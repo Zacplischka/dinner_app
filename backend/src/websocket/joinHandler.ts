@@ -115,7 +115,7 @@ export async function handleSessionJoin(
     });
 
     console.log(`✓ ${displayName} joined session ${sessionCode} (${newCount}/4)`);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in session:join handler:', error);
     callback({
       success: false,

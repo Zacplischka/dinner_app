@@ -89,7 +89,7 @@ export async function handleSessionRestart(
     });
 
     console.log(`✓ Session ${sessionCode} restarted`);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in session:restart handler:', error);
     callback({
       success: false,
