@@ -51,7 +51,7 @@ export async function createSession(hostName: string): Promise<{
   // Create session (host will be added when they join via WebSocket)
   // Note: hostId is temporary and not used since host joins via WebSocket
   const tempHostId = `temp-${Date.now()}`;
-  const session = await SessionModel.createSession(sessionCode, tempHostId);
+  const session = await SessionModel.createSession(sessionCode, tempHostId, hostName);
 
   // Set TTL on session keys (no participants yet)
   const expireAt = calculateExpireAt();
@@ -64,7 +64,7 @@ export async function createSession(hostName: string): Promise<{
   return {
     sessionCode,
     hostName,
-    participantCount: 0,
+    participantCount: 1,
     state: session.state,
     expiresAt: getExpiresAtISO(expireAt),
     shareableLink,
@@ -92,9 +92,9 @@ export async function getSession(sessionCode: string): Promise<{
   const participants = await ParticipantModel.listParticipants(sessionCode);
   const host = participants.find((p) => p.isHost);
 
-  if (!host) {
-    return null;
-  }
+  // If no host exists yet, use the hostName from session creation
+  // This handles the case where a session was created via REST but host hasn't joined via WebSocket
+  const hostName = host ? host.displayName : session.hostName;
 
   // Calculate expiresAt from TTL
   const ttl = await redis.ttl(`session:${sessionCode}`);
@@ -112,7 +112,7 @@ export async function getSession(sessionCode: string): Promise<{
 
   return {
     sessionCode,
-    hostName: host.displayName,
+    hostName: hostName || 'Unknown Host',
     participantCount: session.participantCount,
     state: session.state,
     expiresAt: getExpiresAtISO(expireAt),
@@ -141,8 +141,8 @@ export async function joinSession(
   }
 
   // Check participant limit (FR-004, FR-005)
-  const currentCount = await ParticipantModel.countParticipants(sessionCode);
-  if (currentCount >= 4) {
+  // Use session.participantCount which includes the host who may not have joined yet
+  if (session.participantCount >= 4) {
     throw new Error('SESSION_FULL');
   }
 

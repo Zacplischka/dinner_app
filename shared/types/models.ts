@@ -8,6 +8,7 @@ export interface Session {
   participantCount: number;
   createdAt: number;
   lastActivityAt: number;
+  hostName?: string;
 }
 
 export interface Participant {
