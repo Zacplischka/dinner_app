@@ -9,7 +9,8 @@ import type { Session } from '@dinner-app/shared/types';
  */
 export async function createSession(
   sessionCode: string,
-  hostId: string
+  hostId: string,
+  hostName?: string
 ): Promise<Session> {
   const now = Math.floor(Date.now() / 1000);
 
@@ -20,16 +21,23 @@ export async function createSession(
     participantCount: 1,
     createdAt: now,
     lastActivityAt: now,
+    hostName,
   };
 
   // Store session metadata as Hash
-  await redis.hset(`session:${sessionCode}`, {
+  const sessionData: Record<string, string | number> = {
     createdAt: session.createdAt,
     hostId: session.hostId,
     state: session.state,
     participantCount: session.participantCount,
     lastActivityAt: session.lastActivityAt,
-  });
+  };
+
+  if (hostName) {
+    sessionData.hostName = hostName;
+  }
+
+  await redis.hset(`session:${sessionCode}`, sessionData);
 
   return session;
 }
@@ -51,6 +59,7 @@ export async function getSession(sessionCode: string): Promise<Session | null> {
     participantCount: parseInt(data.participantCount, 10),
     createdAt: parseInt(data.createdAt, 10),
     lastActivityAt: parseInt(data.lastActivityAt, 10),
+    hostName: data.hostName,
   };
 }
 
