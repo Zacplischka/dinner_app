@@ -50,10 +50,10 @@ jobs:
         run: npm run build --workspace=@dinner-app/shared
 
       - name: Type check backend
-        run: npx tsc --noEmit --workspace=@dinner-app/backend
+        run: cd backend && npx tsc --noEmit
 
       - name: Type check frontend
-        run: npx tsc --noEmit --workspace=@dinner-app/frontend
+        run: cd frontend && npx tsc --noEmit
 
       - name: Run backend tests
         run: npm run test --workspace=@dinner-app/backend
