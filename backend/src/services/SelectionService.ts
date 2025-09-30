@@ -30,25 +30,6 @@ export async function submitSelections(
 }
 
 /**
- * Check if all participants have submitted selections
- */
-export async function checkAllSubmitted(sessionCode: string): Promise<boolean> {
-  const participantIds = await ParticipantModel.listParticipantIds(sessionCode);
-  const totalParticipants = participantIds.length;
-
-  // Count how many have submitted
-  let submittedCount = 0;
-  for (const participantId of participantIds) {
-    const selections = await SelectionModel.getSelections(sessionCode, participantId);
-    if (selections.length > 0) {
-      submittedCount++;
-    }
-  }
-
-  return submittedCount === totalParticipants;
-}
-
-/**
  * Get count of participants who have submitted
  */
 export async function getSubmittedCount(sessionCode: string): Promise<number> {
