@@ -1,6 +1,0 @@
-[build]
-builder = "NIXPACKS"
-buildCommand = "npm install --workspace=@dinner-app/shared --workspace=@dinner-app/frontend && npm run build --workspace=@dinner-app/shared && npm run build --workspace=@dinner-app/frontend"
-
-[deploy]
-staticPublishPath = "frontend/dist"
