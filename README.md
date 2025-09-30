@@ -81,7 +81,23 @@ dinner_app/
 - Docker (for local Redis)
 - npm or yarn
 
-### Setup
+### Quick Start (Recommended)
+
+Use the provided startup scripts for easy local development:
+
+```bash
+# Start all services (Redis, backend, frontend)
+./start-dev.sh
+
+# View logs
+./dev-logs.sh backend   # Backend logs
+./dev-logs.sh frontend  # Frontend logs
+
+# Stop all services
+./stop-dev.sh
+```
+
+### Manual Setup
 
 1. **Clone the repository**
    ```bash
@@ -96,7 +112,7 @@ dinner_app/
 
 3. **Start Redis**
    ```bash
-   docker run -d -p 6379:6379 redis:7-alpine
+   docker run -d -p 6379:6379 --name dinner-redis redis:7-alpine
    ```
 
 4. **Start backend** (in terminal 1)
