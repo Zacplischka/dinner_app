@@ -1,7 +1,7 @@
 [build]
-builder = "NIXPACKS"
-nixpacksConfigPath = "nixpacks.toml"
-watchPatterns = ["backend/**", "shared/**", "nixpacks.toml", "package.json", "package-lock.json"]
+builder = "RAILPACK"
+buildCommand = "npm run build --workspace=@dinner-app/shared && npm run build --workspace=@dinner-app/backend && cp backend/src/redis/*.lua backend/dist/redis/"
+watchPatterns = ["backend/**", "shared/**", "package.json", "package-lock.json"]
 
 [deploy]
 startCommand = "cd backend && node dist/server.js"
