@@ -112,7 +112,7 @@ export async function getSession(sessionCode: string): Promise<{
 
   return {
     sessionCode,
-    hostName,
+    hostName: hostName || 'Unknown Host',
     participantCount: session.participantCount,
     state: session.state,
     expiresAt: getExpiresAtISO(expireAt),
