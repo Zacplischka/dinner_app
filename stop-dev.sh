@@ -1,9 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Dinner Decider - Stop Local Development Script
 # This script stops all running development services
 
 set -e  # Exit on error
+
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
 # Colors for output
 GREEN='\033[0;32m'

@@ -1,7 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Dinner Decider - View Development Logs
 # This script displays logs from backend and frontend in real-time
+
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
 # Colors for output
 GREEN='\033[0;32m'

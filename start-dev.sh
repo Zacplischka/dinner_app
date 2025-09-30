@@ -1,9 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Dinner Decider - Local Development Startup Script
 # This script starts Redis, backend, and frontend for local development
 
 set -e  # Exit on error
+
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -67,21 +71,21 @@ if [ ! -d "node_modules" ]; then
     echo -e "${GREEN}✓ Dependencies installed${NC}\n"
 fi
 
+# Create logs directory
+mkdir -p "$SCRIPT_DIR/logs"
+
 # Start backend and frontend in background
 echo -e "${GREEN}Starting backend on http://localhost:3001${NC}"
-cd backend && npm run dev > ../logs/backend.log 2>&1 &
+(cd "$SCRIPT_DIR/backend" && npm run dev > "$SCRIPT_DIR/logs/backend.log" 2>&1) &
 BACKEND_PID=$!
-cd ..
 
 echo -e "${GREEN}Starting frontend on http://localhost:3000${NC}\n"
-cd frontend && npm run dev > ../logs/frontend.log 2>&1 &
+(cd "$SCRIPT_DIR/frontend" && npm run dev > "$SCRIPT_DIR/logs/frontend.log" 2>&1) &
 FRONTEND_PID=$!
-cd ..
 
 # Save PIDs to file for easy cleanup
-mkdir -p logs
-echo $BACKEND_PID > logs/backend.pid
-echo $FRONTEND_PID > logs/frontend.pid
+echo $BACKEND_PID > "$SCRIPT_DIR/logs/backend.pid"
+echo $FRONTEND_PID > "$SCRIPT_DIR/logs/frontend.pid"
 
 # Wait for servers to start
 echo -e "${YELLOW}Waiting for servers to start...${NC}"
