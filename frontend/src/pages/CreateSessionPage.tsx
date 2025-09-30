@@ -37,8 +37,8 @@ export default function CreateSessionPage() {
 
       // Navigate to session lobby
       navigate(`/session/${response.sessionCode}`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create session');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create session');
       setIsLoading(false);
     }
   };
@@ -109,7 +109,7 @@ export default function CreateSessionPage() {
 
         {/* Info */}
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>You'll be able to share a session code with friends</p>
+          <p>You&apos;ll be able to share a session code with friends</p>
         </div>
       </div>
     </main>

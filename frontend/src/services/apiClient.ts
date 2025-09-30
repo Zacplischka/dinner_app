@@ -27,7 +27,7 @@ interface ErrorResponse {
   error: string;
   code: string;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 /**

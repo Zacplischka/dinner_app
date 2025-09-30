@@ -15,7 +15,7 @@ export function emitError(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   code: string,
   message: string,
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 ): void {
   const errorEvent: ErrorEvent = {
     code,

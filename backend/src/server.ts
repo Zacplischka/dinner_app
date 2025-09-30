@@ -31,12 +31,14 @@ app.use('/api/sessions', sessionsRouter);
 app.use('/api/options', optionsRouter);
 
 // Health check endpoint
-app.get('/health', async (_req, res) => {
-  const redisHealthy = await pingRedis();
-  res.status(redisHealthy ? 200 : 503).json({
-    status: redisHealthy ? 'healthy' : 'unhealthy',
-    redis: redisHealthy,
-  });
+app.get('/health', (_req, res) => {
+  void (async () => {
+    const redisHealthy = await pingRedis();
+    res.status(redisHealthy ? 200 : 503).json({
+      status: redisHealthy ? 'healthy' : 'unhealthy',
+      redis: redisHealthy,
+    });
+  })();
 });
 
 // Create HTTP server
@@ -70,22 +72,22 @@ io.on('connection', (socket) => {
 
   // T041: session:join event handler
   socket.on('session:join', (payload, callback) => {
-    handleSessionJoin(socket, payload, callback);
+    void handleSessionJoin(socket, payload, callback);
   });
 
   // T042: selection:submit event handler
   socket.on('selection:submit', (payload, callback) => {
-    handleSelectionSubmit(socket, io, payload, callback);
+    void handleSelectionSubmit(socket, io, payload, callback);
   });
 
   // T043: session:restart event handler
   socket.on('session:restart', (payload, callback) => {
-    handleSessionRestart(socket, io, payload, callback);
+    void handleSessionRestart(socket, io, payload, callback);
   });
 
   // T045: disconnect handler
   socket.on('disconnect', (reason) => {
-    handleDisconnect(socket, io, reason);
+    void handleDisconnect(socket, io, reason);
   });
 });
 
@@ -120,27 +122,31 @@ async function startServer() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  httpServer.close(() => {
-    console.log('HTTP server closed');
-  });
-  await redis.quit();
-  process.exit(0);
+process.on('SIGTERM', () => {
+  void (async () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    httpServer.close(() => {
+      console.log('HTTP server closed');
+    });
+    await redis.quit();
+    process.exit(0);
+  })();
 });
 
-process.on('SIGINT', async () => {
-  console.log('\nSIGINT received, shutting down gracefully...');
-  httpServer.close(() => {
-    console.log('HTTP server closed');
-  });
-  await redis.quit();
-  process.exit(0);
+process.on('SIGINT', () => {
+  void (async () => {
+    console.log('\nSIGINT received, shutting down gracefully...');
+    httpServer.close(() => {
+      console.log('HTTP server closed');
+    });
+    await redis.quit();
+    process.exit(0);
+  })();
 });
 
 // Only start server if run directly (not imported for tests)
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startServer();
+  void startServer();
 }
 
 export { app, io, httpServer };

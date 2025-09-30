@@ -47,7 +47,7 @@ export async function handleDisconnect(
     // Note: We do NOT call ParticipantModel.removeParticipant
     // The participant remains in the session and can reconnect
     // The session will expire after 30 minutes of inactivity (FR-019)
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in disconnect handler:', error);
   }
 }

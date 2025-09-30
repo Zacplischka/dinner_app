@@ -64,12 +64,12 @@ export async function handleSelectionSubmit(
     // Submit selections (validates options and checks already submitted)
     try {
       await SelectionService.submitSelections(sessionCode, socket.id, selections);
-    } catch (error: any) {
+    } catch (error) {
       return callback({
         success: false,
-        error: error.message === 'INVALID_OPTIONS'
+        error: error instanceof Error && error.message === 'INVALID_OPTIONS'
           ? 'One or more selected options are invalid'
-          : error.message === 'ALREADY_SUBMITTED'
+          : error instanceof Error && error.message === 'ALREADY_SUBMITTED'
           ? 'You have already submitted your selections'
           : 'Error submitting selections',
       });
@@ -132,7 +132,7 @@ export async function handleSelectionSubmit(
         `✓ Session ${sessionCode} complete - ${results.hasOverlap ? 'Match found!' : 'No overlap'}`
       );
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in selection:submit handler:', error);
     callback({
       success: false,

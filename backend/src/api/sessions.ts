@@ -20,7 +20,8 @@ const joinSessionRequestSchema = z.object({
  * POST /api/sessions
  * Create a new dinner decision session
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', (req: Request, res: Response) => {
+  void (async () => {
   try {
     // Validate request body
     const validation = createSessionRequestSchema.safeParse(req.body);
@@ -40,7 +41,7 @@ router.post('/', async (req: Request, res: Response) => {
     const session = await SessionService.createSession(hostName);
 
     return res.status(201).json(session);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating session:', error);
     return res.status(500).json({
       error: 'Internal Server Error',
@@ -48,13 +49,15 @@ router.post('/', async (req: Request, res: Response) => {
       message: 'An unexpected error occurred. Please try again later.',
     });
   }
+  })();
 });
 
 /**
  * GET /api/sessions/:sessionCode
  * Get session details
  */
-router.get('/:sessionCode', async (req: Request, res: Response) => {
+router.get('/:sessionCode', (req: Request, res: Response) => {
+  void (async () => {
   try {
     const { sessionCode } = req.params;
 
@@ -79,7 +82,7 @@ router.get('/:sessionCode', async (req: Request, res: Response) => {
     }
 
     return res.status(200).json(session);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error getting session:', error);
     return res.status(500).json({
       error: 'Internal Server Error',
@@ -87,13 +90,15 @@ router.get('/:sessionCode', async (req: Request, res: Response) => {
       message: 'An unexpected error occurred. Please try again later.',
     });
   }
+  })();
 });
 
 /**
  * POST /api/sessions/:sessionCode/join
  * Join an existing session
  */
-router.post('/:sessionCode/join', async (req: Request, res: Response) => {
+router.post('/:sessionCode/join', (req: Request, res: Response) => {
+  void (async () => {
   try {
     const { sessionCode } = req.params;
 
@@ -131,10 +136,10 @@ router.post('/:sessionCode/join', async (req: Request, res: Response) => {
     );
 
     return res.status(200).json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error joining session:', error);
 
-    if (error.message === 'SESSION_NOT_FOUND') {
+    if (error instanceof Error && error.message === 'SESSION_NOT_FOUND') {
       return res.status(404).json({
         error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
@@ -142,7 +147,7 @@ router.post('/:sessionCode/join', async (req: Request, res: Response) => {
       });
     }
 
-    if (error.message === 'SESSION_FULL') {
+    if (error instanceof Error && error.message === 'SESSION_FULL') {
       return res.status(403).json({
         error: 'Session is full',
         code: 'SESSION_FULL',
@@ -156,6 +161,7 @@ router.post('/:sessionCode/join', async (req: Request, res: Response) => {
       message: 'An unexpected error occurred. Please try again later.',
     });
   }
+  })();
 });
 
 export default router;

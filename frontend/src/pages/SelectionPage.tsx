@@ -25,8 +25,8 @@ export default function SelectionPage() {
       try {
         const data = await getDinnerOptions();
         setOptions(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load options');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load options');
       } finally {
         setIsLoading(false);
       }
@@ -66,8 +66,8 @@ export default function SelectionPage() {
     try {
       await submitSelection(sessionCode, selections);
       setHasSubmitted(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit selections');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to submit selections');
       setIsSubmitting(false);
     }
   };
@@ -128,7 +128,7 @@ export default function SelectionPage() {
             Select Your Preferences
           </h1>
           <p className="text-gray-600">
-            Choose all options you'd be happy with
+            Choose all options you&apos;d be happy with
           </p>
           <p className="text-sm text-blue-600 mt-2">
             {selections.length} selected
