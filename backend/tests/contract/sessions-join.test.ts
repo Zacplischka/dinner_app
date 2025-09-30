@@ -10,6 +10,9 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
   beforeAll(async () => {
     // Ensure Redis is connected
     await waitForRedis(redis);
+
+    // Clean up any existing test data from previous test files
+    await cleanupTestData(redis);
   });
 
   beforeEach(async () => {
@@ -26,7 +29,8 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
   });
 
   afterAll(async () => {
-    // Note: Redis connection is shared
+    // Clean up test data after all tests complete
+    await cleanupTestData(redis);
   });
 
   it('should return 200 with valid JoinSessionResponse schema on successful join', async () => {

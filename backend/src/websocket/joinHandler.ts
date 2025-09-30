@@ -56,8 +56,11 @@ export async function handleSessionJoin(
       });
     }
 
+    // First participant becomes the host
+    const isHost = currentCount === 0;
+
     // Add participant using socket.id as participantId
-    await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, false);
+    await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, isHost);
 
     // Increment participant count
     const newCount = await SessionModel.incrementParticipantCount(sessionCode);

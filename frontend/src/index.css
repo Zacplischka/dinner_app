@@ -1,0 +1,96 @@
+/* Tailwind CSS base styles and custom utilities */
+/* Based on: specs/001-dinner-decider-enables/tasks.md T060 */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Mobile-first responsive design */
+  html {
+    font-size: 16px; /* Prevents iOS zoom on input focus */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply antialiased;
+    @apply text-gray-900;
+    @apply bg-gray-50;
+  }
+
+  /* Touch-friendly inputs */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+}
+
+@layer components {
+  /* Touch-friendly button base */
+  .btn {
+    @apply min-h-[44px] min-w-[44px];
+    @apply px-4 py-2;
+    @apply rounded-lg;
+    @apply font-medium;
+    @apply transition-all duration-200;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white;
+    @apply hover:bg-blue-700;
+    @apply disabled:bg-gray-300 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-blue-600;
+    @apply border-2 border-blue-600;
+    @apply hover:bg-blue-50;
+  }
+
+  /* Card component */
+  .card {
+    @apply bg-white rounded-lg shadow-lg p-6;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full min-h-[44px];
+    @apply px-4 py-3;
+    @apply text-base;
+    @apply border-2 border-gray-300 rounded-lg;
+    @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
+    @apply outline-none transition-all;
+  }
+}
+
+@layer utilities {
+  /* Touch target minimum size enforcement */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Safe area insets for notched devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Prevent text selection on interactive elements */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+}

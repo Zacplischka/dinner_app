@@ -48,18 +48,14 @@ export async function createSession(hostName: string): Promise<{
     throw new Error('Failed to generate unique session code');
   }
 
-  // Generate host participant ID (will be socket.id in real usage, UUID for REST)
-  const hostId = `host-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Create session (host will be added when they join via WebSocket)
+  // Note: hostId is temporary and not used since host joins via WebSocket
+  const tempHostId = `temp-${Date.now()}`;
+  const session = await SessionModel.createSession(sessionCode, tempHostId);
 
-  // Create session
-  const session = await SessionModel.createSession(sessionCode, hostId);
-
-  // Add host as first participant
-  await ParticipantModel.addParticipant(sessionCode, hostId, hostName, true);
-
-  // Set TTL on all keys
+  // Set TTL on session keys (no participants yet)
   const expireAt = calculateExpireAt();
-  await refreshSessionTtl(sessionCode, [hostId]);
+  await refreshSessionTtl(sessionCode, []);
 
   // Generate shareable link
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -68,7 +64,7 @@ export async function createSession(hostName: string): Promise<{
   return {
     sessionCode,
     hostName,
-    participantCount: 1,
+    participantCount: 0,
     state: session.state,
     expiresAt: getExpiresAtISO(expireAt),
     shareableLink,

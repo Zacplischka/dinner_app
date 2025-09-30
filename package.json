@@ -1,0 +1,21 @@
+{
+  "name": "dinner-app",
+  "version": "1.0.0",
+  "description": "Dinner Decider - Real-time group dinner decision making",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
+    "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
+    "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
+    "format": "npm run format --workspace=backend && npm run format --workspace=frontend"
+  },
+  "keywords": ["dinner", "decider", "restaurant", "group-decision"],
+  "author": "Dinner Decider Team",
+  "license": "MIT"
+}

@@ -11,6 +11,9 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     // Ensure Redis is connected
     await waitForRedis(redis);
 
+    // Clean up any existing test data from previous test files
+    await cleanupTestData(redis);
+
     // Create a test session for GET tests
     const createResponse = await request(app)
       .post('/api/sessions')
@@ -18,13 +21,9 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     testSessionCode = createResponse.body.sessionCode;
   });
 
-  afterEach(async () => {
-    // Clean up test data
-    await cleanupTestData(redis);
-  });
-
   afterAll(async () => {
-    // Note: Redis connection is shared
+    // Clean up test data after all tests complete
+    await cleanupTestData(redis);
   });
 
   it('should return 200 with valid SessionResponse schema for existing session', async () => {
