@@ -105,16 +105,14 @@ jobs:
       # Deploy backend
       - name: Deploy Backend to Railway
         run: |
-          railway link ${{ secrets.RAILWAY_BACKEND_SERVICE_ID }}
-          railway up --service backend
+          railway up --service ${{ secrets.RAILWAY_BACKEND_SERVICE_ID }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       # Deploy frontend
       - name: Deploy Frontend to Railway
         run: |
-          railway link ${{ secrets.RAILWAY_FRONTEND_SERVICE_ID }}
-          railway up --service frontend
+          railway up --service ${{ secrets.RAILWAY_FRONTEND_SERVICE_ID }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
