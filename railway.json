@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "RAILPACK",
-    "buildCommand": "npm run build --workspace=@dinner-app/shared && npm run build --workspace=@dinner-app/backend && npm run postbuild"
+    "buildCommand": "npm run build -w shared && npm run build -w backend && npm run postbuild"
   },
   "deploy": {
     "startCommand": "cd backend && node dist/server.js",
