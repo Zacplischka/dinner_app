@@ -1,9 +1,0 @@
-[build]
-builder = "RAILPACK"
-buildCommand = "npm run build -w shared && npm run build -w frontend"
-watchPatterns = ["frontend/**", "shared/**", "package.json", "package-lock.json"]
-
-[deploy]
-startCommand = "npm run preview -w frontend"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
