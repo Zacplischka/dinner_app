@@ -102,19 +102,18 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      # Deploy backend
+      # Deploy using Railway GitHub Action instead of CLI
       - name: Deploy Backend to Railway
-        run: |
-          railway up --service ${{ secrets.RAILWAY_BACKEND_SERVICE_ID }}
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        uses: railwayapp/railway-deploy@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: backend
 
-      # Deploy frontend
       - name: Deploy Frontend to Railway
-        run: |
-          railway up --service ${{ secrets.RAILWAY_FRONTEND_SERVICE_ID }}
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        uses: railwayapp/railway-deploy@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: frontend
 
       - name: Deployment Summary
         run: |
