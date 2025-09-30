@@ -54,8 +54,8 @@ export default function JoinSessionPage() {
 
       // Navigate to session lobby
       navigate(`/session/${code}`);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to join session';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to join session';
 
       // Handle specific error cases
       if (errorMessage.includes('full')) {

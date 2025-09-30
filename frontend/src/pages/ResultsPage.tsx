@@ -25,8 +25,8 @@ export default function ResultsPage() {
       await restartSession(sessionCode);
       // Navigate back to selection page
       navigate(`/session/${sessionCode}/select`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to restart session');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to restart session');
       setIsRestarting(false);
     }
   };
@@ -46,7 +46,7 @@ export default function ResultsPage() {
           <p className="text-gray-600">
             {hasOverlap
               ? 'Everyone agrees on these options'
-              : 'No restaurants matched everyone\'s preferences'}
+              : 'No restaurants matched everyone&apos;s preferences'}
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default function ResultsPage() {
         {/* All Selections */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Everyone's Selections
+            Everyone&apos;s Selections
           </h2>
           <div className="space-y-4">
             {participants.map((participant) => {

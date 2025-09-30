@@ -212,7 +212,7 @@ export function restartSession(sessionCode: string): Promise<void> {
       sessionCode,
     };
 
-    socket.emit('session:restart', payload, (ack: any) => {
+    socket.emit('session:restart', payload, (ack: { success?: boolean; error?: string }) => {
       if (ack.success) {
         resolve();
       } else {
