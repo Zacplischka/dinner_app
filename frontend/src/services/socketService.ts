@@ -82,6 +82,7 @@ function setupEventHandlers(): void {
       joinedAt: Date.now(),
       hasSubmitted: false,
       isHost: false,
+      isOnline: event.isOnline ?? true, // Default to true if not provided
     });
   });
 
@@ -90,7 +91,10 @@ function setupEventHandlers(): void {
   // The session stays in waiting state until they reconnect or session expires.
   socket.on('participant:left', (event: ParticipantLeftEvent) => {
     console.log('Participant left:', event);
-    // Do not remove participant - they remain in the session
+    // Update participant's online status to false
+    useSessionStore
+      .getState()
+      .updateParticipantOnlineStatus(event.participantId, event.isOnline ?? false);
   });
 
   // participant:submitted - A participant submitted their selections
@@ -161,6 +165,7 @@ export function joinSession(
           sessionCode,
           joinedAt: Date.now(),
           hasSubmitted: false,
+          isOnline: p.isOnline ?? true, // Default to true if not provided
         })));
         resolve(ack);
       } else {

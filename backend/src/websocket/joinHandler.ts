@@ -8,6 +8,10 @@ import * as ParticipantModel from '../models/Participant.js';
 import * as SessionModel from '../models/Session.js';
 import { refreshSessionTtl } from '../redis/ttl-utils.js';
 import { redis } from '../redis/client.js';
+import {
+  markParticipantOnline,
+  getParticipantsOnlineStatus,
+} from '../redis/presence-utils.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -86,12 +90,21 @@ export async function handleSessionJoin(
     // Join Socket.IO room
     await socket.join(sessionCode);
 
+    // Mark participant as online
+    await markParticipantOnline(sessionCode, socket.id);
+
     // Refresh TTL on all session keys
     const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
     await refreshSessionTtl(sessionCode, participantIds);
 
     // Get all participants for response
     const participants = await ParticipantModel.listParticipants(sessionCode);
+
+    // Get online status for all participants
+    const onlineStatus = await getParticipantsOnlineStatus(
+      sessionCode,
+      participants.map((p) => p.participantId)
+    );
 
     // Send acknowledgment to joining client
     callback({
@@ -104,6 +117,7 @@ export async function handleSessionJoin(
         participantId: p.participantId,
         displayName: p.displayName,
         isHost: p.isHost,
+        isOnline: onlineStatus[p.participantId] ?? false,
       })),
     });
 
@@ -112,6 +126,7 @@ export async function handleSessionJoin(
       participantId: socket.id,
       displayName,
       participantCount: newCount,
+      isOnline: true,
     });
 
     console.log(`✓ ${displayName} joined session ${sessionCode} (${newCount}/4)`);

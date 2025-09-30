@@ -12,6 +12,7 @@ export interface SessionJoinResponse {
         participantId: string;
         displayName: string;
         isHost: boolean;
+        isOnline?: boolean;
     }>;
     error?: string;
 }
@@ -39,6 +40,7 @@ export interface ParticipantJoinedEvent {
     participantId: string;
     displayName: string;
     participantCount: number;
+    isOnline?: boolean;
 }
 export interface ParticipantSubmittedEvent {
     participantId: string;
@@ -64,6 +66,7 @@ export interface ParticipantLeftEvent {
     participantId: string;
     displayName: string;
     participantCount: number;
+    isOnline?: boolean;
 }
 export interface ErrorEvent {
     code: string;

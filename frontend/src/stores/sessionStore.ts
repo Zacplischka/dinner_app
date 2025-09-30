@@ -26,6 +26,7 @@ interface SessionState {
   addParticipant: (participant: Participant) => void;
   removeParticipant: (participantId: string) => void;
   updateParticipants: (participants: Participant[]) => void;
+  updateParticipantOnlineStatus: (participantId: string, isOnline: boolean) => void;
 
   // Selection actions
   setSelections: (optionIds: string[]) => void;
@@ -66,9 +67,20 @@ export const useSessionStore = create<SessionState>()(
         setCurrentUserId: (userId) => set({ currentUserId: userId }),
 
         addParticipant: (participant) =>
-          set((state) => ({
-            participants: [...state.participants, participant],
-          })),
+          set((state) => {
+            // Check if participant already exists, update if so
+            const existingIndex = state.participants.findIndex(
+              (p) => p.participantId === participant.participantId
+            );
+
+            if (existingIndex >= 0) {
+              const updated = [...state.participants];
+              updated[existingIndex] = { ...updated[existingIndex], ...participant };
+              return { participants: updated };
+            }
+
+            return { participants: [...state.participants, participant] };
+          }),
 
         removeParticipant: (participantId) =>
           set((state) => ({
@@ -76,6 +88,13 @@ export const useSessionStore = create<SessionState>()(
           })),
 
         updateParticipants: (participants) => set({ participants }),
+
+        updateParticipantOnlineStatus: (participantId, isOnline) =>
+          set((state) => ({
+            participants: state.participants.map((p) =>
+              p.participantId === participantId ? { ...p, isOnline } : p
+            ),
+          })),
 
         // Selection actions
         setSelections: (optionIds) => set({ selections: optionIds }),

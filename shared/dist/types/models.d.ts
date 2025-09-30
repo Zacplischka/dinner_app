@@ -14,6 +14,7 @@ export interface Participant {
     joinedAt: number;
     hasSubmitted: boolean;
     isHost: boolean;
+    isOnline?: boolean;
 }
 export interface DinnerOption {
     optionId: string;

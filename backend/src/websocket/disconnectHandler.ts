@@ -3,6 +3,7 @@
 
 import type { Socket, Server } from 'socket.io';
 import * as ParticipantModel from '../models/Participant.js';
+import { markParticipantOffline } from '../redis/presence-utils.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -31,6 +32,9 @@ export async function handleDisconnect(
 
     const { sessionCode, displayName } = participant;
 
+    // Mark participant as offline
+    await markParticipantOffline(sessionCode, socket.id);
+
     // Get current participant count (unchanged, per FR-025)
     const participantCount = await ParticipantModel.countParticipants(sessionCode);
 
@@ -40,6 +44,7 @@ export async function handleDisconnect(
       participantId: socket.id,
       displayName,
       participantCount, // Count unchanged - participant still in session
+      isOnline: false,
     });
 
     console.log(`✓ ${displayName} disconnected from ${sessionCode} (session preserved)`);

@@ -51,10 +51,21 @@ export default function ParticipantList({
                 )}
               </p>
             )}
+            {participant.isOnline === false && (
+              <p className="text-xs text-gray-400">Disconnected</p>
+            )}
           </div>
 
           {/* Connection indicator */}
-          <div className="text-green-500 flex-shrink-0">●</div>
+          <div
+            className={`flex-shrink-0 ${
+              participant.isOnline === false ? 'text-gray-400' : 'text-green-500'
+            }`}
+            aria-label={participant.isOnline === false ? 'Disconnected' : 'Online'}
+            role="status"
+          >
+            ●
+          </div>
         </div>
       ))}
     </div>

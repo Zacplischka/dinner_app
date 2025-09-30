@@ -42,6 +42,7 @@ export async function refreshSessionTtl(
     `session:${sessionCode}`,
     `session:${sessionCode}:participants`,
     `session:${sessionCode}:results`,
+    `session:${sessionCode}:online`, // Track online participants
   ];
 
   // Add participant metadata keys
