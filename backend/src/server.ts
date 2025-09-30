@@ -62,6 +62,9 @@ import { handleSelectionSubmit } from './websocket/submitHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
 
+// Import session expiry notifier
+import { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } from './redis/sessionExpiryNotifier.js';
+
 // WebSocket connection handling
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
@@ -110,6 +113,9 @@ async function startServer() {
   try {
     await validateStartup();
 
+    // Initialize session expiry notifier
+    await initializeSessionExpiryNotifier(io);
+
     httpServer.listen(PORT, () => {
       console.log(`\n🚀 Server running on http://localhost:${PORT}`);
       console.log(`📡 WebSocket server ready`);
@@ -128,6 +134,7 @@ process.on('SIGTERM', () => {
     httpServer.close(() => {
       console.log('HTTP server closed');
     });
+    await disconnectSessionExpiryNotifier();
     await redis.quit();
     process.exit(0);
   })();
@@ -139,6 +146,7 @@ process.on('SIGINT', () => {
     httpServer.close(() => {
       console.log('HTTP server closed');
     });
+    await disconnectSessionExpiryNotifier();
     await redis.quit();
     process.exit(0);
   })();
