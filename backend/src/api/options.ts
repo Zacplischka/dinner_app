@@ -10,7 +10,7 @@ const router = Router();
  * GET /api/options
  * Get the static list of dinner options
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (_req: Request, res: Response) => {
   try {
     return res.status(200).json({
       options: DINNER_OPTIONS,

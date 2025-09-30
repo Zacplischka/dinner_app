@@ -86,9 +86,11 @@ function setupEventHandlers(): void {
   });
 
   // participant:left - A participant left the session
+  // Note: Per FR-025, participants are NOT removed on disconnect.
+  // The session stays in waiting state until they reconnect or session expires.
   socket.on('participant:left', (event: ParticipantLeftEvent) => {
     console.log('Participant left:', event);
-    useSessionStore.getState().removeParticipant(event.participantId);
+    // Do not remove participant - they remain in the session
   });
 
   // participant:submitted - A participant submitted their selections

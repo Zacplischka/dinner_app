@@ -31,7 +31,7 @@ app.use('/api/sessions', sessionsRouter);
 app.use('/api/options', optionsRouter);
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
+app.get('/health', async (_req, res) => {
   const redisHealthy = await pingRedis();
   res.status(redisHealthy ? 200 : 503).json({
     status: redisHealthy ? 'healthy' : 'unhealthy',

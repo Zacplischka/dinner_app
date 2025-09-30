@@ -15,7 +15,7 @@ import type {
  */
 export async function handleDisconnect(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
-  io: Server<ClientToServerEvents, ServerToClientEvents>,
+  _io: Server<ClientToServerEvents, ServerToClientEvents>,
   reason: string
 ): Promise<void> {
   try {

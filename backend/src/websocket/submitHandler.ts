@@ -114,6 +114,9 @@ export async function handleSelectionSubmit(
         results.overlappingOptions.map((opt) => opt.optionId)
       );
 
+      // Refresh TTL after storing results to ensure results key expires with session
+      await refreshSessionTtl(sessionCode, participantIds);
+
       // Update session state
       await SessionModel.updateSessionState(sessionCode, 'complete');
 

@@ -84,7 +84,8 @@ export async function getDinnerOptions(): Promise<DinnerOption[]> {
     throw new Error('Failed to fetch dinner options');
   }
 
-  return response.json();
+  const data = await response.json();
+  return data.options;
 }
 
 /**

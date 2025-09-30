@@ -80,6 +80,13 @@ export async function incrementParticipantCount(sessionCode: string): Promise<nu
 }
 
 /**
+ * Set participant count to a specific value
+ */
+export async function setParticipantCount(sessionCode: string, count: number): Promise<void> {
+  await redis.hset(`session:${sessionCode}`, 'participantCount', count);
+}
+
+/**
  * Delete session and all related keys
  */
 export async function deleteSession(sessionCode: string): Promise<void> {

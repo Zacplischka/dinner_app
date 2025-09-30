@@ -3,7 +3,7 @@
 
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
-import * as SessionService from '../services/SessionService.js';
+// SessionService import removed as it's not used in this handler
 import * as ParticipantModel from '../models/Participant.js';
 import * as SessionModel from '../models/Session.js';
 import { refreshSessionTtl } from '../redis/ttl-utils.js';
@@ -48,6 +48,10 @@ export async function handleSessionJoin(
     }
 
     // Check participant limit (FR-005)
+    // Use atomic operation to prevent race condition:
+    // 1. Add participant first
+    // 2. Re-check count after adding
+    // 3. Rollback if over limit
     const currentCount = await ParticipantModel.countParticipants(sessionCode);
     if (currentCount >= 4) {
       return callback({
@@ -62,8 +66,19 @@ export async function handleSessionJoin(
     // Add participant using socket.id as participantId
     await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, isHost);
 
-    // Increment participant count
-    const newCount = await SessionModel.incrementParticipantCount(sessionCode);
+    // Re-check count after adding to catch race condition
+    const newCount = await ParticipantModel.countParticipants(sessionCode);
+    if (newCount > 4) {
+      // Rollback: remove the participant we just added
+      await ParticipantModel.removeParticipant(sessionCode, socket.id);
+      return callback({
+        success: false,
+        error: 'Session is full (maximum 4 participants)',
+      });
+    }
+
+    // Update participant count in session hash
+    await SessionModel.setParticipantCount(sessionCode, newCount);
 
     // Update last activity
     await SessionModel.updateLastActivity(sessionCode);

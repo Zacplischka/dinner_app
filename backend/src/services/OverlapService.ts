@@ -4,7 +4,7 @@
 import { redis } from '../redis/client.js';
 import * as ParticipantModel from '../models/Participant.js';
 import * as SelectionModel from '../models/Selection.js';
-import { DINNER_OPTIONS, getDinnerOptionById } from '../constants/dinnerOptions.js';
+import { getDinnerOptionById } from '../constants/dinnerOptions.js';
 import type { DinnerOption } from '../constants/dinnerOptions.js';
 
 /**

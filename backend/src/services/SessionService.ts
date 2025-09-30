@@ -5,7 +5,7 @@ import { redis } from '../redis/client.js';
 import * as SessionModel from '../models/Session.js';
 import * as ParticipantModel from '../models/Participant.js';
 import { refreshSessionTtl, calculateExpireAt, getExpiresAtISO } from '../redis/ttl-utils.js';
-import type { Session } from '@dinner-app/shared/types';
+// Session type imported but not used directly in this service
 
 /**
  * Generate a unique 6-character alphanumeric session code (uppercase)
@@ -98,6 +98,13 @@ export async function getSession(sessionCode: string): Promise<{
 
   // Calculate expiresAt from TTL
   const ttl = await redis.ttl(`session:${sessionCode}`);
+
+  // Guard against negative TTL values
+  // TTL -2 means key doesn't exist, -1 means no expiry set
+  if (ttl < 0) {
+    return null; // Session expired or doesn't exist
+  }
+
   const expireAt = Math.floor(Date.now() / 1000) + ttl;
 
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
