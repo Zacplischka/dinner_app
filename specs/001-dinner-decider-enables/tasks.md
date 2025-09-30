@@ -50,28 +50,28 @@ dinner_app/
 
 ## Phase 3.1: Setup
 
-- [ ] **T001** Create monorepo project structure (backend/, frontend/, shared/)
+- [X] **T001** Create monorepo project structure (backend/, frontend/, shared/)
   - Create directories: backend/src/{models,services,api,websocket,redis,constants}, backend/tests/{contract,integration,unit}
   - Create directories: frontend/src/{components,pages,services,stores}, frontend/tests/{unit,e2e}
   - Create directories: shared/{types,schemas}
 
-- [ ] **T002** Initialize backend Node.js 20 + TypeScript 5.x project
+- [X] **T002** Initialize backend Node.js 20 + TypeScript 5.x project
   - File: `backend/package.json`, `backend/tsconfig.json`
   - Dependencies: express@4.x, socket.io@4.x, ioredis@5.x, zod@3.x, cors
   - Dev dependencies: vitest@1.x, supertest@6.x, @types/node, @types/express, typescript@5.x
 
-- [ ] **T003** Initialize frontend React 18 + TypeScript 5.x project
+- [X] **T003** Initialize frontend React 18 + TypeScript 5.x project
   - File: `frontend/package.json`, `frontend/tsconfig.json`, `frontend/vite.config.ts`
   - Dependencies: react@18.x, react-dom@18.x, react-router-dom@6.x, socket.io-client@4.x, zustand@4.x
   - Dev dependencies: @vitejs/plugin-react, tailwindcss@3.x, vitest@1.x, @testing-library/react, playwright@1.x
 
-- [ ] **T004** [P] Configure ESLint and Prettier for backend
+- [X] **T004** [P] Configure ESLint and Prettier for backend
   - File: `backend/.eslintrc.json`, `backend/.prettierrc`
 
-- [ ] **T005** [P] Configure ESLint, Prettier, and Tailwind for frontend
+- [X] **T005** [P] Configure ESLint, Prettier, and Tailwind for frontend
   - File: `frontend/.eslintrc.json`, `frontend/.prettierrc`, `frontend/tailwind.config.ts`, `frontend/postcss.config.js`
 
-- [ ] **T006** [P] Initialize shared package for types and schemas
+- [X] **T006** [P] Initialize shared package for types and schemas
   - File: `shared/package.json`, `shared/tsconfig.json`
   - Dependencies: zod@3.x
   - Exports: ./types, ./schemas
@@ -80,23 +80,23 @@ dinner_app/
 
 ## Phase 3.2: Shared Types and Schemas (BEFORE Tests)
 
-- [ ] **T007** [P] Create shared TypeScript types for models
+- [X] **T007** [P] Create shared TypeScript types for models
   - File: `shared/types/models.ts`
   - Types: Session, Participant, DinnerOption, Selection, Result (per data-model.md)
 
-- [ ] **T008** [P] Create shared TypeScript types for REST API
+- [X] **T008** [P] Create shared TypeScript types for REST API
   - File: `shared/types/api.ts`
   - Types: CreateSessionRequest, SessionResponse, JoinSessionRequest, JoinSessionResponse (per openapi.yaml)
 
-- [ ] **T009** [P] Create shared TypeScript types for WebSocket events
+- [X] **T009** [P] Create shared TypeScript types for WebSocket events
   - File: `shared/types/websocket-events.ts`
   - Types: ClientToServerEvents, ServerToClientEvents, SessionJoinPayload, SelectionSubmitPayload, etc. (per websocket-events.md)
 
-- [ ] **T010** [P] Create shared Zod schemas for REST API validation
+- [X] **T010** [P] Create shared Zod schemas for REST API validation
   - File: `shared/schemas/api.ts`
   - Schemas: createSessionRequestSchema, sessionResponseSchema, joinSessionRequestSchema
 
-- [ ] **T011** [P] Create shared Zod schemas for WebSocket validation
+- [X] **T011** [P] Create shared Zod schemas for WebSocket validation
   - File: `shared/schemas/websocket-events.ts`
   - Schemas: sessionJoinPayloadSchema, selectionSubmitPayloadSchema, sessionRestartPayloadSchema
 
@@ -108,98 +108,98 @@ dinner_app/
 
 ### REST API Contract Tests
 
-- [ ] **T012** [P] Contract test POST /api/sessions
+- [X] **T012** [P] Contract test POST /api/sessions
   - File: `backend/tests/contract/sessions-create.test.ts`
   - Test: validates 201 response matches openapi.yaml SessionResponse schema
   - Test: validates 400 response for missing hostName
   - Uses: vitest-openapi, supertest
 
-- [ ] **T013** [P] Contract test GET /api/sessions/:sessionCode
+- [X] **T013** [P] Contract test GET /api/sessions/:sessionCode
   - File: `backend/tests/contract/sessions-get.test.ts`
   - Test: validates 200 response matches SessionResponse schema
   - Test: validates 404 response for non-existent session
 
-- [ ] **T014** [P] Contract test POST /api/sessions/:sessionCode/join
+- [X] **T014** [P] Contract test POST /api/sessions/:sessionCode/join
   - File: `backend/tests/contract/sessions-join.test.ts`
   - Test: validates 200 response matches JoinSessionResponse schema
   - Test: validates 403 response for full session (4 participants)
   - Test: validates 404 response for non-existent session
 
-- [ ] **T015** [P] Contract test GET /api/options
+- [X] **T015** [P] Contract test GET /api/options
   - File: `backend/tests/contract/options-get.test.ts`
   - Test: validates 200 response with array of DinnerOption objects
 
 ### WebSocket Event Contract Tests
 
-- [ ] **T016** [P] Contract test session:join event
+- [X] **T016** [P] Contract test session:join event
   - File: `backend/tests/contract/websocket-join.test.ts`
   - Test: validates payload against sessionJoinPayloadSchema
   - Test: validates acknowledgment response structure
   - Test: validates participant:joined broadcast to other clients
   - Uses: socket.io-client, vitest
 
-- [ ] **T017** [P] Contract test selection:submit event
+- [X] **T017** [P] Contract test selection:submit event
   - File: `backend/tests/contract/websocket-submit.test.ts`
   - Test: validates payload against selectionSubmitPayloadSchema
   - Test: validates participant:submitted broadcast (count only, not selections)
   - Test: validates session:results broadcast when all submit
 
-- [ ] **T018** [P] Contract test session:restart event
+- [X] **T018** [P] Contract test session:restart event
   - File: `backend/tests/contract/websocket-restart.test.ts`
   - Test: validates payload against sessionRestartPayloadSchema
   - Test: validates session:restarted broadcast to all participants
 
 ### Integration Test Scenarios (User Stories)
 
-- [ ] **T019** [P] Integration test: Create session flow
+- [X] **T019** [P] Integration test: Create session flow
   - File: `backend/tests/integration/create-session.test.ts`
   - Scenario: User creates session, receives session code and shareable link (FR-001, FR-002, FR-003)
   - Test: POST /api/sessions returns 201 with valid session code
   - Test: Session stored in Redis with 30-minute TTL
   - Test: Host becomes first participant
 
-- [ ] **T020** [P] Integration test: Join session flow (2-4 participants)
+- [X] **T020** [P] Integration test: Join session flow (2-4 participants)
   - File: `backend/tests/integration/join-session.test.ts`
   - Scenario: Bob and Charlie join Alice's session via WebSocket (FR-004, FR-005, FR-022)
   - Test: session:join emits participant:joined broadcast to existing participants
   - Test: New participant receives current participant list
   - Test: 5th participant rejected with SESSION_FULL error
 
-- [ ] **T021** [P] Integration test: Submit selections flow
+- [X] **T021** [P] Integration test: Submit selections flow
   - File: `backend/tests/integration/submit-selections.test.ts`
   - Scenario: Participants submit selections, remain private until all submit (FR-007, FR-008, FR-023)
   - Test: selection:submit stores selections in Redis
   - Test: participant:submitted broadcasts count only (not selections)
   - Test: Selections not revealed until all participants submit
 
-- [ ] **T022** [P] Integration test: Results revelation with overlap
+- [X] **T022** [P] Integration test: Results revelation with overlap
   - File: `backend/tests/integration/results-overlap.test.ts`
   - Scenario: All participants submit, system calculates and broadcasts overlap (FR-009, FR-010, FR-011)
   - Test: Redis SINTER calculates overlapping options correctly
   - Test: session:results broadcasts overlappingOptions array
   - Test: allSelections map reveals all participants' choices
 
-- [ ] **T023** [P] Integration test: Results revelation with no overlap
+- [X] **T023** [P] Integration test: Results revelation with no overlap
   - File: `backend/tests/integration/results-no-overlap.test.ts`
   - Scenario: All submit but no overlap, show restart option (FR-016)
   - Test: session:results has empty overlappingOptions array
   - Test: hasOverlap: false in results payload
 
-- [ ] **T024** [P] Integration test: Session restart flow
+- [X] **T024** [P] Integration test: Session restart flow
   - File: `backend/tests/integration/restart-session.test.ts`
   - Scenario: Participant restarts session, clears selections, preserves participants (FR-012, FR-013)
   - Test: session:restart clears all selections from Redis
   - Test: session:restarted broadcast to all participants
   - Test: Participant list unchanged after restart
 
-- [ ] **T025** [P] Integration test: Session expiration after 30 minutes
+- [X] **T025** [P] Integration test: Session expiration after 30 minutes
   - File: `backend/tests/integration/session-expiration.test.ts`
   - Scenario: Session expires after 30 minutes of inactivity (FR-019, FR-020)
   - Test: Redis TTL expires session and all related keys
   - Test: session:expired broadcast sent before expiration
   - Test: All participant, selection, and result keys deleted
 
-- [ ] **T026** [P] Integration test: Single participant session
+- [X] **T026** [P] Integration test: Single participant session
   - File: `backend/tests/integration/single-participant.test.ts`
   - Scenario: Alice creates session and submits alone, sees own selections as results (FR-021)
   - Test: selection:submit with 1 participant triggers immediate results
@@ -207,17 +207,17 @@ dinner_app/
 
 ---
 
-## Phase 3.4: Backend Core Implementation (ONLY after tests are failing)
+## Phase 3.4: Backend Core Implementation (ONLY after tests are failing) ✅ COMPLETE
 
 ### Redis Client and Utilities
 
-- [ ] **T027** Redis client initialization
+- [X] **T027** Redis client initialization
   - File: `backend/src/redis/client.ts`
   - Implement: ioredis connection with reconnection strategy
   - Implement: Health check ping/pong
   - Uses: ioredis@5.x
 
-- [ ] **T028** [P] Redis TTL refresh utility (Lua script)
+- [X] **T028** [P] Redis TTL refresh utility (Lua script)
   - File: `backend/src/redis/refresh-ttl.lua`, `backend/src/redis/ttl-utils.ts`
   - Implement: Lua script to atomically refresh EXPIREAT on multiple keys
   - Implement: TypeScript wrapper to execute script
@@ -225,26 +225,26 @@ dinner_app/
 
 ### Constants
 
-- [ ] **T029** [P] Static dinner options list
+- [X] **T029** [P] Static dinner options list
   - File: `backend/src/constants/dinnerOptions.ts`
   - Data: 15-20 hardcoded dinner options with optionId, displayName, description (FR-018)
   - Validation: Startup check for duplicate optionIds
 
 ### Models (Redis operations)
 
-- [ ] **T030** [P] Session model
+- [X] **T030** [P] Session model
   - File: `backend/src/models/Session.ts`
   - Methods: create(hostId), get(sessionCode), updateState(sessionCode, state), delete(sessionCode)
   - Redis: HSET session:{code}, EXPIREAT
   - Per data-model.md Session entity
 
-- [ ] **T031** [P] Participant model
+- [X] **T031** [P] Participant model
   - File: `backend/src/models/Participant.ts`
   - Methods: add(sessionCode, participantId, displayName), remove(sessionCode, participantId), list(sessionCode), count(sessionCode)
   - Redis: SADD session:{code}:participants, HSET participant:{id}, EXPIREAT
   - Per data-model.md Participant entity
 
-- [ ] **T032** [P] Selection model
+- [X] **T032** [P] Selection model
   - File: `backend/src/models/Selection.ts`
   - Methods: submit(sessionCode, participantId, optionIds), get(sessionCode, participantId), getAll(sessionCode), clear(sessionCode)
   - Redis: SADD session:{code}:{participantId}:selections, EXPIREAT
@@ -252,19 +252,19 @@ dinner_app/
 
 ### Services (Business Logic)
 
-- [ ] **T033** Session service
+- [X] **T033** Session service
   - File: `backend/src/services/SessionService.ts`
   - Depends on: T030 (Session model), T031 (Participant model), T028 (TTL utils)
   - Methods: createSession(hostName), getSession(sessionCode), joinSession(sessionCode, participantId, displayName), expireSession(sessionCode)
   - Logic: Generate 6-char alphanumeric code, enforce 1-4 participant limit, refresh TTL on activity
 
-- [ ] **T034** [P] Selection service
+- [X] **T034** [P] Selection service
   - File: `backend/src/services/SelectionService.ts`
   - Depends on: T032 (Selection model)
   - Methods: submitSelections(sessionCode, participantId, optionIds), checkAllSubmitted(sessionCode), clearSelections(sessionCode)
   - Logic: Validate optionIds exist in DINNER_OPTIONS, check not already submitted
 
-- [ ] **T035** [P] Overlap calculation service
+- [X] **T035** [P] Overlap calculation service
   - File: `backend/src/services/OverlapService.ts`
   - Depends on: T032 (Selection model), T029 (DINNER_OPTIONS)
   - Methods: calculateOverlap(sessionCode), formatResults(sessionCode)
@@ -273,25 +273,25 @@ dinner_app/
 
 ### REST API Endpoints
 
-- [ ] **T036** POST /api/sessions endpoint
+- [X] **T036** POST /api/sessions endpoint
   - File: `backend/src/api/sessions.ts`
   - Depends on: T033 (SessionService), T010 (Zod schemas)
   - Implement: createSession route, validate with createSessionRequestSchema, return SessionResponse
   - Makes T012 test pass
 
-- [ ] **T037** GET /api/sessions/:sessionCode endpoint
+- [X] **T037** GET /api/sessions/:sessionCode endpoint
   - File: `backend/src/api/sessions.ts`
   - Depends on: T033 (SessionService)
   - Implement: getSession route, return 404 if not found
   - Makes T013 test pass
 
-- [ ] **T038** POST /api/sessions/:sessionCode/join endpoint
+- [X] **T038** POST /api/sessions/:sessionCode/join endpoint
   - File: `backend/src/api/sessions.ts`
   - Depends on: T033 (SessionService), T010 (Zod schemas)
   - Implement: joinSession route, validate participantName, return 403 if full
   - Makes T014 test pass
 
-- [ ] **T039** [P] GET /api/options endpoint
+- [X] **T039** [P] GET /api/options endpoint
   - File: `backend/src/api/options.ts`
   - Depends on: T029 (DINNER_OPTIONS)
   - Implement: Return static dinner options list
@@ -299,45 +299,45 @@ dinner_app/
 
 ### WebSocket Event Handlers
 
-- [ ] **T040** WebSocket server initialization
-  - File: `backend/src/websocket/server.ts`
+- [X] **T040** WebSocket server initialization
+  - File: `backend/src/server.ts`
   - Depends on: T027 (Redis client)
   - Implement: Socket.IO server with CORS, Connection State Recovery (2-minute buffer per research.md)
   - Implement: TypedServerSocket with ClientToServerEvents, ServerToClientEvents interfaces
 
-- [ ] **T041** session:join event handler
-  - File: `backend/src/websocket/handlers/joinHandler.ts`
+- [X] **T041** session:join event handler
+  - File: `backend/src/websocket/joinHandler.ts`
   - Depends on: T033 (SessionService), T011 (Zod schemas)
   - Implement: Validate payload, add participant, join room, broadcast participant:joined
   - Implement: Return acknowledgment with participant list
   - Makes T016 test pass
 
-- [ ] **T042** selection:submit event handler
-  - File: `backend/src/websocket/handlers/submitHandler.ts`
+- [X] **T042** selection:submit event handler
+  - File: `backend/src/websocket/submitHandler.ts`
   - Depends on: T034 (SelectionService), T035 (OverlapService), T011 (Zod schemas)
   - Implement: Validate payload, submit selections, broadcast participant:submitted (count only)
   - Implement: If all submitted: calculate overlap, broadcast session:results
   - Makes T017 test pass
 
-- [ ] **T043** session:restart event handler
-  - File: `backend/src/websocket/handlers/restartHandler.ts`
+- [X] **T043** session:restart event handler
+  - File: `backend/src/websocket/restartHandler.ts`
   - Depends on: T034 (SelectionService), T011 (Zod schemas)
   - Implement: Validate payload, clear selections, broadcast session:restarted
   - Makes T018 test pass
 
-- [ ] **T044** [P] WebSocket error handler
-  - File: `backend/src/websocket/handlers/errorHandler.ts`
+- [X] **T044** [P] WebSocket error handler
+  - File: `backend/src/websocket/errorHandler.ts`
   - Implement: Emit error event with structured ErrorEvent payload
   - Error codes: SESSION_FULL, SESSION_NOT_FOUND, VALIDATION_ERROR, ALREADY_SUBMITTED, INVALID_OPTIONS
 
-- [ ] **T045** [P] WebSocket disconnect handler
-  - File: `backend/src/websocket/handlers/disconnectHandler.ts`
+- [X] **T045** [P] WebSocket disconnect handler
+  - File: `backend/src/websocket/disconnectHandler.ts`
   - Implement: Broadcast participant:left (but don't remove from session per FR-025)
   - Implement: Session stays in waiting state until reconnect or expire
 
 ### Backend Integration
 
-- [ ] **T046** Express + Socket.IO server integration
+- [X] **T046** Express + Socket.IO server integration
   - File: `backend/src/server.ts`
   - Depends on: T036-T039 (REST routes), T040-T045 (WebSocket handlers)
   - Implement: Express app initialization, mount REST routes, attach Socket.IO

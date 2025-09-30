@@ -1,0 +1,25 @@
+{
+  "name": "@dinner-app/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types and Zod schemas for Dinner Decider",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "exports": {
+    "./types": "./dist/types/index.js",
+    "./schemas": "./dist/schemas/index.js"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["dinner", "decider", "types", "schemas"],
+  "author": "Dinner Decider Team",
+  "license": "MIT"
+}

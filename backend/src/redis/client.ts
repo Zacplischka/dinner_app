@@ -1,0 +1,65 @@
+// Redis client initialization with reconnection strategy
+// Based on: specs/001-dinner-decider-enables/research.md
+
+import Redis from 'ioredis';
+
+const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
+const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+
+export const redis = new Redis({
+  host: REDIS_HOST,
+  port: REDIS_PORT,
+  password: REDIS_PASSWORD,
+  retryStrategy: (times: number) => {
+    const delay = Math.min(times * 50, 2000);
+    console.log(`Redis reconnecting in ${delay}ms (attempt ${times})...`);
+    return delay;
+  },
+  maxRetriesPerRequest: 3,
+  enableReadyCheck: true,
+  lazyConnect: false,
+});
+
+// Event listeners for monitoring
+redis.on('connect', () => {
+  console.log('✓ Redis connected');
+});
+
+redis.on('ready', () => {
+  console.log('✓ Redis ready');
+});
+
+redis.on('error', (error) => {
+  console.error('Redis error:', error.message);
+});
+
+redis.on('close', () => {
+  console.log('Redis connection closed');
+});
+
+redis.on('reconnecting', () => {
+  console.log('Redis reconnecting...');
+});
+
+// Health check utility
+export async function pingRedis(): Promise<boolean> {
+  try {
+    const result = await redis.ping();
+    return result === 'PONG';
+  } catch (error) {
+    console.error('Redis ping failed:', error);
+    return false;
+  }
+}
+
+// Graceful shutdown
+export async function disconnectRedis(): Promise<void> {
+  try {
+    await redis.quit();
+    console.log('Redis disconnected gracefully');
+  } catch (error) {
+    console.error('Error disconnecting Redis:', error);
+    redis.disconnect();
+  }
+}
