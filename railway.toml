@@ -1,8 +1,9 @@
 [build]
 builder = "NIXPACKS"
 nixpacksConfigPath = "nixpacks.toml"
+watchPatterns = ["backend/**", "shared/**", "nixpacks.toml", "package.json", "package-lock.json"]
 
 [deploy]
-startCommand = "npm start --workspace=@dinner-app/backend"
+startCommand = "cd backend && node dist/server.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
