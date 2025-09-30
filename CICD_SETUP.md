@@ -2,77 +2,75 @@
 
 ## Overview
 
-This project uses GitHub Actions to automatically test and deploy to Railway when PRs are merged to main.
+This project uses a simple two-part CI/CD approach:
+1. **GitHub Actions**: Runs tests on pull requests (quality gate)
+2. **Railway Auto-Deploy**: Automatically deploys when code is pushed to main
 
 **Status**: ✅ Fully configured and ready to use!
 
-## GitHub Actions Workflow
+## GitHub Actions (PR Testing)
 
-The `.github/workflows/ci-cd.yml` workflow has two jobs:
+The `.github/workflows/ci-cd.yml` workflow runs on every PR to main:
 
-### 1. **Test Job** (runs on PRs)
-- Lints backend and frontend code
-- Type checks all TypeScript code
-- Runs backend unit/integration tests (with Redis service)
-- Runs frontend unit tests
+- ✅ Lints backend and frontend code
+- ✅ Type checks all TypeScript code
+- ✅ Runs backend unit/integration tests (with Redis service)
+- ✅ Runs frontend unit tests
 
-### 2. **Deploy Job** (runs on push to main)
-- Runs all tests from Test job
-- Deploys backend to Railway (if tests pass)
-- Deploys frontend to Railway (if tests pass)
+## Railway Auto-Deploy
 
-## Required GitHub Secrets
+Railway watches your GitHub repository and automatically deploys when main branch is updated:
 
-You need to add these secrets to your GitHub repository:
+- ✅ Backend service deploys automatically on push to main
+- ✅ Frontend service deploys automatically on push to main
+- ✅ No manual deployment needed
+- ✅ No GitHub Actions deployment job required
 
-### How to Add Secrets
+## Railway Setup (One-Time Configuration)
 
-1. Go to your GitHub repository
-2. Click **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add each secret below:
+### Connect GitHub to Railway
 
-### Required Secrets
+For each service (backend and frontend):
 
-| Secret Name | Description | How to Get |
-|------------|-------------|------------|
-| `RAILWAY_TOKEN` | Railway API token for deployments | [Generate token](https://railway.app/account/tokens) |
-| `RAILWAY_BACKEND_SERVICE_ID` | Backend service ID | Run `railway service` in backend context |
-| `RAILWAY_FRONTEND_SERVICE_ID` | Frontend service ID | Run `railway service` in frontend context |
+1. Go to Railway dashboard → Select your project
+2. Click on the service (backend or frontend)
+3. Go to **Settings** → **Source**
+4. Click **Connect to GitHub**
+5. Select your repository: `Zacplischka/dinner_app`
+6. Choose branch: `main`
+7. Set root directory (if needed):
+   - Backend: Leave blank or set to `backend`
+   - Frontend: Leave blank or set to `frontend`
 
-### Getting Railway Service IDs
+### Configure Auto-Deploy
 
-```bash
-# Get backend service ID
-railway service backend
-railway service
-# Copy the service ID (e.g., "backend-production-4ce9")
+Railway automatically deploys when:
+- ✅ Code is pushed to the `main` branch
+- ✅ PR is merged to main
+- ✅ Manual trigger from Railway dashboard
 
-# Get frontend service ID
-railway service frontend
-railway service
-# Copy the service ID (e.g., "frontend-production-bdfc")
+No additional configuration needed!
+
+## How It Works
+
+### 1. Create a Pull Request
+1. Create a feature branch
+2. Make your changes
+3. Push to GitHub
+4. Create PR to `main`
+5. **GitHub Actions automatically runs tests**
+6. Review test results in PR
+
+### 2. Merge Pull Request
+1. Review code and ensure tests pass
+2. Merge PR to `main`
+3. **Railway automatically deploys both services**
+4. Monitor deployment in Railway dashboard
+
+### Workflow Summary
 ```
-
-### Getting Railway Token
-
-1. Go to https://railway.app/account/tokens
-2. Click **Create Token**
-3. Name it "GitHub Actions"
-4. Copy the token value
-5. Add as `RAILWAY_TOKEN` secret in GitHub
-
-## Workflow Triggers
-
-### Pull Requests to Main
-- ✅ Runs linting and tests
-- ❌ Does NOT deploy
-- Provides fast feedback on code quality
-
-### Merged PRs (push to main)
-- ✅ Runs all tests
-- ✅ Deploys to Railway if tests pass
-- 🚀 Backend deploys first, then frontend
+PR Created → GitHub Actions Tests → PR Review → Merge → Railway Auto-Deploy
+```
 
 ## Testing the Workflow
 
@@ -80,28 +78,28 @@ railway service
 
 ```bash
 # Create a feature branch
-git checkout -b test-ci
+git checkout -b test-feature
 
 # Make a small change
-echo "# Test" >> README.md
+echo "# Test Feature" >> README.md
 
 # Commit and push
 git add README.md
-git commit -m "Test CI pipeline"
-git push origin test-ci
+git commit -m "Test: Add feature documentation"
+git push origin test-feature
 
 # Create PR on GitHub
 # GitHub Actions will run tests automatically
 ```
 
-### 2. Test Deployment
+### 2. Test Auto-Deploy
 
 ```bash
-# Merge the PR on GitHub
-# GitHub Actions will:
-# 1. Run all tests
-# 2. Deploy backend to Railway
-# 3. Deploy frontend to Railway
+# Merge the PR on GitHub (after tests pass)
+# Railway will automatically deploy both services
+
+# Monitor deployment
+# Go to Railway dashboard to watch deployments
 ```
 
 ## Monitoring Deployments

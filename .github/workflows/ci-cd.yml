@@ -1,20 +1,16 @@
-name: CI/CD Pipeline
+name: CI - Pull Request Tests
 
 on:
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
 
 env:
   NODE_VERSION: '20'
 
 jobs:
-  # Run tests on pull requests
   test:
     name: Test
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     services:
       redis:
@@ -64,60 +60,3 @@ jobs:
 
       - name: Run frontend tests
         run: npm run test:unit --workspace=@dinner-app/frontend
-
-  # Deploy to Railway on push to main (after PR merge)
-  deploy:
-    name: Deploy to Railway
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Skip tests for now (tests are outdated and will be fixed in separate PR)
-      # Tests run on PRs to catch issues before merge
-
-      # Install Railway CLI
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      # Deploy backend to Railway
-      - name: Deploy Backend to Railway
-        run: railway up --service backend
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE: ${{ secrets.RAILWAY_BACKEND_SERVICE_ID }}
-
-      # Deploy frontend to Railway
-      - name: Deploy Frontend to Railway
-        run: railway up --service frontend
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE: ${{ secrets.RAILWAY_FRONTEND_SERVICE_ID }}
-
-      - name: Deployment Summary
-        run: |
-          echo "✅ Backend deployed successfully"
-          echo "✅ Frontend deployed successfully"
-          echo "🚀 Deployment complete!"
