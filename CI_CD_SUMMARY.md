@@ -74,17 +74,36 @@ Review → Merge to Main → Railway Auto-Deploy → Live in Production
 - `CICD_SETUP.md` - Detailed setup documentation
 - `DEPLOY_GUIDE.md` - Railway deployment configuration
 
-## Next Steps
+## Important: Railway Service Configuration
 
-1. **Configure Railway GitHub integration** (if not already done):
-   - Go to Railway dashboard
-   - Connect backend service to GitHub repo (`main` branch)
-   - Connect frontend service to GitHub repo (`main` branch)
+For a monorepo, you **must** configure each Railway service separately:
 
-2. **Test the pipeline**:
-   - Create a test PR
-   - Watch tests run
-   - Merge and watch Railway deploy
+###Backend Service:
+1. Go to Railway → Select project → Backend service
+2. Settings → Source → Connect GitHub
+3. Select branch: `main`
+4. **Important**: Set Root Directory to `backend`
+5. Save settings
+
+### Frontend Service:
+1. Go to Railway → Select project → Frontend service
+2. Settings → Source → Connect GitHub
+3. Select branch: `main`
+4. **Important**: Set Root Directory to `frontend`
+5. Make sure `RAILPACK_SPA_OUTPUT_DIR=frontend/dist` is set in env vars
+6. Save settings
+
+## Testing the Pipeline
+
+1. **Create a test PR**:
+   - Make a small change
+   - Push and create PR
+   - Watch GitHub Actions run tests
+
+2. **Merge and deploy**:
+   - Merge PR to main
+   - Railway auto-deploys both services
+   - Monitor in Railway dashboard
 
 ---
 
