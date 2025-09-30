@@ -1,0 +1,363 @@
+openapi: 3.0.3
+info:
+  title: Dinner Decider API
+  description: REST API for session management in the Dinner Decider application
+  version: 1.0.0
+  contact:
+    name: Dinner Decider Team
+servers:
+  - url: http://localhost:3001/api
+    description: Local development server
+  - url: https://api.dinner-decider.app/api
+    description: Production server
+
+tags:
+  - name: sessions
+    description: Session creation and management
+  - name: participants
+    description: Participant management within sessions
+  - name: options
+    description: Dinner options
+
+paths:
+  /sessions:
+    post:
+      operationId: createSession
+      summary: Create a new dinner decision session
+      description: Creates a new session with a unique 6-character alphanumeric code. The creator becomes the first participant and session host.
+      tags:
+        - sessions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+            examples:
+              valid:
+                value:
+                  hostName: Alice
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+              examples:
+                created:
+                  value:
+                    sessionCode: ABC123
+                    hostName: Alice
+                    participantCount: 1
+                    state: waiting
+                    expiresAt: '2025-09-30T12:30:00Z'
+                    shareableLink: 'http://localhost:3000/join?code=ABC123'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sessions/{sessionCode}:
+    get:
+      operationId: getSession
+      summary: Get session details
+      description: Retrieves current session state including participants count and status
+      tags:
+        - sessions
+      parameters:
+        - $ref: '#/components/parameters/SessionCodeParam'
+      responses:
+        '200':
+          description: Session details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sessions/{sessionCode}/join:
+    post:
+      operationId: joinSession
+      summary: Join an existing session
+      description: Adds a participant to an existing session. Fails if session is full (4 participants) or expired.
+      tags:
+        - participants
+      parameters:
+        - $ref: '#/components/parameters/SessionCodeParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinSessionRequest'
+            examples:
+              valid:
+                value:
+                  participantName: Bob
+      responses:
+        '200':
+          description: Successfully joined session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinSessionResponse'
+              examples:
+                joined:
+                  value:
+                    participantId: socket-uuid-2
+                    sessionCode: ABC123
+                    participantName: Bob
+                    participantCount: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Session is full (4 participants maximum)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                sessionFull:
+                  value:
+                    error: Session is full
+                    code: SESSION_FULL
+                    message: This session has reached the maximum of 4 participants
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /options:
+    get:
+      operationId: getDinnerOptions
+      summary: Get the static list of dinner options
+      description: Returns the hardcoded list of available dinner options presented to all sessions
+      tags:
+        - options
+      responses:
+        '200':
+          description: Dinner options retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  options:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DinnerOption'
+              examples:
+                options:
+                  value:
+                    options:
+                      - optionId: pizza-palace
+                        displayName: Pizza Palace
+                        description: Italian cuisine, delivery available
+                      - optionId: sushi-spot
+                        displayName: Sushi Spot
+                        description: Japanese cuisine, dine-in and takeout
+                      - optionId: thai-kitchen
+                        displayName: Thai Kitchen
+                        description: Authentic Thai cuisine
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    SessionCodeParam:
+      name: sessionCode
+      in: path
+      required: true
+      description: 6-character alphanumeric session code (uppercase)
+      schema:
+        type: string
+        pattern: '^[A-Z0-9]{6}$'
+        example: ABC123
+
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required:
+        - hostName
+      properties:
+        hostName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Display name for the session creator
+          example: Alice
+
+    SessionResponse:
+      type: object
+      required:
+        - sessionCode
+        - hostName
+        - participantCount
+        - state
+        - expiresAt
+        - shareableLink
+      properties:
+        sessionCode:
+          type: string
+          pattern: '^[A-Z0-9]{6}$'
+          description: Unique 6-character session identifier
+          example: ABC123
+        hostName:
+          type: string
+          description: Display name of the session creator
+          example: Alice
+        participantCount:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: Current number of participants in the session
+          example: 1
+        state:
+          type: string
+          enum:
+            - waiting
+            - selecting
+            - complete
+            - expired
+          description: Current session state
+          example: waiting
+        expiresAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when session will expire (30 minutes from last activity)
+          example: '2025-09-30T12:30:00Z'
+        shareableLink:
+          type: string
+          format: uri
+          description: Direct link for participants to join the session
+          example: 'http://localhost:3000/join?code=ABC123'
+
+    JoinSessionRequest:
+      type: object
+      required:
+        - participantName
+      properties:
+        participantName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Display name for the joining participant
+          example: Bob
+
+    JoinSessionResponse:
+      type: object
+      required:
+        - participantId
+        - sessionCode
+        - participantName
+        - participantCount
+      properties:
+        participantId:
+          type: string
+          format: uuid
+          description: Unique identifier for the participant (Socket.IO socket ID)
+          example: socket-uuid-2
+        sessionCode:
+          type: string
+          pattern: '^[A-Z0-9]{6}$'
+          description: Session code the participant joined
+          example: ABC123
+        participantName:
+          type: string
+          description: Display name of the participant
+          example: Bob
+        participantCount:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: Total number of participants after join
+          example: 2
+
+    DinnerOption:
+      type: object
+      required:
+        - optionId
+        - displayName
+      properties:
+        optionId:
+          type: string
+          description: Unique identifier for the dinner option
+          example: pizza-palace
+        displayName:
+          type: string
+          description: User-visible restaurant name
+          example: Pizza Palace
+        description:
+          type: string
+          description: Optional brief description of the restaurant
+          example: Italian cuisine, delivery available
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+        - message
+      properties:
+        error:
+          type: string
+          description: Short error identifier
+          example: Bad Request
+        code:
+          type: string
+          description: Machine-readable error code
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+          example: hostName is required and must be 1-50 characters
+        details:
+          type: object
+          description: Additional error context (optional)
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validationError:
+              value:
+                error: Bad Request
+                code: VALIDATION_ERROR
+                message: hostName is required and must be 1-50 characters
+
+    NotFound:
+      description: Session not found or expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            sessionNotFound:
+              value:
+                error: Not Found
+                code: SESSION_NOT_FOUND
+                message: Session ABC123 not found or has expired
+
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              value:
+                error: Internal Server Error
+                code: INTERNAL_ERROR
+                message: An unexpected error occurred. Please try again later.
+
+security: []  # No authentication required (honor system per FR-024)

@@ -47,7 +47,46 @@
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+**Reference**: [Constitution v1.0.0](.specify/memory/constitution.md)
+
+### I. Test-Driven Development
+- [ ] All contract tests written before implementation?
+- [ ] Integration tests defined from user scenarios?
+- [ ] Red-Green-Refactor cycle planned?
+
+### II. Contract-First API Design
+- [ ] REST/WebSocket contracts defined in OpenAPI/TypeScript?
+- [ ] Contract tests planned before endpoint implementation?
+
+### III. Real-Time State Synchronization
+- [ ] Session state changes broadcast via WebSocket?
+- [ ] Privacy rules (FR-023) enforced in broadcasting logic?
+- [ ] Redis as single source of truth confirmed?
+
+### IV. Mobile-First Performance
+- [ ] UI designed for 390px viewport first?
+- [ ] Latency targets documented (<500ms, <200ms)?
+- [ ] Bundle size budget allocated (<200KB gzipped)?
+
+### V. Ephemeral by Design
+- [ ] All session data uses Redis TTL (30 minutes)?
+- [ ] No persistent storage introduced?
+- [ ] No manual cleanup jobs added?
+
+### VI. Simplicity Over Features
+- [ ] Complex features justified vs. simpler alternatives?
+- [ ] YAGNI principle applied to proposed enhancements?
+
+### Performance & Scale
+- [ ] Session capacity limited to 1-4 participants?
+- [ ] Concurrency targets defined (50+ sessions)?
+- [ ] Redis pipelining used for multi-key operations?
+
+### Mobile-First Design
+- [ ] Responsive layout tested at 320-768px range?
+- [ ] Touch targets ≥44x44px?
+- [ ] WebSocket reconnection UI planned?
+- [ ] WCAG AA compliance verified?
 
 ## Project Structure
 
@@ -216,4 +255,4 @@ directories captured above]
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Based on Constitution v1.0.0 - See `.specify/memory/constitution.md`*
