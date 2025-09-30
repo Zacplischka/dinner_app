@@ -47,4 +47,4 @@ This monorepo requires per-service configuration in the Railway dashboard.
 
 ## Deployment Trigger
 
-Both services deploy automatically on push to `main` branch, but only when their watch patterns match changed files.
+Both services deploy automatically on push to `main` branch, but only when their watch patterns match changed files.# Railway monorepo deployment configured successfully
