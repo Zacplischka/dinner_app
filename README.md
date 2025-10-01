@@ -266,6 +266,8 @@ MIT
 
 Built with Claude Code for rapid full-stack development with real-time features.
 
+Special thanks to all contributors!
+
 ---
 
 **Questions or Issues?**
