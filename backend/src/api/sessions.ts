@@ -10,6 +10,12 @@ const router = Router();
 // Zod schemas for validation
 const createSessionRequestSchema = z.object({
   hostName: z.string().min(1).max(50),
+  location: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    address: z.string().optional(),
+  }).optional(),
+  searchRadiusMiles: z.number().min(1).max(15).optional(),
 });
 
 const joinSessionRequestSchema = z.object({
@@ -35,14 +41,26 @@ router.post('/', (req: Request, res: Response) => {
       });
     }
 
-    const { hostName } = validation.data;
+    const { hostName, location, searchRadiusMiles } = validation.data;
+
+    // Default searchRadiusMiles to 5 if location is provided but radius is not
+    const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;
 
     // Create session
-    const session = await SessionService.createSession(hostName);
+    const session = await SessionService.createSession(hostName, location, radius);
 
     return res.status(201).json(session);
   } catch (error) {
     console.error('Error creating session:', error);
+
+    if (error instanceof Error && error.message === 'NO_RESTAURANTS_FOUND') {
+      return res.status(400).json({
+        error: 'Bad Request',
+        code: 'NO_RESTAURANTS_FOUND',
+        message: 'No restaurants found in the specified area. Try expanding your search radius.',
+      });
+    }
+
     return res.status(500).json({
       error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',

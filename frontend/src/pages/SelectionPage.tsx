@@ -3,16 +3,16 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getDinnerOptions } from '../services/apiClient';
+import { getRestaurants } from '../services/apiClient';
 import { submitSelection } from '../services/socketService';
 import { useSessionStore } from '../stores/sessionStore';
-import type { DinnerOption } from '@dinner-app/shared/types';
+import type { Restaurant } from '@dinner-app/shared/types';
 
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const { selections, toggleSelection, participants } = useSessionStore();
-  const [options, setOptions] = useState<DinnerOption[]>([]);
+  const [options, setOptions] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -20,20 +20,26 @@ export default function SelectionPage() {
   const [submittedCount, setSubmittedCount] = useState(0);
 
   useEffect(() => {
-    // Load dinner options
+    // Load restaurants for session
     const loadOptions = async () => {
+      if (!sessionCode) {
+        setError('Session code not found');
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const data = await getDinnerOptions();
+        const data = await getRestaurants(sessionCode);
         setOptions(data);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Failed to load options');
+        setError(err instanceof Error ? err.message : 'Failed to load restaurants');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadOptions();
-  }, []);
+  }, [sessionCode]);
 
   // Listen for participant submissions
   useEffect(() => {
@@ -146,11 +152,13 @@ export default function SelectionPage() {
         <div className="bg-white rounded-lg shadow-lg p-4 mb-6 max-h-[60vh] overflow-y-auto">
           <div className="space-y-2">
             {options.map((option) => {
-              const isSelected = selections.includes(option.optionId);
+              const isSelected = selections.includes(option.placeId);
+              const priceDisplay = '$'.repeat(option.priceLevel || 0);
+
               return (
                 <button
-                  key={option.optionId}
-                  onClick={() => toggleSelection(option.optionId)}
+                  key={option.placeId}
+                  onClick={() => toggleSelection(option.placeId)}
                   className={`w-full min-h-[44px] p-4 text-left rounded-lg border-2 transition-all active:scale-[0.98] ${
                     isSelected
                       ? 'border-blue-500 bg-blue-50'
@@ -180,12 +188,31 @@ export default function SelectionPage() {
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">
-                        {option.displayName}
-                      </p>
-                      {option.description && (
-                        <p className="text-sm text-gray-500">
-                          {option.description}
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-gray-900">
+                          {option.name}
+                        </p>
+                        {priceDisplay && (
+                          <span className="text-sm text-gray-600 ml-2">
+                            {priceDisplay}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        {option.rating && (
+                          <span className="text-sm text-gray-600">
+                            ⭐ {option.rating.toFixed(1)}
+                          </span>
+                        )}
+                        {option.cuisineType && (
+                          <span className="text-sm text-gray-500">
+                            • {option.cuisineType}
+                          </span>
+                        )}
+                      </div>
+                      {option.address && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {option.address}
                         </p>
                       )}
                     </div>

@@ -92,8 +92,8 @@ export async function handleSelectionSubmit(
     const submittedCount = await SelectionService.getSubmittedCount(sessionCode);
     const participantCount = participantIds.length;
 
-    // Broadcast participant:submitted (count only, not selections - FR-023)
-    socket.to(sessionCode).emit('participant:submitted', {
+    // Broadcast participant:submitted to ALL participants (count only, not selections - FR-023)
+    io.in(sessionCode).emit('participant:submitted', {
       participantId: socket.id,
       submittedCount,
       participantCount,

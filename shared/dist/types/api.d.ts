@@ -1,5 +1,12 @@
+import type { Restaurant } from './models.js';
 export interface CreateSessionRequest {
     hostName: string;
+    location: {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    };
+    searchRadiusMiles: number;
 }
 export interface SessionResponse {
     sessionCode: string;
@@ -8,6 +15,13 @@ export interface SessionResponse {
     state: 'waiting' | 'selecting' | 'complete' | 'expired';
     expiresAt: string;
     shareableLink: string;
+    location: {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    };
+    searchRadiusMiles: number;
+    restaurantCount: number;
 }
 export interface JoinSessionRequest {
     participantName: string;
@@ -24,6 +38,10 @@ export interface DinnerOptionsResponse {
         displayName: string;
         description?: string;
     }>;
+}
+export interface RestaurantsResponse {
+    restaurants: Restaurant[];
+    sessionCode: string;
 }
 export interface ErrorResponse {
     error: string;

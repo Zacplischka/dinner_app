@@ -35,6 +35,14 @@ export interface WsDinnerOption {
     displayName: string;
     description?: string;
 }
+export interface WsRestaurant {
+    placeId: string;
+    name: string;
+    rating?: number;
+    priceLevel: number;
+    cuisineType?: string;
+    address?: string;
+}
 export interface ParticipantJoinedEvent {
     participantId: string;
     displayName: string;
@@ -47,7 +55,7 @@ export interface ParticipantSubmittedEvent {
 }
 export interface SessionResultsEvent {
     sessionCode: string;
-    overlappingOptions: WsDinnerOption[];
+    overlappingOptions: WsRestaurant[];
     allSelections: Record<string, string[]>;
     hasOverlap: boolean;
 }

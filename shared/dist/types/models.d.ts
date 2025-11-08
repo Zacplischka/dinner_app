@@ -1,3 +1,11 @@
+export interface Restaurant {
+    placeId: string;
+    name: string;
+    rating?: number;
+    priceLevel: number;
+    cuisineType?: string;
+    address?: string;
+}
 export interface Session {
     sessionCode: string;
     hostId: string;
@@ -6,6 +14,12 @@ export interface Session {
     createdAt: number;
     lastActivityAt: number;
     hostName?: string;
+    location?: {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    };
+    searchRadiusMiles?: number;
 }
 export interface Participant {
     participantId: string;
@@ -27,7 +41,7 @@ export interface Selection {
 }
 export interface Result {
     sessionCode: string;
-    overlappingOptions: DinnerOption[];
+    overlappingOptions: DinnerOption[] | Restaurant[];
     allSelections: Record<string, string[]>;
     hasOverlap: boolean;
 }

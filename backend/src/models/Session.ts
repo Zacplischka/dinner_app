@@ -10,7 +10,13 @@ import type { Session } from '@dinner-app/shared/types';
 export async function createSession(
   sessionCode: string,
   hostId: string,
-  hostName?: string
+  hostName?: string,
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  },
+  searchRadiusMiles?: number
 ): Promise<Session> {
   const now = Math.floor(Date.now() / 1000);
 
@@ -22,6 +28,8 @@ export async function createSession(
     createdAt: now,
     lastActivityAt: now,
     hostName,
+    location,
+    searchRadiusMiles,
   };
 
   // Store session metadata as Hash
@@ -35,6 +43,18 @@ export async function createSession(
 
   if (hostName) {
     sessionData.hostName = hostName;
+  }
+
+  if (location) {
+    sessionData.locationLat = location.latitude;
+    sessionData.locationLng = location.longitude;
+    if (location.address) {
+      sessionData.locationAddress = location.address;
+    }
+  }
+
+  if (searchRadiusMiles !== undefined) {
+    sessionData.searchRadiusMiles = searchRadiusMiles;
   }
 
   await redis.hset(`session:${sessionCode}`, sessionData);
@@ -52,7 +72,7 @@ export async function getSession(sessionCode: string): Promise<Session | null> {
     return null;
   }
 
-  return {
+  const session: Session = {
     sessionCode,
     hostId: data.hostId,
     state: data.state as 'waiting' | 'selecting' | 'complete' | 'expired',
@@ -61,6 +81,22 @@ export async function getSession(sessionCode: string): Promise<Session | null> {
     lastActivityAt: parseInt(data.lastActivityAt, 10),
     hostName: data.hostName,
   };
+
+  // Add location if present
+  if (data.locationLat && data.locationLng) {
+    session.location = {
+      latitude: parseFloat(data.locationLat),
+      longitude: parseFloat(data.locationLng),
+      address: data.locationAddress,
+    };
+  }
+
+  // Add search radius if present
+  if (data.searchRadiusMiles) {
+    session.searchRadiusMiles = parseFloat(data.searchRadiusMiles);
+  }
+
+  return session;
 }
 
 /**

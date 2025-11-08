@@ -6,7 +6,6 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import { redis, pingRedis } from './redis/client.js';
-import { validateDinnerOptions } from './constants/dinnerOptions.js';
 import sessionsRouter from './api/sessions.js';
 import optionsRouter from './api/options.js';
 
@@ -102,10 +101,6 @@ async function validateStartup(): Promise<void> {
     throw new Error('Redis connection failed');
   }
   console.log('✓ Redis connection validated');
-
-  // Validate DINNER_OPTIONS for duplicates
-  validateDinnerOptions();
-  console.log('✓ Dinner options validated (no duplicates)');
 }
 
 // Start server

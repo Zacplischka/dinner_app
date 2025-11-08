@@ -4,17 +4,16 @@
 import { redis } from '../redis/client.js';
 import * as ParticipantModel from '../models/Participant.js';
 import * as SelectionModel from '../models/Selection.js';
-import { getDinnerOptionById } from '../constants/dinnerOptions.js';
-import type { DinnerOption } from '../constants/dinnerOptions.js';
+import type { Restaurant } from '@dinner-app/shared/types';
 
 /**
  * Calculate overlapping options using Redis SINTER
- * Returns options that ALL participants selected
+ * Returns restaurants that ALL participants selected
  */
 export async function calculateOverlap(
   sessionCode: string
 ): Promise<{
-  overlappingOptions: DinnerOption[];
+  overlappingOptions: Restaurant[];
   allSelections: Record<string, string[]>;
   hasOverlap: boolean;
 }> {
@@ -35,22 +34,26 @@ export async function calculateOverlap(
   );
 
   // Calculate intersection using Redis SINTER (O(N*M) where N = smallest set size)
-  let overlappingOptionIds: string[] = [];
+  let overlappingPlaceIds: string[] = [];
 
   if (selectionKeys.length === 1) {
     // Single participant: their selections are the overlap (FR-021)
-    overlappingOptionIds = await redis.smembers(selectionKeys[0]);
+    overlappingPlaceIds = await redis.smembers(selectionKeys[0]);
   } else {
     // Multiple participants: calculate intersection
-    overlappingOptionIds = await redis.sinter(...selectionKeys);
+    overlappingPlaceIds = await redis.sinter(...selectionKeys);
   }
 
-  // Map optionIds to DinnerOption objects
-  const overlappingOptions = overlappingOptionIds
-    .map((optionId) => getDinnerOptionById(optionId))
-    .filter((option): option is DinnerOption => option !== undefined);
+  // Map Place IDs to Restaurant objects
+  const overlappingOptions: Restaurant[] = [];
+  for (const placeId of overlappingPlaceIds) {
+    const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
+    if (restaurantData) {
+      overlappingOptions.push(JSON.parse(restaurantData));
+    }
+  }
 
-  // Build allSelections map for transparency (displayName -> optionIds)
+  // Build allSelections map for transparency (displayName -> placeIds)
   const allSelections: Record<string, string[]> = {};
 
   for (const participant of participants) {

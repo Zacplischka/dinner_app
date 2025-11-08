@@ -3,20 +3,29 @@
 
 import * as SelectionModel from '../models/Selection.js';
 import * as ParticipantModel from '../models/Participant.js';
-import { validateOptionIds } from '../constants/dinnerOptions.js';
+import { redis } from '../redis/client.js';
 
 /**
  * Submit selections for a participant
- * Validates that optionIds exist and participant hasn't already submitted
+ * Validates that Place IDs exist in session's restaurant list and participant hasn't already submitted
  */
 export async function submitSelections(
   sessionCode: string,
   participantId: string,
-  optionIds: string[]
+  placeIds: string[]
 ): Promise<void> {
-  // Validate all optionIds exist in static DINNER_OPTIONS
-  if (!validateOptionIds(optionIds)) {
-    throw new Error('INVALID_OPTIONS');
+  // Validate that placeIds array is not empty
+  if (!placeIds || placeIds.length === 0) {
+    throw new Error('INVALID_RESTAURANTS');
+  }
+
+  // Get valid Place IDs for this session
+  const validPlaceIds = await redis.smembers(`session:${sessionCode}:restaurant_ids`);
+
+  // Validate all placeIds exist in session's restaurant list
+  const invalidPlaceIds = placeIds.filter(id => !validPlaceIds.includes(id));
+  if (invalidPlaceIds.length > 0) {
+    throw new Error('INVALID_RESTAURANTS');
   }
 
   // Check if participant has already submitted (FR-026)
@@ -26,7 +35,7 @@ export async function submitSelections(
   }
 
   // Store selections
-  await SelectionModel.submitSelections(sessionCode, participantId, optionIds);
+  await SelectionModel.submitSelections(sessionCode, participantId, placeIds);
 }
 
 /**

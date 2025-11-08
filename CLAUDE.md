@@ -37,14 +37,6 @@
 - React Router for screen navigation
 - Socket.IO client for real-time updates
 
-## Key Constraints
-
-- No authentication system (honor system, FR-024)
-- 1-4 participants per session (FR-004, FR-005)
-- Static hardcoded dinner options list (FR-018)
-- Private selections until all submit (FR-008, FR-023)
-- 30-minute inactivity timeout (FR-019)
-- Mobile-first UI (<200KB bundle, FR-014)
 
 ## Project Structure
 
@@ -79,13 +71,6 @@ dinner_app/
 ## Recent Changes
 - 001-dinner-decider-enables: Added Node.js 20 LTS + TypeScript 5.x (backend), React 18.x + TypeScript 5.x (frontend) + Express 4.x, Socket.IO 4.x, Redis 7.x (backend); Vite 5.x, Socket.IO Client 4.x, Tailwind CSS 3.x, React Router 6.x, Zustand 4.x (frontend)
 
-- **2025-09-30**: Initial feature specification and implementation plan completed
-  - Spec: `/specs/001-dinner-decider-enables/spec.md`
-  - Plan: `/specs/001-dinner-decider-enables/plan.md`
-  - Research: `/specs/001-dinner-decider-enables/research.md`
-  - Data Model: `/specs/001-dinner-decider-enables/data-model.md`
-  - Contracts: `/specs/001-dinner-decider-enables/contracts/`
-  - Quickstart: `/specs/001-dinner-decider-enables/quickstart.md`
 
 ## Development Guidelines
 
@@ -123,4 +108,3 @@ redis-cli LRANGE session:ABC123:options 0 -1
 
 ---
 
-*For detailed feature specification, see `/specs/001-dinner-decider-enables/spec.md`*

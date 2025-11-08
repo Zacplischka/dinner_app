@@ -1,0 +1,20 @@
+# Build outputs
+dist/
+*.local
+
+# Test outputs
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Dependencies
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -3,7 +3,13 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { Participant, DinnerOption, Result } from '@dinner-app/shared/types';
+import type { Participant, DinnerOption, Restaurant, Result } from '@dinner-app/shared/types';
+
+interface Location {
+  latitude: number;
+  longitude: number;
+  address?: string;
+}
 
 interface SessionState {
   // Session data
@@ -11,10 +17,15 @@ interface SessionState {
   participants: Participant[];
   currentUserId: string | null;
 
+  // Location data
+  location?: Location;
+  searchRadiusMiles?: number;
+  restaurants: Restaurant[];
+
   // Selection data
-  selections: string[]; // Current user's optionIds
+  selections: string[]; // Current user's Place IDs
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
-  overlappingOptions: DinnerOption[];
+  overlappingOptions: DinnerOption[] | Restaurant[];
 
   // Session status
   sessionStatus: 'waiting' | 'selecting' | 'complete' | 'expired';
@@ -27,9 +38,14 @@ interface SessionState {
   removeParticipant: (participantId: string) => void;
   updateParticipants: (participants: Participant[]) => void;
 
+  // Location actions
+  setLocation: (location: Location) => void;
+  setSearchRadiusMiles: (miles: number) => void;
+  setRestaurants: (restaurants: Restaurant[]) => void;
+
   // Selection actions
-  setSelections: (optionIds: string[]) => void;
-  toggleSelection: (optionId: string) => void;
+  setSelections: (placeIds: string[]) => void;
+  toggleSelection: (placeId: string) => void;
 
   // Results actions
   setResults: (results: Result) => void;
@@ -47,6 +63,9 @@ const initialState = {
   sessionCode: null,
   participants: [],
   currentUserId: null,
+  location: undefined,
+  searchRadiusMiles: undefined,
+  restaurants: [],
   selections: [],
   allSelections: {},
   overlappingOptions: [],
@@ -77,8 +96,15 @@ export const useSessionStore = create<SessionState>()(
 
         updateParticipants: (participants) => set({ participants }),
 
+        // Location actions
+        setLocation: (location) => set({ location }),
+
+        setSearchRadiusMiles: (miles) => set({ searchRadiusMiles: miles }),
+
+        setRestaurants: (restaurants) => set({ restaurants }),
+
         // Selection actions
-        setSelections: (optionIds) => set({ selections: optionIds }),
+        setSelections: (placeIds) => set({ selections: placeIds }),
 
         toggleSelection: (optionId) =>
           set((state) => {

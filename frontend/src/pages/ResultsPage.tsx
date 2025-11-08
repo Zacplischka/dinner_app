@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { restartSession } from '../services/socketService';
 import { useSessionStore } from '../stores/sessionStore';
 import { useState } from 'react';
+import type { Restaurant } from '@dinner-app/shared/types';
 
 export default function ResultsPage() {
   const navigate = useNavigate();
@@ -14,6 +15,17 @@ export default function ResultsPage() {
   const [error, setError] = useState('');
 
   const hasOverlap = overlappingOptions.length > 0;
+
+  // Type guard to check if options are Restaurant objects
+  const isRestaurant = (option: any): option is Restaurant => {
+    return 'placeId' in option && 'name' in option;
+  };
+
+  // Helper to format price level
+  const formatPriceLevel = (level: number): string => {
+    if (level === 0) return 'Free';
+    return '$'.repeat(level);
+  };
 
   const handleRestart = async () => {
     if (!sessionCode) return;
@@ -57,21 +69,55 @@ export default function ResultsPage() {
               Matching Restaurants
             </h2>
             <div className="space-y-3">
-              {overlappingOptions.map((option) => (
-                <div
-                  key={option.optionId}
-                  className="p-4 bg-green-50 border-2 border-green-500 rounded-lg"
-                >
-                  <p className="text-lg font-semibold text-gray-900">
-                    {option.displayName}
-                  </p>
-                  {option.description && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      {option.description}
+              {overlappingOptions.map((option) => {
+                const restaurant = isRestaurant(option) ? option : null;
+                const key = restaurant ? restaurant.placeId : (option as any).optionId;
+                const displayName = restaurant ? restaurant.name : (option as any).displayName;
+
+                return (
+                  <div
+                    key={key}
+                    className="p-4 bg-green-50 border-2 border-green-500 rounded-lg"
+                  >
+                    <p className="text-lg font-semibold text-gray-900">
+                      {displayName}
                     </p>
-                  )}
-                </div>
-              ))}
+
+                    {restaurant && (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-center space-x-3 text-sm">
+                          {restaurant.rating !== undefined && (
+                            <span className="flex items-center text-yellow-600">
+                              ⭐ {restaurant.rating.toFixed(1)}
+                            </span>
+                          )}
+                          {restaurant.priceLevel > 0 && (
+                            <span className="text-gray-600 font-medium">
+                              {formatPriceLevel(restaurant.priceLevel)}
+                            </span>
+                          )}
+                          {restaurant.cuisineType && (
+                            <span className="text-gray-600">
+                              {restaurant.cuisineType}
+                            </span>
+                          )}
+                        </div>
+                        {restaurant.address && (
+                          <p className="text-sm text-gray-600">
+                            📍 {restaurant.address}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {!restaurant && (option as any).description && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {(option as any).description}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -111,14 +157,37 @@ export default function ResultsPage() {
                   <div className="ml-10">
                     {participantSelections.length > 0 ? (
                       <ul className="text-sm text-gray-600 space-y-1">
-                        {participantSelections.map((optionId, idx) => {
-                          const option = overlappingOptions.find((o) => o.optionId === optionId);
-                          const isMatch = overlappingOptions.some((o) => o.optionId === optionId);
+                        {participantSelections.map((selectionId, idx) => {
+                          // Try to find in overlappingOptions using either placeId or optionId
+                          const option = overlappingOptions.find((o) => {
+                            if (isRestaurant(o)) {
+                              return o.placeId === selectionId;
+                            }
+                            return (o as any).optionId === selectionId;
+                          });
+
+                          const isMatch = overlappingOptions.some((o) => {
+                            if (isRestaurant(o)) {
+                              return o.placeId === selectionId;
+                            }
+                            return (o as any).optionId === selectionId;
+                          });
+
+                          // Get display name
+                          let displayName = selectionId;
+                          if (option) {
+                            if (isRestaurant(option)) {
+                              displayName = option.name;
+                            } else {
+                              displayName = (option as any).displayName;
+                            }
+                          }
+
                           return (
                             <li key={idx} className="flex items-center space-x-2">
                               {isMatch && <span className="text-green-500">✓</span>}
                               <span className={isMatch ? 'font-medium text-green-700' : ''}>
-                                {option?.displayName || optionId}
+                                {displayName}
                               </span>
                             </li>
                           );

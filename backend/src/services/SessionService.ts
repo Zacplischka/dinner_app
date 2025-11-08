@@ -5,6 +5,8 @@ import { redis } from '../redis/client.js';
 import * as SessionModel from '../models/Session.js';
 import * as ParticipantModel from '../models/Participant.js';
 import { refreshSessionTtl, calculateExpireAt, getExpiresAtISO } from '../redis/ttl-utils.js';
+import * as RestaurantSearchService from './RestaurantSearchService.js';
+import type { Restaurant } from '@dinner-app/shared/types';
 // Session type imported but not used directly in this service
 
 /**
@@ -23,13 +25,28 @@ export function generateSessionCode(): string {
  * Create a new session with the given host
  * Returns session data including code and shareable link
  */
-export async function createSession(hostName: string): Promise<{
+export async function createSession(
+  hostName: string,
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  },
+  searchRadiusMiles?: number
+): Promise<{
   sessionCode: string;
   hostName: string;
   participantCount: number;
   state: string;
   expiresAt: string;
   shareableLink: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  searchRadiusMiles?: number;
+  restaurantCount?: number;
 }> {
   // Generate unique session code
   let sessionCode = generateSessionCode();
@@ -48,10 +65,51 @@ export async function createSession(hostName: string): Promise<{
     throw new Error('Failed to generate unique session code');
   }
 
+  // Search for nearby restaurants if location is provided
+  let restaurants: Restaurant[] = [];
+  if (location && searchRadiusMiles) {
+    // Convert miles to meters (1 mile = 1609.34 meters)
+    const radiusMeters = searchRadiusMiles * 1609.34;
+
+    restaurants = await RestaurantSearchService.searchNearbyRestaurants({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      radiusMeters,
+      maxResults: 20, // Google Places API (New) max is 20
+    });
+
+    // Throw error if no restaurants found
+    if (restaurants.length === 0) {
+      throw new Error('NO_RESTAURANTS_FOUND');
+    }
+
+    // Store restaurant Place IDs in a Set
+    const placeIds = restaurants.map(r => r.placeId);
+    await redis.sadd(`session:${sessionCode}:restaurant_ids`, ...placeIds);
+
+    // Store full restaurant data in a Hash
+    const restaurantData: Record<string, string> = {};
+    restaurants.forEach(restaurant => {
+      restaurantData[restaurant.placeId] = JSON.stringify(restaurant);
+    });
+    await redis.hset(`session:${sessionCode}:restaurants`, restaurantData);
+
+    // Set TTL on restaurant keys (30 minutes)
+    const TTL_SECONDS = 1800; // 30 minutes
+    await redis.expire(`session:${sessionCode}:restaurant_ids`, TTL_SECONDS);
+    await redis.expire(`session:${sessionCode}:restaurants`, TTL_SECONDS);
+  }
+
   // Create session (host will be added when they join via WebSocket)
   // Note: hostId is temporary and not used since host joins via WebSocket
   const tempHostId = `temp-${Date.now()}`;
-  const session = await SessionModel.createSession(sessionCode, tempHostId, hostName);
+  const session = await SessionModel.createSession(
+    sessionCode,
+    tempHostId,
+    hostName,
+    location,
+    searchRadiusMiles
+  );
 
   // Set TTL on session keys (no participants yet)
   const expireAt = calculateExpireAt();
@@ -68,6 +126,9 @@ export async function createSession(hostName: string): Promise<{
     state: session.state,
     expiresAt: getExpiresAtISO(expireAt),
     shareableLink,
+    location,
+    searchRadiusMiles,
+    restaurantCount: restaurants.length,
   };
 }
 
