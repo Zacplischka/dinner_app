@@ -8,6 +8,12 @@ interface GooglePlacesSearchParams {
   maxResults?: number;
 }
 
+interface GooglePlacePhoto {
+  name: string;
+  widthPx: number;
+  heightPx: number;
+}
+
 interface GooglePlaceResult {
   id: string;
   displayName: { text: string };
@@ -15,6 +21,7 @@ interface GooglePlaceResult {
   priceLevel?: string;
   primaryTypeDisplayName?: { text: string };
   formattedAddress?: string;
+  photos?: GooglePlacePhoto[];
 }
 
 export function mapPriceLevel(priceLevel: string): number {
@@ -29,7 +36,15 @@ export function mapPriceLevel(priceLevel: string): number {
   return mapping[priceLevel] || 0;
 }
 
-export function transformGooglePlaceToRestaurant(place: GooglePlaceResult): Restaurant {
+export function getPhotoUrl(photoName: string, apiKey: string, maxHeightPx = 400): string {
+  return `https://places.googleapis.com/v1/${photoName}/media?key=${apiKey}&maxHeightPx=${maxHeightPx}`;
+}
+
+export function transformGooglePlaceToRestaurant(place: GooglePlaceResult, apiKey?: string): Restaurant {
+  const photoUrl = place.photos?.[0]?.name && apiKey
+    ? getPhotoUrl(place.photos[0].name, apiKey)
+    : undefined;
+
   return {
     placeId: place.id,
     name: place.displayName.text,
@@ -37,6 +52,7 @@ export function transformGooglePlaceToRestaurant(place: GooglePlaceResult): Rest
     priceLevel: place.priceLevel ? mapPriceLevel(place.priceLevel) : 0,
     cuisineType: place.primaryTypeDisplayName?.text,
     address: place.formattedAddress,
+    photoUrl,
   };
 }
 
@@ -61,7 +77,7 @@ export async function searchNearbyRestaurants(
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryTypeDisplayName,places.formattedAddress',
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryTypeDisplayName,places.formattedAddress,places.photos',
       },
       body: JSON.stringify({
         includedTypes: ['restaurant'],
@@ -93,7 +109,7 @@ export async function searchNearbyRestaurants(
     const places = data.places || [];
 
     const restaurants = places
-      .map(transformGooglePlaceToRestaurant)
+      .map((place: GooglePlaceResult) => transformGooglePlaceToRestaurant(place, apiKey))
       .sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
     return restaurants;

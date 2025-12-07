@@ -14,6 +14,11 @@ export const config = {
     apiKey: process.env.GOOGLE_PLACES_API_KEY,
     apiUrl: process.env.GOOGLE_PLACES_API_URL || 'https://places.googleapis.com/v1/places:searchNearby',
   },
+  supabase: {
+    url: process.env.SUPABASE_URL || '',
+    jwtSecret: process.env.SUPABASE_JWT_SECRET || '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  },
 };
 
 // Validate required environment variables

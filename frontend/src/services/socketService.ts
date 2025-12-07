@@ -19,6 +19,7 @@ import type {
   ErrorEvent,
 } from '@dinner-app/shared/types';
 import { useSessionStore } from '../stores/sessionStore';
+import { useAuthStore } from '../stores/authStore';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
@@ -27,6 +28,7 @@ let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
 /**
  * Initialize Socket.IO client connection
+ * Includes auth token if user is authenticated
  */
 export function initializeSocket(): void {
   if (socket?.connected) {
@@ -34,12 +36,17 @@ export function initializeSocket(): void {
     return;
   }
 
+  // Get auth token if available
+  const session = useAuthStore.getState().session;
+  const authToken = session?.access_token;
+
   socket = io(BACKEND_URL, {
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 10000,
+    auth: authToken ? { token: authToken } : undefined,
   });
 
   // Connection status handlers
@@ -73,16 +80,36 @@ function setupEventHandlers(): void {
   if (!socket) return;
 
   // participant:joined - Another participant joined the session
+  // Handles both new joins AND rejoins (same displayName with new socket.id)
   socket.on('participant:joined', (event: ParticipantJoinedEvent) => {
     console.log('Participant joined:', event);
-    useSessionStore.getState().addParticipant({
-      participantId: event.participantId,
-      displayName: event.displayName,
-      sessionCode: '', // Will be filled by the store
-      joinedAt: Date.now(),
-      hasSubmitted: false,
-      isHost: false,
-    });
+    const store = useSessionStore.getState();
+
+    // Check if this is a rejoin (same displayName, new participantId)
+    const existingIndex = store.participants.findIndex(
+      (p) => p.displayName === event.displayName
+    );
+
+    if (existingIndex >= 0) {
+      // Rejoin: update existing participant's socket ID
+      const updatedParticipants = [...store.participants];
+      updatedParticipants[existingIndex] = {
+        ...updatedParticipants[existingIndex],
+        participantId: event.participantId,
+      };
+      store.updateParticipants(updatedParticipants);
+      console.log('Updated existing participant socket ID:', event.displayName);
+    } else {
+      // New participant: add to list
+      store.addParticipant({
+        participantId: event.participantId,
+        displayName: event.displayName,
+        sessionCode: '',
+        joinedAt: Date.now(),
+        hasSubmitted: false,
+        isHost: false,
+      });
+    }
   });
 
   // participant:left - A participant left the session
@@ -154,9 +181,16 @@ export function joinSession(
 
     socket.emit('session:join', payload, (ack: SessionJoinResponse) => {
       if (ack.success && ack.participants) {
+        const store = useSessionStore.getState();
+
+        // Check if joining a different session - reset selections from previous session
+        if (store.sessionCode !== sessionCode) {
+          store.resetSelections();
+        }
+
         // Update store with session data
-        useSessionStore.getState().setSessionCode(sessionCode);
-        useSessionStore.getState().updateParticipants(ack.participants.map(p => ({
+        store.setSessionCode(sessionCode);
+        store.updateParticipants(ack.participants.map(p => ({
           ...p,
           sessionCode,
           joinedAt: Date.now(),

@@ -8,6 +8,7 @@ import cors from 'cors';
 import { redis, pingRedis } from './redis/client.js';
 import sessionsRouter from './api/sessions.js';
 import optionsRouter from './api/options.js';
+import friendsRouter from './api/friends.js';
 
 // Import shared types
 import type {
@@ -28,6 +29,7 @@ app.use(express.json());
 // REST API routes
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/options', optionsRouter);
+app.use('/api', friendsRouter); // Friends, users, and invites routes
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
@@ -61,12 +63,33 @@ import { handleSelectionSubmit } from './websocket/submitHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
 
+// Import auth middleware
+import { verifyToken } from './middleware/auth.js';
+
 // Import session expiry notifier
 import { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } from './redis/sessionExpiryNotifier.js';
 
+// Socket.IO authentication middleware (optional - doesn't reject unauthenticated)
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+
+  if (token) {
+    const user = verifyToken(token);
+    if (user) {
+      // Attach user info to socket for later use
+      (socket as any).user = user;
+      console.log(`Socket ${socket.id} authenticated as user ${user.id}`);
+    }
+  }
+
+  // Always allow connection (auth is optional for now)
+  next();
+});
+
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  console.log(`Socket connected: ${socket.id}`);
+  const user = (socket as any).user;
+  console.log(`Socket connected: ${socket.id}${user ? ` (user: ${user.email || user.id})` : ' (anonymous)'}`);
 
   if (socket.recovered) {
     console.log(`Socket ${socket.id} recovered from disconnect`);

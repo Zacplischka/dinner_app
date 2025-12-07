@@ -4,6 +4,7 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { initializeSocket } from './services/socketService';
+import { useAuthStore } from './stores/authStore';
 
 // Lazy load route components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -12,6 +13,7 @@ const JoinSessionPage = lazy(() => import('./pages/JoinSessionPage'));
 const SessionLobbyPage = lazy(() => import('./pages/SessionLobbyPage'));
 const SelectionPage = lazy(() => import('./pages/SelectionPage'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
+const FriendsPage = lazy(() => import('./pages/FriendsPage'));
 
 // Loading fallback component
 function LoadingFallback() {
@@ -26,7 +28,12 @@ function LoadingFallback() {
 }
 
 function App() {
+  const initializeAuth = useAuthStore((state) => state.initialize);
+
   useEffect(() => {
+    // Initialize auth on app mount
+    initializeAuth();
+
     // Initialize Socket.IO connection on app mount
     initializeSocket();
 
@@ -34,7 +41,7 @@ function App() {
     return () => {
       // Socket cleanup happens in socketService
     };
-  }, []);
+  }, [initializeAuth]);
 
   return (
     <BrowserRouter>
@@ -57,6 +64,9 @@ function App() {
 
           {/* Results screen */}
           <Route path="/session/:sessionCode/results" element={<ResultsPage />} />
+
+          {/* Friends page */}
+          <Route path="/friends" element={<FriendsPage />} />
 
           {/* 404 - Redirect to home */}
           <Route path="*" element={<HomePage />} />

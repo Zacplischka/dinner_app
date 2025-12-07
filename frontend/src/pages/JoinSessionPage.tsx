@@ -77,23 +77,23 @@ export default function JoinSessionPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="w-full max-w-md">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-warm-gradient px-4">
+      <div className="w-full max-w-md animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-display font-semibold text-cream mb-2 text-glow">
             Join Session
           </h1>
-          <p className="text-gray-600">
+          <p className="text-cream-400">
             Enter the session code shared by your host
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 p-6 space-y-6">
           {/* Session Code */}
           <div>
-            <label htmlFor="sessionCode" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="sessionCode" className="block text-sm font-medium text-cream-300 mb-2">
               Session Code
             </label>
             <input
@@ -104,18 +104,18 @@ export default function JoinSessionPage() {
               onChange={(e) => handleSessionCodeChange(e.target.value)}
               placeholder="ABC123"
               maxLength={6}
-              className="w-full min-h-[44px] px-4 py-3 text-base text-center font-mono text-xl tracking-widest border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all uppercase"
+              className="w-full min-h-[56px] px-4 py-4 text-center font-mono text-2xl tracking-[0.4em] text-amber bg-midnight-200 border border-midnight-50/50 rounded-xl placeholder:text-cream-500/50 focus:border-amber/60 focus:ring-1 focus:ring-amber/30 outline-none transition-all duration-300 uppercase"
               autoFocus={!searchParams.get('code')}
               disabled={isLoading}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-cream-500 text-center">
               6-character code (letters and numbers)
             </p>
           </div>
 
           {/* Participant Name */}
           <div>
-            <label htmlFor="participantName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="participantName" className="block text-sm font-medium text-cream-300 mb-2">
               Your Name
             </label>
             <input
@@ -126,34 +126,35 @@ export default function JoinSessionPage() {
               onChange={(e) => setParticipantName(e.target.value)}
               placeholder="Enter your name"
               maxLength={50}
-              className="w-full min-h-[44px] px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+              className="w-full min-h-[44px] px-4 py-3 text-base text-cream bg-midnight-200 border border-midnight-50/50 rounded-xl placeholder:text-cream-500 focus:border-amber/60 focus:ring-1 focus:ring-amber/30 outline-none transition-all duration-300"
               disabled={isLoading}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1.5 text-xs text-cream-500">
               {participantName.length}/50 characters
             </p>
           </div>
 
           {/* Connection status */}
           {!isConnected && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-700">⚠️ Connecting to server...</p>
+            <div className="p-3 bg-warning/10 border border-warning/30 rounded-xl flex items-center gap-2">
+              <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
+              <p className="text-sm text-warning-light">Connecting to server...</p>
             </div>
           )}
 
           {/* Error message */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="p-3 bg-error/10 border border-error/30 rounded-xl">
+              <p className="text-sm text-error-light">{error}</p>
             </div>
           )}
 
           {/* Buttons */}
-          <div className="space-y-3">
+          <div className="space-y-3 pt-2">
             <button
               type="submit"
               disabled={isLoading || !sessionCode.trim() || !participantName.trim() || !isConnected}
-              className="w-full min-h-[44px] px-6 py-3 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-[0.98] transition-all shadow-lg"
+              className="w-full min-h-[48px] px-6 py-3 text-lg font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
             >
               {isLoading ? 'Joining...' : 'Join Session'}
             </button>
@@ -162,7 +163,7 @@ export default function JoinSessionPage() {
               type="button"
               onClick={() => navigate('/')}
               disabled={isLoading}
-              className="w-full min-h-[44px] px-6 py-3 text-base font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-50 active:scale-[0.98] transition-all border-2 border-gray-300"
+              className="w-full min-h-[44px] px-6 py-3 text-base font-medium text-cream-400 bg-transparent rounded-xl hover:bg-midnight-100 hover:text-cream active:scale-[0.98] transition-all duration-300 border border-midnight-50/50"
             >
               Cancel
             </button>

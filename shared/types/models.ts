@@ -8,6 +8,7 @@ export interface Restaurant {
   priceLevel: number; // 0-4
   cuisineType?: string;
   address?: string;
+  photoUrl?: string;
 }
 
 export interface Session {

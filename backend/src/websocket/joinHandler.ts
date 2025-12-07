@@ -47,24 +47,35 @@ export async function handleSessionJoin(
       });
     }
 
-    // Check participant limit (FR-005)
-    // Use atomic operation to prevent race condition:
-    // 1. Add participant first
-    // 2. Re-check count after adding
-    // 3. Rollback if over limit
-    const currentCount = await ParticipantModel.countParticipants(sessionCode);
-    if (currentCount >= 4) {
-      return callback({
-        success: false,
-        error: 'Session is full (maximum 4 participants)',
-      });
+    // Check if this is a rejoin (same displayName reconnecting with new socket ID)
+    const existingParticipants = await ParticipantModel.listParticipants(sessionCode);
+    const existingParticipant = existingParticipants.find(p => p.displayName === displayName);
+
+    let isHost = false;
+    let isRejoin = false;
+
+    if (existingParticipant) {
+      // Rejoin: remove old entry and add new one with current socket.id
+      isRejoin = true;
+      isHost = existingParticipant.isHost;
+      await ParticipantModel.removeParticipant(sessionCode, existingParticipant.participantId);
+      await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, isHost);
+    } else {
+      // New participant - check limit (FR-005)
+      const currentCount = await ParticipantModel.countParticipants(sessionCode);
+      if (currentCount >= 4) {
+        return callback({
+          success: false,
+          error: 'Session is full (maximum 4 participants)',
+        });
+      }
+
+      // First participant becomes the host
+      isHost = currentCount === 0;
+
+      // Add participant using socket.id as participantId
+      await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, isHost);
     }
-
-    // First participant becomes the host
-    const isHost = currentCount === 0;
-
-    // Add participant using socket.id as participantId
-    await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, isHost);
 
     // Re-check count after adding to catch race condition
     const newCount = await ParticipantModel.countParticipants(sessionCode);
@@ -114,7 +125,7 @@ export async function handleSessionJoin(
       participantCount: newCount,
     });
 
-    console.log(`✓ ${displayName} joined session ${sessionCode} (${newCount}/4)`);
+    console.log(`✓ ${displayName} ${isRejoin ? 'rejoined' : 'joined'} session ${sessionCode} (${newCount}/4)`);
   } catch (error) {
     console.error('Error in session:join handler:', error);
     callback({

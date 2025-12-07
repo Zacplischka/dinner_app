@@ -1,5 +1,5 @@
-/* Tailwind CSS base styles and custom utilities */
-/* Based on: specs/001-dinner-decider-enables/tasks.md T060 */
+/* Midnight Supper Club Theme - Tailwind CSS */
+/* An elegant dark theme inspired by candlelit dining */
 
 @tailwind base;
 @tailwind components;
@@ -14,8 +14,16 @@
 
   body {
     @apply antialiased;
-    @apply text-gray-900;
-    @apply bg-gray-50;
+    @apply font-body;
+    @apply text-cream bg-midnight;
+    /* Subtle noise texture overlay */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+
+  /* Elegant serif headings */
+  h1, h2, h3 {
+    @apply font-display;
   }
 
   /* Touch-friendly inputs */
@@ -24,11 +32,37 @@
   textarea,
   button {
     font-size: 16px; /* Prevents iOS zoom */
+    @apply font-body;
   }
 
-  /* Focus styles for accessibility */
+  /* Focus styles with warm amber glow */
   *:focus-visible {
-    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+    @apply outline-none ring-2 ring-amber ring-offset-2 ring-offset-midnight;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-midnight-100;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-midnight-50;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-amber-700;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-amber-600/40 text-cream;
   }
 }
 
@@ -36,38 +70,86 @@
   /* Touch-friendly button base */
   .btn {
     @apply min-h-[44px] min-w-[44px];
-    @apply px-4 py-2;
-    @apply rounded-lg;
+    @apply px-5 py-3;
+    @apply rounded-xl;
     @apply font-medium;
-    @apply transition-all duration-200;
+    @apply transition-all duration-300;
     @apply active:scale-[0.98];
   }
 
+  /* Primary button - warm amber glow */
   .btn-primary {
-    @apply bg-blue-600 text-white;
-    @apply hover:bg-blue-700;
-    @apply disabled:bg-gray-300 disabled:cursor-not-allowed;
+    @apply bg-gradient-to-r from-amber-500 to-amber-400;
+    @apply text-midnight-400 font-semibold;
+    @apply shadow-glow;
+    @apply hover:from-amber-400 hover:to-amber-300;
+    @apply hover:shadow-glow-lg;
+    @apply disabled:from-midnight-50 disabled:to-midnight-50;
+    @apply disabled:text-cream-500 disabled:shadow-none disabled:cursor-not-allowed;
   }
 
+  /* Secondary button - elegant outline */
   .btn-secondary {
-    @apply bg-white text-blue-600;
-    @apply border-2 border-blue-600;
-    @apply hover:bg-blue-50;
+    @apply bg-transparent text-amber;
+    @apply border border-amber/40;
+    @apply hover:bg-amber/10 hover:border-amber;
+    @apply disabled:border-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed;
   }
 
-  /* Card component */
+  /* Ghost button - minimal */
+  .btn-ghost {
+    @apply bg-transparent text-cream-400;
+    @apply hover:text-cream hover:bg-midnight-100;
+  }
+
+  /* Card component - dark with subtle glow */
   .card {
-    @apply bg-white rounded-lg shadow-lg p-6;
+    @apply bg-midnight-100 rounded-2xl shadow-card p-6;
+    @apply border border-midnight-50/30;
+    @apply transition-all duration-300;
   }
 
-  /* Input styles */
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+
+  /* Input styles - elegant dark inputs */
   .input {
     @apply w-full min-h-[44px];
     @apply px-4 py-3;
-    @apply text-base;
-    @apply border-2 border-gray-300 rounded-lg;
-    @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
-    @apply outline-none transition-all;
+    @apply text-base text-cream;
+    @apply bg-midnight-200 border border-midnight-50/50 rounded-xl;
+    @apply placeholder:text-cream-500;
+    @apply focus:border-amber/60 focus:ring-1 focus:ring-amber/30;
+    @apply outline-none transition-all duration-300;
+  }
+
+  /* Label styling */
+  .label {
+    @apply block text-sm font-medium text-cream-300 mb-2;
+  }
+
+  /* Divider with warm accent */
+  .divider {
+    @apply border-t border-midnight-50/30;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center justify-center;
+    @apply px-2.5 py-0.5 text-xs font-semibold rounded-full;
+  }
+
+  .badge-amber {
+    @apply bg-amber/20 text-amber border border-amber/30;
+  }
+
+  .badge-success {
+    @apply bg-success/20 text-success-light border border-success/30;
+  }
+
+  .badge-error {
+    @apply bg-error/20 text-error-light border border-error/30;
   }
 }
 
@@ -92,5 +174,27 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+  }
+
+  /* Warm gradient background */
+  .bg-warm-gradient {
+    background: radial-gradient(ellipse at top, rgba(212, 165, 116, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(184, 149, 110, 0.05) 0%, transparent 50%),
+                #1a1a1f;
+  }
+
+  /* Amber text gradient */
+  .text-amber-gradient {
+    @apply bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent;
+  }
+
+  /* Glow text effect */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(212, 165, 116, 0.4);
+  }
+
+  /* Subtle glass effect */
+  .glass {
+    @apply bg-midnight-100/80 backdrop-blur-sm;
   }
 }

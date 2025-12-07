@@ -45,6 +45,8 @@ interface SessionState {
 
   // Selection actions
   setSelections: (placeIds: string[]) => void;
+  addSelection: (placeId: string) => void;
+  removeSelection: (placeId: string) => void;
   toggleSelection: (placeId: string) => void;
 
   // Results actions
@@ -105,6 +107,19 @@ export const useSessionStore = create<SessionState>()(
 
         // Selection actions
         setSelections: (placeIds) => set({ selections: placeIds }),
+
+        addSelection: (placeId) =>
+          set((state) => {
+            if (state.selections.includes(placeId)) {
+              return state; // Already selected, no change
+            }
+            return { selections: [...state.selections, placeId] };
+          }),
+
+        removeSelection: (placeId) =>
+          set((state) => ({
+            selections: state.selections.filter((id) => id !== placeId),
+          })),
 
         toggleSelection: (optionId) =>
           set((state) => {
