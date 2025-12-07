@@ -29,7 +29,7 @@ interface SupabaseJwtPayload {
  */
 export function optionalAuth(
   req: AuthenticatedRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): void {
   const authHeader = req.headers.authorization;

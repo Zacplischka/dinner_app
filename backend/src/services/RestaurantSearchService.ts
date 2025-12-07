@@ -105,12 +105,12 @@ export async function searchNearbyRestaurants(
       throw new Error(`Places API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as { places?: GooglePlaceResult[] };
     const places = data.places || [];
 
     const restaurants = places
       .map((place: GooglePlaceResult) => transformGooglePlaceToRestaurant(place, apiKey))
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      .sort((a: Restaurant, b: Restaurant) => (b.rating || 0) - (a.rating || 0));
 
     return restaurants;
   }

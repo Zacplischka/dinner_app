@@ -14,6 +14,8 @@ import type {
   ServerToClientEvents,
   SelectionSubmitPayload,
   SelectionSubmitResponse,
+  DinnerOption,
+  Restaurant,
 } from '@dinner-app/shared/types';
 
 // Zod schema for validation
@@ -108,11 +110,13 @@ export async function handleSelectionSubmit(
       // Calculate overlap
       const results = await OverlapService.calculateOverlap(sessionCode);
 
-      // Store results
-      await OverlapService.storeResults(
-        sessionCode,
-        results.overlappingOptions.map((opt) => opt.optionId)
-      );
+      // Store results - handle both DinnerOption (optionId) and Restaurant (placeId)
+      // Type assertion needed because overlappingOptions is DinnerOption[] | Restaurant[]
+      const optionIds = results.overlappingOptions.map((opt): string => {
+        const item = opt as DinnerOption | Restaurant;
+        return 'optionId' in item ? item.optionId : item.placeId;
+      });
+      await OverlapService.storeResults(sessionCode, optionIds);
 
       // Refresh TTL after storing results to ensure results key expires with session
       await refreshSessionTtl(sessionCode, participantIds);

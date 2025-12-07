@@ -3,7 +3,7 @@
 
 import { Router, Response } from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
-import { supabase, Profile, Friendship, FriendWithProfile } from '../services/supabase.js';
+import { supabase, Profile } from '../services/supabase.js';
 import type {
   UserProfile,
   Friend,
@@ -78,10 +78,10 @@ router.get('/users/me', async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
-    res.json(mapProfileToUserProfile(profile));
+    return res.json(mapProfileToUserProfile(profile));
   } catch (error) {
     console.error('Error in GET /users/me:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -124,10 +124,10 @@ router.get('/users/search', async (req: AuthenticatedRequest, res: Response) => 
       users: (users || []).map(mapProfileToUserProfile),
     };
 
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     console.error('Error in GET /users/search:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -207,10 +207,10 @@ router.get('/friends', async (req: AuthenticatedRequest, res: Response) => {
     });
 
     const response: FriendsListResponse = { friends };
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     console.error('Error in GET /friends:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -280,10 +280,10 @@ router.get('/friends/requests', async (req: AuthenticatedRequest, res: Response)
     });
 
     const response: FriendRequestsResponse = { requests: friendRequests };
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     console.error('Error in GET /friends/requests:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -385,14 +385,14 @@ router.post('/friends/request', async (req: AuthenticatedRequest, res: Response)
       });
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       requestId: newRequest.id,
       message: 'Friend request sent',
     });
   } catch (error) {
     console.error('Error in POST /friends/request:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -438,13 +438,13 @@ router.post('/friends/:requestId/accept', async (req: AuthenticatedRequest, res:
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Friend request accepted',
     });
   } catch (error) {
     console.error('Error in POST /friends/:requestId/accept:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -476,13 +476,13 @@ router.post('/friends/:requestId/decline', async (req: AuthenticatedRequest, res
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Friend request declined',
     });
   } catch (error) {
     console.error('Error in POST /friends/:requestId/decline:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -515,13 +515,13 @@ router.delete('/friends/:friendId', async (req: AuthenticatedRequest, res: Respo
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Friend removed',
     });
   } catch (error) {
     console.error('Error in DELETE /friends/:friendId:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -606,14 +606,14 @@ router.post('/sessions/:code/invite', async (req: AuthenticatedRequest, res: Res
       }
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       invitedCount: validFriendIds.length,
       message: `Invited ${validFriendIds.length} friend(s) to session`,
     });
   } catch (error) {
     console.error('Error in POST /sessions/:code/invite:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -678,10 +678,10 @@ router.get('/invites', async (req: AuthenticatedRequest, res: Response) => {
     });
 
     const response: SessionInvitesResponse = { invites: sessionInvites };
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     console.error('Error in GET /invites:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -714,14 +714,14 @@ router.post('/invites/:inviteId/accept', async (req: AuthenticatedRequest, res: 
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       sessionCode: invite.session_code,
       message: 'Session invite accepted',
     });
   } catch (error) {
     console.error('Error in POST /invites/:inviteId/accept:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
@@ -753,13 +753,13 @@ router.post('/invites/:inviteId/decline', async (req: AuthenticatedRequest, res:
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Session invite declined',
     });
   } catch (error) {
     console.error('Error in POST /invites/:inviteId/decline:', error);
-    res.status(500).json({
+    return res.status(500).json({
       error: 'internal_error',
       message: 'An unexpected error occurred',
     });
