@@ -43,6 +43,15 @@ export interface SessionRestartResponse {
   error?: string;
 }
 
+export interface SessionLeavePayload {
+  sessionCode: string;
+}
+
+export interface SessionLeaveResponse {
+  success: boolean;
+  error?: string;
+}
+
 // ============= Server → Client Events =============
 
 export interface WsDinnerOption {
@@ -76,6 +85,7 @@ export interface SessionResultsEvent {
   sessionCode: string;
   overlappingOptions: WsRestaurant[];
   allSelections: Record<string, string[]>; // displayName -> placeIds
+  restaurantNames: Record<string, string>; // placeId -> restaurant name (for displaying all selections)
   hasOverlap: boolean;
 }
 
@@ -94,6 +104,17 @@ export interface ParticipantLeftEvent {
   participantId: string;
   displayName: string;
   participantCount: number;
+}
+
+/**
+ * Event emitted when a participant disconnects (network issue, browser close, etc.)
+ * This is INFORMATIONAL only - the participant is NOT removed from the session (FR-025).
+ * They can reconnect and will be re-registered with a new socket.id.
+ */
+export interface ParticipantDisconnectedEvent {
+  participantId: string;
+  displayName: string;
+  participantCount: number; // Count unchanged - participant still in session
 }
 
 export interface ErrorEvent {
@@ -119,6 +140,11 @@ export interface ClientToServerEvents {
     payload: SessionRestartPayload,
     callback: (response: SessionRestartResponse) => void
   ) => void;
+
+  'session:leave': (
+    payload: SessionLeavePayload,
+    callback: (response: SessionLeaveResponse) => void
+  ) => void;
 }
 
 export interface ServerToClientEvents {
@@ -128,6 +154,7 @@ export interface ServerToClientEvents {
   'session:restarted': (data: SessionRestartedEvent) => void;
   'session:expired': (data: SessionExpiredEvent) => void;
   'participant:left': (data: ParticipantLeftEvent) => void;
+  'participant:disconnected': (data: ParticipantDisconnectedEvent) => void;
   error: (data: ErrorEvent) => void;
 }
 

@@ -4,15 +4,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
+import { getDemoSession, addDemoFriends, leaveDemoSession } from '../services/demoSessionService';
 import { getSession } from '../services/apiClient';
+import { leaveSession } from '../services/socketService';
+import { DEMO_MODE } from '../config/demo';
+import NavigationHeader from '../components/NavigationHeader';
+import { useToast } from '../hooks/useToast';
 
 export default function SessionLobbyPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { participants, isConnected } = useSessionStore();
+  const { participants, isConnected, currentUserId, updateParticipants } = useSessionStore();
   const [shareableLink, setShareableLink] = useState('');
-  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const toast = useToast();
 
   useEffect(() => {
     // Fetch session details to get shareable link
@@ -20,8 +25,13 @@ export default function SessionLobbyPage() {
       if (!sessionCode) return;
 
       try {
-        const session = await getSession(sessionCode);
-        setShareableLink(session.shareableLink);
+        if (DEMO_MODE) {
+          const session = getDemoSession(sessionCode);
+          setShareableLink(session.shareableLink);
+        } else {
+          const session = await getSession(sessionCode);
+          setShareableLink(session.shareableLink);
+        }
       } catch (err) {
         console.error('Failed to load session:', err);
       } finally {
@@ -35,21 +45,50 @@ export default function SessionLobbyPage() {
   const handleCopyCode = () => {
     if (sessionCode) {
       navigator.clipboard.writeText(sessionCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      toast.success('Session code copied!');
     }
   };
 
   const handleCopyLink = () => {
     if (shareableLink) {
       navigator.clipboard.writeText(shareableLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      toast.success('Link copied to clipboard!');
     }
   };
 
   const handleStartSelecting = () => {
     navigate(`/session/${sessionCode}/select`);
+  };
+
+  const handleLeaveSession = async () => {
+    if (!sessionCode) return;
+
+    try {
+      if (DEMO_MODE) {
+        if (currentUserId) {
+          leaveDemoSession(sessionCode, currentUserId);
+        }
+        useSessionStore.getState().resetSession();
+      } else {
+        await leaveSession(sessionCode);
+      }
+      navigate('/');
+    } catch (err) {
+      console.error('Failed to leave session:', err);
+      useSessionStore.getState().resetSession();
+      navigate('/');
+    }
+  };
+
+  const handleAddDemoFriends = () => {
+    if (!sessionCode) return;
+    const created = addDemoFriends(sessionCode, 2);
+    const session = getDemoSession(sessionCode);
+    updateParticipants(session.participants);
+
+    if (created.length > 0) {
+      toast.success('Added demo friends');
+    }
   };
 
   if (isLoading) {
@@ -64,17 +103,20 @@ export default function SessionLobbyPage() {
   }
 
   return (
-    <main className="min-h-screen bg-warm-gradient px-4 py-8">
-      <div className="max-w-md mx-auto animate-fade-in">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-display font-semibold text-cream mb-2 text-glow">
-            Session Lobby
-          </h1>
-          <p className="text-cream-400">
-            Waiting for participants to join
-          </p>
-        </div>
+    <main className="min-h-screen bg-warm-gradient">
+      {/* Navigation Header */}
+      <NavigationHeader
+        title="Make the Call"
+        subtitle="Invite friends, then start swiping"
+        sessionCode={sessionCode}
+        showBackButton
+        onBack={handleLeaveSession}
+        confirmOnBack
+        confirmContext="lobby"
+        showConnectionStatus
+      />
+
+      <div className="max-w-md mx-auto px-4 py-6 animate-fade-in">
 
         {/* Session Code Card */}
         <div className="bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 p-6 mb-6">
@@ -89,16 +131,11 @@ export default function SessionLobbyPage() {
               onClick={handleCopyCode}
               className="p-2.5 text-cream-400 hover:text-amber hover:bg-midnight-200 rounded-xl transition-all duration-300"
               title="Copy code"
+              aria-label="Copy session code"
             >
-              {copied ? (
-                <svg className="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-              )}
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
             </button>
           </div>
 
@@ -107,7 +144,7 @@ export default function SessionLobbyPage() {
               onClick={handleCopyLink}
               className="mt-4 w-full px-4 py-2.5 text-sm text-amber hover:bg-amber/10 rounded-xl transition-all duration-300 border border-amber/20 hover:border-amber/40"
             >
-              {copied ? 'Copied to clipboard!' : 'Copy shareable link'}
+              Copy shareable link
             </button>
           )}
         </div>
@@ -174,6 +211,16 @@ export default function SessionLobbyPage() {
         >
           Start Selecting
         </button>
+
+        {DEMO_MODE && (
+          <button
+            onClick={handleAddDemoFriends}
+            disabled={participants.length >= 4}
+            className="mt-3 w-full min-h-[44px] px-6 py-3 text-base font-medium text-amber bg-transparent rounded-xl hover:bg-amber/10 active:scale-[0.98] transition-all duration-300 border border-amber/40 hover:border-amber disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Add demo friends
+          </button>
+        )}
 
         {/* Info */}
         <div className="mt-6 text-center text-sm text-cream-500 space-y-1">

@@ -3,7 +3,7 @@
 
 import { Router, Request, Response } from 'express';
 import { redis } from '../redis/client.js';
-import type { Restaurant } from '@dinner-app/shared/types';
+import type { Restaurant } from '@dinder/shared/types';
 
 const router = Router();
 

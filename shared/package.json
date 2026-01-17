@@ -1,7 +1,7 @@
 {
-  "name": "@dinner-app/shared",
+  "name": "@dinder/shared",
   "version": "1.0.0",
-  "description": "Shared TypeScript types and Zod schemas for Dinner Decider",
+  "description": "Shared TypeScript types and Zod schemas for Dinder",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -19,7 +19,7 @@
   "devDependencies": {
     "typescript": "^5.3.3"
   },
-  "keywords": ["dinner", "decider", "types", "schemas"],
-  "author": "Dinner Decider Team",
+  "keywords": ["dinder", "dinner", "types", "schemas"],
+  "author": "Dinder Team",
   "license": "MIT"
 }

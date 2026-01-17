@@ -1,7 +1,7 @@
 // FriendRequestCard Component
 // Displays a friend request with accept/decline actions
 
-import type { FriendRequest } from '@dinner-app/shared/types';
+import type { FriendRequest } from '@dinder/shared/types';
 import { useFriendsStore } from '../../stores/friendsStore';
 import { useState } from 'react';
 
@@ -41,6 +41,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
           <img
             src={fromUser.avatarUrl}
             alt={fromUser.displayName}
+            referrerPolicy="no-referrer"
             className="w-10 h-10 rounded-full ring-2 ring-amber/20"
           />
         ) : (

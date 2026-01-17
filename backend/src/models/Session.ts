@@ -2,7 +2,7 @@
 // Based on: specs/001-dinner-decider-enables/data-model.md
 
 import { redis } from '../redis/client.js';
-import type { Session } from '@dinner-app/shared/types';
+import type { Session } from '@dinder/shared/types';
 
 /**
  * Create a new session in Redis

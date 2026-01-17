@@ -52,5 +52,6 @@ export interface Result {
   sessionCode: string;
   overlappingOptions: DinnerOption[] | Restaurant[];
   allSelections: Record<string, string[]>; // displayName -> optionIds/placeIds
+  restaurantNames?: Record<string, string>; // placeId -> name mapping for display
   hasOverlap: boolean;
 }

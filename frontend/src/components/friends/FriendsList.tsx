@@ -1,7 +1,7 @@
 // FriendsList Component
 // Displays the user's friends with remove action
 
-import type { Friend } from '@dinner-app/shared/types';
+import type { Friend } from '@dinder/shared/types';
 import { useFriendsStore } from '../../stores/friendsStore';
 
 interface FriendsListProps {
@@ -77,6 +77,7 @@ export default function FriendsList({
               <img
                 src={friend.avatarUrl}
                 alt={friend.displayName}
+                referrerPolicy="no-referrer"
                 className="w-10 h-10 rounded-full ring-2 ring-amber/20"
               />
             ) : (

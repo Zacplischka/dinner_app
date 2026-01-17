@@ -2,7 +2,7 @@
 // Based on: specs/001-dinner-decider-enables/data-model.md
 
 import { redis } from '../redis/client.js';
-import type { Participant } from '@dinner-app/shared/types';
+import type { Participant } from '@dinder/shared/types';
 
 /**
  * Add a participant to a session

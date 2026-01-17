@@ -30,6 +30,13 @@ export interface SessionRestartResponse {
     success: boolean;
     error?: string;
 }
+export interface SessionLeavePayload {
+    sessionCode: string;
+}
+export interface SessionLeaveResponse {
+    success: boolean;
+    error?: string;
+}
 export interface WsDinnerOption {
     optionId: string;
     displayName: string;
@@ -57,6 +64,7 @@ export interface SessionResultsEvent {
     sessionCode: string;
     overlappingOptions: WsRestaurant[];
     allSelections: Record<string, string[]>;
+    restaurantNames: Record<string, string>;
     hasOverlap: boolean;
 }
 export interface SessionRestartedEvent {
@@ -73,6 +81,16 @@ export interface ParticipantLeftEvent {
     displayName: string;
     participantCount: number;
 }
+/**
+ * Event emitted when a participant disconnects (network issue, browser close, etc.)
+ * This is INFORMATIONAL only - the participant is NOT removed from the session (FR-025).
+ * They can reconnect and will be re-registered with a new socket.id.
+ */
+export interface ParticipantDisconnectedEvent {
+    participantId: string;
+    displayName: string;
+    participantCount: number;
+}
 export interface ErrorEvent {
     code: string;
     message: string;
@@ -82,6 +100,7 @@ export interface ClientToServerEvents {
     'session:join': (payload: SessionJoinPayload, callback: (response: SessionJoinResponse) => void) => void;
     'selection:submit': (payload: SelectionSubmitPayload, callback: (response: SelectionSubmitResponse) => void) => void;
     'session:restart': (payload: SessionRestartPayload, callback: (response: SessionRestartResponse) => void) => void;
+    'session:leave': (payload: SessionLeavePayload, callback: (response: SessionLeaveResponse) => void) => void;
 }
 export interface ServerToClientEvents {
     'participant:joined': (data: ParticipantJoinedEvent) => void;
@@ -90,6 +109,7 @@ export interface ServerToClientEvents {
     'session:restarted': (data: SessionRestartedEvent) => void;
     'session:expired': (data: SessionExpiredEvent) => void;
     'participant:left': (data: ParticipantLeftEvent) => void;
+    'participant:disconnected': (data: ParticipantDisconnectedEvent) => void;
     error: (data: ErrorEvent) => void;
 }
 //# sourceMappingURL=websocket-events.d.ts.map

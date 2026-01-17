@@ -1,7 +1,7 @@
-// REST API client for Dinner Decider
+// REST API client for Dinder
 // Based on: specs/001-dinner-decider-enables/tasks.md T049
 
-import type { DinnerOption, Restaurant } from '@dinner-app/shared/types';
+import type { DinnerOption, Restaurant } from '@dinder/shared/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 

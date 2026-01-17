@@ -5,6 +5,7 @@ export interface Restaurant {
     priceLevel: number;
     cuisineType?: string;
     address?: string;
+    photoUrl?: string;
 }
 export interface Session {
     sessionCode: string;
@@ -43,6 +44,7 @@ export interface Result {
     sessionCode: string;
     overlappingOptions: DinnerOption[] | Restaurant[];
     allSelections: Record<string, string[]>;
+    restaurantNames?: Record<string, string>;
     hasOverlap: boolean;
 }
 //# sourceMappingURL=models.d.ts.map

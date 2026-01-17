@@ -128,6 +128,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                         <img
                           src={user.avatarUrl}
                           alt={user.displayName}
+                          referrerPolicy="no-referrer"
                           className="w-8 h-8 rounded-full ring-2 ring-amber/20"
                         />
                       ) : (

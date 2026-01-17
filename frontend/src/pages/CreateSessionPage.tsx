@@ -3,12 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createSession } from '../services/apiClient';
-import { joinSession } from '../services/socketService';
 import { useSessionStore } from '../stores/sessionStore';
-import { useAuthStore } from '../stores/authStore';
-import { useFriendsStore } from '../stores/friendsStore';
-import InviteFriendsSection from '../components/friends/InviteFriendsSection';
+import NavigationHeader from '../components/NavigationHeader';
+import { createDemoSession } from '../services/demoSessionService';
+import { createSession } from '../services/apiClient';
+import { DEMO_MODE } from '../config/demo';
+import { waitForConnection, joinSession } from '../services/socketService';
 
 interface Location {
   latitude: number;
@@ -24,31 +24,13 @@ export default function CreateSessionPage() {
   const [error, setError] = useState('');
   const [location, setLocation] = useState<Location | null>(null);
   const [searchRadiusMiles, setSearchRadiusMiles] = useState<number>(5);
-  const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
-  const { setSessionCode, setLocation: setStoreLocation, setSearchRadiusMiles: setStoreRadius } = useSessionStore();
-  const { isAuthenticated, user } = useAuthStore();
-  const { inviteFriendsToSession, currentUserProfile, fetchCurrentProfile } = useFriendsStore();
+  const { setSessionCode, setLocation: setStoreLocation, setSearchRadiusMiles: setStoreRadius, updateParticipants, setCurrentUserId, setConnectionStatus, setSessionStatus, resetSelections } = useSessionStore();
 
-  // Auto-fill name from Google profile when authenticated
+  // Demo: default a friendly host name
   useEffect(() => {
-    if (isAuthenticated && !hostName) {
-      // Try to get name from current profile first
-      if (currentUserProfile?.displayName) {
-        setHostName(currentUserProfile.displayName);
-      } else {
-        // Fetch profile if not loaded, then set name
-        fetchCurrentProfile().then(() => {
-          const profile = useFriendsStore.getState().currentUserProfile;
-          if (profile?.displayName) {
-            setHostName(profile.displayName);
-          } else if (user?.user_metadata?.full_name) {
-            // Fallback to user metadata
-            setHostName(user.user_metadata.full_name);
-          }
-        });
-      }
-    }
-  }, [isAuthenticated, currentUserProfile, user, fetchCurrentProfile]);
+    if (!hostName) setHostName('Zach');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGetLocation = () => {
     setError('');
@@ -103,28 +85,44 @@ export default function CreateSessionPage() {
     setIsLoading(true);
 
     try {
-      const response = await createSession(hostName.trim(), location, searchRadiusMiles);
+      if (DEMO_MODE) {
+        // Demo mode - use local storage
+        const created = createDemoSession({
+          hostName: hostName.trim(),
+          location,
+          searchRadiusMiles,
+        });
 
-      // Store session data in Zustand
-      setSessionCode(response.sessionCode);
-      setStoreLocation(location);
-      setStoreRadius(searchRadiusMiles);
+        const hostParticipant = created.host;
+        setSessionCode(created.sessionCode);
+        setStoreLocation(location);
+        setStoreRadius(searchRadiusMiles);
+        setConnectionStatus(true);
+        setCurrentUserId(hostParticipant.participantId);
+        setSessionStatus('waiting');
+        resetSelections();
+        updateParticipants([hostParticipant]);
+        navigate(`/session/${created.sessionCode}`);
+      } else {
+        // Real backend - call API and connect WebSocket
+        const response = await createSession(hostName.trim(), location, searchRadiusMiles);
 
-      // Invite selected friends (if any)
-      if (selectedFriendIds.size > 0) {
-        try {
-          await inviteFriendsToSession(response.sessionCode, Array.from(selectedFriendIds));
-        } catch (inviteError) {
-          // Log but don't block session creation
-          console.error('Failed to invite friends:', inviteError);
+        setSessionCode(response.sessionCode);
+        setStoreLocation(location);
+        setStoreRadius(searchRadiusMiles);
+        setSessionStatus('waiting');
+        resetSelections();
+
+        // Connect WebSocket and wait for connection, then join as host
+        await waitForConnection();
+        const joinResponse = await joinSession(response.sessionCode, hostName.trim());
+
+        if (joinResponse.success && joinResponse.participantId) {
+          setCurrentUserId(joinResponse.participantId);
+          setConnectionStatus(true);
+          navigate(`/session/${response.sessionCode}`);
         }
       }
-
-      // Join the session via WebSocket
-      await joinSession(response.sessionCode, hostName.trim());
-
-      // Navigate to session lobby
-      navigate(`/session/${response.sessionCode}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create session');
       setIsLoading(false);
@@ -132,17 +130,15 @@ export default function CreateSessionPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-warm-gradient px-4 py-8">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-display font-semibold text-cream mb-2 text-glow">
-            Create Session
-          </h1>
-          <p className="text-cream-400">
-            Start a new dinner decision session
-          </p>
-        </div>
+    <main className="min-h-screen bg-warm-gradient">
+      <NavigationHeader
+        title="Create Session"
+        subtitle="Start a new dinner decision session"
+        showBackButton
+        onBack={() => navigate('/')}
+      />
+
+      <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 p-6 space-y-6">
@@ -239,14 +235,6 @@ export default function CreateSessionPage() {
             </div>
           )}
 
-          {/* Invite Friends Section (only for authenticated users) */}
-          {isAuthenticated && (
-            <InviteFriendsSection
-              selectedFriendIds={selectedFriendIds}
-              onSelectionChange={setSelectedFriendIds}
-              disabled={isLoading || isGettingLocation}
-            />
-          )}
 
           {/* Error message */}
           {error && (
@@ -255,23 +243,14 @@ export default function CreateSessionPage() {
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="space-y-3 pt-2">
+          {/* Submit Button */}
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isLoading || isGettingLocation || !hostName.trim() || !location}
               className="w-full min-h-[48px] px-6 py-3 text-lg font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
             >
               {isLoading ? 'Creating...' : 'Create Session'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              disabled={isLoading}
-              className="w-full min-h-[44px] px-6 py-3 text-base font-medium text-cream-400 bg-transparent rounded-xl hover:bg-midnight-100 hover:text-cream active:scale-[0.98] transition-all duration-300 border border-midnight-50/50"
-            >
-              Cancel
             </button>
           </div>
         </form>

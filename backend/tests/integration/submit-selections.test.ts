@@ -4,7 +4,7 @@ import request from 'supertest';
 import type { Express } from 'express';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData } from '../helpers/testSetup.js';
-import type { Restaurant } from '@dinner-app/shared/types';
+import type { Restaurant } from '@dinder/shared/types';
 
 // We'll import the app once it's exposed for testing
 // For now, we'll use the running server

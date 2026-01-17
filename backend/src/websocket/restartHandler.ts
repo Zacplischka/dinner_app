@@ -13,7 +13,7 @@ import type {
   ServerToClientEvents,
   SessionRestartPayload,
   SessionRestartResponse,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 
 // Zod schema for validation
 const sessionRestartPayloadSchema = z.object({

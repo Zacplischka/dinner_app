@@ -14,7 +14,7 @@ import friendsRouter from './api/friends.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -61,6 +61,7 @@ const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(httpSe
 import { handleSessionJoin } from './websocket/joinHandler.js';
 import { handleSelectionSubmit } from './websocket/submitHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
+import { handleSessionLeave } from './websocket/leaveHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
 
 // Import auth middleware
@@ -108,6 +109,11 @@ io.on('connection', (socket) => {
   // T043: session:restart event handler
   socket.on('session:restart', (payload, callback) => {
     void handleSessionRestart(socket, io, payload, callback);
+  });
+
+  // session:leave event handler - intentional departure
+  socket.on('session:leave', (payload, callback) => {
+    void handleSessionLeave(socket, io, payload, callback);
   });
 
   // T045: disconnect handler

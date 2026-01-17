@@ -2,7 +2,7 @@
 // Supports touch swipe gestures and button interactions
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { Restaurant } from '@dinner-app/shared/types';
+import type { Restaurant } from '@dinder/shared/types';
 
 interface SwipeCardProps {
   restaurant: Restaurant;

@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { Participant, DinnerOption, Restaurant, Result } from '@dinner-app/shared/types';
+import type { Participant, DinnerOption, Restaurant, Result } from '@dinder/shared/types';
 
 interface Location {
   latitude: number;
@@ -25,6 +25,7 @@ interface SessionState {
   // Selection data
   selections: string[]; // Current user's Place IDs
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
+  restaurantNames: Record<string, string>; // placeId -> name mapping for display
   overlappingOptions: DinnerOption[] | Restaurant[];
 
   // Session status
@@ -70,6 +71,7 @@ const initialState = {
   restaurants: [],
   selections: [],
   allSelections: {},
+  restaurantNames: {},
   overlappingOptions: [],
   sessionStatus: 'waiting' as const,
   isConnected: false,
@@ -135,6 +137,7 @@ export const useSessionStore = create<SessionState>()(
         setResults: (results) =>
           set({
             allSelections: results.allSelections,
+            restaurantNames: results.restaurantNames || {},
             overlappingOptions: results.overlappingOptions,
             sessionStatus: 'complete',
           }),
@@ -151,6 +154,7 @@ export const useSessionStore = create<SessionState>()(
           set({
             selections: [],
             allSelections: {},
+            restaurantNames: {},
             overlappingOptions: [],
             sessionStatus: 'selecting',
           }),

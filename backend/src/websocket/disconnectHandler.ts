@@ -6,7 +6,7 @@ import * as ParticipantModel from '../models/Participant.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 
 /**
  * Handle socket disconnect
@@ -34,9 +34,10 @@ export async function handleDisconnect(
     // Get current participant count (unchanged, per FR-025)
     const participantCount = await ParticipantModel.countParticipants(sessionCode);
 
-    // Broadcast participant:left to remaining participants
-    // Note: Participant remains in session, this is just informational (FR-025)
-    socket.to(sessionCode).emit('participant:left', {
+    // Broadcast participant:disconnected to remaining participants
+    // This is INFORMATIONAL only - participant remains in session per FR-025
+    // Different from participant:left which is for intentional departures
+    socket.to(sessionCode).emit('participant:disconnected', {
       participantId: socket.id,
       displayName,
       participantCount, // Count unchanged - participant still in session

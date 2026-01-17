@@ -3,18 +3,19 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getDemoRestaurants, submitDemoSelection, isDemoSessionComplete, computeDemoResults, leaveDemoSession, getDemoSession, simulateRemainingSubmissions } from '../services/demoSessionService';
 import { getRestaurants } from '../services/apiClient';
-import { submitSelection, joinSession, isSocketConnected } from '../services/socketService';
+import { submitSelection, leaveSession } from '../services/socketService';
+import { DEMO_MODE } from '../config/demo';
 import { useSessionStore } from '../stores/sessionStore';
-import { useFriendsStore } from '../stores/friendsStore';
 import SwipeCard from '../components/SwipeCard';
-import type { Restaurant } from '@dinner-app/shared/types';
+import NavigationHeader from '../components/NavigationHeader';
+import type { Restaurant } from '@dinder/shared/types';
 
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, participants } = useSessionStore();
-  const { currentUserProfile } = useFriendsStore();
+  const { selections, addSelection, participants, currentUserId, updateParticipants, setResults, setSessionStatus } = useSessionStore();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,42 +25,17 @@ export default function SelectionPage() {
   const [submittedCount, setSubmittedCount] = useState(0);
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
 
-  // Ensure we're registered with the session (handles socket reconnection with new ID)
-  // This effect runs once on mount to rejoin with current socket ID
+  // Refresh participants from local storage on mount (demo mode only)
   useEffect(() => {
-    const ensureSessionRegistration = async () => {
-      if (!sessionCode || !isSocketConnected()) return;
-
-      // Get display name - prefer profile, or use a fallback
-      // Note: We capture participants at mount time to avoid dependency loop
-      const storedParticipants = useSessionStore.getState().participants;
-      let displayName = currentUserProfile?.displayName;
-
-      // For anonymous users or if profile not loaded, try to find from stored participants
-      if (!displayName && storedParticipants.length > 0) {
-        const possibleParticipant = storedParticipants.find(p => !p.isHost) || storedParticipants[0];
-        displayName = possibleParticipant?.displayName;
-      }
-
-      if (!displayName) {
-        displayName = 'Guest';
-      }
-
-      try {
-        // Rejoin to register current socket.id with the session
-        await joinSession(sessionCode, displayName);
-      } catch (err) {
-        console.error('Failed to rejoin session:', err);
-        // If session not found, navigate back
-        if (err instanceof Error && err.message.includes('not found')) {
-          navigate('/');
-        }
-      }
-    };
-
-    ensureSessionRegistration();
+    if (!sessionCode || !DEMO_MODE) return;
+    try {
+      const session = getDemoSession(sessionCode);
+      updateParticipants(session.participants);
+    } catch {
+      navigate('/');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionCode]); // Only run when sessionCode changes (effectively once on mount)
+  }, [sessionCode]);
 
   useEffect(() => {
     const loadRestaurants = async () => {
@@ -70,7 +46,10 @@ export default function SelectionPage() {
       }
 
       try {
-        const data = await getRestaurants(sessionCode);
+        // Use real backend API or demo data based on mode
+        const data = DEMO_MODE
+          ? getDemoRestaurants(sessionCode)
+          : await getRestaurants(sessionCode);
         setRestaurants(data);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load restaurants');
@@ -122,11 +101,51 @@ export default function SelectionPage() {
     setError('');
 
     try {
-      await submitSelection(sessionCode, selections);
-      setHasSubmitted(true);
+      if (DEMO_MODE) {
+        if (!currentUserId) throw new Error('Missing participant');
+        submitDemoSelection(sessionCode, currentUserId, selections);
+
+        // Refresh participants and check completion
+        const session = getDemoSession(sessionCode);
+        updateParticipants(session.participants);
+        setHasSubmitted(true);
+
+        if (isDemoSessionComplete(sessionCode)) {
+          const result = computeDemoResults(sessionCode);
+          setResults(result);
+          setSessionStatus('complete');
+          navigate(`/session/${sessionCode}/results`);
+        }
+      } else {
+        // Real backend - submit via WebSocket
+        await submitSelection(sessionCode, selections);
+        setHasSubmitted(true);
+        // Results will be received via WebSocket session:results event
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit selections');
       setIsSubmitting(false);
+    }
+  };
+
+  const handleLeaveSession = async () => {
+    if (!sessionCode) return;
+
+    try {
+      if (DEMO_MODE) {
+        if (currentUserId) {
+          leaveDemoSession(sessionCode, currentUserId);
+        }
+        useSessionStore.getState().resetSession();
+      } else {
+        await leaveSession(sessionCode);
+      }
+      navigate('/');
+    } catch (err) {
+      console.error('Failed to leave session:', err);
+      // Still navigate home even if backend call fails
+      useSessionStore.getState().resetSession();
+      navigate('/');
     }
   };
 
@@ -145,42 +164,76 @@ export default function SelectionPage() {
   }
 
   if (hasSubmitted) {
+    const handleSimulateOthers = () => {
+      if (!sessionCode) return;
+      simulateRemainingSubmissions(sessionCode);
+      const session = getDemoSession(sessionCode);
+      updateParticipants(session.participants);
+
+      const result = computeDemoResults(sessionCode);
+      setResults(result);
+      setSessionStatus('complete');
+      navigate(`/session/${sessionCode}/results`);
+    };
+
     return (
-      <div className="flex items-center justify-center min-h-screen bg-warm-gradient px-4">
-        <div className="max-w-md w-full text-center animate-fade-in">
-          <div className="bg-midnight-100 rounded-3xl shadow-card border border-midnight-50/30 p-8">
-            <div className="w-20 h-20 mx-auto mb-6 bg-success/20 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-display font-semibold text-cream mb-3 text-glow">
-              All Done!
-            </h2>
-            <p className="text-cream-400 mb-8 text-lg">
-              Waiting for other diners...
-            </p>
+      <div className="min-h-screen bg-warm-gradient">
+        <NavigationHeader
+          title="Waiting for Others"
+          sessionCode={sessionCode}
+          showBackButton
+          onBack={handleLeaveSession}
+          confirmOnBack
+          confirmContext="selecting"
+          selectionsCount={selections.length}
+          showConnectionStatus
+          compact
+        />
 
-            <div className="mb-6">
-              <div className="flex justify-center gap-2 mb-3">
-                {participants.map((p, i) => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                      p.hasSubmitted ? 'bg-amber scale-110' : 'bg-midnight-50'
-                    }`}
-                  />
-                ))}
+        <div className="flex items-center justify-center px-4 py-8">
+          <div className="max-w-md w-full text-center animate-fade-in">
+            <div className="bg-midnight-100 rounded-3xl shadow-card border border-midnight-50/30 p-8">
+              <div className="w-20 h-20 mx-auto mb-6 bg-success/20 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-              <p className="text-sm text-cream-500">
-                <span className="text-amber font-semibold">{submittedCount}</span> of{' '}
-                <span className="text-amber font-semibold">{participants.length}</span> have swiped
+              <h2 className="text-3xl font-display font-semibold text-cream mb-3 text-glow">
+                All Done!
+              </h2>
+              <p className="text-cream-400 mb-8 text-lg">
+                Waiting for other diners...
               </p>
-            </div>
 
-            <p className="text-xs text-cream-500/60 italic">
-              Results appear when everyone's done swiping
-            </p>
+              <div className="mb-6">
+                <div className="flex justify-center gap-2 mb-3">
+                  {participants.map((p, i) => (
+                    <div
+                      key={i}
+                      className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                        p.hasSubmitted ? 'bg-amber scale-110' : 'bg-midnight-50'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-cream-500">
+                  <span className="text-amber font-semibold">{submittedCount}</span> of{' '}
+                  <span className="text-amber font-semibold">{participants.length}</span> have swiped
+                </p>
+              </div>
+
+              {DEMO_MODE && (
+                <>
+                  <button className="btn btn-primary w-full" onClick={handleSimulateOthers}>
+                    Simulate others finishing
+                  </button>
+
+                  <p className="text-xs text-cream-500/60 italic mt-4">
+                    Demo shortcut to reach Results on one device
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -189,48 +242,62 @@ export default function SelectionPage() {
 
   if (isDone) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-warm-gradient px-4">
-        <div className="max-w-md w-full text-center animate-fade-in">
-          <div className="bg-midnight-100 rounded-3xl shadow-card border border-midnight-50/30 p-8">
-            <div className="w-20 h-20 mx-auto mb-6 bg-amber/20 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
+      <div className="min-h-screen bg-warm-gradient">
+        <NavigationHeader
+          title="Submit Your Picks"
+          sessionCode={sessionCode}
+          showBackButton
+          onBack={handleLeaveSession}
+          confirmOnBack
+          confirmContext="selecting"
+          selectionsCount={selections.length}
+          showConnectionStatus
+          compact
+        />
 
-            <h2 className="text-3xl font-display font-semibold text-cream mb-3 text-glow">
-              You've seen them all!
-            </h2>
-            <p className="text-cream-400 mb-6">
-              You liked <span className="text-amber font-semibold">{selections.length}</span> restaurant{selections.length !== 1 ? 's' : ''}
-            </p>
-
-            {error && (
-              <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-xl">
-                <p className="text-sm text-error-light">{error}</p>
+        <div className="flex flex-col items-center justify-center px-4 py-8">
+          <div className="max-w-md w-full text-center animate-fade-in">
+            <div className="bg-midnight-100 rounded-3xl shadow-card border border-midnight-50/30 p-8">
+              <div className="w-20 h-20 mx-auto mb-6 bg-amber/20 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
               </div>
-            )}
 
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="w-full min-h-[56px] px-8 py-4 text-xl font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-2xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-midnight border-t-transparent rounded-full animate-spin"></div>
-                  Submitting...
-                </span>
-              ) : (
-                'Submit Selections'
-              )}
-            </button>
-
-            {selections.length === 0 && (
-              <p className="mt-4 text-sm text-cream-500/70">
-                You didn't like any restaurants, but you can still submit!
+              <h2 className="text-3xl font-display font-semibold text-cream mb-3 text-glow">
+                You've seen them all!
+              </h2>
+              <p className="text-cream-400 mb-6">
+                You liked <span className="text-amber font-semibold">{selections.length}</span> restaurant{selections.length !== 1 ? 's' : ''}
               </p>
-            )}
+
+              {error && (
+                <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-xl">
+                  <p className="text-sm text-error-light">{error}</p>
+                </div>
+              )}
+
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full min-h-[56px] px-8 py-4 text-xl font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-2xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-midnight border-t-transparent rounded-full animate-spin"></div>
+                    Submitting...
+                  </span>
+                ) : (
+                  'Submit Selections'
+                )}
+              </button>
+
+              {selections.length === 0 && (
+                <p className="mt-4 text-sm text-cream-500/70">
+                  You didn't like any restaurants, but you can still submit!
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -242,28 +309,30 @@ export default function SelectionPage() {
 
   return (
     <main className="min-h-screen bg-warm-gradient flex flex-col">
-      {/* Header */}
-      <header className="safe-top px-4 pt-4 pb-2">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-cream-400">
-              {currentIndex + 1} / {restaurants.length}
-            </span>
-            <div className="w-24 h-1.5 bg-midnight-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber to-amber-300 rounded-full transition-all duration-300"
-                style={{ width: `${((currentIndex + 1) / restaurants.length) * 100}%` }}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-amber" fill="currentColor" viewBox="0 0 20 20">
+      {/* Navigation Header */}
+      <NavigationHeader
+        title="Choose Restaurants"
+        sessionCode={sessionCode}
+        showBackButton
+        onBack={handleLeaveSession}
+        confirmOnBack
+        confirmContext="selecting"
+        selectionsCount={selections.length}
+        showConnectionStatus
+        compact
+        progress={{
+          current: currentIndex + 1,
+          total: restaurants.length,
+        }}
+        rightAction={
+          <div className="flex items-center gap-1.5 text-amber">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
             </svg>
-            <span className="text-amber font-semibold">{selections.length}</span>
+            <span className="font-semibold">{selections.length}</span>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Card Stack */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
