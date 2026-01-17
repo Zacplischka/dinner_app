@@ -4,7 +4,7 @@
 import { redis } from '../redis/client.js';
 import * as ParticipantModel from '../models/Participant.js';
 import * as SelectionModel from '../models/Selection.js';
-import type { Restaurant } from '@dinner-app/shared/types';
+import type { Restaurant } from '@dinder/shared/types';
 
 /**
  * Calculate overlapping options using Redis SINTER
@@ -15,6 +15,7 @@ export async function calculateOverlap(
 ): Promise<{
   overlappingOptions: Restaurant[];
   allSelections: Record<string, string[]>;
+  restaurantNames: Record<string, string>;
   hasOverlap: boolean;
 }> {
   const participantIds = await ParticipantModel.listParticipantIds(sessionCode);
@@ -24,6 +25,7 @@ export async function calculateOverlap(
     return {
       overlappingOptions: [],
       allSelections: {},
+      restaurantNames: {},
       hasOverlap: false,
     };
   }
@@ -64,9 +66,27 @@ export async function calculateOverlap(
     allSelections[participant.displayName] = selections;
   }
 
+  // Build restaurantNames map for ALL selected placeIds (not just overlapping)
+  const allPlaceIds = new Set<string>();
+  for (const selections of Object.values(allSelections)) {
+    for (const placeId of selections) {
+      allPlaceIds.add(placeId);
+    }
+  }
+
+  const restaurantNames: Record<string, string> = {};
+  for (const placeId of allPlaceIds) {
+    const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
+    if (restaurantData) {
+      const restaurant = JSON.parse(restaurantData) as Restaurant;
+      restaurantNames[placeId] = restaurant.name;
+    }
+  }
+
   return {
     overlappingOptions,
     allSelections,
+    restaurantNames,
     hasOverlap: overlappingOptions.length > 0,
   };
 }

@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { joinSession } from '../services/socketService';
 import { useSessionStore } from '../stores/sessionStore';
+import NavigationHeader from '../components/NavigationHeader';
+import { joinDemoSession, getDemoSession } from '../services/demoSessionService';
 
 export default function JoinSessionPage() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function JoinSessionPage() {
   const [participantName, setParticipantName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { setSessionCode: storeSessionCode, isConnected } = useSessionStore();
+  const { setSessionCode: storeSessionCode, setCurrentUserId, setConnectionStatus, updateParticipants, setSessionStatus, resetSelections } = useSessionStore();
 
   // Pre-fill session code if provided in URL query params
   useEffect(() => {
@@ -38,21 +39,22 @@ export default function JoinSessionPage() {
       return;
     }
 
-    if (!isConnected) {
-      setError('Not connected to server. Please refresh the page.');
-      return;
-    }
 
     setIsLoading(true);
 
     try {
       const code = sessionCode.trim().toUpperCase();
-      await joinSession(code, participantName.trim());
 
-      // Store session code
+      const participant = joinDemoSession(code, participantName.trim());
+      const session = getDemoSession(code);
+
       storeSessionCode(code);
+      setConnectionStatus(true);
+      setCurrentUserId(participant.participantId);
+      setSessionStatus('waiting');
+      resetSelections();
+      updateParticipants(session.participants);
 
-      // Navigate to session lobby
       navigate(`/session/${code}`);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to join session';
@@ -77,17 +79,15 @@ export default function JoinSessionPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-warm-gradient px-4">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-display font-semibold text-cream mb-2 text-glow">
-            Join Session
-          </h1>
-          <p className="text-cream-400">
-            Enter the session code shared by your host
-          </p>
-        </div>
+    <main className="min-h-screen bg-warm-gradient">
+      <NavigationHeader
+        title="Join Session"
+        subtitle="Enter the session code shared by your host"
+        showBackButton
+        onBack={() => navigate('/')}
+      />
+
+      <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 p-6 space-y-6">
@@ -134,13 +134,6 @@ export default function JoinSessionPage() {
             </p>
           </div>
 
-          {/* Connection status */}
-          {!isConnected && (
-            <div className="p-3 bg-warning/10 border border-warning/30 rounded-xl flex items-center gap-2">
-              <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-              <p className="text-sm text-warning-light">Connecting to server...</p>
-            </div>
-          )}
 
           {/* Error message */}
           {error && (
@@ -149,23 +142,14 @@ export default function JoinSessionPage() {
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="space-y-3 pt-2">
+          {/* Submit Button */}
+          <div className="pt-2">
             <button
               type="submit"
-              disabled={isLoading || !sessionCode.trim() || !participantName.trim() || !isConnected}
+              disabled={isLoading || !sessionCode.trim() || !participantName.trim()}
               className="w-full min-h-[48px] px-6 py-3 text-lg font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
             >
               {isLoading ? 'Joining...' : 'Join Session'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              disabled={isLoading}
-              className="w-full min-h-[44px] px-6 py-3 text-base font-medium text-cream-400 bg-transparent rounded-xl hover:bg-midnight-100 hover:text-cream active:scale-[0.98] transition-all duration-300 border border-midnight-50/50"
-            >
-              Cancel
             </button>
           </div>
         </form>

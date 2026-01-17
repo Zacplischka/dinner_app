@@ -1,7 +1,7 @@
 {
-  "name": "@dinner-app/frontend",
+  "name": "@dinder/frontend",
   "version": "1.0.0",
-  "description": "Dinner Decider frontend with React and Vite",
+  "description": "Dinder frontend with React and Vite",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,11 +12,15 @@
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:mobile": "playwright test --project=mobile-chrome",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
-    "@dinner-app/shared": "file:../shared",
+    "@dinder/shared": "file:../shared",
     "@supabase/supabase-js": "^2.86.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -43,11 +47,11 @@
     "vitest": "^1.0.4"
   },
   "keywords": [
+    "dinder",
     "dinner",
-    "decider",
     "react",
     "vite"
   ],
-  "author": "Dinner Decider Team",
+  "author": "Dinder Team",
   "license": "MIT"
 }

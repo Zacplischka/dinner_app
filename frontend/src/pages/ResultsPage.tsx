@@ -2,17 +2,37 @@
 // Based on: specs/001-dinner-decider-enables/tasks.md T056
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { restartSession } from '../services/socketService';
+import { restartDemoSession, leaveDemoSession } from '../services/demoSessionService';
 import { useSessionStore } from '../stores/sessionStore';
 import { useState } from 'react';
-import type { Restaurant } from '@dinner-app/shared/types';
+import NavigationHeader from '../components/NavigationHeader';
+import { useToast } from '../hooks/useToast';
+import type { Restaurant } from '@dinder/shared/types';
+
+// Helper functions to generate delivery app deep links
+const generateUberEatsUrl = (restaurantName: string, address?: string): string => {
+  // Uber Eats search URL - combine restaurant name with address for better accuracy
+  const searchQuery = address
+    ? `${restaurantName} ${address}`
+    : restaurantName;
+  return `https://www.ubereats.com/search?q=${encodeURIComponent(searchQuery)}`;
+};
+
+const generateDoorDashUrl = (restaurantName: string, address?: string): string => {
+  // DoorDash search URL - combine restaurant name with address for better accuracy
+  const searchQuery = address
+    ? `${restaurantName} ${address}`
+    : restaurantName;
+  return `https://www.doordash.com/search/store/${encodeURIComponent(searchQuery)}/`;
+};
 
 export default function ResultsPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { overlappingOptions, allSelections, participants, restaurants } = useSessionStore();
+  const { overlappingOptions, allSelections, restaurantNames, participants, restaurants, currentUserId } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
+  const toast = useToast();
 
   const hasOverlap = overlappingOptions.length > 0;
 
@@ -23,6 +43,13 @@ export default function ResultsPage() {
 
   // Create a lookup map for restaurant names by placeId
   const restaurantNameMap = new Map<string, string>();
+  // First, populate from restaurantNames received from backend (most complete source)
+  if (restaurantNames) {
+    Object.entries(restaurantNames).forEach(([placeId, name]) => {
+      restaurantNameMap.set(placeId, name);
+    });
+  }
+  // Also add from local restaurants array (what current user searched)
   restaurants.forEach((r) => {
     restaurantNameMap.set(r.placeId, r.name);
   });
@@ -46,7 +73,9 @@ export default function ResultsPage() {
     setError('');
 
     try {
-      await restartSession(sessionCode);
+      restartDemoSession(sessionCode);
+      // Reset local store selections/results
+      useSessionStore.getState().resetSelections();
       // Navigate back to selection page
       navigate(`/session/${sessionCode}/select`);
     } catch (err: unknown) {
@@ -59,20 +88,54 @@ export default function ResultsPage() {
     navigate('/');
   };
 
+  const handleLeaveSession = async () => {
+    if (!sessionCode) return;
+
+    try {
+      if (currentUserId) {
+        leaveDemoSession(sessionCode, currentUserId);
+      }
+      useSessionStore.getState().resetSession();
+      navigate('/');
+    } catch (err) {
+      console.error('Failed to leave session:', err);
+      useSessionStore.getState().resetSession();
+      navigate('/');
+    }
+  };
+
+  const handleShareResults = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success('Results link copied!');
+  };
+
   return (
-    <main className="min-h-screen bg-warm-gradient px-4 py-8">
-      <div className="max-w-2xl mx-auto animate-fade-in">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-display font-semibold text-cream mb-2 text-glow">
-            {hasOverlap ? 'Perfect Match!' : 'No Match Found'}
-          </h1>
-          <p className="text-cream-400">
-            {hasOverlap
-              ? 'Everyone agrees on these options'
-              : 'No restaurants matched everyone\'s preferences'}
-          </p>
-        </div>
+    <main className="min-h-screen bg-warm-gradient">
+      {/* Navigation Header */}
+      <NavigationHeader
+        title={hasOverlap ? 'Perfect Match!' : 'No Match Found'}
+        subtitle={hasOverlap ? 'Everyone agrees on these options' : "No restaurants matched everyone's preferences"}
+        sessionCode={sessionCode}
+        showBackButton
+        onBack={handleLeaveSession}
+        confirmOnBack
+        confirmContext="results"
+        rightAction={
+          <button
+            onClick={handleShareResults}
+            className="p-2 text-cream-400 hover:text-amber transition-colors"
+            title="Share results"
+            aria-label="Share results"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
+        }
+      />
+
+      <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
 
         {/* Overlapping Options */}
         {hasOverlap ? (
@@ -99,7 +162,7 @@ export default function ResultsPage() {
                     </p>
 
                     {restaurant && (
-                      <div className="mt-2 space-y-1">
+                      <div className="mt-2 space-y-2">
                         <div className="flex items-center space-x-3 text-sm">
                           {restaurant.rating !== undefined && (
                             <span className="flex items-center text-amber-300 gap-1">
@@ -129,6 +192,53 @@ export default function ResultsPage() {
                             {restaurant.address}
                           </p>
                         )}
+
+                        {/* Delivery Order Buttons - Elegant cards with brand logos */}
+                        <div className="flex flex-wrap gap-3 pt-3 mt-1 border-t border-midnight-50/20">
+                          <a
+                            href={generateUberEatsUrl(restaurant.name, restaurant.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-midnight-200/80 border border-midnight-50/40 hover:border-[#06C167]/50 hover:shadow-[0_0_20px_rgba(6,193,103,0.15)] transition-all duration-300 active:scale-[0.98]"
+                          >
+                            {/* Uber Eats Logo */}
+                            <svg className="w-5 h-5 text-[#06C167] opacity-80 group-hover:opacity-100 transition-opacity duration-300" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.824a9.176 9.176 0 110 18.352 9.176 9.176 0 010-18.352zm0 3.294a5.882 5.882 0 100 11.764 5.882 5.882 0 000-11.764zm0 2.823a3.059 3.059 0 110 6.118 3.059 3.059 0 010-6.118z"/>
+                            </svg>
+
+                            {/* Text */}
+                            <span className="text-sm font-medium text-cream-300 group-hover:text-cream transition-colors duration-300">
+                              Uber Eats
+                            </span>
+
+                            {/* External link indicator */}
+                            <svg className="w-3 h-3 text-cream-500/50 group-hover:text-[#06C167]/70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                            </svg>
+                          </a>
+
+                          <a
+                            href={generateDoorDashUrl(restaurant.name, restaurant.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-midnight-200/80 border border-midnight-50/40 hover:border-[#FF3008]/50 hover:shadow-[0_0_20px_rgba(255,48,8,0.15)] transition-all duration-300 active:scale-[0.98]"
+                          >
+                            {/* DoorDash Logo */}
+                            <svg className="w-5 h-5 text-[#FF3008] opacity-80 group-hover:opacity-100 transition-opacity duration-300" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M23.071 8.409a6.09 6.09 0 00-5.396-3.228H.584A.589.589 0 00.17 6.184L3.894 9.93a1.752 1.752 0 001.242.516h12.049a1.554 1.554 0 011.553 1.553 1.554 1.554 0 01-1.553 1.553H5.136a1.752 1.752 0 00-1.242.515L.17 17.816a.589.589 0 00.414 1.003h17.091a6.09 6.09 0 005.396-3.228 6.048 6.048 0 000-7.182z"/>
+                            </svg>
+
+                            {/* Text */}
+                            <span className="text-sm font-medium text-cream-300 group-hover:text-cream transition-colors duration-300">
+                              DoorDash
+                            </span>
+
+                            {/* External link indicator */}
+                            <svg className="w-3 h-3 text-cream-500/50 group-hover:text-[#FF3008]/70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                            </svg>
+                          </a>
+                        </div>
                       </div>
                     )}
 
@@ -232,23 +342,30 @@ export default function ResultsPage() {
             <button
               onClick={handleRestart}
               disabled={isRestarting}
-              className="w-full min-h-[44px] px-6 py-3 text-base font-medium text-amber bg-transparent rounded-xl hover:bg-amber/10 active:scale-[0.98] transition-all duration-300 border border-amber/40 hover:border-amber"
+              className="w-full min-h-[48px] px-6 py-3 text-base font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
             >
               {isRestarting ? 'Restarting...' : 'Select Again'}
             </button>
           )}
 
           <button
+            onClick={handleShareResults}
+            className="w-full min-h-[44px] px-6 py-3 text-base font-medium text-amber bg-transparent rounded-xl hover:bg-amber/10 active:scale-[0.98] transition-all duration-300 border border-amber/40 hover:border-amber"
+          >
+            Share Results
+          </button>
+
+          <button
             onClick={handleNewSession}
             className="w-full min-h-[44px] px-6 py-3 text-base font-medium text-cream-400 bg-transparent rounded-xl hover:bg-midnight-100 hover:text-cream active:scale-[0.98] transition-all duration-300 border border-midnight-50/50"
           >
-            Start New Session
+            Start Fresh
           </button>
         </div>
 
         {/* Session Info */}
         <div className="mt-6 text-center text-sm text-cream-500">
-          <p>Session Code: <span className="font-mono font-semibold text-amber">{sessionCode}</span></p>
+          <p>Thanks for using Dinder!</p>
         </div>
       </div>
     </main>

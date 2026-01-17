@@ -14,12 +14,14 @@ import type {
   ServerToClientEvents,
   SelectionSubmitPayload,
   SelectionSubmitResponse,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 
 // Zod schema for validation
+// Note: We allow 0 selections - a user may not like any options, and that's valid.
+// The overlap calculation will handle empty selections gracefully.
 const selectionSubmitPayloadSchema = z.object({
   sessionCode: z.string().regex(/^[A-Z0-9]{6}$/),
-  selections: z.array(z.string()).min(1, 'Must select at least 1 option').max(50),
+  selections: z.array(z.string()).max(50),
 });
 
 export async function handleSelectionSubmit(
@@ -111,7 +113,7 @@ export async function handleSelectionSubmit(
       // Store results
       await OverlapService.storeResults(
         sessionCode,
-        results.overlappingOptions.map((opt) => opt.optionId)
+        results.overlappingOptions.map((opt) => opt.placeId)
       );
 
       // Refresh TTL after storing results to ensure results key expires with session
@@ -125,6 +127,7 @@ export async function handleSelectionSubmit(
         sessionCode,
         overlappingOptions: results.overlappingOptions,
         allSelections: results.allSelections,
+        restaurantNames: results.restaurantNames,
         hasOverlap: results.hasOverlap,
       });
 

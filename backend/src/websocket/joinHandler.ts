@@ -13,7 +13,7 @@ import type {
   ServerToClientEvents,
   SessionJoinPayload,
   SessionJoinResponse,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 
 // Zod schema for validation
 const sessionJoinPayloadSchema = z.object({

@@ -1,149 +1,119 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
+
+/**
+ * Home Page E2E Tests
+ *
+ * Tests the landing page functionality including:
+ * - Content rendering
+ * - Navigation
+ * - Accessibility
+ * - Mobile responsiveness
+ *
+ * Uses Page Object Model for maintainable selectors.
+ */
 
 test.describe('Home Page', () => {
-  test('should display welcome screen with navigation options', async ({ page }) => {
-    await page.goto('http://localhost:3000');
+  test('should display welcome screen with navigation options', async ({ homePage }) => {
+    await homePage.goto();
 
-    // Check title and description
-    await expect(page.getByRole('heading', { name: /Dinner Decider/i })).toBeVisible();
-    await expect(page.getByText(/Find restaurants everyone agrees on/i)).toBeVisible();
-
-    // Check action buttons
-    await expect(page.getByRole('button', { name: /Create Session/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Join Session/i })).toBeVisible();
-
-    // Check info text
-    await expect(page.getByText(/No sign-up required/i)).toBeVisible();
-    await expect(page.getByText(/Up to 4 participants/i)).toBeVisible();
-    await expect(page.getByText(/Private selections until everyone submits/i)).toBeVisible();
+    // Verify all key elements using page object
+    await homePage.verifyPageElements();
   });
 
-  test('should navigate to create session page', async ({ page }) => {
-    await page.goto('http://localhost:3000');
-
-    await page.getByRole('button', { name: /Create Session/i }).click();
+  test('should navigate to create session page', async ({ homePage, page }) => {
+    await homePage.goto();
+    await homePage.clickCreateSession();
 
     await expect(page).toHaveURL(/\/create/);
   });
 
-  test('should navigate to join session page', async ({ page }) => {
-    await page.goto('http://localhost:3000');
-
-    await page.getByRole('button', { name: /Join Session/i }).click();
+  test('should navigate to join session page', async ({ homePage, page }) => {
+    await homePage.goto();
+    await homePage.clickJoinSession();
 
     await expect(page).toHaveURL(/\/join/);
   });
 
-  test('should have accessible button elements', async ({ page }) => {
-    await page.goto('http://localhost:3000');
-
-    const createButton = page.getByRole('button', { name: /Create Session/i });
-    const joinButton = page.getByRole('button', { name: /Join Session/i });
-
-    // Check buttons are properly accessible
-    await expect(createButton).toBeEnabled();
-    await expect(joinButton).toBeEnabled();
+  test('should have accessible button elements', async ({ homePage }) => {
+    await homePage.goto();
+    await homePage.verifyButtonsEnabled();
   });
 
-  test('should display mobile-friendly layout', async ({ page }) => {
-    // Set mobile viewport (iPhone 12 Pro)
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('http://localhost:3000');
+  test('should display mobile-friendly layout', async ({ homePage }) => {
+    await homePage.setMobileViewport();
+    await homePage.goto();
 
     // Verify content is visible in mobile viewport
-    await expect(page.getByRole('heading', { name: /Dinner Decider/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Create Session/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Join Session/i })).toBeVisible();
+    await expect(homePage.heading).toBeVisible();
+    await expect(homePage.createSessionButton).toBeVisible();
+    await expect(homePage.joinSessionButton).toBeVisible();
   });
 });
 
 test.describe('Create Session Page', () => {
-  test('should display create session form', async ({ page }) => {
-    await page.goto('http://localhost:3000/create');
-
-    await expect(page.getByRole('heading', { name: /Create Session/i })).toBeVisible();
-    await expect(page.getByLabel(/Your Name/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /Create Session/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Cancel/i })).toBeVisible();
+  test('should display create session form', async ({ createPage }) => {
+    await createPage.goto();
+    await createPage.verifyPageElements();
   });
 
-  test('should show character count for name input', async ({ page }) => {
-    await page.goto('http://localhost:3000/create');
+  test('should show character count for name input', async ({ createPage }) => {
+    await createPage.goto();
+    await createPage.enterName('John');
 
-    const nameInput = page.getByLabel(/Your Name/i);
-    await nameInput.fill('John');
-
-    await expect(page.getByText(/4\/50 characters/i)).toBeVisible();
+    const charCount = await createPage.getCharacterCountText();
+    expect(charCount).toContain('4');
   });
 
-  test('should disable submit button when name is empty', async ({ page }) => {
-    await page.goto('http://localhost:3000/create');
-
-    const submitButton = page.getByRole('button', { name: /Create Session/i });
-    await expect(submitButton).toBeDisabled();
+  test('should disable submit button when name is empty', async ({ createPage }) => {
+    await createPage.goto();
+    await createPage.verifySubmitButtonState(false);
   });
 
-  test('should enable submit button when name is filled', async ({ page }) => {
-    await page.goto('http://localhost:3000/create');
-
-    await page.getByLabel(/Your Name/i).fill('John');
-
-    const submitButton = page.getByRole('button', { name: /Create Session/i });
-    await expect(submitButton).toBeEnabled();
+  test('should enable submit button when name is filled', async ({ createPage }) => {
+    await createPage.goto();
+    await createPage.enterName('John');
+    await createPage.verifySubmitButtonState(true);
   });
 
-  test('should navigate back on cancel', async ({ page }) => {
-    await page.goto('http://localhost:3000/create');
+  test('should navigate back on cancel', async ({ createPage, page }) => {
+    await createPage.goto();
+    await createPage.cancel();
 
-    await page.getByRole('button', { name: /Cancel/i }).click();
-
-    await expect(page).toHaveURL('http://localhost:3000/');
+    await expect(page).toHaveURL('/');
   });
 });
 
 test.describe('Join Session Page', () => {
-  test('should display join session form', async ({ page }) => {
-    await page.goto('http://localhost:3000/join');
-
-    await expect(page.getByRole('heading', { name: /Join Session/i })).toBeVisible();
-    await expect(page.getByLabel(/Session Code/i)).toBeVisible();
-    await expect(page.getByLabel(/Your Name/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /Join Session/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Cancel/i })).toBeVisible();
+  test('should display join session form', async ({ joinPage }) => {
+    await joinPage.goto();
+    await joinPage.verifyPageElements();
   });
 
-  test('should format session code to uppercase', async ({ page }) => {
-    await page.goto('http://localhost:3000/join');
-
-    const sessionCodeInput = page.getByLabel(/Session Code/i);
-    await sessionCodeInput.fill('abc123');
-
-    await expect(sessionCodeInput).toHaveValue('ABC123');
+  test('should format session code to uppercase', async ({ joinPage }) => {
+    await joinPage.goto();
+    await joinPage.enterSessionCode('abc123');
+    await joinPage.verifySessionCodeUppercase('ABC123');
   });
 
-  test('should limit session code to 6 characters', async ({ page }) => {
-    await page.goto('http://localhost:3000/join');
+  test('should limit session code to 6 characters', async ({ joinPage }) => {
+    await joinPage.goto();
+    await joinPage.enterSessionCode('ABCDEFGHIJ');
 
-    const sessionCodeInput = page.getByLabel(/Session Code/i);
-    await sessionCodeInput.fill('ABCDEFGHIJ');
-
-    await expect(sessionCodeInput).toHaveValue('ABCDEF');
+    const value = await joinPage.getSessionCodeValue();
+    expect(value).toBe('ABCDEF');
   });
 
-  test('should show character count for name input', async ({ page }) => {
-    await page.goto('http://localhost:3000/join');
-
-    const nameInput = page.getByLabel(/Your Name/i);
-    await nameInput.fill('Alice');
+  test('should show character count for name input', async ({ joinPage, page }) => {
+    await joinPage.goto();
+    await joinPage.enterName('Alice');
 
     await expect(page.getByText(/5\/50 characters/i)).toBeVisible();
   });
 
-  test('should navigate back on cancel', async ({ page }) => {
-    await page.goto('http://localhost:3000/join');
+  test('should navigate back on cancel', async ({ joinPage, page }) => {
+    await joinPage.goto();
+    await joinPage.cancel();
 
-    await page.getByRole('button', { name: /Cancel/i }).click();
-
-    await expect(page).toHaveURL('http://localhost:3000/');
+    await expect(page).toHaveURL('/');
   });
 });

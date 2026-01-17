@@ -3,7 +3,7 @@
 
 import Redis from 'ioredis';
 import type { Server } from 'socket.io';
-import type { ClientToServerEvents, ServerToClientEvents } from '@dinner-app/shared/types';
+import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);

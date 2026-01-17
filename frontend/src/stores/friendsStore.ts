@@ -8,7 +8,7 @@ import type {
   FriendRequest,
   SessionInvite,
   UserProfile,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 import { useAuthStore } from './authStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';

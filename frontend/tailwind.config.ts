@@ -95,6 +95,13 @@ export default {
         'card-enter': 'cardEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
         'pulse-glow': 'pulseGlow 0.6s ease-out',
         'heart-pop': 'heartPop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55)',
+        // Toast animations
+        'toast-enter': 'toastEnter 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards',
+        'toast-exit': 'toastExit 0.2s ease-in forwards',
+        // Skeleton shimmer
+        'shimmer': 'shimmer 1.5s ease-in-out infinite',
+        // Step completion pulse
+        'step-complete': 'stepComplete 0.4s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -129,6 +136,27 @@ export default {
           '0%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.3)' },
           '100%': { transform: 'scale(1)' },
+        },
+        // Toast enter - slide up from bottom with slight scale
+        toastEnter: {
+          '0%': { opacity: '0', transform: 'translateY(100%) scale(0.95)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        // Toast exit - fade out and slide down
+        toastExit: {
+          '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '100%': { opacity: '0', transform: 'translateY(50%) scale(0.95)' },
+        },
+        // Skeleton shimmer effect
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        // Step completion pulse
+        stepComplete: {
+          '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(212, 165, 116, 0.6)' },
+          '50%': { transform: 'scale(1.1)' },
+          '100%': { transform: 'scale(1)', boxShadow: '0 0 0 8px rgba(212, 165, 116, 0)' },
         },
       },
     },

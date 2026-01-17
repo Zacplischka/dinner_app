@@ -2,7 +2,52 @@
 
 ## Overview
 
-This document provides comprehensive documentation for all end-to-end (E2E) tests in the Dinner Decider application. These tests are written using Playwright and validate the user interface, navigation, form behavior, and accessibility features across the application.
+This document provides comprehensive documentation for all end-to-end (E2E) tests in the Dinder application. These tests are written using Playwright with a Page Object Model architecture for maintainability and scalability.
+
+## Architecture
+
+### Directory Structure
+
+```
+tests/e2e/
+├── fixtures/                    # Custom Playwright fixtures
+│   ├── test-fixtures.ts        # Page object fixtures & helpers
+│   ├── multi-participant.ts    # Multi-browser context support
+│   └── index.ts                # Barrel export
+├── pages/                       # Page Object Model classes
+│   ├── BasePage.ts             # Abstract base class
+│   ├── HomePage.ts             # Landing page
+│   ├── CreateSessionPage.ts    # Session creation
+│   ├── JoinSessionPage.ts      # Session joining
+│   ├── SessionLobbyPage.ts     # Waiting room
+│   ├── SelectionPage.ts        # Restaurant swiping
+│   ├── ResultsPage.ts          # Final results
+│   └── index.ts                # Barrel export
+├── flows/                       # Multi-step flow tests
+│   ├── multi-participant.spec.ts
+│   └── selection-flow.spec.ts
+├── utils/                       # Test utilities
+│   └── test-helpers.ts         # Mocking, accessibility, etc.
+├── home.spec.ts                # Basic page tests
+├── accessibility.spec.ts       # A11y tests
+├── mobile.spec.ts              # Mobile-specific tests
+├── global-setup.ts             # Pre-test setup
+├── global-teardown.ts          # Post-test cleanup
+└── TEST_DOCUMENTATION.md       # This file
+```
+
+### Key Concepts
+
+**Page Object Model (POM)**: Each page has a dedicated class encapsulating:
+- Locators for all interactive elements
+- Common actions (click, fill, navigate)
+- Assertions specific to that page
+
+**Custom Fixtures**: Extend Playwright's `test` with:
+- Pre-instantiated page objects
+- Multi-participant session setup
+- Test data generators
+- WebSocket helpers
 
 ## Test File: `home.spec.ts`
 
@@ -12,7 +57,7 @@ This document provides comprehensive documentation for all end-to-end (E2E) test
 **Purpose**: Validates that the home page renders all essential UI elements correctly.
 
 **What it tests**:
-- The main heading "Dinner Decider" is visible on the page
+- The main heading "Dinder" is visible on the page
 - The tagline "Find restaurants everyone agrees on" is displayed
 - "Create Session" button is present and visible
 - "Join Session" button is present and visible
@@ -264,15 +309,18 @@ This document provides comprehensive documentation for all end-to-end (E2E) test
 - ✅ Mobile viewport compatibility
 - ✅ Session code formatting
 
+### Now Covered (New Tests)
+- ✅ Multi-participant session flows (`flows/multi-participant.spec.ts`)
+- ✅ Restaurant selection interface (`flows/selection-flow.spec.ts`)
+- ✅ Comprehensive accessibility tests (`accessibility.spec.ts`)
+- ✅ Mobile device testing (`mobile.spec.ts`)
+- ✅ Cross-browser testing (via Playwright projects)
+
 ### Not Yet Covered (Future Tests)
-- ❌ Session creation API integration
-- ❌ Joining an existing session
-- ❌ WebSocket connectivity
-- ❌ Multi-participant flows
-- ❌ Restaurant selection interface
-- ❌ Results display
 - ❌ Session expiration handling
-- ❌ Error states (network failures, full sessions, etc.)
+- ❌ Network failure recovery
+- ❌ Visual regression testing
+- ❌ Performance benchmarks
 
 ---
 
@@ -288,9 +336,24 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
+### Run mobile tests only
+```bash
+npm run test:e2e:mobile
+```
+
+### Run tests with browser visible
+```bash
+npm run test:e2e:headed
+```
+
+### Debug mode (step through)
+```bash
+npm run test:e2e:debug
+```
+
 ### View HTML report
 ```bash
-npx playwright show-report
+npm run test:e2e:report
 ```
 
 ### Run specific test file
@@ -298,25 +361,42 @@ npx playwright show-report
 npx playwright test home.spec.ts
 ```
 
-### Run tests in headed mode (see browser)
+### Run specific browser
 ```bash
-npx playwright test --headed
-```
-
-### Debug mode
-```bash
-npx playwright test --debug
+npx playwright test --project=chromium
+npx playwright test --project=firefox
+npx playwright test --project=webkit
+npx playwright test --project=mobile-chrome
 ```
 
 ---
 
 ## Test Configuration
 
+### Default Configuration
+
 Tests run against:
-- **Frontend URL**: http://localhost:3000
-- **Backend URL**: http://localhost:3001 (required for WebSocket tests)
-- **Browser**: Chromium (default)
-- **Viewport**: 1280×720 (default), 390×844 (mobile tests)
+- **Frontend URL**: `http://localhost:3000` (configurable via `BASE_URL` env)
+- **Backend URL**: `http://localhost:3001` (configurable via `BACKEND_URL` env)
+
+### Browser Projects
+
+| Project | Device | Viewport |
+|---------|--------|----------|
+| `mobile-chrome` | iPhone 12 Pro | 390×844 |
+| `mobile-safari` | iPhone 12 Pro | 390×844 |
+| `chromium` | Desktop Chrome | 1280×720 |
+| `firefox` | Desktop Firefox | 1280×720 |
+| `webkit` | Desktop Safari | 1280×720 |
+| `tablet` | iPad Pro 11 | 834×1194 |
+| `android` | Pixel 5 | 393×851 |
+
+### CI/CD Integration
+
+Tests run automatically on:
+- Pull requests to `main`
+- Uses GitHub Actions with Redis service
+- Artifacts: HTML report, failure screenshots
 
 ---
 

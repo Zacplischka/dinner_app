@@ -25,6 +25,7 @@ export default function UserMenu() {
         <img
           src={avatarUrl}
           alt={displayName}
+          referrerPolicy="no-referrer"
           className="w-8 h-8 rounded-full ring-2 ring-amber/30"
         />
       ) : (

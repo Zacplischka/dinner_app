@@ -1,4 +1,4 @@
-# 🍽️ Dinner Decider
+# 🍽️ Dinder
 
 A real-time web application that helps groups of 2-4 people decide on a restaurant by finding overlapping preferences. No authentication required - just create a session, share the code, make selections, and see what everyone agrees on!
 
@@ -179,6 +179,17 @@ cd backend && npm run test:contract
 
 ## 📚 How It Works
 
+### Discovery Flow (New!)
+
+Browse and explore restaurants before starting a group decision:
+
+1. **Explore Cuisines**: Tap any cuisine on the home page to filter restaurants
+2. **Browse Collections**: Check out curated lists like "Date Night" or "Best Italian"
+3. **View Details**: See full restaurant profiles with menus and reviews
+4. **Start Session**: When ready, tap "Decide with Friends" to begin group voting
+
+See [docs/USER_FLOWS.md](./docs/USER_FLOWS.md) for detailed navigation documentation.
+
 ### Session Flow
 
 1. **Create Session**: Host enters their name and gets a 6-character session code
@@ -271,6 +282,7 @@ Special thanks to all contributors!
 ---
 
 **Questions or Issues?**
+- Check [docs/USER_FLOWS.md](./docs/USER_FLOWS.md) for navigation and user flow documentation
 - Check [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) for deployment details
 - Review [deploy.md](./deploy.md) for Railway-specific configuration
-- See [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md) for complete deployment walkthrough.!
+- See [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md) for complete deployment walkthrough

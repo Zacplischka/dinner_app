@@ -1,6 +1,6 @@
-# 🚀 Railway Deployment Guide - Dinner Decider
+# 🚀 Railway Deployment Guide - Dinder
 
-Complete guide for deploying the Dinner Decider application to Railway, including all critical configuration settings and troubleshooting.
+Complete guide for deploying the Dinder application to Railway, including all critical configuration settings and troubleshooting.
 
 ## 📋 Table of Contents
 

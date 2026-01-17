@@ -6,7 +6,7 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
   ErrorEvent,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 
 /**
  * Emit structured error event to client

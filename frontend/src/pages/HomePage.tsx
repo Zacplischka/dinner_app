@@ -61,7 +61,7 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-5xl font-display font-semibold text-cream tracking-tight text-glow">
-            Dinner Decider
+            Dinder
           </h1>
           <p className="text-lg text-cream-400 font-light tracking-wide">
             Find restaurants everyone agrees on

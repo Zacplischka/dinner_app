@@ -1,7 +1,7 @@
 // SessionInviteCard Component
 // Displays a session invite with accept/decline actions
 
-import type { SessionInvite } from '@dinner-app/shared/types';
+import type { SessionInvite } from '@dinder/shared/types';
 import { useFriendsStore } from '../../stores/friendsStore';
 import { useSessionStore } from '../../stores/sessionStore';
 import { joinSession } from '../../services/socketService';

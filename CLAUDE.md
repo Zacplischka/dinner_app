@@ -1,6 +1,6 @@
 # Claude Code Context
 
-**Project**: Dinner Decider
+**Project**: Dinder
 **Last Updated**: 2025-09-30
 
 ## Tech Stack

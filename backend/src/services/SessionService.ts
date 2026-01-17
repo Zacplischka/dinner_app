@@ -6,7 +6,7 @@ import * as SessionModel from '../models/Session.js';
 import * as ParticipantModel from '../models/Participant.js';
 import { refreshSessionTtl, calculateExpireAt, getExpiresAtISO } from '../redis/ttl-utils.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
-import type { Restaurant } from '@dinner-app/shared/types';
+import type { Restaurant } from '@dinder/shared/types';
 // Session type imported but not used directly in this service
 
 /**

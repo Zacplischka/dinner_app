@@ -15,7 +15,7 @@ import type {
   FriendsListResponse,
   FriendRequestsResponse,
   SessionInvitesResponse,
-} from '@dinner-app/shared/types';
+} from '@dinder/shared/types';
 
 const router = Router();
 

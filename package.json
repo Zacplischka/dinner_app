@@ -1,7 +1,7 @@
 {
-  "name": "dinner-app",
+  "name": "dinder",
   "version": "1.0.0",
-  "description": "Dinner Decider - Real-time group dinner decision making",
+  "description": "Dinder - Real-time group dinner decision making",
   "private": true,
   "workspaces": [
     "backend",
@@ -16,7 +16,15 @@
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend"
   },
-  "keywords": ["dinner", "decider", "restaurant", "group-decision"],
-  "author": "Dinner Decider Team",
-  "license": "MIT"
+  "keywords": [
+    "dinder",
+    "dinner",
+    "restaurant",
+    "group-decision"
+  ],
+  "author": "Dinder Team",
+  "license": "MIT",
+  "devDependencies": {
+    "canvas": "^3.2.0"
+  }
 }

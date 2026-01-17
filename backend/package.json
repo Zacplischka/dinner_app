@@ -1,7 +1,7 @@
 {
-  "name": "@dinner-app/backend",
+  "name": "@dinder/backend",
   "version": "1.0.0",
-  "description": "Dinner Decider backend server with Express and Socket.IO",
+  "description": "Dinder backend server with Express and Socket.IO",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
@@ -17,7 +17,7 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
-    "@dinner-app/shared": "file:../shared",
+    "@dinder/shared": "file:../shared",
     "@supabase/supabase-js": "^2.86.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -44,11 +44,11 @@
     "vitest": "^1.0.4"
   },
   "keywords": [
+    "dinder",
     "dinner",
-    "decider",
     "websocket",
     "redis"
   ],
-  "author": "Dinner Decider Team",
+  "author": "Dinder Team",
   "license": "MIT"
 }
