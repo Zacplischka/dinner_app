@@ -6,6 +6,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
 import { joinDemoSession, getDemoSession } from '../services/demoSessionService';
+import { DEMO_MODE } from '../config/demo';
+import { waitForConnection, joinSession } from '../services/socketService';
 
 export default function JoinSessionPage() {
   const navigate = useNavigate();
@@ -45,17 +47,34 @@ export default function JoinSessionPage() {
     try {
       const code = sessionCode.trim().toUpperCase();
 
-      const participant = joinDemoSession(code, participantName.trim());
-      const session = getDemoSession(code);
+      if (DEMO_MODE) {
+        // Demo mode - use local storage
+        const participant = joinDemoSession(code, participantName.trim());
+        const session = getDemoSession(code);
 
-      storeSessionCode(code);
-      setConnectionStatus(true);
-      setCurrentUserId(participant.participantId);
-      setSessionStatus('waiting');
-      resetSelections();
-      updateParticipants(session.participants);
+        storeSessionCode(code);
+        setConnectionStatus(true);
+        setCurrentUserId(participant.participantId);
+        setSessionStatus('waiting');
+        resetSelections();
+        updateParticipants(session.participants);
 
-      navigate(`/session/${code}`);
+        navigate(`/session/${code}`);
+      } else {
+        // Real backend - connect WebSocket and join session
+        storeSessionCode(code);
+        setSessionStatus('waiting');
+        resetSelections();
+
+        await waitForConnection();
+        const joinResponse = await joinSession(code, participantName.trim());
+
+        if (joinResponse.success && joinResponse.participantId) {
+          setCurrentUserId(joinResponse.participantId);
+          setConnectionStatus(true);
+          navigate(`/session/${code}`);
+        }
+      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to join session';
 

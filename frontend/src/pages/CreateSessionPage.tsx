@@ -4,7 +4,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
+import { useFriendsStore } from '../stores/friendsStore';
 import NavigationHeader from '../components/NavigationHeader';
+import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { createDemoSession } from '../services/demoSessionService';
 import { createSession } from '../services/apiClient';
 import { DEMO_MODE } from '../config/demo';
@@ -24,7 +26,9 @@ export default function CreateSessionPage() {
   const [error, setError] = useState('');
   const [location, setLocation] = useState<Location | null>(null);
   const [searchRadiusMiles, setSearchRadiusMiles] = useState<number>(5);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const { setSessionCode, setLocation: setStoreLocation, setSearchRadiusMiles: setStoreRadius, updateParticipants, setCurrentUserId, setConnectionStatus, setSessionStatus, resetSelections } = useSessionStore();
+  const { inviteFriendsToSession } = useFriendsStore();
 
   // Demo: default a friendly host name
   useEffect(() => {
@@ -120,6 +124,12 @@ export default function CreateSessionPage() {
         if (joinResponse.success && joinResponse.participantId) {
           setCurrentUserId(joinResponse.participantId);
           setConnectionStatus(true);
+
+          // Invite selected friends if any
+          if (selectedFriendIds.size > 0) {
+            await inviteFriendsToSession(response.sessionCode, Array.from(selectedFriendIds));
+          }
+
           navigate(`/session/${response.sessionCode}`);
         }
       }
@@ -235,6 +245,14 @@ export default function CreateSessionPage() {
             </div>
           )}
 
+          {/* Invite Friends Section (only in non-demo mode) */}
+          {!DEMO_MODE && (
+            <InviteFriendsSection
+              selectedFriendIds={selectedFriendIds}
+              onSelectionChange={setSelectedFriendIds}
+              disabled={isLoading || isGettingLocation}
+            />
+          )}
 
           {/* Error message */}
           {error && (
