@@ -11,7 +11,11 @@
   "scripts": {
     "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
     "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend && npm run postbuild",
+    "build:backend": "npm run build --workspace=shared && npm run build --workspace=backend && npm run postbuild",
+    "build:frontend": "npm run build --workspace=shared && npm run build --workspace=frontend",
     "postbuild": "cp backend/src/redis/*.lua backend/dist/redis/",
+    "start": "node backend/dist/server.js",
+    "start:backend": "node backend/dist/server.js",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend"
