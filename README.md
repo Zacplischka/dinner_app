@@ -15,9 +15,15 @@
 <p align="center">
   <a href="https://frontend-production-bdfc.up.railway.app">Live demo</a> ·
   <a href="#how-it-works">How it works</a> ·
-  <a href="#screenshots">Screenshots</a> ·
+  <a href="#demo">Demo</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#local-development">Local development</a>
+</p>
+
+## Demo
+
+<p align="center">
+  <img src="docs/media/dinder-demo.gif" alt="Walkthrough: create a session, friends join with a code, everyone swipes, the group's matches appear" width="720">
 </p>
 
 ## Screenshots
