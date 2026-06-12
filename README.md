@@ -7,13 +7,13 @@
 **Swipe. Match. Eat.** Dinder is a real-time app for groups of 2–4 who can't decide where to eat: everyone swipes through nearby restaurants, and the moment the last person submits, Redis computes the overlap and pushes the matches to every phone at once.
 
 <p align="center">
-  <a href="https://frontend-production-bdfc.up.railway.app"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
+  <a href="https://www.dinder.it.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A520-339933" alt="Node 20+">
 </p>
 
 <p align="center">
-  <a href="https://frontend-production-bdfc.up.railway.app">Live demo</a> ·
+  <a href="https://www.dinder.it.com">Live demo</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#architecture">Architecture</a> ·
