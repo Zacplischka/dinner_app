@@ -5,8 +5,9 @@ export default defineConfig({
     // Unit tests for services, models, and utilities
     include: ['tests/unit/**/*.test.ts'],
 
-    // Unit tests can run in parallel (no shared state)
-    fileParallelism: true,
+    // Redis-backed unit tests share one local Redis database and fixed keys.
+    // Keep files serial so cleanup in one file cannot race another file.
+    fileParallelism: false,
 
     // Global timeout for unit tests (should be fast)
     testTimeout: 5000,
