@@ -296,7 +296,7 @@ export function RestaurantCard({
                 </div>
 
                 {highlight && (
-                  <p className="text-cream-300 italic text-sm mb-3">"{highlight}"</p>
+                  <p className="text-cream-300 italic text-sm mb-3">&ldquo;{highlight}&rdquo;</p>
                 )}
 
                 {tags.length > 0 && (

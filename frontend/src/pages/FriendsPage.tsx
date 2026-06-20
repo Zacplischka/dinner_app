@@ -185,7 +185,7 @@ export default function FriendsPage() {
             ) : sessionInvites.length === 0 ? (
               <div className="p-8 text-center bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 text-cream-500">
                 <p className="text-lg">No session invites</p>
-                <p className="text-sm mt-1 text-cream-500/60">When friends invite you to sessions, they'll appear here</p>
+                <p className="text-sm mt-1 text-cream-500/60">When friends invite you to sessions, they&apos;ll appear here</p>
               </div>
             ) : (
               sessionInvites.map((invite) => (

@@ -324,7 +324,7 @@ export default function CuratedListPage() {
 
                       {/* Highlight quote */}
                       <p className="text-cream-300 italic text-sm sm:text-base mb-4">
-                        "{restaurant.highlight}"
+                        &ldquo;{restaurant.highlight}&rdquo;
                       </p>
 
                       {/* Tags */}
@@ -416,7 +416,7 @@ export default function CuratedListPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
             <div>
-              <h3 className="font-display text-2xl text-cream mb-2">Can't decide alone?</h3>
+              <h3 className="font-display text-2xl text-cream mb-2">Can&apos;t decide alone?</h3>
               <p className="text-cream-400">Start a session and let your group vote on these restaurants</p>
             </div>
             <button

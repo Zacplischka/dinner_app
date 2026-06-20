@@ -7,7 +7,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
-import type { Restaurant } from '@dinder/shared/types';
+import type { DinnerOption, Restaurant } from '@dinder/shared/types';
 
 // Helper functions to generate delivery app deep links
 const generateUberEatsUrl = (restaurantName: string, address?: string): string => {
@@ -36,9 +36,13 @@ export default function ResultsPage() {
 
   const hasOverlap = overlappingOptions.length > 0;
 
-  // Type guard to check if options are Restaurant objects
+  // Type guards to check which result shape came back from the session.
   const isRestaurant = (option: unknown): option is Restaurant => {
     return typeof option === 'object' && option !== null && 'placeId' in option && 'name' in option;
+  };
+
+  const isDinnerOption = (option: unknown): option is DinnerOption => {
+    return typeof option === 'object' && option !== null && 'optionId' in option && 'displayName' in option;
   };
 
   // Create a lookup map for restaurant names by placeId
@@ -147,10 +151,11 @@ export default function ResultsPage() {
               Matching Restaurants
             </h2>
             <div className="space-y-3">
-              {overlappingOptions.map((option) => {
+              {overlappingOptions.map((option, index) => {
                 const restaurant = isRestaurant(option) ? option : null;
-                const key = restaurant ? restaurant.placeId : (option as any).optionId;
-                const displayName = restaurant ? restaurant.name : (option as any).displayName;
+                const dinnerOption = isDinnerOption(option) ? option : null;
+                const key = restaurant?.placeId ?? dinnerOption?.optionId ?? String(index);
+                const displayName = restaurant?.name ?? dinnerOption?.displayName ?? 'Unknown option';
 
                 return (
                   <div
@@ -242,9 +247,9 @@ export default function ResultsPage() {
                       </div>
                     )}
 
-                    {!restaurant && (option as any).description && (
+                    {!restaurant && dinnerOption?.description && (
                       <p className="text-sm text-cream-500 mt-1">
-                        {(option as any).description}
+                        {dinnerOption.description}
                       </p>
                     )}
                   </div>
@@ -299,7 +304,10 @@ export default function ResultsPage() {
                             if (isRestaurant(o)) {
                               return o.placeId === selectionId;
                             }
-                            return (o as unknown as { optionId?: string }).optionId === selectionId;
+                            if (isDinnerOption(o)) {
+                              return o.optionId === selectionId;
+                            }
+                            return false;
                           });
 
                           // Get display name from our lookup map, or fall back to selectionId

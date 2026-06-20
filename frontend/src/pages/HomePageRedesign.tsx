@@ -102,7 +102,7 @@ export default function HomePageRedesign() {
 
               {/* Subheadline */}
               <p className="text-xl sm:text-2xl text-cream-400 font-light leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Stop the endless "where should we eat?" debate. Swipe, match, and discover restaurants everyone will love.
+                Stop the endless &ldquo;where should we eat?&rdquo; debate. Swipe, match, and discover restaurants everyone will love.
               </p>
 
               {/* CTA buttons */}
@@ -215,7 +215,7 @@ export default function HomePageRedesign() {
               What Are You Craving?
             </h2>
             <p className="text-cream-400 text-lg max-w-2xl mx-auto">
-              Explore restaurants by your favorite cuisines. Perfect for when the group can't decide on a type.
+              Explore restaurants by your favorite cuisines. Perfect for when the group can&apos;t decide on a type.
             </p>
           </div>
 
@@ -293,7 +293,7 @@ export default function HomePageRedesign() {
               How Dinder Works
             </h2>
             <p className="text-cream-400 text-lg max-w-2xl mx-auto">
-              Three easy steps to restaurant consensus. No more "I don't know, where do you want to eat?"
+              Three easy steps to restaurant consensus. No more &ldquo;I don&apos;t know, where do you want to eat?&rdquo;
             </p>
           </div>
 
@@ -406,7 +406,7 @@ export default function HomePageRedesign() {
           <div className="space-y-8">
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-cream font-semibold leading-tight">
               Ready to End the
-              <span className="text-amber-gradient block">"Where Should We Eat?"</span>
+              <span className="text-amber-gradient block">&ldquo;Where Should We Eat?&rdquo;</span>
               Debate?
             </h2>
 

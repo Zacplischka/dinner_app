@@ -265,7 +265,7 @@ export default function SelectionPage() {
               </div>
 
               <h2 className="text-3xl font-display font-semibold text-cream mb-3 text-glow">
-                You've seen them all!
+                You&apos;ve seen them all!
               </h2>
               <p className="text-cream-400 mb-6">
                 You liked <span className="text-amber font-semibold">{selections.length}</span> restaurant{selections.length !== 1 ? 's' : ''}
@@ -294,7 +294,7 @@ export default function SelectionPage() {
 
               {selections.length === 0 && (
                 <p className="mt-4 text-sm text-cream-500/70">
-                  You didn't like any restaurants, but you can still submit!
+                  You didn&apos;t like any restaurants, but you can still submit!
                 </p>
               )}
             </div>

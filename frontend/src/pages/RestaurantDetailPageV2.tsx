@@ -337,7 +337,7 @@ export default function RestaurantDetailPageV2() {
           <div className="space-y-6">
             {/* Primary CTA - Group decision */}
             <div className="p-6 bg-gradient-to-br from-amber/20 to-amber/5 rounded-2xl border border-amber/30">
-              <h3 className="font-display text-xl text-cream mb-2">Can't decide alone?</h3>
+              <h3 className="font-display text-xl text-cream mb-2">Can&apos;t decide alone?</h3>
               <p className="text-cream-400 text-sm mb-4">Start a session and let your group vote</p>
               <button
                 onClick={() => navigate('/create', { state: { restaurantId: restaurant.id, restaurantName: restaurant.name } })}
