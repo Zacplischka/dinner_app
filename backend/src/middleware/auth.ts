@@ -6,12 +6,14 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 
 // Extend Express Request to include user info
+export interface AuthenticatedUser {
+  id: string;
+  email?: string;
+  role?: string;
+}
+
 export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email?: string;
-    role?: string;
-  };
+  user?: AuthenticatedUser;
 }
 
 interface SupabaseJwtPayload {
@@ -126,7 +128,7 @@ export function requireAuth(
  * Verify a JWT token and return the user info
  * Useful for Socket.IO authentication
  */
-export function verifyToken(token: string): { id: string; email?: string; role?: string } | null {
+export function verifyToken(token: string): AuthenticatedUser | null {
   if (!config.supabase.jwtSecret) {
     console.warn('SUPABASE_JWT_SECRET not configured - cannot verify token');
     return null;

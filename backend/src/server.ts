@@ -9,6 +9,12 @@ import { redis, pingRedis } from './redis/client.js';
 import sessionsRouter from './api/sessions.js';
 import optionsRouter from './api/options.js';
 import friendsRouter from './api/friends.js';
+import {
+  getSocketAuthToken,
+  getSocketUser,
+  setSocketUser,
+  type SocketData,
+} from './websocket/socketAuth.js';
 
 // Import shared types
 import type {
@@ -64,7 +70,12 @@ app.get('/health', (_req, res) => {
 const httpServer = createServer(app);
 
 // Initialize Socket.IO with typed events
-const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(httpServer, {
+const io = new SocketIOServer<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  Record<string, never>,
+  SocketData
+>(httpServer, {
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
@@ -91,13 +102,13 @@ import { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } from
 
 // Socket.IO authentication middleware (optional - doesn't reject unauthenticated)
 io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
+  const token = getSocketAuthToken(socket.handshake.auth);
 
   if (token) {
     const user = verifyToken(token);
     if (user) {
       // Attach user info to socket for later use
-      (socket as any).user = user;
+      setSocketUser(socket, user);
       console.log(`Socket ${socket.id} authenticated as user ${user.id}`);
     }
   }
@@ -108,7 +119,7 @@ io.use((socket, next) => {
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  const user = (socket as any).user;
+  const user = getSocketUser(socket);
   console.log(`Socket connected: ${socket.id}${user ? ` (user: ${user.email || user.id})` : ' (anonymous)'}`);
 
   if (socket.recovered) {

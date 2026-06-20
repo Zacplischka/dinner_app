@@ -62,7 +62,7 @@ export async function handleSessionLeave(
     const newCount = await ParticipantModel.countParticipants(sessionCode);
 
     // Leave Socket.IO room
-    socket.leave(sessionCode);
+    await socket.leave(sessionCode);
 
     // Send acknowledgment to leaving client
     callback({ success: true });
