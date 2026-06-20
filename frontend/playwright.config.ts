@@ -80,6 +80,7 @@ export default defineConfig({
       name: 'mobile-chrome',
       use: {
         ...devices['iPhone 12 Pro'],
+        browserName: 'chromium',
         // Override viewport for exact FR-014 requirements
         viewport: { width: 390, height: 844 },
       },

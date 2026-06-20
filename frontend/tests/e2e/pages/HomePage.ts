@@ -21,7 +21,7 @@ export class HomePage extends BasePage {
   readonly friendsLink: Locator;
 
   // Info bullets
-  readonly noSignUpText: Locator;
+  readonly guestModeText: Locator;
   readonly participantsText: Locator;
   readonly privateSelectionsText: Locator;
 
@@ -36,9 +36,9 @@ export class HomePage extends BasePage {
     this.userMenu = page.locator('[data-testid="user-menu"]');
     this.friendsLink = page.getByRole('link', { name: /Friends/i });
 
-    this.noSignUpText = page.getByText(/No sign-up required/i);
-    this.participantsText = page.getByText(/Up to 4 participants/i);
-    this.privateSelectionsText = page.getByText(/Private selections until everyone submits/i);
+    this.guestModeText = page.getByText(/Sign in to save history & invite friends/i);
+    this.participantsText = page.getByText(/Up to 4/i);
+    this.privateSelectionsText = page.getByText(/Private votes/i);
   }
 
   async goto(): Promise<void> {
@@ -77,7 +77,7 @@ export class HomePage extends BasePage {
     await expect(this.tagline).toBeVisible();
     await expect(this.createSessionButton).toBeVisible();
     await expect(this.joinSessionButton).toBeVisible();
-    await expect(this.noSignUpText).toBeVisible();
+    await expect(this.guestModeText).toBeVisible();
     await expect(this.participantsText).toBeVisible();
     await expect(this.privateSelectionsText).toBeVisible();
   }
