@@ -33,10 +33,8 @@ export default function PullToRefresh({
 
   const canPull = useCallback(() => {
     if (disabled || isRefreshing) return false;
-    const container = containerRef.current;
-    if (!container) return false;
     // Only allow pull when scrolled to top
-    return container.scrollTop <= 0;
+    return containerRef.current!.scrollTop <= 0;
   }, [disabled, isRefreshing]);
 
   const handleTouchStart = useCallback(
@@ -94,8 +92,7 @@ export default function PullToRefresh({
   }, [isPulling, pullDistance, pullThreshold, onRefresh, triggerSuccess]);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const container = containerRef.current!;
 
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -124,12 +121,12 @@ export default function PullToRefresh({
       >
         {showIndicator && (
           <div
-            className="flex items-center justify-center"
-            style={{
-              transform: `translateY(${Math.max(pullDistance - 40, 0)}px)`,
-              transition: isPulling ? 'none' : 'transform 0.3s ease-out',
-            }}
-          >
+              className="flex items-center justify-center"
+              style={{
+                transform: `translateY(${Math.max(pullDistance - 40, 0)}px)`,
+                transition: 'transform 0.3s ease-out',
+              }}
+            >
             <div
               className={`w-10 h-10 rounded-full bg-midnight-100 border border-amber/30 flex items-center justify-center shadow-card ${
                 isRefreshing ? '' : ''

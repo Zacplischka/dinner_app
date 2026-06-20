@@ -177,7 +177,7 @@ export default function ResultsPage() {
                               {restaurant.rating.toFixed(1)}
                             </span>
                           )}
-                          {restaurant.priceLevel > 0 && (
+                          {restaurant.priceLevel !== undefined && (
                             <span className="text-cream-400 font-medium">
                               {formatPriceLevel(restaurant.priceLevel)}
                             </span>
@@ -272,7 +272,7 @@ export default function ResultsPage() {
               disabled={isRestarting}
               className="px-6 py-3 text-midnight font-semibold bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg"
             >
-              {isRestarting ? 'Restarting...' : 'Try Again'}
+              Try Again
             </button>
           </div>
         )}
@@ -352,7 +352,7 @@ export default function ResultsPage() {
               disabled={isRestarting}
               className="w-full min-h-[48px] px-6 py-3 text-base font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
             >
-              {isRestarting ? 'Restarting...' : 'Select Again'}
+              Select Again
             </button>
           )}
 

@@ -122,6 +122,20 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
     expect(response.body).toHaveProperty('message');
   });
 
+  it('should return 404 when a valid session code is not found', async () => {
+    const response = await request(app)
+      .post('/api/sessions/ZZZ999/join')
+      .send({ participantName: 'Bob' })
+      .expect('Content-Type', /json/)
+      .expect(404);
+
+    expect(response.body).toEqual({
+      error: 'Not Found',
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session ZZZ999 not found or has expired',
+    });
+  });
+
   it('should increment participantCount with each successful join', async () => {
     const response1 = await request(app)
       .post(`/api/sessions/${testSessionCode}/join`)

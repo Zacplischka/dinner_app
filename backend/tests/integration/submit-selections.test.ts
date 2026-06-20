@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { io as ioClient, Socket as ClientSocket } from 'socket.io-client';
+import { io as ioClient } from 'socket.io-client';
 import request from 'supertest';
-import type { Express } from 'express';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData } from '../helpers/testSetup.js';
+import { startSocketServer, stopSocketServer } from '../helpers/socketServer.js';
 import type { Restaurant } from '@dinder/shared/types';
 
-// We'll import the app once it's exposed for testing
-// For now, we'll use the running server
-const SOCKET_URL = 'http://localhost:3001';
+let socketUrl: string;
 
 // Mock Place IDs (replacing hardcoded optionIds)
 const PLACE_IDS = {
@@ -87,11 +85,10 @@ async function setupMockRestaurants(redis: Redis, sessionCode: string): Promise<
 describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', () => {
   let redis: Redis;
   let testSessionCode: string;
-  let app: Express; // Will use the live server for now
 
   beforeAll(async () => {
     redis = getTestRedis();
-    // Note: Using live server at http://localhost:3001
+    socketUrl = await startSocketServer();
   });
 
   beforeEach(async () => {
@@ -99,7 +96,7 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
     await cleanupTestData(redis);
 
     // Create fresh session for each test
-    const response = await request(SOCKET_URL)
+    const response = await request(socketUrl)
       .post('/api/sessions')
       .send({ hostName: 'Alice' });
 
@@ -111,10 +108,11 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
 
   afterAll(async () => {
     await cleanupTestData(redis);
+    await stopSocketServer();
   });
 
   it('should store selections in Redis when participant submits', async () => {
-    const bob = ioClient(SOCKET_URL, { transports: ['websocket'] });
+    const bob = ioClient(socketUrl, { transports: ['websocket'] });
 
     await new Promise<void>((resolve, reject) => {
       bob.on('connect', () => {
@@ -163,8 +161,8 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
   });
 
   it('should broadcast participant:submitted with count only (FR-023 privacy)', async () => {
-    const alice = ioClient(SOCKET_URL, { transports: ['websocket'] });
-    const bob = ioClient(SOCKET_URL, { transports: ['websocket'] });
+    const alice = ioClient(socketUrl, { transports: ['websocket'] });
+    const bob = ioClient(socketUrl, { transports: ['websocket'] });
 
     await new Promise<void>((resolve, reject) => {
       let aliceJoined = false;
@@ -247,8 +245,8 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
   }, 10000); // Increase timeout for this test
 
   it('should keep selections private until all submit (FR-008)', async () => {
-    const alice = ioClient(SOCKET_URL, { transports: ['websocket'] });
-    const bob = ioClient(SOCKET_URL, { transports: ['websocket'] });
+    const alice = ioClient(socketUrl, { transports: ['websocket'] });
+    const bob = ioClient(socketUrl, { transports: ['websocket'] });
 
     await new Promise<void>((resolve, reject) => {
       let aliceJoined = false;
@@ -295,6 +293,10 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
 
         // Alice should receive participant:submitted but NOT session:results yet
         alice.on('participant:submitted', (data: any) => {
+          if (data.participantId !== bob.id) {
+            return;
+          }
+
           expect(data.submittedCount).toBe(1);
           expect(data.participantCount).toBe(2);
 
@@ -360,9 +362,9 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
   }, 15000);
 
   it('should track submitted count accurately (FR-009)', async () => {
-    const alice = ioClient(SOCKET_URL, { transports: ['websocket'] });
-    const bob = ioClient(SOCKET_URL, { transports: ['websocket'] });
-    const charlie = ioClient(SOCKET_URL, { transports: ['websocket'] });
+    const alice = ioClient(socketUrl, { transports: ['websocket'] });
+    const bob = ioClient(socketUrl, { transports: ['websocket'] });
+    const charlie = ioClient(socketUrl, { transports: ['websocket'] });
 
     await new Promise<void>((resolve, reject) => {
       let joinedCount = 0;
@@ -426,7 +428,7 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
         // Wait for results after all 3 submit
         alice.on('session:results', (data: any) => {
           try {
-            expect(submittedCount).toBe(2); // Received 2 notifications before submitting
+            expect(submittedCount).toBe(3); // Includes Alice's own submitted notification
             alice.close();
             bob.close();
             charlie.close();
@@ -466,7 +468,7 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
   }, 20000);
 
   it('should allow multiple selections per participant (FR-007)', async () => {
-    const bob = ioClient(SOCKET_URL, { transports: ['websocket'] });
+    const bob = ioClient(socketUrl, { transports: ['websocket'] });
 
     await new Promise<void>((resolve, reject) => {
       bob.on('connect', () => {
@@ -514,7 +516,7 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
   });
 
   it('should mark participant as submitted in metadata', async () => {
-    const bob = ioClient(SOCKET_URL, { transports: ['websocket'] });
+    const bob = ioClient(socketUrl, { transports: ['websocket'] });
 
     await new Promise<void>((resolve, reject) => {
       bob.on('connect', () => {

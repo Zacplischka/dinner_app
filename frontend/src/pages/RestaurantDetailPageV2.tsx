@@ -25,6 +25,7 @@ const RESTAURANTS: Record<string, {
   photos: string[];
   reviews: { author: string; rating: number; date: string; text: string }[];
   menu: { category: string; items: { name: string; price: string; description: string }[] }[];
+  isOpen: boolean;
 }> = {
   '1': {
     id: '1',
@@ -35,6 +36,7 @@ const RESTAURANTS: Record<string, {
     address: '123 Main Street, Downtown',
     rating: 4.8,
     reviewCount: 342,
+    isOpen: true,
     priceLevel: '$$$',
     distance: '0.3 mi',
     hours: [
@@ -85,6 +87,13 @@ const RESTAURANTS: Record<string, {
   // Add more restaurants as needed
 };
 
+RESTAURANTS.closed = {
+  ...RESTAURANTS['1'],
+  id: 'closed',
+  name: 'Closed Cafe',
+  isOpen: false,
+};
+
 export default function RestaurantDetailPageV2() {
   const navigate = useNavigate();
   const { restaurantId } = useParams<{ restaurantId: string }>();
@@ -95,7 +104,7 @@ export default function RestaurantDetailPageV2() {
   const restaurant = RESTAURANTS[restaurantId || '1'] || RESTAURANTS['1'];
 
   // Check if currently open (mock - would be real logic)
-  const isOpen = true;
+  const isOpen = restaurant.isOpen;
   const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
   return (

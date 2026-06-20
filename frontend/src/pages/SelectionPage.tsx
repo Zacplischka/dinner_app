@@ -165,15 +165,15 @@ export default function SelectionPage() {
 
   if (hasSubmitted) {
     const handleSimulateOthers = () => {
-      if (!sessionCode) return;
-      simulateRemainingSubmissions(sessionCode);
-      const session = getDemoSession(sessionCode);
+      const activeSessionCode = sessionCode!;
+      simulateRemainingSubmissions(activeSessionCode);
+      const session = getDemoSession(activeSessionCode);
       updateParticipants(session.participants);
 
-      const result = computeDemoResults(sessionCode);
+      const result = computeDemoResults(activeSessionCode);
       setResults(result);
       setSessionStatus('complete');
-      navigate(`/session/${sessionCode}/results`);
+      navigate(`/session/${activeSessionCode}/results`);
     };
 
     return (

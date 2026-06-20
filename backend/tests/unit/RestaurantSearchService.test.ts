@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as RestaurantSearchService from '../../src/services/RestaurantSearchService.js';
+import { config } from '../../src/config/index.js';
 
 describe('RestaurantSearchService', () => {
   describe('transformGooglePlaceToRestaurant', () => {
@@ -46,6 +47,45 @@ describe('RestaurantSearchService', () => {
         address: undefined,
       });
     });
+
+    it('should default missing price levels to free', () => {
+      const googlePlace = {
+        id: 'place-no-price',
+        displayName: { text: 'No Price Cafe' },
+      };
+
+      const result = RestaurantSearchService.transformGooglePlaceToRestaurant(googlePlace);
+
+      expect(result.priceLevel).toBe(0);
+    });
+
+    it('should include photoUrl when photo data and api key are provided', () => {
+      const googlePlace = {
+        id: 'place-photo',
+        displayName: { text: 'Photo Cafe' },
+        priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
+        photos: [{ name: 'places/place-photo/photos/one', widthPx: 800, heightPx: 600 }],
+      };
+
+      const result = RestaurantSearchService.transformGooglePlaceToRestaurant(
+        googlePlace,
+        'api-key'
+      );
+
+      expect(result.photoUrl).toBe(
+        'https://places.googleapis.com/v1/places/place-photo/photos/one/media?key=api-key&maxHeightPx=400'
+      );
+    });
+  });
+
+  describe('getPhotoUrl', () => {
+    it('should build a Google Places photo media URL with custom height', () => {
+      expect(
+        RestaurantSearchService.getPhotoUrl('places/abc/photos/def', 'key-123', 200)
+      ).toBe(
+        'https://places.googleapis.com/v1/places/abc/photos/def/media?key=key-123&maxHeightPx=200'
+      );
+    });
   });
 
   describe('mapPriceLevel', () => {
@@ -84,7 +124,23 @@ describe('RestaurantSearchService', () => {
     });
 
     afterEach(() => {
+      vi.useRealTimers();
       vi.restoreAllMocks();
+    });
+
+    it('should throw when Google Places API key is missing', async () => {
+      const originalKey = config.googlePlaces.apiKey;
+      config.googlePlaces.apiKey = undefined;
+
+      await expect(
+        RestaurantSearchService.searchNearbyRestaurants({
+          latitude: 37.7749,
+          longitude: -122.4194,
+          radiusMeters: 8046.72,
+        })
+      ).rejects.toThrow('Google Places API configuration missing');
+
+      config.googlePlaces.apiKey = originalKey;
     });
 
     it('should call Google Places Text Search API with correct parameters', async () => {
@@ -225,6 +281,38 @@ describe('RestaurantSearchService', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
+    it('should use a default retry delay when rate limit headers are missing', async () => {
+      vi.useFakeTimers();
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          headers: {
+            get: () => null,
+          },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ places: [] }),
+          headers: {
+            get: () => null,
+          },
+        });
+
+      const promise = RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+      });
+
+      await vi.runOnlyPendingTimersAsync();
+
+      await expect(promise).resolves.toEqual([]);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+    });
+
+
     it('should throw error after max retries', async () => {
       // Mock 3 consecutive 429 responses
       for (let i = 0; i < 3; i++) {
@@ -263,6 +351,51 @@ describe('RestaurantSearchService', () => {
 
       expect(result).toEqual([]);
     });
+
+    it('should return empty array when the API omits places', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+        headers: {
+          get: () => null,
+        },
+      });
+
+      const result = await RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+      });
+
+      expect(result).toEqual([]);
+    });
+
+    it('should sort restaurants without ratings as zero-rated', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [
+            { id: '1', displayName: { text: 'Unrated One' }, primaryType: 'restaurant' },
+            { id: '2', displayName: { text: 'Unrated Two' }, primaryType: 'restaurant' },
+          ],
+        }),
+        headers: {
+          get: () => null,
+        },
+      });
+
+      const result = await RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+      });
+
+      expect(result.map((restaurant) => restaurant.name)).toEqual([
+        'Unrated One',
+        'Unrated Two',
+      ]);
+    });
+
 
     it('should filter out non-restaurant places by primaryType', async () => {
       const mockResponse = {
@@ -324,6 +457,58 @@ describe('RestaurantSearchService', () => {
       // McDonald's should be the highest-rated one (4.2)
       const mcdonalds = result.find(r => r.name.toLowerCase().includes('mcdonald'));
       expect(mcdonalds?.rating).toBe(4.2);
+    });
+
+    it('should request subsequent pages when nextPageToken is returned', async () => {
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            places: [
+              {
+                id: 'page1',
+                displayName: { text: 'Page One' },
+                rating: 4.1,
+                priceLevel: 'PRICE_LEVEL_MODERATE',
+                primaryType: 'restaurant',
+              },
+            ],
+            nextPageToken: 'token-2',
+          }),
+          headers: {
+            get: () => null,
+          },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            places: [
+              {
+                id: 'page2',
+                displayName: { text: 'Page Two' },
+                rating: 4.4,
+                priceLevel: 'PRICE_LEVEL_MODERATE',
+                primaryType: 'restaurant',
+              },
+            ],
+          }),
+          headers: {
+            get: () => null,
+          },
+        });
+
+      const result = await RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+        maxResults: 50,
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({
+        pageToken: 'token-2',
+      });
+      expect(result.map((restaurant) => restaurant.placeId)).toEqual(['page2', 'page1']);
     });
   });
 
@@ -466,6 +651,18 @@ describe('RestaurantSearchService', () => {
       const result = RestaurantSearchService.deduplicateRestaurants(restaurants as any);
       expect(result).toHaveLength(1);
       expect(result[0].rating).toBe(3.8); // Should keep the one with a rating
+    });
+
+    it('should keep one duplicate when all duplicate ratings are missing', () => {
+      const restaurants = [
+        { placeId: '1', name: 'KFC', rating: undefined, priceLevel: 1 },
+        { placeId: '2', name: 'KFC Airport', rating: undefined, priceLevel: 1 },
+      ];
+
+      const result = RestaurantSearchService.deduplicateRestaurants(restaurants as any);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].placeId).toBe('1');
     });
 
     it('should return empty array for empty input', () => {

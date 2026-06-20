@@ -15,6 +15,17 @@ describe('OverlapService', () => {
   });
 
   describe('calculateOverlap with Place IDs', () => {
+    it('should return empty results when no participants exist', async () => {
+      const result = await OverlapService.calculateOverlap(sessionCode);
+
+      expect(result).toEqual({
+        overlappingOptions: [],
+        allSelections: {},
+        restaurantNames: {},
+        hasOverlap: false,
+      });
+    });
+
     it('should map overlapping Place IDs to Restaurant objects', async () => {
       // Set up participants
       await redis.sadd(`session:${sessionCode}:participants`, 'participant1', 'participant2');

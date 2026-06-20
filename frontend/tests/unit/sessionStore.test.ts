@@ -143,4 +143,55 @@ describe('sessionStore', () => {
       expect(useSessionStore.getState().selections).not.toContain('ChIJplace1');
     });
   });
+
+  describe('session actions', () => {
+    it('should add, remove, and replace participants', () => {
+      const participant = {
+        participantId: 'participant-1',
+        displayName: 'Alice',
+        sessionCode: 'ABC123',
+        joinedAt: 1,
+        hasSubmitted: false,
+        isHost: true,
+      };
+
+      useSessionStore.getState().addParticipant(participant);
+      expect(useSessionStore.getState().participants).toEqual([participant]);
+
+      useSessionStore.getState().removeParticipant('participant-1');
+      expect(useSessionStore.getState().participants).toEqual([]);
+
+      useSessionStore.getState().updateParticipants([participant]);
+      expect(useSessionStore.getState().participants).toEqual([participant]);
+    });
+
+    it('should ignore duplicate addSelection calls and remove selections', () => {
+      useSessionStore.getState().addSelection('place-1');
+      useSessionStore.getState().addSelection('place-1');
+
+      expect(useSessionStore.getState().selections).toEqual(['place-1']);
+
+      useSessionStore.getState().removeSelection('place-1');
+      expect(useSessionStore.getState().selections).toEqual([]);
+    });
+
+    it('should set results and reset only selection state', () => {
+      useSessionStore.getState().setSelections(['place-1']);
+      useSessionStore.getState().setResults({
+        sessionCode: 'ABC123',
+        hasOverlap: true,
+        overlappingOptions: [{ optionId: 'place-1', displayName: 'Pasta House' }],
+        allSelections: { Alice: ['place-1'] },
+      });
+
+      expect(useSessionStore.getState().sessionStatus).toBe('complete');
+      expect(useSessionStore.getState().restaurantNames).toEqual({});
+      expect(useSessionStore.getState().overlappingOptions).toHaveLength(1);
+
+      useSessionStore.getState().resetSelections();
+
+      expect(useSessionStore.getState().selections).toEqual([]);
+      expect(useSessionStore.getState().sessionStatus).toBe('selecting');
+    });
+  });
 });

@@ -43,7 +43,7 @@ const PRICE_LEVELS = ['$', '$$', '$$$', '$$$$'];
 const MOCK_RESULTS = [
   { id: '1', name: 'Osteria Romano', cuisine: 'Italian', neighborhood: 'Downtown', rating: 4.8, priceLevel: '$$$', distance: '0.3 mi', image: '🍝', isOpen: true },
   { id: '2', name: 'Taqueria El Sol', cuisine: 'Mexican', neighborhood: 'Downtown', rating: 4.7, priceLevel: '$', distance: '0.4 mi', image: '🌮', isOpen: true },
-  { id: '3', name: 'Sakura Ramen', cuisine: 'Japanese', neighborhood: 'Midtown', rating: 4.6, priceLevel: '$$', distance: '0.8 mi', image: '🍜', isOpen: true },
+  { id: '3', name: 'Sakura Ramen', cuisine: 'Japanese', neighborhood: 'Midtown', rating: 4.6, priceLevel: '$$', distance: '0.8 mi', image: '🍜', isOpen: false },
   { id: '4', name: 'The Velvet Room', cuisine: 'French', neighborhood: 'Downtown', rating: 4.9, priceLevel: '$$$$', distance: '0.6 mi', image: '🥂', isOpen: false },
   { id: '5', name: 'Pizza Napoli', cuisine: 'Italian', neighborhood: 'Little Italy', rating: 4.5, priceLevel: '$$', distance: '1.2 mi', image: '🍕', isOpen: true },
   { id: '6', name: 'Curry House', cuisine: 'Indian', neighborhood: 'East Side', rating: 4.4, priceLevel: '$$', distance: '1.5 mi', image: '🍛', isOpen: true },

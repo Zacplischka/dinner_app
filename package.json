@@ -29,6 +29,8 @@
   "author": "Dinder Team",
   "license": "MIT",
   "devDependencies": {
-    "canvas": "^3.2.0"
+    "@vitest/coverage-v8": "^1.0.4",
+    "canvas": "^3.2.0",
+    "jsdom": "^26.1.0"
   }
 }

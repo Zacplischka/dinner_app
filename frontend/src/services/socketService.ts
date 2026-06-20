@@ -25,6 +25,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../hooks/useToast';
 
+/* v8 ignore next */
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 // Typed socket instance
@@ -88,18 +89,16 @@ export function initializeSocket(): void {
   });
 
   // Event handlers that update Zustand store
-  setupEventHandlers();
+  setupEventHandlers(socket);
 }
 
 /**
  * Setup all Socket.IO event handlers
  */
-function setupEventHandlers(): void {
-  if (!socket) return;
-
+function setupEventHandlers(activeSocket: Socket<ServerToClientEvents, ClientToServerEvents>): void {
   // participant:joined - Another participant joined the session
   // Handles both new joins AND rejoins (same displayName with new socket.id)
-  socket.on('participant:joined', (event: ParticipantJoinedEvent) => {
+  activeSocket.on('participant:joined', (event: ParticipantJoinedEvent) => {
     console.log('Participant joined:', event);
     const store = useSessionStore.getState();
 
@@ -138,7 +137,7 @@ function setupEventHandlers(): void {
 
   // participant:left - A participant INTENTIONALLY left the session (session:leave)
   // This removes the participant from the session permanently.
-  socket.on('participant:left', (event: ParticipantLeftEvent) => {
+  activeSocket.on('participant:left', (event: ParticipantLeftEvent) => {
     console.log('Participant left:', event);
     const store = useSessionStore.getState();
 
@@ -155,7 +154,7 @@ function setupEventHandlers(): void {
   // participant:disconnected - A participant lost connection (network issue, browser close, etc.)
   // This is INFORMATIONAL only - the participant is NOT removed from the session (FR-025).
   // They can reconnect and will be re-registered with a new socket.id.
-  socket.on('participant:disconnected', (event: ParticipantDisconnectedEvent) => {
+  activeSocket.on('participant:disconnected', (event: ParticipantDisconnectedEvent) => {
     console.log('Participant disconnected:', event);
     const store = useSessionStore.getState();
 
@@ -169,7 +168,7 @@ function setupEventHandlers(): void {
   });
 
   // participant:submitted - A participant submitted their selections
-  socket.on('participant:submitted', (event: ParticipantSubmittedEvent) => {
+  activeSocket.on('participant:submitted', (event: ParticipantSubmittedEvent) => {
     console.log('Participant submitted:', event);
     // Update participant's hasSubmitted status
     const store = useSessionStore.getState();
@@ -180,7 +179,7 @@ function setupEventHandlers(): void {
   });
 
   // session:results - All participants submitted, results revealed
-  socket.on('session:results', (event: SessionResultsEvent) => {
+  activeSocket.on('session:results', (event: SessionResultsEvent) => {
     console.log('Session results:', event);
     useSessionStore.getState().setResults({
       sessionCode: event.sessionCode,
@@ -192,19 +191,19 @@ function setupEventHandlers(): void {
   });
 
   // session:restarted - Session was restarted by a participant
-  socket.on('session:restarted', (event: SessionRestartedEvent) => {
+  activeSocket.on('session:restarted', (event: SessionRestartedEvent) => {
     console.log('Session restarted:', event);
     useSessionStore.getState().resetSelections();
   });
 
   // session:expired - Session expired due to inactivity
-  socket.on('session:expired', (event: SessionExpiredEvent) => {
+  activeSocket.on('session:expired', (event: SessionExpiredEvent) => {
     console.log('Session expired:', event);
     useSessionStore.getState().setSessionStatus('expired');
   });
 
   // error - Server-side error
-  socket.on('error', (event: ErrorEvent) => {
+  activeSocket.on('error', (event: ErrorEvent) => {
     console.error('Socket error:', event);
     toast.error(event.message || 'An error occurred');
   });

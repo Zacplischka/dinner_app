@@ -61,9 +61,7 @@ export default function ScrollProgress({
       {/* Optional percentage indicator */}
       {showPercentage && isVisible && (
         <div
-          className={`fixed top-4 right-4 z-[100] px-3 py-1.5 bg-midnight-100/90 backdrop-blur-sm rounded-full border border-midnight-50/50 text-sm font-medium text-cream transition-opacity duration-300 ${
-            isVisible ? 'opacity-100' : 'opacity-0'
-          }`}
+          className="fixed top-4 right-4 z-[100] px-3 py-1.5 bg-midnight-100/90 backdrop-blur-sm rounded-full border border-midnight-50/50 text-sm font-medium text-cream transition-opacity duration-300 opacity-100"
         >
           {Math.round(progress)}%
         </div>

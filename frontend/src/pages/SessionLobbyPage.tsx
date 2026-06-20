@@ -22,7 +22,10 @@ export default function SessionLobbyPage() {
   useEffect(() => {
     // Fetch session details to get shareable link
     const loadSession = async () => {
-      if (!sessionCode) return;
+      if (!sessionCode) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         if (DEMO_MODE) {
@@ -61,7 +64,10 @@ export default function SessionLobbyPage() {
   };
 
   const handleLeaveSession = async () => {
-    if (!sessionCode) return;
+    if (!sessionCode) {
+      navigate('/');
+      return;
+    }
 
     try {
       if (DEMO_MODE) {

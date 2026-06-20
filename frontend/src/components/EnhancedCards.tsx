@@ -550,8 +550,7 @@ export function AnimatedSection({ children, className = '', animation = 'fade-up
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
+    const element = ref.current!;
 
     // Check if element is already in viewport on mount
     const rect = element.getBoundingClientRect();

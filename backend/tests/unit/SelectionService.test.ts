@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as SelectionService from '../../src/services/SelectionService.js';
+import * as ParticipantModel from '../../src/models/Participant.js';
 import { redis } from '../../src/redis/client.js';
 
 describe('SelectionService', () => {
@@ -9,6 +10,8 @@ describe('SelectionService', () => {
   afterEach(async () => {
     await redis.del(`session:${sessionCode}:restaurant_ids`);
     await redis.del(`session:${sessionCode}:${participantId}:selections`);
+    await redis.del(`session:${sessionCode}:participants`);
+    await redis.del(`participant:${participantId}`);
   });
 
   describe('submitSelections with Place IDs', () => {
@@ -38,17 +41,21 @@ describe('SelectionService', () => {
       expect(selections).toContain('place2');
     });
 
-    it('should reject empty selections', async () => {
+    it('should allow empty selections', async () => {
       await redis.sadd(`session:${sessionCode}:restaurant_ids`, 'place1');
 
       await expect(
         SelectionService.submitSelections(sessionCode, participantId, [])
-      ).rejects.toThrow('INVALID_RESTAURANTS');
+      ).resolves.not.toThrow();
+
+      const selections = await redis.smembers(`session:${sessionCode}:${participantId}:selections`);
+      expect(selections).toEqual([]);
     });
 
     it('should reject if participant already submitted', async () => {
       await redis.sadd(`session:${sessionCode}:restaurant_ids`, 'place1');
-      await redis.sadd(`session:${sessionCode}:${participantId}:selections`, 'place1');
+      await ParticipantModel.addParticipant(sessionCode, participantId, 'Bob');
+      await ParticipantModel.markParticipantSubmitted(participantId);
 
       await expect(
         SelectionService.submitSelections(sessionCode, participantId, ['place1'])

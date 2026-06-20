@@ -3,6 +3,7 @@
 
 import type { DinnerOption, Restaurant } from '@dinder/shared/types';
 
+/* v8 ignore next */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 interface Location {

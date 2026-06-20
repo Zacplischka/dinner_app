@@ -1,126 +1,127 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { io as ioClient, Socket as ClientSocket } from 'socket.io-client';
+import { io as ioClient, type Socket as ClientSocket } from 'socket.io-client';
 import request from 'supertest';
-import type { Express } from 'express';
+import Redis from 'ioredis';
+import { getTestRedis, cleanupTestData } from '../helpers/testSetup.js';
+import { startSocketServer, stopSocketServer } from '../helpers/socketServer.js';
 
 describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
-  let app: Express;
+  let redis: Redis;
+  let socketUrl: string;
   let testSessionCode: string;
-  const SOCKET_URL = 'http://localhost:3001';
 
   beforeAll(async () => {
-    throw new Error('Server not implemented yet - this test should fail');
+    redis = getTestRedis();
+    socketUrl = await startSocketServer();
   });
 
   beforeEach(async () => {
-    // Create fresh session for each test
-    const response = await request(app)
+    await cleanupTestData(redis);
+
+    const response = await request(socketUrl)
       .post('/api/sessions')
-      .send({ hostName: 'Alice' });
+      .send({ hostName: 'Alice' })
+      .expect(201);
+
     testSessionCode = response.body.sessionCode;
   });
 
   afterAll(async () => {
-    // TODO: Clean up
+    await cleanupTestData(redis);
+    await stopSocketServer();
   });
 
-  it('should allow Bob and Charlie to join via WebSocket', async () => {
-    const bob = ioClient(SOCKET_URL);
-    const charlie = ioClient(SOCKET_URL);
-
-    await new Promise<void>((resolve) => {
-      bob.on('connect', () => {
-        bob.emit('session:join', {
-          sessionCode: testSessionCode,
-          displayName: 'Bob',
-        }, (response: any) => {
-          expect(response.success).toBe(true);
-          expect(response.participantCount).toBe(2);
-          resolve();
-        });
-      });
+  async function joinSession(
+    displayName: string
+  ): Promise<{ socket: ClientSocket; response: any }> {
+    const socket = ioClient(socketUrl, {
+      transports: ['websocket'],
     });
 
-    await new Promise<void>((resolve) => {
-      charlie.on('connect', () => {
-        charlie.emit('session:join', {
-          sessionCode: testSessionCode,
-          displayName: 'Charlie',
-        }, (response: any) => {
-          expect(response.success).toBe(true);
-          expect(response.participantCount).toBe(3);
-          resolve();
-        });
-      });
-    });
-
-    bob.close();
-    charlie.close();
-  });
-
-  it('should broadcast participant:joined to existing participants (FR-022)', (done) => {
-    const bob = ioClient(SOCKET_URL);
-    const charlie = ioClient(SOCKET_URL);
-
-    bob.on('connect', () => {
-      bob.emit('session:join', {
-        sessionCode: testSessionCode,
-        displayName: 'Bob',
-      });
-
-      bob.on('participant:joined', (data: any) => {
-        expect(data.displayName).toBe('Charlie');
-        expect(data.participantCount).toBe(3);
-        bob.close();
-        charlie.close();
-        done();
-      });
-
-      setTimeout(() => {
-        charlie.connect();
-        charlie.on('connect', () => {
-          charlie.emit('session:join', {
+    return await new Promise((resolve, reject) => {
+      socket.on('connect', () => {
+        socket.emit(
+          'session:join',
+          {
             sessionCode: testSessionCode,
-            displayName: 'Charlie',
-          });
-        });
-      }, 100);
+            displayName,
+          },
+          (response: any) => {
+            resolve({ socket, response });
+          }
+        );
+      });
+
+      socket.on('connect_error', reject);
     });
+  }
+
+  it('should allow Alice, Bob, and Charlie to join via WebSocket', async () => {
+    const alice = await joinSession('Alice');
+    const bob = await joinSession('Bob');
+    const charlie = await joinSession('Charlie');
+
+    expect(alice.response).toMatchObject({
+      success: true,
+      displayName: 'Alice',
+      participantCount: 1,
+    });
+    expect(alice.response.participants).toEqual([
+      expect.objectContaining({ displayName: 'Alice', isHost: true }),
+    ]);
+
+    expect(bob.response).toMatchObject({
+      success: true,
+      displayName: 'Bob',
+      participantCount: 2,
+    });
+    expect(charlie.response).toMatchObject({
+      success: true,
+      displayName: 'Charlie',
+      participantCount: 3,
+    });
+
+    await expect(redis.scard(`session:${testSessionCode}:participants`)).resolves.toBe(3);
+
+    alice.socket.close();
+    bob.socket.close();
+    charlie.socket.close();
+  });
+
+  it('should broadcast participant:joined to existing participants (FR-022)', async () => {
+    const alice = await joinSession('Alice');
+
+    const joinedEvent = new Promise<any>((resolve) => {
+      alice.socket.on('participant:joined', resolve);
+    });
+
+    const bob = await joinSession('Bob');
+
+    await expect(joinedEvent).resolves.toMatchObject({
+      participantId: bob.socket.id,
+      displayName: 'Bob',
+      participantCount: 2,
+    });
+
+    alice.socket.close();
+    bob.socket.close();
   });
 
   it('should reject 5th participant with SESSION_FULL error (FR-005)', async () => {
-    const clients = Array.from({ length: 3 }, () => ioClient(SOCKET_URL));
-
-    // Join 3 more participants (Alice + 3 = 4 total)
-    for (let i = 0; i < 3; i++) {
-      await new Promise<void>((resolve) => {
-        clients[i].on('connect', () => {
-          clients[i].emit('session:join', {
-            sessionCode: testSessionCode,
-            displayName: `User${i}`,
-          }, () => resolve());
-        });
-        clients[i].connect();
-      });
+    const participants = [];
+    for (const name of ['Alice', 'Bob', 'Charlie', 'Dana']) {
+      participants.push(await joinSession(name));
     }
 
-    // 5th participant should be rejected
-    const fifthClient = ioClient(SOCKET_URL);
-    await new Promise<void>((resolve) => {
-      fifthClient.on('connect', () => {
-        fifthClient.emit('session:join', {
-          sessionCode: testSessionCode,
-          displayName: 'FifthUser',
-        }, (response: any) => {
-          expect(response.success).toBe(false);
-          expect(response.error).toContain('full');
-          resolve();
-        });
-      });
-      fifthClient.connect();
-    });
+    const fifth = await joinSession('Eve');
 
-    clients.forEach(c => c.close());
-    fifthClient.close();
+    expect(fifth.response).toMatchObject({
+      success: false,
+      error: 'Session is full (maximum 4 participants)',
+    });
+    await expect(redis.scard(`session:${testSessionCode}:participants`)).resolves.toBe(4);
+
+    participants.forEach(({ socket }) => socket.close());
+    fifth.socket.close();
   });
 });

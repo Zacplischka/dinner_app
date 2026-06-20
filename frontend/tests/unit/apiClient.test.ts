@@ -132,6 +132,35 @@ describe('apiClient', () => {
         )
       ).rejects.toThrow('No restaurants found in the specified area');
     });
+
+    it('should use fallback error message when create session response has no message', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'Internal Server Error', code: 'UNKNOWN', message: '' }),
+      });
+
+      await expect(apiClient.createSession('Alice')).rejects.toThrow('Failed to create session');
+    });
+
+    it('should use configured API base URL when provided', async () => {
+      vi.resetModules();
+      vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test/v1');
+      const freshApiClient = await import('../../src/services/apiClient');
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ options: [] }),
+      });
+
+      await freshApiClient.getDinnerOptions();
+
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.example.test/v1/options',
+        expect.objectContaining({ method: 'GET' })
+      );
+      vi.unstubAllEnvs();
+    });
   });
 
   describe('getRestaurants', () => {
@@ -203,6 +232,78 @@ describe('apiClient', () => {
       await expect(apiClient.getRestaurants('ABC123')).rejects.toThrow(
         'No restaurants found for this session'
       );
+    });
+
+    it('should use fallback error message for restaurant failures without a message', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: 'Bad Request', code: 'BAD' }),
+      });
+
+      await expect(apiClient.getRestaurants('ABC123')).rejects.toThrow('Failed to fetch restaurants');
+    });
+  });
+
+  describe('getSession', () => {
+    it('should fetch session details', async () => {
+      const session = {
+        sessionCode: 'ABC123',
+        hostName: 'Alice',
+        participantCount: 2,
+        state: 'waiting',
+        expiresAt: new Date().toISOString(),
+        shareableLink: 'http://localhost:3000/join?code=ABC123',
+      };
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => session,
+      });
+
+      await expect(apiClient.getSession('ABC123')).resolves.toEqual(session);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/sessions/ABC123'),
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+
+    it('should use fallback error message for session lookup failures', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: 'Bad Request', code: 'BAD' }),
+      });
+
+      await expect(apiClient.getSession('ABC123')).rejects.toThrow('Failed to get session');
+    });
+  });
+
+  describe('getDinnerOptions', () => {
+    it('should fetch legacy dinner options', async () => {
+      const options = [{ optionId: 'pizza', displayName: 'Pizza' }];
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ options }),
+      });
+
+      await expect(apiClient.getDinnerOptions()).resolves.toEqual(options);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/options'),
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+
+    it('should throw for failed legacy dinner option requests', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+      });
+
+      await expect(apiClient.getDinnerOptions()).rejects.toThrow('Failed to fetch dinner options');
+    });
+  });
+
+  describe('handleApiError', () => {
+    it('should return Error messages and a generic fallback for unknown values', () => {
+      expect(apiClient.handleApiError(new Error('Readable'))).toBe('Readable');
+      expect(apiClient.handleApiError('bad')).toBe('An unexpected error occurred');
     });
   });
 });

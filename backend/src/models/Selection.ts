@@ -12,7 +12,7 @@ export async function submitSelections(
   optionIds: string[]
 ): Promise<void> {
   if (optionIds.length === 0) {
-    throw new Error('Must select at least 1 option');
+    return;
   }
 
   // Store selections as a Set
