@@ -10,7 +10,9 @@ describe('REST API internal error branches', () => {
   });
 
   it('POST /api/sessions should return INTERNAL_ERROR for unexpected create failures', async () => {
-    vi.spyOn(SessionService, 'createSession').mockRejectedValueOnce(new Error('boom'));
+    const error = new Error('boom');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(SessionService, 'createSession').mockRejectedValueOnce(error);
 
     const response = await request(app)
       .post('/api/sessions')
@@ -22,10 +24,13 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
+    expect(errorSpy).toHaveBeenCalledWith('Error creating session:', error);
   });
 
   it('GET /api/sessions/:sessionCode should return INTERNAL_ERROR for unexpected lookup failures', async () => {
-    vi.spyOn(SessionService, 'getSession').mockRejectedValueOnce(new Error('boom'));
+    const error = new Error('boom');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(SessionService, 'getSession').mockRejectedValueOnce(error);
 
     const response = await request(app).get('/api/sessions/ABC123').expect(500);
 
@@ -34,10 +39,13 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
+    expect(errorSpy).toHaveBeenCalledWith('Error getting session:', error);
   });
 
   it('POST /api/sessions/:sessionCode/join should return INTERNAL_ERROR for unexpected join failures', async () => {
-    vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(new Error('boom'));
+    const error = new Error('boom');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(error);
 
     const response = await request(app)
       .post('/api/sessions/ABC123/join')
@@ -49,10 +57,13 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
+    expect(errorSpy).toHaveBeenCalledWith('Error joining session:', error);
   });
 
   it('GET /api/options/:sessionCode should return INTERNAL_ERROR for unexpected Redis failures', async () => {
-    vi.spyOn(redis, 'exists').mockRejectedValueOnce(new Error('boom'));
+    const error = new Error('boom');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(redis, 'exists').mockRejectedValueOnce(error);
 
     const response = await request(app).get('/api/options/ABC123').expect(500);
 
@@ -61,5 +72,6 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
+    expect(errorSpy).toHaveBeenCalledWith('Error getting restaurants:', error);
   });
 });

@@ -34,6 +34,9 @@ export async function handleSelectionSubmit(
     // Validate payload
     const validation = selectionSubmitPayloadSchema.safeParse(payload);
     if (!validation.success) {
+      console.warn(
+        `Rejected selection:submit for socket ${socket.id}: invalid payload - ${validation.error.errors[0].message}`
+      );
       return callback({
         success: false,
         error: 'Invalid payload: ' + validation.error.errors[0].message,
@@ -45,6 +48,7 @@ export async function handleSelectionSubmit(
     // Check session exists
     const session = await SessionModel.getSession(sessionCode);
     if (!session) {
+      console.warn(`Rejected selection:submit for ${sessionCode}: session not found`);
       return callback({
         success: false,
         error: 'Session not found or has expired',
@@ -57,6 +61,9 @@ export async function handleSelectionSubmit(
       socket.id
     );
     if (!isInSession) {
+      console.warn(
+        `Rejected selection:submit for ${sessionCode}: socket ${socket.id} is not a participant`
+      );
       return callback({
         success: false,
         error: 'You are not a participant in this session',
@@ -67,6 +74,10 @@ export async function handleSelectionSubmit(
     try {
       await SelectionService.submitSelections(sessionCode, socket.id, selections);
     } catch (error) {
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      console.warn(
+        `Rejected selection:submit for ${sessionCode}: ${reason} from socket ${socket.id}`
+      );
       return callback({
         success: false,
         error: error instanceof Error && error.message === 'INVALID_OPTIONS'

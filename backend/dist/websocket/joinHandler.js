@@ -11,6 +11,7 @@ export async function handleSessionJoin(socket, payload, callback) {
     try {
         const validation = sessionJoinPayloadSchema.safeParse(payload);
         if (!validation.success) {
+            console.warn(`Rejected session:join for socket ${socket.id}: invalid payload - ${validation.error.errors[0].message}`);
             return callback({
                 success: false,
                 error: 'Invalid payload: ' + validation.error.errors[0].message,
@@ -19,6 +20,7 @@ export async function handleSessionJoin(socket, payload, callback) {
         const { sessionCode, displayName } = validation.data;
         const session = await SessionModel.getSession(sessionCode);
         if (!session) {
+            console.warn(`Rejected session:join for ${sessionCode}: session not found`);
             return callback({
                 success: false,
                 error: 'Session not found or has expired',
@@ -37,6 +39,7 @@ export async function handleSessionJoin(socket, payload, callback) {
         else {
             const currentCount = await ParticipantModel.countParticipants(sessionCode);
             if (currentCount >= 4) {
+                console.warn(`Rejected session:join for ${sessionCode}: session full before adding ${socket.id}`);
                 return callback({
                     success: false,
                     error: 'Session is full (maximum 4 participants)',
@@ -48,6 +51,7 @@ export async function handleSessionJoin(socket, payload, callback) {
         const newCount = await ParticipantModel.countParticipants(sessionCode);
         if (newCount > 4) {
             await ParticipantModel.removeParticipant(sessionCode, socket.id);
+            console.warn(`Rejected session:join for ${sessionCode}: participant limit exceeded after adding ${socket.id}`);
             return callback({
                 success: false,
                 error: 'Session is full (maximum 4 participants)',

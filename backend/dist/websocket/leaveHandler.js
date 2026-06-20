@@ -8,6 +8,7 @@ export async function handleSessionLeave(socket, _io, payload, callback) {
     try {
         const validation = sessionLeavePayloadSchema.safeParse(payload);
         if (!validation.success) {
+            console.warn(`Rejected session:leave for socket ${socket.id}: invalid payload - ${validation.error.errors[0].message}`);
             return callback({
                 success: false,
                 error: 'Invalid payload: ' + validation.error.errors[0].message,
@@ -16,6 +17,7 @@ export async function handleSessionLeave(socket, _io, payload, callback) {
         const { sessionCode } = validation.data;
         const session = await SessionModel.getSession(sessionCode);
         if (!session) {
+            console.warn(`Rejected session:leave for ${sessionCode}: session not found`);
             return callback({
                 success: false,
                 error: 'Session not found or has expired',
@@ -23,6 +25,7 @@ export async function handleSessionLeave(socket, _io, payload, callback) {
         }
         const participant = await ParticipantModel.getParticipant(socket.id);
         if (!participant) {
+            console.warn(`Rejected session:leave for ${sessionCode}: socket ${socket.id} is not a participant`);
             return callback({
                 success: false,
                 error: 'You are not a participant in this session',

@@ -4,6 +4,7 @@ export async function handleDisconnect(socket, _io, reason) {
         console.log(`Socket ${socket.id} disconnected: ${reason}`);
         const participant = await ParticipantModel.getParticipant(socket.id);
         if (!participant) {
+            console.warn(`Disconnect for socket ${socket.id} had no participant record`);
             return;
         }
         const { sessionCode, displayName } = participant;

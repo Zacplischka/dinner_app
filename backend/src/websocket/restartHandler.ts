@@ -30,6 +30,9 @@ export async function handleSessionRestart(
     // Validate payload
     const validation = sessionRestartPayloadSchema.safeParse(payload);
     if (!validation.success) {
+      console.warn(
+        `Rejected session:restart for socket ${socket.id}: invalid payload - ${validation.error.errors[0].message}`
+      );
       return callback({
         success: false,
         error: 'Invalid payload: ' + validation.error.errors[0].message,
@@ -41,6 +44,7 @@ export async function handleSessionRestart(
     // Check session exists
     const session = await SessionModel.getSession(sessionCode);
     if (!session) {
+      console.warn(`Rejected session:restart for ${sessionCode}: session not found`);
       return callback({
         success: false,
         error: 'Session not found or has expired',
@@ -53,6 +57,9 @@ export async function handleSessionRestart(
       socket.id
     );
     if (!isInSession) {
+      console.warn(
+        `Rejected session:restart for ${sessionCode}: socket ${socket.id} is not a participant`
+      );
       return callback({
         success: false,
         error: 'You are not a participant in this session',
