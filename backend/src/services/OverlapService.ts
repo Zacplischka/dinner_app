@@ -2,6 +2,7 @@
 // Based on: specs/001-dinner-decider-enables/data-model.md
 
 import { redis } from '../redis/client.js';
+import { parseRedisJson } from '../redis/json.js';
 import * as ParticipantModel from '../models/Participant.js';
 import * as SelectionModel from '../models/Selection.js';
 import type { Restaurant } from '@dinder/shared/types';
@@ -51,7 +52,7 @@ export async function calculateOverlap(
   for (const placeId of overlappingPlaceIds) {
     const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
     if (restaurantData) {
-      overlappingOptions.push(JSON.parse(restaurantData));
+      overlappingOptions.push(parseRedisJson<Restaurant>(restaurantData));
     }
   }
 
@@ -78,7 +79,7 @@ export async function calculateOverlap(
   for (const placeId of allPlaceIds) {
     const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
     if (restaurantData) {
-      const restaurant = JSON.parse(restaurantData) as Restaurant;
+      const restaurant = parseRedisJson<Restaurant>(restaurantData);
       restaurantNames[placeId] = restaurant.name;
     }
   }

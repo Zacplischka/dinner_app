@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { asyncHandler } from './asyncHandler.js';
 import { redis } from '../redis/client.js';
+import { parseRedisJson } from '../redis/json.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 const router = Router();
@@ -51,7 +52,7 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     for (const placeId of placeIds) {
       const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
       if (restaurantData) {
-        restaurants.push(JSON.parse(restaurantData));
+        restaurants.push(parseRedisJson<Restaurant>(restaurantData));
       }
     }
 
