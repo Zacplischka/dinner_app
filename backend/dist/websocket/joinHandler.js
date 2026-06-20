@@ -11,14 +11,25 @@ export async function handleSessionJoin(socket, payload, callback) {
     try {
         const validation = sessionJoinPayloadSchema.safeParse(payload);
         if (!validation.success) {
+            const reason = validation.error.errors[0].message;
+            console.warn('Rejected session:join', {
+                socketId: socket.id,
+                sessionCode: payload.sessionCode,
+                reason,
+            });
             return callback({
                 success: false,
-                error: 'Invalid payload: ' + validation.error.errors[0].message,
+                error: 'Invalid payload: ' + reason,
             });
         }
         const { sessionCode, displayName } = validation.data;
         const session = await SessionModel.getSession(sessionCode);
         if (!session) {
+            console.warn('Rejected session:join', {
+                socketId: socket.id,
+                sessionCode,
+                reason: 'session_not_found',
+            });
             return callback({
                 success: false,
                 error: 'Session not found or has expired',
@@ -37,6 +48,12 @@ export async function handleSessionJoin(socket, payload, callback) {
         else {
             const currentCount = await ParticipantModel.countParticipants(sessionCode);
             if (currentCount >= 4) {
+                console.warn('Rejected session:join', {
+                    socketId: socket.id,
+                    sessionCode,
+                    reason: 'session_full',
+                    participantCount: currentCount,
+                });
                 return callback({
                     success: false,
                     error: 'Session is full (maximum 4 participants)',
@@ -48,6 +65,12 @@ export async function handleSessionJoin(socket, payload, callback) {
         const newCount = await ParticipantModel.countParticipants(sessionCode);
         if (newCount > 4) {
             await ParticipantModel.removeParticipant(sessionCode, socket.id);
+            console.warn('Rejected session:join', {
+                socketId: socket.id,
+                sessionCode,
+                reason: 'session_full_after_add',
+                participantCount: newCount,
+            });
             return callback({
                 success: false,
                 error: 'Session is full (maximum 4 participants)',

@@ -27,9 +27,15 @@ export async function handleSessionLeave(
     // Validate payload
     const validation = sessionLeavePayloadSchema.safeParse(payload);
     if (!validation.success) {
+      const reason = validation.error.errors[0].message;
+      console.warn('Rejected session:leave', {
+        socketId: socket.id,
+        sessionCode: (payload as Partial<SessionLeavePayload>).sessionCode,
+        reason,
+      });
       return callback({
         success: false,
-        error: 'Invalid payload: ' + validation.error.errors[0].message,
+        error: 'Invalid payload: ' + reason,
       });
     }
 
@@ -38,6 +44,11 @@ export async function handleSessionLeave(
     // Check session exists
     const session = await SessionModel.getSession(sessionCode);
     if (!session) {
+      console.warn('Rejected session:leave', {
+        socketId: socket.id,
+        sessionCode,
+        reason: 'session_not_found',
+      });
       return callback({
         success: false,
         error: 'Session not found or has expired',
@@ -47,6 +58,11 @@ export async function handleSessionLeave(
     // Get participant info before removal
     const participant = await ParticipantModel.getParticipant(socket.id);
     if (!participant) {
+      console.warn('Rejected session:leave', {
+        socketId: socket.id,
+        sessionCode,
+        reason: 'participant_not_found',
+      });
       return callback({
         success: false,
         error: 'You are not a participant in this session',

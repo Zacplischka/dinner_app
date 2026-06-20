@@ -116,11 +116,13 @@ describe('RestaurantSearchService', () => {
 
   describe('searchNearbyRestaurants', () => {
     let fetchMock: any;
+    let logSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
       // Mock global fetch
       fetchMock = vi.fn();
       global.fetch = fetchMock;
+      logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     });
 
     afterEach(() => {
@@ -203,6 +205,10 @@ describe('RestaurantSearchService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Restaurant 1');
+      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] Page 1: fetched 1 places (total: 1)');
+      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] API returned 1 places total');
+      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] After isRestaurantType filter: 1 restaurants');
+      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] After deduplication: 1 restaurants');
     });
 
     it('should sort results by rating descending', async () => {
@@ -234,6 +240,7 @@ describe('RestaurantSearchService', () => {
     });
 
     it('should handle API errors gracefully', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       fetchMock.mockResolvedValueOnce({
         ok: false,
         status: 400,
@@ -251,6 +258,8 @@ describe('RestaurantSearchService', () => {
           radiusMeters: 8046.72,
         })
       ).rejects.toThrow('Places API error: Bad Request');
+      expect(errorSpy).toHaveBeenCalledWith('Places API Error:', 400, 'Bad Request');
+      expect(errorSpy).toHaveBeenCalledWith('Error body:', 'Error details');
     });
 
     it('should retry on 429 rate limiting', async () => {

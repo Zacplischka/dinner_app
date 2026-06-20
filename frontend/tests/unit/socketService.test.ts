@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
@@ -88,8 +88,15 @@ describe('socketService', () => {
     useAuthStore.setState({ session: { access_token: 'token' } as any });
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should initialize with auth, update connection state, and handle lifecycle events', () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const socket = setupSocket();
+    const connectionError = new Error('down');
 
     socketService.initializeSocket();
     socket.trigger('connect');
@@ -102,67 +109,101 @@ describe('socketService', () => {
     );
     expect(useSessionStore.getState().isConnected).toBe(true);
     expect(useSessionStore.getState().currentUserId).toBe('socket-1');
+    expect(logSpy).toHaveBeenCalledWith('Socket connected:', 'socket-1');
 
     socket.trigger('disconnect', 'transport close');
     expect(useSessionStore.getState().isConnected).toBe(false);
     expect(socketMocks.toast.warning).toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith('Socket disconnected:', 'transport close');
 
     socket.trigger('disconnect', 'io client disconnect');
-    socket.trigger('connect_error', new Error('down'));
+    expect(logSpy).toHaveBeenCalledWith('Socket disconnected:', 'io client disconnect');
+    socket.trigger('connect_error', connectionError);
     expect(useSessionStore.getState().isConnected).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith('Socket connection error:', connectionError);
 
     socket.trigger('connect');
     expect(socketMocks.toast.success).toHaveBeenCalledWith('Reconnected to server');
 
     socketService.initializeSocket();
     expect(socketMocks.io).toHaveBeenCalledTimes(1);
+    expect(logSpy).toHaveBeenCalledWith('Socket already connected');
   });
 
   it('should handle server participant and session events', () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const socket = setupSocket();
     socketService.initializeSocket();
 
-    socket.trigger('participant:joined', {
+    const joinedEvent = {
       participantId: 'participant-2',
       displayName: 'Bob',
-    });
+    };
+    socket.trigger('participant:joined', joinedEvent);
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Bob');
+    expect(logSpy).toHaveBeenCalledWith('Participant joined:', joinedEvent);
 
-    socket.trigger('participant:joined', {
+    const rejoinedEvent = {
       participantId: 'participant-3',
       displayName: 'Bob',
-    });
+    };
+    socket.trigger('participant:joined', rejoinedEvent);
     expect(useSessionStore.getState().participants.find((p) => p.displayName === 'Bob')?.participantId).toBe('participant-3');
+    expect(logSpy).toHaveBeenCalledWith('Participant joined:', rejoinedEvent);
+    expect(logSpy).toHaveBeenCalledWith('Updated existing participant socket ID:', 'Bob');
 
-    socket.trigger('participant:left', { participantId: 'participant-3' });
+    const leftEvent = { participantId: 'participant-3' };
+    socket.trigger('participant:left', leftEvent);
     expect(useSessionStore.getState().participants.find((p) => p.participantId === 'participant-3')).toBeUndefined();
+    expect(logSpy).toHaveBeenCalledWith('Participant left:', leftEvent);
 
-    socket.trigger('participant:left', { participantId: 'missing' });
-    socket.trigger('participant:disconnected', { participantId: 'participant-1', displayName: 'Fallback' });
-    socket.trigger('participant:disconnected', { participantId: 'missing', displayName: 'Cara' });
-    socket.trigger('participant:submitted', { participantId: 'participant-1' });
-    socket.trigger('participant:submitted', { participantId: 'missing' });
+    const missingLeftEvent = { participantId: 'missing' };
+    const disconnectedEvent = { participantId: 'participant-1', displayName: 'Fallback' };
+    const missingDisconnectedEvent = { participantId: 'missing', displayName: 'Cara' };
+    const submittedEvent = { participantId: 'participant-1' };
+    const missingSubmittedEvent = { participantId: 'missing' };
+    socket.trigger('participant:left', missingLeftEvent);
+    socket.trigger('participant:disconnected', disconnectedEvent);
+    socket.trigger('participant:disconnected', missingDisconnectedEvent);
+    socket.trigger('participant:submitted', submittedEvent);
+    socket.trigger('participant:submitted', missingSubmittedEvent);
     expect(useSessionStore.getState().participants[0].hasSubmitted).toBe(true);
     expect(socketMocks.toast.warning).toHaveBeenCalledWith('Alice lost connection', { duration: 3000 });
+    expect(logSpy).toHaveBeenCalledWith('Participant left:', missingLeftEvent);
+    expect(logSpy).toHaveBeenCalledWith('Participant disconnected:', disconnectedEvent);
+    expect(logSpy).toHaveBeenCalledWith('Participant disconnected:', missingDisconnectedEvent);
+    expect(logSpy).toHaveBeenCalledWith('Participant submitted:', submittedEvent);
+    expect(logSpy).toHaveBeenCalledWith('Participant submitted:', missingSubmittedEvent);
 
-    socket.trigger('session:results', {
+    const resultsEvent = {
       sessionCode: 'ABC123',
       hasOverlap: true,
       overlappingOptions: [{ optionId: 'pizza', displayName: 'Pizza' }],
       allSelections: { Alice: ['pizza'] },
       restaurantNames: { pizza: 'Pizza' },
-    });
+    };
+    socket.trigger('session:results', resultsEvent);
     expect(useSessionStore.getState().sessionStatus).toBe('complete');
+    expect(logSpy).toHaveBeenCalledWith('Session results:', resultsEvent);
 
-    socket.trigger('session:restarted', { sessionCode: 'ABC123' });
+    const restartedEvent = { sessionCode: 'ABC123' };
+    socket.trigger('session:restarted', restartedEvent);
     expect(useSessionStore.getState().sessionStatus).toBe('selecting');
+    expect(logSpy).toHaveBeenCalledWith('Session restarted:', restartedEvent);
 
-    socket.trigger('session:expired', { sessionCode: 'ABC123' });
+    const expiredEvent = { sessionCode: 'ABC123' };
+    socket.trigger('session:expired', expiredEvent);
     expect(useSessionStore.getState().sessionStatus).toBe('expired');
+    expect(logSpy).toHaveBeenCalledWith('Session expired:', expiredEvent);
 
-    socket.trigger('error', { message: 'bad' });
-    socket.trigger('error', {});
+    const socketError = { message: 'bad' };
+    const emptySocketError = {};
+    socket.trigger('error', socketError);
+    socket.trigger('error', emptySocketError);
     expect(socketMocks.toast.error).toHaveBeenCalledWith('bad');
+    expect(errorSpy).toHaveBeenCalledWith('Socket error:', socketError);
+    expect(errorSpy).toHaveBeenCalledWith('Socket error:', emptySocketError);
   });
 
   it('should resolve and reject ack-based actions', async () => {
@@ -224,6 +265,8 @@ describe('socketService', () => {
   });
 
   it('should wait for connection, connection errors, and timeouts', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.useFakeTimers();
     try {
       const socket = setupSocket(false);
@@ -249,6 +292,7 @@ describe('socketService', () => {
   });
 
   it('should use configured backend URL and omit auth when no token is available', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.resetModules();
     vi.stubEnv('VITE_BACKEND_URL', 'https://socket.example.test');
     const freshAuthStore = await import('../../src/stores/authStore');

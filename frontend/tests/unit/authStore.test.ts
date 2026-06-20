@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -42,6 +42,10 @@ describe('authStore', () => {
     });
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should initialize from the current Supabase session and auth change events', async () => {
     let authStateCallback: ((_event: string, session: typeof session | null) => void) | undefined;
     authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
@@ -69,12 +73,15 @@ describe('authStore', () => {
   });
 
   it('should handle initialization errors', async () => {
-    authMocks.getSession.mockRejectedValueOnce(new Error('down'));
+    const error = new Error('down');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    authMocks.getSession.mockRejectedValueOnce(error);
 
     await useAuthStore.getState().initialize();
 
     expect(useAuthStore.getState().isLoading).toBe(false);
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith('Auth initialization error:', error);
   });
 
   it('should call Google sign-in and surface sign-in errors', async () => {
@@ -83,10 +90,13 @@ describe('authStore', () => {
     await expect(useAuthStore.getState().signInWithGoogle()).resolves.toBeUndefined();
     expect(useAuthStore.getState().isLoading).toBe(true);
 
-    authMocks.signInWithGoogle.mockRejectedValueOnce(new Error('denied'));
+    const error = new Error('denied');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    authMocks.signInWithGoogle.mockRejectedValueOnce(error);
 
     await expect(useAuthStore.getState().signInWithGoogle()).rejects.toThrow('denied');
     expect(useAuthStore.getState().isLoading).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith('Sign in error:', error);
   });
 
   it('should sign out and surface sign-out errors', async () => {
@@ -102,10 +112,13 @@ describe('authStore', () => {
       isLoading: false,
     });
 
-    authMocks.signOut.mockRejectedValueOnce(new Error('logout failed'));
+    const error = new Error('logout failed');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    authMocks.signOut.mockRejectedValueOnce(error);
 
     await expect(useAuthStore.getState().signOut()).rejects.toThrow('logout failed');
     expect(useAuthStore.getState().isLoading).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith('Sign out error:', error);
   });
 
   it('should set and clear sessions directly', () => {

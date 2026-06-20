@@ -26,6 +26,10 @@ export async function handleDisconnect(
 
     if (!participant) {
       // Participant not found or not in any session
+      console.warn('Disconnected socket had no participant record', {
+        socketId: socket.id,
+        reason,
+      });
       return;
     }
 

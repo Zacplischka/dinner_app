@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
 
@@ -50,6 +50,10 @@ describe('friendsStore', () => {
       isAuthenticated: true,
       isLoading: false,
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should fetch profile, friends, requests, invites, and search results', async () => {
@@ -135,6 +139,7 @@ describe('friendsStore', () => {
   });
 
   it('should store errors and return failure values when requests fail', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     global.fetch = vi.fn().mockResolvedValue(response({ message: 'failed' }, false, 500));
 
     await useFriendsStore.getState().fetchCurrentProfile();
@@ -151,9 +156,22 @@ describe('friendsStore', () => {
     await expect(useFriendsStore.getState().declineSessionInvite('invite-1')).resolves.toBe(false);
 
     expect(useFriendsStore.getState().error).toBe('failed');
+    expect(errorSpy).toHaveBeenCalledWith('Error fetching profile:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error fetching friends:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error fetching friend requests:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error fetching session invites:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error searching users:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error sending friend request:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error removing friend:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error accepting friend request:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error declining friend request:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error inviting friends to session:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error accepting session invite:', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('Error declining session invite:', expect.any(Error));
   });
 
   it('should use response and catch fallback messages', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 418,
