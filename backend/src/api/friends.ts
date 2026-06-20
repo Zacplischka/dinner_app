@@ -2,6 +2,7 @@
 // Handles user profiles, friendships, and session invites
 
 import { Router, Response } from 'express';
+import { getAuthProfileDefaults } from './authMetadata.js';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { supabase, Profile } from '../services/supabase.js';
@@ -20,6 +21,10 @@ import type {
 
 const router = Router();
 
+const profileSelect = 'id, display_name, avatar_url, email';
+const friendshipSelect = 'id, user_id, friend_id, status, created_at';
+const sessionInviteSelect = 'id, session_code, inviter_id, status, created_at';
+
 // All routes require authentication
 router.use(requireAuth);
 
@@ -37,7 +42,7 @@ router.get('/users/me', asyncHandler(async (req: AuthenticatedRequest, res: Resp
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(profileSelect)
       .eq('id', userId)
       .single();
 
@@ -46,19 +51,20 @@ router.get('/users/me', asyncHandler(async (req: AuthenticatedRequest, res: Resp
       if (error.code === 'PGRST116') {
         // Fetch full user data from Supabase Auth to get Google profile info
         const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-        const metadata = authUser?.user?.user_metadata;
+        const metadata: unknown = authUser?.user?.user_metadata;
+        const profileDefaults = getAuthProfileDefaults(metadata, req.user!.email);
 
         const newProfile = {
           id: userId,
           email: req.user!.email || null,
-          display_name: metadata?.full_name || metadata?.name || req.user!.email?.split('@')[0] || 'User',
-          avatar_url: metadata?.avatar_url || metadata?.picture || null,
+          display_name: profileDefaults.displayName,
+          avatar_url: profileDefaults.avatarUrl,
         };
 
         const { data: created, error: createError } = await supabase
           .from('profiles')
           .insert(newProfile)
-          .select()
+          .select(profileSelect)
           .single();
 
         if (createError) {
@@ -108,7 +114,7 @@ router.get('/users/search', asyncHandler(async (req: AuthenticatedRequest, res: 
     // Exact email match only (privacy protection)
     const { data: users, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(profileSelect)
       .eq('email', email.toLowerCase())
       .neq('id', userId) // Don't return the current user
       .limit(10);
@@ -151,13 +157,7 @@ router.get('/friends', asyncHandler(async (req: AuthenticatedRequest, res: Respo
     // and status is 'accepted'
     const { data: friendships, error } = await supabase
       .from('friendships')
-      .select(`
-        id,
-        user_id,
-        friend_id,
-        status,
-        created_at
-      `)
+      .select(friendshipSelect)
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .eq('status', 'accepted');
 
@@ -181,7 +181,7 @@ router.get('/friends', asyncHandler(async (req: AuthenticatedRequest, res: Respo
     // Fetch profiles for all friends
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*')
+      .select(profileSelect)
       .in('id', friendIds);
 
     if (profilesError) {
@@ -253,7 +253,7 @@ router.get('/friends/requests', asyncHandler(async (req: AuthenticatedRequest, r
     const requesterIds = requests.map((r) => r.user_id);
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*')
+      .select(profileSelect)
       .in('id', requesterIds);
 
     if (profilesError) {
@@ -375,7 +375,7 @@ router.post('/friends/request', asyncHandler(async (req: AuthenticatedRequest, r
         friend_id: targetUser.id,
         status: 'pending',
       })
-      .select()
+      .select('id')
       .single();
 
     if (createError) {
@@ -412,7 +412,7 @@ router.post('/friends/:requestId/accept', asyncHandler(async (req: Authenticated
     // Find the pending request where the current user is the recipient
     const { data: request, error: findError } = await supabase
       .from('friendships')
-      .select('*')
+      .select('id')
       .eq('id', requestId)
       .eq('friend_id', userId)
       .eq('status', 'pending')
@@ -601,9 +601,7 @@ router.post('/sessions/:code/invite', asyncHandler(async (req: AuthenticatedRequ
       for (const invite of invites) {
         await supabase
           .from('session_invites')
-          .insert(invite)
-          .select()
-          .maybeSingle();
+          .insert(invite);
       }
     }
 
@@ -632,7 +630,7 @@ router.get('/invites', asyncHandler(async (req: AuthenticatedRequest, res: Respo
     // Get pending invites where the current user is the invitee
     const { data: invites, error } = await supabase
       .from('session_invites')
-      .select('*')
+      .select(sessionInviteSelect)
       .eq('invitee_id', userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -653,7 +651,7 @@ router.get('/invites', asyncHandler(async (req: AuthenticatedRequest, res: Respo
     const inviterIds = [...new Set(invites.map((i) => i.inviter_id))];
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*')
+      .select(profileSelect)
       .in('id', inviterIds);
 
     if (profilesError) {
@@ -705,7 +703,7 @@ router.post('/invites/:inviteId/accept', asyncHandler(async (req: AuthenticatedR
       .eq('id', inviteId)
       .eq('invitee_id', userId)
       .eq('status', 'pending')
-      .select()
+      .select('session_code')
       .single();
 
     if (updateError || !invite) {
