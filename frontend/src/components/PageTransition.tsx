@@ -25,7 +25,7 @@ export default function PageTransition({ children, variant = 'fade' }: PageTrans
     }, 150); // Match exit animation duration
 
     return () => clearTimeout(timeout);
-  }, [location.pathname]); // Trigger on route change
+  }, [children, location.pathname]); // Trigger on route/content change
 
   // Initial mount - show immediately
   useEffect(() => {

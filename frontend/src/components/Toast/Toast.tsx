@@ -1,7 +1,7 @@
 // Toast Component
 // Individual toast notification with auto-dismiss and swipe-to-dismiss
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import type { Toast as ToastType, ToastType as ToastVariant } from '../../hooks/useToast';
 
 interface ToastProps {
@@ -64,6 +64,14 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
   const remainingTimeRef = useRef(toast.duration);
   const startTimeRef = useRef(Date.now());
 
+  const handleDismiss = useCallback(() => {
+    setIsExiting(true);
+    // Wait for exit animation before removing
+    setTimeout(() => {
+      onDismiss(toast.id);
+    }, 200);
+  }, [onDismiss, toast.id]);
+
   // Handle auto-dismiss with pause/resume capability
   useEffect(() => {
     const startTimer = () => {
@@ -92,15 +100,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [isPaused, toast.duration]);
-
-  const handleDismiss = () => {
-    setIsExiting(true);
-    // Wait for exit animation before removing
-    setTimeout(() => {
-      onDismiss(toast.id);
-    }, 200);
-  };
+  }, [handleDismiss, isPaused, toast.duration]);
 
   const colors = colorClasses[toast.type];
 
