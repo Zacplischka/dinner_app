@@ -94,7 +94,7 @@ export interface ParticipantDisconnectedEvent {
 export interface ErrorEvent {
     code: string;
     message: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
 }
 export interface ClientToServerEvents {
     'session:join': (payload: SessionJoinPayload, callback: (response: SessionJoinResponse) => void) => void;

@@ -47,6 +47,6 @@ export interface ErrorResponse {
     error: string;
     code: string;
     message: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
 }
 //# sourceMappingURL=api.d.ts.map

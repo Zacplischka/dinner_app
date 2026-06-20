@@ -120,7 +120,7 @@ export interface ParticipantDisconnectedEvent {
 export interface ErrorEvent {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // ============= Socket.IO Typed Interfaces =============
