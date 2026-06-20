@@ -36,6 +36,7 @@ export function requireAuth(req, res, next) {
     }
     const token = authHeader.substring(7);
     if (!config.supabase.jwtSecret) {
+        console.warn('SUPABASE_JWT_SECRET not configured - rejecting authenticated request');
         res.status(500).json({
             error: 'server_error',
             code: 'AUTH_NOT_CONFIGURED',
@@ -54,6 +55,7 @@ export function requireAuth(req, res, next) {
     }
     catch (error) {
         if (error instanceof jwt.TokenExpiredError) {
+            console.warn('Expired JWT token:', error.message);
             res.status(401).json({
                 error: 'unauthorized',
                 code: 'TOKEN_EXPIRED',
@@ -61,6 +63,7 @@ export function requireAuth(req, res, next) {
             });
             return;
         }
+        console.warn('Invalid JWT token:', error instanceof Error ? error.message : 'Unknown error');
         res.status(401).json({
             error: 'unauthorized',
             code: 'INVALID_TOKEN',

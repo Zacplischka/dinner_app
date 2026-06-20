@@ -17,7 +17,7 @@ export class JoinSessionPage extends BasePage {
   readonly nameInput: Locator;
   readonly nameCharacterCount: Locator;
   readonly joinButton: Locator;
-  readonly cancelButton: Locator;
+  readonly backButton: Locator;
   readonly errorMessage: Locator;
 
   constructor(page: Page) {
@@ -28,7 +28,7 @@ export class JoinSessionPage extends BasePage {
     this.nameInput = page.getByLabel(/Your Name/i);
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
     this.joinButton = page.getByRole('button', { name: /Join Session/i });
-    this.cancelButton = page.getByRole('button', { name: /Cancel/i });
+    this.backButton = page.getByRole('button', { name: /Back/i });
     this.errorMessage = page.locator('[class*="error"]');
   }
 
@@ -79,7 +79,7 @@ export class JoinSessionPage extends BasePage {
    * Cancel and return home
    */
   async cancel(): Promise<void> {
-    await this.cancelButton.click();
+    await this.backButton.click();
     await this.page.waitForURL('/');
   }
 
@@ -106,6 +106,6 @@ export class JoinSessionPage extends BasePage {
     await expect(this.sessionCodeInput).toBeVisible();
     await expect(this.nameInput).toBeVisible();
     await expect(this.joinButton).toBeVisible();
-    await expect(this.cancelButton).toBeVisible();
+    await expect(this.backButton).toBeVisible();
   }
 }

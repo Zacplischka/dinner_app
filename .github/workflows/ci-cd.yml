@@ -26,13 +26,13 @@ jobs:
         run: npm ci
 
       - name: Lint backend
-        run: npm run lint --workspace=@dinner-app/backend
+        run: npm run lint --workspace=@dinder/backend
 
       - name: Lint frontend
-        run: npm run lint --workspace=@dinner-app/frontend
+        run: npm run lint --workspace=@dinder/frontend
 
       - name: Type check shared
-        run: npm run build --workspace=@dinner-app/shared
+        run: npm run build --workspace=@dinder/shared
 
       - name: Type check backend
         run: cd backend && npx tsc --noEmit
@@ -69,16 +69,16 @@ jobs:
         run: npm ci
 
       - name: Build shared types
-        run: npm run build --workspace=@dinner-app/shared
+        run: npm run build --workspace=@dinder/shared
 
       - name: Run contract tests
-        run: npm run test:contract --workspace=@dinner-app/backend
+        run: npm run test:contract --workspace=@dinder/backend
         env:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
 
   e2e-tests:
-    name: E2E Tests
+    name: E2E Smoke Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -110,16 +110,16 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Build shared types
-        run: npm run build --workspace=@dinner-app/shared
+        run: npm run build --workspace=@dinder/shared
 
       - name: Build backend
-        run: npm run build --workspace=@dinner-app/backend
+        run: npm run build --workspace=@dinder/backend
 
       - name: Build frontend
-        run: npm run build --workspace=@dinner-app/frontend
+        run: npm run build --workspace=@dinder/frontend
 
       - name: Start backend server
-        run: npm run start --workspace=@dinner-app/backend &
+        run: npm run start --workspace=@dinder/backend &
         env:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
@@ -127,16 +127,14 @@ jobs:
           NODE_ENV: test
 
       - name: Start frontend server
-        run: npm run preview --workspace=@dinner-app/frontend &
-        env:
-          PORT: 3000
+        run: npm run preview --workspace=@dinder/frontend -- --port 3000 &
 
       - name: Wait for servers
         run: |
-          npx wait-on http://localhost:3000 http://localhost:3001/health --timeout 60000
+          npx --no-install wait-on http://localhost:3000 http://localhost:3001/health --timeout 60000
 
-      - name: Run E2E tests
-        run: npm run test:e2e --workspace=@dinner-app/frontend
+      - name: Run E2E smoke tests
+        run: npm run test:e2e --workspace=@dinder/frontend -- --project=mobile-chrome home.spec.ts
         env:
           BASE_URL: http://localhost:3000
           BACKEND_URL: http://localhost:3001

@@ -11,16 +11,25 @@ export async function handleSessionRestart(socket, io, payload, callback) {
     try {
         const validation = sessionRestartPayloadSchema.safeParse(payload);
         if (!validation.success) {
-            console.warn(`Rejected session:restart for socket ${socket.id}: invalid payload - ${validation.error.errors[0].message}`);
+            const reason = validation.error.errors[0].message;
+            console.warn('Rejected session:restart', {
+                socketId: socket.id,
+                sessionCode: payload.sessionCode,
+                reason,
+            });
             return callback({
                 success: false,
-                error: 'Invalid payload: ' + validation.error.errors[0].message,
+                error: 'Invalid payload: ' + reason,
             });
         }
         const { sessionCode } = validation.data;
         const session = await SessionModel.getSession(sessionCode);
         if (!session) {
-            console.warn(`Rejected session:restart for ${sessionCode}: session not found`);
+            console.warn('Rejected session:restart', {
+                socketId: socket.id,
+                sessionCode,
+                reason: 'session_not_found',
+            });
             return callback({
                 success: false,
                 error: 'Session not found or has expired',
@@ -28,7 +37,11 @@ export async function handleSessionRestart(socket, io, payload, callback) {
         }
         const isInSession = await ParticipantModel.isParticipantInSession(sessionCode, socket.id);
         if (!isInSession) {
-            console.warn(`Rejected session:restart for ${sessionCode}: socket ${socket.id} is not a participant`);
+            console.warn('Rejected session:restart', {
+                socketId: socket.id,
+                sessionCode,
+                reason: 'participant_not_in_session',
+            });
             return callback({
                 success: false,
                 error: 'You are not a participant in this session',

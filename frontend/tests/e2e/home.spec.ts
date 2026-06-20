@@ -69,9 +69,10 @@ test.describe('Create Session Page', () => {
     await createPage.verifySubmitButtonState(false);
   });
 
-  test('should enable submit button when name is filled', async ({ createPage }) => {
+  test('should enable submit button when name and location are set', async ({ createPage }) => {
     await createPage.goto();
     await createPage.enterName('John');
+    await createPage.setCurrentLocation();
     await createPage.verifySubmitButtonState(true);
   });
 

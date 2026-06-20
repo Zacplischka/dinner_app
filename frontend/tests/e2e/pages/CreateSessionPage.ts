@@ -16,7 +16,7 @@ export class CreateSessionPage extends BasePage {
   readonly nameInput: Locator;
   readonly nameCharacterCount: Locator;
   readonly createButton: Locator;
-  readonly cancelButton: Locator;
+  readonly backButton: Locator;
 
   // Location elements (if available)
   readonly locationInput: Locator;
@@ -29,10 +29,10 @@ export class CreateSessionPage extends BasePage {
     this.nameInput = page.getByLabel(/Your Name/i);
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
     this.createButton = page.getByRole('button', { name: /Create Session/i });
-    this.cancelButton = page.getByRole('button', { name: /Cancel/i });
+    this.backButton = page.getByRole('button', { name: /Back/i });
 
     this.locationInput = page.getByLabel(/Location/i);
-    this.useMyLocationButton = page.getByRole('button', { name: /Use my location/i });
+    this.useMyLocationButton = page.getByRole('button', { name: /Use My Current Location/i });
   }
 
   async goto(): Promise<void> {
@@ -53,6 +53,7 @@ export class CreateSessionPage extends BasePage {
    */
   async createSession(name: string): Promise<string> {
     await this.enterName(name);
+    await this.setCurrentLocation();
     await this.createButton.click();
 
     // Wait for navigation to session lobby
@@ -68,8 +69,21 @@ export class CreateSessionPage extends BasePage {
    * Click cancel and return to home
    */
   async cancel(): Promise<void> {
-    await this.cancelButton.click();
+    await this.backButton.click();
     await this.page.waitForURL('/');
+  }
+
+  /**
+   * Grant browser geolocation and set the current location.
+   */
+  async setCurrentLocation(): Promise<void> {
+    await this.page.context().grantPermissions(['geolocation']);
+    await this.page.context().setGeolocation({
+      latitude: 37.7749,
+      longitude: -122.4194,
+    });
+    await this.useMyLocationButton.click();
+    await expect(this.page.getByText(/Location set/i)).toBeVisible();
   }
 
   /**
@@ -85,8 +99,9 @@ export class CreateSessionPage extends BasePage {
   async verifyPageElements(): Promise<void> {
     await expect(this.heading).toBeVisible();
     await expect(this.nameInput).toBeVisible();
+    await expect(this.useMyLocationButton).toBeVisible();
     await expect(this.createButton).toBeVisible();
-    await expect(this.cancelButton).toBeVisible();
+    await expect(this.backButton).toBeVisible();
   }
 
   /**

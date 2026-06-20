@@ -20,7 +20,7 @@ import {
  * multiple users must interact in real-time via WebSocket.
  */
 
-type Participant = {
+export type Participant = {
   context: BrowserContext;
   page: Page;
   name: string;
@@ -156,5 +156,3 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
     await use(runSequential);
   },
 });
-
-export { Participant };

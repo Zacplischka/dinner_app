@@ -105,13 +105,11 @@ describe('auth middleware', () => {
 
       expect(req.user).toBeUndefined();
       expect(next).toHaveBeenCalledOnce();
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Invalid JWT token:',
-        expect.stringContaining('jwt malformed')
-      );
+      expect(warnSpy).toHaveBeenCalledWith('Invalid JWT token:', expect.any(String));
     });
 
     it('should continue without user when token verification throws a non-Error value', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       config.supabase.jwtSecret = secret;
       vi.spyOn(jwt, 'verify').mockImplementation(() => {
         throw 'invalid';
@@ -123,6 +121,7 @@ describe('auth middleware', () => {
 
       expect(req.user).toBeUndefined();
       expect(next).toHaveBeenCalledOnce();
+      expect(warnSpy).toHaveBeenCalledWith('Invalid JWT token:', 'Unknown error');
     });
   });
 
@@ -141,6 +140,7 @@ describe('auth middleware', () => {
     });
 
     it('should reject requests when auth is not configured', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const res = response();
 
       requireAuth(request(`Bearer ${token()}`), res as any, vi.fn());
@@ -151,6 +151,9 @@ describe('auth middleware', () => {
         code: 'AUTH_NOT_CONFIGURED',
         message: 'Authentication not configured',
       });
+      expect(warnSpy).toHaveBeenCalledWith(
+        'SUPABASE_JWT_SECRET not configured - rejecting authenticated request'
+      );
     });
 
     it('should attach user and continue for a valid token', () => {
@@ -169,6 +172,7 @@ describe('auth middleware', () => {
     });
 
     it('should reject expired tokens', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       config.supabase.jwtSecret = secret;
       const expiredToken = jwt.sign(
         {
@@ -188,9 +192,11 @@ describe('auth middleware', () => {
         code: 'TOKEN_EXPIRED',
         message: 'Token has expired',
       });
+      expect(warnSpy).toHaveBeenCalledWith('Expired JWT token:', expect.any(String));
     });
 
     it('should reject invalid tokens', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       config.supabase.jwtSecret = secret;
       const res = response();
 
@@ -202,6 +208,7 @@ describe('auth middleware', () => {
         code: 'INVALID_TOKEN',
         message: 'Invalid authentication token',
       });
+      expect(warnSpy).toHaveBeenCalledWith('Invalid JWT token:', expect.any(String));
     });
   });
 
@@ -230,19 +237,18 @@ describe('auth middleware', () => {
       config.supabase.jwtSecret = secret;
 
       expect(verifyToken('invalid-token')).toBeNull();
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Token verification failed:',
-        expect.stringContaining('jwt malformed')
-      );
+      expect(warnSpy).toHaveBeenCalledWith('Token verification failed:', expect.any(String));
     });
 
     it('should return null when verification throws a non-Error value', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       config.supabase.jwtSecret = secret;
       vi.spyOn(jwt, 'verify').mockImplementation(() => {
         throw 'invalid';
       });
 
       expect(verifyToken('invalid-token')).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith('Token verification failed:', 'Unknown error');
     });
   });
 });

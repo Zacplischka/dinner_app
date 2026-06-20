@@ -30,12 +30,15 @@ export async function handleSessionJoin(
     // Validate payload
     const validation = sessionJoinPayloadSchema.safeParse(payload);
     if (!validation.success) {
-      console.warn(
-        `Rejected session:join for socket ${socket.id}: invalid payload - ${validation.error.errors[0].message}`
-      );
+      const reason = validation.error.errors[0].message;
+      console.warn('Rejected session:join', {
+        socketId: socket.id,
+        sessionCode: (payload as Partial<SessionJoinPayload>).sessionCode,
+        reason,
+      });
       return callback({
         success: false,
-        error: 'Invalid payload: ' + validation.error.errors[0].message,
+        error: 'Invalid payload: ' + reason,
       });
     }
 
@@ -44,7 +47,11 @@ export async function handleSessionJoin(
     // Check session exists
     const session = await SessionModel.getSession(sessionCode);
     if (!session) {
-      console.warn(`Rejected session:join for ${sessionCode}: session not found`);
+      console.warn('Rejected session:join', {
+        socketId: socket.id,
+        sessionCode,
+        reason: 'session_not_found',
+      });
       return callback({
         success: false,
         error: 'Session not found or has expired',
@@ -68,9 +75,12 @@ export async function handleSessionJoin(
       // New participant - check limit (FR-005)
       const currentCount = await ParticipantModel.countParticipants(sessionCode);
       if (currentCount >= 4) {
-        console.warn(
-          `Rejected session:join for ${sessionCode}: session full before adding ${socket.id}`
-        );
+        console.warn('Rejected session:join', {
+          socketId: socket.id,
+          sessionCode,
+          reason: 'session_full',
+          participantCount: currentCount,
+        });
         return callback({
           success: false,
           error: 'Session is full (maximum 4 participants)',
@@ -89,9 +99,12 @@ export async function handleSessionJoin(
     if (newCount > 4) {
       // Rollback: remove the participant we just added
       await ParticipantModel.removeParticipant(sessionCode, socket.id);
-      console.warn(
-        `Rejected session:join for ${sessionCode}: participant limit exceeded after adding ${socket.id}`
-      );
+      console.warn('Rejected session:join', {
+        socketId: socket.id,
+        sessionCode,
+        reason: 'session_full_after_add',
+        participantCount: newCount,
+      });
       return callback({
         success: false,
         error: 'Session is full (maximum 4 participants)',
