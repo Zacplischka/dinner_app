@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import jwt from 'jsonwebtoken';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   optionalAuth,
   requireAuth,
@@ -8,12 +7,29 @@ import {
 } from '../../src/middleware/auth.js';
 import { config } from '../../src/config/index.js';
 
+const supabaseMocks = vi.hoisted(() => ({
+  getUser: vi.fn(),
+}));
+
+vi.mock('../../src/services/supabase.js', () => ({
+  supabase: {
+    auth: {
+      getUser: supabaseMocks.getUser,
+    },
+  },
+}));
+
 describe('auth middleware', () => {
-  const secret = 'test-secret';
+  beforeEach(() => {
+    config.supabase.url = 'https://supabase.example.test';
+    config.supabase.serviceRoleKey = 'service-role-key';
+  });
 
   afterEach(() => {
-    config.supabase.jwtSecret = '';
+    config.supabase.url = '';
+    config.supabase.serviceRoleKey = '';
     vi.restoreAllMocks();
+    supabaseMocks.getUser.mockReset();
   });
 
   function response() {
@@ -31,18 +47,24 @@ describe('auth middleware', () => {
     } as AuthenticatedRequest;
   }
 
-  function token(payload: Record<string, unknown> = {}) {
-    return jwt.sign(
-      {
-        sub: 'user-1',
-        email: 'alice@example.com',
-        role: 'authenticated',
-        aud: 'authenticated',
-        ...payload,
+  async function flushAsyncAuth() {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  function mockSupabaseUser(overrides: Record<string, unknown> = {}) {
+    supabaseMocks.getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'user-1',
+          email: 'alice@example.com',
+          role: 'authenticated',
+          app_metadata: {},
+          user_metadata: {},
+          ...overrides,
+        },
       },
-      secret,
-      { expiresIn: '1h' }
-    );
+      error: null,
+    });
   }
 
   describe('optionalAuth', () => {
@@ -54,6 +76,7 @@ describe('auth middleware', () => {
 
       expect(req.user).toBeUndefined();
       expect(next).toHaveBeenCalledOnce();
+      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
     });
 
     it('should continue without user when auth header is not a bearer token', () => {
@@ -64,29 +87,34 @@ describe('auth middleware', () => {
 
       expect(req.user).toBeUndefined();
       expect(next).toHaveBeenCalledOnce();
+      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
     });
 
-    it('should skip verification when JWT secret is not configured', () => {
+    it('should skip verification when Supabase Auth is not configured', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      const req = request(`Bearer ${token()}`);
+      config.supabase.serviceRoleKey = '';
+      const req = request('Bearer token');
       const next = vi.fn();
 
       optionalAuth(req, response() as any, next);
 
       expect(req.user).toBeUndefined();
       expect(next).toHaveBeenCalledOnce();
+      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
-        'SUPABASE_JWT_SECRET not configured - skipping token verification'
+        'Supabase Auth is not configured - skipping token verification'
       );
     });
 
-    it('should attach user for a valid token', () => {
-      config.supabase.jwtSecret = secret;
-      const req = request(`Bearer ${token()}`);
+    it('should attach user after Supabase Auth validates a bearer token', async () => {
+      mockSupabaseUser();
+      const req = request('Bearer valid-token');
       const next = vi.fn();
 
       optionalAuth(req, response() as any, next);
+      await flushAsyncAuth();
 
+      expect(supabaseMocks.getUser).toHaveBeenCalledWith('valid-token');
       expect(req.user).toEqual({
         id: 'user-1',
         email: 'alice@example.com',
@@ -95,33 +123,35 @@ describe('auth middleware', () => {
       expect(next).toHaveBeenCalledOnce();
     });
 
-    it('should continue without user for an invalid token', () => {
+    it('should continue without user for an invalid token', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      config.supabase.jwtSecret = secret;
+      supabaseMocks.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: { message: 'invalid JWT' },
+      });
       const req = request('Bearer invalid-token');
       const next = vi.fn();
 
       optionalAuth(req, response() as any, next);
+      await flushAsyncAuth();
 
       expect(req.user).toBeUndefined();
       expect(next).toHaveBeenCalledOnce();
-      expect(warnSpy).toHaveBeenCalledWith('Invalid JWT token:', expect.any(String));
+      expect(warnSpy).toHaveBeenCalledWith('Token verification failed:', 'invalid JWT');
     });
 
-    it('should continue without user when token verification throws a non-Error value', () => {
+    it('should continue without user when Supabase Auth throws a non-Error value', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      config.supabase.jwtSecret = secret;
-      vi.spyOn(jwt, 'verify').mockImplementation(() => {
-        throw 'invalid';
-      });
+      supabaseMocks.getUser.mockRejectedValueOnce('offline');
       const req = request('Bearer token');
       const next = vi.fn();
 
       optionalAuth(req, response() as any, next);
+      await flushAsyncAuth();
 
       expect(req.user).toBeUndefined();
       expect(next).toHaveBeenCalledOnce();
-      expect(warnSpy).toHaveBeenCalledWith('Invalid JWT token:', 'Unknown error');
+      expect(warnSpy).toHaveBeenCalledWith('Token verification failed:', 'Unknown error');
     });
   });
 
@@ -137,13 +167,15 @@ describe('auth middleware', () => {
         code: 'MISSING_TOKEN',
         message: 'Authentication required',
       });
+      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
     });
 
-    it('should reject requests when auth is not configured', () => {
+    it('should reject requests when Supabase Auth is not configured', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      config.supabase.url = '';
       const res = response();
 
-      requireAuth(request(`Bearer ${token()}`), res as any, vi.fn());
+      requireAuth(request('Bearer token'), res as any, vi.fn());
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
@@ -151,18 +183,21 @@ describe('auth middleware', () => {
         code: 'AUTH_NOT_CONFIGURED',
         message: 'Authentication not configured',
       });
+      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
-        'SUPABASE_JWT_SECRET not configured - rejecting authenticated request'
+        'Supabase Auth is not configured - rejecting authenticated request'
       );
     });
 
-    it('should attach user and continue for a valid token', () => {
-      config.supabase.jwtSecret = secret;
-      const req = request(`Bearer ${token()}`);
+    it('should attach user and continue for a valid token', async () => {
+      mockSupabaseUser();
+      const req = request('Bearer valid-token');
       const next = vi.fn();
 
       requireAuth(req, response() as any, next);
+      await flushAsyncAuth();
 
+      expect(supabaseMocks.getUser).toHaveBeenCalledWith('valid-token');
       expect(req.user).toEqual({
         id: 'user-1',
         email: 'alice@example.com',
@@ -171,20 +206,16 @@ describe('auth middleware', () => {
       expect(next).toHaveBeenCalledOnce();
     });
 
-    it('should reject expired tokens', () => {
+    it('should reject expired tokens', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      config.supabase.jwtSecret = secret;
-      const expiredToken = jwt.sign(
-        {
-          sub: 'user-1',
-          aud: 'authenticated',
-          exp: Math.floor(Date.now() / 1000) - 60,
-        },
-        secret
-      );
+      supabaseMocks.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: { message: 'JWT expired' },
+      });
       const res = response();
 
-      requireAuth(request(`Bearer ${expiredToken}`), res as any, vi.fn());
+      requireAuth(request('Bearer expired-token'), res as any, vi.fn());
+      await flushAsyncAuth();
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
@@ -192,15 +223,19 @@ describe('auth middleware', () => {
         code: 'TOKEN_EXPIRED',
         message: 'Token has expired',
       });
-      expect(warnSpy).toHaveBeenCalledWith('Expired JWT token:', expect.any(String));
+      expect(warnSpy).toHaveBeenCalledWith('Expired JWT token:', 'JWT expired');
     });
 
-    it('should reject invalid tokens', () => {
+    it('should reject invalid tokens', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      config.supabase.jwtSecret = secret;
+      supabaseMocks.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: { message: 'invalid JWT' },
+      });
       const res = response();
 
       requireAuth(request('Bearer invalid-token'), res as any, vi.fn());
+      await flushAsyncAuth();
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
@@ -208,46 +243,62 @@ describe('auth middleware', () => {
         code: 'INVALID_TOKEN',
         message: 'Invalid authentication token',
       });
-      expect(warnSpy).toHaveBeenCalledWith('Invalid JWT token:', expect.any(String));
+      expect(warnSpy).toHaveBeenCalledWith('Invalid JWT token:', 'invalid JWT');
     });
   });
 
   describe('verifyToken', () => {
-    it('should return null when JWT secret is not configured', () => {
+    it('should return null when Supabase Auth is not configured', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      config.supabase.serviceRoleKey = '';
 
-      expect(verifyToken(token())).toBeNull();
+      await expect(verifyToken('token')).resolves.toBeNull();
+      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
-        'SUPABASE_JWT_SECRET not configured - cannot verify token'
+        'Supabase Auth is not configured - cannot verify token'
       );
     });
 
-    it('should return user info for a valid token', () => {
-      config.supabase.jwtSecret = secret;
+    it('should return user info after Supabase Auth validates a token', async () => {
+      mockSupabaseUser();
 
-      expect(verifyToken(token())).toEqual({
+      await expect(verifyToken('valid-token')).resolves.toEqual({
         id: 'user-1',
         email: 'alice@example.com',
         role: 'authenticated',
       });
+      expect(supabaseMocks.getUser).toHaveBeenCalledWith('valid-token');
     });
 
-    it('should return null for an invalid token', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      config.supabase.jwtSecret = secret;
-
-      expect(verifyToken('invalid-token')).toBeNull();
-      expect(warnSpy).toHaveBeenCalledWith('Token verification failed:', expect.any(String));
-    });
-
-    it('should return null when verification throws a non-Error value', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      config.supabase.jwtSecret = secret;
-      vi.spyOn(jwt, 'verify').mockImplementation(() => {
-        throw 'invalid';
+    it('should fall back to app metadata role when the auth user has no top-level role', async () => {
+      mockSupabaseUser({
+        role: undefined,
+        app_metadata: { role: 'admin' },
       });
 
-      expect(verifyToken('invalid-token')).toBeNull();
+      await expect(verifyToken('valid-token')).resolves.toEqual({
+        id: 'user-1',
+        email: 'alice@example.com',
+        role: 'admin',
+      });
+    });
+
+    it('should return null for an invalid token', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      supabaseMocks.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: { message: 'invalid JWT' },
+      });
+
+      await expect(verifyToken('invalid-token')).resolves.toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith('Token verification failed:', 'invalid JWT');
+    });
+
+    it('should return null when Supabase Auth throws a non-Error value', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      supabaseMocks.getUser.mockRejectedValueOnce('offline');
+
+      await expect(verifyToken('invalid-token')).resolves.toBeNull();
       expect(warnSpy).toHaveBeenCalledWith('Token verification failed:', 'Unknown error');
     });
   });
