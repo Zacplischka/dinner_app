@@ -2,6 +2,7 @@
 // Handles user profiles, friendships, and session invites
 
 import { Router, Response } from 'express';
+import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { supabase, Profile } from '../services/supabase.js';
 import type {
@@ -30,7 +31,7 @@ router.use(requireAuth);
  * GET /api/users/me
  * Get the current user's profile
  */
-router.get('/users/me', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/users/me', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
 
@@ -86,13 +87,13 @@ router.get('/users/me', async (req: AuthenticatedRequest, res: Response) => {
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * GET /api/users/search?email=<email>
  * Search for users by exact email match
  */
-router.get('/users/search', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/users/search', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { email } = req.query;
     const userId = req.user!.id;
@@ -132,7 +133,7 @@ router.get('/users/search', async (req: AuthenticatedRequest, res: Response) => 
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 // ============================================================================
 // FRIENDS ENDPOINTS
@@ -142,7 +143,7 @@ router.get('/users/search', async (req: AuthenticatedRequest, res: Response) => 
  * GET /api/friends
  * List all accepted friends for the current user
  */
-router.get('/friends', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/friends', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
 
@@ -215,13 +216,13 @@ router.get('/friends', async (req: AuthenticatedRequest, res: Response) => {
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * GET /api/friends/requests
  * List pending friend requests for the current user (requests they received)
  */
-router.get('/friends/requests', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/friends/requests', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
 
@@ -288,13 +289,13 @@ router.get('/friends/requests', async (req: AuthenticatedRequest, res: Response)
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * POST /api/friends/request
  * Send a friend request to a user by email
  */
-router.post('/friends/request', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/friends/request', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { email } = req.body as SendFriendRequestPayload;
@@ -397,13 +398,13 @@ router.post('/friends/request', async (req: AuthenticatedRequest, res: Response)
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * POST /api/friends/:requestId/accept
  * Accept a friend request
  */
-router.post('/friends/:requestId/accept', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/friends/:requestId/accept', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { requestId } = req.params;
@@ -449,13 +450,13 @@ router.post('/friends/:requestId/accept', async (req: AuthenticatedRequest, res:
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * POST /api/friends/:requestId/decline
  * Decline a friend request
  */
-router.post('/friends/:requestId/decline', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/friends/:requestId/decline', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { requestId } = req.params;
@@ -487,13 +488,13 @@ router.post('/friends/:requestId/decline', async (req: AuthenticatedRequest, res
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * DELETE /api/friends/:friendId
  * Remove a friend (unfriend)
  */
-router.delete('/friends/:friendId', async (req: AuthenticatedRequest, res: Response) => {
+router.delete('/friends/:friendId', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { friendId } = req.params;
@@ -526,7 +527,7 @@ router.delete('/friends/:friendId', async (req: AuthenticatedRequest, res: Respo
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 // ============================================================================
 // SESSION INVITE ENDPOINTS
@@ -536,7 +537,7 @@ router.delete('/friends/:friendId', async (req: AuthenticatedRequest, res: Respo
  * POST /api/sessions/:code/invite
  * Invite friends to join a session
  */
-router.post('/sessions/:code/invite', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/sessions/:code/invite', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { code } = req.params;
@@ -618,13 +619,13 @@ router.post('/sessions/:code/invite', async (req: AuthenticatedRequest, res: Res
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * GET /api/invites
  * Get session invites for the current user
  */
-router.get('/invites', async (req: AuthenticatedRequest, res: Response) => {
+router.get('/invites', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
 
@@ -686,13 +687,13 @@ router.get('/invites', async (req: AuthenticatedRequest, res: Response) => {
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * POST /api/invites/:inviteId/accept
  * Accept a session invite
  */
-router.post('/invites/:inviteId/accept', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/invites/:inviteId/accept', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { inviteId } = req.params;
@@ -726,13 +727,13 @@ router.post('/invites/:inviteId/accept', async (req: AuthenticatedRequest, res: 
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 /**
  * POST /api/invites/:inviteId/decline
  * Decline a session invite
  */
-router.post('/invites/:inviteId/decline', async (req: AuthenticatedRequest, res: Response) => {
+router.post('/invites/:inviteId/decline', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { inviteId } = req.params;
@@ -764,7 +765,7 @@ router.post('/invites/:inviteId/decline', async (req: AuthenticatedRequest, res:
       message: 'An unexpected error occurred',
     });
   }
-});
+}));
 
 // ============================================================================
 // HELPER FUNCTIONS

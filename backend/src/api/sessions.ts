@@ -1,8 +1,9 @@
 // REST API endpoints for session management
 // Based on: specs/001-dinner-decider-enables/contracts/openapi.yaml
 
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
+import { asyncHandler } from './asyncHandler.js';
 import * as SessionService from '../services/SessionService.js';
 
 const router = Router();
@@ -26,8 +27,7 @@ const joinSessionRequestSchema = z.object({
  * POST /api/sessions
  * Create a new dinner decision session
  */
-router.post('/', (req: Request, res: Response) => {
-  void (async () => {
+router.post('/', asyncHandler(async (req, res) => {
   try {
     // Validate request body
     const validation = createSessionRequestSchema.safeParse(req.body);
@@ -67,15 +67,13 @@ router.post('/', (req: Request, res: Response) => {
       message: 'An unexpected error occurred. Please try again later.',
     });
   }
-  })();
-});
+}));
 
 /**
  * GET /api/sessions/:sessionCode
  * Get session details
  */
-router.get('/:sessionCode', (req: Request, res: Response) => {
-  void (async () => {
+router.get('/:sessionCode', asyncHandler(async (req, res) => {
   try {
     const { sessionCode } = req.params;
 
@@ -108,15 +106,13 @@ router.get('/:sessionCode', (req: Request, res: Response) => {
       message: 'An unexpected error occurred. Please try again later.',
     });
   }
-  })();
-});
+}));
 
 /**
  * POST /api/sessions/:sessionCode/join
  * Join an existing session
  */
-router.post('/:sessionCode/join', (req: Request, res: Response) => {
-  void (async () => {
+router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
   try {
     const { sessionCode } = req.params;
 
@@ -179,7 +175,6 @@ router.post('/:sessionCode/join', (req: Request, res: Response) => {
       message: 'An unexpected error occurred. Please try again later.',
     });
   }
-  })();
-});
+}));
 
 export default router;

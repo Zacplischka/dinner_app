@@ -1,7 +1,8 @@
 // REST API endpoint for dinner options
 // Based on: specs/001-dinner-decider-enables/contracts/openapi.yaml
 
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { asyncHandler } from './asyncHandler.js';
 import { redis } from '../redis/client.js';
 import type { Restaurant } from '@dinder/shared/types';
 
@@ -11,7 +12,7 @@ const router = Router();
  * GET /api/options/:sessionCode
  * Get restaurants for a specific session
  */
-router.get('/:sessionCode', async (req: Request, res: Response) => {
+router.get('/:sessionCode', asyncHandler(async (req, res) => {
   try {
     const { sessionCode } = req.params;
 
@@ -74,6 +75,6 @@ router.get('/:sessionCode', async (req: Request, res: Response) => {
       message: 'An unexpected error occurred. Please try again later.',
     });
   }
-});
+}));
 
 export default router;
