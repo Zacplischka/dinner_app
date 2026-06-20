@@ -1,288 +1,138 @@
-# 🍽️ Dinder
+<p align="center">
+  <img src="frontend/public/dinder-logo.png" alt="Dinder logo" width="120" />
+</p>
 
-A real-time web application that helps groups of 2-4 people decide on a restaurant by finding overlapping preferences. No authentication required - just create a session, share the code, make selections, and see what everyone agrees on!
+# Dinder
 
-[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://frontend-production-bdfc.up.railway.app)
-[![Backend Status](https://img.shields.io/badge/backend-healthy-success)](https://backend-production-4ce9.up.railway.app/health)
+**Swipe. Match. Eat.** Dinder is a real-time app for groups of 2–4 who can't decide where to eat: everyone swipes through nearby restaurants, and the moment the last person submits, Redis computes the overlap and pushes the matches to every phone at once.
 
-## 🌟 Features
+<p align="center">
+  <a href="https://www.dinder.it.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/node-%E2%89%A520-339933" alt="Node 20+">
+</p>
 
-- **No Sign-Up Required**: Honor system - just enter your name and go
-- **Real-Time Collaboration**: WebSocket-powered live updates as participants join and submit
-- **Private Selections**: Your choices stay hidden until everyone submits
-- **Smart Matching**: Instantly see restaurants that everyone agrees on
-- **Mobile-First Design**: Optimized for phones with Tailwind CSS
-- **Auto-Expiration**: Sessions automatically clean up after 30 minutes of inactivity
-- **Shareable Links**: Easy session codes and shareable URLs
+<p align="center">
+  <a href="https://www.dinder.it.com">Live demo</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#demo">Demo</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#local-development">Local development</a>
+</p>
 
-## 🚀 Live Demo
+## Demo
 
-- **Frontend**: https://frontend-production-bdfc.up.railway.app
-- **Backend API**: https://backend-production-4ce9.up.railway.app
-- **Health Check**: https://backend-production-4ce9.up.railway.app/health
+<p align="center">
+  <img src="docs/media/dinder-demo.gif" alt="Walkthrough: create a session, friends join with a code, everyone swipes, the group's matches appear" width="720">
+</p>
 
-## 🏗️ Tech Stack
+## Screenshots
 
-### Frontend
-- **React 18.x** with TypeScript
-- **Vite 5.x** for blazing-fast builds
-- **Tailwind CSS 3.x** for styling
-- **Socket.IO Client 4.x** for real-time communication
-- **Zustand 4.x** for state management
-- **React Router 6.x** for navigation
+<p align="center">
+  <img src="docs/screenshots/lobby.png" alt="Session lobby with shareable 6-character code and live participant list" width="24%">
+  <img src="docs/screenshots/selection.png" alt="Swipe screen with a restaurant card — like, pass, undo" width="24%">
+  <img src="docs/screenshots/results.png" alt="Perfect Match results screen showing the restaurants everyone liked" width="24%">
+</p>
 
-### Backend
-- **Node.js 20 LTS** with TypeScript
-- **Express 4.x** for REST API
-- **Socket.IO 4.x** for WebSocket server
-- **Redis 7.x** for session storage with native TTL
-- **Zod** for schema validation
+<p align="center"><em>Share a code → everyone swipes → the group's overlap, revealed in real time.</em></p>
+
+## Features
+
+- **No account needed** — enter a name, get a 6-character session code, share it. The core flow is fully anonymous.
+- **Real-time presence** — participants appear in the lobby as they join, via Socket.IO rooms keyed by session code.
+- **Swipe selection** — like or pass on real nearby restaurants fetched from the Google Places API, with ratings, price level, and cuisine.
+- **Set-intersection consensus** — each participant's likes live in a Redis set; the group's matches are computed with a single [`SINTER`](backend/src/services/OverlapService.ts) when the last person submits.
+- **Ephemeral by design** — every session key carries a 30-minute TTL, refreshed atomically across all of a session's keys by a [Lua script](backend/src/redis/refresh-ttl.lua) on each interaction. No cleanup jobs, no stale data.
+- **Push expiry** — Redis keyspace notifications fire when a session's keys expire, and the backend broadcasts `session:expired` so clients aren't left polling a dead session.
+- **Optional Google sign-in** — a Supabase-backed friends feature lets returning users sign in and find each other; the swipe flow never requires it.
+
+## How it works
+
+```mermaid
+sequenceDiagram
+    participant H as Host
+    participant P as Participant
+    participant S as Backend
+    participant R as Redis
+
+    H->>S: POST /api/sessions
+    S->>R: create session keys (30-min TTL)
+    S-->>H: session code
+    P->>S: session:join
+    S->>R: add participant, refresh TTL (Lua)
+    S-->>H: participant:joined
+    H->>S: selection:submit (liked place IDs)
+    S->>R: SADD likes, refresh TTL (Lua)
+    S-->>P: participant:submitted
+    P->>S: selection:submit
+    S->>R: SINTER across participant sets
+    S-->>H: session:results (matches)
+    S-->>P: session:results (matches)
+    Note over S,R: if 30 min pass, keys expire — keyspace notification → session:expired
+```
+
+The full client/server event contract — `session:join`, `selection:submit`, `session:restart`, `session:leave` inbound; `participant:joined/submitted/left/disconnected`, `session:results`, `session:restarted`, `session:expired` outbound — is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts) and imported by both sides, so the frontend and backend cannot drift apart silently.
+
+## Architecture
+
+npm workspaces monorepo, three packages:
+
+| Package | What it is |
+|---|---|
+| `backend/` | Node 20 + TypeScript, Express 4, Socket.IO 4.7, ioredis, Zod validation. One [handler file per socket event](backend/src/websocket/), services for sessions, selections, overlap, and restaurant search. |
+| `frontend/` | React 18 + Vite, Tailwind, Zustand for state, socket.io-client. Mobile-first. |
+| `shared/` | `@dinder/shared` — the typed WebSocket event contract and Zod schemas both sides import. |
+
+**The Redis data model is the app.** A session is a handful of keys (`session:<code>`, `session:<code>:participants`, `session:<code>:<participantId>:selections`, …), all carrying the same 30-minute TTL ([`ttl-utils.ts`](backend/src/redis/ttl-utils.ts)). Consensus is `SINTER` over the per-participant selection sets ([`OverlapService.ts`](backend/src/services/OverlapService.ts)). TTL refresh happens in one atomic [Lua script](backend/src/redis/refresh-ttl.lua) so a session's keys can never expire out of sync, and [`sessionExpiryNotifier.ts`](backend/src/redis/sessionExpiryNotifier.ts) subscribes to keyspace `expired` events to tell connected clients the moment a session dies.
+
+REST is deliberately thin — `POST /api/sessions`, `GET /api/sessions/:code` — everything live goes over the socket.
+
+## Local development
+
+Prerequisites: Node 20+, Docker (for Redis), and a [Google Places API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key).
+
+```bash
+git clone https://github.com/Zacplischka/dinner_app.git
+cd dinner_app
+npm install
+
+# Redis
+docker run -d -p 6379:6379 redis:7-alpine
+
+# backend (terminal 1) — http://localhost:3001
+echo "GOOGLE_PLACES_API_KEY=your-key-here" > backend/.env
+cd backend && npm run dev
+
+# frontend (terminal 2) — http://localhost:3000
+cd frontend && npm run dev
+```
+
+Or `./start.sh`, which starts Redis (Docker), the backend, and the frontend in one go.
+
+### Environment variables
+
+| Variable | Needed for |
+|---|---|
+| `GOOGLE_PLACES_API_KEY` | Restaurant search — required at backend boot |
+| `PORT`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `FRONTEND_URL` | All have local defaults |
+| `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` | Optional Google sign-in / friends feature only |
 
 ### Testing
-- **Vitest 1.x** for unit tests
-- **Supertest 6.x** for API contract tests
-- **Playwright 1.x** for E2E tests
 
-### Deployment
-- **Railway** (Frontend + Backend)
-- **Railway Redis** with public TCP proxy
-
-## 📦 Project Structure
-
-```
-dinner_app/
-├── backend/              # Express + Socket.IO server
-│   ├── src/
-│   │   ├── api/         # REST endpoints
-│   │   ├── models/      # Data models
-│   │   ├── services/    # Business logic
-│   │   ├── websocket/   # Socket.IO handlers
-│   │   ├── redis/       # Redis client + Lua scripts
-│   │   └── server.ts
-│   └── tests/           # Contract, integration, unit tests
-│
-├── frontend/            # React + Vite app
-│   ├── src/
-│   │   ├── components/  # Reusable UI components
-│   │   ├── pages/       # Route pages
-│   │   ├── services/    # API & Socket.IO clients
-│   │   ├── stores/      # Zustand state
-│   │   └── App.tsx
-│   └── tests/           # Unit + E2E tests
-│
-└── shared/              # Shared TypeScript types
-    └── types/           # Contracts between FE/BE
-```
-
-## 🛠️ Local Development
-
-### Prerequisites
-- Node.js 20 LTS or higher
-- Docker (for local Redis)
-- npm or yarn
-
-### Quick Start (Recommended)
-
-Use the provided startup scripts for easy local development:
+The project was built spec-first: feature specs and the WebSocket contract live in [`specs/`](specs/), and contract tests assert the backend against that contract (they need Redis running):
 
 ```bash
-# Start all services (Redis, backend, frontend)
-./start-dev.sh
-
-# View logs
-./dev-logs.sh backend   # Backend logs
-./dev-logs.sh frontend  # Frontend logs
-
-# Stop all services
-./stop-dev.sh
+cd backend && npm test              # unit tests
+cd backend && npm run test:contract # contract + integration tests (Redis required)
+cd frontend && npx playwright test  # end-to-end specs
 ```
 
-### Manual Setup
+Honest status: the suite is extensive (~200 cases across unit, contract, integration, and Playwright e2e) but not currently all green — some backend unit tests have drifted from newer restaurant-search code. Treat the contract tests as the source of truth for the realtime protocol.
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd dinner_app
-   ```
+## Deployment
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+Both services deploy to [Railway](https://railway.app): the backend via NIXPACKS ([`backend/railway.json`](backend/railway.json) — workspace-aware build that ships the Lua script alongside the compiled JS), the frontend as a static SPA. See [`RAILWAY_SETUP.md`](RAILWAY_SETUP.md) and [`DEPLOY_GUIDE.md`](DEPLOY_GUIDE.md).
 
-3. **Start Redis**
-   ```bash
-   docker run -d -p 6379:6379 --name dinner-redis redis:7-alpine
-   ```
+## License
 
-4. **Start backend** (in terminal 1)
-   ```bash
-   cd backend
-   npm run dev
-   # Backend runs on http://localhost:3001
-   ```
-
-5. **Start frontend** (in terminal 2)
-   ```bash
-   cd frontend
-   npm run dev
-   # Frontend runs on http://localhost:3000
-   ```
-
-6. **Open browser**
-   - Navigate to http://localhost:3000
-   - Create a session and test!
-
-### Environment Variables
-
-**Backend** (`backend/.env`):
-```bash
-PORT=3001
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-FRONTEND_URL=http://localhost:3000
-```
-
-**Frontend** (`frontend/.env`):
-```bash
-# Development uses localhost by default
-VITE_API_BASE_URL=http://localhost:3001/api
-VITE_BACKEND_URL=http://localhost:3001
-```
-
-**Frontend Production** (`frontend/.env.production`):
-```bash
-# Production URLs (already configured)
-VITE_API_BASE_URL=https://backend-production-4ce9.up.railway.app/api
-VITE_BACKEND_URL=https://backend-production-4ce9.up.railway.app
-```
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm test
-
-# Unit tests only
-npm run test:unit
-
-# Integration tests
-npm run test:integration
-
-# E2E tests (requires frontend + backend running)
-npm run test:e2e
-
-# Contract tests (validates API schemas)
-cd backend && npm run test:contract
-```
-
-## 📚 How It Works
-
-### Discovery Flow (New!)
-
-Browse and explore restaurants before starting a group decision:
-
-1. **Explore Cuisines**: Tap any cuisine on the home page to filter restaurants
-2. **Browse Collections**: Check out curated lists like "Date Night" or "Best Italian"
-3. **View Details**: See full restaurant profiles with menus and reviews
-4. **Start Session**: When ready, tap "Decide with Friends" to begin group voting
-
-See [docs/USER_FLOWS.md](./docs/USER_FLOWS.md) for detailed navigation documentation.
-
-### Session Flow
-
-1. **Create Session**: Host enters their name and gets a 6-character session code
-2. **Join Session**: Participants enter the code and their names
-3. **Select Options**: Everyone privately selects restaurants they'd be interested in
-4. **Submit**: Once all participants submit, results are revealed
-5. **Results**: See which restaurants everyone agreed on
-6. **Restart**: Host can restart for a new round with same participants
-
-### Key Features
-
-- **Private Selections**: Selections are stored per-participant in Redis and only revealed when all submit (FR-008, FR-023)
-- **Real-Time Updates**: Socket.IO rooms broadcast participant joins, submissions, and results
-- **Session Expiration**: Redis TTL automatically cleans up inactive sessions after 30 minutes (FR-019)
-- **Smart Overlap Calculation**: Set intersection finds restaurants everyone selected
-
-## 🚢 Deployment
-
-See [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md) for detailed Railway deployment instructions.
-
-### Quick Deploy Summary
-
-**Backend**:
-- Service: `backend`
-- Build: Monorepo workspace build with Lua script copy
-- Environment: Redis connection + FRONTEND_URL for CORS
-
-**Frontend**:
-- Service: `frontend`
-- Build: Vite build with production env vars
-- Environment: `RAILPACK_SPA_OUTPUT_DIR=frontend/dist` + backend URLs
-
-**Redis**:
-- Service: `redis-bbxI`
-- Public TCP proxy enabled for connection
-
-## 📖 API Documentation
-
-### REST Endpoints
-
-**POST /api/sessions**
-- Create new session
-- Body: `{ "hostName": "string" }`
-- Returns: Session code, shareable link, expiration time
-
-**GET /api/sessions/:code**
-- Get session details
-- Returns: Session state, participants, expiration
-
-**GET /api/options**
-- Get list of dinner options (hardcoded list)
-- Returns: Array of `{ id, name, cuisine }`
-
-### WebSocket Events
-
-See `specs/001-dinner-decider-enables/contracts/websocket-events.md` for full event documentation.
-
-**Client → Server**:
-- `session:join` - Join a session with display name
-- `selection:submit` - Submit restaurant selections
-- `session:restart` - Restart session (host only)
-
-**Server → Client**:
-- `participant:joined` - New participant joined
-- `participant:submitted` - Participant submitted selections
-- `session:results` - All submitted, results revealed
-- `session:expired` - Session expired due to inactivity
-- `error` - Server-side error
-
-## 🤝 Contributing
-
-This project was built following Test-Driven Development (TDD) principles:
-
-1. Write tests first (contract → integration → E2E)
-2. Implement features to pass tests
-3. Refactor while keeping tests green
-
-See `specs/001-dinner-decider-enables/` for detailed specifications and architecture decisions.
-
-## 📄 License
-
-MIT
-
-## 🙏 Acknowledgments
-
-Built with Claude Code for rapid full-stack development with real-time features.
-
-Special thanks to all contributors!
-
----
-
-**Questions or Issues?**
-- Check [docs/USER_FLOWS.md](./docs/USER_FLOWS.md) for navigation and user flow documentation
-- Check [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) for deployment details
-- Review [deploy.md](./deploy.md) for Railway-specific configuration
-- See [DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md) for complete deployment walkthrough
+[MIT](LICENSE) © Zac Plischka
