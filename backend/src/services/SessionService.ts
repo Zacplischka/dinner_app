@@ -57,11 +57,18 @@ export async function createSession(
   while (attempts < MAX_ATTEMPTS) {
     const exists = await redis.exists(`session:${sessionCode}`);
     if (!exists) break;
+    console.warn('Session code collision detected', {
+      sessionCode,
+      attempt: attempts + 1,
+    });
     sessionCode = generateSessionCode();
     attempts++;
   }
 
   if (attempts >= MAX_ATTEMPTS) {
+    console.error('Failed to generate unique session code', {
+      attempts,
+    });
     throw new Error('Failed to generate unique session code');
   }
 
@@ -80,6 +87,10 @@ export async function createSession(
 
     // Throw error if no restaurants found
     if (restaurants.length === 0) {
+      console.warn('No restaurants found during session creation', {
+        sessionCode,
+        searchRadiusMiles,
+      });
       throw new Error('NO_RESTAURANTS_FOUND');
     }
 
@@ -118,6 +129,13 @@ export async function createSession(
   // Generate shareable link
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
+
+  console.log('Session created', {
+    sessionCode,
+    hasLocation: Boolean(location),
+    searchRadiusMiles,
+    restaurantCount: restaurants.length,
+  });
 
   return {
     sessionCode,
@@ -163,6 +181,10 @@ export async function getSession(sessionCode: string): Promise<{
   // Guard against negative TTL values
   // TTL -2 means key doesn't exist, -1 means no expiry set
   if (ttl < 0) {
+    console.warn('Session lookup returned invalid TTL', {
+      sessionCode,
+      ttl,
+    });
     return null; // Session expired or doesn't exist
   }
 
@@ -198,12 +220,21 @@ export async function joinSession(
   // Check session exists
   const session = await SessionModel.getSession(sessionCode);
   if (!session) {
+    console.warn('Rejected session join for missing session', {
+      sessionCode,
+      participantId,
+    });
     throw new Error('SESSION_NOT_FOUND');
   }
 
   // Check participant limit (FR-004, FR-005)
   // Use session.participantCount which includes the host who may not have joined yet
   if (session.participantCount >= 4) {
+    console.warn('Rejected session join because session is full', {
+      sessionCode,
+      participantId,
+      participantCount: session.participantCount,
+    });
     throw new Error('SESSION_FULL');
   }
 
@@ -220,6 +251,12 @@ export async function joinSession(
   const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
   await refreshSessionTtl(sessionCode, participantIds);
 
+  console.log('Participant joined session', {
+    sessionCode,
+    participantId,
+    participantCount: newCount,
+  });
+
   return {
     participantId,
     sessionCode,
@@ -234,4 +271,7 @@ export async function joinSession(
 export async function expireSession(sessionCode: string): Promise<void> {
   await SessionModel.updateSessionState(sessionCode, 'expired');
   await SessionModel.deleteSession(sessionCode);
+  console.log('Session expired and removed', {
+    sessionCode,
+  });
 }
