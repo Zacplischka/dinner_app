@@ -41,6 +41,7 @@ describe('SessionService', () => {
 
   describe('createSession code generation', () => {
     it('should fail after repeated session code collisions', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       await redis.hset('session:AAAAAA', {
         hostId: 'existing-host',
         state: 'waiting',
@@ -53,11 +54,42 @@ describe('SessionService', () => {
       await expect(SessionService.createSession('Alice')).rejects.toThrow(
         'Failed to generate unique session code'
       );
+      expect(errorSpy).toHaveBeenCalledWith('Failed to generate unique session code', {
+        attempts: 10,
+      });
+    });
+
+    it('should warn when code generation collisions are retried', async () => {
+      await redis.hset('session:AAAAAA', {
+        hostId: 'existing-host',
+        state: 'waiting',
+        participantCount: '1',
+        createdAt: '1700000000',
+        lastActivityAt: '1700000000',
+      });
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      vi.spyOn(Math, 'random')
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(0.5);
+
+      const result = await SessionService.createSession('Alice');
+      createdSessionCodes.push(result.sessionCode);
+
+      expect(warnSpy).toHaveBeenCalledWith('Session code collision detected', {
+        sessionCode: 'AAAAAA',
+        attempt: 1,
+      });
     });
   });
 
   describe('getSession', () => {
     it('should return null when the session has no TTL', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       await redis.hset(`session:${testSessionCode}`, {
         hostId: 'host-1',
         hostName: 'Alice',
@@ -68,6 +100,10 @@ describe('SessionService', () => {
       });
 
       await expect(SessionService.getSession(testSessionCode)).resolves.toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith('Session lookup returned invalid TTL', {
+        sessionCode: testSessionCode,
+        ttl: -1,
+      });
     });
 
     it('should prefer the joined host participant display name', async () => {
@@ -107,9 +143,67 @@ describe('SessionService', () => {
 
   describe('joinSession', () => {
     it('should reject missing sessions', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
       await expect(
         SessionService.joinSession(testSessionCode, 'participant-1', 'Bob')
       ).rejects.toThrow('SESSION_NOT_FOUND');
+
+      expect(warnSpy).toHaveBeenCalledWith('Rejected session join for missing session', {
+        sessionCode: testSessionCode,
+        participantId: 'participant-1',
+      });
+    });
+
+    it('should log successful joins with the updated participant count', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const session = await SessionService.createSession('Alice');
+      createdSessionCodes.push(session.sessionCode);
+
+      const result = await SessionService.joinSession(session.sessionCode, 'participant-1', 'Bob');
+
+      expect(result.participantCount).toBe(2);
+      expect(logSpy).toHaveBeenCalledWith('Participant joined session', {
+        sessionCode: session.sessionCode,
+        participantId: 'participant-1',
+        participantCount: 2,
+      });
+    });
+
+    it('should warn when rejecting joins for full sessions', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      await redis.hset(`session:${testSessionCode}`, {
+        hostId: 'host-1',
+        hostName: 'Alice',
+        state: 'waiting',
+        participantCount: '4',
+        createdAt: '1700000000',
+        lastActivityAt: '1700000000',
+      });
+
+      await expect(
+        SessionService.joinSession(testSessionCode, 'participant-5', 'Eve')
+      ).rejects.toThrow('SESSION_FULL');
+
+      expect(warnSpy).toHaveBeenCalledWith('Rejected session join because session is full', {
+        sessionCode: testSessionCode,
+        participantId: 'participant-5',
+        participantCount: 4,
+      });
+    });
+  });
+
+  describe('expireSession', () => {
+    it('should log explicit session expiry', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const session = await SessionService.createSession('Alice');
+      createdSessionCodes.push(session.sessionCode);
+
+      await SessionService.expireSession(session.sessionCode);
+
+      expect(logSpy).toHaveBeenCalledWith('Session expired and removed', {
+        sessionCode: session.sessionCode,
+      });
     });
   });
 
@@ -135,6 +229,7 @@ describe('SessionService', () => {
     });
 
     it('should search for nearby restaurants', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       const mockRestaurants = [
         { placeId: 'place1', name: 'Restaurant 1', rating: 4.5, priceLevel: 2, cuisineType: 'Italian', address: '123 Main St' },
         { placeId: 'place2', name: 'Restaurant 2', rating: 4.2, priceLevel: 3, cuisineType: 'Chinese', address: '456 Oak Ave' },
@@ -157,6 +252,12 @@ describe('SessionService', () => {
       });
 
       expect(result.restaurantCount).toBe(2);
+      expect(logSpy).toHaveBeenCalledWith('Session created', {
+        sessionCode: result.sessionCode,
+        hasLocation: true,
+        searchRadiusMiles: 5,
+        restaurantCount: 2,
+      });
     });
 
     it('should store restaurant Place IDs in Redis Set', async () => {
@@ -202,6 +303,7 @@ describe('SessionService', () => {
     });
 
     it('should throw error if no restaurants found', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
         .mockResolvedValue([]);
 
@@ -212,6 +314,11 @@ describe('SessionService', () => {
           5
         )
       ).rejects.toThrow('NO_RESTAURANTS_FOUND');
+
+      expect(warnSpy).toHaveBeenCalledWith('No restaurants found during session creation', {
+        sessionCode: expect.any(String),
+        searchRadiusMiles: 5,
+      });
     });
 
     it('should set TTL on restaurant keys', async () => {

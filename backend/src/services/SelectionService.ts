@@ -20,6 +20,10 @@ export async function submitSelections(
   // This allows empty selections to be submitted once
   const participant = await ParticipantModel.getParticipant(participantId);
   if (participant?.hasSubmitted) {
+    console.warn('Rejected duplicate selection submission', {
+      sessionCode,
+      participantId,
+    });
     throw new Error('ALREADY_SUBMITTED');
   }
 
@@ -31,12 +35,22 @@ export async function submitSelections(
     // Validate all placeIds exist in session's restaurant list
     const invalidPlaceIds = placeIds.filter(id => !validPlaceIds.includes(id));
     if (invalidPlaceIds.length > 0) {
+      console.warn('Rejected selections with invalid restaurants', {
+        sessionCode,
+        participantId,
+        invalidCount: invalidPlaceIds.length,
+      });
       throw new Error('INVALID_RESTAURANTS');
     }
   }
 
   // Store selections (can be empty array)
   await SelectionModel.submitSelections(sessionCode, participantId, placeIds);
+  console.log('Selections submitted', {
+    sessionCode,
+    participantId,
+    selectionCount: placeIds.length,
+  });
 }
 
 /**
@@ -55,4 +69,8 @@ export async function getSubmittedCount(sessionCode: string): Promise<number> {
 export async function clearSelections(sessionCode: string): Promise<void> {
   const participantIds = await ParticipantModel.listParticipantIds(sessionCode);
   await SelectionModel.clearAllSelections(sessionCode, participantIds);
+  console.log('Session selections cleared', {
+    sessionCode,
+    participantCount: participantIds.length,
+  });
 }

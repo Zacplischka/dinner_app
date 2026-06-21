@@ -19,10 +19,17 @@ export async function createSession(hostName, location, searchRadiusMiles) {
         const exists = await redis.exists(`session:${sessionCode}`);
         if (!exists)
             break;
+        console.warn('Session code collision detected', {
+            sessionCode,
+            attempt: attempts + 1,
+        });
         sessionCode = generateSessionCode();
         attempts++;
     }
     if (attempts >= MAX_ATTEMPTS) {
+        console.error('Failed to generate unique session code', {
+            attempts,
+        });
         throw new Error('Failed to generate unique session code');
     }
     let restaurants = [];
@@ -35,6 +42,10 @@ export async function createSession(hostName, location, searchRadiusMiles) {
             maxResults: 20,
         });
         if (restaurants.length === 0) {
+            console.warn('No restaurants found during session creation', {
+                sessionCode,
+                searchRadiusMiles,
+            });
             throw new Error('NO_RESTAURANTS_FOUND');
         }
         const placeIds = restaurants.map(r => r.placeId);
@@ -54,6 +65,12 @@ export async function createSession(hostName, location, searchRadiusMiles) {
     await refreshSessionTtl(sessionCode, []);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
+    console.log('Session created', {
+        sessionCode,
+        hasLocation: Boolean(location),
+        searchRadiusMiles,
+        restaurantCount: restaurants.length,
+    });
     return {
         sessionCode,
         hostName,
@@ -76,6 +93,10 @@ export async function getSession(sessionCode) {
     const hostName = host ? host.displayName : session.hostName;
     const ttl = await redis.ttl(`session:${sessionCode}`);
     if (ttl < 0) {
+        console.warn('Session lookup returned invalid TTL', {
+            sessionCode,
+            ttl,
+        });
         return null;
     }
     const expireAt = Math.floor(Date.now() / 1000) + ttl;
@@ -93,9 +114,18 @@ export async function getSession(sessionCode) {
 export async function joinSession(sessionCode, participantId, displayName) {
     const session = await SessionModel.getSession(sessionCode);
     if (!session) {
+        console.warn('Rejected session join for missing session', {
+            sessionCode,
+            participantId,
+        });
         throw new Error('SESSION_NOT_FOUND');
     }
     if (session.participantCount >= 4) {
+        console.warn('Rejected session join because session is full', {
+            sessionCode,
+            participantId,
+            participantCount: session.participantCount,
+        });
         throw new Error('SESSION_FULL');
     }
     await ParticipantModel.addParticipant(sessionCode, participantId, displayName, false);
@@ -103,6 +133,11 @@ export async function joinSession(sessionCode, participantId, displayName) {
     await SessionModel.updateLastActivity(sessionCode);
     const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
     await refreshSessionTtl(sessionCode, participantIds);
+    console.log('Participant joined session', {
+        sessionCode,
+        participantId,
+        participantCount: newCount,
+    });
     return {
         participantId,
         sessionCode,
@@ -113,5 +148,8 @@ export async function joinSession(sessionCode, participantId, displayName) {
 export async function expireSession(sessionCode) {
     await SessionModel.updateSessionState(sessionCode, 'expired');
     await SessionModel.deleteSession(sessionCode);
+    console.log('Session expired and removed', {
+        sessionCode,
+    });
 }
 //# sourceMappingURL=SessionService.js.map
