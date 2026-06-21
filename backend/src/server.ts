@@ -104,17 +104,23 @@ import { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } from
 io.use((socket, next) => {
   const token = getSocketAuthToken(socket.handshake.auth);
 
-  if (token) {
-    const user = verifyToken(token);
+  if (!token) {
+    // Always allow connection (auth is optional for now)
+    next();
+    return;
+  }
+
+  void (async () => {
+    const user = await verifyToken(token);
     if (user) {
       // Attach user info to socket for later use
       setSocketUser(socket, user);
       console.log(`Socket ${socket.id} authenticated as user ${user.id}`);
     }
-  }
 
-  // Always allow connection (auth is optional for now)
-  next();
+    // Always allow connection (auth is optional for now)
+    next();
+  })();
 });
 
 // WebSocket connection handling

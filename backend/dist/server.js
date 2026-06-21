@@ -61,14 +61,18 @@ import { verifyToken } from './middleware/auth.js';
 import { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } from './redis/sessionExpiryNotifier.js';
 io.use((socket, next) => {
     const token = getSocketAuthToken(socket.handshake.auth);
-    if (token) {
-        const user = verifyToken(token);
+    if (!token) {
+        next();
+        return;
+    }
+    void (async () => {
+        const user = await verifyToken(token);
         if (user) {
             setSocketUser(socket, user);
             console.log(`Socket ${socket.id} authenticated as user ${user.id}`);
         }
-    }
-    next();
+        next();
+    })();
 });
 io.on('connection', (socket) => {
     const user = getSocketUser(socket);

@@ -1,9 +1,9 @@
-// JWT Authentication Middleware for Supabase Auth
-// Verifies Supabase JWT tokens and extracts user information
+// Authentication middleware for Supabase Auth
+// Verifies Supabase access tokens with the Auth service and extracts user information
 
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
+import { supabase } from '../services/supabase.js';
 
 // Extend Express Request to include user info
 export interface AuthenticatedUser {
@@ -16,13 +16,77 @@ export interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
 }
 
-interface SupabaseJwtPayload {
-  sub: string; // User ID
-  email?: string;
-  role?: string;
-  aud: string;
-  exp: number;
-  iat: number;
+type SupabaseAuthUser = {
+  id: string;
+  email?: string | null;
+  role?: string | null;
+  app_metadata?: Record<string, unknown> | null;
+};
+
+type TokenVerificationFailure = 'expired' | 'invalid';
+
+type TokenVerificationResult =
+  | { user: AuthenticatedUser; failure?: never; message?: never }
+  | { user: null; failure: TokenVerificationFailure; message: string };
+
+function isSupabaseAuthConfigured(): boolean {
+  return Boolean(config.supabase.url && config.supabase.serviceRoleKey);
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') {
+      return message;
+    }
+  }
+
+  return 'Unknown error';
+}
+
+function getFailureReason(message: string): TokenVerificationFailure {
+  return message.toLowerCase().includes('expired') ? 'expired' : 'invalid';
+}
+
+function mapSupabaseUser(user: SupabaseAuthUser): AuthenticatedUser {
+  const appMetadataRole = user.app_metadata?.role;
+  const role = user.role || (typeof appMetadataRole === 'string' ? appMetadataRole : undefined);
+
+  return {
+    id: user.id,
+    email: user.email || undefined,
+    role,
+  };
+}
+
+async function verifyTokenInternal(token: string): Promise<TokenVerificationResult> {
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data.user) {
+      const message = error ? getErrorMessage(error) : 'No user returned for token';
+      return {
+        user: null,
+        failure: getFailureReason(message),
+        message,
+      };
+    }
+
+    return {
+      user: mapSupabaseUser(data.user as SupabaseAuthUser),
+    };
+  } catch (error) {
+    const message = getErrorMessage(error);
+    return {
+      user: null,
+      failure: getFailureReason(message),
+      message,
+    };
+  }
 }
 
 /**
@@ -43,26 +107,22 @@ export function optionalAuth(
 
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-  if (!config.supabase.jwtSecret) {
-    console.warn('SUPABASE_JWT_SECRET not configured - skipping token verification');
+  if (!isSupabaseAuthConfigured()) {
+    console.warn('Supabase Auth is not configured - skipping token verification');
     return next();
   }
 
-  try {
-    const decoded = jwt.verify(token, config.supabase.jwtSecret) as SupabaseJwtPayload;
+  void (async () => {
+    const result = await verifyTokenInternal(token);
 
-    req.user = {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role,
-    };
+    if (result.user) {
+      req.user = result.user;
+    } else {
+      console.warn('Token verification failed:', result.message);
+    }
 
     next();
-  } catch (error) {
-    // Invalid token - continue without auth (optional auth doesn't reject)
-    console.warn('Invalid JWT token:', error instanceof Error ? error.message : 'Unknown error');
-    next();
-  }
+  })();
 }
 
 /**
@@ -87,8 +147,8 @@ export function requireAuth(
 
   const token = authHeader.substring(7);
 
-  if (!config.supabase.jwtSecret) {
-    console.warn('SUPABASE_JWT_SECRET not configured - rejecting authenticated request');
+  if (!isSupabaseAuthConfigured()) {
+    console.warn('Supabase Auth is not configured - rejecting authenticated request');
     res.status(500).json({
       error: 'server_error',
       code: 'AUTH_NOT_CONFIGURED',
@@ -97,19 +157,17 @@ export function requireAuth(
     return;
   }
 
-  try {
-    const decoded = jwt.verify(token, config.supabase.jwtSecret) as SupabaseJwtPayload;
+  void (async () => {
+    const result = await verifyTokenInternal(token);
 
-    req.user = {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role,
-    };
+    if (result.user) {
+      req.user = result.user;
+      next();
+      return;
+    }
 
-    next();
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      console.warn('Expired JWT token:', error.message);
+    if (result.failure === 'expired') {
+      console.warn('Expired JWT token:', result.message);
       res.status(401).json({
         error: 'unauthorized',
         code: 'TOKEN_EXPIRED',
@@ -118,34 +176,30 @@ export function requireAuth(
       return;
     }
 
-    console.warn('Invalid JWT token:', error instanceof Error ? error.message : 'Unknown error');
+    console.warn('Invalid JWT token:', result.message);
     res.status(401).json({
       error: 'unauthorized',
       code: 'INVALID_TOKEN',
       message: 'Invalid authentication token',
     });
-  }
+  })();
 }
 
 /**
- * Verify a JWT token and return the user info
+ * Verify a Supabase access token and return the user info.
  * Useful for Socket.IO authentication
  */
-export function verifyToken(token: string): AuthenticatedUser | null {
-  if (!config.supabase.jwtSecret) {
-    console.warn('SUPABASE_JWT_SECRET not configured - cannot verify token');
+export async function verifyToken(token: string): Promise<AuthenticatedUser | null> {
+  if (!isSupabaseAuthConfigured()) {
+    console.warn('Supabase Auth is not configured - cannot verify token');
     return null;
   }
 
-  try {
-    const decoded = jwt.verify(token, config.supabase.jwtSecret) as SupabaseJwtPayload;
-    return {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role,
-    };
-  } catch (error) {
-    console.warn('Token verification failed:', error instanceof Error ? error.message : 'Unknown error');
-    return null;
+  const result = await verifyTokenInternal(token);
+  if (result.user) {
+    return result.user;
   }
+
+  console.warn('Token verification failed:', result.message);
+  return null;
 }

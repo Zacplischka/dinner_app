@@ -23,6 +23,10 @@ export async function calculateOverlap(
   const participants = await ParticipantModel.listParticipants(sessionCode);
 
   if (participantIds.length === 0) {
+    console.log('Calculated overlap for empty session', {
+      sessionCode,
+      participantCount: 0,
+    });
     return {
       overlappingOptions: [],
       allSelections: {},
@@ -49,11 +53,21 @@ export async function calculateOverlap(
 
   // Map Place IDs to Restaurant objects
   const overlappingOptions: Restaurant[] = [];
+  let missingRestaurantCount = 0;
   for (const placeId of overlappingPlaceIds) {
     const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
     if (restaurantData) {
       overlappingOptions.push(parseRedisJson<Restaurant>(restaurantData));
+    } else {
+      missingRestaurantCount++;
     }
+  }
+
+  if (missingRestaurantCount > 0) {
+    console.warn('Overlap calculation skipped missing restaurant data', {
+      sessionCode,
+      missingRestaurantCount,
+    });
   }
 
   // Build allSelections map for transparency (displayName -> placeIds)
@@ -84,11 +98,20 @@ export async function calculateOverlap(
     }
   }
 
+  const hasOverlap = overlappingOptions.length > 0;
+
+  console.log('Calculated session overlap', {
+    sessionCode,
+    participantCount: participantIds.length,
+    overlappingCount: overlappingOptions.length,
+    hasOverlap,
+  });
+
   return {
     overlappingOptions,
     allSelections,
     restaurantNames,
-    hasOverlap: overlappingOptions.length > 0,
+    hasOverlap,
   };
 }
 

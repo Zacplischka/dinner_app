@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import * as OverlapService from '../../src/services/OverlapService.js';
 import { redis } from '../../src/redis/client.js';
 
@@ -12,10 +12,13 @@ describe('OverlapService', () => {
     await redis.del(`session:${sessionCode}:restaurants`);
     await redis.del(`participant:participant1`);
     await redis.del(`participant:participant2`);
+    vi.restoreAllMocks();
   });
 
   describe('calculateOverlap with Place IDs', () => {
     it('should return empty results when no participants exist', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
       const result = await OverlapService.calculateOverlap(sessionCode);
 
       expect(result).toEqual({
@@ -24,9 +27,14 @@ describe('OverlapService', () => {
         restaurantNames: {},
         hasOverlap: false,
       });
+      expect(logSpy).toHaveBeenCalledWith('Calculated overlap for empty session', {
+        sessionCode,
+        participantCount: 0,
+      });
     });
 
     it('should map overlapping Place IDs to Restaurant objects', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       // Set up participants
       await redis.sadd(`session:${sessionCode}:participants`, 'participant1', 'participant2');
       await redis.hset(`participant:participant1`, {
@@ -64,9 +72,16 @@ describe('OverlapService', () => {
 
       expect(result.overlappingOptions).toHaveLength(1);
       expect(result.overlappingOptions[0]).toEqual(restaurant2);
+      expect(logSpy).toHaveBeenCalledWith('Calculated session overlap', {
+        sessionCode,
+        participantCount: 2,
+        overlappingCount: 1,
+        hasOverlap: true,
+      });
     });
 
     it('should handle missing restaurant data gracefully', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       // Set up participants
       await redis.sadd(`session:${sessionCode}:participants`, 'participant1', 'participant2');
       await redis.hset(`participant:participant1`, {
@@ -90,6 +105,10 @@ describe('OverlapService', () => {
       const result = await OverlapService.calculateOverlap(sessionCode);
 
       expect(result.overlappingOptions).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith('Overlap calculation skipped missing restaurant data', {
+        sessionCode,
+        missingRestaurantCount: 1,
+      });
     });
 
     it('should return all selections with Place IDs', async () => {
