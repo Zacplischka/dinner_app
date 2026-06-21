@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
@@ -26,7 +26,13 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     await cleanupTestData(redis);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should return 200 with valid SessionResponse schema for existing session', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
     const response = await request(app)
       .get(`/api/sessions/${testSessionCode}`)
       .expect('Content-Type', /json/)
@@ -44,9 +50,16 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     expect(response.body).toHaveProperty('expiresAt');
     expect(new Date(response.body.expiresAt).toISOString()).toBe(response.body.expiresAt);
     expect(response.body).toHaveProperty('shareableLink');
+    expect(logSpy).toHaveBeenCalledWith('Returned REST session', {
+      sessionCode: testSessionCode,
+      state: response.body.state,
+      participantCount: response.body.participantCount,
+    });
   });
 
   it('should return 404 with ErrorResponse schema for non-existent session', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
     const response = await request(app)
       .get('/api/sessions/NOTFOUND')
       .expect('Content-Type', /json/)
@@ -57,6 +70,10 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     expect(response.body).toHaveProperty('code', 'SESSION_NOT_FOUND');
     expect(response.body).toHaveProperty('message');
     expect(response.body.message).toContain('not found');
+    expect(warnSpy).toHaveBeenCalledWith('Rejected REST session get', {
+      sessionCode: 'NOTFOUND',
+      reason: 'invalid_session_code',
+    });
   });
 
   it('should return 404 for expired session', async () => {
