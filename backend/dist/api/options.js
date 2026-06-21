@@ -7,6 +7,10 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     try {
         const { sessionCode } = req.params;
         if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
+            console.warn('Rejected REST options get', {
+                sessionCode,
+                reason: 'invalid_session_code',
+            });
             return res.status(404).json({
                 error: 'Not Found',
                 code: 'SESSION_NOT_FOUND',
@@ -15,6 +19,10 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
         }
         const sessionExists = await redis.exists(`session:${sessionCode}`);
         if (!sessionExists) {
+            console.warn('Rejected REST options get', {
+                sessionCode,
+                reason: 'session_not_found',
+            });
             return res.status(404).json({
                 error: 'Not Found',
                 code: 'SESSION_NOT_FOUND',
@@ -23,6 +31,10 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
         }
         const placeIds = await redis.smembers(`session:${sessionCode}:restaurant_ids`);
         if (placeIds.length === 0) {
+            console.warn('Rejected REST options get', {
+                sessionCode,
+                reason: 'restaurant_ids_missing',
+            });
             return res.status(404).json({
                 error: 'Not Found',
                 code: 'NO_RESTAURANTS',
@@ -37,12 +49,23 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
             }
         }
         if (restaurants.length === 0) {
+            console.warn('Rejected REST options get', {
+                sessionCode,
+                reason: 'restaurant_data_missing',
+                requestedRestaurantCount: placeIds.length,
+                missingRestaurantDataCount: placeIds.length,
+            });
             return res.status(404).json({
                 error: 'Not Found',
                 code: 'NO_RESTAURANTS',
                 message: 'No restaurants found for this session',
             });
         }
+        console.log('Returned REST session options', {
+            sessionCode,
+            restaurantCount: restaurants.length,
+            missingRestaurantDataCount: placeIds.length - restaurants.length,
+        });
         return res.status(200).json({
             restaurants,
             sessionCode,

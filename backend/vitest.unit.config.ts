@@ -14,6 +14,7 @@ export default defineConfig({
 
     // Environment variables
     env: {
+      GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || 'test-google-places-key',
       NODE_ENV: 'test',
     },
   },
