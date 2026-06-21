@@ -7,7 +7,7 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     try {
         const { sessionCode } = req.params;
         if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
-            console.warn('Rejected GET /api/options/:sessionCode', {
+            console.warn('Rejected REST options get', {
                 sessionCode,
                 reason: 'invalid_session_code',
             });
@@ -19,7 +19,7 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
         }
         const sessionExists = await redis.exists(`session:${sessionCode}`);
         if (!sessionExists) {
-            console.warn('Rejected GET /api/options/:sessionCode', {
+            console.warn('Rejected REST options get', {
                 sessionCode,
                 reason: 'session_not_found',
             });
@@ -31,9 +31,9 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
         }
         const placeIds = await redis.smembers(`session:${sessionCode}:restaurant_ids`);
         if (placeIds.length === 0) {
-            console.warn('Rejected GET /api/options/:sessionCode', {
+            console.warn('Rejected REST options get', {
                 sessionCode,
-                reason: 'no_restaurant_ids',
+                reason: 'restaurant_ids_missing',
             });
             return res.status(404).json({
                 error: 'Not Found',
@@ -49,10 +49,11 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
             }
         }
         if (restaurants.length === 0) {
-            console.warn('Rejected GET /api/options/:sessionCode', {
+            console.warn('Rejected REST options get', {
                 sessionCode,
-                reason: 'restaurant_records_missing',
+                reason: 'restaurant_data_missing',
                 requestedRestaurantCount: placeIds.length,
+                missingRestaurantDataCount: placeIds.length,
             });
             return res.status(404).json({
                 error: 'Not Found',
@@ -60,9 +61,10 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
                 message: 'No restaurants found for this session',
             });
         }
-        console.log('Fetched restaurant options', {
+        console.log('Returned REST session options', {
             sessionCode,
             restaurantCount: restaurants.length,
+            missingRestaurantDataCount: placeIds.length - restaurants.length,
         });
         return res.status(200).json({
             restaurants,

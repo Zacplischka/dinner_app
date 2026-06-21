@@ -23,20 +23,33 @@ const joinSessionRequestSchema = z.object({
   participantName: z.string().min(1).max(50),
 });
 
+function validationFields(error: z.ZodError): string[] {
+  return Object.keys(error.flatten().fieldErrors).sort();
+}
+
 /**
  * POST /api/sessions
  * Create a new dinner decision session
  */
 router.post('/', asyncHandler(async (req, res) => {
+  let createContext: {
+    hasLocation: boolean;
+    searchRadiusMiles: number | null;
+  } = {
+    hasLocation: false,
+    searchRadiusMiles: null,
+  };
+
   try {
     // Validate request body
     const validation = createSessionRequestSchema.safeParse(req.body);
 
     if (!validation.success) {
-      console.warn('Rejected POST /api/sessions', {
+      console.warn('Rejected REST session create', {
         reason: 'validation_error',
-        fields: Object.keys(validation.error.flatten().fieldErrors),
+        fields: validationFields(validation.error),
       });
+
       return res.status(400).json({
         error: 'Bad Request',
         code: 'VALIDATION_ERROR',
@@ -49,26 +62,28 @@ router.post('/', asyncHandler(async (req, res) => {
 
     // Default searchRadiusMiles to 5 if location is provided but radius is not
     const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;
+    createContext = {
+      hasLocation: Boolean(location),
+      searchRadiusMiles: radius ?? null,
+    };
 
     // Create session
     const session = await SessionService.createSession(hostName, location, radius);
 
-    console.log('Created session', {
+    console.log('Created REST session', {
       sessionCode: session.sessionCode,
-      hostName,
-      hasLocation: Boolean(location),
-      searchRadiusMiles: radius,
-      restaurantCount: session.restaurantCount,
+      ...createContext,
+      restaurantCount: session.restaurantCount ?? 0,
     });
 
     return res.status(201).json(session);
   } catch (error) {
     if (error instanceof Error && error.message === 'NO_RESTAURANTS_FOUND') {
-      console.warn('Rejected POST /api/sessions', {
+      console.warn('Rejected REST session create', {
         reason: 'no_restaurants_found',
-        hasLocation: Boolean(req.body?.location),
-        searchRadiusMiles: req.body?.searchRadiusMiles,
+        ...createContext,
       });
+
       return res.status(400).json({
         error: 'Bad Request',
         code: 'NO_RESTAURANTS_FOUND',
@@ -96,10 +111,11 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
 
     // Validate session code format
     if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
-      console.warn('Rejected GET /api/sessions/:sessionCode', {
+      console.warn('Rejected REST session get', {
         sessionCode,
         reason: 'invalid_session_code',
       });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
@@ -111,10 +127,11 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     const session = await SessionService.getSession(sessionCode);
 
     if (!session) {
-      console.warn('Rejected GET /api/sessions/:sessionCode', {
+      console.warn('Rejected REST session get', {
         sessionCode,
         reason: 'session_not_found',
       });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
@@ -122,7 +139,7 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
       });
     }
 
-    console.log('Fetched session', {
+    console.log('Returned REST session', {
       sessionCode,
       state: session.state,
       participantCount: session.participantCount,
@@ -149,10 +166,11 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
 
     // Validate session code format
     if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
-      console.warn('Rejected POST /api/sessions/:sessionCode/join', {
+      console.warn('Rejected REST session join', {
         sessionCode,
         reason: 'invalid_session_code',
       });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
@@ -164,11 +182,12 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
     const validation = joinSessionRequestSchema.safeParse(req.body);
 
     if (!validation.success) {
-      console.warn('Rejected POST /api/sessions/:sessionCode/join', {
+      console.warn('Rejected REST session join', {
         sessionCode,
         reason: 'validation_error',
-        fields: Object.keys(validation.error.flatten().fieldErrors),
+        fields: validationFields(validation.error),
       });
+
       return res.status(400).json({
         error: 'Bad Request',
         code: 'VALIDATION_ERROR',
@@ -189,20 +208,20 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
       participantName
     );
 
-    console.log('Joined session via REST', {
+    console.log('Joined REST session', {
       sessionCode,
       participantId: result.participantId,
-      participantName,
       participantCount: result.participantCount,
     });
 
     return res.status(200).json(result);
   } catch (error) {
     if (error instanceof Error && error.message === 'SESSION_NOT_FOUND') {
-      console.warn('Rejected POST /api/sessions/:sessionCode/join', {
+      console.warn('Rejected REST session join', {
         sessionCode: req.params.sessionCode,
         reason: 'session_not_found',
       });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
@@ -211,10 +230,12 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
     }
 
     if (error instanceof Error && error.message === 'SESSION_FULL') {
-      console.warn('Rejected POST /api/sessions/:sessionCode/join', {
+      console.warn('Rejected REST session join', {
         sessionCode: req.params.sessionCode,
         reason: 'session_full',
+        participantLimit: 4,
       });
+
       return res.status(403).json({
         error: 'Session is full',
         code: 'SESSION_FULL',
