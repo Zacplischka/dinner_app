@@ -19,6 +19,11 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
 
     // Validate session code format (6 uppercase alphanumeric)
     if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
+      console.warn('Rejected GET /api/options/:sessionCode', {
+        sessionCode,
+        reason: 'invalid_session_code',
+      });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
@@ -29,6 +34,11 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     // Check if session exists
     const sessionExists = await redis.exists(`session:${sessionCode}`);
     if (!sessionExists) {
+      console.warn('Rejected GET /api/options/:sessionCode', {
+        sessionCode,
+        reason: 'session_not_found',
+      });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
@@ -40,6 +50,11 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     const placeIds = await redis.smembers(`session:${sessionCode}:restaurant_ids`);
 
     if (placeIds.length === 0) {
+      console.warn('Rejected GET /api/options/:sessionCode', {
+        sessionCode,
+        reason: 'no_restaurant_ids',
+      });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'NO_RESTAURANTS',
@@ -49,20 +64,34 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
 
     // Get full restaurant data from Hash
     const restaurants: Restaurant[] = [];
+    const missingRestaurantIds: string[] = [];
     for (const placeId of placeIds) {
       const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
       if (restaurantData) {
         restaurants.push(parseRedisJson<Restaurant>(restaurantData));
+      } else {
+        missingRestaurantIds.push(placeId);
       }
     }
 
     if (restaurants.length === 0) {
+      console.warn('Rejected GET /api/options/:sessionCode', {
+        sessionCode,
+        reason: 'no_restaurant_data',
+        missingRestaurantIds,
+      });
+
       return res.status(404).json({
         error: 'Not Found',
         code: 'NO_RESTAURANTS',
         message: 'No restaurants found for this session',
       });
     }
+
+    console.log('Fetched REST session options', {
+      sessionCode,
+      restaurantCount: restaurants.length,
+    });
 
     return res.status(200).json({
       restaurants,

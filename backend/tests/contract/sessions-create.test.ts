@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
@@ -12,6 +12,7 @@ describe('Contract Test: POST /api/sessions', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     // Clean up test data after each test
     await cleanupTestData(redis);
   });
@@ -21,6 +22,8 @@ describe('Contract Test: POST /api/sessions', () => {
   });
 
   it('should return 201 with valid SessionResponse schema on successful session creation', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
     const response = await request(app)
       .post('/api/sessions')
       .send({ hostName: 'Alice' })
@@ -38,9 +41,17 @@ describe('Contract Test: POST /api/sessions', () => {
     expect(new Date(response.body.expiresAt).toISOString()).toBe(response.body.expiresAt); // Valid ISO 8601
     expect(response.body).toHaveProperty('shareableLink');
     expect(response.body.shareableLink).toContain(response.body.sessionCode);
+    expect(logSpy).toHaveBeenCalledWith('Created REST session', {
+      sessionCode: response.body.sessionCode,
+      hasLocation: false,
+      searchRadiusMiles: undefined,
+      restaurantCount: 0,
+    });
   });
 
   it('should return 400 with ErrorResponse schema when hostName is missing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
     const response = await request(app)
       .post('/api/sessions')
       .send({})
@@ -52,6 +63,10 @@ describe('Contract Test: POST /api/sessions', () => {
     expect(response.body).toHaveProperty('code');
     expect(response.body).toHaveProperty('message');
     expect(response.body.code).toBe('VALIDATION_ERROR');
+    expect(warnSpy).toHaveBeenCalledWith('Rejected POST /api/sessions', {
+      reason: 'validation_error',
+      fields: ['hostName'],
+    });
   });
 
   it('should return 400 when hostName is empty string', async () => {
