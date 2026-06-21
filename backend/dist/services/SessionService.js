@@ -19,10 +19,17 @@ export async function createSession(hostName, location, searchRadiusMiles) {
         const exists = await redis.exists(`session:${sessionCode}`);
         if (!exists)
             break;
+        console.warn('Session code collision during createSession', {
+            sessionCode,
+            attempt: attempts + 1,
+        });
         sessionCode = generateSessionCode();
         attempts++;
     }
     if (attempts >= MAX_ATTEMPTS) {
+        console.error('Failed to generate unique session code', {
+            attempts: MAX_ATTEMPTS,
+        });
         throw new Error('Failed to generate unique session code');
     }
     let restaurants = [];
@@ -54,6 +61,14 @@ export async function createSession(hostName, location, searchRadiusMiles) {
     await refreshSessionTtl(sessionCode, []);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
+    console.log('Created session', {
+        sessionCode,
+        hostName,
+        hasLocation: Boolean(location),
+        searchRadiusMiles,
+        participantCount: 1,
+        restaurantCount: restaurants.length,
+    });
     return {
         sessionCode,
         hostName,
@@ -93,9 +108,20 @@ export async function getSession(sessionCode) {
 export async function joinSession(sessionCode, participantId, displayName) {
     const session = await SessionModel.getSession(sessionCode);
     if (!session) {
+        console.warn('Rejected REST session join', {
+            sessionCode,
+            participantId,
+            reason: 'session_not_found',
+        });
         throw new Error('SESSION_NOT_FOUND');
     }
     if (session.participantCount >= 4) {
+        console.warn('Rejected REST session join', {
+            sessionCode,
+            participantId,
+            reason: 'session_full',
+            participantCount: session.participantCount,
+        });
         throw new Error('SESSION_FULL');
     }
     await ParticipantModel.addParticipant(sessionCode, participantId, displayName, false);
@@ -103,6 +129,12 @@ export async function joinSession(sessionCode, participantId, displayName) {
     await SessionModel.updateLastActivity(sessionCode);
     const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
     await refreshSessionTtl(sessionCode, participantIds);
+    console.log('Joined session via REST', {
+        sessionCode,
+        participantId,
+        participantName: displayName,
+        participantCount: newCount,
+    });
     return {
         participantId,
         sessionCode,
@@ -113,5 +145,8 @@ export async function joinSession(sessionCode, participantId, displayName) {
 export async function expireSession(sessionCode) {
     await SessionModel.updateSessionState(sessionCode, 'expired');
     await SessionModel.deleteSession(sessionCode);
+    console.log('Expired session cleanup complete', {
+        sessionCode,
+    });
 }
 //# sourceMappingURL=SessionService.js.map

@@ -57,11 +57,18 @@ export async function createSession(
   while (attempts < MAX_ATTEMPTS) {
     const exists = await redis.exists(`session:${sessionCode}`);
     if (!exists) break;
+    console.warn('Session code collision during createSession', {
+      sessionCode,
+      attempt: attempts + 1,
+    });
     sessionCode = generateSessionCode();
     attempts++;
   }
 
   if (attempts >= MAX_ATTEMPTS) {
+    console.error('Failed to generate unique session code', {
+      attempts: MAX_ATTEMPTS,
+    });
     throw new Error('Failed to generate unique session code');
   }
 
@@ -118,6 +125,15 @@ export async function createSession(
   // Generate shareable link
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
+
+  console.log('Created session', {
+    sessionCode,
+    hostName,
+    hasLocation: Boolean(location),
+    searchRadiusMiles,
+    participantCount: 1,
+    restaurantCount: restaurants.length,
+  });
 
   return {
     sessionCode,
@@ -198,12 +214,23 @@ export async function joinSession(
   // Check session exists
   const session = await SessionModel.getSession(sessionCode);
   if (!session) {
+    console.warn('Rejected REST session join', {
+      sessionCode,
+      participantId,
+      reason: 'session_not_found',
+    });
     throw new Error('SESSION_NOT_FOUND');
   }
 
   // Check participant limit (FR-004, FR-005)
   // Use session.participantCount which includes the host who may not have joined yet
   if (session.participantCount >= 4) {
+    console.warn('Rejected REST session join', {
+      sessionCode,
+      participantId,
+      reason: 'session_full',
+      participantCount: session.participantCount,
+    });
     throw new Error('SESSION_FULL');
   }
 
@@ -220,6 +247,13 @@ export async function joinSession(
   const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
   await refreshSessionTtl(sessionCode, participantIds);
 
+  console.log('Joined session via REST', {
+    sessionCode,
+    participantId,
+    participantName: displayName,
+    participantCount: newCount,
+  });
+
   return {
     participantId,
     sessionCode,
@@ -234,4 +268,7 @@ export async function joinSession(
 export async function expireSession(sessionCode: string): Promise<void> {
   await SessionModel.updateSessionState(sessionCode, 'expired');
   await SessionModel.deleteSession(sessionCode);
+  console.log('Expired session cleanup complete', {
+    sessionCode,
+  });
 }
