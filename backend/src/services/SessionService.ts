@@ -57,7 +57,7 @@ export async function createSession(
   while (attempts < MAX_ATTEMPTS) {
     const exists = await redis.exists(`session:${sessionCode}`);
     if (!exists) break;
-    console.warn('Session code collision detected', {
+    console.warn('Session code collision during createSession', {
       sessionCode,
       attempt: attempts + 1,
     });
@@ -67,7 +67,7 @@ export async function createSession(
 
   if (attempts >= MAX_ATTEMPTS) {
     console.error('Failed to generate unique session code', {
-      attempts,
+      attempts: MAX_ATTEMPTS,
     });
     throw new Error('Failed to generate unique session code');
   }
@@ -134,6 +134,7 @@ export async function createSession(
     sessionCode,
     hasLocation: Boolean(location),
     searchRadiusMiles,
+    participantCount: 1,
     restaurantCount: restaurants.length,
   });
 
@@ -220,9 +221,10 @@ export async function joinSession(
   // Check session exists
   const session = await SessionModel.getSession(sessionCode);
   if (!session) {
-    console.warn('Rejected session join for missing session', {
+    console.warn('Rejected session join', {
       sessionCode,
       participantId,
+      reason: 'session_not_found',
     });
     throw new Error('SESSION_NOT_FOUND');
   }
@@ -230,9 +232,10 @@ export async function joinSession(
   // Check participant limit (FR-004, FR-005)
   // Use session.participantCount which includes the host who may not have joined yet
   if (session.participantCount >= 4) {
-    console.warn('Rejected session join because session is full', {
+    console.warn('Rejected session join', {
       sessionCode,
       participantId,
+      reason: 'session_full',
       participantCount: session.participantCount,
     });
     throw new Error('SESSION_FULL');
@@ -271,7 +274,7 @@ export async function joinSession(
 export async function expireSession(sessionCode: string): Promise<void> {
   await SessionModel.updateSessionState(sessionCode, 'expired');
   await SessionModel.deleteSession(sessionCode);
-  console.log('Session expired and removed', {
+  console.log('Expired session cleanup complete', {
     sessionCode,
   });
 }

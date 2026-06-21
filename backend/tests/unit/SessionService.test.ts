@@ -9,6 +9,12 @@ describe('SessionService', () => {
   const originalFrontendUrl = process.env.FRONTEND_URL;
   const createdSessionCodes: string[] = [];
 
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
   afterEach(async () => {
     // Clean up test data
     await redis.del(`session:${testSessionCode}`);
@@ -40,6 +46,47 @@ describe('SessionService', () => {
   });
 
   describe('createSession code generation', () => {
+    it('should log created sessions with operational context', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+      const result = await SessionService.createSession('Alice');
+      createdSessionCodes.push(result.sessionCode);
+
+      expect(logSpy).toHaveBeenCalledWith('Session created', {
+        sessionCode: result.sessionCode,
+        hasLocation: false,
+        searchRadiusMiles: undefined,
+        participantCount: 1,
+        restaurantCount: 0,
+      });
+    });
+
+    it('should warn when session code generation collides', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      await redis.hset('session:AAAAAA', {
+        hostId: 'existing-host',
+        state: 'waiting',
+        participantCount: '1',
+        createdAt: '1700000000',
+        lastActivityAt: '1700000000',
+      });
+      let calls = 0;
+      const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
+        calls++;
+        return calls <= 6 ? 0 : 0.03;
+      });
+
+      const result = await SessionService.createSession('Alice');
+      createdSessionCodes.push(result.sessionCode);
+
+      expect(result.sessionCode).toBe('BBBBBB');
+      expect(randomSpy).toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith('Session code collision during createSession', {
+        sessionCode: 'AAAAAA',
+        attempt: 1,
+      });
+    });
+
     it('should fail after repeated session code collisions', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       await redis.hset('session:AAAAAA', {
@@ -56,33 +103,6 @@ describe('SessionService', () => {
       );
       expect(errorSpy).toHaveBeenCalledWith('Failed to generate unique session code', {
         attempts: 10,
-      });
-    });
-
-    it('should warn when code generation collisions are retried', async () => {
-      await redis.hset('session:AAAAAA', {
-        hostId: 'existing-host',
-        state: 'waiting',
-        participantCount: '1',
-        createdAt: '1700000000',
-        lastActivityAt: '1700000000',
-      });
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      vi.spyOn(Math, 'random')
-        .mockReturnValueOnce(0)
-        .mockReturnValueOnce(0)
-        .mockReturnValueOnce(0)
-        .mockReturnValueOnce(0)
-        .mockReturnValueOnce(0)
-        .mockReturnValueOnce(0)
-        .mockReturnValue(0.5);
-
-      const result = await SessionService.createSession('Alice');
-      createdSessionCodes.push(result.sessionCode);
-
-      expect(warnSpy).toHaveBeenCalledWith('Session code collision detected', {
-        sessionCode: 'AAAAAA',
-        attempt: 1,
       });
     });
   });
@@ -149,24 +169,10 @@ describe('SessionService', () => {
         SessionService.joinSession(testSessionCode, 'participant-1', 'Bob')
       ).rejects.toThrow('SESSION_NOT_FOUND');
 
-      expect(warnSpy).toHaveBeenCalledWith('Rejected session join for missing session', {
+      expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
         sessionCode: testSessionCode,
         participantId: 'participant-1',
-      });
-    });
-
-    it('should log successful joins with the updated participant count', async () => {
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-      const session = await SessionService.createSession('Alice');
-      createdSessionCodes.push(session.sessionCode);
-
-      const result = await SessionService.joinSession(session.sessionCode, 'participant-1', 'Bob');
-
-      expect(result.participantCount).toBe(2);
-      expect(logSpy).toHaveBeenCalledWith('Participant joined session', {
-        sessionCode: session.sessionCode,
-        participantId: 'participant-1',
-        participantCount: 2,
+        reason: 'session_not_found',
       });
     });
 
@@ -185,23 +191,44 @@ describe('SessionService', () => {
         SessionService.joinSession(testSessionCode, 'participant-5', 'Eve')
       ).rejects.toThrow('SESSION_FULL');
 
-      expect(warnSpy).toHaveBeenCalledWith('Rejected session join because session is full', {
+      expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
         sessionCode: testSessionCode,
         participantId: 'participant-5',
+        reason: 'session_full',
         participantCount: 4,
+      });
+    });
+
+    it('should log successful joins with the updated participant count', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const session = await SessionService.createSession('Alice');
+      createdSessionCodes.push(session.sessionCode);
+
+      const result = await SessionService.joinSession(session.sessionCode, 'participant-1', 'Bob');
+
+      expect(result).toEqual({
+        participantId: 'participant-1',
+        sessionCode: session.sessionCode,
+        participantName: 'Bob',
+        participantCount: 2,
+      });
+      expect(logSpy).toHaveBeenCalledWith('Participant joined session', {
+        sessionCode: session.sessionCode,
+        participantId: 'participant-1',
+        participantCount: 2,
       });
     });
   });
 
   describe('expireSession', () => {
-    it('should log explicit session expiry', async () => {
+    it('should log session expiration cleanup', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       const session = await SessionService.createSession('Alice');
       createdSessionCodes.push(session.sessionCode);
 
       await SessionService.expireSession(session.sessionCode);
 
-      expect(logSpy).toHaveBeenCalledWith('Session expired and removed', {
+      expect(logSpy).toHaveBeenCalledWith('Expired session cleanup complete', {
         sessionCode: session.sessionCode,
       });
     });
@@ -243,6 +270,7 @@ describe('SessionService', () => {
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
+      createdSessionCodes.push(result.sessionCode);
 
       expect(searchSpy).toHaveBeenCalledWith({
         latitude: 37.7749,
@@ -256,6 +284,7 @@ describe('SessionService', () => {
         sessionCode: result.sessionCode,
         hasLocation: true,
         searchRadiusMiles: 5,
+        participantCount: 1,
         restaurantCount: 2,
       });
     });
@@ -273,6 +302,7 @@ describe('SessionService', () => {
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
+      createdSessionCodes.push(result.sessionCode);
 
       const placeIds = await redis.smembers(`session:${result.sessionCode}:restaurant_ids`);
       expect(placeIds).toContain('place1');
@@ -291,6 +321,7 @@ describe('SessionService', () => {
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
+      createdSessionCodes.push(result.sessionCode);
 
       const restaurantData = await redis.hget(
         `session:${result.sessionCode}:restaurants`,
@@ -334,6 +365,7 @@ describe('SessionService', () => {
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
+      createdSessionCodes.push(result.sessionCode);
 
       const ttl = await redis.ttl(`session:${result.sessionCode}:restaurant_ids`);
       expect(ttl).toBeGreaterThan(0);
@@ -348,11 +380,12 @@ describe('SessionService', () => {
       const searchSpy = vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
         .mockResolvedValue(mockRestaurants);
 
-      await SessionService.createSession(
+      const result = await SessionService.createSession(
         'Alice',
         { latitude: 37.7749, longitude: -122.4194 },
         10
       );
+      createdSessionCodes.push(result.sessionCode);
 
       expect(searchSpy).toHaveBeenCalledWith({
         latitude: 37.7749,

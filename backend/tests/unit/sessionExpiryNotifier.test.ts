@@ -35,6 +35,9 @@ describe('session expiry notifier', () => {
     redisState.instances = [];
     redisState.configError = null;
     vi.resetModules();
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -51,6 +54,46 @@ describe('session expiry notifier', () => {
       },
     };
   }
+
+  it('should log notifier initialization and disconnection', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const { io } = ioMock();
+    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
+      '../../src/redis/sessionExpiryNotifier.js'
+    );
+
+    await initializeSessionExpiryNotifier(io as any);
+
+    expect(logSpy).toHaveBeenCalledWith('✓ Redis keyspace notifications enabled');
+    expect(redisState.instances[0].subscribe).toHaveBeenCalledWith('__keyevent@0__:expired');
+    expect(logSpy).toHaveBeenCalledWith('✓ Session expiry notifier initialized');
+
+    await disconnectSessionExpiryNotifier();
+
+    expect(redisState.instances[0].quit).toHaveBeenCalledOnce();
+    expect(logSpy).toHaveBeenCalledWith('Session expiry notifier disconnected');
+  });
+
+  it('should emit and log valid expired session keys', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const { io, emit } = ioMock();
+    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
+      '../../src/redis/sessionExpiryNotifier.js'
+    );
+
+    await initializeSessionExpiryNotifier(io as any);
+    redisState.instances[0].emit('message', '__keyevent@0__:expired', 'session:ABC123');
+
+    expect(logSpy).toHaveBeenCalledWith('Session expired: ABC123');
+    expect(io.to).toHaveBeenCalledWith('ABC123');
+    expect(emit).toHaveBeenCalledWith('session:expired', {
+      sessionCode: 'ABC123',
+      reason: 'inactivity',
+      message: 'Session has expired due to inactivity',
+    });
+
+    await disconnectSessionExpiryNotifier();
+  });
 
   it('should continue when Redis config is disabled and log subscriber errors', async () => {
     delete process.env.REDIS_HOST;
