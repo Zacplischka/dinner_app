@@ -244,10 +244,13 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       await store.removeParticipant(sessionCode, prior.participantId);
     } else {
       isHost = !hostPresent && displayName === session.hostName;
+    }
 
-      // Check participant limit (FR-004, FR-005); the host slot stays
-      // reserved until the host claims it
-      const reservedHostSlot = hostPresent || isHost ? 0 : 1;
+    // The host slot stays reserved in the count until the host claims it
+    const reservedHostSlot = hostPresent || isHost ? 0 : 1;
+
+    if (!prior) {
+      // Check participant limit (FR-004, FR-005)
       if (existing.length + reservedHostSlot >= MAX_PARTICIPANTS) {
         console.warn('Rejected session join', {
           sessionCode,
@@ -265,9 +268,11 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Add participant (touches TTL and lastActivityAt)
     const setSize = await store.addParticipant(sessionCode, { participantId, displayName, isHost });
 
-    const reservedHostSlot = hostPresent || isHost ? 0 : 1;
-
-    // Re-check after adding to close the check-then-add race (rejoins are net-zero)
+    // Re-check after adding to close the check-then-add race. Rejoins are
+    // exempt: they're net-zero in isolation, and a concurrent join landing
+    // inside a rejoin's remove/add window may transiently exceed the cap -
+    // an accepted trade-off over kicking out a legitimately-rejoining
+    // participant.
     if (!prior && setSize + reservedHostSlot > MAX_PARTICIPANTS) {
       await store.removeParticipant(sessionCode, participantId);
       console.warn('Rejected session join', {
