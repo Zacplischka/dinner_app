@@ -84,12 +84,15 @@ export async function listProfilesByIds(ids: string[]) {
   return data || [];
 }
 
+/** Returns null when no profile matches (or the lookup fails). */
 export async function findProfileIdByEmail(email: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('id')
     .eq('email', email.toLowerCase())
     .single();
+
+  return error ? null : data;
 }
 
 // --- Friendships -----------------------------------------------------------
@@ -124,9 +127,9 @@ export async function listPendingRequestsForRecipient(userId: string) {
   return data || [];
 }
 
-// Existence check for a pair, in either direction
+/** Existence check for a pair, in either direction. Null when no row exists. */
 export async function findFriendshipBetween(userId: string, otherUserId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('friendships')
     .select('id, status')
     .or(
@@ -134,10 +137,16 @@ export async function findFriendshipBetween(userId: string, otherUserId: string)
       `and(user_id.eq.${otherUserId},friend_id.eq.${userId})`
     )
     .maybeSingle();
+
+  if (error) {
+    console.error('Error checking existing friendship:', error);
+    throw new DomainError('database_error', 'Failed to check existing friendship');
+  }
+  return data;
 }
 
 export async function createFriendRequest(userId: string, friendId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('friendships')
     .insert({
       user_id: userId,
@@ -146,42 +155,66 @@ export async function createFriendRequest(userId: string, friendId: string) {
     })
     .select('id')
     .single();
+
+  if (error) {
+    console.error('Error creating friend request:', error);
+    throw new DomainError('database_error', 'Failed to create friend request');
+  }
+  return data;
 }
 
+/** Returns null when no matching pending request exists (or the lookup fails). */
 export async function findPendingRequestForRecipient(requestId: string, userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('friendships')
     .select('id')
     .eq('id', requestId)
     .eq('friend_id', userId)
     .eq('status', 'pending')
     .single();
+
+  return error ? null : data;
 }
 
-export async function acceptFriendRequest(requestId: string) {
-  return supabase
+export async function acceptFriendRequest(requestId: string): Promise<void> {
+  const { error } = await supabase
     .from('friendships')
     .update({ status: 'accepted', updated_at: new Date().toISOString() })
     .eq('id', requestId);
+
+  if (error) {
+    console.error('Error accepting friend request:', error);
+    throw new DomainError('database_error', 'Failed to accept friend request');
+  }
 }
 
-export async function deletePendingRequestForRecipient(requestId: string, userId: string) {
-  return supabase
+export async function deletePendingRequestForRecipient(requestId: string, userId: string): Promise<void> {
+  const { error } = await supabase
     .from('friendships')
     .delete()
     .eq('id', requestId)
     .eq('friend_id', userId)
     .eq('status', 'pending');
+
+  if (error) {
+    console.error('Error declining friend request:', error);
+    throw new DomainError('database_error', 'Failed to decline friend request');
+  }
 }
 
-export async function deleteFriendshipBetween(userId: string, friendId: string) {
-  return supabase
+export async function deleteFriendshipBetween(userId: string, friendId: string): Promise<void> {
+  const { error } = await supabase
     .from('friendships')
     .delete()
     .or(
       `and(user_id.eq.${userId},friend_id.eq.${friendId}),` +
       `and(user_id.eq.${friendId},friend_id.eq.${userId})`
     );
+
+  if (error) {
+    console.error('Error removing friend:', error);
+    throw new DomainError('database_error', 'Failed to remove friend');
+  }
 }
 
 // Same rows as listAcceptedFriendships but only the pair columns; kept as

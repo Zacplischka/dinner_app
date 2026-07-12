@@ -102,6 +102,57 @@ export async function listFriendRequests(userId: string): Promise<FriendRequest[
 }
 
 /**
+ * Send a friend request to a user by email.
+ * Returns the new request's id.
+ */
+export async function sendFriendRequest(userId: string, email: string): Promise<string> {
+  const targetUser = await friendsStore.findProfileIdByEmail(email);
+  if (!targetUser) {
+    throw new DomainError('not_found', 'User not found with that email');
+  }
+
+  if (targetUser.id === userId) {
+    throw new DomainError('validation_error', 'You cannot send a friend request to yourself');
+  }
+
+  const existingFriendship = await friendsStore.findFriendshipBetween(userId, targetUser.id);
+  if (existingFriendship) {
+    if (existingFriendship.status === 'accepted') {
+      throw new DomainError('already_friends', 'You are already friends with this user');
+    }
+    if (existingFriendship.status === 'pending') {
+      throw new DomainError('request_pending', 'A friend request is already pending');
+    }
+    if (existingFriendship.status === 'blocked') {
+      throw new DomainError('blocked', 'Unable to send friend request');
+    }
+  }
+
+  const newRequest = await friendsStore.createFriendRequest(userId, targetUser.id);
+  return newRequest.id;
+}
+
+/** Only the recipient of a pending request may accept it. */
+export async function acceptFriendRequest(userId: string, requestId: string): Promise<void> {
+  const request = await friendsStore.findPendingRequestForRecipient(requestId, userId);
+  if (!request) {
+    throw new DomainError('not_found', 'Friend request not found');
+  }
+
+  await friendsStore.acceptFriendRequest(requestId);
+}
+
+/** Only the recipient of a pending request may decline it; declining deletes the row. */
+export async function declineFriendRequest(userId: string, requestId: string): Promise<void> {
+  await friendsStore.deletePendingRequestForRecipient(requestId, userId);
+}
+
+/** Remove a friendship in either direction. */
+export async function removeFriend(userId: string, friendId: string): Promise<void> {
+  await friendsStore.deleteFriendshipBetween(userId, friendId);
+}
+
+/**
  * Map a database Profile to a UserProfile API response object
  */
 export function mapProfileToUserProfile(profile: Partial<Profile>): UserProfile {

@@ -84,89 +84,22 @@ router.get('/friends/requests', asyncHandler(async (req: AuthenticatedRequest, r
  * Send a friend request to a user by email
  */
 router.post('/friends/request', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const { email } = req.body as SendFriendRequestPayload;
+  const { email } = req.body as SendFriendRequestPayload;
 
-    if (!email) {
-      return res.status(400).json({
-        error: 'validation_error',
-        message: 'Email is required',
-      });
-    }
-
-    // Find the user by email
-    const { data: targetUser, error: findError } = await friendsStore.findProfileIdByEmail(email);
-
-    if (findError || !targetUser) {
-      return res.status(404).json({
-        error: 'not_found',
-        message: 'User not found with that email',
-      });
-    }
-
-    if (targetUser.id === userId) {
-      return res.status(400).json({
-        error: 'validation_error',
-        message: 'You cannot send a friend request to yourself',
-      });
-    }
-
-    // Check if a friendship already exists (in either direction)
-    const { data: existingFriendship, error: checkError } = await friendsStore.findFriendshipBetween(userId, targetUser.id);
-
-    if (checkError) {
-      console.error('Error checking existing friendship:', checkError);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to check existing friendship',
-      });
-    }
-
-    if (existingFriendship) {
-      if (existingFriendship.status === 'accepted') {
-        return res.status(400).json({
-          error: 'already_friends',
-          message: 'You are already friends with this user',
-        });
-      }
-      if (existingFriendship.status === 'pending') {
-        return res.status(400).json({
-          error: 'request_pending',
-          message: 'A friend request is already pending',
-        });
-      }
-      if (existingFriendship.status === 'blocked') {
-        return res.status(400).json({
-          error: 'blocked',
-          message: 'Unable to send friend request',
-        });
-      }
-    }
-
-    // Create the friend request
-    const { data: newRequest, error: createError } = await friendsStore.createFriendRequest(userId, targetUser.id);
-
-    if (createError) {
-      console.error('Error creating friend request:', createError);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to create friend request',
-      });
-    }
-
-    return res.status(201).json({
-      success: true,
-      requestId: newRequest.id,
-      message: 'Friend request sent',
-    });
-  } catch (error) {
-    console.error('Error in POST /friends/request:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
+  if (!email) {
+    return res.status(400).json({
+      error: 'validation_error',
+      message: 'Email is required',
     });
   }
+
+  const requestId = await FriendsService.sendFriendRequest(req.user!.id, email);
+
+  return res.status(201).json({
+    success: true,
+    requestId,
+    message: 'Friend request sent',
+  });
 }));
 
 /**
@@ -174,42 +107,12 @@ router.post('/friends/request', asyncHandler(async (req: AuthenticatedRequest, r
  * Accept a friend request
  */
 router.post('/friends/:requestId/accept', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const { requestId } = req.params;
+  await FriendsService.acceptFriendRequest(req.user!.id, req.params.requestId);
 
-    // Find the pending request where the current user is the recipient
-    const { data: request, error: findError } = await friendsStore.findPendingRequestForRecipient(requestId, userId);
-
-    if (findError || !request) {
-      return res.status(404).json({
-        error: 'not_found',
-        message: 'Friend request not found',
-      });
-    }
-
-    // Update the request to accepted
-    const { error: updateError } = await friendsStore.acceptFriendRequest(requestId);
-
-    if (updateError) {
-      console.error('Error accepting friend request:', updateError);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to accept friend request',
-      });
-    }
-
-    return res.json({
-      success: true,
-      message: 'Friend request accepted',
-    });
-  } catch (error) {
-    console.error('Error in POST /friends/:requestId/accept:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
-    });
-  }
+  return res.json({
+    success: true,
+    message: 'Friend request accepted',
+  });
 }));
 
 /**
@@ -217,32 +120,12 @@ router.post('/friends/:requestId/accept', asyncHandler(async (req: Authenticated
  * Decline a friend request
  */
 router.post('/friends/:requestId/decline', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const { requestId } = req.params;
+  await FriendsService.declineFriendRequest(req.user!.id, req.params.requestId);
 
-    // Find and delete the pending request where the current user is the recipient
-    const { error: deleteError } = await friendsStore.deletePendingRequestForRecipient(requestId, userId);
-
-    if (deleteError) {
-      console.error('Error declining friend request:', deleteError);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to decline friend request',
-      });
-    }
-
-    return res.json({
-      success: true,
-      message: 'Friend request declined',
-    });
-  } catch (error) {
-    console.error('Error in POST /friends/:requestId/decline:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
-    });
-  }
+  return res.json({
+    success: true,
+    message: 'Friend request declined',
+  });
 }));
 
 /**
@@ -250,32 +133,12 @@ router.post('/friends/:requestId/decline', asyncHandler(async (req: Authenticate
  * Remove a friend (unfriend)
  */
 router.delete('/friends/:friendId', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const { friendId } = req.params;
+  await FriendsService.removeFriend(req.user!.id, req.params.friendId);
 
-    // Delete the friendship in either direction
-    const { error: deleteError } = await friendsStore.deleteFriendshipBetween(userId, friendId);
-
-    if (deleteError) {
-      console.error('Error removing friend:', deleteError);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to remove friend',
-      });
-    }
-
-    return res.json({
-      success: true,
-      message: 'Friend removed',
-    });
-  } catch (error) {
-    console.error('Error in DELETE /friends/:friendId:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
-    });
-  }
+  return res.json({
+    success: true,
+    message: 'Friend removed',
+  });
 }));
 
 // ============================================================================
