@@ -483,7 +483,6 @@ Before deploying, ensure:
 - ✅ `REDIS_PORT` = public proxy port
 - ✅ `REDIS_PASSWORD` = correct password
 - ✅ `FRONTEND_URL` = exact frontend domain
-- ✅ Build command includes Lua script copy
 - ✅ Health endpoint responds
 
 **Frontend**:
