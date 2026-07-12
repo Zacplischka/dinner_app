@@ -6,6 +6,7 @@ import { getAuthProfileDefaults } from './authMetadata.js';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { supabase, Profile } from '../services/supabase.js';
+import * as friendsStore from '../store/friendsStore.js';
 import type {
   UserProfile,
   Friend,
@@ -40,18 +41,13 @@ router.get('/users/me', asyncHandler(async (req: AuthenticatedRequest, res: Resp
   try {
     const userId = req.user!.id;
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select(profileSelect)
-      .eq('id', userId)
-      .single();
+    const { data: profile, error } = await friendsStore.getProfileById(userId);
 
     if (error) {
       // Profile might not exist yet - create it from auth data
       if (error.code === 'PGRST116') {
         // Fetch full user data from Supabase Auth to get Google profile info
-        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-        const metadata: unknown = authUser?.user?.user_metadata;
+        const metadata = await friendsStore.getAuthUserMetadata(userId);
         const profileDefaults = getAuthProfileDefaults(metadata, req.user!.email);
 
         const newProfile = {
@@ -61,11 +57,7 @@ router.get('/users/me', asyncHandler(async (req: AuthenticatedRequest, res: Resp
           avatar_url: profileDefaults.avatarUrl,
         };
 
-        const { data: created, error: createError } = await supabase
-          .from('profiles')
-          .insert(newProfile)
-          .select(profileSelect)
-          .single();
+        const { data: created, error: createError } = await friendsStore.createProfile(newProfile);
 
         if (createError) {
           console.error('Error creating profile:', createError);
@@ -111,13 +103,7 @@ router.get('/users/search', asyncHandler(async (req: AuthenticatedRequest, res: 
       });
     }
 
-    // Exact email match only (privacy protection)
-    const { data: users, error } = await supabase
-      .from('profiles')
-      .select(profileSelect)
-      .eq('email', email.toLowerCase())
-      .neq('id', userId) // Don't return the current user
-      .limit(10);
+    const { data: users, error } = await friendsStore.searchProfilesByEmail(email, userId);
 
     if (error) {
       console.error('Error searching users:', error);
