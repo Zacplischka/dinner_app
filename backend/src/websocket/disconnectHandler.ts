@@ -2,7 +2,7 @@
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import type { Socket, Server } from 'socket.io';
-import * as ParticipantModel from '../models/Participant.js';
+import * as store from '../store/sessionStore.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -22,7 +22,7 @@ export async function handleDisconnect(
     console.log(`Socket ${socket.id} disconnected: ${reason}`);
 
     // Get participant info to find which session they were in
-    const participant = await ParticipantModel.getParticipant(socket.id);
+    const participant = await store.getParticipant(socket.id);
 
     if (!participant) {
       // Participant not found or not in any session
@@ -36,7 +36,7 @@ export async function handleDisconnect(
     const { sessionCode, displayName } = participant;
 
     // Get current participant count (unchanged, per FR-025)
-    const participantCount = await ParticipantModel.countParticipants(sessionCode);
+    const participantCount = await store.countParticipants(sessionCode);
 
     // Broadcast participant:disconnected to remaining participants
     // This is INFORMATIONAL only - participant remains in session per FR-025

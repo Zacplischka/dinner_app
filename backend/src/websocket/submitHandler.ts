@@ -3,12 +3,7 @@
 
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import * as SelectionService from '../services/SelectionService.js';
-import * as OverlapService from '../services/OverlapService.js';
-import * as ParticipantModel from '../models/Participant.js';
-import * as SessionModel from '../models/Session.js';
-import { refreshSessionTtl } from '../redis/ttl-utils.js';
-import { redis } from '../redis/client.js';
+import * as store from '../store/sessionStore.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -49,7 +44,7 @@ export async function handleSelectionSubmit(
     const { sessionCode, selections } = validation.data;
 
     // Check session exists
-    const session = await SessionModel.getSession(sessionCode);
+    const session = await store.readSession(sessionCode);
     if (!session) {
       console.warn('Rejected selection:submit', {
         socketId: socket.id,
@@ -63,10 +58,7 @@ export async function handleSelectionSubmit(
     }
 
     // Check participant is in session
-    const isInSession = await ParticipantModel.isParticipantInSession(
-      sessionCode,
-      socket.id
-    );
+    const isInSession = await store.isParticipant(sessionCode, socket.id);
     if (!isInSession) {
       console.warn('Rejected selection:submit', {
         socketId: socket.id,
@@ -79,9 +71,16 @@ export async function handleSelectionSubmit(
       });
     }
 
-    // Submit selections (validates options and checks already submitted)
+    // Record the Submission (validates restaurants, rejects duplicates,
+    // stores selections, marks submitted, touches TTL)
+    let submittedCount: number;
+    let participantCount: number;
     try {
-      await SelectionService.submitSelections(sessionCode, socket.id, selections);
+      ({ submittedCount, participantCount } = await store.recordSubmission(
+        sessionCode,
+        socket.id,
+        selections
+      ));
     } catch (error) {
       console.warn('Rejected selection:submit', {
         socketId: socket.id,
@@ -90,7 +89,7 @@ export async function handleSelectionSubmit(
       });
       return callback({
         success: false,
-        error: error instanceof Error && error.message === 'INVALID_OPTIONS'
+        error: error instanceof Error && error.message === 'INVALID_RESTAURANTS'
           ? 'One or more selected options are invalid'
           : error instanceof Error && error.message === 'ALREADY_SUBMITTED'
           ? 'You have already submitted your selections'
@@ -98,22 +97,8 @@ export async function handleSelectionSubmit(
       });
     }
 
-    // Mark participant as submitted
-    await ParticipantModel.markParticipantSubmitted(socket.id);
-
-    // Update last activity
-    await SessionModel.updateLastActivity(sessionCode);
-
-    // Refresh TTL
-    const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
-    await refreshSessionTtl(sessionCode, participantIds);
-
     // Send acknowledgment
     callback({ success: true });
-
-    // Get submission count
-    const submittedCount = await SelectionService.getSubmittedCount(sessionCode);
-    const participantCount = participantIds.length;
 
     // Broadcast participant:submitted to ALL participants (count only, not selections - FR-023)
     io.in(sessionCode).emit('participant:submitted', {
@@ -125,23 +110,12 @@ export async function handleSelectionSubmit(
     console.log(`✓ Participant ${socket.id} submitted (${submittedCount}/${participantCount})`);
 
     // Check if all submitted
-    const allSubmitted = submittedCount === participantCount;
-
-    if (allSubmitted) {
-      // Calculate overlap
-      const results = await OverlapService.calculateOverlap(sessionCode);
-
-      // Store results
-      await OverlapService.storeResults(
-        sessionCode,
-        results.overlappingOptions.map((opt) => opt.placeId)
-      );
-
-      // Refresh TTL after storing results to ensure results key expires with session
-      await refreshSessionTtl(sessionCode, participantIds);
+    if (submittedCount === participantCount) {
+      // Compute and store the Match
+      const results = await store.computeAndStoreResults(sessionCode);
 
       // Update session state
-      await SessionModel.updateSessionState(sessionCode, 'complete');
+      await store.updateState(sessionCode, 'complete');
 
       // Broadcast results to ALL participants (including sender)
       io.in(sessionCode).emit('session:results', {

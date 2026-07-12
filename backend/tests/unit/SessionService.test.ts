@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as SessionService from '../../src/services/SessionService.js';
 import * as RestaurantSearchService from '../../src/services/RestaurantSearchService.js';
 import { redis } from '../../src/redis/client.js';
-import * as ParticipantModel from '../../src/models/Participant.js';
+import * as store from '../../src/store/sessionStore.js';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST123';
@@ -130,12 +130,11 @@ describe('SessionService', () => {
       delete process.env.FRONTEND_URL;
       const result = await SessionService.createSession('Original Host');
       createdSessionCodes.push(result.sessionCode);
-      await ParticipantModel.addParticipant(
-        result.sessionCode,
-        'host-participant',
-        'Joined Host',
-        true
-      );
+      await store.addParticipant(result.sessionCode, {
+        participantId: 'host-participant',
+        displayName: 'Joined Host',
+        isHost: true,
+      });
 
       const session = await SessionService.getSession(result.sessionCode);
 

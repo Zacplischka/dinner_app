@@ -1,18 +1,21 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import * as SessionModel from '../../src/models/Session.js';
-import * as ParticipantModel from '../../src/models/Participant.js';
+import * as store from '../../src/store/sessionStore.js';
 import * as SessionService from '../../src/services/SessionService.js';
-import { refreshSessionTtl } from '../../src/redis/ttl-utils.js';
 import {
   initializeSessionExpiryNotifier,
   disconnectSessionExpiryNotifier,
 } from '../../src/redis/sessionExpiryNotifier.js';
+import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
   const sessionCode = 'EXP123';
   let redis: Redis;
+
+  const restaurants: Restaurant[] = [
+    { placeId: 'place1', name: 'Pizza Palace', rating: 4.5, priceLevel: 2 },
+  ];
 
   beforeAll(async () => {
     redis = getTestRedis();
@@ -25,22 +28,30 @@ describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
   });
 
   async function createCompleteSession(): Promise<void> {
-    await SessionModel.createSession(sessionCode, 'alice', 'Alice');
-    await ParticipantModel.addParticipant(sessionCode, 'alice', 'Alice', true);
-    await ParticipantModel.addParticipant(sessionCode, 'bob', 'Bob');
-    await redis.sadd(`session:${sessionCode}:alice:selections`, 'place1');
-    await redis.sadd(`session:${sessionCode}:bob:selections`, 'place1');
-    await redis.sadd(`session:${sessionCode}:results`, 'place1');
+    await store.createSession(sessionCode, {
+      hostId: 'alice',
+      hostName: 'Alice',
+      restaurants,
+    });
+    await store.addParticipant(sessionCode, {
+      participantId: 'alice',
+      displayName: 'Alice',
+      isHost: true,
+    });
+    await store.addParticipant(sessionCode, { participantId: 'bob', displayName: 'Bob' });
+    await store.recordSubmission(sessionCode, 'alice', ['place1']);
+    await store.recordSubmission(sessionCode, 'bob', ['place1']);
+    await store.computeAndStoreResults(sessionCode);
   }
 
-  it('should refresh session-related keys with a 30-minute TTL', async () => {
+  it('should keep a 30-minute TTL on every session key after any mutation', async () => {
     await createCompleteSession();
-
-    await refreshSessionTtl(sessionCode, ['alice', 'bob']);
 
     for (const key of [
       `session:${sessionCode}`,
       `session:${sessionCode}:participants`,
+      `session:${sessionCode}:restaurant_ids`,
+      `session:${sessionCode}:restaurants`,
       `participant:alice`,
       `participant:bob`,
       `session:${sessionCode}:alice:selections`,

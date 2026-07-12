@@ -1,13 +1,18 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import * as SessionModel from '../../src/models/Session.js';
-import * as ParticipantModel from '../../src/models/Participant.js';
+import * as store from '../../src/store/sessionStore.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
+import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
   const sessionCode = 'RST123';
   let redis: Redis;
+
+  const restaurants: Restaurant[] = [
+    { placeId: 'place1', name: 'Pizza Palace', rating: 4.5, priceLevel: 2 },
+    { placeId: 'place2', name: 'Sushi Spot', rating: 4.8, priceLevel: 3 },
+  ];
 
   beforeAll(async () => {
     redis = getTestRedis();
@@ -16,15 +21,21 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
 
   beforeEach(async () => {
     await cleanupTestData(redis);
-    await SessionModel.createSession(sessionCode, 'alice', 'Alice');
-    await SessionModel.updateSessionState(sessionCode, 'complete');
-    await ParticipantModel.addParticipant(sessionCode, 'alice', 'Alice', true);
-    await ParticipantModel.addParticipant(sessionCode, 'bob', 'Bob');
-    await ParticipantModel.markParticipantSubmitted('alice');
-    await ParticipantModel.markParticipantSubmitted('bob');
-    await redis.sadd(`session:${sessionCode}:alice:selections`, 'place1', 'place2');
-    await redis.sadd(`session:${sessionCode}:bob:selections`, 'place2');
-    await redis.sadd(`session:${sessionCode}:results`, 'place2');
+    await store.createSession(sessionCode, {
+      hostId: 'alice',
+      hostName: 'Alice',
+      restaurants,
+    });
+    await store.addParticipant(sessionCode, {
+      participantId: 'alice',
+      displayName: 'Alice',
+      isHost: true,
+    });
+    await store.addParticipant(sessionCode, { participantId: 'bob', displayName: 'Bob' });
+    await store.recordSubmission(sessionCode, 'alice', ['place1', 'place2']);
+    await store.recordSubmission(sessionCode, 'bob', ['place2']);
+    await store.computeAndStoreResults(sessionCode);
+    await store.updateState(sessionCode, 'complete');
   });
 
   afterEach(async () => {

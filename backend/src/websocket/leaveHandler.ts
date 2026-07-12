@@ -3,8 +3,7 @@
 
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import * as ParticipantModel from '../models/Participant.js';
-import * as SessionModel from '../models/Session.js';
+import * as store from '../store/sessionStore.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -42,7 +41,7 @@ export async function handleSessionLeave(
     const { sessionCode } = validation.data;
 
     // Check session exists
-    const session = await SessionModel.getSession(sessionCode);
+    const session = await store.readSession(sessionCode);
     if (!session) {
       console.warn('Rejected session:leave', {
         socketId: socket.id,
@@ -56,7 +55,7 @@ export async function handleSessionLeave(
     }
 
     // Get participant info before removal
-    const participant = await ParticipantModel.getParticipant(socket.id);
+    const participant = await store.getParticipant(socket.id);
     if (!participant) {
       console.warn('Rejected session:leave', {
         socketId: socket.id,
@@ -72,10 +71,7 @@ export async function handleSessionLeave(
     const { displayName } = participant;
 
     // Remove participant from session (unlike disconnect, this actually removes)
-    await ParticipantModel.removeParticipant(sessionCode, socket.id);
-
-    // Get updated participant count
-    const newCount = await ParticipantModel.countParticipants(sessionCode);
+    const newCount = await store.removeParticipant(sessionCode, socket.id);
 
     // Leave Socket.IO room
     await socket.leave(sessionCode);

@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import * as ParticipantModel from '../../src/models/Participant.js';
-import * as OverlapService from '../../src/services/OverlapService.js';
+import * as store from '../../src/store/sessionStore.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Results with No Overlap (FR-016)', () => {
@@ -21,38 +20,35 @@ describe('Integration Test: Results with No Overlap (FR-016)', () => {
 
   beforeEach(async () => {
     await cleanupTestData(redis);
-    await ParticipantModel.addParticipant(sessionCode, 'alice', 'Alice', true);
-    await ParticipantModel.addParticipant(sessionCode, 'bob', 'Bob');
-
-    await redis.hset(
-      `session:${sessionCode}:restaurants`,
-      Object.fromEntries(
-        restaurants.map((restaurant) => [
-          restaurant.placeId,
-          JSON.stringify(restaurant),
-        ])
-      )
-    );
-    await redis.sadd(`session:${sessionCode}:alice:selections`, 'place1');
-    await redis.sadd(`session:${sessionCode}:bob:selections`, 'place2');
+    await store.createSession(sessionCode, {
+      hostId: 'alice',
+      hostName: 'Alice',
+      restaurants,
+    });
+    await store.addParticipant(sessionCode, {
+      participantId: 'alice',
+      displayName: 'Alice',
+      isHost: true,
+    });
+    await store.addParticipant(sessionCode, { participantId: 'bob', displayName: 'Bob' });
+    await store.recordSubmission(sessionCode, 'alice', ['place1']);
+    await store.recordSubmission(sessionCode, 'bob', ['place2']);
   });
 
   afterEach(async () => {
     await cleanupTestData(redis);
   });
 
-  it('should return empty overlappingOptions array', async () => {
-    const results = await OverlapService.calculateOverlap(sessionCode);
+  it('should return an empty Match', async () => {
+    const results = await store.computeAndStoreResults(sessionCode);
 
     expect(results.overlappingOptions).toEqual([]);
   });
 
   it('should set hasOverlap to false and store an empty results marker', async () => {
-    const results = await OverlapService.calculateOverlap(sessionCode);
+    const results = await store.computeAndStoreResults(sessionCode);
 
     expect(results.hasOverlap).toBe(false);
-
-    await OverlapService.storeResults(sessionCode, []);
 
     await expect(redis.smembers(`session:${sessionCode}:results`)).resolves.toEqual([
       '__empty__',

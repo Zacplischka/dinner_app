@@ -3,11 +3,7 @@
 
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import * as SelectionService from '../services/SelectionService.js';
-import * as ParticipantModel from '../models/Participant.js';
-import * as SessionModel from '../models/Session.js';
-import { refreshSessionTtl } from '../redis/ttl-utils.js';
-import { redis } from '../redis/client.js';
+import * as store from '../store/sessionStore.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -45,7 +41,7 @@ export async function handleSessionRestart(
     const { sessionCode } = validation.data;
 
     // Check session exists
-    const session = await SessionModel.getSession(sessionCode);
+    const session = await store.readSession(sessionCode);
     if (!session) {
       console.warn('Rejected session:restart', {
         socketId: socket.id,
@@ -59,10 +55,7 @@ export async function handleSessionRestart(
     }
 
     // Check participant is in session
-    const isInSession = await ParticipantModel.isParticipantInSession(
-      sessionCode,
-      socket.id
-    );
+    const isInSession = await store.isParticipant(sessionCode, socket.id);
     if (!isInSession) {
       console.warn('Rejected session:restart', {
         socketId: socket.id,
@@ -75,25 +68,8 @@ export async function handleSessionRestart(
       });
     }
 
-    // Clear all selections (FR-012)
-    await SelectionService.clearSelections(sessionCode);
-
-    // Reset hasSubmitted flag for all participants
-    const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
-    const pipeline = redis.pipeline();
-    participantIds.forEach((participantId) => {
-      pipeline.hset(`participant:${participantId}`, 'hasSubmitted', '0');
-    });
-    await pipeline.exec();
-
-    // Update session state back to selecting
-    await SessionModel.updateSessionState(sessionCode, 'selecting');
-
-    // Update last activity
-    await SessionModel.updateLastActivity(sessionCode);
-
-    // Refresh TTL
-    await refreshSessionTtl(sessionCode, participantIds);
+    // Restart: wipe Selections, Submissions, and the Match; back to 'selecting' (FR-012)
+    await store.resetForRestart(sessionCode);
 
     // Send acknowledgment
     callback({ success: true });

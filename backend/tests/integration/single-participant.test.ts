@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import * as ParticipantModel from '../../src/models/Participant.js';
-import * as OverlapService from '../../src/services/OverlapService.js';
+import * as store from '../../src/store/sessionStore.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Single Participant Session (FR-021)', () => {
@@ -21,25 +20,25 @@ describe('Integration Test: Single Participant Session (FR-021)', () => {
 
   beforeEach(async () => {
     await cleanupTestData(redis);
-    await ParticipantModel.addParticipant(sessionCode, 'alice', 'Alice', true);
-    await redis.hset(
-      `session:${sessionCode}:restaurants`,
-      Object.fromEntries(
-        restaurants.map((restaurant) => [
-          restaurant.placeId,
-          JSON.stringify(restaurant),
-        ])
-      )
-    );
-    await redis.sadd(`session:${sessionCode}:alice:selections`, 'place1', 'place2');
+    await store.createSession(sessionCode, {
+      hostId: 'alice',
+      hostName: 'Alice',
+      restaurants,
+    });
+    await store.addParticipant(sessionCode, {
+      participantId: 'alice',
+      displayName: 'Alice',
+      isHost: true,
+    });
+    await store.recordSubmission(sessionCode, 'alice', ['place1', 'place2']);
   });
 
   afterEach(async () => {
     await cleanupTestData(redis);
   });
 
-  it('should trigger immediate overlap results from the single participant selections', async () => {
-    const results = await OverlapService.calculateOverlap(sessionCode);
+  it('should use the single participant selections as the Match', async () => {
+    const results = await store.computeAndStoreResults(sessionCode);
 
     expect(results.hasOverlap).toBe(true);
     expect(results.overlappingOptions).toEqual(
@@ -51,7 +50,7 @@ describe('Integration Test: Single Participant Session (FR-021)', () => {
   });
 
   it('should return participant selections as overlapping options', async () => {
-    const results = await OverlapService.calculateOverlap(sessionCode);
+    const results = await store.computeAndStoreResults(sessionCode);
 
     expect(results.allSelections).toEqual({
       Alice: expect.arrayContaining(['place1', 'place2']),

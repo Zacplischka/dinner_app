@@ -3,9 +3,7 @@
 
 import { Router } from 'express';
 import { asyncHandler } from './asyncHandler.js';
-import { redis } from '../redis/client.js';
-import { parseRedisJson } from '../redis/json.js';
-import type { Restaurant } from '@dinder/shared/types';
+import * as store from '../store/sessionStore.js';
 
 const router = Router();
 
@@ -32,8 +30,7 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     }
 
     // Check if session exists
-    const sessionExists = await redis.exists(`session:${sessionCode}`);
-    if (!sessionExists) {
+    if (!(await store.sessionExists(sessionCode))) {
       console.warn('Rejected REST options get', {
         sessionCode,
         reason: 'session_not_found',
@@ -46,37 +43,16 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
       });
     }
 
-    // Get restaurant IDs from Set
-    const placeIds = await redis.smembers(`session:${sessionCode}:restaurant_ids`);
-
-    if (placeIds.length === 0) {
-      console.warn('Rejected REST options get', {
-        sessionCode,
-        reason: 'restaurant_ids_missing',
-      });
-
-      return res.status(404).json({
-        error: 'Not Found',
-        code: 'NO_RESTAURANTS',
-        message: 'No restaurants found for this session',
-      });
-    }
-
-    // Get full restaurant data from Hash
-    const restaurants: Restaurant[] = [];
-    for (const placeId of placeIds) {
-      const restaurantData = await redis.hget(`session:${sessionCode}:restaurants`, placeId);
-      if (restaurantData) {
-        restaurants.push(parseRedisJson<Restaurant>(restaurantData));
-      }
-    }
+    const { restaurants, missingCount } = await store.getRestaurants(sessionCode);
 
     if (restaurants.length === 0) {
       console.warn('Rejected REST options get', {
         sessionCode,
-        reason: 'restaurant_data_missing',
-        requestedRestaurantCount: placeIds.length,
-        missingRestaurantDataCount: placeIds.length,
+        reason: missingCount === 0 ? 'restaurant_ids_missing' : 'restaurant_data_missing',
+        ...(missingCount > 0 && {
+          requestedRestaurantCount: missingCount,
+          missingRestaurantDataCount: missingCount,
+        }),
       });
 
       return res.status(404).json({
@@ -89,7 +65,7 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     console.log('Returned REST session options', {
       sessionCode,
       restaurantCount: restaurants.length,
-      missingRestaurantDataCount: placeIds.length - restaurants.length,
+      missingRestaurantDataCount: missingCount,
     });
 
     return res.status(200).json({

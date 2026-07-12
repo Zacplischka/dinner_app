@@ -1,13 +1,9 @@
 // Session service - Business logic for session lifecycle
 // Based on: specs/001-dinner-decider-enables/plan.md
 
-import { redis } from '../redis/client.js';
-import * as SessionModel from '../models/Session.js';
-import * as ParticipantModel from '../models/Participant.js';
-import { refreshSessionTtl, calculateExpireAt, getExpiresAtISO } from '../redis/ttl-utils.js';
+import * as store from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import type { Restaurant } from '@dinder/shared/types';
-// Session type imported but not used directly in this service
 
 /**
  * Generate a unique 6-character alphanumeric session code (uppercase)
@@ -55,8 +51,7 @@ export async function createSession(
 
   // Ensure uniqueness (extremely unlikely to collide, but good practice)
   while (attempts < MAX_ATTEMPTS) {
-    const exists = await redis.exists(`session:${sessionCode}`);
-    if (!exists) break;
+    if (!(await store.sessionExists(sessionCode))) break;
     console.warn('Session code collision during createSession', {
       sessionCode,
       attempt: attempts + 1,
@@ -93,38 +88,17 @@ export async function createSession(
       });
       throw new Error('NO_RESTAURANTS_FOUND');
     }
-
-    // Store restaurant Place IDs in a Set
-    const placeIds = restaurants.map(r => r.placeId);
-    await redis.sadd(`session:${sessionCode}:restaurant_ids`, ...placeIds);
-
-    // Store full restaurant data in a Hash
-    const restaurantData: Record<string, string> = {};
-    restaurants.forEach(restaurant => {
-      restaurantData[restaurant.placeId] = JSON.stringify(restaurant);
-    });
-    await redis.hset(`session:${sessionCode}:restaurants`, restaurantData);
-
-    // Set TTL on restaurant keys (30 minutes)
-    const TTL_SECONDS = 1800; // 30 minutes
-    await redis.expire(`session:${sessionCode}:restaurant_ids`, TTL_SECONDS);
-    await redis.expire(`session:${sessionCode}:restaurants`, TTL_SECONDS);
   }
 
   // Create session (host will be added when they join via WebSocket)
   // Note: hostId is temporary and not used since host joins via WebSocket
-  const tempHostId = `temp-${Date.now()}`;
-  const session = await SessionModel.createSession(
-    sessionCode,
-    tempHostId,
+  const { session, expireAt } = await store.createSession(sessionCode, {
+    hostId: `temp-${Date.now()}`,
     hostName,
     location,
-    searchRadiusMiles
-  );
-
-  // Set TTL on session keys (no participants yet)
-  const expireAt = calculateExpireAt();
-  await refreshSessionTtl(sessionCode, []);
+    searchRadiusMiles,
+    restaurants,
+  });
 
   // Generate shareable link
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -143,7 +117,7 @@ export async function createSession(
     hostName,
     participantCount: 1,
     state: session.state,
-    expiresAt: getExpiresAtISO(expireAt),
+    expiresAt: store.getExpiresAtISO(expireAt),
     shareableLink,
     location,
     searchRadiusMiles,
@@ -162,14 +136,14 @@ export async function getSession(sessionCode: string): Promise<{
   expiresAt: string;
   shareableLink: string;
 } | null> {
-  const session = await SessionModel.getSession(sessionCode);
+  const session = await store.readSession(sessionCode);
 
   if (!session) {
     return null;
   }
 
   // Get host participant to retrieve hostName
-  const participants = await ParticipantModel.listParticipants(sessionCode);
+  const participants = await store.listParticipants(sessionCode);
   const host = participants.find((p) => p.isHost);
 
   // If no host exists yet, use the hostName from session creation
@@ -177,7 +151,7 @@ export async function getSession(sessionCode: string): Promise<{
   const hostName = host ? host.displayName : session.hostName;
 
   // Calculate expiresAt from TTL
-  const ttl = await redis.ttl(`session:${sessionCode}`);
+  const ttl = await store.getSessionTtl(sessionCode);
 
   // Guard against negative TTL values
   // TTL -2 means key doesn't exist, -1 means no expiry set
@@ -199,7 +173,7 @@ export async function getSession(sessionCode: string): Promise<{
     hostName: hostName || 'Unknown Host',
     participantCount: session.participantCount,
     state: session.state,
-    expiresAt: getExpiresAtISO(expireAt),
+    expiresAt: store.getExpiresAtISO(expireAt),
     shareableLink,
   };
 }
@@ -219,7 +193,7 @@ export async function joinSession(
   participantCount: number;
 }> {
   // Check session exists
-  const session = await SessionModel.getSession(sessionCode);
+  const session = await store.readSession(sessionCode);
   if (!session) {
     console.warn('Rejected session join', {
       sessionCode,
@@ -241,18 +215,11 @@ export async function joinSession(
     throw new Error('SESSION_FULL');
   }
 
-  // Add participant
-  await ParticipantModel.addParticipant(sessionCode, participantId, displayName, false);
+  // Add participant (touches TTL and lastActivityAt)
+  await store.addParticipant(sessionCode, { participantId, displayName });
 
   // Increment participant count
-  const newCount = await SessionModel.incrementParticipantCount(sessionCode);
-
-  // Update last activity
-  await SessionModel.updateLastActivity(sessionCode);
-
-  // Refresh TTL
-  const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
-  await refreshSessionTtl(sessionCode, participantIds);
+  const newCount = await store.incrementParticipantCount(sessionCode);
 
   console.log('Participant joined session', {
     sessionCode,
@@ -272,8 +239,8 @@ export async function joinSession(
  * Expire a session (cleanup)
  */
 export async function expireSession(sessionCode: string): Promise<void> {
-  await SessionModel.updateSessionState(sessionCode, 'expired');
-  await SessionModel.deleteSession(sessionCode);
+  await store.updateState(sessionCode, 'expired');
+  await store.deleteSession(sessionCode);
   console.log('Expired session cleanup complete', {
     sessionCode,
   });

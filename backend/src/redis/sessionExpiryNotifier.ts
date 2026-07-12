@@ -3,6 +3,7 @@
 
 import Redis from 'ioredis';
 import type { Server } from 'socket.io';
+import { sessionCodeFromExpiredKey } from '../store/sessionStore.js';
 import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -40,7 +41,7 @@ export async function initializeSessionExpiryNotifier(
 
   // Handle expired key events
   subscriber.on('message', (channel: string, key: string) => {
-    if (channel === '__keyevent@0__:expired' && key.startsWith('session:')) {
+    if (channel === '__keyevent@0__:expired') {
       handleSessionExpired(io, key);
     }
   });
@@ -60,11 +61,10 @@ function handleSessionExpired(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   key: string
 ): void {
-  // Extract session code from key format: "session:ABC123"
-  const sessionCode = key.replace('session:', '');
+  // The store owns the key format; sub-keys (e.g. ...:results) return null
+  const sessionCode = sessionCodeFromExpiredKey(key);
 
-  if (!sessionCode || sessionCode.length !== 6) {
-    console.warn(`Invalid session code from expired key: ${key}`);
+  if (!sessionCode) {
     return;
   }
 

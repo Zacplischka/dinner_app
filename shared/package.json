@@ -1,7 +1,7 @@
 {
   "name": "@dinder/shared",
   "version": "1.0.0",
-  "description": "Shared TypeScript types and Zod schemas for Dinder",
+  "description": "Shared TypeScript types for Dinder",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -10,16 +10,16 @@
     "watch": "tsc --watch"
   },
   "exports": {
-    "./types": "./dist/types/index.js",
-    "./schemas": "./dist/schemas/index.js"
-  },
-  "dependencies": {
-    "zod": "^3.22.4"
+    "./types": "./dist/types/index.js"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
   },
-  "keywords": ["dinder", "dinner", "types", "schemas"],
+  "keywords": [
+    "dinder",
+    "dinner",
+    "types"
+  ],
   "author": "Dinder Team",
   "license": "MIT"
 }

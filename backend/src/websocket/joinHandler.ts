@@ -3,11 +3,7 @@
 
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
-// SessionService import removed as it's not used in this handler
-import * as ParticipantModel from '../models/Participant.js';
-import * as SessionModel from '../models/Session.js';
-import { refreshSessionTtl } from '../redis/ttl-utils.js';
-import { redis } from '../redis/client.js';
+import * as store from '../store/sessionStore.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -45,7 +41,7 @@ export async function handleSessionJoin(
     const { sessionCode, displayName } = validation.data;
 
     // Check session exists
-    const session = await SessionModel.getSession(sessionCode);
+    const session = await store.readSession(sessionCode);
     if (!session) {
       console.warn('Rejected session:join', {
         socketId: socket.id,
@@ -59,21 +55,26 @@ export async function handleSessionJoin(
     }
 
     // Check if this is a rejoin (same displayName reconnecting with new socket ID)
-    const existingParticipants = await ParticipantModel.listParticipants(sessionCode);
+    const existingParticipants = await store.listParticipants(sessionCode);
     const existingParticipant = existingParticipants.find(p => p.displayName === displayName);
 
     let isHost = false;
     let isRejoin = false;
+    let newCount: number;
 
     if (existingParticipant) {
       // Rejoin: remove old entry and add new one with current socket.id
       isRejoin = true;
       isHost = existingParticipant.isHost;
-      await ParticipantModel.removeParticipant(sessionCode, existingParticipant.participantId);
-      await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, isHost);
+      await store.removeParticipant(sessionCode, existingParticipant.participantId);
+      newCount = await store.addParticipant(sessionCode, {
+        participantId: socket.id,
+        displayName,
+        isHost,
+      });
     } else {
       // New participant - check limit (FR-005)
-      const currentCount = await ParticipantModel.countParticipants(sessionCode);
+      const currentCount = await store.countParticipants(sessionCode);
       if (currentCount >= 4) {
         console.warn('Rejected session:join', {
           socketId: socket.id,
@@ -91,14 +92,19 @@ export async function handleSessionJoin(
       isHost = currentCount === 0;
 
       // Add participant using socket.id as participantId
-      await ParticipantModel.addParticipant(sessionCode, socket.id, displayName, isHost);
+      newCount = await store.addParticipant(sessionCode, {
+        participantId: socket.id,
+        displayName,
+        isHost,
+      });
     }
 
     // Re-check count after adding to catch race condition
-    const newCount = await ParticipantModel.countParticipants(sessionCode);
+    // ponytail: check-then-add race survives; a truly atomic join is the
+    // unify-join-paths refactor's job
     if (newCount > 4) {
       // Rollback: remove the participant we just added
-      await ParticipantModel.removeParticipant(sessionCode, socket.id);
+      await store.removeParticipant(sessionCode, socket.id);
       console.warn('Rejected session:join', {
         socketId: socket.id,
         sessionCode,
@@ -112,20 +118,13 @@ export async function handleSessionJoin(
     }
 
     // Update participant count in session hash
-    await SessionModel.setParticipantCount(sessionCode, newCount);
-
-    // Update last activity
-    await SessionModel.updateLastActivity(sessionCode);
+    await store.setParticipantCount(sessionCode, newCount);
 
     // Join Socket.IO room
     await socket.join(sessionCode);
 
-    // Refresh TTL on all session keys
-    const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
-    await refreshSessionTtl(sessionCode, participantIds);
-
     // Get all participants for response
-    const participants = await ParticipantModel.listParticipants(sessionCode);
+    const participants = await store.listParticipants(sessionCode);
 
     // Send acknowledgment to joining client
     callback({

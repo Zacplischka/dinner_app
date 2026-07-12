@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { redis } from '../../src/redis/client.js';
-import * as SessionModel from '../../src/models/Session.js';
-import * as ParticipantModel from '../../src/models/Participant.js';
-import * as SelectionService from '../../src/services/SelectionService.js';
-import * as OverlapService from '../../src/services/OverlapService.js';
+import * as store from '../../src/store/sessionStore.js';
 import { handleSessionJoin } from '../../src/websocket/joinHandler.js';
 import { handleSessionLeave } from '../../src/websocket/leaveHandler.js';
 import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
@@ -55,8 +52,12 @@ describe('websocket handlers', () => {
   }
 
   async function createSessionWithParticipant(participantId = 'socket-1') {
-    await SessionModel.createSession(sessionCode, 'host', 'Alice');
-    await ParticipantModel.addParticipant(sessionCode, participantId, 'Alice', true);
+    await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+    await store.addParticipant(sessionCode, {
+      participantId,
+      displayName: 'Alice',
+      isHost: true,
+    });
   }
 
   describe('emitError', () => {
@@ -118,7 +119,7 @@ describe('websocket handlers', () => {
 
     it('should add a new participant and log the join', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-      await SessionModel.createSession(sessionCode, 'host', 'Alice');
+      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const testSocket = socket('socket-1');
       const callback = vi.fn();
 
@@ -164,12 +165,12 @@ describe('websocket handlers', () => {
 
     it('should reject full sessions before adding and log the rejection', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await SessionModel.createSession(sessionCode, 'host', 'Alice');
+      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       await Promise.all([
-        ParticipantModel.addParticipant(sessionCode, 'socket-1', 'Alice', true),
-        ParticipantModel.addParticipant(sessionCode, 'socket-2', 'Bob', false),
-        ParticipantModel.addParticipant(sessionCode, 'socket-3', 'Cara', false),
-        ParticipantModel.addParticipant(sessionCode, 'socket-4', 'Dan', false),
+        store.addParticipant(sessionCode, { participantId: 'socket-1', displayName: 'Alice', isHost: true }),
+        store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' }),
+        store.addParticipant(sessionCode, { participantId: 'socket-3', displayName: 'Cara' }),
+        store.addParticipant(sessionCode, { participantId: 'socket-4', displayName: 'Dan' }),
       ]);
       const callback = vi.fn();
 
@@ -193,11 +194,9 @@ describe('websocket handlers', () => {
 
     it('should roll back if participant count exceeds the limit after add', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await SessionModel.createSession(sessionCode, 'host', 'Alice');
-      const countSpy = vi
-        .spyOn(ParticipantModel, 'countParticipants')
-        .mockResolvedValueOnce(3)
-        .mockResolvedValueOnce(5);
+      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      vi.spyOn(store, 'countParticipants').mockResolvedValueOnce(3);
+      const addSpy = vi.spyOn(store, 'addParticipant').mockResolvedValueOnce(5);
       const callback = vi.fn();
 
       await handleSessionJoin(
@@ -206,7 +205,7 @@ describe('websocket handlers', () => {
         callback
       );
 
-      expect(countSpy).toHaveBeenCalledTimes(2);
+      expect(addSpy).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith({
         success: false,
         error: 'Session is full (maximum 4 participants)',
@@ -223,7 +222,7 @@ describe('websocket handlers', () => {
     it('should return generic error when join processing throws', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const error = new Error('redis down');
-      vi.spyOn(SessionModel, 'getSession').mockRejectedValueOnce(error);
+      vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
       await handleSessionJoin(
@@ -277,7 +276,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await SessionModel.createSession(sessionCode, 'host', 'Alice');
+      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionLeave(socket('missing') as any, {} as any, { sessionCode }, callback);
@@ -315,7 +314,7 @@ describe('websocket handlers', () => {
     it('should return generic error when leave processing throws', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const error = new Error('redis down');
-      vi.spyOn(SessionModel, 'getSession').mockRejectedValueOnce(error);
+      vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
       await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback);
@@ -364,7 +363,7 @@ describe('websocket handlers', () => {
       vi.spyOn(console, 'log').mockImplementation(() => undefined);
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const error = new Error('redis down');
-      vi.spyOn(ParticipantModel, 'getParticipant').mockRejectedValueOnce(error);
+      vi.spyOn(store, 'getParticipant').mockRejectedValueOnce(error);
 
       await expect(
         handleDisconnect(socket('socket-1') as any, {} as any, 'transport close')
@@ -410,7 +409,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await SessionModel.createSession(sessionCode, 'host', 'Alice');
+      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionRestart(socket('missing') as any, io() as any, { sessionCode }, callback);
@@ -450,7 +449,7 @@ describe('websocket handlers', () => {
     it('should return generic error when restart processing throws', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const error = new Error('redis down');
-      vi.spyOn(SessionModel, 'getSession').mockRejectedValueOnce(error);
+      vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
       await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback);
@@ -500,7 +499,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await SessionModel.createSession(sessionCode, 'host', 'Alice');
+      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSelectionSubmit(socket('missing') as any, io() as any, { sessionCode, selections: [] }, callback);
@@ -516,7 +515,7 @@ describe('websocket handlers', () => {
       });
     });
 
-    it('should map invalid selection errors to generic submit failure', async () => {
+    it('should map invalid selection errors to a friendly message', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       await createSessionWithParticipant('socket-1');
       const callback = vi.fn();
@@ -530,7 +529,7 @@ describe('websocket handlers', () => {
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
-        error: 'Error submitting selections',
+        error: 'One or more selected options are invalid',
       });
       expect(warnSpy).toHaveBeenCalledWith('Rejected selection:submit', {
         socketId: 'socket-1',
@@ -542,7 +541,7 @@ describe('websocket handlers', () => {
     it('should map already submitted errors to a friendly message', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       await createSessionWithParticipant('socket-1');
-      await ParticipantModel.markParticipantSubmitted('socket-1');
+      await store.recordSubmission(sessionCode, 'socket-1', []);
       const callback = vi.fn();
 
       await handleSelectionSubmit(
@@ -566,7 +565,7 @@ describe('websocket handlers', () => {
     it('should return generic error when submit processing throws', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const error = new Error('redis down');
-      vi.spyOn(SessionModel, 'getSession').mockRejectedValueOnce(error);
+      vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
       await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback);
@@ -578,36 +577,10 @@ describe('websocket handlers', () => {
       expect(errorSpy).toHaveBeenCalledWith('Error in selection:submit handler:', error);
     });
 
-    it('should map INVALID_OPTIONS errors when service uses that code', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await createSessionWithParticipant('socket-1');
-      vi.spyOn(SelectionService, 'submitSelections').mockRejectedValueOnce(
-        new Error('INVALID_OPTIONS')
-      );
-      const callback = vi.fn();
-
-      await handleSelectionSubmit(
-        socket('socket-1') as any,
-        io() as any,
-        { sessionCode, selections: [] },
-        callback
-      );
-
-      expect(callback).toHaveBeenCalledWith({
-        success: false,
-        error: 'One or more selected options are invalid',
-      });
-      expect(warnSpy).toHaveBeenCalledWith('Rejected selection:submit', {
-        socketId: 'socket-1',
-        sessionCode,
-        reason: 'INVALID_OPTIONS',
-      });
-    });
-
     it('should submit selections and log progress without exposing choices', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       await createSessionWithParticipant('socket-1');
-      await ParticipantModel.addParticipant(sessionCode, 'socket-2', 'Bob', false);
+      await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' });
       const callback = vi.fn();
 
       await handleSelectionSubmit(
@@ -624,7 +597,7 @@ describe('websocket handlers', () => {
     it('should log when all participants submit and results are emitted', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       await createSessionWithParticipant('socket-1');
-      vi.spyOn(OverlapService, 'calculateOverlap').mockResolvedValueOnce({
+      vi.spyOn(store, 'computeAndStoreResults').mockResolvedValueOnce({
         overlappingOptions: [],
         allSelections: {},
         restaurantNames: {},

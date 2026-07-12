@@ -45,6 +45,12 @@ describe('session expiry notifier', () => {
     vi.restoreAllMocks();
   });
 
+  // Importing the notifier also imports the store, whose redis client is
+  // constructed under the same mock - the subscriber is the LAST instance.
+  function subscriber() {
+    return redisState.instances[redisState.instances.length - 1];
+  }
+
   function ioMock() {
     const emit = vi.fn();
     return {
@@ -65,12 +71,13 @@ describe('session expiry notifier', () => {
     await initializeSessionExpiryNotifier(io as any);
 
     expect(logSpy).toHaveBeenCalledWith('✓ Redis keyspace notifications enabled');
-    expect(redisState.instances[0].subscribe).toHaveBeenCalledWith('__keyevent@0__:expired');
+    expect(subscriber().subscribe).toHaveBeenCalledWith('__keyevent@0__:expired');
     expect(logSpy).toHaveBeenCalledWith('✓ Session expiry notifier initialized');
 
+    const notifierInstance = subscriber();
     await disconnectSessionExpiryNotifier();
 
-    expect(redisState.instances[0].quit).toHaveBeenCalledOnce();
+    expect(notifierInstance.quit).toHaveBeenCalledOnce();
     expect(logSpy).toHaveBeenCalledWith('Session expiry notifier disconnected');
   });
 
@@ -82,7 +89,7 @@ describe('session expiry notifier', () => {
     );
 
     await initializeSessionExpiryNotifier(io as any);
-    redisState.instances[0].emit('message', '__keyevent@0__:expired', 'session:ABC123');
+    subscriber().emit('message', '__keyevent@0__:expired', 'session:ABC123');
 
     expect(logSpy).toHaveBeenCalledWith('Session expired: ABC123');
     expect(io.to).toHaveBeenCalledWith('ABC123');
@@ -108,7 +115,7 @@ describe('session expiry notifier', () => {
 
     await initializeSessionExpiryNotifier(io as any);
 
-    expect(redisState.instances[0].options).toEqual({
+    expect(subscriber().options).toEqual({
       host: 'localhost',
       port: 6379,
       password: undefined,
@@ -118,25 +125,26 @@ describe('session expiry notifier', () => {
       redisState.configError
     );
 
-    redisState.instances[0].emit('error', new Error('subscriber down'));
+    subscriber().emit('error', new Error('subscriber down'));
 
     expect(errorSpy).toHaveBeenCalledWith('Redis subscriber error:', 'subscriber down');
 
+    const notifierInstance = subscriber();
     await disconnectSessionExpiryNotifier();
-    expect(redisState.instances[0].quit).toHaveBeenCalledOnce();
+    expect(notifierInstance.quit).toHaveBeenCalledOnce();
   });
 
-  it('should ignore malformed expired session keys', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  it('should silently ignore malformed and sub-key expirations', async () => {
     const { io } = ioMock();
     const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
       '../../src/redis/sessionExpiryNotifier.js'
     );
 
     await initializeSessionExpiryNotifier(io as any);
-    redisState.instances[0].emit('message', '__keyevent@0__:expired', 'session:INVALID');
+    subscriber().emit('message', '__keyevent@0__:expired', 'session:INVALID');
+    subscriber().emit('message', '__keyevent@0__:expired', 'session:ABC123:results');
+    subscriber().emit('message', '__keyevent@0__:expired', 'participant:xyz');
 
-    expect(warnSpy).toHaveBeenCalledWith('Invalid session code from expired key: session:INVALID');
     expect(io.to).not.toHaveBeenCalled();
 
     await disconnectSessionExpiryNotifier();

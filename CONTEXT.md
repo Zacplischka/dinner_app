@@ -4,8 +4,10 @@ Ephemeral group dinner decision-making: a host opens a short-lived Session, frie
 
 ## Language
 
+### Session flow
+
 **Session**:
-A short-lived shared decision room identified by a Session Code. Expires automatically after inactivity; nothing about it persists afterward.
+A short-lived shared decision room identified by a Session Code, holding at most four Participants. Expires automatically after inactivity; nothing about it persists afterward.
 _Avoid_: room, game, lobby
 
 **Session Code**:
@@ -33,7 +35,7 @@ A Participant's declaration that they are done selecting. A Submission may conta
 _Avoid_: inferring "submitted" from a non-empty Selection set
 
 **Match**:
-The set of Restaurants every Participant selected, computed once all Participants have a Submission. May be empty.
+The set of Restaurants every current Participant selected, computed once all current Participants have a Submission — including when the last unsubmitted Participant leaves. May be empty.
 _Avoid_: results, overlap, winners
 
 **SessionStore**:
@@ -43,3 +45,25 @@ _Avoid_: models, repository, DAO
 **Restart**:
 Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again.
 _Avoid_: reset, replay
+
+### Social
+
+**Profile**:
+A persistent account with a display name and avatar. Required for social features; NOT required to be a Participant — guests join Sessions with just a display name.
+_Avoid_: user, account
+
+**Friendship**:
+The relationship between two Profiles. Exactly one of: pending, accepted, blocked.
+_Avoid_: connection
+
+**Friend**:
+A Profile whose Friendship with you is accepted. A pending Friendship is a Friend Request, never a "pending friend".
+_Avoid_: contact (the shared `Friend` type's `pending` status is legacy naming)
+
+**Friend Request**:
+A Friendship still in pending, seen from either side.
+_Avoid_: invite (that word is reserved for Session Invites)
+
+**Session Invite**:
+A Profile inviting a Friend into a specific Session. One of: pending, accepted, declined, expired.
+_Avoid_: friend request, invitation
