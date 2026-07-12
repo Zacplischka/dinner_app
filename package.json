@@ -29,8 +29,6 @@
   "license": "MIT",
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.4",
-    "canvas": "^3.2.0",
-    "jsdom": "^26.1.0",
     "wait-on": "^9.0.10"
   }
 }
