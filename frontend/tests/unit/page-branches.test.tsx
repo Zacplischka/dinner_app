@@ -79,13 +79,10 @@ vi.mock('../../src/services/supabase', () => ({
   signOut: vi.fn(async () => undefined),
 }));
 
-import CuratedListPage from '../../src/pages/CuratedListPage';
-import ExplorePage from '../../src/pages/ExplorePage';
 import FriendsPage from '../../src/pages/FriendsPage';
 import GuideHomePage from '../../src/pages/GuideHomePage';
 import GuideListPage from '../../src/pages/GuideListPage';
 import RestaurantDetailPage from '../../src/pages/RestaurantDetailPage';
-import RestaurantDetailPageV2 from '../../src/pages/RestaurantDetailPageV2';
 import SessionLobbyPage from '../../src/pages/SessionLobbyPage';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
@@ -135,15 +132,10 @@ function renderApp(route: string) {
     <MemoryRouter initialEntries={[route]}>
       <Routes>
         <Route path="/" element={<GuideHomePage />} />
-        <Route path="/list" element={<CuratedListPage />} />
-        <Route path="/list/:listId" element={<CuratedListPage />} />
-        <Route path="/explore" element={<ExplorePage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/lists" element={<GuideListPage />} />
         <Route path="/lists/:listId" element={<GuideListPage />} />
         <Route path="/r/:placeId" element={<RestaurantDetailPage />} />
-        <Route path="/restaurant" element={<RestaurantDetailPageV2 />} />
-        <Route path="/restaurant/:restaurantId" element={<RestaurantDetailPageV2 />} />
         <Route path="/session/:sessionCode" element={<SessionLobbyPage />} />
         <Route path="/lobby" element={<SessionLobbyPage />} />
         <Route path="/create" element={<div>Create route</div>} />
@@ -179,56 +171,6 @@ describe('page branch coverage', () => {
       acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'ABC123' })) as any,
       declineSessionInvite: vi.fn(async () => true) as any,
     });
-  });
-
-  it('covers curated-list defaults, filter toggles, sort options, and nav actions', async () => {
-    renderApp('/list');
-    expect(screen.getAllByText('Best Italian').length).toBeGreaterThan(0);
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Rating' } });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Distance' } });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Price: Low to High' } });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Price: High to Low' } });
-    const desktopPrice = screen.getAllByText('$$')[0];
-    fireEvent.click(desktopPrice);
-    fireEvent.click(desktopPrice);
-    fireEvent.click(screen.getByText('Filters'));
-    const mobilePrice = screen.getAllByText('$')[1];
-    fireEvent.click(mobilePrice);
-    fireEvent.click(mobilePrice);
-    fireEvent.click(screen.getByText('Decide Together'));
-    expect(await screen.findByText('Create route')).toBeInTheDocument();
-  });
-
-  it('covers explore search, filters, discovery cards, and navigation branches', async () => {
-    renderApp('/explore');
-
-    fireEvent.click(screen.getByText('Start Session'));
-    expect(await screen.findByText('Create route')).toBeInTheDocument();
-
-    const { unmount } = renderApp('/explore');
-    const [desktopSearch, mobileSearch] = screen.getAllByPlaceholderText('Search restaurants...');
-    fireEvent.change(desktopSearch, { target: { value: 'Pizza' } });
-    fireEvent.change(mobileSearch, { target: { value: 'Ramen' } });
-    fireEvent.click(screen.getByText('Filters'));
-    const firstPrice = screen.getAllByText('$$')[0];
-    fireEvent.click(firstPrice);
-    fireEvent.click(firstPrice);
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Downtown' } });
-    fireEvent.click(screen.getByText('Clear all'));
-    fireEvent.click(screen.getAllByText('Italian')[0]);
-    fireEvent.click(screen.getAllByText('Italian')[0]);
-    fireEvent.click(screen.getAllByText('Italian').at(-1)!);
-    expect(screen.getByText('Restaurants')).toBeInTheDocument();
-    unmount();
-
-    const discovery = renderApp('/explore');
-    fireEvent.click(screen.getAllByText('Italian').at(-1)!);
-    expect(screen.getByText('Restaurants')).toBeInTheDocument();
-    discovery.unmount();
-
-    renderApp('/explore');
-    fireEvent.click(screen.getByText('Osteria Romano'));
-    expect(await screen.findByText('Osteria Romano')).toBeInTheDocument();
   });
 
   it('covers authenticated friends tabs with requests and invites', async () => {
@@ -292,26 +234,6 @@ describe('page branch coverage', () => {
     renderApp('/r/mock-place');
     expect(screen.getByText(/Nowhere .* Restaurant/)).toBeInTheDocument();
     expect(screen.getByText('4.4')).toBeInTheDocument();
-  });
-
-  it('covers restaurant detail v2 default route and tab interactions', async () => {
-    renderApp('/restaurant');
-    expect(screen.getByText('Osteria Romano')).toBeInTheDocument();
-    fireEvent.click(screen.getByTitle('Save'));
-    expect(screen.getByTitle('Saved')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('menu'));
-    expect(screen.getByText('Cacio e Pepe')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('reviews'));
-    expect(screen.getByText('Sarah M.')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Decide with Friends'));
-    expect(await screen.findByText('Create route')).toBeInTheDocument();
-
-    const missing = renderApp('/restaurant/missing');
-    expect(screen.getAllByText('Osteria Romano').length).toBeGreaterThan(0);
-    missing.unmount();
-
-    renderApp('/restaurant/closed');
-    expect(screen.getByText('Closed')).toBeInTheDocument();
   });
 
   it('covers lobby route without a session code and non-demo leave success', async () => {

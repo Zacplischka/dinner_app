@@ -5,8 +5,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
-import { joinDemoSession, getDemoSession } from '../services/demoSessionService';
-import { DEMO_MODE } from '../config/demo';
 import { waitForConnection, joinSession } from '../services/socketService';
 
 export default function JoinSessionPage() {
@@ -16,7 +14,7 @@ export default function JoinSessionPage() {
   const [participantName, setParticipantName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { setSessionCode: storeSessionCode, setCurrentUserId, setConnectionStatus, updateParticipants, setSessionStatus, resetSelections } = useSessionStore();
+  const { setSessionCode: storeSessionCode, setCurrentUserId, setConnectionStatus, setSessionStatus, resetSelections } = useSessionStore();
 
   // Pre-fill session code if provided in URL query params
   useEffect(() => {
@@ -47,33 +45,17 @@ export default function JoinSessionPage() {
     try {
       const code = sessionCode.trim().toUpperCase();
 
-      if (DEMO_MODE) {
-        // Demo mode - use local storage
-        const participant = joinDemoSession(code, participantName.trim());
-        const session = getDemoSession(code);
+      storeSessionCode(code);
+      setSessionStatus('waiting');
+      resetSelections();
 
-        storeSessionCode(code);
+      await waitForConnection();
+      const joinResponse = await joinSession(code, participantName.trim());
+
+      if (joinResponse.success && joinResponse.participantId) {
+        setCurrentUserId(joinResponse.participantId);
         setConnectionStatus(true);
-        setCurrentUserId(participant.participantId);
-        setSessionStatus('waiting');
-        resetSelections();
-        updateParticipants(session.participants);
-
         navigate(`/session/${code}`);
-      } else {
-        // Real backend - connect WebSocket and join session
-        storeSessionCode(code);
-        setSessionStatus('waiting');
-        resetSelections();
-
-        await waitForConnection();
-        const joinResponse = await joinSession(code, participantName.trim());
-
-        if (joinResponse.success && joinResponse.participantId) {
-          setCurrentUserId(joinResponse.participantId);
-          setConnectionStatus(true);
-          navigate(`/session/${code}`);
-        }
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to join session';

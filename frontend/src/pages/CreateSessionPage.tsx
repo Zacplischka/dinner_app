@@ -1,15 +1,13 @@
 // Create Session page - Host creates a new dinner decision session
 // Based on: specs/001-dinner-decider-enables/tasks.md T052
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import NavigationHeader from '../components/NavigationHeader';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
-import { createDemoSession } from '../services/demoSessionService';
 import { createSession } from '../services/apiClient';
-import { DEMO_MODE } from '../config/demo';
 import { waitForConnection, joinSession } from '../services/socketService';
 
 interface Location {
@@ -27,14 +25,8 @@ export default function CreateSessionPage() {
   const [location, setLocation] = useState<Location | null>(null);
   const [searchRadiusMiles, setSearchRadiusMiles] = useState<number>(5);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
-  const { setSessionCode, setLocation: setStoreLocation, setSearchRadiusMiles: setStoreRadius, updateParticipants, setCurrentUserId, setConnectionStatus, setSessionStatus, resetSelections } = useSessionStore();
+  const { setSessionCode, setLocation: setStoreLocation, setSearchRadiusMiles: setStoreRadius, setCurrentUserId, setConnectionStatus, setSessionStatus, resetSelections } = useSessionStore();
   const { inviteFriendsToSession } = useFriendsStore();
-
-  // Demo: default a friendly host name
-  useEffect(() => {
-    if (!hostName) setHostName('Zach');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleGetLocation = () => {
     setError('');
@@ -89,49 +81,28 @@ export default function CreateSessionPage() {
     setIsLoading(true);
 
     try {
-      if (DEMO_MODE) {
-        // Demo mode - use local storage
-        const created = createDemoSession({
-          hostName: hostName.trim(),
-          location,
-          searchRadiusMiles,
-        });
+      const response = await createSession(hostName.trim(), location, searchRadiusMiles);
 
-        const hostParticipant = created.host;
-        setSessionCode(created.sessionCode);
-        setStoreLocation(location);
-        setStoreRadius(searchRadiusMiles);
+      setSessionCode(response.sessionCode);
+      setStoreLocation(location);
+      setStoreRadius(searchRadiusMiles);
+      setSessionStatus('waiting');
+      resetSelections();
+
+      // Connect WebSocket and wait for connection, then join as host
+      await waitForConnection();
+      const joinResponse = await joinSession(response.sessionCode, hostName.trim());
+
+      if (joinResponse.success && joinResponse.participantId) {
+        setCurrentUserId(joinResponse.participantId);
         setConnectionStatus(true);
-        setCurrentUserId(hostParticipant.participantId);
-        setSessionStatus('waiting');
-        resetSelections();
-        updateParticipants([hostParticipant]);
-        navigate(`/session/${created.sessionCode}`);
-      } else {
-        // Real backend - call API and connect WebSocket
-        const response = await createSession(hostName.trim(), location, searchRadiusMiles);
 
-        setSessionCode(response.sessionCode);
-        setStoreLocation(location);
-        setStoreRadius(searchRadiusMiles);
-        setSessionStatus('waiting');
-        resetSelections();
-
-        // Connect WebSocket and wait for connection, then join as host
-        await waitForConnection();
-        const joinResponse = await joinSession(response.sessionCode, hostName.trim());
-
-        if (joinResponse.success && joinResponse.participantId) {
-          setCurrentUserId(joinResponse.participantId);
-          setConnectionStatus(true);
-
-          // Invite selected friends if any
-          if (selectedFriendIds.size > 0) {
-            await inviteFriendsToSession(response.sessionCode, Array.from(selectedFriendIds));
-          }
-
-          navigate(`/session/${response.sessionCode}`);
+        // Invite selected friends if any
+        if (selectedFriendIds.size > 0) {
+          await inviteFriendsToSession(response.sessionCode, Array.from(selectedFriendIds));
         }
+
+        navigate(`/session/${response.sessionCode}`);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create session');
@@ -245,14 +216,11 @@ export default function CreateSessionPage() {
             </div>
           )}
 
-          {/* Invite Friends Section (only in non-demo mode) */}
-          {!DEMO_MODE && (
-            <InviteFriendsSection
-              selectedFriendIds={selectedFriendIds}
-              onSelectionChange={setSelectedFriendIds}
-              disabled={isLoading || isGettingLocation}
-            />
-          )}
+          <InviteFriendsSection
+            selectedFriendIds={selectedFriendIds}
+            onSelectionChange={setSelectedFriendIds}
+            disabled={isLoading || isGettingLocation}
+          />
 
           {/* Error message */}
           {error && (

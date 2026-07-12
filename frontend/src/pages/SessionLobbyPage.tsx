@@ -4,17 +4,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
-import { getDemoSession, addDemoFriends, leaveDemoSession } from '../services/demoSessionService';
 import { getSession } from '../services/apiClient';
 import { leaveSession } from '../services/socketService';
-import { DEMO_MODE } from '../config/demo';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
 
 export default function SessionLobbyPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { participants, isConnected, currentUserId, updateParticipants } = useSessionStore();
+  const { participants, isConnected } = useSessionStore();
   const [shareableLink, setShareableLink] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
@@ -28,13 +26,8 @@ export default function SessionLobbyPage() {
       }
 
       try {
-        if (DEMO_MODE) {
-          const session = getDemoSession(sessionCode);
-          setShareableLink(session.shareableLink);
-        } else {
-          const session = await getSession(sessionCode);
-          setShareableLink(session.shareableLink);
-        }
+        const session = await getSession(sessionCode);
+        setShareableLink(session.shareableLink);
       } catch (err) {
         console.error('Failed to load session:', err);
       } finally {
@@ -70,30 +63,12 @@ export default function SessionLobbyPage() {
     }
 
     try {
-      if (DEMO_MODE) {
-        if (currentUserId) {
-          leaveDemoSession(sessionCode, currentUserId);
-        }
-        useSessionStore.getState().resetSession();
-      } else {
-        await leaveSession(sessionCode);
-      }
+      await leaveSession(sessionCode);
       navigate('/');
     } catch (err) {
       console.error('Failed to leave session:', err);
       useSessionStore.getState().resetSession();
       navigate('/');
-    }
-  };
-
-  const handleAddDemoFriends = () => {
-    if (!sessionCode) return;
-    const created = addDemoFriends(sessionCode, 2);
-    const session = getDemoSession(sessionCode);
-    updateParticipants(session.participants);
-
-    if (created.length > 0) {
-      toast.success('Added demo friends');
     }
   };
 
@@ -217,16 +192,6 @@ export default function SessionLobbyPage() {
         >
           Start Selecting
         </button>
-
-        {DEMO_MODE && (
-          <button
-            onClick={handleAddDemoFriends}
-            disabled={participants.length >= 4}
-            className="mt-3 w-full min-h-[44px] px-6 py-3 text-base font-medium text-amber bg-transparent rounded-xl hover:bg-amber/10 active:scale-[0.98] transition-all duration-300 border border-amber/40 hover:border-amber disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Add demo friends
-          </button>
-        )}
 
         {/* Info */}
         <div className="mt-6 text-center text-sm text-cream-500 space-y-1">

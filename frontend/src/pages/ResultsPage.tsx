@@ -2,7 +2,7 @@
 // Based on: specs/001-dinner-decider-enables/tasks.md T056
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { restartDemoSession, leaveDemoSession } from '../services/demoSessionService';
+import { restartSession, leaveSession } from '../services/socketService';
 import { useSessionStore } from '../stores/sessionStore';
 import { useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
@@ -29,7 +29,7 @@ const generateDoorDashUrl = (restaurantName: string, address?: string): string =
 export default function ResultsPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { overlappingOptions, allSelections, restaurantNames, participants, restaurants, currentUserId } = useSessionStore();
+  const { overlappingOptions, allSelections, restaurantNames, participants, restaurants } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
@@ -77,7 +77,7 @@ export default function ResultsPage() {
     setError('');
 
     try {
-      restartDemoSession(sessionCode);
+      await restartSession(sessionCode);
       // Reset local store selections/results
       useSessionStore.getState().resetSelections();
       // Navigate back to selection page
@@ -96,9 +96,7 @@ export default function ResultsPage() {
     if (!sessionCode) return;
 
     try {
-      if (currentUserId) {
-        leaveDemoSession(sessionCode, currentUserId);
-      }
+      await leaveSession(sessionCode);
       useSessionStore.getState().resetSession();
       navigate('/');
     } catch (err) {

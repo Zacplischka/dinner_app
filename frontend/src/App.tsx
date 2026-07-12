@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
 import { useSessionStore } from './stores/sessionStore';
 import { useAuthStore } from './stores/authStore';
-import { DEMO_MODE } from './config/demo';
 import { AnimatedRoute } from './components/PageTransition';
 
 // Lazy load route components for code splitting
@@ -22,16 +21,7 @@ const SessionLobbyPage = lazy(() => import('./pages/SessionLobbyPage'));
 const SelectionPage = lazy(() => import('./pages/SelectionPage'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 
-// Legacy/unused in demo (kept for later)
 const FriendsPage = lazy(() => import('./pages/FriendsPage'));
-
-// New homepage redesign (Food Network inspired)
-const HomePageRedesign = lazy(() => import('./pages/HomePageRedesign'));
-
-// New discovery pages (Food Network style)
-const ExplorePage = lazy(() => import('./pages/ExplorePage'));
-const CuratedListPage = lazy(() => import('./pages/CuratedListPage'));
-const RestaurantDetailPageV2 = lazy(() => import('./pages/RestaurantDetailPageV2'));
 
 // Loading fallback component - matches dark theme
 function LoadingFallback() {
@@ -78,14 +68,6 @@ function AnimatedRoutes() {
         {/* Friends page */}
         <Route path="/friends" element={<FriendsPage />} />
 
-        {/* New homepage redesign preview */}
-        <Route path="/home-v2" element={<HomePageRedesign />} />
-
-        {/* New discovery pages (Food Network style) */}
-        <Route path="/explore" element={<ExplorePage />} />
-        <Route path="/guides/:listId" element={<CuratedListPage />} />
-        <Route path="/restaurant/:restaurantId" element={<RestaurantDetailPageV2 />} />
-
         {/* 404 - Redirect to home */}
         <Route path="*" element={<HomePage />} />
       </Routes>
@@ -99,16 +81,6 @@ function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
-    // Demo mode: mark "connected" and assign a stable-ish client ID.
-    if (DEMO_MODE) {
-      const store = useSessionStore.getState();
-      store.setConnectionStatus(true);
-      if (!store.currentUserId) {
-        store.setCurrentUserId(`demo-client-${Math.random().toString(16).slice(2)}`);
-      }
-      return;
-    }
-
     // Initialize auth (Supabase session check)
     initializeAuth();
   }, [initializeAuth]);

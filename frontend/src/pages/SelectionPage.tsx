@@ -3,10 +3,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getDemoRestaurants, submitDemoSelection, isDemoSessionComplete, computeDemoResults, leaveDemoSession, getDemoSession, simulateRemainingSubmissions } from '../services/demoSessionService';
 import { getRestaurants } from '../services/apiClient';
 import { submitSelection, leaveSession } from '../services/socketService';
-import { DEMO_MODE } from '../config/demo';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -15,7 +13,7 @@ import type { Restaurant } from '@dinder/shared/types';
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, participants, currentUserId, updateParticipants, setResults, setSessionStatus } = useSessionStore();
+  const { selections, addSelection, participants } = useSessionStore();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,18 +22,6 @@ export default function SelectionPage() {
   const [error, setError] = useState('');
   const [submittedCount, setSubmittedCount] = useState(0);
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
-
-  // Refresh participants from local storage on mount (demo mode only)
-  useEffect(() => {
-    if (!sessionCode || !DEMO_MODE) return;
-    try {
-      const session = getDemoSession(sessionCode);
-      updateParticipants(session.participants);
-    } catch {
-      navigate('/');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionCode]);
 
   useEffect(() => {
     const loadRestaurants = async () => {
@@ -46,10 +32,7 @@ export default function SelectionPage() {
       }
 
       try {
-        // Use real backend API or demo data based on mode
-        const data = DEMO_MODE
-          ? getDemoRestaurants(sessionCode)
-          : await getRestaurants(sessionCode);
+        const data = await getRestaurants(sessionCode);
         setRestaurants(data);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load restaurants');
@@ -101,27 +84,9 @@ export default function SelectionPage() {
     setError('');
 
     try {
-      if (DEMO_MODE) {
-        if (!currentUserId) throw new Error('Missing participant');
-        submitDemoSelection(sessionCode, currentUserId, selections);
-
-        // Refresh participants and check completion
-        const session = getDemoSession(sessionCode);
-        updateParticipants(session.participants);
-        setHasSubmitted(true);
-
-        if (isDemoSessionComplete(sessionCode)) {
-          const result = computeDemoResults(sessionCode);
-          setResults(result);
-          setSessionStatus('complete');
-          navigate(`/session/${sessionCode}/results`);
-        }
-      } else {
-        // Real backend - submit via WebSocket
-        await submitSelection(sessionCode, selections);
-        setHasSubmitted(true);
-        // Results will be received via WebSocket session:results event
-      }
+      await submitSelection(sessionCode, selections);
+      setHasSubmitted(true);
+      // Results will be received via WebSocket session:results event
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit selections');
       setIsSubmitting(false);
@@ -132,14 +97,7 @@ export default function SelectionPage() {
     if (!sessionCode) return;
 
     try {
-      if (DEMO_MODE) {
-        if (currentUserId) {
-          leaveDemoSession(sessionCode, currentUserId);
-        }
-        useSessionStore.getState().resetSession();
-      } else {
-        await leaveSession(sessionCode);
-      }
+      await leaveSession(sessionCode);
       navigate('/');
     } catch (err) {
       console.error('Failed to leave session:', err);
@@ -164,18 +122,6 @@ export default function SelectionPage() {
   }
 
   if (hasSubmitted) {
-    const handleSimulateOthers = () => {
-      const activeSessionCode = sessionCode!;
-      simulateRemainingSubmissions(activeSessionCode);
-      const session = getDemoSession(activeSessionCode);
-      updateParticipants(session.participants);
-
-      const result = computeDemoResults(activeSessionCode);
-      setResults(result);
-      setSessionStatus('complete');
-      navigate(`/session/${activeSessionCode}/results`);
-    };
-
     return (
       <div className="min-h-screen bg-warm-gradient">
         <NavigationHeader
@@ -221,18 +167,6 @@ export default function SelectionPage() {
                   <span className="text-amber font-semibold">{participants.length}</span> have swiped
                 </p>
               </div>
-
-              {DEMO_MODE && (
-                <>
-                  <button className="btn btn-primary w-full" onClick={handleSimulateOthers}>
-                    Simulate others finishing
-                  </button>
-
-                  <p className="text-xs text-cream-500/60 italic mt-4">
-                    Demo shortcut to reach Results on one device
-                  </p>
-                </>
-              )}
             </div>
           </div>
         </div>

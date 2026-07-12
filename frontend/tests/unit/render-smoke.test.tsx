@@ -3,21 +3,7 @@ import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-li
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import ActionSheet from '../../src/components/ActionSheet';
 import ConfirmLeaveModal from '../../src/components/ConfirmLeaveModal';
-import EmptyState, {
-  NoMatchesEmpty,
-  NoParticipantsEmpty,
-  NoRestaurantsEmpty,
-  NoResultsEmpty,
-} from '../../src/components/EmptyState';
-import {
-  AnimatedSection,
-  CollectionCard,
-  CuisineCard,
-  RestaurantCard,
-} from '../../src/components/EnhancedCards';
-import FloatingNav from '../../src/components/FloatingNav';
 import GoogleSignInButton from '../../src/components/GoogleSignInButton';
 import NavigationHeader from '../../src/components/NavigationHeader';
 import PageTransition, {
@@ -25,34 +11,7 @@ import PageTransition, {
   StaggeredContainer,
   useViewTransition,
 } from '../../src/components/PageTransition';
-import ProgressStepper from '../../src/components/ProgressStepper';
-import PullToRefresh, { RefreshIndicator } from '../../src/components/PullToRefresh';
-import ScrollProgress, {
-  BackToTop,
-  ReadingTime,
-  SectionProgress,
-} from '../../src/components/ScrollProgress';
-import {
-  Skeleton,
-  SkeletonAvatar,
-  SkeletonButton,
-  SkeletonCard,
-  SkeletonHeading,
-  SkeletonParticipant,
-  SkeletonRestaurantCard,
-  SkeletonResult,
-  SkeletonText,
-} from '../../src/components/Skeleton';
-import {
-  CollectionCardSkeleton,
-  CuisineCardSkeleton,
-  ExplorePageSkeleton,
-  ListHeroSkeleton,
-  RestaurantCardSkeleton,
-  RestaurantListSkeleton,
-} from '../../src/components/SkeletonLoaders';
 import SwipeCard from '../../src/components/SwipeCard';
-import TopNav from '../../src/components/TopNav';
 import UserMenu from '../../src/components/UserMenu';
 import Toast from '../../src/components/Toast/Toast';
 import ToastProvider from '../../src/components/Toast/ToastProvider';
@@ -64,16 +23,12 @@ import SessionInviteCard from '../../src/components/friends/SessionInviteCard';
 
 import App from '../../src/App';
 import CreateSessionPage from '../../src/pages/CreateSessionPage';
-import CuratedListPage from '../../src/pages/CuratedListPage';
-import ExplorePage from '../../src/pages/ExplorePage';
 import FriendsPage from '../../src/pages/FriendsPage';
 import GuideHomePage from '../../src/pages/GuideHomePage';
 import GuideListPage from '../../src/pages/GuideListPage';
 import HomePage from '../../src/pages/HomePage';
-import HomePageRedesign from '../../src/pages/HomePageRedesign';
 import JoinSessionPage from '../../src/pages/JoinSessionPage';
 import RestaurantDetailPage from '../../src/pages/RestaurantDetailPage';
-import RestaurantDetailPageV2 from '../../src/pages/RestaurantDetailPageV2';
 import ResultsPage from '../../src/pages/ResultsPage';
 import SelectionPage from '../../src/pages/SelectionPage';
 import SessionLobbyPage from '../../src/pages/SessionLobbyPage';
@@ -82,8 +37,6 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { Toast as ToastType, useToastStore } from '../../src/hooks/useToast';
-import { RippleButton, TouchFeedback, useHaptics } from '../../src/hooks/useHaptics';
-import { getAnimationClass, useScrollAnimation, useStaggeredAnimation } from '../../src/hooks/useScrollAnimation';
 import { toast as singletonToast, useToast } from '../../src/hooks/useToast';
 import { demoPhotoUrl } from '../../src/demo/demoImages';
 import {
@@ -111,7 +64,6 @@ import {
 } from '../../src/stores/sessionStore';
 import * as apiClient from '../../src/services/apiClient';
 import * as socketService from '../../src/services/socketService';
-import { createDemoSession } from '../../src/services/demoSessionService';
 
 vi.mock('../../src/services/apiClient', () => ({
   createSession: vi.fn(async () => ({
@@ -322,93 +274,37 @@ describe('render smoke coverage', () => {
 
   it('renders shared components and common interactions', async () => {
     const onClose = vi.fn();
-    const onSelect = vi.fn();
     const onConfirm = vi.fn();
 
     renderWithRouter(
       <>
-        <ActionSheet
-          isOpen
-          title="Choose"
-          options={[
-            { id: 'one', label: 'One', icon: <span>1</span>, onSelect },
-            { id: 'two', label: 'Two', variant: 'danger', onSelect },
-          ]}
-          onClose={onClose}
-        />
         <ConfirmLeaveModal
           isOpen
           context="lobby"
           onClose={onClose}
           onConfirm={onConfirm}
         />
-        <EmptyState title="Empty" description="Nothing here" action={{ label: 'Retry', onClick: onConfirm }} />
-        <NoResultsEmpty onRetry={onConfirm} />
-        <NoRestaurantsEmpty onExpand={onConfirm} />
-        <NoMatchesEmpty onRestart={onConfirm} />
-        <NoParticipantsEmpty />
         <NavigationHeader title="Title" subtitle="Subtitle" showBackButton onBack={onClose} showConnectionStatus />
         <PageTransition><div>Page child</div></PageTransition>
         <AnimatedRoute>Route child</AnimatedRoute>
         <StaggeredContainer><span>Item</span></StaggeredContainer>
-        <ProgressStepper currentStep="selecting" />
-        <PullToRefresh onRefresh={vi.fn(async () => undefined)}><div>Refresh child</div></PullToRefresh>
-        <RefreshIndicator isRefreshing />
-        <ScrollProgress />
-        <SectionProgress sections={['One', 'Two']} currentSection={1} />
-        <ReadingTime content={'word '.repeat(450)} />
-        <BackToTop threshold={0} />
-        <Skeleton />
-        <SkeletonText />
-        <SkeletonHeading />
-        <SkeletonAvatar size="lg" />
-        <SkeletonCard />
-        <SkeletonButton />
-        <SkeletonParticipant />
-        <SkeletonRestaurantCard />
-        <SkeletonResult />
-        <RestaurantCardSkeleton variant="list" />
-        <CollectionCardSkeleton />
-        <CuisineCardSkeleton />
-        <ExplorePageSkeleton />
-        <RestaurantListSkeleton count={2} variant="grid" />
-        <ListHeroSkeleton />
       </>
     );
 
-    fireEvent.click(screen.getByText('One'));
     fireEvent.click(screen.getByText('Leave Session'));
-    fireEvent.click(screen.getAllByText('Retry')[0]);
 
-    expect(onSelect).toHaveBeenCalled();
     expect(onConfirm).toHaveBeenCalled();
   });
 
-  it('renders card/navigation components', () => {
+  it('renders auth components', () => {
     renderWithRouter(
       <>
-        <CuisineCard id="italian" name="Italian" emoji="I" count={12} gradient="from-red-500 to-orange-500" />
-        <RestaurantCard
-          id="place-1"
-          name="Pasta House"
-          cuisine="Italian"
-          emoji="P"
-          rating={4.7}
-          priceLevel="$$"
-          distance="1.2 mi"
-          isOpen
-          onVote={vi.fn()}
-        />
-        <CollectionCard id="date-night" title="Date Night" subtitle="Quiet spots" emoji="D" gradient="from-pink-500 to-red-500" count={8} />
-        <AnimatedSection>Animated content</AnimatedSection>
-        <FloatingNav />
         <GoogleSignInButton />
-        <TopNav showBackButton showAuth />
         <UserMenu />
       </>
     );
 
-    expect(screen.getAllByText(/Italian|Pasta House|Date Night|Dinder/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Continue with Google')).toBeInTheDocument();
   });
 
   it('renders swipe card and triggers pointer actions', () => {
@@ -468,13 +364,9 @@ describe('render smoke coverage', () => {
     renderWithRouter(<HomePage />);
     expect(screen.getByText(/Dinder/i)).toBeInTheDocument();
 
-    renderWithRouter(<HomePageRedesign />);
     renderWithRouter(<GuideHomePage />);
     renderRoute('/guides/:guideId', '/guides/best-italian', <GuideListPage />);
-    renderRoute('/list/:listId', '/list/best-italian', <CuratedListPage />);
-    renderWithRouter(<ExplorePage />);
     renderRoute('/restaurants/:restaurantId', '/restaurants/1', <RestaurantDetailPage />);
-    renderRoute('/restaurant/:restaurantId', '/restaurant/1', <RestaurantDetailPageV2 />);
     renderRoute('/friends', '/friends', <FriendsPage />);
     renderRoute('/create', '/create', <CreateSessionPage />);
     renderRoute('/join', '/join?code=abc123', <JoinSessionPage />);
@@ -486,30 +378,6 @@ describe('render smoke coverage', () => {
   });
 
   it('covers exported hooks, selectors, and singleton utilities', async () => {
-    const haptics = renderHook(() => useHaptics());
-
-    act(() => {
-      haptics.result.current.trigger();
-      haptics.result.current.triggerLight();
-      haptics.result.current.triggerMedium();
-      haptics.result.current.triggerHeavy();
-      haptics.result.current.triggerSelection();
-      haptics.result.current.triggerSuccess();
-      haptics.result.current.triggerWarning();
-      haptics.result.current.triggerError();
-    });
-    expect(navigator.vibrate).toHaveBeenCalled();
-
-    const throwingVibrate = vi.fn(() => {
-      throw new Error('blocked');
-    });
-    Object.defineProperty(navigator, 'vibrate', {
-      configurable: true,
-      value: throwingVibrate,
-    });
-    act(() => haptics.result.current.triggerHeavy());
-    expect(throwingVibrate).toHaveBeenCalledWith(40);
-
     expect(renderHook(() => useUser()).result.current?.id).toBe('user-1');
     expect(renderHook(() => useSession()).result.current).toEqual({ access_token: 'token' });
     expect(renderHook(() => useIsAuthenticated()).result.current).toBe(true);
@@ -548,49 +416,6 @@ describe('render smoke coverage', () => {
 
     expect(demoPhotoUrl('abc', '')).toContain('data:image/svg+xml');
     expect(demoPhotoUrl('abc', 'Pasta')).toContain('data:image/svg+xml');
-    expect(getAnimationClass(true, 'fade-down')).toContain('opacity-100');
-    expect(getAnimationClass(false, 'fade-left')).toContain('opacity-0');
-    expect(getAnimationClass(true, 'fade-right')).toContain('translate-x-0');
-    expect(getAnimationClass(false, 'scale-up')).toContain('scale-95');
-    expect(getAnimationClass(true, 'blur-in')).toContain('blur-0');
-    expect(getAnimationClass(false, 'unknown')).toContain('translate-y-8');
-
-    const staggered = renderHook(() => useStaggeredAnimation(3, 75));
-    expect(staggered.result.current.getStaggerDelay(2)).toEqual({
-      animationDelay: '150ms',
-      transitionDelay: '150ms',
-    });
-
-    let observerCallback: IntersectionObserverCallback | undefined;
-    const unobserve = vi.fn();
-    const disconnect = vi.fn();
-    class TestIntersectionObserver {
-      constructor(callback: IntersectionObserverCallback) {
-        observerCallback = callback;
-      }
-      observe = vi.fn();
-      unobserve = unobserve;
-      disconnect = disconnect;
-    }
-    Object.defineProperty(window, 'IntersectionObserver', {
-      writable: true,
-      value: TestIntersectionObserver,
-    });
-
-    function ScrollProbe({ triggerOnce }: { triggerOnce: boolean }) {
-      const { ref, isVisible } = useScrollAnimation<HTMLDivElement>({ triggerOnce });
-      return <div ref={ref}>{isVisible ? 'visible' : 'hidden'}</div>;
-    }
-
-    const { rerender } = render(<ScrollProbe triggerOnce />);
-    act(() => observerCallback?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver));
-    expect(screen.getByText('visible')).toBeInTheDocument();
-    expect(unobserve).toHaveBeenCalled();
-
-    rerender(<ScrollProbe triggerOnce={false} />);
-    act(() => observerCallback?.([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver));
-    expect(screen.getByText('hidden')).toBeInTheDocument();
-    expect(disconnect).toHaveBeenCalled();
 
     const transition = renderHook(() => useViewTransition());
     const transitioned = vi.fn();
@@ -615,61 +440,15 @@ describe('render smoke coverage', () => {
     vi.useFakeTimers();
     try {
       const onClose = vi.fn();
-      const onSelect = vi.fn();
       const onConfirm = vi.fn();
-      const onPress = vi.fn();
-
-      const rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-        x: 0,
-        y: 0,
-        width: 120,
-        height: 80,
-        top: 0,
-        left: 0,
-        right: 120,
-        bottom: 80,
-        toJSON: () => ({}),
-      } as DOMRect);
 
       renderWithRouter(
         <>
-          <ActionSheet
-            isOpen
-            options={[
-              { id: 'disabled', label: 'Disabled', onSelect, disabled: true },
-              { id: 'enabled', label: 'Enabled', onSelect },
-            ]}
-            onClose={onClose}
-            showCancel={false}
-          />
           <ConfirmLeaveModal isOpen context="selecting" selectionsCount={0} onClose={onClose} onConfirm={onConfirm} />
           <ConfirmLeaveModal isOpen context="selecting" selectionsCount={1} onClose={onClose} onConfirm={onConfirm} />
           <ConfirmLeaveModal isOpen context="selecting" selectionsCount={2} onClose={onClose} onConfirm={onConfirm} />
           <ConfirmLeaveModal isOpen context="results" onClose={onClose} onConfirm={onConfirm} isLoading />
-          <NoResultsEmpty />
-          <NoRestaurantsEmpty />
-          <NoMatchesEmpty />
-          <Skeleton animate={false} className="plain-skeleton" />
-          <SkeletonText animate={false} />
-          <SkeletonAvatar size="sm" animate={false} />
-          <RestaurantCardSkeleton />
-          <RestaurantListSkeleton count={1} variant="list" />
           <GoogleSignInButton variant="compact" />
-          <TouchFeedback onPress={onPress} scaleOnPress={0.9} hapticType="success">
-            <button>Touch target</button>
-          </TouchFeedback>
-          <TouchFeedback disabled onPress={onPress}>
-            <button>Disabled touch</button>
-          </TouchFeedback>
-          <RippleButton onClick={onConfirm} className="ripple-target">
-            Ripple target
-          </RippleButton>
-          <RippleButton disabled onClick={onConfirm}>
-            Disabled ripple
-          </RippleButton>
-          <RefreshIndicator isRefreshing={false} />
-          <SectionProgress currentSection={1} totalSections={3} labels={['Start', 'Middle', 'End']} />
-          <ReadingTime content="" wordsPerMinute={200} />
           <PageTransition variant="slide-up"><div>Slide up child</div></PageTransition>
           <PageTransition variant="slide-left"><div>Slide left child</div></PageTransition>
           <PageTransition variant="scale"><div>Scale child</div></PageTransition>
@@ -679,132 +458,31 @@ describe('render smoke coverage', () => {
         </>
       );
 
-      fireEvent.keyDown(document, { key: 'Escape' });
-      fireEvent.click(screen.getByText('Disabled'));
-      fireEvent.click(screen.getByText('Enabled'));
-      expect(onSelect).toHaveBeenCalledTimes(1);
-      expect(onClose).toHaveBeenCalled();
-
-      fireEvent.keyDown(screen.getAllByRole('dialog')[1], { key: 'Escape' });
+      fireEvent.keyDown(screen.getAllByRole('dialog')[0], { key: 'Escape' });
       fireEvent.click(screen.getAllByText('Keep Swiping')[0]);
       fireEvent.click(screen.getAllByText('Leave Session')[0]);
       expect(onConfirm).toHaveBeenCalled();
-
-      fireEvent.mouseDown(screen.getByText('Touch target').parentElement!);
-      fireEvent.mouseUp(screen.getByText('Touch target').parentElement!);
-      await act(async () => {
-        vi.advanceTimersByTime(50);
-      });
-      expect(onPress).toHaveBeenCalled();
-
-      fireEvent.mouseDown(screen.getByText('Disabled touch').parentElement!);
-      fireEvent.mouseLeave(screen.getByText('Disabled touch').parentElement!);
-
-      fireEvent.click(screen.getByText('Ripple target'), { clientX: 30, clientY: 20 });
-      fireEvent.click(screen.getByText('Disabled ripple'), { clientX: 30, clientY: 20 });
-      await act(async () => {
-        vi.advanceTimersByTime(600);
-      });
-      expect(onConfirm).toHaveBeenCalled();
-
-      rectSpy.mockRestore();
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it('covers card, navigation, refresh, progress, and toast interactions', async () => {
-    const onSave = vi.fn();
-    const onVote = vi.fn();
-    const onClick = vi.fn();
-    const onRefresh = vi.fn(async () => undefined);
+  it('covers toast interactions', async () => {
     const onDismiss = vi.fn();
     const actionClick = vi.fn();
 
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 150 });
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
-    Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, value: 1800 });
-
-    const { container } = renderWithRouter(
-      <>
-        <CuisineCard id="unknown" name="Fusion" emoji="F" count={2} size="large" onClick={onClick} />
-        <RestaurantCard
-          id="place-2"
-          name="List Place"
-          cuisine="Unknown"
-          emoji="L"
-          rating={4.2}
-          priceLevel="$$$"
-          distance="2 mi"
-          neighborhood="Downtown"
-          isOpen={false}
-          highlight="Great noodles"
-          tags={['cozy', 'quiet', 'local', 'extra']}
-          rank={3}
-          variant="list"
-          onSave={onSave}
-          onVote={onVote}
-        />
-        <CollectionCard id="unknown" title="Unknown Collection" subtitle="Sub" emoji="U" gradient="from-blue-500 to-green-500" count={4} onClick={onClick} />
-        <FloatingNav />
-        <ScrollProgress showPercentage color="rose" />
-        <BackToTop threshold={100} />
-        <PullToRefresh onRefresh={onRefresh} pullThreshold={20} maxPull={40}>
-          <div>Pull child</div>
-        </PullToRefresh>
-        <Toast
-          toast={{
-            id: 'toast-action',
-            type: 'warning',
-            message: 'Act now',
-            duration: 500,
-            action: { label: 'Undo', onClick: actionClick },
-          }}
-          onDismiss={onDismiss}
-        />
-      </>
+    renderWithRouter(
+      <Toast
+        toast={{
+          id: 'toast-action',
+          type: 'warning',
+          message: 'Act now',
+          duration: 500,
+          action: { label: 'Undo', onClick: actionClick },
+        }}
+        onDismiss={onDismiss}
+      />
     );
-
-    fireEvent.scroll(window);
-    fireEvent.click(screen.getByLabelText('Back to top'));
-    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
-
-    for (const img of Array.from(container.querySelectorAll('img'))) {
-      fireEvent.load(img);
-      fireEvent.error(img);
-    }
-    fireEvent.mouseEnter(screen.getByText('Fusion').closest('button')!);
-    fireEvent.mouseLeave(screen.getByText('Fusion').closest('button')!);
-    fireEvent.click(screen.getByText('Fusion'));
-
-    const listArticle = screen.getByText('List Place').closest('article')!;
-    fireEvent.mouseEnter(listArticle);
-    fireEvent.mouseLeave(listArticle);
-    fireEvent.click(listArticle.querySelectorAll('button')[0]);
-    fireEvent.click(listArticle.querySelectorAll('button')[1]);
-    fireEvent.click(listArticle);
-
-    const collectionButton = screen.getByText('Unknown Collection').closest('button')!;
-    fireEvent.mouseEnter(collectionButton);
-    fireEvent.mouseLeave(collectionButton);
-    fireEvent.click(collectionButton);
-    expect(onClick).toHaveBeenCalled();
-    expect(onSave).toHaveBeenCalled();
-    expect(onVote).toHaveBeenCalled();
-
-    fireEvent.click(screen.getByText('Start'));
-    fireEvent.click(screen.getByText('Create Session'));
-    fireEvent.click(screen.getByText('Start'));
-    fireEvent.click(screen.getByText('Join Session'));
-    fireEvent.click(screen.getByText('Start'));
-    fireEvent.click(document.querySelector('.fixed.inset-0.bg-black\\/50')!);
-
-    const pullContainer = screen.getByText('Pull child').closest('.relative') as HTMLElement;
-    Object.defineProperty(pullContainer, 'scrollTop', { configurable: true, value: 0 });
-    fireEvent.touchStart(pullContainer, { touches: [{ clientY: 10 }] });
-    fireEvent.touchMove(pullContainer, { touches: [{ clientY: 100 }] });
-    fireEvent.touchEnd(pullContainer);
-    await waitFor(() => expect(onRefresh).toHaveBeenCalled());
 
     const toastAlert = screen.getByRole('alert');
     fireEvent.mouseEnter(toastAlert);
@@ -823,10 +501,9 @@ describe('render smoke coverage', () => {
     expect(screen.getByText('From provider')).toBeInTheDocument();
   });
 
-  it('covers swipe, top navigation, and friend component actions', async () => {
+  it('covers swipe, user menu, and friend component actions', async () => {
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();
-    const onBack = vi.fn();
     const onInvite = vi.fn();
     const onToggle = vi.fn();
     const onSelectionChange = vi.fn();
@@ -895,21 +572,8 @@ describe('render smoke coverage', () => {
       sessionInvites: Array.from({ length: 4 }, (_, index) => ({ ...sampleInvite, id: `invite-${index}` })),
     });
 
-    renderWithRouter(
-      <>
-        <TopNav showBackButton onBack={onBack} rightAction={<button>Right</button>} />
-        <TopNav showLogo={false} showFriendsButton={false} showAuth={false} transparent />
-        <UserMenu />
-      </>,
-      ['/explore']
-    );
-    fireEvent.click(screen.getByLabelText('Go back'));
-    fireEvent.click(screen.getByText('Dinder'));
-    fireEvent.click(screen.getAllByText('Explore')[0]);
-    fireEvent.click(screen.getByTitle('Friends'));
-    fireEvent.click(screen.getAllByText('Sign out')[0]);
-    fireEvent.click(screen.getAllByText('Sign out')[1]);
-    expect(onBack).toHaveBeenCalled();
+    renderWithRouter(<UserMenu />);
+    fireEvent.click(screen.getByText('Sign out'));
 
     useAuthStore.setState({
       user: null,
@@ -921,12 +585,10 @@ describe('render smoke coverage', () => {
     });
     renderWithRouter(
       <>
-        <TopNav showAuth />
         <UserMenu />
         <GoogleSignInButton />
       </>
     );
-    fireEvent.click(screen.getAllByText('...')[0]);
     fireEvent.click(screen.getByText('Signing in...'));
 
     vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
@@ -1053,6 +715,7 @@ describe('render smoke coverage', () => {
 
     renderRoute('/create', '/create', <CreateSessionPage />);
 
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Zach' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Create Session' }).closest('form')!);
     expect(await screen.findByText('Please set your location first')).toBeInTheDocument();
 
@@ -1159,6 +822,7 @@ describe('render smoke coverage', () => {
     });
     vi.mocked(apiClient.createSession).mockRejectedValueOnce(new Error('create failed'));
     const failedCreate = renderRoute('/create', '/create', <CreateSessionPage />);
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Zach' } });
     fireEvent.click(screen.getByText('Use My Current Location'));
     await screen.findByText('Location set');
     fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
@@ -1167,6 +831,7 @@ describe('render smoke coverage', () => {
 
     vi.mocked(apiClient.createSession).mockRejectedValueOnce('bad response');
     const unknownCreateFailure = renderRoute('/create', '/create', <CreateSessionPage />);
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Zach' } });
     fireEvent.click(screen.getByText('Use My Current Location'));
     await screen.findByText('Location set');
     fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
@@ -1316,22 +981,17 @@ describe('render smoke coverage', () => {
   });
 
   it('covers results page matches, fallbacks, restart, share, and leave flows', async () => {
-    const created = createDemoSession({
-      hostName: 'Alice',
-      location: { latitude: 1, longitude: 2 },
-      searchRadiusMiles: 3,
-    });
     useSessionStore.setState({
-      sessionCode: created.sessionCode,
-      currentUserId: created.host.participantId,
-      participants: [created.host, { ...sampleParticipant, participantId: 'p2', displayName: 'Bob', isHost: false }],
+      sessionCode: 'ABC123',
+      currentUserId: 'participant-1',
+      participants: [sampleParticipant, { ...sampleParticipant, participantId: 'p2', displayName: 'Bob', isHost: false }],
       restaurants: [{ ...sampleRestaurant, address: undefined, priceLevel: 0, cuisineType: '' }],
       allSelections: { Alice: ['place-1'], Bob: [] },
       restaurantNames: {},
       overlappingOptions: [{ ...sampleRestaurant, address: undefined, priceLevel: 0, cuisineType: '' }],
     });
 
-    const matching = renderRoute('/session/:sessionCode/results', `/session/${created.sessionCode}/results`, <ResultsPage />);
+    const matching = renderRoute('/session/:sessionCode/results', '/session/ABC123/results', <ResultsPage />);
     expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Uber Eats/i })).toHaveAttribute('href', 'https://www.ubereats.com/search?q=Pasta%20House');
     expect(screen.getByRole('link', { name: /DoorDash/i })).toHaveAttribute('href', 'https://www.doordash.com/search/store/Pasta%20House/');
@@ -1339,19 +999,19 @@ describe('render smoke coverage', () => {
     fireEvent.click(screen.getByText('Share Results'));
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
     fireEvent.click(screen.getByText('Select Again'));
-    expect(useSessionStore.getState().selections).toEqual([]);
+    await waitFor(() => expect(useSessionStore.getState().selections).toEqual([]));
     matching.unmount();
 
     useSessionStore.setState({
-      sessionCode: created.sessionCode,
-      currentUserId: created.host.participantId,
-      participants: [created.host],
+      sessionCode: 'ABC123',
+      currentUserId: 'participant-1',
+      participants: [sampleParticipant],
       restaurants: [],
       allSelections: { Alice: ['legacy-option'] },
       restaurantNames: {},
       overlappingOptions: [{ optionId: 'legacy-option', displayName: 'Legacy Option', description: 'Old format' } as any],
     });
-    const legacy = renderRoute('/session/:sessionCode/results', `/session/${created.sessionCode}/results`, <ResultsPage />);
+    const legacy = renderRoute('/session/:sessionCode/results', '/session/ABC123/results', <ResultsPage />);
     expect(screen.getByText('Legacy Option')).toBeInTheDocument();
     expect(screen.getByText('Old format')).toBeInTheDocument();
     legacy.unmount();
@@ -1405,72 +1065,6 @@ describe('render smoke coverage', () => {
     fireEvent.click(screen.getByTitle('Friends'));
     authenticatedHome.unmount();
 
-    const redesign = renderWithRouter(<HomePageRedesign />);
-    fireEvent.click(screen.getByText('Start a Session'));
-    fireEvent.click(screen.getByText('Join with Code'));
-    fireEvent.click(screen.getByText('Italian'));
-    fireEvent.click(screen.getByText('Get Started Free'));
-    redesign.unmount();
-
-    const explore = renderWithRouter(<ExplorePage />, ['/explore']);
-    fireEvent.change(screen.getAllByPlaceholderText('Search restaurants...')[0], { target: { value: 'zzzz' } });
-    expect(screen.getByText('No restaurants found')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Clear Filters'));
-    fireEvent.click(screen.getByText('Filters'));
-    fireEvent.click(screen.getAllByText('$$$$')[0]);
-    fireEvent.change(screen.getByDisplayValue('All Areas'), { target: { value: 'Downtown' } });
-    fireEvent.click(screen.getByText('Clear all'));
-    fireEvent.click(screen.getAllByText('Italian')[0]);
-    expect(screen.getByText('Restaurants')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Vote on These'));
-    fireEvent.click(screen.getByText('Osteria Romano'));
-    explore.unmount();
-
-    const cuisineStateExplore = render(
-      <MemoryRouter initialEntries={[{ pathname: '/explore', state: { cuisine: 'japanese' } }]}>
-        <ExplorePage />
-      </MemoryRouter>
-    );
-    expect(screen.getByText('Sakura Ramen')).toBeInTheDocument();
-    cuisineStateExplore.unmount();
-
-    const curatedHome = renderRoute('/guides/:listId', '/guides/best-italian', <CuratedListPage />);
-    fireEvent.click(screen.getAllByText('Home').at(-1)!);
-    curatedHome.unmount();
-
-    const curatedExplore = renderRoute('/guides/:listId', '/guides/best-italian', <CuratedListPage />);
-    fireEvent.click(screen.getAllByText('Explore').at(-1)!);
-    curatedExplore.unmount();
-
-    const curated = renderRoute('/guides/:listId', '/guides/best-italian', <CuratedListPage />);
-    fireEvent.change(screen.getByDisplayValue('Recommended'), { target: { value: 'Rating' } });
-    fireEvent.change(screen.getByDisplayValue('Rating'), { target: { value: 'Distance' } });
-    fireEvent.change(screen.getByDisplayValue('Distance'), { target: { value: 'Price: Low to High' } });
-    fireEvent.change(screen.getByDisplayValue('Price: Low to High'), { target: { value: 'Price: High to Low' } });
-    fireEvent.click(screen.getAllByText('$')[0]);
-    expect(screen.getByText('No restaurants match')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Clear Filters'));
-    fireEvent.click(screen.getByText('Filters'));
-    fireEvent.click(screen.getAllByText('$$$')[0]);
-    fireEvent.click(screen.getAllByTitle('Save')[0]);
-    curated.unmount();
-
-    const curatedCta = renderRoute('/guides/:listId', '/guides/best-italian', <CuratedListPage />);
-    fireEvent.click(screen.getByText('Decide with Friends'));
-    curatedCta.unmount();
-
-    const curatedVote = renderRoute('/guides/:listId', '/guides/best-italian', <CuratedListPage />);
-    fireEvent.click(screen.getAllByText('Vote')[0]);
-    curatedVote.unmount();
-
-    const curatedArticle = renderRoute('/guides/:listId', '/guides/best-italian', <CuratedListPage />);
-    fireEvent.click(screen.getByText('Osteria Romano').closest('article')!);
-    curatedArticle.unmount();
-
-    const defaultCurated = renderRoute('/guides/:listId', '/guides/unknown', <CuratedListPage />);
-    expect(screen.getAllByText('Best Italian').length).toBeGreaterThan(0);
-    defaultCurated.unmount();
-
     useAuthStore.setState({ isAuthenticated: false, isLoading: false });
     const unauthGuide = renderWithRouter(<GuideHomePage />);
     expect(screen.getByText('Sign In')).toBeInTheDocument();
@@ -1522,21 +1116,6 @@ describe('render smoke coverage', () => {
     const defaultDetail = renderRoute('/r', '/r', <RestaurantDetailPage />);
     expect(screen.getByText('Restaurant not found.')).toBeInTheDocument();
     defaultDetail.unmount();
-
-    const detailV2 = renderRoute('/restaurant/:restaurantId', '/restaurant/1', <RestaurantDetailPageV2 />);
-    fireEvent.click(screen.getByText('Back'));
-    fireEvent.click(screen.getByTitle('Save'));
-    expect(screen.getByTitle('Saved')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('menu'));
-    expect(screen.getByText('Antipasti')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('reviews'));
-    expect(screen.getByText('See all 342 reviews')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Decide with Friends'));
-    detailV2.unmount();
-
-    const defaultDetailV2 = renderRoute('/restaurant', '/restaurant', <RestaurantDetailPageV2 />);
-    expect(screen.getByText('Osteria Romano')).toBeInTheDocument();
-    defaultDetailV2.unmount();
 
     useAuthStore.setState({ isAuthenticated: false, isLoading: true });
     const loadingFriends = renderWithRouter(<FriendsPage />);
