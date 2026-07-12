@@ -9,6 +9,7 @@ import { redis, pingRedis } from './redis/client.js';
 import sessionsRouter from './api/sessions.js';
 import optionsRouter from './api/options.js';
 import friendsRouter from './api/friends.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import {
   getSocketAuthToken,
   getSocketUser,
@@ -65,6 +66,9 @@ app.get('/health', (_req, res) => {
     });
   })();
 });
+
+// Global error safety net (must come after all routes)
+app.use(errorHandler);
 
 // Create HTTP server
 const httpServer = createServer(app);

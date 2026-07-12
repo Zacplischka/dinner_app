@@ -60,6 +60,21 @@ describe('REST API internal error branches', () => {
     expect(errorSpy).toHaveBeenCalledWith('Error joining session:', error);
   });
 
+  it('should return JSON INVALID_JSON for malformed request bodies, not HTML', async () => {
+    const response = await request(app)
+      .post('/api/sessions')
+      .set('Content-Type', 'application/json')
+      .send('{bad')
+      .expect(400);
+
+    expect(response.headers['content-type']).toMatch(/application\/json/);
+    expect(response.body).toEqual({
+      error: 'Bad Request',
+      code: 'INVALID_JSON',
+      message: 'Request body is not valid JSON',
+    });
+  });
+
   it('GET /api/options/:sessionCode should return INTERNAL_ERROR for unexpected Redis failures', async () => {
     const error = new Error('boom');
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
