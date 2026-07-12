@@ -106,7 +106,6 @@ export async function getSession(sessionCode: string): Promise<SessionResponse> 
   return response.json();
 }
 
-
 /**
  * Get restaurants for a session
  */

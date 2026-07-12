@@ -19,7 +19,6 @@ import type {
 export function createFriendsRouter(friendsService: FriendsService) {
   const router = Router();
 
-
   // All routes require authentication
   router.use(requireAuth);
 

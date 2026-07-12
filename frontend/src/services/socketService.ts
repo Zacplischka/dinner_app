@@ -190,7 +190,6 @@ export function isSocketConnected(): boolean {
   return socket?.connected || false;
 }
 
-
 /**
  * Wait for socket to be connected
  * Returns a promise that resolves when connected or rejects on timeout

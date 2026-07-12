@@ -56,7 +56,6 @@ describe('redis client helpers', () => {
     expect(errorSpy).toHaveBeenCalledWith({ err: error }, 'Redis ping failed');
   });
 
-
   it('should log Redis client lifecycle events', () => {
     const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);

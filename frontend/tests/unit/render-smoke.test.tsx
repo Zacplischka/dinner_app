@@ -971,7 +971,6 @@ describe('render smoke coverage', () => {
     await waitFor(() => expect(socketService.leaveSession).toHaveBeenCalledWith('ABC123'));
     leaveSuccessFlow.unmount();
 
-
     useSessionStore.setState({ sessionStatus: 'complete' });
     vi.mocked(apiClient.getRestaurants).mockResolvedValueOnce([sampleRestaurant]);
     renderRoute('/session/:sessionCode/select', '/session/ABC123/select', <SelectionPage />);

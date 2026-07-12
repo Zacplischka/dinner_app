@@ -122,7 +122,6 @@ export const useSessionStore = create<SessionState>()(
             selections: state.selections.filter((id) => id !== placeId),
           })),
 
-
         // Results actions
         setResults: (results) =>
           set({

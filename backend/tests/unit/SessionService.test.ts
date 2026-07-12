@@ -280,7 +280,6 @@ describe('SessionService', () => {
     });
   });
 
-
   describe('createSession with location', () => {
     it('should create a shareable link from default and custom frontend URLs', async () => {
       delete process.env.FRONTEND_URL;

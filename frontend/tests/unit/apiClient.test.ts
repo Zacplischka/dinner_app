@@ -276,7 +276,6 @@ describe('apiClient', () => {
     });
   });
 
-
   describe('handleApiError', () => {
     it('should return Error messages and a generic fallback for unknown values', () => {
       expect(apiClient.handleApiError(new Error('Readable'))).toBe('Readable');

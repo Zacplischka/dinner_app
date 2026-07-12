@@ -20,7 +20,6 @@ describe('Google Places API Configuration', () => {
     expect(config.googlePlaces.apiUrl).toBe('https://places.googleapis.com/v1/places:searchNearby');
   });
 
-
   it('should load explicit environment values at module initialization', async () => {
     vi.resetModules();
     vi.doMock('dotenv', () => ({
