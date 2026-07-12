@@ -236,3 +236,86 @@ export async function getSessionInvites(): Promise<SessionInvite[]> {
   const data = await handleResponse<{ invites: SessionInvite[] }>(response);
   return data.invites;
 }
+
+/**
+ * Send a friend request to a user by email
+ */
+export async function sendFriendRequest(email: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/friends/request`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ email }),
+  });
+  await handleResponse(response);
+}
+
+/**
+ * Accept a friend request
+ */
+export async function acceptFriendRequest(requestId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/friends/${requestId}/accept`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  await handleResponse(response);
+}
+
+/**
+ * Decline a friend request
+ */
+export async function declineFriendRequest(requestId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/friends/${requestId}/decline`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  await handleResponse(response);
+}
+
+/**
+ * Remove a friend (unfriend)
+ */
+export async function removeFriend(friendId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/friends/${friendId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  await handleResponse(response);
+}
+
+/**
+ * Invite friends to join a session
+ */
+export async function inviteFriendsToSession(
+  sessionCode: string,
+  friendIds: string[]
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/sessions/${sessionCode}/invite`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ friendIds }),
+  });
+  await handleResponse(response);
+}
+
+/**
+ * Accept a session invite; returns the session code to join
+ */
+export async function acceptSessionInvite(inviteId: string): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/invites/${inviteId}/accept`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  const data = await handleResponse<{ success: boolean; sessionCode: string }>(response);
+  return data.sessionCode;
+}
+
+/**
+ * Decline a session invite
+ */
+export async function declineSessionInvite(inviteId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/invites/${inviteId}/decline`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  await handleResponse(response);
+}

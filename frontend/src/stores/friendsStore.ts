@@ -9,10 +9,7 @@ import type {
   SessionInvite,
   UserProfile,
 } from '@dinder/shared/types';
-import { useAuthStore } from './authStore';
 import * as apiClient from '../services/apiClient';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface FriendsState {
   // Data
@@ -56,29 +53,6 @@ interface FriendsState {
   // Utility
   clearError: () => void;
   reset: () => void;
-}
-
-// Helper to get auth headers
-function getAuthHeaders(): HeadersInit {
-  const session = useAuthStore.getState().session;
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
-  }
-
-  return headers;
-}
-
-// Helper to handle API responses
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-    throw new Error(error.message || `HTTP error ${response.status}`);
-  }
-  return response.json();
 }
 
 export const useFriendsStore = create<FriendsState>()(
@@ -142,13 +116,7 @@ export const useFriendsStore = create<FriendsState>()(
       sendFriendRequest: async (email: string) => {
         set({ error: null });
         try {
-          const response = await fetch(`${API_URL}/api/friends/request`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ email }),
-          });
-
-          await handleResponse(response);
+          await apiClient.sendFriendRequest(email);
           // Clear search results after sending request
           set({ searchResults: [] });
           return true;
@@ -162,12 +130,7 @@ export const useFriendsStore = create<FriendsState>()(
       removeFriend: async (friendId: string) => {
         set({ error: null });
         try {
-          const response = await fetch(`${API_URL}/api/friends/${friendId}`, {
-            method: 'DELETE',
-            headers: getAuthHeaders(),
-          });
-
-          await handleResponse(response);
+          await apiClient.removeFriend(friendId);
 
           // Remove friend from local state
           set((state) => ({
@@ -200,12 +163,7 @@ export const useFriendsStore = create<FriendsState>()(
       acceptFriendRequest: async (requestId: string) => {
         set({ error: null });
         try {
-          const response = await fetch(`${API_URL}/api/friends/${requestId}/accept`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-          });
-
-          await handleResponse(response);
+          await apiClient.acceptFriendRequest(requestId);
 
           // Remove from requests, refresh friends list
           set((state) => ({
@@ -226,12 +184,7 @@ export const useFriendsStore = create<FriendsState>()(
       declineFriendRequest: async (requestId: string) => {
         set({ error: null });
         try {
-          const response = await fetch(`${API_URL}/api/friends/${requestId}/decline`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-          });
-
-          await handleResponse(response);
+          await apiClient.declineFriendRequest(requestId);
 
           // Remove from requests
           set((state) => ({
@@ -264,13 +217,7 @@ export const useFriendsStore = create<FriendsState>()(
       inviteFriendsToSession: async (sessionCode: string, friendIds: string[]) => {
         set({ error: null });
         try {
-          const response = await fetch(`${API_URL}/api/sessions/${sessionCode}/invite`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ friendIds }),
-          });
-
-          await handleResponse(response);
+          await apiClient.inviteFriendsToSession(sessionCode, friendIds);
           return true;
         } catch (error) {
           console.error('Error inviting friends to session:', error);
@@ -282,19 +229,14 @@ export const useFriendsStore = create<FriendsState>()(
       acceptSessionInvite: async (inviteId: string) => {
         set({ error: null });
         try {
-          const response = await fetch(`${API_URL}/api/invites/${inviteId}/accept`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-          });
-
-          const data = await handleResponse<{ success: boolean; sessionCode: string }>(response);
+          const sessionCode = await apiClient.acceptSessionInvite(inviteId);
 
           // Remove from invites
           set((state) => ({
             sessionInvites: state.sessionInvites.filter((i) => i.id !== inviteId),
           }));
 
-          return { success: true, sessionCode: data.sessionCode };
+          return { success: true, sessionCode };
         } catch (error) {
           console.error('Error accepting session invite:', error);
           set({ error: error instanceof Error ? error.message : 'Failed to accept invite' });
@@ -305,12 +247,7 @@ export const useFriendsStore = create<FriendsState>()(
       declineSessionInvite: async (inviteId: string) => {
         set({ error: null });
         try {
-          const response = await fetch(`${API_URL}/api/invites/${inviteId}/decline`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-          });
-
-          await handleResponse(response);
+          await apiClient.declineSessionInvite(inviteId);
 
           // Remove from invites
           set((state) => ({
