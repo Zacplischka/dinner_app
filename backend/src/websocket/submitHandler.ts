@@ -4,6 +4,7 @@
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import * as store from '../store/sessionStore.js';
+import { DomainError } from '../services/DomainError.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -85,15 +86,17 @@ export async function handleSelectionSubmit(
       console.warn('Rejected selection:submit', {
         socketId: socket.id,
         sessionCode,
-        reason: error instanceof Error ? error.message : 'unknown_error',
+        reason:
+          error instanceof DomainError
+            ? error.code
+            : error instanceof Error
+              ? error.message
+              : 'unknown_error',
       });
       return callback({
         success: false,
-        error: error instanceof Error && error.message === 'INVALID_RESTAURANTS'
-          ? 'One or more selected options are invalid'
-          : error instanceof Error && error.message === 'ALREADY_SUBMITTED'
-          ? 'You have already submitted your selections'
-          : 'Error submitting selections',
+        // DomainError messages are the user-facing copy
+        error: error instanceof DomainError ? error.message : 'Error submitting selections',
       });
     }
 

@@ -8,6 +8,7 @@
 
 import type { Redis } from 'ioredis';
 import { redis } from '../redis/client.js';
+import { DomainError } from '../services/DomainError.js';
 import type { Participant, Restaurant, Session } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
@@ -276,15 +277,8 @@ export function createSessionStore(redis: Redis) {
     return await redis.scard(participantsKey(sessionCode));
   }
 
-  // ponytail: two participantCount writers survive - REST join increments the
-  // hash counter, WS join overwrites it with the set size. Unifying the join
-  // paths (one counting strategy) is its own refactor; these stay until then.
   async function setParticipantCount(sessionCode: string, count: number): Promise<void> {
     await redis.hset(sessionKey(sessionCode), 'participantCount', count);
-  }
-
-  async function incrementParticipantCount(sessionCode: string): Promise<number> {
-    return await redis.hincrby(sessionKey(sessionCode), 'participantCount', 1);
   }
 
   // --- Submissions -------------------------------------------------------
@@ -304,14 +298,14 @@ export function createSessionStore(redis: Redis) {
   ): Promise<{ submittedCount: number; participantCount: number }> {
     const participant = await getParticipant(participantId);
     if (participant?.hasSubmitted) {
-      throw new Error('ALREADY_SUBMITTED');
+      throw new DomainError('ALREADY_SUBMITTED', 'You have already submitted your selections');
     }
 
     if (placeIds.length > 0) {
       const validPlaceIds = await redis.smembers(restaurantIdsKey(sessionCode));
       const invalid = placeIds.filter((id) => !validPlaceIds.includes(id));
       if (invalid.length > 0) {
-        throw new Error('INVALID_RESTAURANTS');
+        throw new DomainError('INVALID_RESTAURANTS', 'One or more selected options are invalid');
       }
     }
 
@@ -462,7 +456,6 @@ export function createSessionStore(redis: Redis) {
     isParticipant,
     countParticipants,
     setParticipantCount,
-    incrementParticipantCount,
     recordSubmission,
     computeAndStoreResults,
     resetForRestart,
@@ -486,7 +479,6 @@ export const {
   isParticipant,
   countParticipants,
   setParticipantCount,
-  incrementParticipantCount,
   recordSubmission,
   computeAndStoreResults,
   resetForRestart,

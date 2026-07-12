@@ -1,9 +1,12 @@
-// WebSocket handler for session:join event
+// WebSocket handler for session:join event - pure transport over
+// SessionService.joinSession (payload validation, room join, ack/broadcast).
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
-import * as store from '../store/sessionStore.js';
+import * as SessionService from '../services/SessionService.js';
+import { MAX_PARTICIPANTS } from '../services/SessionService.js';
+import { DomainError } from '../services/DomainError.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -16,6 +19,11 @@ const sessionJoinPayloadSchema = z.object({
   sessionCode: z.string().regex(/^[A-Z0-9]{6}$/, 'Session code must be 6 alphanumeric characters'),
   displayName: z.string().min(1, 'Display name required').max(50, 'Display name too long'),
 });
+
+const joinErrorMessages: Record<string, string> = {
+  SESSION_NOT_FOUND: 'Session not found or has expired',
+  SESSION_FULL: `Session is full (maximum ${MAX_PARTICIPANTS} participants)`,
+};
 
 export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
@@ -40,91 +48,10 @@ export async function handleSessionJoin(
 
     const { sessionCode, displayName } = validation.data;
 
-    // Check session exists
-    const session = await store.readSession(sessionCode);
-    if (!session) {
-      console.warn('Rejected session:join', {
-        socketId: socket.id,
-        sessionCode,
-        reason: 'session_not_found',
-      });
-      return callback({
-        success: false,
-        error: 'Session not found or has expired',
-      });
-    }
-
-    // Check if this is a rejoin (same displayName reconnecting with new socket ID)
-    const existingParticipants = await store.listParticipants(sessionCode);
-    const existingParticipant = existingParticipants.find(p => p.displayName === displayName);
-
-    let isHost = false;
-    let isRejoin = false;
-    let newCount: number;
-
-    if (existingParticipant) {
-      // Rejoin: remove old entry and add new one with current socket.id
-      isRejoin = true;
-      isHost = existingParticipant.isHost;
-      await store.removeParticipant(sessionCode, existingParticipant.participantId);
-      newCount = await store.addParticipant(sessionCode, {
-        participantId: socket.id,
-        displayName,
-        isHost,
-      });
-    } else {
-      // New participant - check limit (FR-005)
-      const currentCount = await store.countParticipants(sessionCode);
-      if (currentCount >= 4) {
-        console.warn('Rejected session:join', {
-          socketId: socket.id,
-          sessionCode,
-          reason: 'session_full',
-          participantCount: currentCount,
-        });
-        return callback({
-          success: false,
-          error: 'Session is full (maximum 4 participants)',
-        });
-      }
-
-      // First participant becomes the host
-      isHost = currentCount === 0;
-
-      // Add participant using socket.id as participantId
-      newCount = await store.addParticipant(sessionCode, {
-        participantId: socket.id,
-        displayName,
-        isHost,
-      });
-    }
-
-    // Re-check count after adding to catch race condition
-    // ponytail: check-then-add race survives; a truly atomic join is the
-    // unify-join-paths refactor's job
-    if (newCount > 4) {
-      // Rollback: remove the participant we just added
-      await store.removeParticipant(sessionCode, socket.id);
-      console.warn('Rejected session:join', {
-        socketId: socket.id,
-        sessionCode,
-        reason: 'session_full_after_add',
-        participantCount: newCount,
-      });
-      return callback({
-        success: false,
-        error: 'Session is full (maximum 4 participants)',
-      });
-    }
-
-    // Update participant count in session hash
-    await store.setParticipantCount(sessionCode, newCount);
+    const result = await SessionService.joinSession(sessionCode, socket.id, displayName);
 
     // Join Socket.IO room
     await socket.join(sessionCode);
-
-    // Get all participants for response
-    const participants = await store.listParticipants(sessionCode);
 
     // Send acknowledgment to joining client
     callback({
@@ -132,23 +59,27 @@ export async function handleSessionJoin(
       participantId: socket.id,
       sessionCode,
       displayName,
-      participantCount: newCount,
-      participants: participants.map((p) => ({
-        participantId: p.participantId,
-        displayName: p.displayName,
-        isHost: p.isHost,
-      })),
+      participantCount: result.participantCount,
+      participants: result.participants,
     });
 
     // Broadcast to OTHER participants in room (FR-022)
     socket.to(sessionCode).emit('participant:joined', {
       participantId: socket.id,
       displayName,
-      participantCount: newCount,
+      participantCount: result.participantCount,
     });
 
-    console.log(`✓ ${displayName} ${isRejoin ? 'rejoined' : 'joined'} session ${sessionCode} (${newCount}/4)`);
+    console.log(
+      `✓ ${displayName} ${result.isRejoin ? 'rejoined' : 'joined'} session ${sessionCode} (${result.participantCount}/${MAX_PARTICIPANTS})`
+    );
   } catch (error) {
+    if (error instanceof DomainError && joinErrorMessages[error.code]) {
+      return callback({
+        success: false,
+        error: joinErrorMessages[error.code],
+      });
+    }
     console.error('Error in session:join handler:', error);
     callback({
       success: false,

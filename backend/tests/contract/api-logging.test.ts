@@ -3,6 +3,7 @@ import request from 'supertest';
 import { app } from '../../src/server.js';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 import * as SessionService from '../../src/services/SessionService.js';
+import { DomainError } from '../../src/services/DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Contract Test: API logging', () => {
@@ -88,7 +89,7 @@ describe('Contract Test: API logging', () => {
   it('logs expected no-restaurant creation failures separately from unexpected errors', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.spyOn(SessionService, 'createSession').mockRejectedValueOnce(
-      new Error('NO_RESTAURANTS_FOUND')
+      new DomainError('NO_RESTAURANTS_FOUND', 'No restaurants found in the specified area.')
     );
 
     await request(app)
@@ -167,7 +168,9 @@ describe('Contract Test: API logging', () => {
 
   it('logs full-session join rejections with capacity context', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(new Error('SESSION_FULL'));
+    vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(
+      new DomainError('SESSION_FULL', 'Session is full (maximum 4 participants)')
+    );
 
     await request(app)
       .post('/api/sessions/ABC123/join')
