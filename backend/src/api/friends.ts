@@ -23,7 +23,6 @@ import type {
 const router = Router();
 
 const profileSelect = 'id, display_name, avatar_url, email';
-const friendshipSelect = 'id, user_id, friend_id, status, created_at';
 const sessionInviteSelect = 'id, session_code, inviter_id, status, created_at';
 
 // All routes require authentication
@@ -139,13 +138,7 @@ router.get('/friends', asyncHandler(async (req: AuthenticatedRequest, res: Respo
   try {
     const userId = req.user!.id;
 
-    // Get friendships where the user is either user_id or friend_id
-    // and status is 'accepted'
-    const { data: friendships, error } = await supabase
-      .from('friendships')
-      .select(friendshipSelect)
-      .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
-      .eq('status', 'accepted');
+    const { data: friendships, error } = await friendsStore.listAcceptedFriendships(userId);
 
     if (error) {
       console.error('Error fetching friendships:', error);
@@ -165,10 +158,7 @@ router.get('/friends', asyncHandler(async (req: AuthenticatedRequest, res: Respo
     }
 
     // Fetch profiles for all friends
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select(profileSelect)
-      .in('id', friendIds);
+    const { data: profiles, error: profilesError } = await friendsStore.listProfilesByIds(friendIds);
 
     if (profilesError) {
       console.error('Error fetching friend profiles:', profilesError);
@@ -213,15 +203,7 @@ router.get('/friends/requests', asyncHandler(async (req: AuthenticatedRequest, r
     const userId = req.user!.id;
 
     // Get pending requests where the current user is the recipient (friend_id)
-    const { data: requests, error } = await supabase
-      .from('friendships')
-      .select(`
-        id,
-        user_id,
-        created_at
-      `)
-      .eq('friend_id', userId)
-      .eq('status', 'pending');
+    const { data: requests, error } = await friendsStore.listPendingRequestsForRecipient(userId);
 
     if (error) {
       console.error('Error fetching friend requests:', error);
@@ -237,10 +219,7 @@ router.get('/friends/requests', asyncHandler(async (req: AuthenticatedRequest, r
 
     // Fetch profiles for all requesters
     const requesterIds = requests.map((r) => r.user_id);
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select(profileSelect)
-      .in('id', requesterIds);
+    const { data: profiles, error: profilesError } = await friendsStore.listProfilesByIds(requesterIds);
 
     if (profilesError) {
       console.error('Error fetching requester profiles:', profilesError);

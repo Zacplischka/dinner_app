@@ -44,3 +44,30 @@ export async function searchProfilesByEmail(email: string, excludeUserId: string
     .neq('id', excludeUserId)
     .limit(10);
 }
+
+export async function listProfilesByIds(ids: string[]) {
+  return supabase
+    .from('profiles')
+    .select(profileSelect)
+    .in('id', ids);
+}
+
+// --- Friendships -----------------------------------------------------------
+
+const friendshipSelect = 'id, user_id, friend_id, status, created_at';
+
+export async function listAcceptedFriendships(userId: string) {
+  return supabase
+    .from('friendships')
+    .select(friendshipSelect)
+    .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+    .eq('status', 'accepted');
+}
+
+export async function listPendingRequestsForRecipient(userId: string) {
+  return supabase
+    .from('friendships')
+    .select('id, user_id, created_at')
+    .eq('friend_id', userId)
+    .eq('status', 'pending');
+}
