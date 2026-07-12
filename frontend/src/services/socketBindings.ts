@@ -59,15 +59,15 @@ const socketConfig: SocketConfig = {
     },
 
     // participant:joined - Another participant joined the session
-    // Handles both new joins AND rejoins (same displayName with new socket.id)
+    // The server decides whether this is a rejoin (isRejoin); the client just
+    // applies it. Fall back to add if the rejoiner isn't in our local list.
     'participant:joined': (event: ParticipantJoinedEvent) => {
       console.log('Participant joined:', event);
       const store = useSessionStore.getState();
 
-      // Check if this is a rejoin (same displayName, new participantId)
-      const existingIndex = store.participants.findIndex(
-        (p) => p.displayName === event.displayName
-      );
+      const existingIndex = event.isRejoin
+        ? store.participants.findIndex((p) => p.displayName === event.displayName)
+        : -1;
 
       if (existingIndex >= 0) {
         // Rejoin: update existing participant's socket ID

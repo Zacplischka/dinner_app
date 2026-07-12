@@ -155,6 +155,12 @@ describe('websocket handlers', () => {
           participantCount: 1,
         })
       );
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:joined', {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        participantCount: 1,
+        isRejoin: false,
+      });
       expect(logSpy).toHaveBeenCalledWith('✓ Alice joined session WSH123 (1/4)');
     });
 
@@ -180,6 +186,12 @@ describe('websocket handlers', () => {
       );
       await expect(redis.exists('participant:old-socket')).resolves.toBe(0);
       await expect(redis.exists('participant:new-socket')).resolves.toBe(1);
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:joined', {
+        participantId: 'new-socket',
+        displayName: 'Alice',
+        participantCount: 1,
+        isRejoin: true,
+      });
       expect(logSpy).toHaveBeenCalledWith('✓ Alice rejoined session WSH123 (1/4)');
     });
 

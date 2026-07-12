@@ -68,6 +68,7 @@ export async function handleSessionJoin(
       participantId: socket.id,
       displayName,
       participantCount: result.participantCount,
+      isRejoin: result.isRejoin,
     });
 
     console.log(

@@ -73,6 +73,8 @@ export interface ParticipantJoinedEvent {
   participantId: string;
   displayName: string;
   participantCount: number;
+  /** Server-decided: this join replaced an existing participant's connection. */
+  isRejoin: boolean;
 }
 
 export interface ParticipantSubmittedEvent {

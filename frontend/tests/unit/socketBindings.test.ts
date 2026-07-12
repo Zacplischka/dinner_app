@@ -132,12 +132,20 @@ describe('socketBindings', () => {
     socketBindings.initializeSocket();
 
     // New participant joins
-    socket.trigger('participant:joined', { participantId: 'participant-2', displayName: 'Bob' });
+    socket.trigger('participant:joined', {
+      participantId: 'participant-2',
+      displayName: 'Bob',
+      isRejoin: false,
+    });
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Bob');
     expect(socketMocks.toast.info).toHaveBeenCalledWith('Bob joined the session');
 
-    // Same displayName with a new id is a rejoin, not a duplicate
-    socket.trigger('participant:joined', { participantId: 'participant-3', displayName: 'Bob' });
+    // Server-flagged rejoin updates the existing entry instead of duplicating
+    socket.trigger('participant:joined', {
+      participantId: 'participant-3',
+      displayName: 'Bob',
+      isRejoin: true,
+    });
     expect(
       useSessionStore.getState().participants.filter((p) => p.displayName === 'Bob')
     ).toHaveLength(1);
