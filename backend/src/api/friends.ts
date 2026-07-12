@@ -8,8 +8,6 @@ import { DomainError } from '../services/DomainError.js';
 import * as FriendsService from '../services/FriendsService.js';
 import * as friendsStore from '../store/friendsStore.js';
 import type {
-  Friend,
-  FriendRequest,
   SessionInvite,
   SendFriendRequestPayload,
   InviteToSessionPayload,
@@ -66,63 +64,9 @@ router.get('/users/search', asyncHandler(async (req: AuthenticatedRequest, res: 
  * List all accepted friends for the current user
  */
 router.get('/friends', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-
-    const { data: friendships, error } = await friendsStore.listAcceptedFriendships(userId);
-
-    if (error) {
-      console.error('Error fetching friendships:', error);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to fetch friends',
-      });
-    }
-
-    // Get the IDs of friends (the "other" person in each friendship)
-    const friendIds = friendships.map((f) =>
-      f.user_id === userId ? f.friend_id : f.user_id
-    );
-
-    if (friendIds.length === 0) {
-      return res.json({ friends: [] } as FriendsListResponse);
-    }
-
-    // Fetch profiles for all friends
-    const { data: profiles, error: profilesError } = await friendsStore.listProfilesByIds(friendIds);
-
-    if (profilesError) {
-      console.error('Error fetching friend profiles:', profilesError);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to fetch friend profiles',
-      });
-    }
-
-    // Map friendships to Friend objects
-    const friends: Friend[] = friendships.map((friendship) => {
-      const friendId = friendship.user_id === userId ? friendship.friend_id : friendship.user_id;
-      const profile = profiles.find((p) => p.id === friendId);
-
-      return {
-        id: friendId,
-        friendshipId: friendship.id,
-        displayName: profile?.display_name || 'Unknown User',
-        avatarUrl: profile?.avatar_url || null,
-        email: profile?.email || null,
-        status: 'accepted' as const,
-      };
-    });
-
-    const response: FriendsListResponse = { friends };
-    return res.json(response);
-  } catch (error) {
-    console.error('Error in GET /friends:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
-    });
-  }
+  const friends = await FriendsService.listFriends(req.user!.id);
+  const response: FriendsListResponse = { friends };
+  return res.json(response);
 }));
 
 /**
@@ -130,61 +74,9 @@ router.get('/friends', asyncHandler(async (req: AuthenticatedRequest, res: Respo
  * List pending friend requests for the current user (requests they received)
  */
 router.get('/friends/requests', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-
-    // Get pending requests where the current user is the recipient (friend_id)
-    const { data: requests, error } = await friendsStore.listPendingRequestsForRecipient(userId);
-
-    if (error) {
-      console.error('Error fetching friend requests:', error);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to fetch friend requests',
-      });
-    }
-
-    if (!requests || requests.length === 0) {
-      return res.json({ requests: [] } as FriendRequestsResponse);
-    }
-
-    // Fetch profiles for all requesters
-    const requesterIds = requests.map((r) => r.user_id);
-    const { data: profiles, error: profilesError } = await friendsStore.listProfilesByIds(requesterIds);
-
-    if (profilesError) {
-      console.error('Error fetching requester profiles:', profilesError);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to fetch requester profiles',
-      });
-    }
-
-    // Map to FriendRequest objects
-    const friendRequests: FriendRequest[] = requests.map((request) => {
-      const profile = profiles?.find((p) => p.id === request.user_id);
-
-      return {
-        id: request.id,
-        fromUser: mapProfileToUserProfile(profile || {
-          id: request.user_id,
-          display_name: 'Unknown User',
-          avatar_url: null,
-          email: null,
-        }),
-        createdAt: request.created_at,
-      };
-    });
-
-    const response: FriendRequestsResponse = { requests: friendRequests };
-    return res.json(response);
-  } catch (error) {
-    console.error('Error in GET /friends/requests:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
-    });
-  }
+  const requests = await FriendsService.listFriendRequests(req.user!.id);
+  const response: FriendRequestsResponse = { requests };
+  return res.json(response);
 }));
 
 /**
@@ -478,13 +370,9 @@ router.get('/invites', asyncHandler(async (req: AuthenticatedRequest, res: Respo
       return res.json({ invites: [] } as SessionInvitesResponse);
     }
 
-    // Fetch inviter profiles
+    // Fetch inviter profiles; a failed lookup falls back to placeholder profiles
     const inviterIds = [...new Set(invites.map((i) => i.inviter_id))];
-    const { data: profiles, error: profilesError } = await friendsStore.listProfilesByIds(inviterIds);
-
-    if (profilesError) {
-      console.error('Error fetching inviter profiles:', profilesError);
-    }
+    const profiles = await friendsStore.listProfilesByIds(inviterIds);
 
     // Map to SessionInvite objects
     const sessionInvites: SessionInvite[] = invites.map((invite) => {

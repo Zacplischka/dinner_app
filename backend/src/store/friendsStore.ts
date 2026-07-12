@@ -70,11 +70,18 @@ export async function searchProfilesByEmail(email: string, excludeUserId: string
   return data || [];
 }
 
+/** Returns null when the query fails; callers decide whether that's fatal. */
 export async function listProfilesByIds(ids: string[]) {
-  return supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select(profileSelect)
     .in('id', ids);
+
+  if (error) {
+    console.error('Error fetching profiles:', error);
+    return null;
+  }
+  return data || [];
 }
 
 export async function findProfileIdByEmail(email: string) {
@@ -90,19 +97,31 @@ export async function findProfileIdByEmail(email: string) {
 const friendshipSelect = 'id, user_id, friend_id, status, created_at';
 
 export async function listAcceptedFriendships(userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('friendships')
     .select(friendshipSelect)
     .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
     .eq('status', 'accepted');
+
+  if (error) {
+    console.error('Error fetching friendships:', error);
+    throw new DomainError('database_error', 'Failed to fetch friends');
+  }
+  return data || [];
 }
 
 export async function listPendingRequestsForRecipient(userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('friendships')
     .select('id, user_id, created_at')
     .eq('friend_id', userId)
     .eq('status', 'pending');
+
+  if (error) {
+    console.error('Error fetching friend requests:', error);
+    throw new DomainError('database_error', 'Failed to fetch friend requests');
+  }
+  return data || [];
 }
 
 // Existence check for a pair, in either direction
