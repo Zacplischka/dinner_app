@@ -152,10 +152,10 @@ export const useSessionStore = create<SessionState>()(
         name: 'dinner-session-storage',
         version: 1,
         // isConnected is live socket state; rehydrating it as true would lie.
-        partialize: ({ isConnected: _isConnected, ...rest }: SessionState) => rest,
+        partialize: ({ isConnected: _isConnected, ...rest }: SessionState): Partial<SessionState> =>
+          rest,
         // Pre-v1 blobs have unversioned, possibly stale shapes — discard them.
-        // Cast is safe: merge() spreads this over the live store, which owns the actions.
-        migrate: () => ({ ...initialState }) as unknown as Omit<SessionState, 'isConnected'>,
+        migrate: () => ({ ...initialState }),
         merge: (persisted, current) => ({
           ...current,
           ...((persisted ?? {}) as Partial<SessionState>),
