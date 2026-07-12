@@ -1,3 +1,4 @@
+import { captureLogs } from '../helpers/logCapture.js';
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
@@ -22,7 +23,7 @@ describe('Contract Test: POST /api/sessions', () => {
   });
 
   it('should return 201 with valid SessionResponse schema on successful session creation', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .post('/api/sessions')
@@ -41,7 +42,7 @@ describe('Contract Test: POST /api/sessions', () => {
     expect(new Date(response.body.expiresAt).toISOString()).toBe(response.body.expiresAt); // Valid ISO 8601
     expect(response.body).toHaveProperty('shareableLink');
     expect(response.body.shareableLink).toContain(response.body.sessionCode);
-    expect(logSpy).toHaveBeenCalledWith('Created REST session', {
+    expect(logs.withMsg('Created REST session')[0]).toMatchObject({
       sessionCode: response.body.sessionCode,
       hasLocation: false,
       searchRadiusMiles: null,
@@ -50,7 +51,7 @@ describe('Contract Test: POST /api/sessions', () => {
   });
 
   it('should return 400 with ErrorResponse schema when hostName is missing', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .post('/api/sessions')
@@ -63,7 +64,7 @@ describe('Contract Test: POST /api/sessions', () => {
     expect(response.body).toHaveProperty('code');
     expect(response.body).toHaveProperty('message');
     expect(response.body.code).toBe('VALIDATION_ERROR');
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST session create', {
+    expect(logs.withMsg('Rejected REST session create')[0]).toMatchObject({
       reason: 'validation_error',
       fields: ['hostName'],
     });

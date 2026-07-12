@@ -2,6 +2,7 @@
 // SessionService.joinSession (payload validation, room join, ack/broadcast).
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
+import { logger } from '../logger.js';
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS, type SessionService } from '../services/SessionService.js';
@@ -35,11 +36,11 @@ export async function handleSessionJoin(
     const validation = sessionJoinPayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      console.warn('Rejected session:join', {
+      logger.warn({
         socketId: socket.id,
         sessionCode: (payload as Partial<SessionJoinPayload>).sessionCode,
         reason,
-      });
+      }, 'Rejected session:join');
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
@@ -71,9 +72,7 @@ export async function handleSessionJoin(
       isRejoin: result.isRejoin,
     });
 
-    console.log(
-      `✓ ${displayName} ${result.isRejoin ? 'rejoined' : 'joined'} session ${sessionCode} (${result.participantCount}/${MAX_PARTICIPANTS})`
-    );
+    logger.info({ socketId: socket.id, sessionCode, isRejoin: result.isRejoin, participantCount: result.participantCount }, 'Participant joined session');
   } catch (error) {
     if (error instanceof DomainError && joinErrorMessages[error.code]) {
       return callback({
@@ -81,7 +80,7 @@ export async function handleSessionJoin(
         error: joinErrorMessages[error.code],
       });
     }
-    console.error('Error in session:join handler:', error);
+    logger.error({ err: error, socketId: socket.id }, 'Error in session:join handler');
     callback({
       success: false,
       error: 'An error occurred while joining the session',

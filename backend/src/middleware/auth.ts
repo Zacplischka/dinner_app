@@ -1,6 +1,7 @@
 // Authentication middleware for Supabase Auth
 // Verifies Supabase access tokens with the Auth service and extracts user information
 
+import { logger } from '../logger.js';
 import { Request, Response, NextFunction } from 'express';
 import { config } from '../config/index.js';
 import { supabase } from '../services/supabase.js';
@@ -108,7 +109,7 @@ export function optionalAuth(
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
   if (!isSupabaseAuthConfigured()) {
-    console.warn('Supabase Auth is not configured - skipping token verification');
+    logger.warn('Supabase Auth is not configured - skipping token verification');
     return next();
   }
 
@@ -118,7 +119,7 @@ export function optionalAuth(
     if (result.user) {
       req.user = result.user;
     } else {
-      console.warn('Token verification failed:', result.message);
+      logger.warn({ detail: result.message }, 'Token verification failed');
     }
 
     next();
@@ -148,7 +149,7 @@ export function requireAuth(
   const token = authHeader.substring(7);
 
   if (!isSupabaseAuthConfigured()) {
-    console.warn('Supabase Auth is not configured - rejecting authenticated request');
+    logger.warn('Supabase Auth is not configured - rejecting authenticated request');
     res.status(500).json({
       error: 'server_error',
       code: 'AUTH_NOT_CONFIGURED',
@@ -167,7 +168,7 @@ export function requireAuth(
     }
 
     if (result.failure === 'expired') {
-      console.warn('Expired JWT token:', result.message);
+      logger.warn({ detail: result.message }, 'Expired JWT token');
       res.status(401).json({
         error: 'unauthorized',
         code: 'TOKEN_EXPIRED',
@@ -176,7 +177,7 @@ export function requireAuth(
       return;
     }
 
-    console.warn('Invalid JWT token:', result.message);
+    logger.warn({ detail: result.message }, 'Invalid JWT token');
     res.status(401).json({
       error: 'unauthorized',
       code: 'INVALID_TOKEN',
@@ -191,7 +192,7 @@ export function requireAuth(
  */
 export async function verifyToken(token: string): Promise<AuthenticatedUser | null> {
   if (!isSupabaseAuthConfigured()) {
-    console.warn('Supabase Auth is not configured - cannot verify token');
+    logger.warn('Supabase Auth is not configured - cannot verify token');
     return null;
   }
 
@@ -200,6 +201,6 @@ export async function verifyToken(token: string): Promise<AuthenticatedUser | nu
     return result.user;
   }
 
-  console.warn('Token verification failed:', result.message);
+  logger.warn({ detail: result.message }, 'Token verification failed');
   return null;
 }

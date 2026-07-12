@@ -1,6 +1,7 @@
 // WebSocket handler for session:restart event
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
+import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionStore } from '../store/sessionStore.js';
@@ -28,11 +29,11 @@ export async function handleSessionRestart(
     const validation = sessionRestartPayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      console.warn('Rejected session:restart', {
+      logger.warn({
         socketId: socket.id,
         sessionCode: (payload as Partial<SessionRestartPayload>).sessionCode,
         reason,
-      });
+      }, 'Rejected session:restart');
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
@@ -44,11 +45,11 @@ export async function handleSessionRestart(
     // Check session exists
     const session = await store.readSession(sessionCode);
     if (!session) {
-      console.warn('Rejected session:restart', {
+      logger.warn({
         socketId: socket.id,
         sessionCode,
         reason: 'session_not_found',
-      });
+      }, 'Rejected session:restart');
       return callback({
         success: false,
         error: 'Session not found or has expired',
@@ -58,11 +59,11 @@ export async function handleSessionRestart(
     // Check participant is in session
     const isInSession = await store.isParticipant(sessionCode, socket.id);
     if (!isInSession) {
-      console.warn('Rejected session:restart', {
+      logger.warn({
         socketId: socket.id,
         sessionCode,
         reason: 'participant_not_in_session',
-      });
+      }, 'Rejected session:restart');
       return callback({
         success: false,
         error: 'You are not a participant in this session',
@@ -81,9 +82,9 @@ export async function handleSessionRestart(
       message: 'Session restarted. Make new selections.',
     });
 
-    console.log(`✓ Session ${sessionCode} restarted`);
+    logger.info({ socketId: socket.id, sessionCode }, 'Session restarted');
   } catch (error) {
-    console.error('Error in session:restart handler:', error);
+    logger.error({ err: error, socketId: socket.id }, 'Error in session:restart handler');
     callback({
       success: false,
       error: 'An error occurred while restarting the session',

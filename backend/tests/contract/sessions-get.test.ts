@@ -1,3 +1,4 @@
+import { captureLogs } from '../helpers/logCapture.js';
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
@@ -31,7 +32,7 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
   });
 
   it('should return 200 with valid SessionResponse schema for existing session', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .get(`/api/sessions/${testSessionCode}`)
@@ -50,7 +51,7 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     expect(response.body).toHaveProperty('expiresAt');
     expect(new Date(response.body.expiresAt).toISOString()).toBe(response.body.expiresAt);
     expect(response.body).toHaveProperty('shareableLink');
-    expect(logSpy).toHaveBeenCalledWith('Returned REST session', {
+    expect(logs.withMsg('Returned REST session')[0]).toMatchObject({
       sessionCode: testSessionCode,
       state: response.body.state,
       participantCount: response.body.participantCount,
@@ -58,7 +59,7 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
   });
 
   it('should return 404 with ErrorResponse schema for non-existent session', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .get('/api/sessions/NOTFOUND')
@@ -70,7 +71,7 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     expect(response.body).toHaveProperty('code', 'SESSION_NOT_FOUND');
     expect(response.body).toHaveProperty('message');
     expect(response.body.message).toContain('not found');
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST session get', {
+    expect(logs.withMsg('Rejected REST session get')[0]).toMatchObject({
       sessionCode: 'NOTFOUND',
       reason: 'invalid_session_code',
     });

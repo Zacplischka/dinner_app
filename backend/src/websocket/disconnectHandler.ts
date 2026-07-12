@@ -1,6 +1,7 @@
 // WebSocket disconnect handler
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
+import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import type { SessionStore } from '../store/sessionStore.js';
 import type {
@@ -20,17 +21,17 @@ export async function handleDisconnect(
   store: SessionStore
 ): Promise<void> {
   try {
-    console.log(`Socket ${socket.id} disconnected: ${reason}`);
+    logger.info({ socketId: socket.id, reason }, 'Socket disconnected');
 
     // Get participant info to find which session they were in
     const participant = await store.getParticipant(socket.id);
 
     if (!participant) {
       // Participant not found or not in any session
-      console.warn('Disconnected socket had no participant record', {
+      logger.warn({
         socketId: socket.id,
         reason,
-      });
+      }, 'Disconnected socket had no participant record');
       return;
     }
 
@@ -48,12 +49,12 @@ export async function handleDisconnect(
       participantCount, // Count unchanged - participant still in session
     });
 
-    console.log(`✓ ${displayName} disconnected from ${sessionCode} (session preserved)`);
+    logger.info({ socketId: socket.id, sessionCode }, 'Participant disconnected, session preserved');
 
     // Note: We do NOT call ParticipantModel.removeParticipant
     // The participant remains in the session and can reconnect
     // The session will expire after 30 minutes of inactivity (FR-019)
   } catch (error) {
-    console.error('Error in disconnect handler:', error);
+    logger.error({ err: error, socketId: socket.id }, 'Error in disconnect handler');
   }
 }

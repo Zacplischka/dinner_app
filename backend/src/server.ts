@@ -5,10 +5,14 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
+import { pinoHttp } from 'pino-http';
+import { randomUUID } from 'crypto';
+import { logger } from './logger.js';
 import { redis, pingRedis } from './redis/client.js';
 import sessionsRouter from './api/sessions.js';
 import optionsRouter from './api/options.js';
 import friendsRouter from './api/friends.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import {
   getSocketAuthToken,
   getSocketUser,
@@ -48,6 +52,26 @@ app.use(cors({
   },
   credentials: true,
 }));
+// Request logging: request IDs, per-request child loggers (req.log).
+// Must precede express.json() so body-parse errors still get an X-Request-Id.
+app.use(pinoHttp({
+  logger,
+  genReqId: (req, res) => {
+    const id = (req.headers['x-request-id'] as string) || randomUUID();
+    res.setHeader('X-Request-Id', id);
+    return id;
+  },
+  customLogLevel: (_req, res, err) => {
+    if (err || res.statusCode >= 500) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    return 'info';
+  },
+  customProps: (req) => {
+    const user = (req as AuthenticatedRequest).user;
+    return user ? { userId: user.id } : {};
+  },
+}));
+
 app.use(express.json());
 
 // REST API routes
@@ -65,6 +89,9 @@ app.get('/health', (_req, res) => {
     });
   })();
 });
+
+// Global error safety net (must come after all routes)
+app.use(errorHandler);
 
 // Create HTTP server
 const httpServer = createServer(app);
@@ -97,7 +124,7 @@ import { sessionStore } from './store/sessionStore.js';
 import { sessionService } from './services/SessionService.js';
 
 // Import auth middleware
-import { verifyToken } from './middleware/auth.js';
+import { verifyToken, type AuthenticatedRequest } from './middleware/auth.js';
 
 // Import session expiry notifier
 import { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } from './redis/sessionExpiryNotifier.js';
@@ -117,7 +144,7 @@ io.use((socket, next) => {
     if (user) {
       // Attach user info to socket for later use
       setSocketUser(socket, user);
-      console.log(`Socket ${socket.id} authenticated as user ${user.id}`);
+      logger.info({ socketId: socket.id, userId: user.id }, 'Socket authenticated');
     }
 
     // Always allow connection (auth is optional for now)
@@ -128,10 +155,11 @@ io.use((socket, next) => {
 // WebSocket connection handling
 io.on('connection', (socket) => {
   const user = getSocketUser(socket);
-  console.log(`Socket connected: ${socket.id}${user ? ` (user: ${user.email || user.id})` : ' (anonymous)'}`);
+  const socketLog = logger.child({ socketId: socket.id });
+  socketLog.info({ userId: user?.id }, 'Socket connected');
 
   if (socket.recovered) {
-    console.log(`Socket ${socket.id} recovered from disconnect`);
+    socketLog.info('Socket recovered from disconnect');
   }
 
   // T041: session:join event handler
@@ -167,7 +195,7 @@ async function validateStartup(): Promise<void> {
   if (!redisHealthy) {
     throw new Error('Redis connection failed');
   }
-  console.log('✓ Redis connection validated');
+  logger.info('Redis connection validated');
 }
 
 // Start server
@@ -179,12 +207,10 @@ async function startServer() {
     await initializeSessionExpiryNotifier(io);
 
     httpServer.listen(PORT, () => {
-      console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📡 WebSocket server ready`);
-      console.log(`🔗 Frontend URL: ${FRONTEND_URL}\n`);
+      logger.info({ port: PORT, frontendUrl: FRONTEND_URL }, 'Server running, WebSocket ready');
     });
   } catch (error) {
-    console.error('❌ Server startup failed:', error);
+    logger.error({ err: error }, 'Server startup failed');
     process.exit(1);
   }
 }
@@ -192,9 +218,9 @@ async function startServer() {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   void (async () => {
-    console.log('SIGTERM received, shutting down gracefully...');
+    logger.info('SIGTERM received, shutting down gracefully');
     httpServer.close(() => {
-      console.log('HTTP server closed');
+      logger.info('HTTP server closed');
     });
     await disconnectSessionExpiryNotifier();
     await redis.quit();
@@ -204,9 +230,9 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   void (async () => {
-    console.log('\nSIGINT received, shutting down gracefully...');
+    logger.info('SIGINT received, shutting down gracefully');
     httpServer.close(() => {
-      console.log('HTTP server closed');
+      logger.info('HTTP server closed');
     });
     await disconnectSessionExpiryNotifier();
     await redis.quit();

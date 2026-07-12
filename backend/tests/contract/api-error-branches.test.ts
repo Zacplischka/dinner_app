@@ -1,3 +1,4 @@
+import { captureLogs } from '../helpers/logCapture.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
@@ -11,7 +12,7 @@ describe('REST API internal error branches', () => {
 
   it('POST /api/sessions should return INTERNAL_ERROR for unexpected create failures', async () => {
     const error = new Error('boom');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logs = captureLogs();
     vi.spyOn(SessionService, 'createSession').mockRejectedValueOnce(error);
 
     const response = await request(app)
@@ -24,12 +25,12 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(errorSpy).toHaveBeenCalledWith('Error creating session:', error);
+    expect(logs.withMsg('Error creating session')[0]).toMatchObject({ err: { message: error.message } });
   });
 
   it('GET /api/sessions/:sessionCode should return INTERNAL_ERROR for unexpected lookup failures', async () => {
     const error = new Error('boom');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logs = captureLogs();
     vi.spyOn(SessionService, 'getSession').mockRejectedValueOnce(error);
 
     const response = await request(app).get('/api/sessions/ABC123').expect(500);
@@ -39,12 +40,12 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(errorSpy).toHaveBeenCalledWith('Error getting session:', error);
+    expect(logs.withMsg('Error getting session')[0]).toMatchObject({ err: { message: error.message } });
   });
 
   it('POST /api/sessions/:sessionCode/join should return INTERNAL_ERROR for unexpected join failures', async () => {
     const error = new Error('boom');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logs = captureLogs();
     vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(error);
 
     const response = await request(app)
@@ -57,12 +58,28 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(errorSpy).toHaveBeenCalledWith('Error joining session:', error);
+    expect(logs.withMsg('Error joining session')[0]).toMatchObject({ err: { message: error.message } });
+  });
+
+  it('should return JSON INVALID_JSON for malformed request bodies, not HTML', async () => {
+    const response = await request(app)
+      .post('/api/sessions')
+      .set('Content-Type', 'application/json')
+      .send('{bad')
+      .expect(400);
+
+    expect(response.headers['content-type']).toMatch(/application\/json/);
+    expect(response.headers['x-request-id']).toMatch(/\S+/);
+    expect(response.body).toEqual({
+      error: 'Bad Request',
+      code: 'INVALID_JSON',
+      message: 'Request body is not valid JSON',
+    });
   });
 
   it('GET /api/options/:sessionCode should return INTERNAL_ERROR for unexpected Redis failures', async () => {
     const error = new Error('boom');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logs = captureLogs();
     vi.spyOn(redis, 'exists').mockRejectedValueOnce(error);
 
     const response = await request(app).get('/api/options/ABC123').expect(500);
@@ -72,6 +89,6 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(errorSpy).toHaveBeenCalledWith('Error getting restaurants:', error);
+    expect(logs.withMsg('Error getting restaurants')[0]).toMatchObject({ err: { message: error.message } });
   });
 });

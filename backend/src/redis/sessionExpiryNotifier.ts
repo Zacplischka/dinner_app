@@ -1,6 +1,7 @@
 // Redis keyspace notifications listener for session expiration
 // Emits session:expired events via Socket.IO when sessions expire
 
+import { logger } from '../logger.js';
 import Redis from 'ioredis';
 import type { Server } from 'socket.io';
 import { sessionCodeFromExpiredKey } from '../store/sessionStore.js';
@@ -30,9 +31,9 @@ export async function initializeSessionExpiryNotifier(
   // 'Ex' = keyspace events for expired keys
   try {
     await subscriber.config('SET', 'notify-keyspace-events', 'Ex');
-    console.log('✓ Redis keyspace notifications enabled');
+    logger.info('✓ Redis keyspace notifications enabled');
   } catch (error) {
-    console.error('Failed to enable Redis keyspace notifications:', error);
+    logger.error({ err: error }, 'Failed to enable Redis keyspace notifications');
     // Some Redis instances may have CONFIG disabled; log but continue
   }
 
@@ -47,10 +48,10 @@ export async function initializeSessionExpiryNotifier(
   });
 
   subscriber.on('error', (error) => {
-    console.error('Redis subscriber error:', error.message);
+    logger.error({ err: error.message }, 'Redis subscriber error');
   });
 
-  console.log('✓ Session expiry notifier initialized');
+  logger.info('✓ Session expiry notifier initialized');
 }
 
 /**
@@ -68,7 +69,7 @@ function handleSessionExpired(
     return;
   }
 
-  console.log(`Session expired: ${sessionCode}`);
+  logger.info({ sessionCode }, 'Session expired');
 
   // Emit session:expired to all participants in the session room
   io.to(sessionCode).emit('session:expired', {
@@ -85,6 +86,6 @@ export async function disconnectSessionExpiryNotifier(): Promise<void> {
   if (subscriber) {
     await subscriber.quit();
     subscriber = null;
-    console.log('Session expiry notifier disconnected');
+    logger.info('Session expiry notifier disconnected');
   }
 }

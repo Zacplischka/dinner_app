@@ -5,6 +5,7 @@
 // restaurant-search fn (tests pass fakes); sessionService below is the
 // production instance bound to the real singletons.
 
+import { logger } from '../logger.js';
 import { getExpiresAtISO, sessionStore, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
@@ -66,18 +67,18 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Ensure uniqueness (extremely unlikely to collide, but good practice)
     while (attempts < MAX_ATTEMPTS) {
       if (!(await store.sessionExists(sessionCode))) break;
-      console.warn('Session code collision during createSession', {
+      logger.warn({
         sessionCode,
         attempt: attempts + 1,
-      });
+      }, 'Session code collision during createSession');
       sessionCode = generateSessionCode();
       attempts++;
     }
 
     if (attempts >= MAX_ATTEMPTS) {
-      console.error('Failed to generate unique session code', {
+      logger.error({
         attempts: MAX_ATTEMPTS,
-      });
+      }, 'Failed to generate unique session code');
       throw new Error('Failed to generate unique session code');
     }
 
@@ -96,10 +97,10 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
 
       // Throw error if no restaurants found
       if (restaurants.length === 0) {
-        console.warn('No restaurants found during session creation', {
+        logger.warn({
           sessionCode,
           searchRadiusMiles,
-        });
+        }, 'No restaurants found during session creation');
         throw new DomainError(
           'NO_RESTAURANTS_FOUND',
           'No restaurants found in the specified area. Try expanding your search radius.'
@@ -121,13 +122,13 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
 
-    console.log('Session created', {
+    logger.info({
       sessionCode,
       hasLocation: Boolean(location),
       searchRadiusMiles,
       participantCount: 1,
       restaurantCount: restaurants.length,
-    });
+    }, 'Session created');
 
     return {
       sessionCode,
@@ -173,10 +174,10 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Guard against negative TTL values
     // TTL -2 means key doesn't exist, -1 means no expiry set
     if (ttl < 0) {
-      console.warn('Session lookup returned invalid TTL', {
+      logger.warn({
         sessionCode,
         ttl,
-      });
+      }, 'Session lookup returned invalid TTL');
       return null; // Session expired or doesn't exist
     }
 
@@ -220,11 +221,11 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Check session exists
     const session = await store.readSession(sessionCode);
     if (!session) {
-      console.warn('Rejected session join', {
+      logger.warn({
         sessionCode,
         participantId,
         reason: 'session_not_found',
-      });
+      }, 'Rejected session join');
       throw new DomainError('SESSION_NOT_FOUND', `Session ${sessionCode} not found or has expired`);
     }
 
@@ -249,12 +250,12 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     if (!prior) {
       // Check participant limit (FR-004, FR-005)
       if (existing.length + reservedHostSlot >= MAX_PARTICIPANTS) {
-        console.warn('Rejected session join', {
+        logger.warn({
           sessionCode,
           participantId,
           reason: 'session_full',
           participantCount: existing.length + reservedHostSlot,
-        });
+        }, 'Rejected session join');
         throw new DomainError(
           'SESSION_FULL',
           `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
@@ -272,12 +273,12 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // participant.
     if (!prior && setSize + reservedHostSlot > MAX_PARTICIPANTS) {
       await store.removeParticipant(sessionCode, participantId);
-      console.warn('Rejected session join', {
+      logger.warn({
         sessionCode,
         participantId,
         reason: 'session_full_after_add',
         participantCount: setSize + reservedHostSlot,
-      });
+      }, 'Rejected session join');
       throw new DomainError(
         'SESSION_FULL',
         `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
@@ -290,11 +291,11 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
 
     const participants = await store.listParticipants(sessionCode);
 
-    console.log('Participant joined session', {
+    logger.info({
       sessionCode,
       participantId,
       participantCount,
-    });
+    }, 'Participant joined session');
 
     return {
       participantId,
@@ -317,9 +318,9 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
   async function expireSession(sessionCode: string): Promise<void> {
     await store.updateState(sessionCode, 'expired');
     await store.deleteSession(sessionCode);
-    console.log('Expired session cleanup complete', {
+    logger.info({
       sessionCode,
-    });
+    }, 'Expired session cleanup complete');
   }
 
   return { createSession, getSession, joinSession, expireSession };

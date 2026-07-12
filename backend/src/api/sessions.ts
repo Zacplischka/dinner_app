@@ -46,10 +46,10 @@ router.post('/', asyncHandler(async (req, res) => {
     const validation = createSessionRequestSchema.safeParse(req.body);
 
     if (!validation.success) {
-      console.warn('Rejected REST session create', {
+      req.log.warn({
         reason: 'validation_error',
         fields: validationFields(validation.error),
-      });
+      }, 'Rejected REST session create');
 
       return res.status(400).json({
         error: 'Bad Request',
@@ -71,19 +71,19 @@ router.post('/', asyncHandler(async (req, res) => {
     // Create session
     const session = await SessionService.createSession(hostName, location, radius);
 
-    console.log('Created REST session', {
+    req.log.info({
       sessionCode: session.sessionCode,
       ...createContext,
       restaurantCount: session.restaurantCount ?? 0,
-    });
+    }, 'Created REST session');
 
     return res.status(201).json(session);
   } catch (error) {
     if (error instanceof DomainError && error.code === 'NO_RESTAURANTS_FOUND') {
-      console.warn('Rejected REST session create', {
+      req.log.warn({
         reason: 'no_restaurants_found',
         ...createContext,
-      });
+      }, 'Rejected REST session create');
 
       return res.status(400).json({
         error: 'Bad Request',
@@ -92,7 +92,7 @@ router.post('/', asyncHandler(async (req, res) => {
       });
     }
 
-    console.error('Error creating session:', error);
+    req.log.error({ err: error }, 'Error creating session');
 
     return res.status(500).json({
       error: 'Internal Server Error',
@@ -112,10 +112,10 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
 
     // Validate session code format
     if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
-      console.warn('Rejected REST session get', {
+      req.log.warn({
         sessionCode,
         reason: 'invalid_session_code',
-      });
+      }, 'Rejected REST session get');
 
       return res.status(404).json({
         error: 'Not Found',
@@ -128,10 +128,10 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
     const session = await SessionService.getSession(sessionCode);
 
     if (!session) {
-      console.warn('Rejected REST session get', {
+      req.log.warn({
         sessionCode,
         reason: 'session_not_found',
-      });
+      }, 'Rejected REST session get');
 
       return res.status(404).json({
         error: 'Not Found',
@@ -140,15 +140,15 @@ router.get('/:sessionCode', asyncHandler(async (req, res) => {
       });
     }
 
-    console.log('Returned REST session', {
+    req.log.info({
       sessionCode,
       state: session.state,
       participantCount: session.participantCount,
-    });
+    }, 'Returned REST session');
 
     return res.status(200).json(session);
   } catch (error) {
-    console.error('Error getting session:', error);
+    req.log.error({ err: error }, 'Error getting session');
     return res.status(500).json({
       error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',
@@ -167,10 +167,10 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
 
     // Validate session code format
     if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
-      console.warn('Rejected REST session join', {
+      req.log.warn({
         sessionCode,
         reason: 'invalid_session_code',
-      });
+      }, 'Rejected REST session join');
 
       return res.status(404).json({
         error: 'Not Found',
@@ -183,11 +183,11 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
     const validation = joinSessionRequestSchema.safeParse(req.body);
 
     if (!validation.success) {
-      console.warn('Rejected REST session join', {
+      req.log.warn({
         sessionCode,
         reason: 'validation_error',
         fields: validationFields(validation.error),
-      });
+      }, 'Rejected REST session join');
 
       return res.status(400).json({
         error: 'Bad Request',
@@ -209,11 +209,11 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
       participantName
     );
 
-    console.log('Joined REST session', {
+    req.log.info({
       sessionCode,
       participantId: result.participantId,
       participantCount: result.participantCount,
-    });
+    }, 'Joined REST session');
 
     // Explicit shape: the service result carries WS-only fields the REST
     // contract doesn't include
@@ -225,10 +225,10 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
     });
   } catch (error) {
     if (error instanceof DomainError && error.code === 'SESSION_NOT_FOUND') {
-      console.warn('Rejected REST session join', {
+      req.log.warn({
         sessionCode: req.params.sessionCode,
         reason: 'session_not_found',
-      });
+      }, 'Rejected REST session join');
 
       return res.status(404).json({
         error: 'Not Found',
@@ -238,11 +238,11 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
     }
 
     if (error instanceof DomainError && error.code === 'SESSION_FULL') {
-      console.warn('Rejected REST session join', {
+      req.log.warn({
         sessionCode: req.params.sessionCode,
         reason: 'session_full',
         participantLimit: MAX_PARTICIPANTS,
-      });
+      }, 'Rejected REST session join');
 
       return res.status(403).json({
         error: 'Session is full',
@@ -251,7 +251,7 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
       });
     }
 
-    console.error('Error joining session:', error);
+    req.log.error({ err: error }, 'Error joining session');
 
     return res.status(500).json({
       error: 'Internal Server Error',
