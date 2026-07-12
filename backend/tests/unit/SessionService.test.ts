@@ -280,19 +280,6 @@ describe('SessionService', () => {
     });
   });
 
-  describe('expireSession', () => {
-    it('should log session expiration cleanup', async () => {
-      const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-      const session = await SessionService.createSession('Alice');
-
-      await SessionService.expireSession(session.sessionCode);
-
-      expect(logSpy).toHaveBeenCalledWith({
-        sessionCode: session.sessionCode,
-      }, 'Expired session cleanup complete');
-    });
-  });
-
   describe('createSession with location', () => {
     it('should create a shareable link from default and custom frontend URLs', async () => {
       delete process.env.FRONTEND_URL;

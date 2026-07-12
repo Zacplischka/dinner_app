@@ -191,19 +191,6 @@ export function isSocketConnected(): boolean {
 }
 
 /**
- * Get or create socket connection
- * Returns the socket instance for direct event handling
- */
-export function connectSocket(
-  config?: SocketConfig
-): Socket<ServerToClientEvents, ClientToServerEvents> {
-  if (!socket?.connected) {
-    initializeSocket(config);
-  }
-  return socket!;
-}
-
-/**
  * Wait for socket to be connected
  * Returns a promise that resolves when connected or rejects on timeout
  */

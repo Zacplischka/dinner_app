@@ -150,13 +150,13 @@ describe('apiClient', () => {
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ options: [] }),
+        json: async () => ({}),
       });
 
-      await freshApiClient.getDinnerOptions();
+      await freshApiClient.getSession('ABC123');
 
       expect(fetch).toHaveBeenCalledWith(
-        'https://api.example.test/v1/options',
+        'https://api.example.test/v1/sessions/ABC123',
         expect.objectContaining({ method: 'GET' })
       );
       vi.unstubAllEnvs();
@@ -273,30 +273,6 @@ describe('apiClient', () => {
       });
 
       await expect(apiClient.getSession('ABC123')).rejects.toThrow('Failed to get session');
-    });
-  });
-
-  describe('getDinnerOptions', () => {
-    it('should fetch legacy dinner options', async () => {
-      const options = [{ optionId: 'pizza', displayName: 'Pizza' }];
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ options }),
-      });
-
-      await expect(apiClient.getDinnerOptions()).resolves.toEqual(options);
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/options'),
-        expect.objectContaining({ method: 'GET' })
-      );
-    });
-
-    it('should throw for failed legacy dinner option requests', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-      });
-
-      await expect(apiClient.getDinnerOptions()).rejects.toThrow('Failed to fetch dinner options');
     });
   });
 

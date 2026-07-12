@@ -91,7 +91,6 @@ vi.mock('../../src/services/apiClient', () => ({
     address: '1 Main St',
     photoUrl: 'https://example.com/pasta.jpg',
   }]),
-  getDinnerOptions: vi.fn(async () => []),
   handleApiError: vi.fn((error: unknown) => (error instanceof Error ? error.message : 'error')),
 }));
 
@@ -134,7 +133,6 @@ vi.mock('../../src/services/socketBindings', () => ({
   disconnectSocket: vi.fn(),
   getSocketId: vi.fn(() => 'socket-1'),
   isSocketConnected: vi.fn(() => true),
-  connectSocket: vi.fn(),
 }));
 
 vi.mock('../../src/services/supabase', () => ({
@@ -972,7 +970,6 @@ describe('render smoke coverage', () => {
     fireEvent.click(screen.getByText('Leave Session'));
     await waitFor(() => expect(socketService.leaveSession).toHaveBeenCalledWith('ABC123'));
     leaveSuccessFlow.unmount();
-
 
     useSessionStore.setState({ sessionStatus: 'complete' });
     vi.mocked(apiClient.getRestaurants).mockResolvedValueOnce([sampleRestaurant]);

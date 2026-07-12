@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
 import { redis } from '../../src/redis/client.js';
-import { sessionService as SessionService } from '../../src/services/SessionService.js';
+import { sessionService as SessionService } from '../../src/server.js';
 
 describe('REST API internal error branches', () => {
   afterEach(() => {

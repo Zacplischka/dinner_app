@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import { sessionStore as store } from '../../src/store/sessionStore.js';
+import { sessionStore as store } from '../../src/server.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import type { Restaurant } from '@dinder/shared/types';
 

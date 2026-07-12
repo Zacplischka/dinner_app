@@ -53,14 +53,3 @@ export async function pingRedis(): Promise<boolean> {
     return false;
   }
 }
-
-// Graceful shutdown
-export async function disconnectRedis(): Promise<void> {
-  try {
-    await redis.quit();
-    logger.info('Redis disconnected gracefully');
-  } catch (error) {
-    logger.error({ err: error }, 'Error disconnecting Redis');
-    redis.disconnect();
-  }
-}

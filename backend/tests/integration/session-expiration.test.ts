@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import { sessionStore as store } from '../../src/store/sessionStore.js';
-import { sessionService as SessionService } from '../../src/services/SessionService.js';
+import { sessionStore as store } from '../../src/server.js';
 import {
   initializeSessionExpiryNotifier,
   disconnectSessionExpiryNotifier,
@@ -67,7 +66,7 @@ describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
   it('should delete all related keys when a session expires', async () => {
     await createCompleteSession();
 
-    await SessionService.expireSession(sessionCode);
+    await store.deleteSession(sessionCode);
 
     for (const key of [
       `session:${sessionCode}`,

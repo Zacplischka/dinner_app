@@ -177,7 +177,6 @@ describe('socketService', () => {
 
     expect(socketService.getSocketId()).toBe('socket-1');
     expect(socketService.isSocketConnected()).toBe(false);
-    expect(socketService.connectSocket()).toBe(socket);
 
     socketService.disconnectSocket();
     expect(socket.disconnect).toHaveBeenCalled();
@@ -214,7 +213,7 @@ describe('socketService', () => {
     vi.resetModules();
     vi.stubEnv('VITE_BACKEND_URL', 'https://socket.example.test');
     const freshSocketService = await import('../../src/services/socketService');
-    const socket = setupSocket();
+    setupSocket();
 
     freshSocketService.initializeSocket();
 
@@ -222,8 +221,6 @@ describe('socketService', () => {
       'https://socket.example.test',
       expect.objectContaining({ auth: undefined })
     );
-    expect(freshSocketService.connectSocket()).toBe(socket);
-
     freshSocketService.disconnectSocket();
     vi.unstubAllEnvs();
   });

@@ -9,9 +9,14 @@ import { pinoHttp } from 'pino-http';
 import { randomUUID } from 'crypto';
 import { logger } from './logger.js';
 import { redis, pingRedis } from './redis/client.js';
-import sessionsRouter from './api/sessions.js';
-import optionsRouter from './api/options.js';
-import friendsRouter from './api/friends.js';
+import { createSessionsRouter } from './api/sessions.js';
+import { createOptionsRouter } from './api/options.js';
+import { createFriendsRouter } from './api/friends.js';
+import { createSessionStore } from './store/sessionStore.js';
+import { createSessionService } from './services/SessionService.js';
+import { createFriendsService } from './services/FriendsService.js';
+import * as friendsStore from './store/friendsStore.js';
+import * as RestaurantSearchService from './services/RestaurantSearchService.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import {
   getSocketAuthToken,
@@ -36,6 +41,15 @@ const allowedOrigins = [
   'https://dinder.it.com',
   FRONTEND_URL,
 ].filter(Boolean);
+
+// Composition root: the only place production stores and services are
+// constructed. Everything else receives them by injection.
+const sessionStore = createSessionStore(redis);
+const sessionService = createSessionService({
+  store: sessionStore,
+  searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
+});
+const friendsService = createFriendsService({ store: friendsStore });
 
 // Initialize Express app
 const app = express();
@@ -75,9 +89,9 @@ app.use(pinoHttp({
 app.use(express.json());
 
 // REST API routes
-app.use('/api/sessions', sessionsRouter);
-app.use('/api/options', optionsRouter);
-app.use('/api', friendsRouter); // Friends, users, and invites routes
+app.use('/api/sessions', createSessionsRouter(sessionService));
+app.use('/api/options', createOptionsRouter(sessionStore));
+app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
@@ -114,14 +128,12 @@ const io = new SocketIOServer<
   },
 });
 
-// Import WebSocket handlers and the production store/service they run over
+// Import WebSocket handlers (they run over the store/service built above)
 import { handleSessionJoin } from './websocket/joinHandler.js';
 import { handleSelectionSubmit } from './websocket/submitHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
 import { handleSessionLeave } from './websocket/leaveHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
-import { sessionStore } from './store/sessionStore.js';
-import { sessionService } from './services/SessionService.js';
 
 // Import auth middleware
 import { verifyToken, type AuthenticatedRequest } from './middleware/auth.js';
@@ -245,4 +257,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   void startServer();
 }
 
-export { app, io, httpServer };
+// Instances exported for contract/integration tests, which must exercise
+// (and spy on) the same objects the routes and handlers close over.
+export { app, io, httpServer, sessionStore, sessionService };

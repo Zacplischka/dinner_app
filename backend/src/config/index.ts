@@ -26,13 +26,3 @@ export function shareableLink(sessionCode: string): string {
   return `${config.frontendUrl}/join?code=${sessionCode}`;
 }
 
-// Validate required environment variables
-export function validateConfig(): void {
-  if (!config.googlePlaces.apiKey) {
-    throw new Error('GOOGLE_PLACES_API_KEY environment variable is required');
-  }
-
-  if (!config.googlePlaces.apiUrl) {
-    throw new Error('GOOGLE_PLACES_API_URL environment variable is required');
-  }
-}

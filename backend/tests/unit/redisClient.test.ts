@@ -1,6 +1,25 @@
 import { logger } from '../../src/logger.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { redis, pingRedis, disconnectRedis } from '../../src/redis/client.js';
+
+// Mock ioredis so this suite never opens a real connection; the mock keeps
+// EventEmitter semantics because client.ts wires lifecycle logging via .on().
+vi.mock('ioredis', async () => {
+  const { EventEmitter } = await import('node:events');
+  class MockRedis extends EventEmitter {
+    options: unknown;
+    ping = vi.fn();
+    quit = vi.fn();
+    disconnect = vi.fn();
+
+    constructor(options: unknown) {
+      super();
+      this.options = options;
+    }
+  }
+  return { default: MockRedis };
+});
+
+const { redis, pingRedis } = await import('../../src/redis/client.js');
 
 describe('redis client helpers', () => {
   const originalEnv = { ...process.env };
@@ -35,26 +54,6 @@ describe('redis client helpers', () => {
 
     await expect(pingRedis()).resolves.toBe(false);
     expect(errorSpy).toHaveBeenCalledWith({ err: error }, 'Redis ping failed');
-  });
-
-  it('should quit Redis gracefully', async () => {
-    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-    vi.spyOn(redis, 'quit').mockResolvedValueOnce('OK' as any);
-
-    await expect(disconnectRedis()).resolves.toBeUndefined();
-    expect(logSpy).toHaveBeenCalledWith('Redis disconnected gracefully');
-  });
-
-  it('should disconnect Redis when graceful quit fails', async () => {
-    const error = new Error('quit failed');
-    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    vi.spyOn(redis, 'quit').mockRejectedValueOnce(error);
-    const disconnect = vi.spyOn(redis, 'disconnect').mockImplementation(() => undefined);
-
-    await disconnectRedis();
-
-    expect(disconnect).toHaveBeenCalledOnce();
-    expect(errorSpy).toHaveBeenCalledWith({ err: error }, 'Error disconnecting Redis');
   });
 
   it('should log Redis client lifecycle events', () => {

@@ -79,7 +79,10 @@ vi.mock('../../src/services/supabase.js', () => {
   };
 });
 
-const { default: friendsRouter } = await import('../../src/api/friends.js');
+const { createFriendsRouter } = await import('../../src/api/friends.js');
+const { createFriendsService } = await import('../../src/services/FriendsService.js');
+const friendsStore = await import('../../src/store/friendsStore.js');
+const friendsRouter = createFriendsRouter(createFriendsService({ store: friendsStore }));
 
 function makeApp() {
   const app = express();

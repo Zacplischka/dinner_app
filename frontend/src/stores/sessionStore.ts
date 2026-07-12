@@ -48,7 +48,6 @@ interface SessionState {
   setSelections: (placeIds: string[]) => void;
   addSelection: (placeId: string) => void;
   removeSelection: (placeId: string) => void;
-  toggleSelection: (placeId: string) => void;
 
   // Results actions
   setResults: (results: Result) => void;
@@ -122,16 +121,6 @@ export const useSessionStore = create<SessionState>()(
           set((state) => ({
             selections: state.selections.filter((id) => id !== placeId),
           })),
-
-        toggleSelection: (optionId) =>
-          set((state) => {
-            const isSelected = state.selections.includes(optionId);
-            return {
-              selections: isSelected
-                ? state.selections.filter((id) => id !== optionId)
-                : [...state.selections, optionId],
-            };
-          }),
 
         // Results actions
         setResults: (results) =>

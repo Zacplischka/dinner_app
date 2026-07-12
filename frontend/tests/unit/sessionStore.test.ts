@@ -132,16 +132,6 @@ describe('sessionStore', () => {
 
       expect(useSessionStore.getState().selections).toEqual(['ChIJplace1', 'ChIJplace2']);
     });
-
-    it('should toggle Place ID selection', () => {
-      const { toggleSelection } = useSessionStore.getState();
-
-      toggleSelection('ChIJplace1');
-      expect(useSessionStore.getState().selections).toContain('ChIJplace1');
-
-      toggleSelection('ChIJplace1');
-      expect(useSessionStore.getState().selections).not.toContain('ChIJplace1');
-    });
   });
 
   describe('session actions', () => {

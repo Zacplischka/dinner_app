@@ -3,9 +3,9 @@
 // HTTP shaping lives in the friends router.
 //
 // createFriendsService(deps) builds the service over an injected store (tests
-// pass an in-memory fake); friendsService below is the production instance.
+// pass an in-memory fake); server.ts constructs the production instance.
 
-import * as friendsStore from '../store/friendsStore.js';
+import type * as friendsStore from '../store/friendsStore.js';
 import { getAuthProfileDefaults } from '../api/authMetadata.js';
 import { DomainError } from './DomainError.js';
 import type { Profile } from './supabase.js';
@@ -266,6 +266,3 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
 }
 
 export type FriendsService = ReturnType<typeof createFriendsService>;
-
-/** Production instance bound to the real FriendsStore. */
-export const friendsService = createFriendsService({ store: friendsStore });
