@@ -7,7 +7,6 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
-import type { DinnerOption, Restaurant } from '@dinder/shared/types';
 
 // Helper functions to generate delivery app deep links
 const generateUberEatsUrl = (restaurantName: string, address?: string): string => {
@@ -36,15 +35,6 @@ export default function ResultsPage() {
 
   const hasOverlap = overlappingOptions.length > 0;
 
-  // Type guards to check which result shape came back from the session.
-  const isRestaurant = (option: unknown): option is Restaurant => {
-    return typeof option === 'object' && option !== null && 'placeId' in option && 'name' in option;
-  };
-
-  const isDinnerOption = (option: unknown): option is DinnerOption => {
-    return typeof option === 'object' && option !== null && 'optionId' in option && 'displayName' in option;
-  };
-
   // Create a lookup map for restaurant names by placeId
   const restaurantNameMap = new Map<string, string>();
   // First, populate from restaurantNames received from backend (most complete source)
@@ -59,9 +49,7 @@ export default function ResultsPage() {
   });
   // Also add from overlappingOptions (in case restaurants array isn't populated)
   overlappingOptions.forEach((o) => {
-    if (isRestaurant(o)) {
-      restaurantNameMap.set(o.placeId, o.name);
-    }
+    restaurantNameMap.set(o.placeId, o.name);
   });
 
   // Helper to format price level
@@ -149,23 +137,17 @@ export default function ResultsPage() {
               Matching Restaurants
             </h2>
             <div className="space-y-3">
-              {overlappingOptions.map((option, index) => {
-                const restaurant = isRestaurant(option) ? option : null;
-                const dinnerOption = isDinnerOption(option) ? option : null;
-                const key = restaurant?.placeId ?? dinnerOption?.optionId ?? String(index);
-                const displayName = restaurant?.name ?? dinnerOption?.displayName ?? 'Unknown option';
-
+              {overlappingOptions.map((restaurant) => {
                 return (
                   <div
-                    key={key}
+                    key={restaurant.placeId}
                     className="p-4 bg-success/10 border border-success/30 rounded-xl"
                   >
                     <p className="text-lg font-semibold text-cream">
-                      {displayName}
+                      {restaurant.name}
                     </p>
 
-                    {restaurant && (
-                      <div className="mt-2 space-y-2">
+                    <div className="mt-2 space-y-2">
                         <div className="flex items-center space-x-3 text-sm">
                           {restaurant.rating !== undefined && (
                             <span className="flex items-center text-amber-300 gap-1">
@@ -243,13 +225,6 @@ export default function ResultsPage() {
                           </a>
                         </div>
                       </div>
-                    )}
-
-                    {!restaurant && dinnerOption?.description && (
-                      <p className="text-sm text-cream-500 mt-1">
-                        {dinnerOption.description}
-                      </p>
-                    )}
                   </div>
                 );
               })}
@@ -298,15 +273,7 @@ export default function ResultsPage() {
                       <ul className="text-sm text-cream-400 space-y-1">
                         {participantSelections.map((selectionId, idx) => {
                           // Check if this selection is a match (in overlappingOptions)
-                          const isMatch = overlappingOptions.some((o) => {
-                            if (isRestaurant(o)) {
-                              return o.placeId === selectionId;
-                            }
-                            if (isDinnerOption(o)) {
-                              return o.optionId === selectionId;
-                            }
-                            return false;
-                          });
+                          const isMatch = overlappingOptions.some((o) => o.placeId === selectionId);
 
                           // Get display name from our lookup map, or fall back to selectionId
                           const displayName = restaurantNameMap.get(selectionId) || selectionId;

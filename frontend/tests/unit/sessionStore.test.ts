@@ -1,8 +1,17 @@
 // Session Store Tests - TDD for location state management
 // Phase 2.5: Update Session Store to handle location and restaurants
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useSessionStore } from '../../src/stores/sessionStore';
+
+const STORAGE_KEY = 'dinner-session-storage';
+
+// Rehydrates the store from localStorage by re-importing the module fresh.
+async function freshStore() {
+  vi.resetModules();
+  const mod = await import('../../src/stores/sessionStore');
+  return mod.useSessionStore;
+}
 
 describe('sessionStore', () => {
   beforeEach(() => {
@@ -134,6 +143,53 @@ describe('sessionStore', () => {
     });
   });
 
+  describe('persistence boundaries', () => {
+    it('discards persisted state from an older schema version', async () => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          state: {
+            sessionCode: 'OLD123',
+            overlappingOptions: [{ optionId: 'legacy', displayName: 'Legacy Shape' }],
+            sessionStatus: 'complete',
+          },
+          version: 0,
+        })
+      );
+
+      const store = await freshStore();
+
+      expect(store.getState().sessionCode).toBeNull();
+      expect(store.getState().overlappingOptions).toEqual([]);
+      expect(store.getState().sessionStatus).toBe('waiting');
+    });
+
+    it('does not rehydrate isConnected as true', async () => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          state: { sessionCode: 'ABC123', isConnected: true },
+          version: 1,
+        })
+      );
+
+      const store = await freshStore();
+
+      expect(store.getState().sessionCode).toBe('ABC123');
+      expect(store.getState().isConnected).toBe(false);
+    });
+
+    it('never writes isConnected to storage', () => {
+      useSessionStore.getState().setSessionCode('XYZ789');
+      useSessionStore.getState().setConnectionStatus(true);
+
+      const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+
+      expect(persisted.state.sessionCode).toBe('XYZ789');
+      expect(persisted.state).not.toHaveProperty('isConnected');
+    });
+  });
+
   describe('session actions', () => {
     it('should add, remove, and replace participants', () => {
       const participant = {
@@ -170,7 +226,7 @@ describe('sessionStore', () => {
       useSessionStore.getState().setResults({
         sessionCode: 'ABC123',
         hasOverlap: true,
-        overlappingOptions: [{ optionId: 'place-1', displayName: 'Pasta House' }],
+        overlappingOptions: [{ placeId: 'place-1', name: 'Pasta House' }],
         allSelections: { Alice: ['place-1'] },
       });
 
