@@ -43,7 +43,7 @@
 npm install                                  # root; installs all workspaces
 docker run -d -p 6379:6379 redis:7-alpine    # required for backend dev AND all backend tests
 npm run dev                                  # backend :3001 + frontend :3000
-npm run build                                # shared → backend → frontend, then copies redis/*.lua to dist
+npm run build                                # shared → backend → frontend
 
 cd backend && npm run test:unit              # also test:contract, test:integration — all need local Redis
 cd frontend && npx vitest run                # unit tests; npm run test:e2e for Playwright
