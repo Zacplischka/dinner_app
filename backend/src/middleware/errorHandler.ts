@@ -20,7 +20,7 @@ export function errorHandler(
   _next: NextFunction
 ): Response {
   if (err instanceof DomainError) {
-    // ponytail: unmapped codes default to 400, mirroring the friends router's
+    // Note: unmapped codes default to 400, mirroring the friends router's
     // convention; server-fault codes (e.g. database_error) are mapped there
     // before they can reach this handler. Extend statusByCode if that changes.
     return res.status(statusByCode[err.code] ?? 400).json({
