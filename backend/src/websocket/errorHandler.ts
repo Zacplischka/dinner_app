@@ -1,6 +1,7 @@
 // WebSocket error handler
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
+import { logger } from '../logger.js';
 import type { Socket } from 'socket.io';
 import type {
   ClientToServerEvents,
@@ -24,7 +25,7 @@ export function emitError(
   };
 
   socket.emit('error', errorEvent);
-  console.error(`[Error ${socket.id}] ${code}: ${message}`);
+  logger.error({ socketId: socket.id, code }, message);
 }
 
 /**

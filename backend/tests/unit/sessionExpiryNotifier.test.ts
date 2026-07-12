@@ -30,14 +30,19 @@ vi.mock('ioredis', () => ({
 describe('session expiry notifier', () => {
   const originalEnv = { ...process.env };
 
-  beforeEach(() => {
+  // vi.resetModules() gives each test a fresh module registry, so the logger
+  // must be re-imported per test to spy on the instance the notifier uses.
+  let logger: typeof import('../../src/logger.js').logger;
+
+  beforeEach(async () => {
     process.env = { ...originalEnv };
     redisState.instances = [];
     redisState.configError = null;
     vi.resetModules();
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    ({ logger } = await import('../../src/logger.js'));
+    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -62,7 +67,7 @@ describe('session expiry notifier', () => {
   }
 
   it('should log notifier initialization and disconnection', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     const { io } = ioMock();
     const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
       '../../src/redis/sessionExpiryNotifier.js'
@@ -82,7 +87,7 @@ describe('session expiry notifier', () => {
   });
 
   it('should emit and log valid expired session keys', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     const { io, emit } = ioMock();
     const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
       '../../src/redis/sessionExpiryNotifier.js'
@@ -91,7 +96,7 @@ describe('session expiry notifier', () => {
     await initializeSessionExpiryNotifier(io as any);
     subscriber().emit('message', '__keyevent@0__:expired', 'session:ABC123');
 
-    expect(logSpy).toHaveBeenCalledWith('Session expired: ABC123');
+    expect(logSpy).toHaveBeenCalledWith({ sessionCode: 'ABC123' }, 'Session expired');
     expect(io.to).toHaveBeenCalledWith('ABC123');
     expect(emit).toHaveBeenCalledWith('session:expired', {
       sessionCode: 'ABC123',
@@ -107,7 +112,7 @@ describe('session expiry notifier', () => {
     delete process.env.REDIS_PORT;
     delete process.env.REDIS_PASSWORD;
     redisState.configError = new Error('CONFIG disabled');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     const { io } = ioMock();
     const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
       '../../src/redis/sessionExpiryNotifier.js'
@@ -121,13 +126,13 @@ describe('session expiry notifier', () => {
       password: undefined,
     });
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to enable Redis keyspace notifications:',
-      redisState.configError
+      { err: redisState.configError },
+      'Failed to enable Redis keyspace notifications'
     );
 
     subscriber().emit('error', new Error('subscriber down'));
 
-    expect(errorSpy).toHaveBeenCalledWith('Redis subscriber error:', 'subscriber down');
+    expect(errorSpy).toHaveBeenCalledWith({ err: 'subscriber down' }, 'Redis subscriber error');
 
     const notifierInstance = subscriber();
     await disconnectSessionExpiryNotifier();

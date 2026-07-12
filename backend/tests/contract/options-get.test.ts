@@ -1,3 +1,4 @@
+import { captureLogs } from '../helpers/logCapture.js';
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
@@ -59,7 +60,7 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
   }
 
   it('should return session restaurants', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logs = captureLogs();
     await createSessionRestaurants();
 
     const response = await request(app)
@@ -85,7 +86,7 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
         }),
       ])
     );
-    expect(logSpy).toHaveBeenCalledWith('Returned REST session options', {
+    expect(logs.withMsg('Returned REST session options')[0]).toMatchObject({
       sessionCode,
       restaurantCount: 2,
       missingRestaurantDataCount: 0,
@@ -93,7 +94,7 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
   });
 
   it('should return 404 for invalid session code format', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .get('/api/options/bad')
@@ -105,14 +106,14 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
     });
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST options get', {
+    expect(logs.withMsg('Rejected REST options get')[0]).toMatchObject({
       sessionCode: 'bad',
       reason: 'invalid_session_code',
     });
   });
 
   it('should return 404 when session does not exist', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .get(`/api/options/${sessionCode}`)
@@ -124,14 +125,14 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
     });
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST options get', {
+    expect(logs.withMsg('Rejected REST options get')[0]).toMatchObject({
       sessionCode,
       reason: 'session_not_found',
     });
   });
 
   it('should return 404 when a session has no restaurant ids', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
     await redis.hset(`session:${sessionCode}`, {
       hostId: 'host-1',
       state: 'waiting',
@@ -150,14 +151,14 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       code: 'NO_RESTAURANTS',
       message: 'No restaurants found for this session',
     });
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST options get', {
+    expect(logs.withMsg('Rejected REST options get')[0]).toMatchObject({
       sessionCode,
       reason: 'restaurant_ids_missing',
     });
   });
 
   it('should return 404 when restaurant ids have no stored restaurant data', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
     await redis.hset(`session:${sessionCode}`, {
       hostId: 'host-1',
       state: 'waiting',
@@ -177,7 +178,7 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       code: 'NO_RESTAURANTS',
       message: 'No restaurants found for this session',
     });
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST options get', {
+    expect(logs.withMsg('Rejected REST options get')[0]).toMatchObject({
       sessionCode,
       reason: 'restaurant_data_missing',
       requestedRestaurantCount: 1,

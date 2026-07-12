@@ -1,6 +1,7 @@
 // WebSocket handler for session:leave event
 // Handles intentional session departure (different from disconnect which preserves participant)
 
+import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionStore } from '../store/sessionStore.js';
@@ -28,11 +29,11 @@ export async function handleSessionLeave(
     const validation = sessionLeavePayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      console.warn('Rejected session:leave', {
+      logger.warn({
         socketId: socket.id,
         sessionCode: (payload as Partial<SessionLeavePayload>).sessionCode,
         reason,
-      });
+      }, 'Rejected session:leave');
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
@@ -44,11 +45,11 @@ export async function handleSessionLeave(
     // Check session exists
     const session = await store.readSession(sessionCode);
     if (!session) {
-      console.warn('Rejected session:leave', {
+      logger.warn({
         socketId: socket.id,
         sessionCode,
         reason: 'session_not_found',
-      });
+      }, 'Rejected session:leave');
       return callback({
         success: false,
         error: 'Session not found or has expired',
@@ -58,11 +59,11 @@ export async function handleSessionLeave(
     // Get participant info before removal
     const participant = await store.getParticipant(socket.id);
     if (!participant) {
-      console.warn('Rejected session:leave', {
+      logger.warn({
         socketId: socket.id,
         sessionCode,
         reason: 'participant_not_found',
-      });
+      }, 'Rejected session:leave');
       return callback({
         success: false,
         error: 'You are not a participant in this session',
@@ -87,9 +88,9 @@ export async function handleSessionLeave(
       participantCount: newCount,
     });
 
-    console.log(`✓ ${displayName} left session ${sessionCode} (${newCount}/4 remaining)`);
+    logger.info({ socketId: socket.id, sessionCode, participantCount: newCount }, 'Participant left session');
   } catch (error) {
-    console.error('Error in session:leave handler:', error);
+    logger.error({ err: error, socketId: socket.id }, 'Error in session:leave handler');
     callback({
       success: false,
       error: 'An error occurred while leaving the session',

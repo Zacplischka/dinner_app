@@ -1,6 +1,7 @@
 // WebSocket handler for selection:submit event
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
+import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionStore } from '../store/sessionStore.js';
@@ -32,11 +33,11 @@ export async function handleSelectionSubmit(
     const validation = selectionSubmitPayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      console.warn('Rejected selection:submit', {
+      logger.warn({
         socketId: socket.id,
         sessionCode: (payload as Partial<SelectionSubmitPayload>).sessionCode,
         reason,
-      });
+      }, 'Rejected selection:submit');
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
@@ -48,11 +49,11 @@ export async function handleSelectionSubmit(
     // Check session exists
     const session = await store.readSession(sessionCode);
     if (!session) {
-      console.warn('Rejected selection:submit', {
+      logger.warn({
         socketId: socket.id,
         sessionCode,
         reason: 'session_not_found',
-      });
+      }, 'Rejected selection:submit');
       return callback({
         success: false,
         error: 'Session not found or has expired',
@@ -62,11 +63,11 @@ export async function handleSelectionSubmit(
     // Check participant is in session
     const isInSession = await store.isParticipant(sessionCode, socket.id);
     if (!isInSession) {
-      console.warn('Rejected selection:submit', {
+      logger.warn({
         socketId: socket.id,
         sessionCode,
         reason: 'participant_not_in_session',
-      });
+      }, 'Rejected selection:submit');
       return callback({
         success: false,
         error: 'You are not a participant in this session',
@@ -84,7 +85,7 @@ export async function handleSelectionSubmit(
         selections
       ));
     } catch (error) {
-      console.warn('Rejected selection:submit', {
+      logger.warn({
         socketId: socket.id,
         sessionCode,
         reason:
@@ -93,7 +94,7 @@ export async function handleSelectionSubmit(
             : error instanceof Error
               ? error.message
               : 'unknown_error',
-      });
+      }, 'Rejected selection:submit');
       return callback({
         success: false,
         // DomainError messages are the user-facing copy
@@ -111,7 +112,7 @@ export async function handleSelectionSubmit(
       participantCount,
     });
 
-    console.log(`✓ Participant ${socket.id} submitted (${submittedCount}/${participantCount})`);
+    logger.info({ socketId: socket.id, sessionCode, submittedCount, participantCount }, 'Participant submitted selections');
 
     // Check if all submitted
     if (submittedCount === participantCount) {
@@ -130,12 +131,10 @@ export async function handleSelectionSubmit(
         hasOverlap: results.hasOverlap,
       });
 
-      console.log(
-        `✓ Session ${sessionCode} complete - ${results.hasOverlap ? 'Match found!' : 'No overlap'}`
-      );
+      logger.info({ socketId: socket.id, sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
     }
   } catch (error) {
-    console.error('Error in selection:submit handler:', error);
+    logger.error({ err: error, socketId: socket.id }, 'Error in selection:submit handler');
     callback({
       success: false,
       error: 'An error occurred while submitting selections',

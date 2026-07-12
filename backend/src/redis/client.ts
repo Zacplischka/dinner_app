@@ -1,6 +1,7 @@
 // Redis client initialization with reconnection strategy
 // Based on: specs/001-dinner-decider-enables/research.md
 
+import { logger } from '../logger.js';
 import Redis from 'ioredis';
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -13,7 +14,7 @@ export const redis = new Redis({
   password: REDIS_PASSWORD,
   retryStrategy: (times: number) => {
     const delay = Math.min(times * 50, 2000);
-    console.log(`Redis reconnecting in ${delay}ms (attempt ${times})...`);
+    logger.info({ delayMs: delay, attempt: times }, 'Redis reconnecting');
     return delay;
   },
   maxRetriesPerRequest: 3,
@@ -23,23 +24,23 @@ export const redis = new Redis({
 
 // Event listeners for monitoring
 redis.on('connect', () => {
-  console.log('✓ Redis connected');
+  logger.info('✓ Redis connected');
 });
 
 redis.on('ready', () => {
-  console.log('✓ Redis ready');
+  logger.info('✓ Redis ready');
 });
 
 redis.on('error', (error) => {
-  console.error('Redis error:', error.message);
+  logger.error({ err: error.message }, 'Redis error');
 });
 
 redis.on('close', () => {
-  console.log('Redis connection closed');
+  logger.info('Redis connection closed');
 });
 
 redis.on('reconnecting', () => {
-  console.log('Redis reconnecting...');
+  logger.info('Redis reconnecting...');
 });
 
 // Health check utility
@@ -48,7 +49,7 @@ export async function pingRedis(): Promise<boolean> {
     const result = await redis.ping();
     return result === 'PONG';
   } catch (error) {
-    console.error('Redis ping failed:', error);
+    logger.error({ err: error }, 'Redis ping failed');
     return false;
   }
 }
@@ -57,9 +58,9 @@ export async function pingRedis(): Promise<boolean> {
 export async function disconnectRedis(): Promise<void> {
   try {
     await redis.quit();
-    console.log('Redis disconnected gracefully');
+    logger.info('Redis disconnected gracefully');
   } catch (error) {
-    console.error('Error disconnecting Redis:', error);
+    logger.error({ err: error }, 'Error disconnecting Redis');
     redis.disconnect();
   }
 }

@@ -1,6 +1,7 @@
 // Friends API Router
 // Handles user profiles, friendships, and session invites
 
+import { logger } from '../logger.js';
 import { Router, Request, Response, NextFunction } from 'express';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
@@ -219,7 +220,7 @@ const statusByCode: Record<string, number> = {
 // Maps typed domain errors to HTTP; anything unexpected becomes a 500.
 // The asyncHandler wrapper on every route delivers thrown errors here.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-router.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+router.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof DomainError) {
     return res.status(statusByCode[err.code] ?? 400).json({
       error: err.code,
@@ -227,7 +228,7 @@ router.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => 
     });
   }
 
-  console.error('Unhandled friends API error:', err);
+  (req.log ?? logger).error({ err }, 'Unhandled friends API error');
   return res.status(500).json({
     error: 'internal_error',
     message: 'An unexpected error occurred',

@@ -2,6 +2,7 @@
 // instance built over an injected in-memory store and a stubbed restaurant
 // search fn. No real Redis, no network, no module mocks.
 
+import { logger } from '../../src/logger.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
@@ -26,9 +27,9 @@ describe('SessionService', () => {
     searchNearbyRestaurants = vi.fn();
     SessionService = createSessionService({ store, searchNearbyRestaurants });
 
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -42,21 +43,21 @@ describe('SessionService', () => {
 
   describe('createSession code generation', () => {
     it('should log created sessions with operational context', async () => {
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
 
       const result = await SessionService.createSession('Alice');
 
-      expect(logSpy).toHaveBeenCalledWith('Session created', {
+      expect(logSpy).toHaveBeenCalledWith({
         sessionCode: result.sessionCode,
         hasLocation: false,
         searchRadiusMiles: undefined,
         participantCount: 1,
         restaurantCount: 0,
-      });
+      }, 'Session created');
     });
 
     it('should warn when session code generation collides', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       await redis.hset('session:AAAAAA', {
         hostId: 'existing-host',
         state: 'waiting',
@@ -74,14 +75,14 @@ describe('SessionService', () => {
 
       expect(result.sessionCode).toBe('BBBBBB');
       expect(randomSpy).toHaveBeenCalled();
-      expect(warnSpy).toHaveBeenCalledWith('Session code collision during createSession', {
+      expect(warnSpy).toHaveBeenCalledWith({
         sessionCode: 'AAAAAA',
         attempt: 1,
-      });
+      }, 'Session code collision during createSession');
     });
 
     it('should fail after repeated session code collisions', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
       await redis.hset('session:AAAAAA', {
         hostId: 'existing-host',
         state: 'waiting',
@@ -94,15 +95,15 @@ describe('SessionService', () => {
       await expect(SessionService.createSession('Alice')).rejects.toThrow(
         'Failed to generate unique session code'
       );
-      expect(errorSpy).toHaveBeenCalledWith('Failed to generate unique session code', {
+      expect(errorSpy).toHaveBeenCalledWith({
         attempts: 10,
-      });
+      }, 'Failed to generate unique session code');
     });
   });
 
   describe('getSession', () => {
     it('should return null when the session has no TTL', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       await redis.hset(`session:${testSessionCode}`, {
         hostId: 'host-1',
         hostName: 'Alice',
@@ -113,10 +114,10 @@ describe('SessionService', () => {
       });
 
       await expect(SessionService.getSession(testSessionCode)).resolves.toBeNull();
-      expect(warnSpy).toHaveBeenCalledWith('Session lookup returned invalid TTL', {
+      expect(warnSpy).toHaveBeenCalledWith({
         sessionCode: testSessionCode,
         ttl: -1,
-      });
+      }, 'Session lookup returned invalid TTL');
     });
 
     it('should prefer the joined host participant display name', async () => {
@@ -154,7 +155,7 @@ describe('SessionService', () => {
 
   describe('joinSession', () => {
     it('should reject missing sessions with a SESSION_NOT_FOUND domain error', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
       const error = await SessionService.joinSession(testSessionCode, 'participant-1', 'Bob').then(
         () => null,
@@ -164,15 +165,15 @@ describe('SessionService', () => {
       expect(error).toBeInstanceOf(DomainError);
       expect(error.code).toBe('SESSION_NOT_FOUND');
 
-      expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
+      expect(warnSpy).toHaveBeenCalledWith({
         sessionCode: testSessionCode,
         participantId: 'participant-1',
         reason: 'session_not_found',
-      });
+      }, 'Rejected session join');
     });
 
     it('should reject a fifth participant with a SESSION_FULL domain error', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-1', 'Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-2', 'Bob');
@@ -186,12 +187,12 @@ describe('SessionService', () => {
 
       expect(error).toBeInstanceOf(DomainError);
       expect(error.code).toBe('SESSION_FULL');
-      expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
+      expect(warnSpy).toHaveBeenCalledWith({
         sessionCode: session.sessionCode,
         participantId: 'participant-5',
         reason: 'session_full',
         participantCount: 4,
-      });
+      }, 'Rejected session join');
     });
 
     it('should keep the host slot reserved: cap non-hosts at 3 but still admit the host', async () => {
@@ -240,7 +241,7 @@ describe('SessionService', () => {
     });
 
     it('should log successful joins with the updated participant count', async () => {
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
       const session = await SessionService.createSession('Alice');
 
       const result = await SessionService.joinSession(session.sessionCode, 'participant-1', 'Bob');
@@ -253,17 +254,17 @@ describe('SessionService', () => {
         isHost: false,
         isRejoin: false,
       });
-      expect(logSpy).toHaveBeenCalledWith('Participant joined session', {
+      expect(logSpy).toHaveBeenCalledWith({
         sessionCode: session.sessionCode,
         participantId: 'participant-1',
         participantCount: 2,
-      });
+      }, 'Participant joined session');
     });
   });
 
   describe('joinSession race', () => {
     it('should roll back and reject when a concurrent join overfills the session', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const racyStore = {
         ...store,
         // simulate a concurrent join landing between the cap check and the add
@@ -284,14 +285,14 @@ describe('SessionService', () => {
 
   describe('expireSession', () => {
     it('should log session expiration cleanup', async () => {
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
       const session = await SessionService.createSession('Alice');
 
       await SessionService.expireSession(session.sessionCode);
 
-      expect(logSpy).toHaveBeenCalledWith('Expired session cleanup complete', {
+      expect(logSpy).toHaveBeenCalledWith({
         sessionCode: session.sessionCode,
-      });
+      }, 'Expired session cleanup complete');
     });
   });
 
@@ -315,7 +316,7 @@ describe('SessionService', () => {
     });
 
     it('should search for nearby restaurants', async () => {
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
       const mockRestaurants = [
         { placeId: 'place1', name: 'Restaurant 1', rating: 4.5, priceLevel: 2, cuisineType: 'Italian', address: '123 Main St' },
         { placeId: 'place2', name: 'Restaurant 2', rating: 4.2, priceLevel: 3, cuisineType: 'Chinese', address: '456 Oak Ave' },
@@ -336,13 +337,13 @@ describe('SessionService', () => {
       });
 
       expect(result.restaurantCount).toBe(2);
-      expect(logSpy).toHaveBeenCalledWith('Session created', {
+      expect(logSpy).toHaveBeenCalledWith({
         sessionCode: result.sessionCode,
         hasLocation: true,
         searchRadiusMiles: 5,
         participantCount: 1,
         restaurantCount: 2,
-      });
+      }, 'Session created');
     });
 
     it('should store restaurant Place IDs in Redis Set', async () => {
@@ -382,7 +383,7 @@ describe('SessionService', () => {
     });
 
     it('should throw error if no restaurants found', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       searchNearbyRestaurants.mockResolvedValue([]);
 
       const error = await SessionService.createSession(
@@ -397,10 +398,10 @@ describe('SessionService', () => {
       expect(error).toBeInstanceOf(DomainError);
       expect(error.code).toBe('NO_RESTAURANTS_FOUND');
 
-      expect(warnSpy).toHaveBeenCalledWith('No restaurants found during session creation', {
+      expect(warnSpy).toHaveBeenCalledWith({
         sessionCode: expect.any(String),
         searchRadiusMiles: 5,
-      });
+      }, 'No restaurants found during session creation');
     });
 
     it('should set TTL on restaurant keys', async () => {

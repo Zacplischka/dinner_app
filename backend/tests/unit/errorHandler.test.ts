@@ -1,3 +1,4 @@
+import { logger } from '../../src/logger.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
@@ -42,7 +43,7 @@ describe('global errorHandler middleware', () => {
   });
 
   it('returns a generic 500 for unexpected errors and logs the stack', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     const err = new Error('boom');
 
     const response = await request(appThrowing(err)).get('/boom').expect(500);
@@ -52,6 +53,6 @@ describe('global errorHandler middleware', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(errorSpy).toHaveBeenCalledWith('Unhandled request error:', err);
+    expect(errorSpy).toHaveBeenCalledWith({ err: err }, 'Unhandled request error');
   });
 });

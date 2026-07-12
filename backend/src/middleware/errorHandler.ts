@@ -3,6 +3,7 @@
 // try/catches remain the primary handlers. See issue #30.
 import type { NextFunction, Request, Response } from 'express';
 import { DomainError } from '../services/DomainError.js';
+import { logger } from '../logger.js';
 
 const statusByCode: Record<string, number> = {
   SESSION_NOT_FOUND: 404,
@@ -13,7 +14,7 @@ const statusByCode: Record<string, number> = {
 
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction
@@ -35,7 +36,7 @@ export function errorHandler(
     });
   }
 
-  console.error('Unhandled request error:', err);
+  (req.log ?? logger).error({ err }, 'Unhandled request error');
   return res.status(500).json({
     error: 'Internal Server Error',
     code: 'INTERNAL_ERROR',

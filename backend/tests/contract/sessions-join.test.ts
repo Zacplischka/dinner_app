@@ -1,3 +1,4 @@
+import { captureLogs } from '../helpers/logCapture.js';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
@@ -35,7 +36,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
   });
 
   it('should return 200 with valid JoinSessionResponse schema on successful join', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .post(`/api/sessions/${testSessionCode}/join`)
@@ -51,7 +52,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
     expect(response.body).toHaveProperty('participantCount');
     expect(response.body.participantCount).toBeGreaterThanOrEqual(2); // Host + Bob
     expect(response.body.participantCount).toBeLessThanOrEqual(4);
-    expect(logSpy).toHaveBeenCalledWith('Joined REST session', {
+    expect(logs.withMsg('Joined REST session')[0]).toMatchObject({
       sessionCode: testSessionCode,
       participantId: response.body.participantId,
       participantCount: response.body.participantCount,
@@ -59,7 +60,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
   });
 
   it('should return 400 when participantName is missing', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .post(`/api/sessions/${testSessionCode}/join`)
@@ -70,7 +71,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
     expect(response.body).toHaveProperty('error');
     expect(response.body).toHaveProperty('code', 'VALIDATION_ERROR');
     expect(response.body).toHaveProperty('message');
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST session join', {
+    expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
       sessionCode: testSessionCode,
       reason: 'validation_error',
       fields: ['participantName'],
@@ -96,7 +97,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
   });
 
   it('should return 403 with SESSION_FULL error when session has 4 participants', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     // Join with 3 more participants to reach limit of 4
     await request(app)
@@ -125,7 +126,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
     expect(response.body).toHaveProperty('code', 'SESSION_FULL');
     expect(response.body).toHaveProperty('message');
     expect(response.body.message).toContain('4 participants');
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST session join', {
+    expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
       sessionCode: testSessionCode,
       reason: 'session_full',
       participantLimit: 4,
@@ -145,7 +146,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
   });
 
   it('should return 404 when a valid session code is not found', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const logs = captureLogs();
 
     const response = await request(app)
       .post('/api/sessions/ZZZ999/join')
@@ -158,7 +159,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
       code: 'SESSION_NOT_FOUND',
       message: 'Session ZZZ999 not found or has expired',
     });
-    expect(warnSpy).toHaveBeenCalledWith('Rejected REST session join', {
+    expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
       sessionCode: 'ZZZ999',
       reason: 'session_not_found',
     });

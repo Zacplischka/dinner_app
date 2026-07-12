@@ -1,3 +1,4 @@
+import { logger } from '../../src/logger.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as RestaurantSearchService from '../../src/services/RestaurantSearchService.js';
 import { config } from '../../src/config/index.js';
@@ -122,7 +123,7 @@ describe('RestaurantSearchService', () => {
       // Mock global fetch
       fetchMock = vi.fn();
       global.fetch = fetchMock;
-      logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     });
 
     afterEach(() => {
@@ -205,10 +206,10 @@ describe('RestaurantSearchService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Restaurant 1');
-      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] Page 1: fetched 1 places (total: 1)');
-      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] API returned 1 places total');
-      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] After isRestaurantType filter: 1 restaurants');
-      expect(logSpy).toHaveBeenCalledWith('[RestaurantSearch] After deduplication: 1 restaurants');
+      expect(logSpy).toHaveBeenCalledWith({ page: 1, fetched: 1, total: 1 }, 'RestaurantSearch page fetched');
+      expect(logSpy).toHaveBeenCalledWith({ placeCount: 1 }, 'RestaurantSearch API returned places');
+      expect(logSpy).toHaveBeenCalledWith({ restaurantCount: 1 }, 'RestaurantSearch after type filter');
+      expect(logSpy).toHaveBeenCalledWith({ restaurantCount: 1 }, 'RestaurantSearch after deduplication');
     });
 
     it('should sort results by rating descending', async () => {
@@ -240,7 +241,7 @@ describe('RestaurantSearchService', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
       fetchMock.mockResolvedValueOnce({
         ok: false,
         status: 400,
@@ -258,8 +259,7 @@ describe('RestaurantSearchService', () => {
           radiusMeters: 8046.72,
         })
       ).rejects.toThrow('Places API error: Bad Request');
-      expect(errorSpy).toHaveBeenCalledWith('Places API Error:', 400, 'Bad Request');
-      expect(errorSpy).toHaveBeenCalledWith('Error body:', 'Error details');
+      expect(errorSpy).toHaveBeenCalledWith({ status: 400, statusText: 'Bad Request', errorBody: 'Error details' }, 'Places API error');
     });
 
     it('should retry on 429 rate limiting', async () => {

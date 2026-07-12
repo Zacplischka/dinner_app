@@ -1,3 +1,4 @@
+import { logger } from '../../src/logger.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { redis, pingRedis, disconnectRedis } from '../../src/redis/client.js';
 
@@ -12,13 +13,13 @@ describe('redis client helpers', () => {
   });
 
   it('should expose retry delay strategy capped at 2 seconds', () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     const retryStrategy = (redis as any).options.retryStrategy;
 
     expect(retryStrategy(1)).toBe(50);
     expect(retryStrategy(100)).toBe(2000);
-    expect(logSpy).toHaveBeenCalledWith('Redis reconnecting in 50ms (attempt 1)...');
-    expect(logSpy).toHaveBeenCalledWith('Redis reconnecting in 2000ms (attempt 100)...');
+    expect(logSpy).toHaveBeenCalledWith({ delayMs: 50, attempt: 1 }, 'Redis reconnecting');
+    expect(logSpy).toHaveBeenCalledWith({ delayMs: 2000, attempt: 100 }, 'Redis reconnecting');
   });
 
   it('should report healthy Redis pings', async () => {
@@ -29,15 +30,15 @@ describe('redis client helpers', () => {
 
   it('should report failed Redis pings', async () => {
     const error = new Error('down');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     vi.spyOn(redis, 'ping').mockRejectedValueOnce(error);
 
     await expect(pingRedis()).resolves.toBe(false);
-    expect(errorSpy).toHaveBeenCalledWith('Redis ping failed:', error);
+    expect(errorSpy).toHaveBeenCalledWith({ err: error }, 'Redis ping failed');
   });
 
   it('should quit Redis gracefully', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     vi.spyOn(redis, 'quit').mockResolvedValueOnce('OK' as any);
 
     await expect(disconnectRedis()).resolves.toBeUndefined();
@@ -46,19 +47,19 @@ describe('redis client helpers', () => {
 
   it('should disconnect Redis when graceful quit fails', async () => {
     const error = new Error('quit failed');
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     vi.spyOn(redis, 'quit').mockRejectedValueOnce(error);
     const disconnect = vi.spyOn(redis, 'disconnect').mockImplementation(() => undefined);
 
     await disconnectRedis();
 
     expect(disconnect).toHaveBeenCalledOnce();
-    expect(errorSpy).toHaveBeenCalledWith('Error disconnecting Redis:', error);
+    expect(errorSpy).toHaveBeenCalledWith({ err: error }, 'Error disconnecting Redis');
   });
 
   it('should log Redis client lifecycle events', () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
 
     expect(() => redis.emit('connect')).not.toThrow();
     expect(() => redis.emit('ready')).not.toThrow();
@@ -68,7 +69,7 @@ describe('redis client helpers', () => {
 
     expect(logSpy).toHaveBeenCalledWith('✓ Redis connected');
     expect(logSpy).toHaveBeenCalledWith('✓ Redis ready');
-    expect(errorSpy).toHaveBeenCalledWith('Redis error:', 'event error');
+    expect(errorSpy).toHaveBeenCalledWith({ err: 'event error' }, 'Redis error');
     expect(logSpy).toHaveBeenCalledWith('Redis connection closed');
     expect(logSpy).toHaveBeenCalledWith('Redis reconnecting...');
   });

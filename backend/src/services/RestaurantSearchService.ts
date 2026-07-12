@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 import type { Restaurant } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 
@@ -224,8 +225,7 @@ async function fetchTextSearchPage(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error('Places API Error:', response.status, response.statusText);
-    console.error('Error body:', errorBody);
+    logger.error({ status: response.status, statusText: response.statusText, errorBody }, 'Places API error');
     throw new Error(`Places API error: ${response.statusText}`);
   }
 
@@ -276,7 +276,7 @@ export async function searchNearbyRestaurants(
     }
 
     allPlaces.push(...pageData.places);
-    console.log(`[RestaurantSearch] Page ${pageCount + 1}: fetched ${pageData.places.length} places (total: ${allPlaces.length})`);
+    logger.info({ page: pageCount + 1, fetched: pageData.places.length, total: allPlaces.length }, 'RestaurantSearch page fetched');
 
     pageToken = pageData.nextPageToken;
     pageCount++;
@@ -288,13 +288,13 @@ export async function searchNearbyRestaurants(
     await new Promise(resolve => setTimeout(resolve, 200));
   }
 
-  console.log(`[RestaurantSearch] API returned ${allPlaces.length} places total`);
+  logger.info({ placeCount: allPlaces.length }, 'RestaurantSearch API returned places');
 
   // Filter to only include actual restaurants (by primaryType)
   const restaurantPlaces = allPlaces.filter((place: GooglePlaceResult) =>
     isRestaurantType(place.primaryType)
   );
-  console.log(`[RestaurantSearch] After isRestaurantType filter: ${restaurantPlaces.length} restaurants`);
+  logger.info({ restaurantCount: restaurantPlaces.length }, 'RestaurantSearch after type filter');
 
   // Transform Google Places results to Restaurant objects
   const transformedRestaurants = restaurantPlaces.map((place: GooglePlaceResult) =>
@@ -303,7 +303,7 @@ export async function searchNearbyRestaurants(
 
   // Deduplicate chain restaurants (keeps highest-rated instance)
   const uniqueRestaurants = deduplicateRestaurants(transformedRestaurants);
-  console.log(`[RestaurantSearch] After deduplication: ${uniqueRestaurants.length} restaurants`);
+  logger.info({ restaurantCount: uniqueRestaurants.length }, 'RestaurantSearch after deduplication');
 
   // Sort by rating descending
   const restaurants = uniqueRestaurants.sort((a, b) =>
