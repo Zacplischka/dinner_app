@@ -10,6 +10,7 @@ import type {
   UserProfile,
 } from '@dinder/shared/types';
 import { useAuthStore } from './authStore';
+import * as apiClient from '../services/apiClient';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -98,11 +99,7 @@ export const useFriendsStore = create<FriendsState>()(
       // Profile actions
       fetchCurrentProfile: async () => {
         try {
-          const response = await fetch(`${API_URL}/api/users/me`, {
-            headers: getAuthHeaders(),
-          });
-
-          const profile = await handleResponse<UserProfile>(response);
+          const profile = await apiClient.getCurrentProfile();
           set({ currentUserProfile: profile });
         } catch (error) {
           console.error('Error fetching profile:', error);
@@ -114,12 +111,8 @@ export const useFriendsStore = create<FriendsState>()(
       fetchFriends: async () => {
         set({ isLoadingFriends: true, error: null });
         try {
-          const response = await fetch(`${API_URL}/api/friends`, {
-            headers: getAuthHeaders(),
-          });
-
-          const data = await handleResponse<{ friends: Friend[] }>(response);
-          set({ friends: data.friends, isLoadingFriends: false });
+          const friends = await apiClient.getFriends();
+          set({ friends, isLoadingFriends: false });
         } catch (error) {
           console.error('Error fetching friends:', error);
           set({
@@ -132,14 +125,9 @@ export const useFriendsStore = create<FriendsState>()(
       searchUsers: async (email: string) => {
         set({ isSearching: true, error: null });
         try {
-          const response = await fetch(
-            `${API_URL}/api/users/search?email=${encodeURIComponent(email)}`,
-            { headers: getAuthHeaders() }
-          );
-
-          const data = await handleResponse<{ users: UserProfile[] }>(response);
-          set({ searchResults: data.users, isSearching: false });
-          return data.users;
+          const users = await apiClient.searchUsers(email);
+          set({ searchResults: users, isSearching: false });
+          return users;
         } catch (error) {
           console.error('Error searching users:', error);
           set({
@@ -198,12 +186,8 @@ export const useFriendsStore = create<FriendsState>()(
       fetchFriendRequests: async () => {
         set({ isLoadingRequests: true, error: null });
         try {
-          const response = await fetch(`${API_URL}/api/friends/requests`, {
-            headers: getAuthHeaders(),
-          });
-
-          const data = await handleResponse<{ requests: FriendRequest[] }>(response);
-          set({ friendRequests: data.requests, isLoadingRequests: false });
+          const requests = await apiClient.getFriendRequests();
+          set({ friendRequests: requests, isLoadingRequests: false });
         } catch (error) {
           console.error('Error fetching friend requests:', error);
           set({
@@ -266,12 +250,8 @@ export const useFriendsStore = create<FriendsState>()(
       fetchSessionInvites: async () => {
         set({ isLoadingInvites: true, error: null });
         try {
-          const response = await fetch(`${API_URL}/api/invites`, {
-            headers: getAuthHeaders(),
-          });
-
-          const data = await handleResponse<{ invites: SessionInvite[] }>(response);
-          set({ sessionInvites: data.invites, isLoadingInvites: false });
+          const invites = await apiClient.getSessionInvites();
+          set({ sessionInvites: invites, isLoadingInvites: false });
         } catch (error) {
           console.error('Error fetching session invites:', error);
           set({

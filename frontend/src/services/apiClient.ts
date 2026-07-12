@@ -1,7 +1,15 @@
-// REST API client for Dinder
-// Based on: specs/001-dinner-decider-enables/tasks.md T049
+// REST API client for Dinder - the single owner of HTTP transport
+// (base URL, auth header, error shaping). State stores never call fetch.
 
-import type { DinnerOption, Restaurant } from '@dinder/shared/types';
+import type {
+  DinnerOption,
+  Friend,
+  FriendRequest,
+  Restaurant,
+  SessionInvite,
+  UserProfile,
+} from '@dinder/shared/types';
+import { useAuthStore } from '../stores/authStore';
 
 /* v8 ignore next */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
@@ -147,4 +155,84 @@ export function handleApiError(error: unknown): string {
     return error.message;
   }
   return 'An unexpected error occurred';
+}
+
+// ============================================================================
+// FRIENDS / PROFILE ENDPOINTS (authenticated)
+// ============================================================================
+
+function getAuthHeaders(): HeadersInit {
+  const session = useAuthStore.getState().session;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+
+  return headers;
+}
+
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+    throw new Error(error.message || `HTTP error ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get the current user's profile (created on first sight server-side)
+ */
+export async function getCurrentProfile(): Promise<UserProfile> {
+  const response = await fetch(`${API_BASE_URL}/users/me`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<UserProfile>(response);
+}
+
+/**
+ * Search users by exact email match
+ */
+export async function searchUsers(email: string): Promise<UserProfile[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/users/search?email=${encodeURIComponent(email)}`,
+    { headers: getAuthHeaders() }
+  );
+  const data = await handleResponse<{ users: UserProfile[] }>(response);
+  return data.users;
+}
+
+/**
+ * List the current user's accepted friends
+ */
+export async function getFriends(): Promise<Friend[]> {
+  const response = await fetch(`${API_BASE_URL}/friends`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await handleResponse<{ friends: Friend[] }>(response);
+  return data.friends;
+}
+
+/**
+ * List pending friend requests the current user received
+ */
+export async function getFriendRequests(): Promise<FriendRequest[]> {
+  const response = await fetch(`${API_BASE_URL}/friends/requests`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await handleResponse<{ requests: FriendRequest[] }>(response);
+  return data.requests;
+}
+
+/**
+ * List pending session invites for the current user
+ */
+export async function getSessionInvites(): Promise<SessionInvite[]> {
+  const response = await fetch(`${API_BASE_URL}/invites`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await handleResponse<{ invites: SessionInvite[] }>(response);
+  return data.invites;
 }
