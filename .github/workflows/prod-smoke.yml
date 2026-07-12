@@ -1,0 +1,17 @@
+name: Production Smoke Test
+
+on:
+  schedule:
+    - cron: '0 20 * * *' # daily ~06:00 AEST
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Session create with restaurant search
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Smoke test production backend
+        run: bash scripts/smoke-prod.sh

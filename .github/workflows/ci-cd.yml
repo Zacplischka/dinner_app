@@ -252,3 +252,6 @@ jobs:
             sleep 10
           done
           exit 1
+
+      - name: Smoke test session create (Places API key)
+        run: bash scripts/smoke-prod.sh
