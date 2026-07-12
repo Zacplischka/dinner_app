@@ -481,7 +481,7 @@ describe('websocket handlers', () => {
         io() as any,
         { sessionCode: 'bad', selections: [] } as any,
         callback,
-        store
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -499,7 +499,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback, store);
+      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -508,7 +508,7 @@ describe('websocket handlers', () => {
       expect(warnSpy).toHaveBeenCalledWith({
         socketId: 'socket-1',
         sessionCode,
-        reason: 'session_not_found',
+        reason: 'SESSION_NOT_FOUND',
       }, 'Rejected selection:submit');
     });
 
@@ -517,7 +517,7 @@ describe('websocket handlers', () => {
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
-      await handleSelectionSubmit(socket('missing') as any, io() as any, { sessionCode, selections: [] }, callback, store);
+      await handleSelectionSubmit(socket('missing') as any, io() as any, { sessionCode, selections: [] }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -526,7 +526,7 @@ describe('websocket handlers', () => {
       expect(warnSpy).toHaveBeenCalledWith({
         socketId: 'missing',
         sessionCode,
-        reason: 'participant_not_in_session',
+        reason: 'NOT_IN_SESSION',
       }, 'Rejected selection:submit');
     });
 
@@ -540,7 +540,7 @@ describe('websocket handlers', () => {
         io() as any,
         { sessionCode, selections: ['missing-place'] },
         callback,
-        store
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -565,7 +565,7 @@ describe('websocket handlers', () => {
         io() as any,
         { sessionCode, selections: [] },
         callback,
-        store
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -585,7 +585,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
-      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback, store);
+      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -605,7 +605,7 @@ describe('websocket handlers', () => {
         io() as any,
         { sessionCode, selections: [] },
         callback,
-        store
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({ success: true });
@@ -629,7 +629,7 @@ describe('websocket handlers', () => {
         testIo as any,
         { sessionCode, selections: [] },
         callback,
-        store
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({ success: true });
@@ -640,7 +640,7 @@ describe('websocket handlers', () => {
         restaurantNames: {},
         hasOverlap: false,
       });
-      expect(logSpy).toHaveBeenCalledWith({ socketId: 'socket-1', sessionCode, hasOverlap: false }, 'Session complete');
+      expect(logSpy).toHaveBeenCalledWith({ sessionCode, hasOverlap: false }, 'Session complete');
     });
   });
 });

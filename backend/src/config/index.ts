@@ -21,6 +21,11 @@ export const config = {
   },
 };
 
+/** Canonical join link for a session, built on the configured frontend URL. */
+export function shareableLink(sessionCode: string): string {
+  return `${config.frontendUrl}/join?code=${sessionCode}`;
+}
+
 // Validate required environment variables
 export function validateConfig(): void {
   if (!config.googlePlaces.apiKey) {

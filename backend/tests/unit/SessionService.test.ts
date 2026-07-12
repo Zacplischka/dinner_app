@@ -6,13 +6,14 @@ import { logger } from '../../src/logger.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
+import { config } from '../../src/config/index.js';
 import { createSessionStore } from '../../src/store/sessionStore.js';
 import { createSessionService, MAX_PARTICIPANTS } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST123';
-  const originalFrontendUrl = process.env.FRONTEND_URL;
+  const originalFrontendUrl = config.frontendUrl;
 
   let redis: Redis;
   let store: ReturnType<typeof createSessionStore>;
@@ -33,11 +34,7 @@ describe('SessionService', () => {
   });
 
   afterEach(() => {
-    if (originalFrontendUrl === undefined) {
-      delete process.env.FRONTEND_URL;
-    } else {
-      process.env.FRONTEND_URL = originalFrontendUrl;
-    }
+    config.frontendUrl = originalFrontendUrl;
     vi.restoreAllMocks();
   });
 
@@ -121,7 +118,7 @@ describe('SessionService', () => {
     });
 
     it('should prefer the joined host participant display name', async () => {
-      delete process.env.FRONTEND_URL;
+      config.frontendUrl = 'http://localhost:3000';
       const result = await SessionService.createSession('Original Host');
       await store.addParticipant(result.sessionCode, {
         participantId: 'host-participant',
@@ -136,7 +133,7 @@ describe('SessionService', () => {
     });
 
     it('should use an unknown host fallback and custom frontend URL', async () => {
-      process.env.FRONTEND_URL = 'https://frontend.example.test';
+      config.frontendUrl = 'https://frontend.example.test';
       await redis.hset('session:NOHST1', {
         hostId: 'host-1',
         state: 'waiting',
@@ -306,7 +303,7 @@ describe('SessionService', () => {
         `http://localhost:3000/join?code=${defaultResult.sessionCode}`
       );
 
-      process.env.FRONTEND_URL = 'https://frontend.example.test';
+      config.frontendUrl = 'https://frontend.example.test';
 
       const customResult = await SessionService.createSession('Bob');
 
@@ -437,6 +434,52 @@ describe('SessionService', () => {
         radiusMeters: expect.closeTo(16093.4, 1), // 10 miles in meters (allow 1 meter tolerance)
         maxResults: 20,
       });
+    });
+  });
+
+  describe('submitSelections', () => {
+    async function createTwoParticipantSession(): Promise<string> {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      return sessionCode;
+    }
+
+    it('records a submission and returns counts without results while others are pending', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      const result = await SessionService.submitSelections(sessionCode, 'p-alice', []);
+
+      expect(result).toEqual({ submittedCount: 1, participantCount: 2 });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).not.toBe('complete');
+    });
+
+    it('computes results and marks the session complete when the last participant submits', async () => {
+      const sessionCode = await createTwoParticipantSession();
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+
+      const result = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      expect(result.submittedCount).toBe(2);
+      expect(result.participantCount).toBe(2);
+      expect(result.results).toMatchObject({ hasOverlap: false, overlappingOptions: [] });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).toBe('complete');
+    });
+
+    it('rejects submissions to missing sessions', async () => {
+      await expect(
+        SessionService.submitSelections('NOPE99', 'p-alice', [])
+      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
+    });
+
+    it('rejects submissions from non-participants', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      await expect(
+        SessionService.submitSelections(sessionCode, 'p-stranger', [])
+      ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
     });
   });
 });

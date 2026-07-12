@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { DomainError } from '../../src/services/DomainError.js';
+import { createFriendsService } from '../../src/services/FriendsService.js';
 
 // In-memory fake of FriendsStore: plain Maps of profiles/friendships/invites.
 // Tests assert on FriendsService behavior only - never on which queries ran.
@@ -28,15 +29,15 @@ type InviteRow = {
   created_at: string;
 };
 
-const db = vi.hoisted(() => ({
+const db = {
   profiles: new Map<string, ProfileRow>(),
   friendships: new Map<string, FriendshipRow>(),
   invites: new Map<string, InviteRow>(),
   authMetadata: new Map<string, unknown>(),
   nextId: 1,
-}));
+};
 
-vi.mock('../../src/store/friendsStore.js', () => ({
+const fakeStore = {
   getProfileById: async (userId: string) => db.profiles.get(userId) ?? null,
 
   getAuthUserMetadata: async (userId: string) => db.authMetadata.get(userId),
@@ -164,9 +165,9 @@ vi.mock('../../src/store/friendsStore.js', () => ({
       invite.status = 'declined';
     }
   },
-}));
+};
 
-const FriendsService = await import('../../src/services/FriendsService.js');
+const FriendsService = createFriendsService({ store: fakeStore });
 
 function addProfile(id: string, displayName: string, email: string) {
   db.profiles.set(id, {

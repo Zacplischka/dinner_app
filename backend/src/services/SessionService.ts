@@ -6,6 +6,7 @@
 // production instance bound to the real singletons.
 
 import { logger } from '../logger.js';
+import { shareableLink } from '../config/index.js';
 import { getExpiresAtISO, sessionStore, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
@@ -118,10 +119,6 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       restaurants,
     });
 
-    // Generate shareable link
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
-
     logger.info({
       sessionCode,
       hasLocation: Boolean(location),
@@ -136,7 +133,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       participantCount: 1,
       state: session.state,
       expiresAt: getExpiresAtISO(expireAt),
-      shareableLink,
+      shareableLink: shareableLink(sessionCode),
       location,
       searchRadiusMiles,
       restaurantCount: restaurants.length,
@@ -183,16 +180,13 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
 
     const expireAt = Math.floor(Date.now() / 1000) + ttl;
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
-
     return {
       sessionCode,
       hostName: hostName || 'Unknown Host',
       participantCount: session.participantCount,
       state: session.state,
       expiresAt: getExpiresAtISO(expireAt),
-      shareableLink,
+      shareableLink: shareableLink(sessionCode),
     };
   }
 
@@ -313,6 +307,45 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
   }
 
   /**
+   * Record a participant's selections. When the last participant submits,
+   * computes the Match, marks the session complete, and returns the results.
+   */
+  async function submitSelections(
+    sessionCode: string,
+    participantId: string,
+    placeIds: string[]
+  ): Promise<{
+    submittedCount: number;
+    participantCount: number;
+    results?: Awaited<ReturnType<SessionStore['computeAndStoreResults']>>;
+  }> {
+    if (!(await store.readSession(sessionCode))) {
+      throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
+    }
+
+    if (!(await store.isParticipant(sessionCode, participantId))) {
+      throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
+    }
+
+    const { submittedCount, participantCount } = await store.recordSubmission(
+      sessionCode,
+      participantId,
+      placeIds
+    );
+
+    if (submittedCount !== participantCount) {
+      return { submittedCount, participantCount };
+    }
+
+    // Everyone has submitted: compute the Match and complete the session
+    const results = await store.computeAndStoreResults(sessionCode);
+    await store.updateState(sessionCode, 'complete');
+    logger.info({ sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
+
+    return { submittedCount, participantCount, results };
+  }
+
+  /**
    * Expire a session (cleanup)
    */
   async function expireSession(sessionCode: string): Promise<void> {
@@ -323,7 +356,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     }, 'Expired session cleanup complete');
   }
 
-  return { createSession, getSession, joinSession, expireSession };
+  return { createSession, getSession, joinSession, submitSelections, expireSession };
 }
 
 export type SessionService = ReturnType<typeof createSessionService>;
