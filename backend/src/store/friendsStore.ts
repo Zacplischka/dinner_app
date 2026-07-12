@@ -139,3 +139,71 @@ export async function deleteFriendshipBetween(userId: string, friendId: string) 
       `and(user_id.eq.${friendId},friend_id.eq.${userId})`
     );
 }
+
+// Same rows as listAcceptedFriendships but only the pair columns; kept as
+// its own query so each caller's shape and failure handling stay exact.
+export async function listAcceptedFriendPairs(userId: string) {
+  return supabase
+    .from('friendships')
+    .select('user_id, friend_id')
+    .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+    .eq('status', 'accepted');
+}
+
+// --- Session Invites ---------------------------------------------------------
+
+const sessionInviteSelect = 'id, session_code, inviter_id, status, created_at';
+
+type SessionInviteRow = {
+  session_code: string;
+  inviter_id: string;
+  invitee_id: string;
+  status: 'pending';
+};
+
+export async function createSessionInvites(invites: SessionInviteRow[]): Promise<void> {
+  // Upsert to handle duplicate invites gracefully
+  const { error } = await supabase
+    .from('session_invites')
+    .upsert(invites, {
+      onConflict: 'session_code,inviter_id,invitee_id',
+      ignoreDuplicates: true,
+    });
+
+  if (error) {
+    // If upsert fails, try inserting individually (ignoring duplicates)
+    console.warn('Upsert failed, trying individual inserts:', error);
+    for (const invite of invites) {
+      await supabase.from('session_invites').insert(invite);
+    }
+  }
+}
+
+export async function listPendingInvitesForInvitee(userId: string) {
+  return supabase
+    .from('session_invites')
+    .select(sessionInviteSelect)
+    .eq('invitee_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+}
+
+export async function acceptSessionInvite(inviteId: string, userId: string) {
+  return supabase
+    .from('session_invites')
+    .update({ status: 'accepted' })
+    .eq('id', inviteId)
+    .eq('invitee_id', userId)
+    .eq('status', 'pending')
+    .select('session_code')
+    .single();
+}
+
+export async function declineSessionInvite(inviteId: string, userId: string) {
+  return supabase
+    .from('session_invites')
+    .update({ status: 'declined' })
+    .eq('id', inviteId)
+    .eq('invitee_id', userId)
+    .eq('status', 'pending');
+}

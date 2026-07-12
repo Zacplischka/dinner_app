@@ -5,7 +5,7 @@ import { Router, Response } from 'express';
 import { getAuthProfileDefaults } from './authMetadata.js';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
-import { supabase, Profile } from '../services/supabase.js';
+import type { Profile } from '../services/supabase.js';
 import * as friendsStore from '../store/friendsStore.js';
 import type {
   UserProfile,
@@ -22,8 +22,6 @@ import type {
 
 const router = Router();
 
-const profileSelect = 'id, display_name, avatar_url, email';
-const sessionInviteSelect = 'id, session_code, inviter_id, status, created_at';
 
 // All routes require authentication
 router.use(requireAuth);
@@ -477,11 +475,7 @@ router.post('/sessions/:code/invite', asyncHandler(async (req: AuthenticatedRequ
     }
 
     // Verify all friend IDs are actually friends of the user
-    const { data: friendships, error: friendError } = await supabase
-      .from('friendships')
-      .select('user_id, friend_id')
-      .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
-      .eq('status', 'accepted');
+    const { data: friendships, error: friendError } = await friendsStore.listAcceptedFriendPairs(userId);
 
     if (friendError) {
       console.error('Error verifying friendships:', friendError);
@@ -512,24 +506,7 @@ router.post('/sessions/:code/invite', asyncHandler(async (req: AuthenticatedRequ
       status: 'pending' as const,
     }));
 
-    // Use upsert to handle duplicate invites gracefully
-    const { error: insertError } = await supabase
-      .from('session_invites')
-      .upsert(invites, {
-        onConflict: 'session_code,inviter_id,invitee_id',
-        ignoreDuplicates: true,
-      });
-
-    if (insertError) {
-      // If upsert fails, try inserting individually (ignoring duplicates)
-      console.warn('Upsert failed, trying individual inserts:', insertError);
-
-      for (const invite of invites) {
-        await supabase
-          .from('session_invites')
-          .insert(invite);
-      }
-    }
+    await friendsStore.createSessionInvites(invites);
 
     return res.status(201).json({
       success: true,
@@ -554,12 +531,7 @@ router.get('/invites', asyncHandler(async (req: AuthenticatedRequest, res: Respo
     const userId = req.user!.id;
 
     // Get pending invites where the current user is the invitee
-    const { data: invites, error } = await supabase
-      .from('session_invites')
-      .select(sessionInviteSelect)
-      .eq('invitee_id', userId)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+    const { data: invites, error } = await friendsStore.listPendingInvitesForInvitee(userId);
 
     if (error) {
       console.error('Error fetching invites:', error);
@@ -575,10 +547,7 @@ router.get('/invites', asyncHandler(async (req: AuthenticatedRequest, res: Respo
 
     // Fetch inviter profiles
     const inviterIds = [...new Set(invites.map((i) => i.inviter_id))];
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select(profileSelect)
-      .in('id', inviterIds);
+    const { data: profiles, error: profilesError } = await friendsStore.listProfilesByIds(inviterIds);
 
     if (profilesError) {
       console.error('Error fetching inviter profiles:', profilesError);
@@ -623,14 +592,7 @@ router.post('/invites/:inviteId/accept', asyncHandler(async (req: AuthenticatedR
     const { inviteId } = req.params;
 
     // Find and update the invite
-    const { data: invite, error: updateError } = await supabase
-      .from('session_invites')
-      .update({ status: 'accepted' })
-      .eq('id', inviteId)
-      .eq('invitee_id', userId)
-      .eq('status', 'pending')
-      .select('session_code')
-      .single();
+    const { data: invite, error: updateError } = await friendsStore.acceptSessionInvite(inviteId, userId);
 
     if (updateError || !invite) {
       return res.status(404).json({
@@ -663,12 +625,7 @@ router.post('/invites/:inviteId/decline', asyncHandler(async (req: Authenticated
     const { inviteId } = req.params;
 
     // Find and update the invite
-    const { error: updateError } = await supabase
-      .from('session_invites')
-      .update({ status: 'declined' })
-      .eq('id', inviteId)
-      .eq('invitee_id', userId)
-      .eq('status', 'pending');
+    const { error: updateError } = await friendsStore.declineSessionInvite(inviteId, userId);
 
     if (updateError) {
       console.error('Error declining invite:', updateError);
