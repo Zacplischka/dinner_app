@@ -4,6 +4,7 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import { useSessionStore } from './stores/sessionStore';
 import { useAuthStore } from './stores/authStore';
 import { AnimatedRoute } from './components/PageTransition';
@@ -102,13 +103,15 @@ function App() {
   }, [sessionCode, sessionStatus]);
 
   return (
-    <BrowserRouter>
-      <ToastProvider>
-        <Suspense fallback={<LoadingFallback />}>
-          <AnimatedRoutes />
-        </Suspense>
-      </ToastProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ToastProvider>
+          <Suspense fallback={<LoadingFallback />}>
+            <AnimatedRoutes />
+          </Suspense>
+        </ToastProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
