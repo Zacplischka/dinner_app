@@ -6,7 +6,7 @@ import * as friendsStore from '../store/friendsStore.js';
 import { getAuthProfileDefaults } from '../api/authMetadata.js';
 import { DomainError } from './DomainError.js';
 import type { Profile } from './supabase.js';
-import type { Friend, FriendRequest, UserProfile } from '@dinder/shared/types';
+import type { Friend, FriendRequest, SessionInvite, UserProfile } from '@dinder/shared/types';
 
 // --- Profiles ------------------------------------------------------------
 
@@ -152,10 +152,84 @@ export async function removeFriend(userId: string, friendId: string): Promise<vo
   await friendsStore.deleteFriendshipBetween(userId, friendId);
 }
 
+// --- Session Invites ---------------------------------------------------------
+
+/**
+ * Invite friends into a session. Ids without an accepted Friendship with the
+ * inviter are dropped; inviting only non-friends is an error.
+ * Returns how many friends were invited.
+ */
+export async function inviteFriendsToSession(
+  userId: string,
+  sessionCode: string,
+  friendIds: string[]
+): Promise<number> {
+  const friendships = await friendsStore.listAcceptedFriendPairs(userId);
+  const actualFriendIds = new Set(
+    friendships.map((f) => (f.user_id === userId ? f.friend_id : f.user_id))
+  );
+
+  const validFriendIds = friendIds.filter((id) => actualFriendIds.has(id));
+  if (validFriendIds.length === 0) {
+    throw new DomainError('validation_error', 'No valid friend IDs provided');
+  }
+
+  await friendsStore.createSessionInvites(
+    validFriendIds.map((friendId) => ({
+      session_code: sessionCode,
+      inviter_id: userId,
+      invitee_id: friendId,
+      status: 'pending' as const,
+    }))
+  );
+
+  return validFriendIds.length;
+}
+
+export async function listSessionInvites(userId: string): Promise<SessionInvite[]> {
+  const invites = await friendsStore.listPendingInvitesForInvitee(userId);
+
+  if (invites.length === 0) {
+    return [];
+  }
+
+  // A failed inviter-profile lookup falls back to placeholder profiles
+  const inviterIds = [...new Set(invites.map((i) => i.inviter_id))];
+  const profiles = await friendsStore.listProfilesByIds(inviterIds);
+
+  return invites.map((invite) => ({
+    id: invite.id,
+    sessionCode: invite.session_code,
+    inviter: mapProfileToUserProfile(
+      profiles?.find((p) => p.id === invite.inviter_id) || {
+        id: invite.inviter_id,
+        display_name: 'Unknown User',
+        avatar_url: null,
+        email: null,
+      }
+    ),
+    status: invite.status,
+    createdAt: invite.created_at,
+  }));
+}
+
+/** Accept a pending invite; returns the Session Code to join. */
+export async function acceptSessionInvite(userId: string, inviteId: string): Promise<string> {
+  const invite = await friendsStore.acceptSessionInvite(inviteId, userId);
+  if (!invite) {
+    throw new DomainError('not_found', 'Session invite not found');
+  }
+  return invite.session_code;
+}
+
+export async function declineSessionInvite(userId: string, inviteId: string): Promise<void> {
+  await friendsStore.declineSessionInvite(inviteId, userId);
+}
+
 /**
  * Map a database Profile to a UserProfile API response object
  */
-export function mapProfileToUserProfile(profile: Partial<Profile>): UserProfile {
+function mapProfileToUserProfile(profile: Partial<Profile>): UserProfile {
   return {
     id: profile.id || '',
     displayName: profile.display_name || 'Unknown User',

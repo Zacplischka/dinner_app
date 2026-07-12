@@ -220,11 +220,17 @@ export async function deleteFriendshipBetween(userId: string, friendId: string):
 // Same rows as listAcceptedFriendships but only the pair columns; kept as
 // its own query so each caller's shape and failure handling stay exact.
 export async function listAcceptedFriendPairs(userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('friendships')
     .select('user_id, friend_id')
     .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
     .eq('status', 'accepted');
+
+  if (error) {
+    console.error('Error verifying friendships:', error);
+    throw new DomainError('database_error', 'Failed to verify friendships');
+  }
+  return data || [];
 }
 
 // --- Session Invites ---------------------------------------------------------
@@ -257,16 +263,27 @@ export async function createSessionInvites(invites: SessionInviteRow[]): Promise
 }
 
 export async function listPendingInvitesForInvitee(userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('session_invites')
     .select(sessionInviteSelect)
     .eq('invitee_id', userId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching invites:', error);
+    throw new DomainError('database_error', 'Failed to fetch session invites');
+  }
+  return data || [];
 }
 
+/**
+ * Mark a pending invite accepted; only the invitee may do so.
+ * Returns the invite's session code, or null when no matching pending
+ * invite exists (or the update fails).
+ */
 export async function acceptSessionInvite(inviteId: string, userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('session_invites')
     .update({ status: 'accepted' })
     .eq('id', inviteId)
@@ -274,13 +291,21 @@ export async function acceptSessionInvite(inviteId: string, userId: string) {
     .eq('status', 'pending')
     .select('session_code')
     .single();
+
+  return error ? null : data;
 }
 
-export async function declineSessionInvite(inviteId: string, userId: string) {
-  return supabase
+/** Mark a pending invite declined; only the invitee may do so. */
+export async function declineSessionInvite(inviteId: string, userId: string): Promise<void> {
+  const { error } = await supabase
     .from('session_invites')
     .update({ status: 'declined' })
     .eq('id', inviteId)
     .eq('invitee_id', userId)
     .eq('status', 'pending');
+
+  if (error) {
+    console.error('Error declining invite:', error);
+    throw new DomainError('database_error', 'Failed to decline invite');
+  }
 }
