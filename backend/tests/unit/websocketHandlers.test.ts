@@ -118,9 +118,9 @@ describe('websocket handlers', () => {
         success: false,
         error: 'Session not found or has expired',
       });
-      expect(warnSpy).toHaveBeenCalledWith('Rejected session:join', {
-        socketId: 'socket-1',
+      expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
         sessionCode,
+        participantId: 'socket-1',
         reason: 'session_not_found',
       });
     });
@@ -192,38 +192,11 @@ describe('websocket handlers', () => {
         success: false,
         error: 'Session is full (maximum 4 participants)',
       });
-      expect(warnSpy).toHaveBeenCalledWith('Rejected session:join', {
-        socketId: 'socket-5',
+      expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
         sessionCode,
+        participantId: 'socket-5',
         reason: 'session_full',
         participantCount: 4,
-      });
-    });
-
-    it('should roll back if participant count exceeds the limit after add', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
-      vi.spyOn(store, 'countParticipants').mockResolvedValueOnce(3);
-      const addSpy = vi.spyOn(store, 'addParticipant').mockResolvedValueOnce(5);
-      const callback = vi.fn();
-
-      await handleSessionJoin(
-        socket('late-socket') as any,
-        { sessionCode, displayName: 'Late' },
-        callback
-      );
-
-      expect(addSpy).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith({
-        success: false,
-        error: 'Session is full (maximum 4 participants)',
-      });
-      await expect(redis.exists('participant:late-socket')).resolves.toBe(0);
-      expect(warnSpy).toHaveBeenCalledWith('Rejected session:join', {
-        socketId: 'late-socket',
-        sessionCode,
-        reason: 'session_full_after_add',
-        participantCount: 5,
       });
     });
 

@@ -10,6 +10,7 @@ import {
   sessionCodeFromExpiredKey,
   SESSION_TTL_SECONDS,
 } from '../../src/store/sessionStore.js';
+import { DomainError } from '../../src/services/DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 const sessionCode = 'TEST12';
@@ -149,18 +150,26 @@ describe('SessionStore', () => {
       await store.addParticipant(sessionCode, { participantId: 'p1', displayName: 'Alice' });
       await store.recordSubmission(sessionCode, 'p1', []);
 
-      await expect(store.recordSubmission(sessionCode, 'p1', ['place1'])).rejects.toThrow(
-        'ALREADY_SUBMITTED'
+      const error = await store.recordSubmission(sessionCode, 'p1', ['place1']).then(
+        () => null,
+        (e) => e
       );
+
+      expect(error).toBeInstanceOf(DomainError);
+      expect(error.code).toBe('ALREADY_SUBMITTED');
     });
 
     it('rejects selections outside the session restaurant list', async () => {
       await createTestSession();
       await store.addParticipant(sessionCode, { participantId: 'p1', displayName: 'Alice' });
 
-      await expect(
-        store.recordSubmission(sessionCode, 'p1', ['place1', 'bogus'])
-      ).rejects.toThrow('INVALID_RESTAURANTS');
+      const error = await store.recordSubmission(sessionCode, 'p1', ['place1', 'bogus']).then(
+        () => null,
+        (e) => e
+      );
+
+      expect(error).toBeInstanceOf(DomainError);
+      expect(error.code).toBe('INVALID_RESTAURANTS');
     });
   });
 

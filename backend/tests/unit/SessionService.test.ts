@@ -6,7 +6,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
 import { createSessionStore } from '../../src/store/sessionStore.js';
-import { createSessionService } from '../../src/services/SessionService.js';
+import { createSessionService, MAX_PARTICIPANTS } from '../../src/services/SessionService.js';
+import { DomainError } from '../../src/services/DomainError.js';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST123';
@@ -152,12 +153,16 @@ describe('SessionService', () => {
   });
 
   describe('joinSession', () => {
-    it('should reject missing sessions', async () => {
+    it('should reject missing sessions with a SESSION_NOT_FOUND domain error', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-      await expect(
-        SessionService.joinSession(testSessionCode, 'participant-1', 'Bob')
-      ).rejects.toThrow('SESSION_NOT_FOUND');
+      const error = await SessionService.joinSession(testSessionCode, 'participant-1', 'Bob').then(
+        () => null,
+        (e) => e
+      );
+
+      expect(error).toBeInstanceOf(DomainError);
+      expect(error.code).toBe('SESSION_NOT_FOUND');
 
       expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
         sessionCode: testSessionCode,
@@ -166,27 +171,72 @@ describe('SessionService', () => {
       });
     });
 
-    it('should warn when rejecting joins for full sessions', async () => {
+    it('should reject a fifth participant with a SESSION_FULL domain error', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      await redis.hset(`session:${testSessionCode}`, {
-        hostId: 'host-1',
-        hostName: 'Alice',
-        state: 'waiting',
-        participantCount: '4',
-        createdAt: '1700000000',
-        lastActivityAt: '1700000000',
-      });
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-1', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-2', 'Bob');
+      await SessionService.joinSession(session.sessionCode, 'socket-3', 'Cara');
+      await SessionService.joinSession(session.sessionCode, 'socket-4', 'Dan');
 
-      await expect(
-        SessionService.joinSession(testSessionCode, 'participant-5', 'Eve')
-      ).rejects.toThrow('SESSION_FULL');
+      const error = await SessionService.joinSession(session.sessionCode, 'participant-5', 'Eve').then(
+        () => null,
+        (e) => e
+      );
 
+      expect(error).toBeInstanceOf(DomainError);
+      expect(error.code).toBe('SESSION_FULL');
       expect(warnSpy).toHaveBeenCalledWith('Rejected session join', {
-        sessionCode: testSessionCode,
+        sessionCode: session.sessionCode,
         participantId: 'participant-5',
         reason: 'session_full',
         participantCount: 4,
       });
+    });
+
+    it('should keep the host slot reserved: cap non-hosts at 3 but still admit the host', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-1', 'Bob');
+      await SessionService.joinSession(session.sessionCode, 'socket-2', 'Cara');
+      const third = await SessionService.joinSession(session.sessionCode, 'socket-3', 'Dan');
+      expect(third.participantCount).toBe(4); // 3 joined + reserved host slot
+
+      await expect(
+        SessionService.joinSession(session.sessionCode, 'socket-4', 'Eve')
+      ).rejects.toMatchObject({ code: 'SESSION_FULL' });
+
+      const host = await SessionService.joinSession(session.sessionCode, 'host-socket', 'Alice');
+      expect(host).toMatchObject({ isHost: true, participantCount: 4 });
+    });
+
+    it('should give the host slot to the joiner matching the session hostName', async () => {
+      const session = await SessionService.createSession('Alice');
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-1', 'Alice');
+
+      expect(result.isHost).toBe(true);
+      expect(result.participantCount).toBe(1);
+      expect(result.participants).toEqual([
+        expect.objectContaining({ participantId: 'socket-1', displayName: 'Alice', isHost: true }),
+      ]);
+    });
+
+    it('should treat a same-name join as a rejoin that replaces the old participant', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-old', 'Alice');
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-new', 'Alice');
+
+      expect(result).toMatchObject({
+        participantId: 'socket-new',
+        participantCount: 1,
+        isHost: true,
+        isRejoin: true,
+      });
+      expect(result.participants).toEqual([
+        expect.objectContaining({ participantId: 'socket-new', displayName: 'Alice', isHost: true }),
+      ]);
+      await expect(store.getParticipant('socket-old')).resolves.toBeNull();
     });
 
     it('should log successful joins with the updated participant count', async () => {
@@ -195,17 +245,40 @@ describe('SessionService', () => {
 
       const result = await SessionService.joinSession(session.sessionCode, 'participant-1', 'Bob');
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         participantId: 'participant-1',
         sessionCode: session.sessionCode,
         participantName: 'Bob',
         participantCount: 2,
+        isHost: false,
+        isRejoin: false,
       });
       expect(logSpy).toHaveBeenCalledWith('Participant joined session', {
         sessionCode: session.sessionCode,
         participantId: 'participant-1',
         participantCount: 2,
       });
+    });
+  });
+
+  describe('joinSession race', () => {
+    it('should roll back and reject when a concurrent join overfills the session', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const racyStore = {
+        ...store,
+        // simulate a concurrent join landing between the cap check and the add
+        addParticipant: async (code: string, p: Parameters<typeof store.addParticipant>[1]) => {
+          await store.addParticipant(code, p);
+          return MAX_PARTICIPANTS + 1;
+        },
+      };
+      const racyService = createSessionService({ store: racyStore, searchNearbyRestaurants });
+      const session = await racyService.createSession('Alice');
+
+      await expect(
+        racyService.joinSession(session.sessionCode, 'late-socket', 'Alice')
+      ).rejects.toMatchObject({ code: 'SESSION_FULL' });
+      await expect(store.getParticipant('late-socket')).resolves.toBeNull();
     });
   });
 
@@ -312,13 +385,17 @@ describe('SessionService', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       searchNearbyRestaurants.mockResolvedValue([]);
 
-      await expect(
-        SessionService.createSession(
-          'Alice',
-          { latitude: 37.7749, longitude: -122.4194 },
-          5
-        )
-      ).rejects.toThrow('NO_RESTAURANTS_FOUND');
+      const error = await SessionService.createSession(
+        'Alice',
+        { latitude: 37.7749, longitude: -122.4194 },
+        5
+      ).then(
+        () => null,
+        (e) => e
+      );
+
+      expect(error).toBeInstanceOf(DomainError);
+      expect(error.code).toBe('NO_RESTAURANTS_FOUND');
 
       expect(warnSpy).toHaveBeenCalledWith('No restaurants found during session creation', {
         sessionCode: expect.any(String),

@@ -8,9 +8,13 @@
 import * as store from '../store/sessionStore.js';
 import { getExpiresAtISO, type createSessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
+import { DomainError } from './DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 type SessionStore = ReturnType<typeof createSessionStore>;
+
+/** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
+export const MAX_PARTICIPANTS = 4;
 
 interface SessionServiceDeps {
   store: SessionStore;
@@ -99,7 +103,10 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
           sessionCode,
           searchRadiusMiles,
         });
-        throw new Error('NO_RESTAURANTS_FOUND');
+        throw new DomainError(
+          'NO_RESTAURANTS_FOUND',
+          'No restaurants found in the specified area. Try expanding your search radius.'
+        );
       }
     }
 
@@ -192,8 +199,13 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
   }
 
   /**
-   * Join an existing session
-   * Enforces 1-4 participant limit
+   * Join an existing session - the single join path for both REST and WebSocket.
+   * Handles rejoin (same displayName, new participantId), host-slot assignment
+   * (the joiner matching the session's hostName claims the reserved host slot),
+   * and the participant cap.
+   *
+   * The reported participantCount is the participant set size plus one reserved
+   * slot while the host hasn't joined yet.
    */
   async function joinSession(
     sessionCode: string,
@@ -204,6 +216,9 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     sessionCode: string;
     participantName: string;
     participantCount: number;
+    isHost: boolean;
+    isRejoin: boolean;
+    participants: { participantId: string; displayName: string; isHost: boolean }[];
   }> {
     // Check session exists
     const session = await store.readSession(sessionCode);
@@ -213,38 +228,89 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
         participantId,
         reason: 'session_not_found',
       });
-      throw new Error('SESSION_NOT_FOUND');
+      throw new DomainError('SESSION_NOT_FOUND', `Session ${sessionCode} not found or has expired`);
     }
 
-    // Check participant limit (FR-004, FR-005)
-    // Use session.participantCount which includes the host who may not have joined yet
-    if (session.participantCount >= 4) {
-      console.warn('Rejected session join', {
-        sessionCode,
-        participantId,
-        reason: 'session_full',
-        participantCount: session.participantCount,
-      });
-      throw new Error('SESSION_FULL');
+    const existing = await store.listParticipants(sessionCode);
+    const hostPresent = existing.some((p) => p.isHost);
+    const prior = existing.find((p) => p.displayName === displayName);
+
+    let isHost: boolean;
+    const isRejoin = Boolean(prior);
+
+    if (prior) {
+      // Rejoin: replace the old entry, preserving host status
+      isHost = prior.isHost;
+      await store.removeParticipant(sessionCode, prior.participantId);
+    } else {
+      isHost = !hostPresent && displayName === session.hostName;
+    }
+
+    // The host slot stays reserved in the count until the host claims it
+    const reservedHostSlot = hostPresent || isHost ? 0 : 1;
+
+    if (!prior) {
+      // Check participant limit (FR-004, FR-005)
+      if (existing.length + reservedHostSlot >= MAX_PARTICIPANTS) {
+        console.warn('Rejected session join', {
+          sessionCode,
+          participantId,
+          reason: 'session_full',
+          participantCount: existing.length + reservedHostSlot,
+        });
+        throw new DomainError(
+          'SESSION_FULL',
+          `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
+        );
+      }
     }
 
     // Add participant (touches TTL and lastActivityAt)
-    await store.addParticipant(sessionCode, { participantId, displayName });
+    const setSize = await store.addParticipant(sessionCode, { participantId, displayName, isHost });
 
-    // Increment participant count
-    const newCount = await store.incrementParticipantCount(sessionCode);
+    // Re-check after adding to close the check-then-add race. Rejoins are
+    // exempt: they're net-zero in isolation, and a concurrent join landing
+    // inside a rejoin's remove/add window may transiently exceed the cap -
+    // an accepted trade-off over kicking out a legitimately-rejoining
+    // participant.
+    if (!prior && setSize + reservedHostSlot > MAX_PARTICIPANTS) {
+      await store.removeParticipant(sessionCode, participantId);
+      console.warn('Rejected session join', {
+        sessionCode,
+        participantId,
+        reason: 'session_full_after_add',
+        participantCount: setSize + reservedHostSlot,
+      });
+      throw new DomainError(
+        'SESSION_FULL',
+        `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
+      );
+    }
+
+    // Sole participantCount writer: set size plus the reserved host slot
+    const participantCount = setSize + reservedHostSlot;
+    await store.setParticipantCount(sessionCode, participantCount);
+
+    const participants = await store.listParticipants(sessionCode);
 
     console.log('Participant joined session', {
       sessionCode,
       participantId,
-      participantCount: newCount,
+      participantCount,
     });
 
     return {
       participantId,
       sessionCode,
       participantName: displayName,
-      participantCount: newCount,
+      participantCount,
+      isHost,
+      isRejoin,
+      participants: participants.map((p) => ({
+        participantId: p.participantId,
+        displayName: p.displayName,
+        isHost: p.isHost,
+      })),
     };
   }
 

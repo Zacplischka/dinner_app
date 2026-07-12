@@ -5,6 +5,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
 import * as SessionService from '../services/SessionService.js';
+import { MAX_PARTICIPANTS } from '../services/SessionService.js';
+import { DomainError } from '../services/DomainError.js';
 
 const router = Router();
 
@@ -78,7 +80,7 @@ router.post('/', asyncHandler(async (req, res) => {
 
     return res.status(201).json(session);
   } catch (error) {
-    if (error instanceof Error && error.message === 'NO_RESTAURANTS_FOUND') {
+    if (error instanceof DomainError && error.code === 'NO_RESTAURANTS_FOUND') {
       console.warn('Rejected REST session create', {
         reason: 'no_restaurants_found',
         ...createContext,
@@ -214,9 +216,16 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
       participantCount: result.participantCount,
     });
 
-    return res.status(200).json(result);
+    // Explicit shape: the service result carries WS-only fields the REST
+    // contract doesn't include
+    return res.status(200).json({
+      participantId: result.participantId,
+      sessionCode: result.sessionCode,
+      participantName: result.participantName,
+      participantCount: result.participantCount,
+    });
   } catch (error) {
-    if (error instanceof Error && error.message === 'SESSION_NOT_FOUND') {
+    if (error instanceof DomainError && error.code === 'SESSION_NOT_FOUND') {
       console.warn('Rejected REST session join', {
         sessionCode: req.params.sessionCode,
         reason: 'session_not_found',
@@ -229,17 +238,17 @@ router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
       });
     }
 
-    if (error instanceof Error && error.message === 'SESSION_FULL') {
+    if (error instanceof DomainError && error.code === 'SESSION_FULL') {
       console.warn('Rejected REST session join', {
         sessionCode: req.params.sessionCode,
         reason: 'session_full',
-        participantLimit: 4,
+        participantLimit: MAX_PARTICIPANTS,
       });
 
       return res.status(403).json({
         error: 'Session is full',
         code: 'SESSION_FULL',
-        message: 'This session has reached the maximum of 4 participants',
+        message: `This session has reached the maximum of ${MAX_PARTICIPANTS} participants`,
       });
     }
 
