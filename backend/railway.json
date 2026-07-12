@@ -2,7 +2,7 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd .. && npm ci && npm run build --workspace=shared && npm run build --workspace=backend && cp backend/src/redis/*.lua backend/dist/redis/"
+    "buildCommand": "cd .. && npm ci && npm run build --workspace=shared && npm run build --workspace=backend"
   },
   "deploy": {
     "startCommand": "node dist/server.js",

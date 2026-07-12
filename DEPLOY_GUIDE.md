@@ -27,7 +27,6 @@ Complete guide for deploying the Dinder application to Railway, including all cr
 Ensure these files exist in your repository:
 - `frontend/.env.production` - Production backend URLs
 - `backend/railway.json` - Backend build configuration
-- `backend/src/redis/*.lua` - Redis Lua scripts
 
 ---
 
@@ -129,7 +128,7 @@ Backend build/deploy config lives in `backend/railway.json` (the backend service
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd .. && npm ci && npm run build --workspace=shared && npm run build --workspace=backend && cp backend/src/redis/*.lua backend/dist/redis/"
+    "buildCommand": "cd .. && npm ci && npm run build --workspace=shared && npm run build --workspace=backend"
   },
   "deploy": {
     "startCommand": "node dist/server.js",
@@ -139,7 +138,7 @@ Backend build/deploy config lives in `backend/railway.json` (the backend service
 }
 ```
 
-**⚠️ CRITICAL**: The `cp backend/src/redis/*.lua backend/dist/redis/` command is **MANDATORY** - it copies Lua scripts needed for Redis TTL operations. Without this, the backend will crash on startup.
+Note: the Redis TTL-refresh Lua script is inlined in `backend/src/store/sessionStore.ts`; no separate `.lua` files are copied during the build.
 
 ### 4. Deploy Backend
 
@@ -338,22 +337,7 @@ curl -I https://frontend-production-bdfc.up.railway.app
    railway up
    ```
 
-### Issue 2: Backend Crashes with "refresh-ttl.lua not found"
-
-**Symptoms**:
-- Backend logs: `Error: Script not found`
-- Backend exits immediately after start
-
-**Cause**: Lua scripts not copied to `dist/` folder during build
-
-**Fix**:
-1. Verify the `backend/railway.json` build command includes:
-   ```bash
-   cp backend/src/redis/*.lua backend/dist/redis/
-   ```
-2. Redeploy backend
-
-### Issue 3: "No start command was found"
+### Issue 2: "No start command was found"
 
 **Symptoms**:
 - Railway build logs: "No start command was found"
@@ -368,7 +352,7 @@ railway variables --set RAILPACK_SPA_OUTPUT_DIR=frontend/dist
 railway up
 ```
 
-### Issue 4: CORS Errors
+### Issue 3: CORS Errors
 
 **Symptoms**:
 - Browser console: `CORS policy: No 'Access-Control-Allow-Origin' header`
@@ -385,7 +369,7 @@ railway up
    ```
 3. Restart backend (Railway auto-restarts on env var change)
 
-### Issue 5: WebSocket Connection Fails
+### Issue 4: WebSocket Connection Fails
 
 **Symptoms**:
 - Browser console: `WebSocket connection failed`
@@ -398,7 +382,7 @@ railway up
 2. Verify WebSocket connects to production backend, not localhost
 3. If wrong, rebuild frontend with correct `VITE_BACKEND_URL`
 
-### Issue 6: Redis Connection Timeout
+### Issue 5: Redis Connection Timeout
 
 **Symptoms**:
 - Backend logs: `Error: Redis connection timeout`
