@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { getSession } from '../services/apiClient';
-import { leaveSession } from '../services/socketService';
+import { leaveSession } from '../services/socketBindings';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
 

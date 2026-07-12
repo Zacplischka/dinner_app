@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../src/services/socketService', () => ({
+vi.mock('../../src/services/socketBindings', () => ({
   joinSession: vi.fn(async () => ({ success: true, participantId: 'participant-1' })),
 }));
 
@@ -20,7 +20,7 @@ import { toast as singletonToast, useToastStore } from '../../src/hooks/useToast
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
-import { joinSession } from '../../src/services/socketService';
+import { joinSession } from '../../src/services/socketBindings';
 
 const authActions = {
   initialize: useAuthStore.getState().initialize,

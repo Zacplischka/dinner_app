@@ -2,7 +2,7 @@
 // Based on: specs/001-dinner-decider-enables/tasks.md T056
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { restartSession, leaveSession } from '../services/socketService';
+import { restartSession, leaveSession } from '../services/socketBindings';
 import { useSessionStore } from '../stores/sessionStore';
 import { useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';

@@ -1,9 +1,15 @@
-// SessionStore unit tests - exercised through the store's interface against real Redis.
-// Replaces the per-layer Session/SelectionService/OverlapService suites.
+// SessionStore unit tests - exercised through the store's interface against an
+// injected in-memory Redis (ioredis-mock). No real Redis required; each test
+// gets a fresh client, so no cross-test cleanup is needed.
 
-import { describe, it, expect, afterEach } from 'vitest';
-import * as store from '../../src/store/sessionStore.js';
-import { redis } from '../../src/redis/client.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import RedisMock from 'ioredis-mock';
+import type { Redis } from 'ioredis';
+import {
+  createSessionStore,
+  sessionCodeFromExpiredKey,
+  SESSION_TTL_SECONDS,
+} from '../../src/store/sessionStore.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 const sessionCode = 'TEST12';
@@ -14,6 +20,16 @@ const restaurants: Restaurant[] = [
   { placeId: 'place3', name: 'Restaurant 3', rating: 3.9, priceLevel: 1 } as Restaurant,
 ];
 
+let redis: Redis;
+let store: ReturnType<typeof createSessionStore>;
+
+beforeEach(async () => {
+  // ioredis-mock instances share one in-process data store; flush per test.
+  redis = new RedisMock();
+  store = createSessionStore(redis);
+  await redis.flushall();
+});
+
 async function createTestSession(withRestaurants = true) {
   return await store.createSession(sessionCode, {
     hostId: 'host-1',
@@ -21,10 +37,6 @@ async function createTestSession(withRestaurants = true) {
     restaurants: withRestaurants ? restaurants : undefined,
   });
 }
-
-afterEach(async () => {
-  await store.deleteSession(sessionCode);
-});
 
 describe('SessionStore', () => {
   describe('createSession / readSession', () => {
@@ -67,7 +79,7 @@ describe('SessionStore', () => {
       ]) {
         const ttl = await redis.ttl(key);
         expect(ttl).toBeGreaterThan(0);
-        expect(ttl).toBeLessThanOrEqual(store.SESSION_TTL_SECONDS);
+        expect(ttl).toBeLessThanOrEqual(SESSION_TTL_SECONDS);
       }
     });
   });
@@ -254,12 +266,12 @@ describe('SessionStore', () => {
 
   describe('sessionCodeFromExpiredKey', () => {
     it('extracts the code from a root session key', () => {
-      expect(store.sessionCodeFromExpiredKey('session:ABC123')).toBe('ABC123');
+      expect(sessionCodeFromExpiredKey('session:ABC123')).toBe('ABC123');
     });
 
     it('ignores sub-keys and unrelated keys', () => {
-      expect(store.sessionCodeFromExpiredKey('session:ABC123:results')).toBeNull();
-      expect(store.sessionCodeFromExpiredKey('participant:xyz')).toBeNull();
+      expect(sessionCodeFromExpiredKey('session:ABC123:results')).toBeNull();
+      expect(sessionCodeFromExpiredKey('participant:xyz')).toBeNull();
     });
   });
 });

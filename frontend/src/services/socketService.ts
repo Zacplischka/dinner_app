@@ -1,5 +1,7 @@
-// Socket.IO client service
-// Based on: specs/001-dinner-decider-enables/tasks.md T048
+// Socket.IO client transport - connection lifecycle and ack-based requests.
+// Knows nothing about stores or toasts: UI wiring is injected via SocketConfig
+// (see socketBindings.ts, which supplies the concretions). Pages import from
+// socketBindings, not from here.
 
 import { io, Socket } from 'socket.io-client';
 import type {
@@ -12,41 +14,37 @@ import type {
   SessionRestartPayload,
   SessionLeavePayload,
   SessionLeaveResponse,
-  ParticipantJoinedEvent,
-  ParticipantLeftEvent,
-  ParticipantDisconnectedEvent,
-  ParticipantSubmittedEvent,
-  SessionResultsEvent,
-  SessionRestartedEvent,
-  SessionExpiredEvent,
-  ErrorEvent,
 } from '@dinder/shared/types';
-import { useSessionStore } from '../stores/sessionStore';
-import { useAuthStore } from '../stores/authStore';
-import { toast } from '../hooks/useToast';
 
 /* v8 ignore next */
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
+// Reserved socket.io lifecycle events, alongside the app's server events
+type SocketEventHandlers = Partial<ServerToClientEvents> & {
+  connect?: () => void;
+  disconnect?: (reason: string) => void;
+  connect_error?: (error: Error) => void;
+};
+
+export interface SocketConfig {
+  getAuthToken?: () => string | undefined;
+  onEvent?: SocketEventHandlers;
+}
+
 // Typed socket instance
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
-// Track if we had a previous connection (for showing "Reconnected" toast)
-let hadPreviousConnection = false;
-
 /**
- * Initialize Socket.IO client connection
- * Includes auth token if user is authenticated
+ * Initialize Socket.IO client connection.
+ * Includes an auth token and event handlers when the config provides them.
  */
-export function initializeSocket(): void {
+export function initializeSocket(config: SocketConfig = {}): void {
   if (socket?.connected) {
     console.log('Socket already connected');
     return;
   }
 
-  // Get auth token if available
-  const session = useAuthStore.getState().session;
-  const authToken = session?.access_token;
+  const authToken = config.getAuthToken?.();
 
   socket = io(BACKEND_URL, {
     reconnection: true,
@@ -57,156 +55,11 @@ export function initializeSocket(): void {
     auth: authToken ? { token: authToken } : undefined,
   });
 
-  // Connection status handlers
-  socket.on('connect', () => {
-    const socketId = socket?.id;
-    console.log('Socket connected:', socketId);
-    useSessionStore.getState().setConnectionStatus(true);
-    if (socketId) {
-      useSessionStore.getState().setCurrentUserId(socketId);
-    }
-
-    // Show reconnected toast (only if we had a previous connection)
-    if (hadPreviousConnection) {
-      toast.success('Reconnected to server');
-    }
-    hadPreviousConnection = true;
-  });
-
-  socket.on('disconnect', (reason) => {
-    console.log('Socket disconnected:', reason);
-    useSessionStore.getState().setConnectionStatus(false);
-
-    // Only show toast for unexpected disconnects, not intentional ones
-    if (reason !== 'io client disconnect') {
-      toast.warning('Connection lost. Reconnecting...', { duration: 4000 });
-    }
-  });
-
-  socket.on('connect_error', (error) => {
-    console.error('Socket connection error:', error);
-    useSessionStore.getState().setConnectionStatus(false);
-  });
-
-  // Event handlers that update Zustand store
-  setupEventHandlers(socket);
-}
-
-/**
- * Setup all Socket.IO event handlers
- */
-function setupEventHandlers(activeSocket: Socket<ServerToClientEvents, ClientToServerEvents>): void {
-  // participant:joined - Another participant joined the session
-  // Handles both new joins AND rejoins (same displayName with new socket.id)
-  activeSocket.on('participant:joined', (event: ParticipantJoinedEvent) => {
-    console.log('Participant joined:', event);
-    const store = useSessionStore.getState();
-
-    // Check if this is a rejoin (same displayName, new participantId)
-    const existingIndex = store.participants.findIndex(
-      (p) => p.displayName === event.displayName
-    );
-
-    if (existingIndex >= 0) {
-      // Rejoin: update existing participant's socket ID
-      const updatedParticipants = [...store.participants];
-      updatedParticipants[existingIndex] = {
-        ...updatedParticipants[existingIndex],
-        participantId: event.participantId,
-      };
-      store.updateParticipants(updatedParticipants);
-      console.log('Updated existing participant socket ID:', event.displayName);
-
-      // Show reconnected toast for rejoin
-      toast.info(`${event.displayName} reconnected`);
-    } else {
-      // New participant: add to list
-      store.addParticipant({
-        participantId: event.participantId,
-        displayName: event.displayName,
-        sessionCode: '',
-        joinedAt: Date.now(),
-        hasSubmitted: false,
-        isHost: false,
-      });
-
-      // Show joined toast for new participant
-      toast.info(`${event.displayName} joined the session`);
-    }
-  });
-
-  // participant:left - A participant INTENTIONALLY left the session (session:leave)
-  // This removes the participant from the session permanently.
-  activeSocket.on('participant:left', (event: ParticipantLeftEvent) => {
-    console.log('Participant left:', event);
-    const store = useSessionStore.getState();
-
-    // Find participant name before removing
-    const participant = store.participants.find(p => p.participantId === event.participantId);
-    const displayName = participant?.displayName || 'Someone';
-
-    store.removeParticipant(event.participantId);
-
-    // Show left toast
-    toast.info(`${displayName} left the session`);
-  });
-
-  // participant:disconnected - A participant lost connection (network issue, browser close, etc.)
-  // This is INFORMATIONAL only - the participant is NOT removed from the session (FR-025).
-  // They can reconnect and will be re-registered with a new socket.id.
-  activeSocket.on('participant:disconnected', (event: ParticipantDisconnectedEvent) => {
-    console.log('Participant disconnected:', event);
-    const store = useSessionStore.getState();
-
-    // Find participant to get their name
-    const participant = store.participants.find(p => p.participantId === event.participantId);
-    const displayName = participant?.displayName || event.displayName;
-
-    // Do NOT remove the participant - they may reconnect (FR-025)
-    // Just show an informational toast
-    toast.warning(`${displayName} lost connection`, { duration: 3000 });
-  });
-
-  // participant:submitted - A participant submitted their selections
-  activeSocket.on('participant:submitted', (event: ParticipantSubmittedEvent) => {
-    console.log('Participant submitted:', event);
-    // Update participant's hasSubmitted status
-    const store = useSessionStore.getState();
-    const updatedParticipants = store.participants.map((p) =>
-      p.participantId === event.participantId ? { ...p, hasSubmitted: true } : p
-    );
-    store.updateParticipants(updatedParticipants);
-  });
-
-  // session:results - All participants submitted, results revealed
-  activeSocket.on('session:results', (event: SessionResultsEvent) => {
-    console.log('Session results:', event);
-    useSessionStore.getState().setResults({
-      sessionCode: event.sessionCode,
-      overlappingOptions: event.overlappingOptions,
-      allSelections: event.allSelections,
-      restaurantNames: event.restaurantNames,
-      hasOverlap: event.hasOverlap,
-    });
-  });
-
-  // session:restarted - Session was restarted by a participant
-  activeSocket.on('session:restarted', (event: SessionRestartedEvent) => {
-    console.log('Session restarted:', event);
-    useSessionStore.getState().resetSelections();
-  });
-
-  // session:expired - Session expired due to inactivity
-  activeSocket.on('session:expired', (event: SessionExpiredEvent) => {
-    console.log('Session expired:', event);
-    useSessionStore.getState().setSessionStatus('expired');
-  });
-
-  // error - Server-side error
-  activeSocket.on('error', (event: ErrorEvent) => {
-    console.error('Socket error:', event);
-    toast.error(event.message || 'An error occurred');
-  });
+  for (const [event, handler] of Object.entries(config.onEvent ?? {})) {
+    // Handler signatures are enforced by SocketEventHandlers; socket.io's
+    // overloaded `on` can't infer them from Object.entries.
+    socket.on(event as never, handler as never);
+  }
 }
 
 /**
@@ -229,21 +82,6 @@ export function joinSession(
 
     socket.emit('session:join', payload, (ack: SessionJoinResponse) => {
       if (ack.success && ack.participants) {
-        const store = useSessionStore.getState();
-
-        // Check if joining a different session - reset selections from previous session
-        if (store.sessionCode !== sessionCode) {
-          store.resetSelections();
-        }
-
-        // Update store with session data
-        store.setSessionCode(sessionCode);
-        store.updateParticipants(ack.participants.map(p => ({
-          ...p,
-          sessionCode,
-          joinedAt: Date.now(),
-          hasSubmitted: false,
-        })));
         resolve(ack);
       } else {
         reject(new Error(ack.error || 'Failed to join session'));
@@ -320,8 +158,6 @@ export function leaveSession(sessionCode: string): Promise<SessionLeaveResponse>
 
     socket.emit('session:leave', payload, (ack: SessionLeaveResponse) => {
       if (ack.success) {
-        // Clear local session state
-        useSessionStore.getState().resetSession();
         resolve(ack);
       } else {
         reject(new Error(ack.error || 'Failed to leave session'));
@@ -337,7 +173,6 @@ export function disconnectSocket(): void {
   if (socket) {
     socket.disconnect();
     socket = null;
-    useSessionStore.getState().setConnectionStatus(false);
   }
 }
 
@@ -359,9 +194,11 @@ export function isSocketConnected(): boolean {
  * Get or create socket connection
  * Returns the socket instance for direct event handling
  */
-export function connectSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+export function connectSocket(
+  config?: SocketConfig
+): Socket<ServerToClientEvents, ClientToServerEvents> {
   if (!socket?.connected) {
-    initializeSocket();
+    initializeSocket(config);
   }
   return socket!;
 }
@@ -370,14 +207,14 @@ export function connectSocket(): Socket<ServerToClientEvents, ClientToServerEven
  * Wait for socket to be connected
  * Returns a promise that resolves when connected or rejects on timeout
  */
-export function waitForConnection(timeoutMs = 5000): Promise<void> {
+export function waitForConnection(timeoutMs = 5000, config?: SocketConfig): Promise<void> {
   return new Promise((resolve, reject) => {
     if (socket?.connected) {
       resolve();
       return;
     }
 
-    initializeSocket();
+    initializeSocket(config);
 
     const timeout = setTimeout(() => {
       reject(new Error('Socket connection timeout'));

@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
-import { waitForConnection, joinSession } from '../services/socketService';
+import { waitForConnection, joinSession } from '../services/socketBindings';
 
 export default function JoinSessionPage() {
   const navigate = useNavigate();
