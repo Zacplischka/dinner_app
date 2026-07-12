@@ -46,6 +46,14 @@ _Avoid_: models, repository, DAO
 Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again.
 _Avoid_: reset, replay
 
+**Leave**:
+A Participant's deliberate exit from a Session. They are removed and no longer count as current — leaving can therefore complete the Session for those remaining.
+_Avoid_: disconnect, drop
+
+**Disconnect**:
+A Participant's connection dropping without them leaving. They remain a current Participant — the Match still waits on their Submission.
+_Avoid_: leave, timeout
+
 ### Social
 
 **Profile**:

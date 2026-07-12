@@ -29,7 +29,7 @@
 ### Data Storage
 - Redis with TTL for automatic session expiration (30 minutes)
 - Set-based selection storage for efficient intersection calculation
-- No persistent database - sessions are ephemeral by design
+- Session state is ephemeral by design (Redis only, no history); the social graph (Profiles, Friendships, Session Invites) persists in Supabase — see `docs/adr/0001`
 
 ### Frontend Architecture
 - Mobile-first design with Tailwind CSS
