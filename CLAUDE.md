@@ -50,6 +50,22 @@ cd frontend && npx vitest run                # unit tests; npm run test:e2e for 
 npm run lint                                 # root; lints backend + frontend src
 ```
 
+## Deployments
+
+- **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns — see `RAILWAY_SETUP.md` / `DEPLOY_GUIDE.md`):
+  - Backend: https://backend-production-4ce9.up.railway.app (health: `/health`; config in `backend/railway.json`)
+  - Frontend: https://frontend-production-bdfc.up.railway.app (static Vite site, needs `RAILPACK_SPA_OUTPUT_DIR=frontend/dist`)
+  - Redis: service `redis-bbxI`, reached via public TCP proxy `trolley.proxy.rlwy.net` (internal URL fails in monorepo builds)
+- **Supabase**: project `hcjuqvicwuszwqkreklc` (https://hcjuqvicwuszwqkreklc.supabase.co) — social graph persistence + auth (JWT).
+- **Google Places API (New)**: `places.googleapis.com/v1` (`places:searchNearby`, `places:searchText`, photo media) — called from `backend/src/services/RestaurantSearchService.ts`; key in `backend/.env`.
+- CI (`.github/workflows/ci-cd.yml`) verifies production deploys by polling the backend health endpoint after Railway deploys.
+
+### How Claude can access these
+
+- **Supabase**: Supabase MCP tools (`mcp__plugin_supabase_supabase__*`) — list_tables, execute_sql, get_logs, get_advisors, apply_migration, etc. against project `hcjuqvicwuszwqkreklc`.
+- **Railway**: `railway` CLI (installed via Homebrew). Requires `railway login` (interactive — ask the user to run it), then `railway link`, `railway logs`, `railway variables`, `railway up`.
+- **Google Places**: `gcloud` CLI is installed and authenticated, but the active project is `mypickle-486702` — verify/switch project before touching Places quotas or keys (`gcloud config set project <id>`). Runtime access just uses the API key in `backend/.env`.
+
 ## Gotchas
 
 - Build `@dinder/shared` first (`npm run build --workspace=shared`) — backend/frontend typecheck resolves the `file:` dep against `shared/dist/`.
