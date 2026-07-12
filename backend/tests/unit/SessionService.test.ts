@@ -469,4 +469,97 @@ describe('SessionService', () => {
       ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
     });
   });
+
+  describe('leaveSession', () => {
+    async function createTwoParticipantSession(): Promise<string> {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      return sessionCode;
+    }
+
+    it('rejects leaves from missing sessions', async () => {
+      await expect(
+        SessionService.leaveSession('NOPE99', 'p-alice')
+      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
+    });
+
+    it('rejects leaves from non-participants', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      await expect(
+        SessionService.leaveSession(sessionCode, 'p-stranger')
+      ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
+    });
+
+    it('re-reserves the host slot when the host leaves', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      const result = await SessionService.leaveSession(sessionCode, 'p-alice');
+
+      // 1 remaining + the host slot reserved again, matching joinSession's rule
+      expect(result).toMatchObject({ displayName: 'Alice', participantCount: 2 });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.participantCount).toBe(2);
+    });
+
+    it('persists the reduced participantCount', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      const result = await SessionService.leaveSession(sessionCode, 'p-bob');
+
+      expect(result).toMatchObject({ displayName: 'Bob', participantCount: 1 });
+      expect(result.results).toBeUndefined();
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.participantCount).toBe(1);
+    });
+
+    it('completes the session when everyone remaining has submitted', async () => {
+      const sessionCode = await createTwoParticipantSession();
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+
+      const { results } = await SessionService.leaveSession(sessionCode, 'p-bob');
+
+      expect(results).toMatchObject({ hasOverlap: false, overlappingOptions: [] });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).toBe('complete');
+    });
+
+    it('does not recompute results when the session is already complete', async () => {
+      const sessionCode = await createTwoParticipantSession();
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      const { results } = await SessionService.leaveSession(sessionCode, 'p-bob');
+
+      expect(results).toBeUndefined();
+    });
+  });
+
+  describe('restartSession', () => {
+    it('rejects restarts from missing sessions', async () => {
+      await expect(
+        SessionService.restartSession('NOPE99', 'p-alice')
+      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
+    });
+
+    it('rejects restarts from non-participants', async () => {
+      const { sessionCode } = await SessionService.createSession('Alice');
+
+      await expect(
+        SessionService.restartSession(sessionCode, 'p-stranger')
+      ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
+    });
+
+    it('wipes submissions and puts the session back in selecting', async () => {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+
+      await SessionService.restartSession(sessionCode, 'p-alice');
+
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).toBe('selecting');
+    });
+  });
 });

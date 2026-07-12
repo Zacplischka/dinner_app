@@ -1,10 +1,12 @@
-// WebSocket handler for session:restart event
+// WebSocket handler for session:restart event - pure transport over
+// SessionService.restartSession (payload validation, ack/broadcasts).
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import type { SessionStore } from '../store/sessionStore.js';
+import type { SessionService } from '../services/SessionService.js';
+import { DomainError } from '../services/DomainError.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -22,7 +24,7 @@ export async function handleSessionRestart(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionRestartPayload,
   callback: (response: SessionRestartResponse) => void,
-  store: SessionStore
+  service: SessionService
 ): Promise<void> {
   try {
     // Validate payload
@@ -42,36 +44,23 @@ export async function handleSessionRestart(
 
     const { sessionCode } = validation.data;
 
-    // Check session exists
-    const session = await store.readSession(sessionCode);
-    if (!session) {
+    try {
+      await service.restartSession(sessionCode, socket.id);
+    } catch (error) {
+      if (!(error instanceof DomainError)) {
+        throw error;
+      }
       logger.warn({
         socketId: socket.id,
         sessionCode,
-        reason: 'session_not_found',
+        reason: error.code,
       }, 'Rejected session:restart');
       return callback({
         success: false,
-        error: 'Session not found or has expired',
+        // DomainError messages are the user-facing copy
+        error: error.message,
       });
     }
-
-    // Check participant is in session
-    const isInSession = await store.isParticipant(sessionCode, socket.id);
-    if (!isInSession) {
-      logger.warn({
-        socketId: socket.id,
-        sessionCode,
-        reason: 'participant_not_in_session',
-      }, 'Rejected session:restart');
-      return callback({
-        success: false,
-        error: 'You are not a participant in this session',
-      });
-    }
-
-    // Restart: wipe Selections, Submissions, and the Match; back to 'selecting' (FR-012)
-    await store.resetForRestart(sessionCode);
 
     // Send acknowledgment
     callback({ success: true });
@@ -81,8 +70,6 @@ export async function handleSessionRestart(
       sessionCode,
       message: 'Session restarted. Make new selections.',
     });
-
-    logger.info({ socketId: socket.id, sessionCode }, 'Session restarted');
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in session:restart handler');
     callback({

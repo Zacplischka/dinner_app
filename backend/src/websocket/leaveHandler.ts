@@ -1,10 +1,12 @@
-// WebSocket handler for session:leave event
-// Handles intentional session departure (different from disconnect which preserves participant)
+// WebSocket handler for session:leave event - pure transport over
+// SessionService.leaveSession (payload validation, ack/broadcasts).
+// Leaving is deliberate (unlike disconnect, which preserves the participant).
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import type { SessionStore } from '../store/sessionStore.js';
+import type { SessionService } from '../services/SessionService.js';
+import { DomainError } from '../services/DomainError.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -19,10 +21,10 @@ const sessionLeavePayloadSchema = z.object({
 
 export async function handleSessionLeave(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
-  _io: Server<ClientToServerEvents, ServerToClientEvents>,
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionLeavePayload,
   callback: (response: SessionLeaveResponse) => void,
-  store: SessionStore
+  service: SessionService
 ): Promise<void> {
   try {
     // Validate payload
@@ -42,38 +44,29 @@ export async function handleSessionLeave(
 
     const { sessionCode } = validation.data;
 
-    // Check session exists
-    const session = await store.readSession(sessionCode);
-    if (!session) {
+    let displayName: string;
+    let participantCount: number;
+    let results: Awaited<ReturnType<SessionService['leaveSession']>>['results'];
+    try {
+      ({ displayName, participantCount, results } = await service.leaveSession(
+        sessionCode,
+        socket.id
+      ));
+    } catch (error) {
+      if (!(error instanceof DomainError)) {
+        throw error;
+      }
       logger.warn({
         socketId: socket.id,
         sessionCode,
-        reason: 'session_not_found',
+        reason: error.code,
       }, 'Rejected session:leave');
       return callback({
         success: false,
-        error: 'Session not found or has expired',
+        // DomainError messages are the user-facing copy
+        error: error.message,
       });
     }
-
-    // Get participant info before removal
-    const participant = await store.getParticipant(socket.id);
-    if (!participant) {
-      logger.warn({
-        socketId: socket.id,
-        sessionCode,
-        reason: 'participant_not_found',
-      }, 'Rejected session:leave');
-      return callback({
-        success: false,
-        error: 'You are not a participant in this session',
-      });
-    }
-
-    const { displayName } = participant;
-
-    // Remove participant from session (unlike disconnect, this actually removes)
-    const newCount = await store.removeParticipant(sessionCode, socket.id);
 
     // Leave Socket.IO room
     await socket.leave(sessionCode);
@@ -85,10 +78,19 @@ export async function handleSessionLeave(
     socket.to(sessionCode).emit('participant:left', {
       participantId: socket.id,
       displayName,
-      participantCount: newCount,
+      participantCount,
     });
 
-    logger.info({ socketId: socket.id, sessionCode, participantCount: newCount }, 'Participant left session');
+    // Leaving completed the session for those remaining: broadcast the Match
+    if (results) {
+      io.in(sessionCode).emit('session:results', {
+        sessionCode,
+        overlappingOptions: results.overlappingOptions,
+        allSelections: results.allSelections,
+        restaurantNames: results.restaurantNames,
+        hasOverlap: results.hasOverlap,
+      });
+    }
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in session:leave handler');
     callback({

@@ -345,7 +345,75 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     return { submittedCount, participantCount, results };
   }
 
-  return { createSession, getSession, joinSession, submitSelections };
+  /**
+   * Remove a Participant who deliberately left. Keeps the persisted
+   * participantCount in sync and — because leaving can complete the Session
+   * for those remaining (CONTEXT.md) — computes the Match when everyone
+   * still present has already submitted.
+   */
+  async function leaveSession(
+    sessionCode: string,
+    participantId: string
+  ): Promise<{
+    displayName: string;
+    participantCount: number;
+    results?: Awaited<ReturnType<SessionStore['computeAndStoreResults']>>;
+  }> {
+    const session = await store.readSession(sessionCode);
+    if (!session) {
+      throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
+    }
+
+    const participant = await store.getParticipant(participantId);
+    if (!participant || participant.sessionCode !== sessionCode) {
+      throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
+    }
+
+    await store.removeParticipant(sessionCode, participantId);
+    const remaining = await store.listParticipants(sessionCode);
+
+    // Same counting rule as joinSession: the host slot stays reserved
+    // whenever no host is currently present — a host who leaves can rejoin
+    // into the reserved slot, and the next join would recompute this anyway.
+    const hostPresent = remaining.some((p) => p.isHost);
+    const participantCount = remaining.length + (hostPresent ? 0 : 1);
+    await store.setParticipantCount(sessionCode, participantCount);
+
+    logger.info({ sessionCode, participantId, participantCount }, 'Participant left session');
+
+    if (
+      session.state !== 'complete' &&
+      remaining.length > 0 &&
+      remaining.every((p) => p.hasSubmitted)
+    ) {
+      // The leaver was the last holdout: complete the session for those remaining
+      const results = await store.computeAndStoreResults(sessionCode);
+      await store.updateState(sessionCode, 'complete');
+      logger.info({ sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
+      return { displayName: participant.displayName, participantCount, results };
+    }
+
+    return { displayName: participant.displayName, participantCount };
+  }
+
+  /**
+   * Wipe Selections, Submissions, and the Match so the same Participants can
+   * decide again (FR-012).
+   */
+  async function restartSession(sessionCode: string, participantId: string): Promise<void> {
+    if (!(await store.readSession(sessionCode))) {
+      throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
+    }
+
+    if (!(await store.isParticipant(sessionCode, participantId))) {
+      throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
+    }
+
+    await store.resetForRestart(sessionCode);
+    logger.info({ sessionCode, participantId }, 'Session restarted');
+  }
+
+  return { createSession, getSession, joinSession, submitSelections, leaveSession, restartSession };
 }
 
 export type SessionService = ReturnType<typeof createSessionService>;
