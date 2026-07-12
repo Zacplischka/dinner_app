@@ -372,9 +372,10 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     await store.removeParticipant(sessionCode, participantId);
     const remaining = await store.listParticipants(sessionCode);
 
-    // Same counting rule as joinSession: the host slot stays reserved until a
-    // host has claimed it. A host who leaves gives the slot up.
-    const hostPresent = participant.isHost || remaining.some((p) => p.isHost);
+    // Same counting rule as joinSession: the host slot stays reserved
+    // whenever no host is currently present — a host who leaves can rejoin
+    // into the reserved slot, and the next join would recompute this anyway.
+    const hostPresent = remaining.some((p) => p.isHost);
     const participantCount = remaining.length + (hostPresent ? 0 : 1);
     await store.setParticipantCount(sessionCode, participantCount);
 

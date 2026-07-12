@@ -492,6 +492,17 @@ describe('SessionService', () => {
       ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
     });
 
+    it('re-reserves the host slot when the host leaves', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      const result = await SessionService.leaveSession(sessionCode, 'p-alice');
+
+      // 1 remaining + the host slot reserved again, matching joinSession's rule
+      expect(result).toMatchObject({ displayName: 'Alice', participantCount: 2 });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.participantCount).toBe(2);
+    });
+
     it('persists the reduced participantCount', async () => {
       const sessionCode = await createTwoParticipantSession();
 

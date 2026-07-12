@@ -310,14 +310,15 @@ describe('websocket handlers', () => {
 
       expect(callback).toHaveBeenCalledWith({ success: true });
       expect(testSocket.leave).toHaveBeenCalledWith(sessionCode);
+      // The departed host's slot is reserved again, matching a fresh session
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:left', {
         participantId: 'socket-1',
         displayName: 'Alice',
-        participantCount: 0,
+        participantCount: 1,
       });
       await expect(redis.exists('participant:socket-1')).resolves.toBe(0);
-      await expect(redis.hget(`session:${sessionCode}`, 'participantCount')).resolves.toBe('0');
-      expect(logSpy).toHaveBeenCalledWith({ sessionCode, participantId: 'socket-1', participantCount: 0 }, 'Participant left session');
+      await expect(redis.hget(`session:${sessionCode}`, 'participantCount')).resolves.toBe('1');
+      expect(logSpy).toHaveBeenCalledWith({ sessionCode, participantId: 'socket-1', participantCount: 1 }, 'Participant left session');
     });
 
     it('should broadcast results when leaving completes the session', async () => {
