@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { config, validateConfig } from '../../src/config/index.js';
+import { config } from '../../src/config/index.js';
 
 describe('Google Places API Configuration', () => {
   const originalEnv = { ...process.env };
@@ -20,32 +20,6 @@ describe('Google Places API Configuration', () => {
     expect(config.googlePlaces.apiUrl).toBe('https://places.googleapis.com/v1/places:searchNearby');
   });
 
-  it('should throw error if API key is missing', () => {
-    const originalKey = config.googlePlaces.apiKey;
-    config.googlePlaces.apiKey = undefined;
-
-    expect(() => validateConfig()).toThrow(
-      'GOOGLE_PLACES_API_KEY environment variable is required'
-    );
-
-    // Restore original value
-    config.googlePlaces.apiKey = originalKey;
-  });
-
-  it('should throw error if API URL is missing', () => {
-    const originalUrl = config.googlePlaces.apiUrl;
-    config.googlePlaces.apiUrl = '';
-
-    expect(() => validateConfig()).toThrow(
-      'GOOGLE_PLACES_API_URL environment variable is required'
-    );
-
-    config.googlePlaces.apiUrl = originalUrl;
-  });
-
-  it('should validate when required Google Places config is present', () => {
-    expect(() => validateConfig()).not.toThrow();
-  });
 
   it('should load explicit environment values at module initialization', async () => {
     vi.resetModules();

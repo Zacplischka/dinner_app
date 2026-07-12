@@ -2,7 +2,6 @@
 // (base URL, auth header, error shaping). State stores never call fetch.
 
 import type {
-  DinnerOption,
   Friend,
   FriendRequest,
   Restaurant,
@@ -107,25 +106,6 @@ export async function getSession(sessionCode: string): Promise<SessionResponse> 
   return response.json();
 }
 
-/**
- * Get list of dinner options (deprecated - use getRestaurants)
- * @deprecated Use getRestaurants instead
- */
-export async function getDinnerOptions(): Promise<DinnerOption[]> {
-  const response = await fetch(`${API_BASE_URL}/options`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch dinner options');
-  }
-
-  const data = await response.json();
-  return data.options;
-}
 
 /**
  * Get restaurants for a session

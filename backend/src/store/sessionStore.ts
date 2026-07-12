@@ -3,11 +3,10 @@
 // See CONTEXT.md for the domain language (Session, Participant, Submission, Match).
 //
 // createSessionStore(redis) builds a store bound to any ioredis-compatible
-// client (tests inject ioredis-mock); the named exports below are the
-// production instance bound to the real singleton.
+// client (tests inject ioredis-mock); server.ts constructs the production
+// instance.
 
 import type { Redis } from 'ioredis';
-import { redis } from '../redis/client.js';
 import { DomainError } from '../services/DomainError.js';
 import type { Participant, Restaurant, Session } from '@dinder/shared/types';
 
@@ -464,7 +463,3 @@ export function createSessionStore(redis: Redis) {
 }
 
 export type SessionStore = ReturnType<typeof createSessionStore>;
-
-// Production instance bound to the real Redis singleton. Everything else
-// (handlers, services, tests) receives a SessionStore by injection.
-export const sessionStore = createSessionStore(redis);

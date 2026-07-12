@@ -190,18 +190,6 @@ export function isSocketConnected(): boolean {
   return socket?.connected || false;
 }
 
-/**
- * Get or create socket connection
- * Returns the socket instance for direct event handling
- */
-export function connectSocket(
-  config?: SocketConfig
-): Socket<ServerToClientEvents, ClientToServerEvents> {
-  if (!socket?.connected) {
-    initializeSocket(config);
-  }
-  return socket!;
-}
 
 /**
  * Wait for socket to be connected

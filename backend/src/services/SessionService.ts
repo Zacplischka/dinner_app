@@ -2,12 +2,12 @@
 // Based on: specs/001-dinner-decider-enables/plan.md
 //
 // createSessionService(deps) builds the service over an injected store and
-// restaurant-search fn (tests pass fakes); sessionService below is the
-// production instance bound to the real singletons.
+// restaurant-search fn (tests pass fakes); server.ts constructs the
+// production instance.
 
 import { logger } from '../logger.js';
 import { shareableLink } from '../config/index.js';
-import { getExpiresAtISO, sessionStore, type SessionStore } from '../store/sessionStore.js';
+import { getExpiresAtISO, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
@@ -345,24 +345,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     return { submittedCount, participantCount, results };
   }
 
-  /**
-   * Expire a session (cleanup)
-   */
-  async function expireSession(sessionCode: string): Promise<void> {
-    await store.updateState(sessionCode, 'expired');
-    await store.deleteSession(sessionCode);
-    logger.info({
-      sessionCode,
-    }, 'Expired session cleanup complete');
-  }
-
-  return { createSession, getSession, joinSession, submitSelections, expireSession };
+  return { createSession, getSession, joinSession, submitSelections };
 }
 
 export type SessionService = ReturnType<typeof createSessionService>;
-
-// Production instance bound to the real store and Google Places caller.
-export const sessionService = createSessionService({
-  store: sessionStore,
-  searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
-});
