@@ -119,9 +119,6 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       restaurants,
     });
 
-    // Generate shareable link
-
-
     logger.info({
       sessionCode,
       hasLocation: Boolean(location),
@@ -182,8 +179,6 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     }
 
     const expireAt = Math.floor(Date.now() / 1000) + ttl;
-
-
 
     return {
       sessionCode,
