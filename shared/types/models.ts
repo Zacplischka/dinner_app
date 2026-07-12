@@ -36,12 +36,6 @@ export interface Participant {
   isHost: boolean;
 }
 
-export interface DinnerOption {
-  optionId: string;
-  displayName: string;
-  description?: string;
-}
-
 export interface Selection {
   participantId: string;
   sessionCode: string;
@@ -50,7 +44,7 @@ export interface Selection {
 
 export interface Result {
   sessionCode: string;
-  overlappingOptions: DinnerOption[] | Restaurant[];
+  overlappingOptions: Restaurant[];
   allSelections: Record<string, string[]>; // displayName -> optionIds/placeIds
   restaurantNames?: Record<string, string>; // placeId -> name mapping for display
   hasOverlap: boolean;

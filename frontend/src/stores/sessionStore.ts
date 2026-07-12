@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { Participant, DinnerOption, Restaurant, Result } from '@dinder/shared/types';
+import type { Participant, Restaurant, Result } from '@dinder/shared/types';
 
 interface Location {
   latitude: number;
@@ -26,7 +26,7 @@ interface SessionState {
   selections: string[]; // Current user's Place IDs
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
   restaurantNames: Record<string, string>; // placeId -> name mapping for display
-  overlappingOptions: DinnerOption[] | Restaurant[];
+  overlappingOptions: Restaurant[];
 
   // Session status
   sessionStatus: 'waiting' | 'selecting' | 'complete' | 'expired';
@@ -150,8 +150,17 @@ export const useSessionStore = create<SessionState>()(
       }),
       {
         name: 'dinner-session-storage',
-        // Only persist essential data - use partialPersist if available in newer versions
-        // For now, all state is persisted
+        version: 1,
+        // isConnected is live socket state; rehydrating it as true would lie.
+        partialize: ({ isConnected: _isConnected, ...rest }: SessionState) => rest,
+        // Pre-v1 blobs have unversioned, possibly stale shapes — discard them.
+        // Cast is safe: merge() spreads this over the live store, which owns the actions.
+        migrate: () => ({ ...initialState }) as unknown as Omit<SessionState, 'isConnected'>,
+        merge: (persisted, current) => ({
+          ...current,
+          ...((persisted ?? {}) as Partial<SessionState>),
+          isConnected: false,
+        }),
       }
     ),
     { name: 'DinnerSession' }

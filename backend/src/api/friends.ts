@@ -5,7 +5,7 @@ import { logger } from '../logger.js';
 import { Router, Request, Response, NextFunction } from 'express';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
-import { DomainError } from '../services/DomainError.js';
+import { DomainError, type DomainErrorCode } from '../services/DomainError.js';
 import type { FriendsService } from '../services/FriendsService.js';
 import type {
   SendFriendRequestPayload,
@@ -212,7 +212,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
   // ERROR MAPPING
   // ============================================================================
 
-  const statusByCode: Record<string, number> = {
+  const statusByCode: Partial<Record<DomainErrorCode, number>> = {
     not_found: 404,
     database_error: 500,
   };

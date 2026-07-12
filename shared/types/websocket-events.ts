@@ -54,12 +54,6 @@ export interface SessionLeaveResponse {
 
 // ============= Server → Client Events =============
 
-export interface WsDinnerOption {
-  optionId: string;
-  displayName: string;
-  description?: string;
-}
-
 export interface WsRestaurant {
   placeId: string;
   name: string;

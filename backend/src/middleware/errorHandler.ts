@@ -2,10 +2,10 @@
 // through asyncHandler's next(err) path and body-parse failures. Per-route
 // try/catches remain the primary handlers. See issue #30.
 import type { NextFunction, Request, Response } from 'express';
-import { DomainError } from '../services/DomainError.js';
+import { DomainError, type DomainErrorCode } from '../services/DomainError.js';
 import { logger } from '../logger.js';
 
-const statusByCode: Record<string, number> = {
+const statusByCode: Partial<Record<DomainErrorCode, number>> = {
   SESSION_NOT_FOUND: 404,
   SESSION_FULL: 403,
   NO_RESTAURANTS_FOUND: 400,

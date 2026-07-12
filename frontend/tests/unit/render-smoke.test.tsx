@@ -1000,20 +1000,6 @@ describe('render smoke coverage', () => {
     matching.unmount();
 
     useSessionStore.setState({
-      sessionCode: 'ABC123',
-      currentUserId: 'participant-1',
-      participants: [sampleParticipant],
-      restaurants: [],
-      allSelections: { Alice: ['legacy-option'] },
-      restaurantNames: {},
-      overlappingOptions: [{ optionId: 'legacy-option', displayName: 'Legacy Option', description: 'Old format' } as any],
-    });
-    const legacy = renderRoute('/session/:sessionCode/results', '/session/ABC123/results', <ResultsPage />);
-    expect(screen.getByText('Legacy Option')).toBeInTheDocument();
-    expect(screen.getByText('Old format')).toBeInTheDocument();
-    legacy.unmount();
-
-    useSessionStore.setState({
       sessionCode: 'MISSING',
       currentUserId: 'missing-user',
       participants: [sampleParticipant],

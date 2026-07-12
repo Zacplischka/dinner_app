@@ -184,7 +184,7 @@ describe('socketBindings', () => {
     socket.trigger('session:results', {
       sessionCode: 'ABC123',
       hasOverlap: true,
-      overlappingOptions: [{ optionId: 'pizza', displayName: 'Pizza' }],
+      overlappingOptions: [{ placeId: 'pizza', name: 'Pizza' }],
       allSelections: { Alice: ['pizza'] },
       restaurantNames: { pizza: 'Pizza' },
     });
