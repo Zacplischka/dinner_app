@@ -4,17 +4,30 @@
 // See CONTEXT.md for the domain language (Profile, Friendship, Session Invite).
 
 import { supabase } from '../services/supabase.js';
+import { DomainError } from '../services/DomainError.js';
 
-export const profileSelect = 'id, display_name, avatar_url, email';
+const profileSelect = 'id, display_name, avatar_url, email';
+
+// Store functions return data and throw DomainError('database_error', ...) on
+// query failure. Functions documented as returning null instead fold specific
+// failures into null because their callers treat them as "not there".
 
 // --- Profiles ------------------------------------------------------------
 
+/** Returns null when no profile exists yet. */
 export async function getProfileById(userId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select(profileSelect)
     .eq('id', userId)
     .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    console.error('Error fetching profile:', error);
+    throw new DomainError('database_error', 'Failed to fetch user profile');
+  }
+  return data;
 }
 
 export async function getAuthUserMetadata(userId: string): Promise<unknown> {
@@ -28,21 +41,33 @@ export async function createProfile(profile: {
   display_name: string;
   avatar_url: string | null;
 }) {
-  return supabase
+  const { data, error } = await supabase
     .from('profiles')
     .insert(profile)
     .select(profileSelect)
     .single();
+
+  if (error) {
+    console.error('Error creating profile:', error);
+    throw new DomainError('database_error', 'Failed to create user profile');
+  }
+  return data;
 }
 
 // Exact email match only (privacy protection)
 export async function searchProfilesByEmail(email: string, excludeUserId: string) {
-  return supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select(profileSelect)
     .eq('email', email.toLowerCase())
     .neq('id', excludeUserId)
     .limit(10);
+
+  if (error) {
+    console.error('Error searching users:', error);
+    throw new DomainError('database_error', 'Failed to search users');
+  }
+  return data || [];
 }
 
 export async function listProfilesByIds(ids: string[]) {

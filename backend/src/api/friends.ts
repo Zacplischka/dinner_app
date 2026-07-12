@@ -1,14 +1,13 @@
 // Friends API Router
 // Handles user profiles, friendships, and session invites
 
-import { Router, Response } from 'express';
-import { getAuthProfileDefaults } from './authMetadata.js';
+import { Router, Request, Response, NextFunction } from 'express';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
-import type { Profile } from '../services/supabase.js';
+import { DomainError } from '../services/DomainError.js';
+import * as FriendsService from '../services/FriendsService.js';
 import * as friendsStore from '../store/friendsStore.js';
 import type {
-  UserProfile,
   Friend,
   FriendRequest,
   SessionInvite,
@@ -35,53 +34,8 @@ router.use(requireAuth);
  * Get the current user's profile
  */
 router.get('/users/me', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-
-    const { data: profile, error } = await friendsStore.getProfileById(userId);
-
-    if (error) {
-      // Profile might not exist yet - create it from auth data
-      if (error.code === 'PGRST116') {
-        // Fetch full user data from Supabase Auth to get Google profile info
-        const metadata = await friendsStore.getAuthUserMetadata(userId);
-        const profileDefaults = getAuthProfileDefaults(metadata, req.user!.email);
-
-        const newProfile = {
-          id: userId,
-          email: req.user!.email || null,
-          display_name: profileDefaults.displayName,
-          avatar_url: profileDefaults.avatarUrl,
-        };
-
-        const { data: created, error: createError } = await friendsStore.createProfile(newProfile);
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          return res.status(500).json({
-            error: 'database_error',
-            message: 'Failed to create user profile',
-          });
-        }
-
-        return res.json(mapProfileToUserProfile(created));
-      }
-
-      console.error('Error fetching profile:', error);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to fetch user profile',
-      });
-    }
-
-    return res.json(mapProfileToUserProfile(profile));
-  } catch (error) {
-    console.error('Error in GET /users/me:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
-    });
-  }
+  const profile = await FriendsService.getCurrentProfile(req.user!.id, req.user!.email);
+  return res.json(profile);
 }));
 
 /**
@@ -89,39 +43,18 @@ router.get('/users/me', asyncHandler(async (req: AuthenticatedRequest, res: Resp
  * Search for users by exact email match
  */
 router.get('/users/search', asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { email } = req.query;
-    const userId = req.user!.id;
+  const { email } = req.query;
 
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({
-        error: 'validation_error',
-        message: 'Email query parameter is required',
-      });
-    }
-
-    const { data: users, error } = await friendsStore.searchProfilesByEmail(email, userId);
-
-    if (error) {
-      console.error('Error searching users:', error);
-      return res.status(500).json({
-        error: 'database_error',
-        message: 'Failed to search users',
-      });
-    }
-
-    const response: SearchUsersResponse = {
-      users: (users || []).map(mapProfileToUserProfile),
-    };
-
-    return res.json(response);
-  } catch (error) {
-    console.error('Error in GET /users/search:', error);
-    return res.status(500).json({
-      error: 'internal_error',
-      message: 'An unexpected error occurred',
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({
+      error: 'validation_error',
+      message: 'Email query parameter is required',
     });
   }
+
+  const users = await FriendsService.searchUsers(email, req.user!.id);
+  const response: SearchUsersResponse = { users };
+  return res.json(response);
 }));
 
 // ============================================================================
@@ -649,19 +582,32 @@ router.post('/invites/:inviteId/decline', asyncHandler(async (req: Authenticated
 }));
 
 // ============================================================================
-// HELPER FUNCTIONS
+// ERROR MAPPING
 // ============================================================================
 
-/**
- * Map a database Profile to a UserProfile API response object
- */
-function mapProfileToUserProfile(profile: Partial<Profile>): UserProfile {
-  return {
-    id: profile.id || '',
-    displayName: profile.display_name || 'Unknown User',
-    avatarUrl: profile.avatar_url || null,
-    email: profile.email || null,
-  };
-}
+const mapProfileToUserProfile = FriendsService.mapProfileToUserProfile;
+
+const statusByCode: Record<string, number> = {
+  not_found: 404,
+  database_error: 500,
+};
+
+// Maps typed domain errors to HTTP; anything unexpected becomes a 500.
+// The asyncHandler wrapper on every route delivers thrown errors here.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+router.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof DomainError) {
+    return res.status(statusByCode[err.code] ?? 400).json({
+      error: err.code,
+      message: err.message,
+    });
+  }
+
+  console.error('Unhandled friends API error:', err);
+  return res.status(500).json({
+    error: 'internal_error',
+    message: 'An unexpected error occurred',
+  });
+});
 
 export default router;
