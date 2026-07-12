@@ -36,17 +36,6 @@ export async function cleanupTestData(redis: Redis): Promise<void> {
 }
 
 /**
- * Close the shared Redis connection
- * Should only be called once at the end of ALL tests
- */
-export async function closeTestRedis(): Promise<void> {
-  if (redisClient) {
-    await redisClient.quit();
-    redisClient = null;
-  }
-}
-
-/**
  * Wait for Redis to be ready
  */
 export async function waitForRedis(redis: Redis, maxAttempts = 10): Promise<void> {

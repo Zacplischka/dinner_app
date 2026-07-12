@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  // Backend/frontend consume @dinder/shared via the built shared/dist (file: dep),
+  // so the shared source looks unreachable to static analysis.
+  "ignorePatterns": ["shared/types/**"]
+}
