@@ -5,8 +5,9 @@ export default defineConfig({
     // Unit tests for services, models, and utilities
     include: ['tests/unit/**/*.test.ts'],
 
-    // Unit tests run against in-memory ioredis-mock instances (one shared
-    // keyspace per worker process), so files can run in parallel.
+    // Unit tests run against in-memory ioredis-mock instances. Vitest's
+    // default per-file module isolation gives each test file its own mock
+    // module state, so files can run in parallel (don't disable `isolate`).
     fileParallelism: true,
 
     // Global timeout for unit tests (should be fast)
