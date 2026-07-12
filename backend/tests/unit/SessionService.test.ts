@@ -1,42 +1,36 @@
+// SessionService unit tests - business rules exercised through a service
+// instance built over an injected in-memory store and a stubbed restaurant
+// search fn. No real Redis, no network, no module mocks.
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as SessionService from '../../src/services/SessionService.js';
-import * as RestaurantSearchService from '../../src/services/RestaurantSearchService.js';
-import { redis } from '../../src/redis/client.js';
-import * as store from '../../src/store/sessionStore.js';
+import RedisMock from 'ioredis-mock';
+import type { Redis } from 'ioredis';
+import { createSessionStore } from '../../src/store/sessionStore.js';
+import { createSessionService } from '../../src/services/SessionService.js';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST123';
   const originalFrontendUrl = process.env.FRONTEND_URL;
-  const createdSessionCodes: string[] = [];
 
-  beforeEach(() => {
+  let redis: Redis;
+  let store: ReturnType<typeof createSessionStore>;
+  let searchNearbyRestaurants: ReturnType<typeof vi.fn>;
+  let SessionService: ReturnType<typeof createSessionService>;
+
+  beforeEach(async () => {
+    // ioredis-mock instances share one in-process data store; flush per test.
+    redis = new RedisMock();
+    await redis.flushall();
+    store = createSessionStore(redis);
+    searchNearbyRestaurants = vi.fn();
+    SessionService = createSessionService({ store, searchNearbyRestaurants });
+
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
-  afterEach(async () => {
-    // Clean up test data
-    await redis.del(`session:${testSessionCode}`);
-    await redis.del('session:NOHST1');
-    await redis.del('session:NOHST1:participants');
-    await redis.del('session:AAAAAA');
-    await redis.del(`session:${testSessionCode}:restaurant_ids`);
-    await redis.del(`session:${testSessionCode}:restaurants`);
-    for (const sessionCode of createdSessionCodes.splice(0)) {
-      const participantIds = await redis.smembers(`session:${sessionCode}:participants`);
-      const keys = [
-        `session:${sessionCode}`,
-        `session:${sessionCode}:participants`,
-        `session:${sessionCode}:restaurant_ids`,
-        `session:${sessionCode}:restaurants`,
-        ...participantIds.flatMap((participantId) => [
-          `participant:${participantId}`,
-          `session:${sessionCode}:${participantId}:selections`,
-        ]),
-      ];
-      await redis.del(...keys);
-    }
+  afterEach(() => {
     if (originalFrontendUrl === undefined) {
       delete process.env.FRONTEND_URL;
     } else {
@@ -50,7 +44,6 @@ describe('SessionService', () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
       const result = await SessionService.createSession('Alice');
-      createdSessionCodes.push(result.sessionCode);
 
       expect(logSpy).toHaveBeenCalledWith('Session created', {
         sessionCode: result.sessionCode,
@@ -77,7 +70,6 @@ describe('SessionService', () => {
       });
 
       const result = await SessionService.createSession('Alice');
-      createdSessionCodes.push(result.sessionCode);
 
       expect(result.sessionCode).toBe('BBBBBB');
       expect(randomSpy).toHaveBeenCalled();
@@ -129,7 +121,6 @@ describe('SessionService', () => {
     it('should prefer the joined host participant display name', async () => {
       delete process.env.FRONTEND_URL;
       const result = await SessionService.createSession('Original Host');
-      createdSessionCodes.push(result.sessionCode);
       await store.addParticipant(result.sessionCode, {
         participantId: 'host-participant',
         displayName: 'Joined Host',
@@ -201,7 +192,6 @@ describe('SessionService', () => {
     it('should log successful joins with the updated participant count', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       const session = await SessionService.createSession('Alice');
-      createdSessionCodes.push(session.sessionCode);
 
       const result = await SessionService.joinSession(session.sessionCode, 'participant-1', 'Bob');
 
@@ -223,7 +213,6 @@ describe('SessionService', () => {
     it('should log session expiration cleanup', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       const session = await SessionService.createSession('Alice');
-      createdSessionCodes.push(session.sessionCode);
 
       await SessionService.expireSession(session.sessionCode);
 
@@ -238,7 +227,6 @@ describe('SessionService', () => {
       delete process.env.FRONTEND_URL;
 
       const defaultResult = await SessionService.createSession('Alice');
-      createdSessionCodes.push(defaultResult.sessionCode);
 
       expect(defaultResult.shareableLink).toBe(
         `http://localhost:3000/join?code=${defaultResult.sessionCode}`
@@ -247,7 +235,6 @@ describe('SessionService', () => {
       process.env.FRONTEND_URL = 'https://frontend.example.test';
 
       const customResult = await SessionService.createSession('Bob');
-      createdSessionCodes.push(customResult.sessionCode);
 
       expect(customResult.shareableLink).toBe(
         `https://frontend.example.test/join?code=${customResult.sessionCode}`
@@ -260,18 +247,15 @@ describe('SessionService', () => {
         { placeId: 'place1', name: 'Restaurant 1', rating: 4.5, priceLevel: 2, cuisineType: 'Italian', address: '123 Main St' },
         { placeId: 'place2', name: 'Restaurant 2', rating: 4.2, priceLevel: 3, cuisineType: 'Chinese', address: '456 Oak Ave' },
       ];
-
-      const searchSpy = vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-        .mockResolvedValue(mockRestaurants);
+      searchNearbyRestaurants.mockResolvedValue(mockRestaurants);
 
       const result = await SessionService.createSession(
         'Alice',
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
-      createdSessionCodes.push(result.sessionCode);
 
-      expect(searchSpy).toHaveBeenCalledWith({
+      expect(searchNearbyRestaurants).toHaveBeenCalledWith({
         latitude: 37.7749,
         longitude: -122.4194,
         radiusMeters: expect.closeTo(8046.7, 1), // 5 miles in meters (allow 1 meter tolerance)
@@ -289,38 +273,30 @@ describe('SessionService', () => {
     });
 
     it('should store restaurant Place IDs in Redis Set', async () => {
-      const mockRestaurants = [
+      searchNearbyRestaurants.mockResolvedValue([
         { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ];
-
-      vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-        .mockResolvedValue(mockRestaurants);
+      ]);
 
       const result = await SessionService.createSession(
         'Alice',
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
-      createdSessionCodes.push(result.sessionCode);
 
       const placeIds = await redis.smembers(`session:${result.sessionCode}:restaurant_ids`);
       expect(placeIds).toContain('place1');
     });
 
     it('should store full restaurant data in Redis Hash', async () => {
-      const mockRestaurants = [
+      searchNearbyRestaurants.mockResolvedValue([
         { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2, cuisineType: 'Italian' },
-      ];
-
-      vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-        .mockResolvedValue(mockRestaurants);
+      ]);
 
       const result = await SessionService.createSession(
         'Alice',
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
-      createdSessionCodes.push(result.sessionCode);
 
       const restaurantData = await redis.hget(
         `session:${result.sessionCode}:restaurants`,
@@ -334,8 +310,7 @@ describe('SessionService', () => {
 
     it('should throw error if no restaurants found', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-        .mockResolvedValue([]);
+      searchNearbyRestaurants.mockResolvedValue([]);
 
       await expect(
         SessionService.createSession(
@@ -352,19 +327,15 @@ describe('SessionService', () => {
     });
 
     it('should set TTL on restaurant keys', async () => {
-      const mockRestaurants = [
+      searchNearbyRestaurants.mockResolvedValue([
         { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ];
-
-      vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-        .mockResolvedValue(mockRestaurants);
+      ]);
 
       const result = await SessionService.createSession(
         'Alice',
         { latitude: 37.7749, longitude: -122.4194 },
         5
       );
-      createdSessionCodes.push(result.sessionCode);
 
       const ttl = await redis.ttl(`session:${result.sessionCode}:restaurant_ids`);
       expect(ttl).toBeGreaterThan(0);
@@ -372,21 +343,17 @@ describe('SessionService', () => {
     });
 
     it('should convert miles to meters correctly', async () => {
-      const mockRestaurants = [
+      searchNearbyRestaurants.mockResolvedValue([
         { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ];
+      ]);
 
-      const searchSpy = vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-        .mockResolvedValue(mockRestaurants);
-
-      const result = await SessionService.createSession(
+      await SessionService.createSession(
         'Alice',
         { latitude: 37.7749, longitude: -122.4194 },
         10
       );
-      createdSessionCodes.push(result.sessionCode);
 
-      expect(searchSpy).toHaveBeenCalledWith({
+      expect(searchNearbyRestaurants).toHaveBeenCalledWith({
         latitude: 37.7749,
         longitude: -122.4194,
         radiusMeters: expect.closeTo(16093.4, 1), // 10 miles in meters (allow 1 meter tolerance)

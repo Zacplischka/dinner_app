@@ -1,4 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Handlers exercise the bound sessionStore; swap its Redis for an in-memory
+// mock so this suite needs no real Redis.
+vi.mock('../../src/redis/client.js', async () => {
+  const RedisMock = (await import('ioredis-mock')).default;
+  return { redis: new RedisMock() };
+});
+
 import { redis } from '../../src/redis/client.js';
 import * as store from '../../src/store/sessionStore.js';
 import { handleSessionJoin } from '../../src/websocket/joinHandler.js';

@@ -63,7 +63,7 @@ import {
   useSessionStatus,
 } from '../../src/stores/sessionStore';
 import * as apiClient from '../../src/services/apiClient';
-import * as socketService from '../../src/services/socketService';
+import * as socketService from '../../src/services/socketBindings';
 
 vi.mock('../../src/services/apiClient', () => ({
   createSession: vi.fn(async () => ({
@@ -95,7 +95,7 @@ vi.mock('../../src/services/apiClient', () => ({
   handleApiError: vi.fn((error: unknown) => (error instanceof Error ? error.message : 'error')),
 }));
 
-vi.mock('../../src/services/socketService', () => ({
+vi.mock('../../src/services/socketBindings', () => ({
   waitForConnection: vi.fn(async () => undefined),
   joinSession: vi.fn(async () => ({
     success: true,

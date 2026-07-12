@@ -4,7 +4,7 @@
 import type { SessionInvite } from '@dinder/shared/types';
 import { useFriendsStore } from '../../stores/friendsStore';
 import { useSessionStore } from '../../stores/sessionStore';
-import { joinSession } from '../../services/socketService';
+import { joinSession } from '../../services/socketBindings';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

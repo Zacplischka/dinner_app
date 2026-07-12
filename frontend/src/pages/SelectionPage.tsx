@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants } from '../services/apiClient';
-import { submitSelection, leaveSession } from '../services/socketService';
+import { submitSelection, leaveSession } from '../services/socketBindings';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';

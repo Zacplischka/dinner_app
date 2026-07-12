@@ -8,7 +8,7 @@ import { useFriendsStore } from '../stores/friendsStore';
 import NavigationHeader from '../components/NavigationHeader';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { createSession } from '../services/apiClient';
-import { waitForConnection, joinSession } from '../services/socketService';
+import { waitForConnection, joinSession } from '../services/socketBindings';
 
 interface Location {
   latitude: number;

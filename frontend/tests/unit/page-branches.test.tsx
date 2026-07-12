@@ -63,7 +63,7 @@ vi.mock('../../src/services/apiClient', () => ({
   getSession: serviceMocks.getSession,
 }));
 
-vi.mock('../../src/services/socketService', () => ({
+vi.mock('../../src/services/socketBindings', () => ({
   leaveSession: serviceMocks.leaveSession,
   joinSession: serviceMocks.joinSession,
 }));
