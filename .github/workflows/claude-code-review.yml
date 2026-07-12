@@ -39,6 +39,10 @@ jobs:
           # Tracking comment guarantees the review lands on the PR even if a
           # `gh pr comment` call fails.
           track_progress: true
+          plugin_marketplaces: |
+            https://github.com/DietrichGebert/ponytail.git
+          plugins: |
+            ponytail@ponytail
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -50,18 +54,10 @@ jobs:
             - Security concerns
             - Test coverage
 
-            Then do a second pass hunting over-engineering only (ponytail review).
-            The diff's best outcome is getting shorter. One line per finding:
-            `<file>:L<line>: <tag> <what>. <replacement>.` using these tags:
-            - `delete:` dead code, unused flexibility, speculative feature. Replacement: nothing.
-            - `stdlib:` hand-rolled thing the standard library ships. Name the function.
-            - `native:` dependency or code doing what the platform already does. Name the feature.
-            - `yagni:` abstraction with one implementation, config nobody sets, layer with one caller.
-            - `shrink:` same logic, fewer lines. Show the shorter form.
-            End the pass with `net: -<N> lines possible.`, or `Lean already. Ship.` if
-            there is nothing to cut. A single smoke test or assert-based self-check is
-            the minimum, not bloat — never flag it for deletion. Post this pass as its
-            own section titled "Ponytail pass" in the top-level review comment.
+            Then do a second pass hunting over-engineering only: invoke the
+            ponytail-review skill from the installed ponytail plugin on this PR's
+            diff, and post its findings verbatim as their own section titled
+            "Ponytail pass" in the top-level review comment.
 
             Use the repository's CLAUDE.md for guidance on style and conventions.
             Be constructive and helpful in your feedback.
@@ -74,4 +70,4 @@ jobs:
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/solutions.md
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh pr list:*),Bash(gh search:*)"
+            --allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh pr list:*),Bash(gh search:*)"
