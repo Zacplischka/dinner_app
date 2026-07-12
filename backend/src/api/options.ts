@@ -3,7 +3,7 @@
 
 import { Router } from 'express';
 import { asyncHandler } from './asyncHandler.js';
-import * as store from '../store/sessionStore.js';
+import { sessionStore as store } from '../store/sessionStore.js';
 
 const router = Router();
 

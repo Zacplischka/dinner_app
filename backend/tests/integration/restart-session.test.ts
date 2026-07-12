@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import * as store from '../../src/store/sessionStore.js';
+import { sessionStore as store } from '../../src/store/sessionStore.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import type { Restaurant } from '@dinder/shared/types';
 
@@ -54,7 +54,8 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
       socket as any,
       io as any,
       { sessionCode },
-      callback
+      callback,
+      store
     );
 
     return { callback, io, emit };

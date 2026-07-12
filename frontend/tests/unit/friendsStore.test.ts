@@ -170,6 +170,23 @@ describe('friendsStore', () => {
     expect(errorSpy).toHaveBeenCalledWith('Error declining session invite:', expect.any(Error));
   });
 
+  it('should clear loading flags when requests fail', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    global.fetch = vi.fn().mockRejectedValue(new Error('down'));
+
+    await useFriendsStore.getState().fetchFriends();
+    await useFriendsStore.getState().fetchFriendRequests();
+    await useFriendsStore.getState().fetchSessionInvites();
+    await useFriendsStore.getState().searchUsers('x@example.com');
+
+    expect(useFriendsStore.getState()).toMatchObject({
+      isLoadingFriends: false,
+      isLoadingRequests: false,
+      isLoadingInvites: false,
+      isSearching: false,
+    });
+  });
+
   it('should use response and catch fallback messages', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     global.fetch = vi.fn().mockResolvedValueOnce({

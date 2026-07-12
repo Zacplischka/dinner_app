@@ -87,12 +87,14 @@ const io = new SocketIOServer<
   },
 });
 
-// Import WebSocket handlers
+// Import WebSocket handlers and the production store/service they run over
 import { handleSessionJoin } from './websocket/joinHandler.js';
 import { handleSelectionSubmit } from './websocket/submitHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
 import { handleSessionLeave } from './websocket/leaveHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
+import { sessionStore } from './store/sessionStore.js';
+import { sessionService } from './services/SessionService.js';
 
 // Import auth middleware
 import { verifyToken } from './middleware/auth.js';
@@ -134,27 +136,27 @@ io.on('connection', (socket) => {
 
   // T041: session:join event handler
   socket.on('session:join', (payload, callback) => {
-    void handleSessionJoin(socket, payload, callback);
+    void handleSessionJoin(socket, payload, callback, sessionService);
   });
 
   // T042: selection:submit event handler
   socket.on('selection:submit', (payload, callback) => {
-    void handleSelectionSubmit(socket, io, payload, callback);
+    void handleSelectionSubmit(socket, io, payload, callback, sessionStore);
   });
 
   // T043: session:restart event handler
   socket.on('session:restart', (payload, callback) => {
-    void handleSessionRestart(socket, io, payload, callback);
+    void handleSessionRestart(socket, io, payload, callback, sessionStore);
   });
 
   // session:leave event handler - intentional departure
   socket.on('session:leave', (payload, callback) => {
-    void handleSessionLeave(socket, io, payload, callback);
+    void handleSessionLeave(socket, io, payload, callback, sessionStore);
   });
 
   // T045: disconnect handler
   socket.on('disconnect', (reason) => {
-    void handleDisconnect(socket, io, reason);
+    void handleDisconnect(socket, io, reason, sessionStore);
   });
 });
 

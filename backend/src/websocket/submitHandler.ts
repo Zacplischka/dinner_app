@@ -3,7 +3,7 @@
 
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import * as store from '../store/sessionStore.js';
+import type { SessionStore } from '../store/sessionStore.js';
 import { DomainError } from '../services/DomainError.js';
 import type {
   ClientToServerEvents,
@@ -24,7 +24,8 @@ export async function handleSelectionSubmit(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SelectionSubmitPayload,
-  callback: (response: SelectionSubmitResponse) => void
+  callback: (response: SelectionSubmitResponse) => void,
+  store: SessionStore
 ): Promise<void> {
   try {
     // Validate payload

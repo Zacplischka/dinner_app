@@ -2,7 +2,7 @@
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import type { Socket, Server } from 'socket.io';
-import * as store from '../store/sessionStore.js';
+import type { SessionStore } from '../store/sessionStore.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -16,7 +16,8 @@ import type {
 export async function handleDisconnect(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   _io: Server<ClientToServerEvents, ServerToClientEvents>,
-  reason: string
+  reason: string,
+  store: SessionStore
 ): Promise<void> {
   try {
     console.log(`Socket ${socket.id} disconnected: ${reason}`);

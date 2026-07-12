@@ -3,7 +3,7 @@
 
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import * as store from '../store/sessionStore.js';
+import type { SessionStore } from '../store/sessionStore.js';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -20,7 +20,8 @@ export async function handleSessionLeave(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   _io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionLeavePayload,
-  callback: (response: SessionLeaveResponse) => void
+  callback: (response: SessionLeaveResponse) => void,
+  store: SessionStore
 ): Promise<void> {
   try {
     // Validate payload

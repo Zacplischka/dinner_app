@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import * as store from '../../src/store/sessionStore.js';
+import { sessionStore as store } from '../../src/store/sessionStore.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Results with Overlap (FR-009, FR-010, FR-011)', () => {

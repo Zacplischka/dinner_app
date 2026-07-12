@@ -4,8 +4,7 @@
 
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
-import * as SessionService from '../services/SessionService.js';
-import { MAX_PARTICIPANTS } from '../services/SessionService.js';
+import { MAX_PARTICIPANTS, type SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import type {
   ClientToServerEvents,
@@ -28,7 +27,8 @@ const joinErrorMessages: Record<string, string> = {
 export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionJoinPayload,
-  callback: (response: SessionJoinResponse) => void
+  callback: (response: SessionJoinResponse) => void,
+  service: SessionService
 ): Promise<void> {
   try {
     // Validate payload
@@ -48,7 +48,7 @@ export async function handleSessionJoin(
 
     const { sessionCode, displayName } = validation.data;
 
-    const result = await SessionService.joinSession(sessionCode, socket.id, displayName);
+    const result = await service.joinSession(sessionCode, socket.id, displayName);
 
     // Join Socket.IO room
     await socket.join(sessionCode);
@@ -68,6 +68,7 @@ export async function handleSessionJoin(
       participantId: socket.id,
       displayName,
       participantCount: result.participantCount,
+      isRejoin: result.isRejoin,
     });
 
     console.log(

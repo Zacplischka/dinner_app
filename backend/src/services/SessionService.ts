@@ -2,16 +2,13 @@
 // Based on: specs/001-dinner-decider-enables/plan.md
 //
 // createSessionService(deps) builds the service over an injected store and
-// restaurant-search fn (tests pass fakes); the named exports below are the
+// restaurant-search fn (tests pass fakes); sessionService below is the
 // production instance bound to the real singletons.
 
-import * as store from '../store/sessionStore.js';
-import { getExpiresAtISO, type createSessionStore } from '../store/sessionStore.js';
+import { getExpiresAtISO, sessionStore, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
-
-type SessionStore = ReturnType<typeof createSessionStore>;
 
 /** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
 export const MAX_PARTICIPANTS = 4;
@@ -328,9 +325,10 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
   return { createSession, getSession, joinSession, expireSession };
 }
 
-// Production instance bound to the real store and Google Places caller -
-// preserves the module's historical named exports so consumers don't change.
-export const { createSession, getSession, joinSession, expireSession } = createSessionService({
-  store,
+export type SessionService = ReturnType<typeof createSessionService>;
+
+// Production instance bound to the real store and Google Places caller.
+export const sessionService = createSessionService({
+  store: sessionStore,
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
 });

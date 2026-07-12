@@ -55,230 +55,187 @@ interface FriendsState {
   reset: () => void;
 }
 
+type LoadingKey = 'isLoadingFriends' | 'isLoadingRequests' | 'isLoadingInvites' | 'isSearching';
+
 export const useFriendsStore = create<FriendsState>()(
   devtools(
-    (set, get) => ({
-      // Initial state
-      friends: [],
-      friendRequests: [],
-      sessionInvites: [],
-      currentUserProfile: null,
-      isLoadingFriends: false,
-      isLoadingRequests: false,
-      isLoadingInvites: false,
-      isSearching: false,
-      searchResults: [],
-      error: null,
-
-      // Profile actions
-      fetchCurrentProfile: async () => {
+    (set, get) => {
+      // Every action shares one loading/error lifecycle: clear the error,
+      // run the call, and on failure log `Error <label>:`, store the error
+      // message (or the fallback), and apply any extra error state.
+      // Returns undefined on failure so callers pick their error value.
+      async function run<T>(
+        label: string,
+        fallback: string,
+        fn: () => Promise<T>,
+        opts: { loading?: LoadingKey; onError?: Partial<FriendsState> } = {}
+      ): Promise<T | undefined> {
+        const start: Partial<FriendsState> = { error: null };
+        if (opts.loading) start[opts.loading] = true;
+        set(start);
         try {
-          const profile = await apiClient.getCurrentProfile();
-          set({ currentUserProfile: profile });
+          const result = await fn();
+          if (opts.loading) set({ [opts.loading]: false });
+          return result;
         } catch (error) {
-          console.error('Error fetching profile:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to fetch profile' });
+          console.error(`Error ${label}:`, error);
+          const failure: Partial<FriendsState> = {
+            error: error instanceof Error ? error.message : fallback,
+            ...opts.onError,
+          };
+          if (opts.loading) failure[opts.loading] = false;
+          set(failure);
+          return undefined;
         }
-      },
+      }
 
-      // Friends actions
-      fetchFriends: async () => {
-        set({ isLoadingFriends: true, error: null });
-        try {
-          const friends = await apiClient.getFriends();
-          set({ friends, isLoadingFriends: false });
-        } catch (error) {
-          console.error('Error fetching friends:', error);
-          set({
-            error: error instanceof Error ? error.message : 'Failed to fetch friends',
-            isLoadingFriends: false,
+      return {
+        // Initial state
+        friends: [],
+        friendRequests: [],
+        sessionInvites: [],
+        currentUserProfile: null,
+        isLoadingFriends: false,
+        isLoadingRequests: false,
+        isLoadingInvites: false,
+        isSearching: false,
+        searchResults: [],
+        error: null,
+
+        // Profile actions
+        fetchCurrentProfile: async () => {
+          await run('fetching profile', 'Failed to fetch profile', async () => {
+            set({ currentUserProfile: await apiClient.getCurrentProfile() });
           });
-        }
-      },
+        },
 
-      searchUsers: async (email: string) => {
-        set({ isSearching: true, error: null });
-        try {
-          const users = await apiClient.searchUsers(email);
-          set({ searchResults: users, isSearching: false });
-          return users;
-        } catch (error) {
-          console.error('Error searching users:', error);
+        // Friends actions
+        fetchFriends: async () => {
+          await run(
+            'fetching friends',
+            'Failed to fetch friends',
+            async () => {
+              set({ friends: await apiClient.getFriends() });
+            },
+            { loading: 'isLoadingFriends' }
+          );
+        },
+
+        searchUsers: async (email: string) =>
+          (await run(
+            'searching users',
+            'Failed to search users',
+            async () => {
+              const users = await apiClient.searchUsers(email);
+              set({ searchResults: users });
+              return users;
+            },
+            { loading: 'isSearching', onError: { searchResults: [] } }
+          )) ?? [],
+
+        sendFriendRequest: async (email: string) =>
+          (await run('sending friend request', 'Failed to send friend request', async () => {
+            await apiClient.sendFriendRequest(email);
+            // Clear search results after sending request
+            set({ searchResults: [] });
+            return true;
+          })) ?? false,
+
+        removeFriend: async (friendId: string) =>
+          (await run('removing friend', 'Failed to remove friend', async () => {
+            await apiClient.removeFriend(friendId);
+            set((state) => ({
+              friends: state.friends.filter((f) => f.id !== friendId),
+            }));
+            return true;
+          })) ?? false,
+
+        // Friend request actions
+        fetchFriendRequests: async () => {
+          await run(
+            'fetching friend requests',
+            'Failed to fetch friend requests',
+            async () => {
+              set({ friendRequests: await apiClient.getFriendRequests() });
+            },
+            { loading: 'isLoadingRequests' }
+          );
+        },
+
+        acceptFriendRequest: async (requestId: string) =>
+          (await run('accepting friend request', 'Failed to accept friend request', async () => {
+            await apiClient.acceptFriendRequest(requestId);
+            set((state) => ({
+              friendRequests: state.friendRequests.filter((r) => r.id !== requestId),
+            }));
+            // Refresh friends list to include the new friend
+            void get().fetchFriends();
+            return true;
+          })) ?? false,
+
+        declineFriendRequest: async (requestId: string) =>
+          (await run('declining friend request', 'Failed to decline friend request', async () => {
+            await apiClient.declineFriendRequest(requestId);
+            set((state) => ({
+              friendRequests: state.friendRequests.filter((r) => r.id !== requestId),
+            }));
+            return true;
+          })) ?? false,
+
+        // Session invite actions
+        fetchSessionInvites: async () => {
+          await run(
+            'fetching session invites',
+            'Failed to fetch session invites',
+            async () => {
+              set({ sessionInvites: await apiClient.getSessionInvites() });
+            },
+            { loading: 'isLoadingInvites' }
+          );
+        },
+
+        inviteFriendsToSession: async (sessionCode: string, friendIds: string[]) =>
+          (await run('inviting friends to session', 'Failed to invite friends', async () => {
+            await apiClient.inviteFriendsToSession(sessionCode, friendIds);
+            return true;
+          })) ?? false,
+
+        acceptSessionInvite: async (inviteId: string) =>
+          (await run('accepting session invite', 'Failed to accept invite', async () => {
+            const sessionCode = await apiClient.acceptSessionInvite(inviteId);
+            set((state) => ({
+              sessionInvites: state.sessionInvites.filter((i) => i.id !== inviteId),
+            }));
+            return { success: true, sessionCode };
+          })) ?? { success: false },
+
+        declineSessionInvite: async (inviteId: string) =>
+          (await run('declining session invite', 'Failed to decline invite', async () => {
+            await apiClient.declineSessionInvite(inviteId);
+            set((state) => ({
+              sessionInvites: state.sessionInvites.filter((i) => i.id !== inviteId),
+            }));
+            return true;
+          })) ?? false,
+
+        // Utility actions
+        clearError: () => set({ error: null }),
+
+        reset: () =>
           set({
-            error: error instanceof Error ? error.message : 'Failed to search users',
+            friends: [],
+            friendRequests: [],
+            sessionInvites: [],
+            currentUserProfile: null,
+            isLoadingFriends: false,
+            isLoadingRequests: false,
+            isLoadingInvites: false,
             isSearching: false,
             searchResults: [],
-          });
-          return [];
-        }
-      },
-
-      sendFriendRequest: async (email: string) => {
-        set({ error: null });
-        try {
-          await apiClient.sendFriendRequest(email);
-          // Clear search results after sending request
-          set({ searchResults: [] });
-          return true;
-        } catch (error) {
-          console.error('Error sending friend request:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to send friend request' });
-          return false;
-        }
-      },
-
-      removeFriend: async (friendId: string) => {
-        set({ error: null });
-        try {
-          await apiClient.removeFriend(friendId);
-
-          // Remove friend from local state
-          set((state) => ({
-            friends: state.friends.filter((f) => f.id !== friendId),
-          }));
-
-          return true;
-        } catch (error) {
-          console.error('Error removing friend:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to remove friend' });
-          return false;
-        }
-      },
-
-      // Friend request actions
-      fetchFriendRequests: async () => {
-        set({ isLoadingRequests: true, error: null });
-        try {
-          const requests = await apiClient.getFriendRequests();
-          set({ friendRequests: requests, isLoadingRequests: false });
-        } catch (error) {
-          console.error('Error fetching friend requests:', error);
-          set({
-            error: error instanceof Error ? error.message : 'Failed to fetch friend requests',
-            isLoadingRequests: false,
-          });
-        }
-      },
-
-      acceptFriendRequest: async (requestId: string) => {
-        set({ error: null });
-        try {
-          await apiClient.acceptFriendRequest(requestId);
-
-          // Remove from requests, refresh friends list
-          set((state) => ({
-            friendRequests: state.friendRequests.filter((r) => r.id !== requestId),
-          }));
-
-          // Refresh friends list to include the new friend
-          get().fetchFriends();
-
-          return true;
-        } catch (error) {
-          console.error('Error accepting friend request:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to accept friend request' });
-          return false;
-        }
-      },
-
-      declineFriendRequest: async (requestId: string) => {
-        set({ error: null });
-        try {
-          await apiClient.declineFriendRequest(requestId);
-
-          // Remove from requests
-          set((state) => ({
-            friendRequests: state.friendRequests.filter((r) => r.id !== requestId),
-          }));
-
-          return true;
-        } catch (error) {
-          console.error('Error declining friend request:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to decline friend request' });
-          return false;
-        }
-      },
-
-      // Session invite actions
-      fetchSessionInvites: async () => {
-        set({ isLoadingInvites: true, error: null });
-        try {
-          const invites = await apiClient.getSessionInvites();
-          set({ sessionInvites: invites, isLoadingInvites: false });
-        } catch (error) {
-          console.error('Error fetching session invites:', error);
-          set({
-            error: error instanceof Error ? error.message : 'Failed to fetch session invites',
-            isLoadingInvites: false,
-          });
-        }
-      },
-
-      inviteFriendsToSession: async (sessionCode: string, friendIds: string[]) => {
-        set({ error: null });
-        try {
-          await apiClient.inviteFriendsToSession(sessionCode, friendIds);
-          return true;
-        } catch (error) {
-          console.error('Error inviting friends to session:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to invite friends' });
-          return false;
-        }
-      },
-
-      acceptSessionInvite: async (inviteId: string) => {
-        set({ error: null });
-        try {
-          const sessionCode = await apiClient.acceptSessionInvite(inviteId);
-
-          // Remove from invites
-          set((state) => ({
-            sessionInvites: state.sessionInvites.filter((i) => i.id !== inviteId),
-          }));
-
-          return { success: true, sessionCode };
-        } catch (error) {
-          console.error('Error accepting session invite:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to accept invite' });
-          return { success: false };
-        }
-      },
-
-      declineSessionInvite: async (inviteId: string) => {
-        set({ error: null });
-        try {
-          await apiClient.declineSessionInvite(inviteId);
-
-          // Remove from invites
-          set((state) => ({
-            sessionInvites: state.sessionInvites.filter((i) => i.id !== inviteId),
-          }));
-
-          return true;
-        } catch (error) {
-          console.error('Error declining session invite:', error);
-          set({ error: error instanceof Error ? error.message : 'Failed to decline invite' });
-          return false;
-        }
-      },
-
-      // Utility actions
-      clearError: () => set({ error: null }),
-
-      reset: () =>
-        set({
-          friends: [],
-          friendRequests: [],
-          sessionInvites: [],
-          currentUserProfile: null,
-          isLoadingFriends: false,
-          isLoadingRequests: false,
-          isLoadingInvites: false,
-          isSearching: false,
-          searchResults: [],
-          error: null,
-        }),
-    }),
+            error: null,
+          }),
+      };
+    },
     { name: 'FriendsStore' }
   )
 );

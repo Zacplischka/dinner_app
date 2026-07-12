@@ -463,24 +463,8 @@ export function createSessionStore(redis: Redis) {
   };
 }
 
-// Production instance bound to the real Redis singleton - preserves the
-// module's historical named exports so consumers don't change.
-export const {
-  sessionExists,
-  createSession,
-  readSession,
-  getSessionTtl,
-  updateState,
-  deleteSession,
-  addParticipant,
-  removeParticipant,
-  getParticipant,
-  listParticipants,
-  isParticipant,
-  countParticipants,
-  setParticipantCount,
-  recordSubmission,
-  computeAndStoreResults,
-  resetForRestart,
-  getRestaurants,
-} = createSessionStore(redis);
+export type SessionStore = ReturnType<typeof createSessionStore>;
+
+// Production instance bound to the real Redis singleton. Everything else
+// (handlers, services, tests) receives a SessionStore by injection.
+export const sessionStore = createSessionStore(redis);
