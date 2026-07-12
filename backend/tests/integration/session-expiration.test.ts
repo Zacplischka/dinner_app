@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
-import * as store from '../../src/store/sessionStore.js';
-import * as SessionService from '../../src/services/SessionService.js';
+import { sessionStore as store } from '../../src/store/sessionStore.js';
+import { sessionService as SessionService } from '../../src/services/SessionService.js';
 import {
   initializeSessionExpiryNotifier,
   disconnectSessionExpiryNotifier,

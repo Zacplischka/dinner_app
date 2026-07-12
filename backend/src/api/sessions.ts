@@ -4,8 +4,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
-import * as SessionService from '../services/SessionService.js';
-import { MAX_PARTICIPANTS } from '../services/SessionService.js';
+import { sessionService as SessionService, MAX_PARTICIPANTS } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 
 const router = Router();

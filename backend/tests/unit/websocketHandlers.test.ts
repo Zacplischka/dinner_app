@@ -1,20 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import RedisMock from 'ioredis-mock';
+import type { Redis } from 'ioredis';
 
-// Handlers exercise the bound sessionStore; swap its Redis for an in-memory
-// mock so this suite needs no real Redis.
-vi.mock('../../src/redis/client.js', async () => {
-  const RedisMock = (await import('ioredis-mock')).default;
-  return { redis: new RedisMock() };
-});
-
-import { redis } from '../../src/redis/client.js';
-import * as store from '../../src/store/sessionStore.js';
+// Handlers take their store/service as a parameter - build them over an
+// in-memory Redis so this suite needs no real Redis.
+import { createSessionStore } from '../../src/store/sessionStore.js';
+import { createSessionService } from '../../src/services/SessionService.js';
 import { handleSessionJoin } from '../../src/websocket/joinHandler.js';
 import { handleSessionLeave } from '../../src/websocket/leaveHandler.js';
 import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import { handleSelectionSubmit } from '../../src/websocket/submitHandler.js';
 import { emitError, ErrorCodes } from '../../src/websocket/errorHandler.js';
+
+const redis = new RedisMock() as unknown as Redis;
+const store = createSessionStore(redis);
+const service = createSessionService({
+  store,
+  searchNearbyRestaurants: vi.fn(async () => []),
+});
 
 describe('websocket handlers', () => {
   const sessionCode = 'WSH123';
@@ -91,7 +95,12 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionJoin(socket() as any, { sessionCode: 'bad', displayName: '' } as any, callback);
+      await handleSessionJoin(
+        socket() as any,
+        { sessionCode: 'bad', displayName: '' } as any,
+        callback,
+        service
+      );
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -111,7 +120,8 @@ describe('websocket handlers', () => {
       await handleSessionJoin(
         socket() as any,
         { sessionCode, displayName: 'Alice' },
-        callback
+        callback,
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -134,7 +144,8 @@ describe('websocket handlers', () => {
       await handleSessionJoin(
         testSocket as any,
         { sessionCode, displayName: 'Alice' },
-        callback
+        callback,
+        service
       );
 
       expect(callback).toHaveBeenCalledWith(
@@ -156,7 +167,8 @@ describe('websocket handlers', () => {
       await handleSessionJoin(
         testSocket as any,
         { sessionCode, displayName: 'Alice' },
-        callback
+        callback,
+        service
       );
 
       expect(callback).toHaveBeenCalledWith(
@@ -185,7 +197,8 @@ describe('websocket handlers', () => {
       await handleSessionJoin(
         socket('socket-5') as any,
         { sessionCode, displayName: 'Eve' },
-        callback
+        callback,
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -209,7 +222,8 @@ describe('websocket handlers', () => {
       await handleSessionJoin(
         socket() as any,
         { sessionCode, displayName: 'Alice' },
-        callback
+        callback,
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -225,7 +239,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionLeave(socket() as any, {} as any, { sessionCode: 'bad' }, callback);
+      await handleSessionLeave(socket() as any, {} as any, { sessionCode: 'bad' }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -242,7 +256,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback);
+      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -260,7 +274,7 @@ describe('websocket handlers', () => {
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
-      await handleSessionLeave(socket('missing') as any, {} as any, { sessionCode }, callback);
+      await handleSessionLeave(socket('missing') as any, {} as any, { sessionCode }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -279,7 +293,7 @@ describe('websocket handlers', () => {
       const testSocket = socket('socket-1');
       const callback = vi.fn();
 
-      await handleSessionLeave(testSocket as any, {} as any, { sessionCode }, callback);
+      await handleSessionLeave(testSocket as any, {} as any, { sessionCode }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({ success: true });
       expect(testSocket.leave).toHaveBeenCalledWith(sessionCode);
@@ -298,7 +312,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
-      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback);
+      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -314,7 +328,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const testSocket = socket('missing');
 
-      await handleDisconnect(testSocket as any, {} as any, 'transport close');
+      await handleDisconnect(testSocket as any, {} as any, 'transport close', store);
 
       expect(testSocket.to).not.toHaveBeenCalled();
       expect(logSpy).toHaveBeenCalledWith('Socket missing disconnected: transport close');
@@ -329,7 +343,7 @@ describe('websocket handlers', () => {
       await createSessionWithParticipant('socket-1');
       const testSocket = socket('socket-1');
 
-      await handleDisconnect(testSocket as any, {} as any, 'transport close');
+      await handleDisconnect(testSocket as any, {} as any, 'transport close', store);
 
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:disconnected', {
         participantId: 'socket-1',
@@ -347,7 +361,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'getParticipant').mockRejectedValueOnce(error);
 
       await expect(
-        handleDisconnect(socket('socket-1') as any, {} as any, 'transport close')
+        handleDisconnect(socket('socket-1') as any, {} as any, 'transport close', store)
       ).resolves.toBeUndefined();
       expect(errorSpy).toHaveBeenCalledWith('Error in disconnect handler:', error);
     });
@@ -358,7 +372,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionRestart(socket() as any, io() as any, { sessionCode: 'bad' }, callback);
+      await handleSessionRestart(socket() as any, io() as any, { sessionCode: 'bad' }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -375,7 +389,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback);
+      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -393,7 +407,7 @@ describe('websocket handlers', () => {
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
-      await handleSessionRestart(socket('missing') as any, io() as any, { sessionCode }, callback);
+      await handleSessionRestart(socket('missing') as any, io() as any, { sessionCode }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -416,7 +430,8 @@ describe('websocket handlers', () => {
         socket('socket-1') as any,
         testIo as any,
         { sessionCode },
-        callback
+        callback,
+        store
       );
 
       expect(callback).toHaveBeenCalledWith({ success: true });
@@ -433,7 +448,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
-      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback);
+      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -448,7 +463,13 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode: 'bad', selections: [] } as any, callback);
+      await handleSelectionSubmit(
+        socket() as any,
+        io() as any,
+        { sessionCode: 'bad', selections: [] } as any,
+        callback,
+        store
+      );
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -465,7 +486,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback);
+      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -483,7 +504,7 @@ describe('websocket handlers', () => {
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
-      await handleSelectionSubmit(socket('missing') as any, io() as any, { sessionCode, selections: [] }, callback);
+      await handleSelectionSubmit(socket('missing') as any, io() as any, { sessionCode, selections: [] }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -505,7 +526,8 @@ describe('websocket handlers', () => {
         socket('socket-1') as any,
         io() as any,
         { sessionCode, selections: ['missing-place'] },
-        callback
+        callback,
+        store
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -529,7 +551,8 @@ describe('websocket handlers', () => {
         socket('socket-1') as any,
         io() as any,
         { sessionCode, selections: [] },
-        callback
+        callback,
+        store
       );
 
       expect(callback).toHaveBeenCalledWith({
@@ -549,7 +572,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
-      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback);
+      await handleSelectionSubmit(socket() as any, io() as any, { sessionCode, selections: [] }, callback, store);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -568,7 +591,8 @@ describe('websocket handlers', () => {
         socket('socket-1') as any,
         io() as any,
         { sessionCode, selections: [] },
-        callback
+        callback,
+        store
       );
 
       expect(callback).toHaveBeenCalledWith({ success: true });
@@ -591,7 +615,8 @@ describe('websocket handlers', () => {
         socket('socket-1') as any,
         testIo as any,
         { sessionCode, selections: [] },
-        callback
+        callback,
+        store
       );
 
       expect(callback).toHaveBeenCalledWith({ success: true });
