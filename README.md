@@ -41,8 +41,8 @@
 - **No account needed** — enter a name, get a 6-character session code, share it. The core flow is fully anonymous.
 - **Real-time presence** — participants appear in the lobby as they join, via Socket.IO rooms keyed by session code.
 - **Swipe selection** — like or pass on real nearby restaurants fetched from the Google Places API, with ratings, price level, and cuisine.
-- **Set-intersection consensus** — each participant's likes live in a Redis set; the group's matches are computed with a single [`SINTER`](backend/src/services/OverlapService.ts) when the last person submits.
-- **Ephemeral by design** — every session key carries a 30-minute TTL, refreshed atomically across all of a session's keys by a [Lua script](backend/src/redis/refresh-ttl.lua) on each interaction. No cleanup jobs, no stale data.
+- **Set-intersection consensus** — each participant's likes live in a Redis set; the group's matches are computed with a single [`SINTER`](backend/src/store/sessionStore.ts) when the last person submits.
+- **Ephemeral by design** — every session key carries a 30-minute TTL, refreshed atomically across all of a session's keys by an inline [Lua script](backend/src/store/sessionStore.ts) on each interaction. No cleanup jobs, no stale data.
 - **Push expiry** — Redis keyspace notifications fire when a session's keys expire, and the backend broadcasts `session:expired` so clients aren't left polling a dead session.
 - **Optional Google sign-in** — a Supabase-backed friends feature lets returning users sign in and find each other; the swipe flow never requires it.
 
@@ -79,11 +79,11 @@ npm workspaces monorepo, three packages:
 
 | Package | What it is |
 |---|---|
-| `backend/` | Node 20 + TypeScript, Express 4, Socket.IO 4.7, ioredis, Zod validation. One [handler file per socket event](backend/src/websocket/), services for sessions, selections, overlap, and restaurant search. |
+| `backend/` | Node 20 + TypeScript, Express 4, Socket.IO 4.7, ioredis, Zod validation. One [handler file per socket event](backend/src/websocket/), services for sessions, friends, and restaurant search. |
 | `frontend/` | React 18 + Vite, Tailwind, Zustand for state, socket.io-client. Mobile-first. |
 | `shared/` | `@dinder/shared` — the typed WebSocket event contract and Zod schemas both sides import. |
 
-**The Redis data model is the app.** A session is a handful of keys (`session:<code>`, `session:<code>:participants`, `session:<code>:<participantId>:selections`, …), all carrying the same 30-minute TTL ([`ttl-utils.ts`](backend/src/redis/ttl-utils.ts)). Consensus is `SINTER` over the per-participant selection sets ([`OverlapService.ts`](backend/src/services/OverlapService.ts)). TTL refresh happens in one atomic [Lua script](backend/src/redis/refresh-ttl.lua) so a session's keys can never expire out of sync, and [`sessionExpiryNotifier.ts`](backend/src/redis/sessionExpiryNotifier.ts) subscribes to keyspace `expired` events to tell connected clients the moment a session dies.
+**The Redis data model is the app.** A session is a handful of keys (`session:<code>`, `session:<code>:participants`, `session:<code>:<participantId>:selections`, …), all carrying the same 30-minute TTL. Consensus is `SINTER` over the per-participant selection sets, and TTL refresh happens in one atomic inline Lua script so a session's keys can never expire out of sync — all in [`sessionStore.ts`](backend/src/store/sessionStore.ts). [`sessionExpiryNotifier.ts`](backend/src/redis/sessionExpiryNotifier.ts) subscribes to keyspace `expired` events to tell connected clients the moment a session dies.
 
 REST is deliberately thin — `POST /api/sessions`, `GET /api/sessions/:code` — everything live goes over the socket.
 
@@ -119,7 +119,7 @@ Or `./start.sh`, which starts Redis (Docker), the backend, and the frontend in o
 
 ### Testing
 
-The project was built spec-first: feature specs and the WebSocket contract live in [`specs/`](specs/), and contract tests assert the backend against that contract (they need Redis running):
+The project was built spec-first: the WebSocket contract is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts), and [contract tests](backend/tests/contract/) assert the backend against it (they need Redis running):
 
 ```bash
 cd backend && npm test              # unit tests
