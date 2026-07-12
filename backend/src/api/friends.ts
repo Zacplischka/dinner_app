@@ -273,11 +273,7 @@ router.post('/friends/request', asyncHandler(async (req: AuthenticatedRequest, r
     }
 
     // Find the user by email
-    const { data: targetUser, error: findError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .single();
+    const { data: targetUser, error: findError } = await friendsStore.findProfileIdByEmail(email);
 
     if (findError || !targetUser) {
       return res.status(404).json({
@@ -294,14 +290,7 @@ router.post('/friends/request', asyncHandler(async (req: AuthenticatedRequest, r
     }
 
     // Check if a friendship already exists (in either direction)
-    const { data: existingFriendship, error: checkError } = await supabase
-      .from('friendships')
-      .select('id, status')
-      .or(
-        `and(user_id.eq.${userId},friend_id.eq.${targetUser.id}),` +
-        `and(user_id.eq.${targetUser.id},friend_id.eq.${userId})`
-      )
-      .maybeSingle();
+    const { data: existingFriendship, error: checkError } = await friendsStore.findFriendshipBetween(userId, targetUser.id);
 
     if (checkError) {
       console.error('Error checking existing friendship:', checkError);
@@ -333,15 +322,7 @@ router.post('/friends/request', asyncHandler(async (req: AuthenticatedRequest, r
     }
 
     // Create the friend request
-    const { data: newRequest, error: createError } = await supabase
-      .from('friendships')
-      .insert({
-        user_id: userId,
-        friend_id: targetUser.id,
-        status: 'pending',
-      })
-      .select('id')
-      .single();
+    const { data: newRequest, error: createError } = await friendsStore.createFriendRequest(userId, targetUser.id);
 
     if (createError) {
       console.error('Error creating friend request:', createError);
@@ -375,13 +356,7 @@ router.post('/friends/:requestId/accept', asyncHandler(async (req: Authenticated
     const { requestId } = req.params;
 
     // Find the pending request where the current user is the recipient
-    const { data: request, error: findError } = await supabase
-      .from('friendships')
-      .select('id')
-      .eq('id', requestId)
-      .eq('friend_id', userId)
-      .eq('status', 'pending')
-      .single();
+    const { data: request, error: findError } = await friendsStore.findPendingRequestForRecipient(requestId, userId);
 
     if (findError || !request) {
       return res.status(404).json({
@@ -391,10 +366,7 @@ router.post('/friends/:requestId/accept', asyncHandler(async (req: Authenticated
     }
 
     // Update the request to accepted
-    const { error: updateError } = await supabase
-      .from('friendships')
-      .update({ status: 'accepted', updated_at: new Date().toISOString() })
-      .eq('id', requestId);
+    const { error: updateError } = await friendsStore.acceptFriendRequest(requestId);
 
     if (updateError) {
       console.error('Error accepting friend request:', updateError);
@@ -427,12 +399,7 @@ router.post('/friends/:requestId/decline', asyncHandler(async (req: Authenticate
     const { requestId } = req.params;
 
     // Find and delete the pending request where the current user is the recipient
-    const { error: deleteError } = await supabase
-      .from('friendships')
-      .delete()
-      .eq('id', requestId)
-      .eq('friend_id', userId)
-      .eq('status', 'pending');
+    const { error: deleteError } = await friendsStore.deletePendingRequestForRecipient(requestId, userId);
 
     if (deleteError) {
       console.error('Error declining friend request:', deleteError);
@@ -465,13 +432,7 @@ router.delete('/friends/:friendId', asyncHandler(async (req: AuthenticatedReques
     const { friendId } = req.params;
 
     // Delete the friendship in either direction
-    const { error: deleteError } = await supabase
-      .from('friendships')
-      .delete()
-      .or(
-        `and(user_id.eq.${userId},friend_id.eq.${friendId}),` +
-        `and(user_id.eq.${friendId},friend_id.eq.${userId})`
-      );
+    const { error: deleteError } = await friendsStore.deleteFriendshipBetween(userId, friendId);
 
     if (deleteError) {
       console.error('Error removing friend:', deleteError);

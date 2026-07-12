@@ -52,6 +52,14 @@ export async function listProfilesByIds(ids: string[]) {
     .in('id', ids);
 }
 
+export async function findProfileIdByEmail(email: string) {
+  return supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email.toLowerCase())
+    .single();
+}
+
 // --- Friendships -----------------------------------------------------------
 
 const friendshipSelect = 'id, user_id, friend_id, status, created_at';
@@ -70,4 +78,64 @@ export async function listPendingRequestsForRecipient(userId: string) {
     .select('id, user_id, created_at')
     .eq('friend_id', userId)
     .eq('status', 'pending');
+}
+
+// Existence check for a pair, in either direction
+export async function findFriendshipBetween(userId: string, otherUserId: string) {
+  return supabase
+    .from('friendships')
+    .select('id, status')
+    .or(
+      `and(user_id.eq.${userId},friend_id.eq.${otherUserId}),` +
+      `and(user_id.eq.${otherUserId},friend_id.eq.${userId})`
+    )
+    .maybeSingle();
+}
+
+export async function createFriendRequest(userId: string, friendId: string) {
+  return supabase
+    .from('friendships')
+    .insert({
+      user_id: userId,
+      friend_id: friendId,
+      status: 'pending',
+    })
+    .select('id')
+    .single();
+}
+
+export async function findPendingRequestForRecipient(requestId: string, userId: string) {
+  return supabase
+    .from('friendships')
+    .select('id')
+    .eq('id', requestId)
+    .eq('friend_id', userId)
+    .eq('status', 'pending')
+    .single();
+}
+
+export async function acceptFriendRequest(requestId: string) {
+  return supabase
+    .from('friendships')
+    .update({ status: 'accepted', updated_at: new Date().toISOString() })
+    .eq('id', requestId);
+}
+
+export async function deletePendingRequestForRecipient(requestId: string, userId: string) {
+  return supabase
+    .from('friendships')
+    .delete()
+    .eq('id', requestId)
+    .eq('friend_id', userId)
+    .eq('status', 'pending');
+}
+
+export async function deleteFriendshipBetween(userId: string, friendId: string) {
+  return supabase
+    .from('friendships')
+    .delete()
+    .or(
+      `and(user_id.eq.${userId},friend_id.eq.${friendId}),` +
+      `and(user_id.eq.${friendId},friend_id.eq.${userId})`
+    );
 }
