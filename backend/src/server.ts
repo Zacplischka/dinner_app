@@ -186,12 +186,12 @@ io.on('connection', (socket) => {
 
   // T043: session:restart event handler
   socket.on('session:restart', (payload, callback) => {
-    void handleSessionRestart(socket, io, payload, callback, sessionStore);
+    void handleSessionRestart(socket, io, payload, callback, sessionService);
   });
 
   // session:leave event handler - intentional departure
   socket.on('session:leave', (payload, callback) => {
-    void handleSessionLeave(socket, io, payload, callback, sessionStore);
+    void handleSessionLeave(socket, io, payload, callback, sessionService);
   });
 
   // T045: disconnect handler

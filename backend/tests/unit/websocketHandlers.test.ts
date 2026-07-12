@@ -252,7 +252,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionLeave(socket() as any, {} as any, { sessionCode: 'bad' }, callback, store);
+      await handleSessionLeave(socket() as any, {} as any, { sessionCode: 'bad' }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -269,7 +269,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, store);
+      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -278,7 +278,7 @@ describe('websocket handlers', () => {
       expect(warnSpy).toHaveBeenCalledWith({
         socketId: 'socket-1',
         sessionCode,
-        reason: 'session_not_found',
+        reason: 'SESSION_NOT_FOUND',
       }, 'Rejected session:leave');
     });
 
@@ -287,7 +287,7 @@ describe('websocket handlers', () => {
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
-      await handleSessionLeave(socket('missing') as any, {} as any, { sessionCode }, callback, store);
+      await handleSessionLeave(socket('missing') as any, {} as any, { sessionCode }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -296,7 +296,7 @@ describe('websocket handlers', () => {
       expect(warnSpy).toHaveBeenCalledWith({
         socketId: 'missing',
         sessionCode,
-        reason: 'participant_not_found',
+        reason: 'NOT_IN_SESSION',
       }, 'Rejected session:leave');
     });
 
@@ -306,7 +306,7 @@ describe('websocket handlers', () => {
       const testSocket = socket('socket-1');
       const callback = vi.fn();
 
-      await handleSessionLeave(testSocket as any, {} as any, { sessionCode }, callback, store);
+      await handleSessionLeave(testSocket as any, {} as any, { sessionCode }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({ success: true });
       expect(testSocket.leave).toHaveBeenCalledWith(sessionCode);
@@ -316,7 +316,26 @@ describe('websocket handlers', () => {
         participantCount: 0,
       });
       await expect(redis.exists('participant:socket-1')).resolves.toBe(0);
-      expect(logSpy).toHaveBeenCalledWith({ socketId: 'socket-1', sessionCode, participantCount: 0 }, 'Participant left session');
+      await expect(redis.hget(`session:${sessionCode}`, 'participantCount')).resolves.toBe('0');
+      expect(logSpy).toHaveBeenCalledWith({ sessionCode, participantId: 'socket-1', participantCount: 0 }, 'Participant left session');
+    });
+
+    it('should broadcast results when leaving completes the session', async () => {
+      vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+      await createSessionWithParticipant('socket-1');
+      await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' });
+      await store.recordSubmission(sessionCode, 'socket-1', []);
+      const testIo = io();
+      const callback = vi.fn();
+
+      await handleSessionLeave(socket('socket-2') as any, testIo as any, { sessionCode }, callback, service);
+
+      expect(callback).toHaveBeenCalledWith({ success: true });
+      expect(testIo.roomEmitter.emit).toHaveBeenCalledWith('session:results', expect.objectContaining({
+        sessionCode,
+        hasOverlap: false,
+      }));
+      await expect(redis.hget(`session:${sessionCode}`, 'state')).resolves.toBe('complete');
     });
 
     it('should return generic error when leave processing throws', async () => {
@@ -325,7 +344,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
-      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, store);
+      await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -385,7 +404,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionRestart(socket() as any, io() as any, { sessionCode: 'bad' }, callback, store);
+      await handleSessionRestart(socket() as any, io() as any, { sessionCode: 'bad' }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -402,7 +421,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const callback = vi.fn();
 
-      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, store);
+      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -411,7 +430,7 @@ describe('websocket handlers', () => {
       expect(warnSpy).toHaveBeenCalledWith({
         socketId: 'socket-1',
         sessionCode,
-        reason: 'session_not_found',
+        reason: 'SESSION_NOT_FOUND',
       }, 'Rejected session:restart');
     });
 
@@ -420,7 +439,7 @@ describe('websocket handlers', () => {
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
-      await handleSessionRestart(socket('missing') as any, io() as any, { sessionCode }, callback, store);
+      await handleSessionRestart(socket('missing') as any, io() as any, { sessionCode }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
@@ -429,7 +448,7 @@ describe('websocket handlers', () => {
       expect(warnSpy).toHaveBeenCalledWith({
         socketId: 'missing',
         sessionCode,
-        reason: 'participant_not_in_session',
+        reason: 'NOT_IN_SESSION',
       }, 'Rejected session:restart');
     });
 
@@ -444,7 +463,7 @@ describe('websocket handlers', () => {
         testIo as any,
         { sessionCode },
         callback,
-        store
+        service
       );
 
       expect(callback).toHaveBeenCalledWith({ success: true });
@@ -452,7 +471,7 @@ describe('websocket handlers', () => {
         sessionCode,
         message: 'Session restarted. Make new selections.',
       });
-      expect(logSpy).toHaveBeenCalledWith({ socketId: 'socket-1', sessionCode }, 'Session restarted');
+      expect(logSpy).toHaveBeenCalledWith({ sessionCode, participantId: 'socket-1' }, 'Session restarted');
     });
 
     it('should return generic error when restart processing throws', async () => {
@@ -461,7 +480,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'readSession').mockRejectedValueOnce(error);
       const callback = vi.fn();
 
-      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, store);
+      await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, service);
 
       expect(callback).toHaveBeenCalledWith({
         success: false,
