@@ -52,9 +52,8 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
-
-// Request logging: request IDs, per-request child loggers (req.log)
+// Request logging: request IDs, per-request child loggers (req.log).
+// Must precede express.json() so body-parse errors still get an X-Request-Id.
 app.use(pinoHttp({
   logger,
   genReqId: (req, res) => {
@@ -72,6 +71,8 @@ app.use(pinoHttp({
     return user ? { userId: user.id } : {};
   },
 }));
+
+app.use(express.json());
 
 // REST API routes
 app.use('/api/sessions', sessionsRouter);

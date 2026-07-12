@@ -32,7 +32,7 @@ redis.on('ready', () => {
 });
 
 redis.on('error', (error) => {
-  logger.error({ err: error.message }, 'Redis error');
+  logger.error({ err: error }, 'Redis error');
 });
 
 redis.on('close', () => {

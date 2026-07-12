@@ -69,6 +69,7 @@ describe('REST API internal error branches', () => {
       .expect(400);
 
     expect(response.headers['content-type']).toMatch(/application\/json/);
+    expect(response.headers['x-request-id']).toMatch(/\S+/);
     expect(response.body).toEqual({
       error: 'Bad Request',
       code: 'INVALID_JSON',
