@@ -1,7 +1,7 @@
 # Claude Code Context
 
 **Project**: Dinder
-**Last Updated**: 2025-09-30
+**Last Updated**: 2026-07-12
 
 ## Tech Stack
 
@@ -37,77 +37,24 @@
 - React Router for screen navigation
 - Socket.IO client for real-time updates
 
-
-## Project Structure
-
-```
-dinner_app/
-├── backend/
-│   ├── src/
-│   │   ├── models/           # Session, Participant, Selection
-│   │   ├── services/         # Business logic
-│   │   ├── api/              # REST endpoints
-│   │   ├── websocket/        # Socket.IO handlers
-│   │   ├── redis/            # Redis client
-│   │   └── server.ts
-│   └── tests/
-│       ├── contract/         # API contract tests
-│       ├── integration/      # WebSocket flows
-│       └── unit/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/            # Create, Join, Select, Results
-│   │   ├── services/         # Socket.IO client
-│   │   ├── stores/           # Zustand
-│   │   └── App.tsx
-│   └── tests/
-│       ├── unit/
-│       └── e2e/              # Playwright mobile tests
-└── shared/
-    └── types/                # Shared TypeScript contracts
-```
-
-## Recent Changes
-- 001-dinner-decider-enables: Added Node.js 20 LTS + TypeScript 5.x (backend), React 18.x + TypeScript 5.x (frontend) + Express 4.x, Socket.IO 4.x, Redis 7.x (backend); Vite 5.x, Socket.IO Client 4.x, Tailwind CSS 3.x, React Router 6.x, Zustand 4.x (frontend)
-
-
-## Development Guidelines
-
-- Follow TDD: Write tests before implementation
-- Mobile-first: Test all UI changes on 390px viewport (iPhone 12 Pro)
-- Type safety: Use shared TypeScript types from `shared/types/`
-- Performance: Validate latency targets (<500ms session ops, <200ms selections)
-- WebSocket events: Follow event contracts in `contracts/websocket-events.md`
-
-## Testing Strategy
-
-1. **Contract Tests**: Validate API/WebSocket schemas match OpenAPI/TypeScript definitions
-2. **Unit Tests**: Business logic (overlap calculation, code generation, expiration)
-3. **Integration Tests**: WebSocket event sequences, Redis TTL behavior
-4. **E2E Tests**: Multi-participant flows in Playwright with mobile emulation
-
-## Useful Commands
+## Commands
 
 ```bash
-# Start development environment
-docker run -d -p 6379:6379 redis:7-alpine
-cd backend && npm run dev
-cd frontend && npm run dev
+npm install                                  # root; installs all workspaces
+docker run -d -p 6379:6379 redis:7-alpine    # required for backend dev AND all backend tests
+npm run dev                                  # backend :3001 + frontend :3000
+npm run build                                # shared → backend → frontend, then copies redis/*.lua to dist
 
-# Run tests
-npm run test              # Unit + integration
-npm run test:e2e          # Playwright E2E
-npm run test:contract     # API contract validation
-
-# Redis debugging
-redis-cli GET session:ABC123
-redis-cli TTL session:ABC123
-redis-cli LRANGE session:ABC123:options 0 -1
+cd backend && npm run test:unit              # also test:contract, test:integration — all need local Redis
+cd frontend && npx vitest run                # unit tests; npm run test:e2e for Playwright
+npm run lint                                 # root; lints backend + frontend src
 ```
 
----
+## Gotchas
 
+- Build `@dinder/shared` first (`npm run build --workspace=shared`) — backend/frontend typecheck resolves the `file:` dep against `shared/dist/`.
+- Backend "unit" tests are not isolated: they hit a real Redis on localhost:6379 and run test files serially to avoid key collisions.
+- Backend env is in `backend/.env` (GOOGLE_PLACES_API_KEY, SUPABASE_URL, SUPABASE_JWT_SECRET, SUPABASE_SERVICE_ROLE_KEY, REDIS_*). Frontend uses VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL.
 
 ## Agent skills
 
@@ -122,3 +69,13 @@ Default label vocabulary — each triage role uses its canonical name (`needs-tr
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
