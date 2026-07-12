@@ -6,7 +6,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { DomainError } from '../services/DomainError.js';
-import * as FriendsService from '../services/FriendsService.js';
+import { friendsService as FriendsService } from '../services/FriendsService.js';
 import type {
   SendFriendRequestPayload,
   InviteToSessionPayload,
