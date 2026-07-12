@@ -6,6 +6,7 @@
 // production instance bound to the real singletons.
 
 import { logger } from '../logger.js';
+import { shareableLink } from '../config/index.js';
 import { getExpiresAtISO, sessionStore, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
@@ -119,8 +120,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     });
 
     // Generate shareable link
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
+
 
     logger.info({
       sessionCode,
@@ -136,7 +136,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       participantCount: 1,
       state: session.state,
       expiresAt: getExpiresAtISO(expireAt),
-      shareableLink,
+      shareableLink: shareableLink(sessionCode),
       location,
       searchRadiusMiles,
       restaurantCount: restaurants.length,
@@ -183,8 +183,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
 
     const expireAt = Math.floor(Date.now() / 1000) + ttl;
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const shareableLink = `${frontendUrl}/join?code=${sessionCode}`;
+
 
     return {
       sessionCode,
@@ -192,7 +191,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       participantCount: session.participantCount,
       state: session.state,
       expiresAt: getExpiresAtISO(expireAt),
-      shareableLink,
+      shareableLink: shareableLink(sessionCode),
     };
   }
 

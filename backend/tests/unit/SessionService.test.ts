@@ -6,13 +6,14 @@ import { logger } from '../../src/logger.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
+import { config } from '../../src/config/index.js';
 import { createSessionStore } from '../../src/store/sessionStore.js';
 import { createSessionService, MAX_PARTICIPANTS } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST123';
-  const originalFrontendUrl = process.env.FRONTEND_URL;
+  const originalFrontendUrl = config.frontendUrl;
 
   let redis: Redis;
   let store: ReturnType<typeof createSessionStore>;
@@ -33,11 +34,7 @@ describe('SessionService', () => {
   });
 
   afterEach(() => {
-    if (originalFrontendUrl === undefined) {
-      delete process.env.FRONTEND_URL;
-    } else {
-      process.env.FRONTEND_URL = originalFrontendUrl;
-    }
+    config.frontendUrl = originalFrontendUrl;
     vi.restoreAllMocks();
   });
 
@@ -121,7 +118,7 @@ describe('SessionService', () => {
     });
 
     it('should prefer the joined host participant display name', async () => {
-      delete process.env.FRONTEND_URL;
+      config.frontendUrl = 'http://localhost:3000';
       const result = await SessionService.createSession('Original Host');
       await store.addParticipant(result.sessionCode, {
         participantId: 'host-participant',
@@ -136,7 +133,7 @@ describe('SessionService', () => {
     });
 
     it('should use an unknown host fallback and custom frontend URL', async () => {
-      process.env.FRONTEND_URL = 'https://frontend.example.test';
+      config.frontendUrl = 'https://frontend.example.test';
       await redis.hset('session:NOHST1', {
         hostId: 'host-1',
         state: 'waiting',
@@ -306,7 +303,7 @@ describe('SessionService', () => {
         `http://localhost:3000/join?code=${defaultResult.sessionCode}`
       );
 
-      process.env.FRONTEND_URL = 'https://frontend.example.test';
+      config.frontendUrl = 'https://frontend.example.test';
 
       const customResult = await SessionService.createSession('Bob');
 
