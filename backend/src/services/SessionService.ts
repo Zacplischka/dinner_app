@@ -313,6 +313,45 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
   }
 
   /**
+   * Record a participant's selections. When the last participant submits,
+   * computes the Match, marks the session complete, and returns the results.
+   */
+  async function submitSelections(
+    sessionCode: string,
+    participantId: string,
+    placeIds: string[]
+  ): Promise<{
+    submittedCount: number;
+    participantCount: number;
+    results?: Awaited<ReturnType<SessionStore['computeAndStoreResults']>>;
+  }> {
+    if (!(await store.readSession(sessionCode))) {
+      throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
+    }
+
+    if (!(await store.isParticipant(sessionCode, participantId))) {
+      throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
+    }
+
+    const { submittedCount, participantCount } = await store.recordSubmission(
+      sessionCode,
+      participantId,
+      placeIds
+    );
+
+    if (submittedCount !== participantCount) {
+      return { submittedCount, participantCount };
+    }
+
+    // Everyone has submitted: compute the Match and complete the session
+    const results = await store.computeAndStoreResults(sessionCode);
+    await store.updateState(sessionCode, 'complete');
+    logger.info({ sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
+
+    return { submittedCount, participantCount, results };
+  }
+
+  /**
    * Expire a session (cleanup)
    */
   async function expireSession(sessionCode: string): Promise<void> {
@@ -323,7 +362,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     }, 'Expired session cleanup complete');
   }
 
-  return { createSession, getSession, joinSession, expireSession };
+  return { createSession, getSession, joinSession, submitSelections, expireSession };
 }
 
 export type SessionService = ReturnType<typeof createSessionService>;

@@ -439,4 +439,50 @@ describe('SessionService', () => {
       });
     });
   });
+
+  describe('submitSelections', () => {
+    async function createTwoParticipantSession(): Promise<string> {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      return sessionCode;
+    }
+
+    it('records a submission and returns counts without results while others are pending', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      const result = await SessionService.submitSelections(sessionCode, 'p-alice', []);
+
+      expect(result).toEqual({ submittedCount: 1, participantCount: 2 });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).not.toBe('complete');
+    });
+
+    it('computes results and marks the session complete when the last participant submits', async () => {
+      const sessionCode = await createTwoParticipantSession();
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+
+      const result = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      expect(result.submittedCount).toBe(2);
+      expect(result.participantCount).toBe(2);
+      expect(result.results).toMatchObject({ hasOverlap: false, overlappingOptions: [] });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).toBe('complete');
+    });
+
+    it('rejects submissions to missing sessions', async () => {
+      await expect(
+        SessionService.submitSelections('NOPE99', 'p-alice', [])
+      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
+    });
+
+    it('rejects submissions from non-participants', async () => {
+      const sessionCode = await createTwoParticipantSession();
+
+      await expect(
+        SessionService.submitSelections(sessionCode, 'p-stranger', [])
+      ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
+    });
+  });
 });

@@ -1,10 +1,11 @@
-// WebSocket handler for selection:submit event
+// WebSocket handler for selection:submit event - pure transport over
+// SessionService.submitSelections (payload validation, ack/broadcasts).
 // Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
-import type { SessionStore } from '../store/sessionStore.js';
+import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import type {
   ClientToServerEvents,
@@ -26,7 +27,7 @@ export async function handleSelectionSubmit(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SelectionSubmitPayload,
   callback: (response: SelectionSubmitResponse) => void,
-  store: SessionStore
+  service: SessionService
 ): Promise<void> {
   try {
     // Validate payload
@@ -46,59 +47,28 @@ export async function handleSelectionSubmit(
 
     const { sessionCode, selections } = validation.data;
 
-    // Check session exists
-    const session = await store.readSession(sessionCode);
-    if (!session) {
-      logger.warn({
-        socketId: socket.id,
-        sessionCode,
-        reason: 'session_not_found',
-      }, 'Rejected selection:submit');
-      return callback({
-        success: false,
-        error: 'Session not found or has expired',
-      });
-    }
-
-    // Check participant is in session
-    const isInSession = await store.isParticipant(sessionCode, socket.id);
-    if (!isInSession) {
-      logger.warn({
-        socketId: socket.id,
-        sessionCode,
-        reason: 'participant_not_in_session',
-      }, 'Rejected selection:submit');
-      return callback({
-        success: false,
-        error: 'You are not a participant in this session',
-      });
-    }
-
-    // Record the Submission (validates restaurants, rejects duplicates,
-    // stores selections, marks submitted, touches TTL)
     let submittedCount: number;
     let participantCount: number;
+    let results: Awaited<ReturnType<SessionService['submitSelections']>>['results'];
     try {
-      ({ submittedCount, participantCount } = await store.recordSubmission(
+      ({ submittedCount, participantCount, results } = await service.submitSelections(
         sessionCode,
         socket.id,
         selections
       ));
     } catch (error) {
+      if (!(error instanceof DomainError)) {
+        throw error;
+      }
       logger.warn({
         socketId: socket.id,
         sessionCode,
-        reason:
-          error instanceof DomainError
-            ? error.code
-            : error instanceof Error
-              ? error.message
-              : 'unknown_error',
+        reason: error.code,
       }, 'Rejected selection:submit');
       return callback({
         success: false,
         // DomainError messages are the user-facing copy
-        error: error instanceof DomainError ? error.message : 'Error submitting selections',
+        error: error.message,
       });
     }
 
@@ -114,14 +84,8 @@ export async function handleSelectionSubmit(
 
     logger.info({ socketId: socket.id, sessionCode, submittedCount, participantCount }, 'Participant submitted selections');
 
-    // Check if all submitted
-    if (submittedCount === participantCount) {
-      // Compute and store the Match
-      const results = await store.computeAndStoreResults(sessionCode);
-
-      // Update session state
-      await store.updateState(sessionCode, 'complete');
-
+    // When everyone has submitted, the service returns the computed Match
+    if (results) {
       // Broadcast results to ALL participants (including sender)
       io.in(sessionCode).emit('session:results', {
         sessionCode,
@@ -130,8 +94,6 @@ export async function handleSelectionSubmit(
         restaurantNames: results.restaurantNames,
         hasOverlap: results.hasOverlap,
       });
-
-      logger.info({ socketId: socket.id, sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
     }
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in selection:submit handler');

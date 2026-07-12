@@ -169,7 +169,7 @@ io.on('connection', (socket) => {
 
   // T042: selection:submit event handler
   socket.on('selection:submit', (payload, callback) => {
-    void handleSelectionSubmit(socket, io, payload, callback, sessionStore);
+    void handleSelectionSubmit(socket, io, payload, callback, sessionService);
   });
 
   // T043: session:restart event handler
