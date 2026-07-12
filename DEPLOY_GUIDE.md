@@ -26,7 +26,7 @@ Complete guide for deploying the Dinder application to Railway, including all cr
 ### Required Files
 Ensure these files exist in your repository:
 - `frontend/.env.production` - Production backend URLs
-- `railway.backend.toml` - Backend build configuration (backup)
+- `backend/railway.json` - Backend build configuration
 - `backend/src/redis/*.lua` - Redis Lua scripts
 
 ---
@@ -123,15 +123,20 @@ NODE_ENV=production
 
 ### 3. Backend Railway Configuration
 
-Create or verify `railway.backend.toml`:
+Backend build/deploy config lives in `backend/railway.json` (the backend service's Root Directory is `backend`, so Railway picks it up automatically):
 
-```toml
-[build]
-builder = "NIXPACKS"
-buildCommand = "npm install --workspace=@dinner-app/shared --workspace=@dinner-app/backend && npm run build --workspace=@dinner-app/shared && npm run build --workspace=@dinner-app/backend && cp backend/src/redis/*.lua backend/dist/redis/"
-
-[deploy]
-startCommand = "cd backend && node dist/server.js"
+```json
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd .. && npm ci && npm run build --workspace=shared && npm run build --workspace=backend && cp backend/src/redis/*.lua backend/dist/redis/"
+  },
+  "deploy": {
+    "startCommand": "node dist/server.js",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
 ```
 
 **⚠️ CRITICAL**: The `cp backend/src/redis/*.lua backend/dist/redis/` command is **MANDATORY** - it copies Lua scripts needed for Redis TTL operations. Without this, the backend will crash on startup.
@@ -266,25 +271,16 @@ curl -s https://frontend-production-bdfc.up.railway.app/assets/index-CKSMsjgL.js
 
 ### Railway Configuration Files
 
-**DO NOT use `railway.toml` for frontend** - Let Nixpacks auto-detect with `RAILPACK_SPA_OUTPUT_DIR`.
+**Backend**: `backend/railway.json` (see [Backend Railway Configuration](#3-backend-railway-configuration)).
 
-**DO use `railway.backend.toml` for backend** - Rename to `railway.toml` when deploying backend:
+**Frontend**: no config file — Nixpacks auto-detects the static site via `RAILPACK_SPA_OUTPUT_DIR`.
 
-```bash
-# When deploying backend
-mv railway.toml railway.frontend.toml  # Save frontend config
-mv railway.backend.toml railway.toml    # Use backend config
-railway service backend
-railway up
+### Watch Patterns
 
-# When deploying frontend
-mv railway.toml railway.backend.toml    # Save backend config
-mv railway.frontend.toml railway.toml   # Use frontend config (if needed)
-railway service frontend
-railway up
-```
+Both services auto-deploy on push to `main`, filtered by watch patterns set in the Railway dashboard:
 
-**Alternative**: Deploy each service from Railway dashboard without config files, using environment variables only.
+- **Backend**: `backend/**`, `shared/**`, `package.json`, `package-lock.json`
+- **Frontend**: `frontend/**`, `shared/**`, `package.json`, `package-lock.json`
 
 ---
 
@@ -351,7 +347,7 @@ curl -I https://frontend-production-bdfc.up.railway.app
 **Cause**: Lua scripts not copied to `dist/` folder during build
 
 **Fix**:
-1. Verify `railway.backend.toml` build command includes:
+1. Verify the `backend/railway.json` build command includes:
    ```bash
    cp backend/src/redis/*.lua backend/dist/redis/
    ```

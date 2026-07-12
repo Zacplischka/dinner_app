@@ -52,7 +52,7 @@ npm run lint                                 # root; lints backend + frontend sr
 
 ## Deployments
 
-- **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns — see `RAILWAY_SETUP.md` / `DEPLOY_GUIDE.md`):
+- **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns — see `DEPLOY_GUIDE.md`):
   - Backend: https://backend-production-4ce9.up.railway.app (health: `/health`; config in `backend/railway.json`)
   - Frontend: https://frontend-production-bdfc.up.railway.app (static Vite site, needs `RAILPACK_SPA_OUTPUT_DIR=frontend/dist`)
   - Redis: service `redis-bbxI`, reached via public TCP proxy `trolley.proxy.rlwy.net` (internal URL fails in monorepo builds)

@@ -131,7 +131,7 @@ Honest status: the suite is extensive (~200 cases across unit, contract, integra
 
 ## Deployment
 
-Both services deploy to [Railway](https://railway.app): the backend via NIXPACKS ([`backend/railway.json`](backend/railway.json) — workspace-aware build that ships the Lua script alongside the compiled JS), the frontend as a static SPA. See [`RAILWAY_SETUP.md`](RAILWAY_SETUP.md) and [`DEPLOY_GUIDE.md`](DEPLOY_GUIDE.md).
+Both services deploy to [Railway](https://railway.app): the backend via NIXPACKS ([`backend/railway.json`](backend/railway.json) — workspace-aware build that ships the Lua script alongside the compiled JS), the frontend as a static SPA. See [`DEPLOY_GUIDE.md`](DEPLOY_GUIDE.md).
 
 ## License
 
