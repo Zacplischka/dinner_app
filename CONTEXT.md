@@ -75,3 +75,7 @@ _Avoid_: invite (that word is reserved for Session Invites)
 **Session Invite**:
 A Profile inviting a Friend into a specific Session. One of: pending, accepted, declined, expired.
 _Avoid_: friend request, invitation
+
+**FriendsStore**:
+The sole keeper of the persistent social graph — Profiles, Friendships, and Session Invites. All Supabase access for social data enters and leaves through it.
+_Avoid_: models, repository, DAO
