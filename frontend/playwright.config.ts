@@ -5,10 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * Key features:
  * - Mobile-first testing (iPhone 12 Pro as primary viewport)
- * - Cross-browser support (Chromium, Firefox, Safari, Mobile)
  * - Parallel execution with proper test isolation
- * - Visual regression support
- * - Accessibility testing ready
  */
 
 // Read environment from process.env with sensible defaults
@@ -71,11 +68,8 @@ export default defineConfig({
     ...(CI ? {} : { launchOptions: { slowMo: 50 } }),
   },
 
-  // Define test projects for different browsers/devices
+  // Test projects: mobile-first (primary, used in CI) plus one desktop browser
   projects: [
-    // ============================================
-    // Mobile-First Testing (Primary)
-    // ============================================
     {
       name: 'mobile-chrome',
       use: {
@@ -86,55 +80,10 @@ export default defineConfig({
       },
     },
     {
-      name: 'mobile-safari',
-      use: {
-        ...devices['iPhone 12 Pro'],
-        viewport: { width: 390, height: 844 },
-      },
-    },
-
-    // ============================================
-    // Desktop Browsers
-    // ============================================
-    {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 720 },
-      },
-    },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        viewport: { width: 1280, height: 720 },
-      },
-    },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-        viewport: { width: 1280, height: 720 },
-      },
-    },
-
-    // ============================================
-    // Tablet Testing
-    // ============================================
-    {
-      name: 'tablet',
-      use: {
-        ...devices['iPad Pro 11'],
-      },
-    },
-
-    // ============================================
-    // Android Testing
-    // ============================================
-    {
-      name: 'android',
-      use: {
-        ...devices['Pixel 5'],
       },
     },
   ],

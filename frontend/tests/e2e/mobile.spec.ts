@@ -87,7 +87,7 @@ test.describe('Mobile Layout - Create Session Page', () => {
   test('cancel button is easily reachable', async ({ createPage }) => {
     await createPage.goto();
 
-    const cancelBox = await createPage.cancelButton.boundingBox();
+    const cancelBox = await createPage.backButton.boundingBox();
     expect(cancelBox).toBeTruthy();
 
     // Should be near top or easily accessible

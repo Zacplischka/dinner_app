@@ -4,7 +4,6 @@
  * Export all page objects for easy importing in tests
  */
 
-export { BasePage } from './BasePage';
 export { HomePage } from './HomePage';
 export { CreateSessionPage } from './CreateSessionPage';
 export { JoinSessionPage } from './JoinSessionPage';

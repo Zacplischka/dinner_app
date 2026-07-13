@@ -5,22 +5,12 @@ import { BasePage } from './BasePage';
  * HomePage - Page object for the landing page
  *
  * Routes: /
- * User flows:
- * - Create new session
- * - Join existing session
- * - Sign in with Google
  */
 export class HomePage extends BasePage {
-  // Page elements
   readonly heading: Locator;
   readonly tagline: Locator;
   readonly createSessionButton: Locator;
   readonly joinSessionButton: Locator;
-  readonly googleSignInButton: Locator;
-  readonly userMenu: Locator;
-  readonly friendsLink: Locator;
-
-  // Info bullets
   readonly guestModeText: Locator;
   readonly participantsText: Locator;
   readonly privateSelectionsText: Locator;
@@ -32,10 +22,6 @@ export class HomePage extends BasePage {
     this.tagline = page.getByText(/Find restaurants everyone agrees on/i);
     this.createSessionButton = page.getByRole('button', { name: /Create Session/i });
     this.joinSessionButton = page.getByRole('button', { name: /Join Session/i });
-    this.googleSignInButton = page.getByRole('button', { name: /Sign in with Google/i });
-    this.userMenu = page.locator('[data-testid="user-menu"]');
-    this.friendsLink = page.getByRole('link', { name: /Friends/i });
-
     this.guestModeText = page.getByText(/Sign in to save history & invite friends/i);
     this.participantsText = page.getByText(/Up to 4/i);
     this.privateSelectionsText = page.getByText(/Private votes/i);
@@ -60,13 +46,6 @@ export class HomePage extends BasePage {
   async clickJoinSession(): Promise<void> {
     await this.joinSessionButton.click();
     await this.page.waitForURL(/\/join/);
-  }
-
-  /**
-   * Check if user is signed in
-   */
-  async isSignedIn(): Promise<boolean> {
-    return this.userMenu.isVisible();
   }
 
   /**

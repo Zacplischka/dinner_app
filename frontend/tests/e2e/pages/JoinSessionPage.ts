@@ -5,20 +5,13 @@ import { BasePage } from './BasePage';
  * JoinSessionPage - Page object for joining existing sessions
  *
  * Routes: /join
- * User flows:
- * - Enter session code and name to join
- * - Handle invalid session codes
- * - Cancel and return home
  */
 export class JoinSessionPage extends BasePage {
-  // Page elements
   readonly heading: Locator;
   readonly sessionCodeInput: Locator;
   readonly nameInput: Locator;
-  readonly nameCharacterCount: Locator;
   readonly joinButton: Locator;
   readonly backButton: Locator;
-  readonly errorMessage: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -26,10 +19,8 @@ export class JoinSessionPage extends BasePage {
     this.heading = page.getByRole('heading', { name: /Join Session/i });
     this.sessionCodeInput = page.getByLabel(/Session Code/i);
     this.nameInput = page.getByLabel(/Your Name/i);
-    this.nameCharacterCount = page.getByText(/\/50 characters/i);
     this.joinButton = page.getByRole('button', { name: /Join Session/i });
     this.backButton = page.getByRole('button', { name: /Back/i });
-    this.errorMessage = page.locator('[class*="error"]');
   }
 
   async goto(): Promise<void> {
@@ -61,18 +52,6 @@ export class JoinSessionPage extends BasePage {
 
     // Wait for navigation to session lobby
     await this.page.waitForURL(/\/session\/[A-Z0-9]+$/, { timeout: 10_000 });
-  }
-
-  /**
-   * Attempt to join and expect failure
-   */
-  async joinSessionExpectError(sessionCode: string, name: string): Promise<void> {
-    await this.enterSessionCode(sessionCode);
-    await this.enterName(name);
-    await this.joinButton.click();
-
-    // Should stay on join page with error
-    await expect(this.errorMessage).toBeVisible({ timeout: 5_000 });
   }
 
   /**
