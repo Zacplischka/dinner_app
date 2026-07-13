@@ -5,21 +5,13 @@ import { BasePage } from './BasePage';
  * CreateSessionPage - Page object for session creation
  *
  * Routes: /create
- * User flows:
- * - Enter name and create session
- * - Set location for restaurant search
- * - Cancel and return home
  */
 export class CreateSessionPage extends BasePage {
-  // Page elements
   readonly heading: Locator;
   readonly nameInput: Locator;
   readonly nameCharacterCount: Locator;
   readonly createButton: Locator;
   readonly backButton: Locator;
-
-  // Location elements (if available)
-  readonly locationInput: Locator;
   readonly useMyLocationButton: Locator;
 
   constructor(page: Page) {
@@ -30,8 +22,6 @@ export class CreateSessionPage extends BasePage {
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
     this.createButton = page.getByRole('button', { name: /Create Session/i });
     this.backButton = page.getByRole('button', { name: /Back/i });
-
-    this.locationInput = page.getByLabel(/Location/i);
     this.useMyLocationButton = page.getByRole('button', { name: /Use My Current Location/i });
   }
 

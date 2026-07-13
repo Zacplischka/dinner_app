@@ -16,8 +16,8 @@ test.describe('Accessibility - Home Page', () => {
   test('all buttons have accessible names', async ({ homePage }) => {
     await homePage.goto();
 
-    await expect(homePage.createSessionButton).toHaveAccessibleName();
-    await expect(homePage.joinSessionButton).toHaveAccessibleName();
+    await expect(homePage.createSessionButton).toHaveAccessibleName(/Create Session/i);
+    await expect(homePage.joinSessionButton).toHaveAccessibleName(/Join Session/i);
   });
 
   test('page passes accessibility checks', async ({ page, homePage }) => {
