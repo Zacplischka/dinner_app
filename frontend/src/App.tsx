@@ -14,6 +14,8 @@ const HomePage = lazy(() => import('./pages/HomePage'));
 const GuideHomePage = lazy(() => import('./pages/GuideHomePage'));
 const GuideListPage = lazy(() => import('./pages/GuideListPage'));
 const RestaurantDetailPage = lazy(() => import('./pages/RestaurantDetailPage'));
+const ComparePage = lazy(() => import('./pages/ComparePage'));
+const ComparisonViewPage = lazy(() => import('./pages/ComparisonViewPage'));
 
 // Demo decider flow uses the existing routes, but with dummy data/services
 const CreateSessionPage = lazy(() => import('./pages/CreateSessionPage'));
@@ -50,6 +52,10 @@ function AnimatedRoutes() {
         <Route path="/guide" element={<GuideHomePage />} />
         <Route path="/lists/:listId" element={<GuideListPage />} />
         <Route path="/r/:placeId" element={<RestaurantDetailPage />} />
+
+        {/* Standalone delivery price comparison */}
+        <Route path="/compare" element={<ComparePage />} />
+        <Route path="/compare/:placeId" element={<ComparisonViewPage />} />
 
         {/* Create new session */}
         <Route path="/create" element={<CreateSessionPage />} />

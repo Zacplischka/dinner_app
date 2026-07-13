@@ -12,11 +12,16 @@ import { redis, pingRedis } from './redis/client.js';
 import { createSessionsRouter } from './api/sessions.js';
 import { createOptionsRouter } from './api/options.js';
 import { createFriendsRouter } from './api/friends.js';
+import { createComparisonRouter } from './api/comparison.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createFriendsService } from './services/FriendsService.js';
+import { createComparisonService } from './services/ComparisonService.js';
+import { createApifyClient } from './services/apifyClient.js';
 import * as friendsStore from './store/friendsStore.js';
+import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
+import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import {
   getSocketAuthToken,
@@ -50,9 +55,21 @@ const sessionService = createSessionService({
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
 });
 const friendsService = createFriendsService({ store: friendsStore });
+const apifyClient = createApifyClient({ token: config.apify.token || '' });
+const comparisonService = createComparisonService({
+  runActor: (...args) => apifyClient.runActor(...args),
+  uberEatsActorId: config.apify.uberEatsActorId,
+  doorDashActorId: config.apify.doorDashActorId,
+  fetchPlaceDetails: (...args) => RestaurantSearchService.fetchPlaceDetails(...args),
+  snapshotStore: comparisonSnapshotStore,
+  freshnessMs: 20 * 60_000,
+  failureFreshnessMs: 2 * 60_000,
+  settleCapMs: 300_000,
+});
 
 // Initialize Express app
 const app = express();
+app.set('trust proxy', 1); // Railway terminates requests at one edge proxy.
 
 // Middleware
 app.use(cors({
@@ -91,6 +108,12 @@ app.use(express.json());
 // REST API routes
 app.use('/api/sessions', createSessionsRouter(sessionService));
 app.use('/api/options', createOptionsRouter(sessionStore));
+app.use('/api/comparison', createComparisonRouter({
+  searchNearbyVenues: (...args) => RestaurantSearchService.searchNearbyVenues(...args),
+  reverseGeocodeSuburb: (...args) => RestaurantSearchService.reverseGeocodeSuburb(...args),
+  fetchPlacePhoto: (...args) => RestaurantSearchService.fetchPlacePhoto(...args),
+  comparisonService,
+}));
 app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes
 
 // Health check endpoint

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
@@ -15,6 +15,7 @@
     "test:e2e:mobile": "playwright test --project=mobile-chrome",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
+    "test:e2e:live": "set -a && . ../backend/.env && set +a && VITE_API_BASE_URL=http://localhost:3001/api VITE_BACKEND_URL=http://localhost:3001 BASE_URL=http://localhost:3000 BACKEND_URL=http://localhost:3001 RUN_LIVE_COMPARE=1 playwright test --project=mobile-chrome compare-live.spec.ts",
     "test:e2e:report": "playwright show-report",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""

@@ -1,0 +1,51 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useComparisonStore } from '../../src/stores/comparisonStore';
+
+describe('comparisonStore', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useComparisonStore.getState().reset();
+  });
+
+  it('persists location and radius but keeps Venue results and scroll position in memory', () => {
+    const location = { latitude: -37.81, longitude: 144.96 };
+    const venues = [{ placeId: 'place-1', name: '11 Inch Pizza', distanceMiles: 0.2 }];
+
+    useComparisonStore.getState().setLocation(location);
+    useComparisonStore.getState().setRadiusMiles(8);
+    useComparisonStore.getState().setSuburb('Melbourne');
+    useComparisonStore.getState().setVenues(venues);
+    useComparisonStore.getState().setScrollY(240);
+
+    expect(useComparisonStore.getState()).toMatchObject({
+      location,
+      radiusMiles: 8,
+      suburb: 'Melbourne',
+      venues,
+      scrollY: 240,
+    });
+    const persisted = JSON.parse(localStorage.getItem('dinder-comparison')!);
+    expect(persisted.state).toEqual({ location, radiusMiles: 8, suburb: 'Melbourne' });
+  });
+
+  it('rehydrates a persisted location, radius, and suburb on a return visit', async () => {
+    const location = { latitude: -37.81, longitude: 144.96 };
+    localStorage.setItem('dinder-comparison', JSON.stringify({
+      state: { location, radiusMiles: 9, suburb: 'Melbourne' },
+      version: 0,
+    }));
+    vi.resetModules();
+
+    const { useComparisonStore: rehydratedStore } = await import('../../src/stores/comparisonStore');
+
+    await vi.waitFor(() => {
+      expect(rehydratedStore.getState()).toMatchObject({
+        location,
+        radiusMiles: 9,
+        suburb: 'Melbourne',
+        venues: [],
+        scrollY: 0,
+      });
+    });
+  });
+});

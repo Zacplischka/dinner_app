@@ -1,12 +1,20 @@
 import { logger } from '../logger.js';
-import type { Restaurant } from '@dinder/shared/types';
+import type { Restaurant, Venue } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 
-interface GooglePlacesSearchParams {
+export interface GooglePlacesSearchParams {
   latitude: number;
   longitude: number;
   radiusMeters: number;
   maxResults?: number;
+}
+
+export interface VenueDetails {
+  placeId: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
 }
 
 interface GooglePlacePhoto {
@@ -24,6 +32,74 @@ interface GooglePlaceResult {
   primaryTypeDisplayName?: { text: string };
   formattedAddress?: string;
   photos?: GooglePlacePhoto[];
+  location?: { latitude: number; longitude: number };
+}
+
+export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> {
+  const apiKey = config.googlePlaces.apiKey;
+  if (!apiKey) {
+    throw new Error('Google Places API configuration missing');
+  }
+
+  const response = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+    {
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'id,displayName,formattedAddress,location',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Places API error: ${response.statusText}`);
+  }
+
+  const place = await response.json() as GooglePlaceResult;
+  if (!place.id || !place.displayName?.text || !place.formattedAddress || !place.location) {
+    throw new Error('Places API returned incomplete Venue details');
+  }
+
+  return {
+    placeId: place.id,
+    name: place.displayName.text,
+    address: place.formattedAddress,
+    latitude: place.location.latitude,
+    longitude: place.location.longitude,
+  };
+}
+
+export async function reverseGeocodeSuburb(
+  latitude: number,
+  longitude: number
+): Promise<string | undefined> {
+  const apiKey = config.googlePlaces.apiKey;
+  if (!apiKey) {
+    throw new Error('Google Places API configuration missing');
+  }
+
+  const response = await fetch(
+    `https://geocode.googleapis.com/v4/geocode/location/${latitude},${longitude}?types=locality&regionCode=AU&languageCode=en`,
+    {
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'results.addressComponents.longText,results.addressComponents.types',
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Geocoding API error: ${response.statusText}`);
+  }
+
+  const data = await response.json() as {
+    results?: Array<{
+      addressComponents?: Array<{ longText?: string; types?: string[] }>;
+    }>;
+  };
+  return data.results
+    ?.flatMap((result) => result.addressComponents || [])
+    .find((component) => component.types?.includes('locality'))
+    ?.longText;
 }
 
 export function mapPriceLevel(priceLevel: string): number {
@@ -38,8 +114,36 @@ export function mapPriceLevel(priceLevel: string): number {
   return mapping[priceLevel] || 0;
 }
 
-export function getPhotoUrl(photoName: string, apiKey: string, maxHeightPx = 400): string {
-  return `https://places.googleapis.com/v1/${photoName}/media?key=${apiKey}&maxHeightPx=${maxHeightPx}`;
+export function getPhotoUrl(photoName: string, _apiKey: string): string {
+  return `/api/comparison/photo?name=${encodeURIComponent(photoName)}`;
+}
+
+export async function fetchPlacePhoto(photoName: string): Promise<string> {
+  if (!/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(photoName)) {
+    throw new Error('Invalid Google Places photo name');
+  }
+  const apiKey = config.googlePlaces.apiKey;
+  if (!apiKey) throw new Error('Google Places API configuration missing');
+
+  const response = await fetch(
+    `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=400&skipHttpRedirect=true`,
+    { headers: { 'X-Goog-Api-Key': apiKey } }
+  );
+  if (!response.ok) throw new Error(`Places photo API error: ${response.statusText}`);
+
+  const output = await response.json() as { photoUri?: unknown };
+  if (typeof output.photoUri !== 'string') throw new Error('Places API returned an invalid photo URL');
+  try {
+    const photoUrl = new URL(output.photoUri);
+    if (photoUrl.protocol !== 'https:'
+      || (photoUrl.hostname !== 'googleusercontent.com'
+        && !photoUrl.hostname.endsWith('.googleusercontent.com'))) {
+      throw new Error();
+    }
+    return photoUrl.toString();
+  } catch {
+    throw new Error('Places API returned an invalid photo URL');
+  }
 }
 
 /**
@@ -185,9 +289,7 @@ async function fetchTextSearchPage(
   const textSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
 
   // Include nextPageToken in field mask if paginating
-  const fieldMask = pageToken
-    ? 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,nextPageToken'
-    : 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,nextPageToken';
+  const fieldMask = 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,nextPageToken';
 
   const requestBody: Record<string, unknown> = {
     textQuery: 'restaurants',
@@ -236,9 +338,9 @@ async function fetchTextSearchPage(
   };
 }
 
-export async function searchNearbyRestaurants(
+async function fetchNearbyPlaces(
   params: GooglePlacesSearchParams
-): Promise<Restaurant[]> {
+): Promise<{ places: GooglePlaceResult[]; apiKey: string }> {
   const { latitude, longitude, radiusMeters, maxResults = 50 } = params;
 
   const apiKey = config.googlePlaces.apiKey;
@@ -290,6 +392,14 @@ export async function searchNearbyRestaurants(
 
   logger.info({ placeCount: allPlaces.length }, 'RestaurantSearch API returned places');
 
+  return { places: allPlaces, apiKey };
+}
+
+export async function searchNearbyRestaurants(
+  params: GooglePlacesSearchParams
+): Promise<Restaurant[]> {
+  const { places: allPlaces, apiKey } = await fetchNearbyPlaces(params);
+
   // Filter to only include actual restaurants (by primaryType)
   const restaurantPlaces = allPlaces.filter((place: GooglePlaceResult) =>
     isRestaurantType(place.primaryType)
@@ -311,4 +421,41 @@ export async function searchNearbyRestaurants(
   );
 
   return restaurants;
+}
+
+export async function searchNearbyVenues(
+  params: GooglePlacesSearchParams
+): Promise<Venue[]> {
+  const { places, apiKey } = await fetchNearbyPlaces(params);
+  const origin = { latitude: params.latitude, longitude: params.longitude };
+  const maxDistanceMiles = params.radiusMeters / 1609.344;
+
+  return places
+    .filter((place) => isRestaurantType(place.primaryType) && place.location)
+    .map((place) => ({
+      placeId: place.id,
+      name: place.displayName.text,
+      rating: place.rating,
+      cuisineType: place.primaryTypeDisplayName?.text,
+      address: place.formattedAddress,
+      photoUrl: place.photos?.[0]?.name ? getPhotoUrl(place.photos[0].name, apiKey) : undefined,
+      distanceMiles: distanceMiles(origin, place.location!),
+    }))
+    .filter((venue) => venue.distanceMiles <= maxDistanceMiles)
+    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+    .slice(0, params.maxResults ?? 50);
+}
+
+function distanceMiles(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number }
+): number {
+  const radians = (degrees: number) => degrees * Math.PI / 180;
+  const dLat = radians(b.latitude - a.latitude);
+  const dLng = radians(b.longitude - a.longitude);
+  const lat1 = radians(a.latitude);
+  const lat2 = radians(b.latitude);
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 3958.8 * 2 * Math.asin(Math.sqrt(h));
 }

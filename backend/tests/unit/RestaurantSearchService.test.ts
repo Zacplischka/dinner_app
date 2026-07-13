@@ -60,7 +60,7 @@ describe('RestaurantSearchService', () => {
       expect(result.priceLevel).toBe(0);
     });
 
-    it('should include photoUrl when photo data and api key are provided', () => {
+    it('returns an API photo URL without exposing the Google API key', () => {
       const googlePlace = {
         id: 'place-photo',
         displayName: { text: 'Photo Cafe' },
@@ -74,17 +74,122 @@ describe('RestaurantSearchService', () => {
       );
 
       expect(result.photoUrl).toBe(
-        'https://places.googleapis.com/v1/places/place-photo/photos/one/media?key=api-key&maxHeightPx=400'
+        '/api/comparison/photo?name=places%2Fplace-photo%2Fphotos%2Fone'
       );
+      expect(result.photoUrl).not.toContain('api-key');
     });
   });
 
   describe('getPhotoUrl', () => {
-    it('should build a Google Places photo media URL with custom height', () => {
+    it('builds a keyless API photo URL', () => {
       expect(
-        RestaurantSearchService.getPhotoUrl('places/abc/photos/def', 'key-123', 200)
+        RestaurantSearchService.getPhotoUrl('places/abc/photos/def', 'key-123')
       ).toBe(
-        'https://places.googleapis.com/v1/places/abc/photos/def/media?key=key-123&maxHeightPx=200'
+        '/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef'
+      );
+    });
+  });
+
+  describe('fetchPlacePhoto', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('authenticates server-side and returns only a trusted Google image URL', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ photoUri: 'https://lh3.googleusercontent.com/photo.jpg' }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')
+      ).resolves.toBe('https://lh3.googleusercontent.com/photo.jpg');
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://places.googleapis.com/v1/places/abc/photos/def/media?maxHeightPx=400&skipHttpRedirect=true',
+        { headers: { 'X-Goog-Api-Key': expect.any(String) } }
+      );
+      expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('key=');
+    });
+
+    it('rejects an untrusted image redirect returned by Google', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ photoUri: 'https://example.com/photo.jpg' }),
+      }));
+
+      await expect(
+        RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')
+      ).rejects.toThrow('invalid photo URL');
+    });
+  });
+
+  describe('fetchPlaceDetails', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('fetches the trusted Venue name and coordinates by placeId', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: 'ChIJ11InchPizza',
+          displayName: { text: '11 Inch Pizza' },
+          formattedAddress: '7A/353 Little Collins St, Melbourne VIC 3000, Australia',
+          location: { latitude: -37.8156, longitude: 144.9631 },
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')
+      ).resolves.toEqual({
+        placeId: 'ChIJ11InchPizza',
+        name: '11 Inch Pizza',
+        address: '7A/353 Little Collins St, Melbourne VIC 3000, Australia',
+        latitude: -37.8156,
+        longitude: 144.9631,
+      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://places.googleapis.com/v1/places/ChIJ11InchPizza',
+        {
+          headers: {
+            'X-Goog-Api-Key': expect.any(String),
+            'X-Goog-FieldMask': 'id,displayName,formattedAddress,location',
+          },
+        }
+      );
+    });
+  });
+
+  describe('reverseGeocodeSuburb', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('derives the suburb from the shared browser coordinates', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          results: [{
+            addressComponents: [{
+              longText: 'Melbourne',
+              types: ['locality', 'political'],
+            }],
+          }],
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        RestaurantSearchService.reverseGeocodeSuburb(-37.81, 144.96)
+      ).resolves.toBe('Melbourne');
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://geocode.googleapis.com/v4/geocode/location/-37.81,144.96?types=locality&regionCode=AU&languageCode=en',
+        {
+          headers: {
+            'X-Goog-Api-Key': expect.any(String),
+            'X-Goog-FieldMask': 'results.addressComponents.longText,results.addressComponents.types',
+          },
+        }
       );
     });
   });
@@ -184,7 +289,7 @@ describe('RestaurantSearchService', () => {
           headers: {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': expect.any(String),
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,nextPageToken',
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,nextPageToken',
           },
           body: JSON.stringify({
             textQuery: 'restaurants',

@@ -2,6 +2,7 @@
 // Uses service role key for admin operations
 
 import { createClient } from '@supabase/supabase-js';
+import type { SnapshotPayload } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 
 // Types for database tables
@@ -30,6 +31,14 @@ export type SessionInvite = {
   invitee_id: string;
   status: 'pending' | 'accepted' | 'declined' | 'expired';
   created_at: string;
+};
+
+export type ComparisonSnapshot = {
+  id: string;
+  place_id: string;
+  venue_name: string;
+  fetched_at: string;
+  payload: SnapshotPayload;
 };
 
 // Friend with profile info (for API responses)
@@ -70,6 +79,14 @@ type SessionInviteInsert = {
   created_at?: string;
 };
 
+type ComparisonSnapshotInsert = {
+  id?: string;
+  place_id: string;
+  venue_name: string;
+  fetched_at?: string;
+  payload: SnapshotPayload;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -89,6 +106,12 @@ export interface Database {
         Row: SessionInvite;
         Insert: SessionInviteInsert;
         Update: Partial<SessionInviteInsert>;
+        Relationships: [];
+      };
+      comparison_snapshots: {
+        Row: ComparisonSnapshot;
+        Insert: ComparisonSnapshotInsert;
+        Update: never;
         Relationships: [];
       };
     };

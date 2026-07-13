@@ -11,6 +11,16 @@ export interface Restaurant {
   photoUrl?: string;
 }
 
+export interface Venue {
+  placeId: string;
+  name: string;
+  rating?: number;
+  cuisineType?: string;
+  address?: string;
+  photoUrl?: string;
+  distanceMiles: number;
+}
+
 export interface Session {
   sessionCode: string;
   hostId: string;

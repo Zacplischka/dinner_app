@@ -12,6 +12,7 @@ import { defineConfig, devices } from '@playwright/test';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 const CI = !!process.env.CI;
+const LIVE_COMPARE = process.env.RUN_LIVE_COMPARE === '1';
 
 export default defineConfig({
   // Test directory configuration
@@ -97,7 +98,7 @@ export default defineConfig({
         {
           command: 'npm run build && npm run preview -- --port 3000',
           url: BASE_URL,
-          reuseExistingServer: true,
+          reuseExistingServer: !LIVE_COMPARE,
           timeout: 120_000,
           stdout: 'pipe',
           stderr: 'pipe',
@@ -106,7 +107,7 @@ export default defineConfig({
         {
           command: 'cd ../backend && npm run build && npm start',
           url: `${BACKEND_URL}/health`,
-          reuseExistingServer: true,
+          reuseExistingServer: !LIVE_COMPARE,
           timeout: 120_000,
           stdout: 'pipe',
           stderr: 'pipe',

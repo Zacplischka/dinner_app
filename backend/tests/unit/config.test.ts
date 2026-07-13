@@ -34,6 +34,9 @@ describe('Google Places API Configuration', () => {
       NODE_ENV: 'test',
       GOOGLE_PLACES_API_KEY: 'places-key',
       GOOGLE_PLACES_API_URL: 'https://places.example.test/search',
+      APIFY_TOKEN: 'apify-token',
+      APIFY_UBER_EATS_ACTOR_ID: 'example/uber-eats',
+      APIFY_DOORDASH_ACTOR_ID: 'example/doordash',
       SUPABASE_URL: 'https://supabase.example.test',
       SUPABASE_JWT_SECRET: 'jwt-secret',
       SUPABASE_SERVICE_ROLE_KEY: 'service-role',
@@ -51,6 +54,11 @@ describe('Google Places API Configuration', () => {
       googlePlaces: {
         apiKey: 'places-key',
         apiUrl: 'https://places.example.test/search',
+      },
+      apify: {
+        token: 'apify-token',
+        uberEatsActorId: 'example/uber-eats',
+        doorDashActorId: 'example/doordash',
       },
       supabase: {
         url: 'https://supabase.example.test',
@@ -73,6 +81,9 @@ describe('Google Places API Configuration', () => {
       'FRONTEND_URL',
       'NODE_ENV',
       'GOOGLE_PLACES_API_URL',
+      'APIFY_TOKEN',
+      'APIFY_UBER_EATS_ACTOR_ID',
+      'APIFY_DOORDASH_ACTOR_ID',
       'SUPABASE_URL',
       'SUPABASE_JWT_SECRET',
       'SUPABASE_SERVICE_ROLE_KEY',
@@ -93,6 +104,11 @@ describe('Google Places API Configuration', () => {
       googlePlaces: {
         apiKey: 'places-key',
         apiUrl: 'https://places.googleapis.com/v1/places:searchNearby',
+      },
+      apify: {
+        token: undefined,
+        uberEatsActorId: 'borderline/uber-eats-scraper-ppr',
+        doorDashActorId: 'abotapi/doordash-scraper',
       },
       supabase: {
         url: '',

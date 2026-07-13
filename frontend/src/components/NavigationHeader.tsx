@@ -3,6 +3,7 @@
 // Supports back button with optional confirmation, session code badge, and connection status
 
 import { ReactNode, useState } from 'react';
+import { Link, useInRouterContext } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import ConfirmLeaveModal from './ConfirmLeaveModal';
 
@@ -56,6 +57,7 @@ export default function NavigationHeader({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const { isConnected } = useSessionStore();
+  const isInRouter = useInRouterContext();
 
   const handleBackClick = () => {
     if (confirmOnBack) {
@@ -184,6 +186,15 @@ export default function NavigationHeader({
 
             {/* Right section - Connection status and custom action */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              {isInRouter ? (
+                <Link to="/compare" className="px-2 py-3 text-sm text-cream-400 hover:text-amber">
+                  Compare
+                </Link>
+              ) : (
+                <a href="/compare" className="px-2 py-3 text-sm text-cream-400 hover:text-amber">
+                  Compare
+                </a>
+              )}
               <ConnectionIndicator />
               {rightAction && (
                 <div className="min-h-[44px] flex items-center">
@@ -191,9 +202,6 @@ export default function NavigationHeader({
                 </div>
               )}
               {/* Invisible spacer to balance layout when no right action */}
-              {!rightAction && showBackButton && (
-                <div className="w-[44px]" aria-hidden="true" />
-              )}
             </div>
           </div>
         </div>

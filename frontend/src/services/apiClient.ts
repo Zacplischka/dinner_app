@@ -7,11 +7,12 @@ import type {
   Restaurant,
   SessionInvite,
   UserProfile,
+  Venue,
 } from '@dinder/shared/types';
 import { useAuthStore } from '../stores/authStore';
 
 /* v8 ignore next */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 interface Location {
   latitude: number;
@@ -123,7 +124,52 @@ export async function getRestaurants(sessionCode: string): Promise<Restaurant[]>
   }
 
   const data = await response.json();
-  return data.restaurants;
+  return resolvePhotoUrls(data.restaurants);
+}
+
+export async function getVenues(
+  location: { latitude: number; longitude: number },
+  radiusMiles: number
+): Promise<{ venues: Venue[]; suburb?: string }> {
+  const query = new URLSearchParams({
+    latitude: String(location.latitude),
+    longitude: String(location.longitude),
+    radiusMiles: String(radiusMiles),
+  });
+  const response = await fetch(`${API_BASE_URL}/comparison/venues?${query}`, { method: 'GET' });
+  const result = await handleResponse<{ venues: Venue[]; suburb?: string }>(response);
+  return { ...result, venues: resolvePhotoUrls(result.venues) };
+}
+
+function resolvePhotoUrls<T extends { photoUrl?: string }>(items: T[]): T[] {
+  return items.map((item) => {
+    if (!item.photoUrl) return item;
+    let proxyPath = item.photoUrl;
+
+    if (!proxyPath.startsWith('/api/comparison/photo?')) {
+      try {
+        const legacyUrl = new URL(proxyPath);
+        if (legacyUrl.hostname !== 'places.googleapis.com') return item;
+        const match = /^\/v1\/(places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+)\/media$/.exec(
+          legacyUrl.pathname
+        );
+        if (!match) {
+          const clean = { ...item };
+          delete clean.photoUrl;
+          return clean;
+        }
+        proxyPath = `/api/comparison/photo?name=${encodeURIComponent(match[1])}`;
+      } catch {
+        const clean = { ...item };
+        delete clean.photoUrl;
+        return clean;
+      }
+    }
+
+    const locationOrigin = globalThis.location?.origin || 'http://localhost';
+    const apiOrigin = new URL(API_BASE_URL, locationOrigin).origin;
+    return { ...item, photoUrl: `${apiOrigin}${proxyPath}` };
+  });
 }
 
 /**

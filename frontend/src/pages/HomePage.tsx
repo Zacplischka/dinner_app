@@ -100,6 +100,13 @@ export default function HomePage() {
           >
             Join Session
           </button>
+
+          <button
+            onClick={() => navigate('/compare')}
+            className="w-full min-h-[52px] px-6 py-4 text-lg font-semibold text-cream bg-midnight-100 rounded-xl hover:bg-midnight-50 active:scale-[0.98] transition-all duration-300 border border-midnight-50/50"
+          >
+            Compare delivery prices
+          </button>
         </div>
 
         {/* Info text with elegant styling */}

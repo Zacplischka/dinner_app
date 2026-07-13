@@ -163,6 +163,34 @@ describe('apiClient', () => {
     });
   });
 
+  describe('getVenues', () => {
+    it('fetches nearby Venues without authentication', async () => {
+      const venues = [{
+        placeId: 'place-1',
+        name: '11 Inch Pizza',
+        distanceMiles: 0.2,
+        photoUrl: '/api/comparison/photo?name=places%2Fplace-1%2Fphotos%2Fone',
+      }];
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ venues, suburb: 'Melbourne' }),
+      });
+
+      await expect(apiClient.getVenues({ latitude: -37.81, longitude: 144.96 }, 5))
+        .resolves.toEqual({
+          venues: [{
+            ...venues[0],
+            photoUrl: 'http://localhost:3001/api/comparison/photo?name=places%2Fplace-1%2Fphotos%2Fone',
+          }],
+          suburb: 'Melbourne',
+        });
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/comparison/venues?latitude=-37.81&longitude=144.96&radiusMiles=5'),
+        { method: 'GET' }
+      );
+    });
+  });
+
   describe('getRestaurants', () => {
     it('should fetch restaurants for session code', async () => {
       const mockRestaurants = [
@@ -173,6 +201,7 @@ describe('apiClient', () => {
           priceLevel: 2,
           cuisineType: 'Italian',
           address: '123 Main St',
+          photoUrl: 'https://places.googleapis.com/v1/places/place1/photos/one/media?key=old-secret&maxHeightPx=400',
         },
         {
           placeId: 'ChIJplace2',
@@ -197,7 +226,13 @@ describe('apiClient', () => {
         expect.stringContaining('/options/ABC123'),
         expect.objectContaining({ method: 'GET' })
       );
-      expect(result).toEqual(mockRestaurants);
+      expect(result).toEqual([
+        {
+          ...mockRestaurants[0],
+          photoUrl: 'http://localhost:3001/api/comparison/photo?name=places%2Fplace1%2Fphotos%2Fone',
+        },
+        mockRestaurants[1],
+      ]);
     });
 
     it('should throw error for invalid session code', async () => {

@@ -10,6 +10,7 @@ on:
 env:
   NODE_VERSION: '20'
   GOOGLE_PLACES_API_KEY: test-google-places-key
+  APIFY_TOKEN: test-apify-token
   SUPABASE_URL: http://localhost:54321
   SUPABASE_SERVICE_ROLE_KEY: test-service-role
   SUPABASE_JWT_SECRET: test-jwt-secret
@@ -51,6 +52,12 @@ jobs:
 
       - name: Type check frontend
         run: cd frontend && npx tsc --noEmit
+
+      - name: Run backend unit tests
+        run: npm run test:unit --workspace=@dinder/backend
+
+      - name: Run frontend unit tests
+        run: npm run test:unit --workspace=@dinder/frontend
 
   contract-tests:
     name: Contract Tests

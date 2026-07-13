@@ -16,6 +16,8 @@
     "start": "node backend/dist/server.js",
     "start:backend": "node backend/dist/server.js",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
+    "test:e2e:live": "npm run test:e2e:live --workspace=frontend --",
+    "compare:smoke": "npm run compare:smoke --workspace=backend --",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",

@@ -14,6 +14,11 @@ export const config = {
     apiKey: process.env.GOOGLE_PLACES_API_KEY,
     apiUrl: process.env.GOOGLE_PLACES_API_URL || 'https://places.googleapis.com/v1/places:searchNearby',
   },
+  apify: {
+    token: process.env.APIFY_TOKEN,
+    uberEatsActorId: process.env.APIFY_UBER_EATS_ACTOR_ID || 'borderline/uber-eats-scraper-ppr',
+    doorDashActorId: process.env.APIFY_DOORDASH_ACTOR_ID || 'abotapi/doordash-scraper',
+  },
   supabase: {
     url: process.env.SUPABASE_URL || '',
     jwtSecret: process.env.SUPABASE_JWT_SECRET || '',
@@ -25,4 +30,3 @@ export const config = {
 export function shareableLink(sessionCode: string): string {
   return `${config.frontendUrl}/join?code=${sessionCode}`;
 }
-
