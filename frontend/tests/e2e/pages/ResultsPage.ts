@@ -27,8 +27,7 @@ export class ResultsPage extends BasePage {
    * Check if there are any matches
    */
   async hasMatches(): Promise<boolean> {
-    const cards = await this.restaurantCards.all();
-    return cards.length > 0;
+    return (await this.restaurantCards.count()) > 0;
   }
 
   /**
