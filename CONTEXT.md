@@ -79,3 +79,33 @@ _Avoid_: friend request, invitation
 **FriendsStore**:
 The sole keeper of the persistent social graph — Profiles, Friendships, and Session Invites. All Supabase access for social data enters and leaves through it.
 _Avoid_: models, repository, DAO
+
+### Price comparison
+
+**Platform**:
+A food delivery app whose prices are compared (DoorDash, Uber Eats).
+_Avoid_: provider, vendor, app
+
+**Venue**:
+A physical restaurant near the user's location. May have a Storefront on any number of Platforms, including none — which Platforms carry it is discovered when a Comparison is requested, not known in advance. Not a Restaurant — that word is reserved for the session swipe flow.
+_Avoid_: restaurant, place
+
+**Storefront**:
+One Venue's presence on one Platform: its menu prices, delivery fee, and Deals. Service fees are out of scope — they are a percentage of the basket and don't exist without one. A Venue with a Storefront on only one Platform is still shown, flagged as such.
+_Avoid_: listing, store
+
+**Comparison**:
+The side-by-side view of one Venue's Storefronts across Platforms — fees, Matched Items, and Deals. Always quoted for a non-member (no DashPass/Uber One pricing).
+_Avoid_: quote, report
+
+**Matched Item**:
+The same dish appearing on two of a Venue's Storefronts, paired by normalized name so its prices can be compared. Unmatched items belong to a single Storefront and are listed, not compared.
+_Avoid_: shared item, common item
+
+**Deal**:
+A Storefront-level promotion as reported by the data source (e.g. "20% off orders over $25"). Displayed, never applied; membership pricing is not a Deal.
+_Avoid_: promo, offer, discount
+
+**Snapshot**:
+An immutable record of one Venue's Comparison at a moment in time. The newest Snapshot, if fresh enough, serves as the current Comparison; the full set of a Venue's Snapshots is its price history. Snapshots are never updated or deleted.
+_Avoid_: cache entry, record

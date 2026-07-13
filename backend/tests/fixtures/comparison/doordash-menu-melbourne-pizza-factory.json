@@ -1,0 +1,405 @@
+[{
+  "storeId": "melbourne-pizza-factory-melbourne-843606",
+  "storeName": "Melbourne Pizza Factory",
+  "storeUrl": "https://www.doordash.com/store/melbourne-pizza-factory-melbourne-843606/",
+  "title": "Order Melbourne Pizza Factory - Melbourne, VIC Menu Delivery [Menu & Prices] | Melbourne - DoorDash",
+  "description": "Get delivery or takeout from Melbourne Pizza Factory at 271 King Street in Melbourne. Order online and track your order live. No delivery fee on your first order!",
+  "address": "271 King Street",
+  "city": "Melbourne",
+  "state": "VI",
+  "breadcrumbs": [
+    "Home",
+    "Restaurants",
+    "Pizza",
+    "Melbourne Pizza Factory"
+  ],
+  "menuSectionCount": 9,
+  "menuItemCount": 59,
+  "menuSections": [
+    "Most Ordered",
+    "Traditional Pizzas",
+    "Gourmet Pizzas",
+    "Dessert Pizzas",
+    "Combo Deals for Traditional Pizzas",
+    "Combo Deals for Gourmet Pizzas",
+    "Chips, Dim Sims & Nuggets",
+    "Juice",
+    "Cold Drinks"
+  ],
+  "menuItems": [
+    {
+      "section": "Most Ordered",
+      "name": "Pepperonis Traditional Pizza",
+      "description": "Recommended. Pepperonis and mozzarella cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Margherita Traditional Pizza",
+      "description": "Recommended. Mozzarella topped with oregano and garlic on a tomato sauce.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Hawaiian Traditional Pizza",
+      "description": "Shredded meat, pineapple, tomato base, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Meat Lovers Traditional Pizza",
+      "description": "Recommended. Shredded meat, hot salami, smokey beef, and cheese on a BBQ Sauce base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Chicken Tandoori Gourmet Pizza",
+      "description": "Recommended. Succulent chicken, tandoori spices, spinach, onion, and mozzarella cheese.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Veggie Traditional Pizza",
+      "description": "Mushrooms, onion, olives, capsicum, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Chicken Peri Peri Gourmet Pizza",
+      "description": "Succulent chicken, roasted capsicum, onions on a tomato base, and topped with peri peri sauce.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Soft Drinks",
+      "description": "Recommended.",
+      "price": "A$4.50"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "BBQ Chicken Gourmet Pizza",
+      "description": "Chicken, mozzarella cheese, mushrooms, onions on rich BBQ sauce, and finished with smokey BBQ drizzle.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Mexican Traditional Pizza",
+      "description": "Hot salami, capsicum, jalapenos, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Capricciosa Traditional Pizza",
+      "description": "Shredded meat, garlic, mushrooms, olives, oregano, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Most Ordered",
+      "name": "Combo Deal 1",
+      "description": "Any two large traditional pizzas, garlic bread, and 1.25 L soft drink.",
+      "price": "A$63.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Pepperonis Traditional Pizza",
+      "description": "Recommended. Pepperonis and mozzarella cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Margherita Traditional Pizza",
+      "description": "Recommended. Mozzarella topped with oregano and garlic on a tomato sauce.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Meat Lovers Traditional Pizza",
+      "description": "Recommended. Shredded meat, hot salami, smokey beef, and cheese on a BBQ Sauce base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Mexican Traditional Pizza",
+      "description": "Hot salami, capsicum, jalapenos, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Hawaiian Traditional Pizza",
+      "description": "Shredded meat, pineapple, tomato base, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Aussie Traditional Pizza",
+      "description": "Shredded meat, smokey beef, mushrooms, egg, and cheese on a bbq sauce base",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Veggie Traditional Pizza",
+      "description": "Mushrooms, onion, olives, capsicum, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Capricciosa Traditional Pizza",
+      "description": "Shredded meat, garlic, mushrooms, olives, oregano, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Veggie Hot & Spicy",
+      "description": "Tomato base, cheese, onions, pineapples, capsicum, jalapeños, chilli flakes",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Garlic Pizza",
+      "description": "Garlic base, cheese, drizzled with oregano and pizza sauce",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Mushrooms Pizza",
+      "description": "Tomato base, cheese, mushrooms, garlic and oregano",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Veggie Peri-Peri Pizza",
+      "description": "peri-peri sauce base, cheese, onions, capsicum, tomatoes, jalapeños topped with peri peri sauce",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Garlic Traditional Pizza",
+      "description": "Garlic base, cheese, drizzled with oregano, and tomato paste.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Traditional Pizzas",
+      "name": "Hot & Spicy Traditional Pizza",
+      "description": "Shredded meat, hot salami, mushroom, capsicum, satay sauce, smokey beef, chilli flakes, and cheese on a tomato base.",
+      "price": "A$23.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "BBQ Chicken Gourmet Pizza",
+      "description": "Chicken, mozzarella cheese, mushrooms, onions on rich BBQ sauce, and finished with smokey BBQ drizzle.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Chicken Tandoori Gourmet Pizza",
+      "description": "Recommended. Succulent chicken, tandoori spices, spinach, onion, and mozzarella cheese.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Chicken Peri Peri Gourmet Pizza",
+      "description": "Succulent chicken, roasted capsicum, onions on a tomato base, and topped with peri peri sauce.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Chicken Fajita Pizza",
+      "description": "Tomato base, cheese, chicken with Mexican spices, tomatoes, onions jalapeños",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Doner Pizza ( Chicken or Lamb )",
+      "description": "Tomato base, cheese, chicken or lamb, chilli flakes topper with garlic yogurt sauce",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Garlic Prawn Gourmet Pizza",
+      "description": "Prawns, baby spinach, fresh tomato, oregano on a creme fraiche base, and topped with garlic sauce.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Sweet Chilli Prawns Pizza",
+      "description": "Cream base, cheese, baby spinach, tomatoes, prawns and topped with sweet chilli sauce",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Veggie Tandoori Gourmet Pizza",
+      "description": "Tandoori paste base, Spinach, Onions, Capsicum, Mushrooms, Olives and Mozzarella Cheese.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "Chilli Prawn Gourmet Pizza",
+      "description": "Succulent prawns, baby spinach, and fresh tomato with creme fraiche.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Gourmet Pizzas",
+      "name": "MPF Special Gourmet Pizza",
+      "description": "Succulent chicken, shredded meat, salami, mushrooms, drizzled with BBQ sauce, garlic sauce, and chilli sauce.",
+      "price": "A$26.00"
+    },
+    {
+      "section": "Dessert Pizzas",
+      "name": "Nutella Pizza",
+      "description": "A medium size base topped with yummy Nutella.",
+      "price": "A$20.00"
+    },
+    {
+      "section": "Combo Deals for Traditional Pizzas",
+      "name": "Combo Deal 2",
+      "description": "Any five large traditional pizzas, two garlic bread and two 1.25 L soft drink.",
+      "price": "A$153.50"
+    },
+    {
+      "section": "Combo Deals for Traditional Pizzas",
+      "name": "Combo Deal 1",
+      "description": "Any two large traditional pizzas, garlic bread, and 1.25 L soft drink.",
+      "price": "A$63.00"
+    },
+    {
+      "section": "Combo Deals for Traditional Pizzas",
+      "name": "Combo Deal 3",
+      "description": "Any ten large traditional pizzas with four garlic bread and four 1.25 L soft drink.",
+      "price": "A$310.00"
+    },
+    {
+      "section": "Combo Deals for Gourmet Pizzas",
+      "name": "Combo Deal 3",
+      "description": "Any ten large gourmet pizzas, four garlic bread, and four 1.25 L soft drink.",
+      "price": "A$345.00"
+    },
+    {
+      "section": "Combo Deals for Gourmet Pizzas",
+      "name": "Combo Deal 1",
+      "description": "Any two large gourmet pizzas, garlic bread, and 1.25 l soft drink.",
+      "price": "A$69.00"
+    },
+    {
+      "section": "Combo Deals for Gourmet Pizzas",
+      "name": "Combo Deal 2",
+      "description": "Any five large gourmet pizzas, two garlic bread, and two 1.25 l soft drink.",
+      "price": "A$171.00"
+    },
+    {
+      "section": "Chips, Dim Sims & Nuggets",
+      "name": "Chicken Nuggets",
+      "description": "Tempura Premium Chicken Nuggets.",
+      "price": "A$11.50"
+    },
+    {
+      "section": "Chips, Dim Sims & Nuggets",
+      "name": "Dim Sims",
+      "description": "Three pieces.",
+      "price": "A$9.99"
+    },
+    {
+      "section": "Chips, Dim Sims & Nuggets",
+      "name": "Potato Cake",
+      "description": "3 Battered potato deep-fried.",
+      "price": "A$9.90"
+    },
+    {
+      "section": "Chips, Dim Sims & Nuggets",
+      "name": "Cheesy Chips",
+      "description": "",
+      "price": "A$9.50"
+    },
+    {
+      "section": "Chips, Dim Sims & Nuggets",
+      "name": "Chips",
+      "description": "",
+      "price": "A$8.00"
+    },
+    {
+      "section": "Juice",
+      "name": "Orange Juice",
+      "description": "",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Juice",
+      "name": "Apple Juice",
+      "description": "",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Powerade",
+      "description": "",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Kirks Portello",
+      "description": "",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Red Bull",
+      "description": "",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Water",
+      "description": "600 mL.",
+      "price": "A$4.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Pump",
+      "description": "750 mL.",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "V Drink",
+      "description": "",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Ice Tea",
+      "description": "",
+      "price": "A$6.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Soft Drinks",
+      "description": "Recommended.",
+      "price": "A$4.50"
+    },
+    {
+      "section": "Cold Drinks",
+      "name": "Sparkling Water",
+      "description": "",
+      "price": "A$5.50"
+    }
+  ],
+  "faqCount": 4,
+  "faq": [
+    {
+      "question": "What is the Melbourne Pizza Factory's address?",
+      "answer": "Melbourne Pizza Factory is located at House Of Kebabs, 271 King St, Melbourne VIC 3000, Australia. This is where you will go to get DoorDash Pickup orders, and where Dashers will go to get your DoorDash delivery orders."
+    },
+    {
+      "question": "Does Melbourne Pizza Factory offer delivery or pickup?",
+      "answer": "You can browse Melbourne Pizza Factory’s menu and place an order for Delivery on DoorDash. Melbourne Pizza Factory does not take orders for Pickup on DoorDash at this time. Melbourne Pizza Factory may also offer delivery and pickup on their own or through other delivery services."
+    },
+    {
+      "question": "What are the most popular dishes at Melbourne Pizza Factory?",
+      "answer": "The dishes most commonly ordered by DoorDash customers at Melbourne Pizza Factory are Pepperonis Traditional Pizza, Margherita Traditional Pizza and Hawaiian Traditional Pizza."
+    },
+    {
+      "question": "Is Melbourne Pizza Factory a DashPass eligible store?",
+      "answer": "Melbourne Pizza Factory offers DashPass benefits like $0 delivery, reduced service fees, and $5 credits back on Pickup orders. If you want to know if a store is DashPass eligible, you can look for the DashPass icon next to their name."
+    }
+  ],
+  "scrapedAt": "2026-07-13T05:29:43.908937+00:00"
+}]
