@@ -8,6 +8,12 @@ description: Submit a PR for this repo, monitor the Claude Code Review workflow 
 Ship a branch through this repo's PR pipeline: push → PR → wait for the
 claude-review workflow → fix findings → repeat → merge.
 
+
+## 0. Preflight
+```bash
+npm run analyze:pr
+```
+
 ## 1. Submit
 
 ```bash

@@ -17,7 +17,9 @@
     "start:backend": "node backend/dist/server.js",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
-    "format": "npm run format --workspace=backend && npm run format --workspace=frontend"
+    "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
+    "analyze": "fallow --production-dead-code",
+    "analyze:pr": "fallow audit --base origin/main"
   },
   "keywords": [
     "dinder",
@@ -29,6 +31,7 @@
   "license": "MIT",
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.4",
+    "fallow": "^3.3.0",
     "wait-on": "^9.0.10"
   }
 }
