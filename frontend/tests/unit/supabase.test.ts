@@ -3,22 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const supabaseMocks = vi.hoisted(() => {
   const signInWithOAuth = vi.fn();
   const signOut = vi.fn();
-  const getSession = vi.fn();
-  const getUser = vi.fn();
   const client = {
     auth: {
       signInWithOAuth,
       signOut,
-      getSession,
-      getUser,
     },
   };
 
   return {
     signInWithOAuth,
     signOut,
-    getSession,
-    getUser,
     createClient: vi.fn(() => client),
     client,
   };
@@ -28,20 +22,12 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: supabaseMocks.createClient,
 }));
 
-import {
-  getCurrentUser,
-  getSession,
-  signInWithGoogle,
-  signOut,
-  supabase,
-} from '../../src/services/supabase';
+import { signInWithGoogle, signOut, supabase } from '../../src/services/supabase';
 
 describe('supabase service', () => {
   beforeEach(() => {
     supabaseMocks.signInWithOAuth.mockReset();
     supabaseMocks.signOut.mockReset();
-    supabaseMocks.getSession.mockReset();
-    supabaseMocks.getUser.mockReset();
   });
 
   afterEach(() => {
@@ -120,33 +106,5 @@ describe('supabase service', () => {
 
     await expect(signOut()).rejects.toThrow('logout failed');
     expect(errorSpy).toHaveBeenCalledWith('Sign out error:', error);
-  });
-
-  it('should get sessions and surface errors', async () => {
-    const session = { access_token: 'token' };
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    supabaseMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
-
-    await expect(getSession()).resolves.toBe(session);
-
-    const error = new Error('down');
-    supabaseMocks.getSession.mockResolvedValueOnce({ data: {}, error });
-
-    await expect(getSession()).rejects.toThrow('down');
-    expect(errorSpy).toHaveBeenCalledWith('Get session error:', error);
-  });
-
-  it('should get users and return null on errors', async () => {
-    const user = { id: 'user-1' };
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    supabaseMocks.getUser.mockResolvedValueOnce({ data: { user }, error: null });
-
-    await expect(getCurrentUser()).resolves.toBe(user);
-
-    const error = new Error('missing');
-    supabaseMocks.getUser.mockResolvedValueOnce({ data: {}, error });
-
-    await expect(getCurrentUser()).resolves.toBeNull();
-    expect(errorSpy).toHaveBeenCalledWith('Get user error:', error);
   });
 });

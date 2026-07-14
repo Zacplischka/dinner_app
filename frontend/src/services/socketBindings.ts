@@ -253,5 +253,3 @@ export function disconnectSocket(): void {
   socketService.disconnectSocket();
   useSessionStore.getState().setConnectionStatus(false);
 }
-
-export { getSocketId, isSocketConnected } from './socketService';

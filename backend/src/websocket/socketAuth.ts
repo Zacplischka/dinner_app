@@ -1,20 +1,8 @@
-import type { Socket } from 'socket.io';
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from '@dinder/shared/types';
 import type { AuthenticatedUser } from '../middleware/auth.js';
 
 export interface SocketData {
   user?: AuthenticatedUser;
 }
-
-export type DinderSocket = Socket<
-  ClientToServerEvents,
-  ServerToClientEvents,
-  Record<string, never>,
-  SocketData
->;
 
 type SocketWithData = {
   data: SocketData;

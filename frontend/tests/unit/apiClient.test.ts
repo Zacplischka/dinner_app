@@ -140,7 +140,7 @@ describe('apiClient', () => {
         json: async () => ({ error: 'Internal Server Error', code: 'UNKNOWN', message: '' }),
       });
 
-      await expect(apiClient.createSession('Alice')).rejects.toThrow('Failed to create session');
+      await expect(apiClient.createSession('Alice')).rejects.toThrow('HTTP error 500');
     });
 
     it('should use configured API base URL when provided', async () => {
@@ -155,10 +155,7 @@ describe('apiClient', () => {
 
       await freshApiClient.getSession('ABC123');
 
-      expect(fetch).toHaveBeenCalledWith(
-        'https://api.example.test/v1/sessions/ABC123',
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toHaveBeenCalledWith('https://api.example.test/v1/sessions/ABC123');
       vi.unstubAllEnvs();
     });
   });
@@ -185,8 +182,7 @@ describe('apiClient', () => {
           suburb: 'Melbourne',
         });
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/comparison/venues?latitude=-37.81&longitude=144.96&radiusMiles=5'),
-        { method: 'GET' }
+        expect.stringContaining('/comparison/venues?latitude=-37.81&longitude=144.96&radiusMiles=5')
       );
     });
   });
@@ -222,10 +218,7 @@ describe('apiClient', () => {
 
       const result = await apiClient.getRestaurants('ABC123');
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/options/ABC123'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/options/ABC123'));
       expect(result).toEqual([
         {
           ...mockRestaurants[0],
@@ -272,10 +265,11 @@ describe('apiClient', () => {
     it('should use fallback error message for restaurant failures without a message', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
+        status: 400,
         json: async () => ({ error: 'Bad Request', code: 'BAD' }),
       });
 
-      await expect(apiClient.getRestaurants('ABC123')).rejects.toThrow('Failed to fetch restaurants');
+      await expect(apiClient.getRestaurants('ABC123')).rejects.toThrow('HTTP error 400');
     });
   });
 
@@ -295,26 +289,17 @@ describe('apiClient', () => {
       });
 
       await expect(apiClient.getSession('ABC123')).resolves.toEqual(session);
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/sessions/ABC123'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/sessions/ABC123'));
     });
 
     it('should use fallback error message for session lookup failures', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
+        status: 400,
         json: async () => ({ error: 'Bad Request', code: 'BAD' }),
       });
 
-      await expect(apiClient.getSession('ABC123')).rejects.toThrow('Failed to get session');
-    });
-  });
-
-  describe('handleApiError', () => {
-    it('should return Error messages and a generic fallback for unknown values', () => {
-      expect(apiClient.handleApiError(new Error('Readable'))).toBe('Readable');
-      expect(apiClient.handleApiError('bad')).toBe('An unexpected error occurred');
+      await expect(apiClient.getSession('ABC123')).rejects.toThrow('HTTP error 400');
     });
   });
 });

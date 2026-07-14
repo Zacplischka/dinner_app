@@ -166,12 +166,3 @@ export const useSessionStore = create<SessionState>()(
     { name: 'DinnerSession' }
   )
 );
-
-// Selector hooks for optimized re-renders
-export const useSessionCode = () => useSessionStore((state) => state.sessionCode);
-export const useParticipants = () => useSessionStore((state) => state.participants);
-export const useCurrentUserId = () => useSessionStore((state) => state.currentUserId);
-export const useSelections = () => useSessionStore((state) => state.selections);
-export const useOverlappingOptions = () => useSessionStore((state) => state.overlappingOptions);
-export const useSessionStatus = () => useSessionStore((state) => state.sessionStatus);
-export const useConnectionStatus = () => useSessionStore((state) => state.isConnected);

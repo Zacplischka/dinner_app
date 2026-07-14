@@ -85,10 +85,7 @@ export async function handleSessionLeave(
     if (results) {
       io.in(sessionCode).emit('session:results', {
         sessionCode,
-        overlappingOptions: results.overlappingOptions,
-        allSelections: results.allSelections,
-        restaurantNames: results.restaurantNames,
-        hasOverlap: results.hasOverlap,
+        ...results,
       });
     }
   } catch (error) {

@@ -91,42 +91,6 @@ async function verifyTokenInternal(token: string): Promise<TokenVerificationResu
 }
 
 /**
- * Optional auth middleware - extracts user info if token is present
- * Does not require authentication, but populates req.user if valid token exists
- */
-export function optionalAuth(
-  req: AuthenticatedRequest,
-  _res: Response,
-  next: NextFunction
-): void {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // No token provided - continue without auth
-    return next();
-  }
-
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-  if (!isSupabaseAuthConfigured()) {
-    logger.warn('Supabase Auth is not configured - skipping token verification');
-    return next();
-  }
-
-  void (async () => {
-    const result = await verifyTokenInternal(token);
-
-    if (result.user) {
-      req.user = result.user;
-    } else {
-      logger.warn({ detail: result.message }, 'Token verification failed');
-    }
-
-    next();
-  })();
-}
-
-/**
  * Required auth middleware - rejects requests without valid token
  * Use this for protected routes
  */

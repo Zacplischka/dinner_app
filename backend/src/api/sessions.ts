@@ -108,54 +108,45 @@ export function createSessionsRouter(sessionService: SessionService) {
    * Get session details
    */
   router.get('/:sessionCode', asyncHandler(async (req, res) => {
-    try {
-      const { sessionCode } = req.params;
+    const { sessionCode } = req.params;
 
-      // Validate session code format
-      if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
-        req.log.warn({
-          sessionCode,
-          reason: 'invalid_session_code',
-        }, 'Rejected REST session get');
-
-        return res.status(404).json({
-          error: 'Not Found',
-          code: 'SESSION_NOT_FOUND',
-          message: `Session ${sessionCode} not found or has expired`,
-        });
-      }
-
-      // Get session
-      const session = await sessionService.getSession(sessionCode);
-
-      if (!session) {
-        req.log.warn({
-          sessionCode,
-          reason: 'session_not_found',
-        }, 'Rejected REST session get');
-
-        return res.status(404).json({
-          error: 'Not Found',
-          code: 'SESSION_NOT_FOUND',
-          message: `Session ${sessionCode} not found or has expired`,
-        });
-      }
-
-      req.log.info({
+    // Validate session code format
+    if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
+      req.log.warn({
         sessionCode,
-        state: session.state,
-        participantCount: session.participantCount,
-      }, 'Returned REST session');
+        reason: 'invalid_session_code',
+      }, 'Rejected REST session get');
 
-      return res.status(200).json(session);
-    } catch (error) {
-      req.log.error({ err: error }, 'Error getting session');
-      return res.status(500).json({
-        error: 'Internal Server Error',
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred. Please try again later.',
+      return res.status(404).json({
+        error: 'Not Found',
+        code: 'SESSION_NOT_FOUND',
+        message: `Session ${sessionCode} not found or has expired`,
       });
     }
+
+    // Get session
+    const session = await sessionService.getSession(sessionCode);
+
+    if (!session) {
+      req.log.warn({
+        sessionCode,
+        reason: 'session_not_found',
+      }, 'Rejected REST session get');
+
+      return res.status(404).json({
+        error: 'Not Found',
+        code: 'SESSION_NOT_FOUND',
+        message: `Session ${sessionCode} not found or has expired`,
+      });
+    }
+
+    req.log.info({
+      sessionCode,
+      state: session.state,
+      participantCount: session.participantCount,
+    }, 'Returned REST session');
+
+    return res.status(200).json(session);
   }));
 
   /**

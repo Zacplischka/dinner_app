@@ -12,7 +12,7 @@ import type { Profile } from './supabase.js';
 import type { Friend, FriendRequest, SessionInvite, UserProfile } from '@dinder/shared/types';
 
 /** The FriendsStore surface the service depends on. */
-export type FriendsStore = typeof friendsStore;
+type FriendsStore = typeof friendsStore;
 
 interface FriendsServiceDeps {
   store: FriendsStore;

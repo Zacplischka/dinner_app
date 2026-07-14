@@ -38,7 +38,7 @@ end
 return expireAt
 `;
 
-export function calculateExpireAt(): number {
+function calculateExpireAt(): number {
   return Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
 }
 

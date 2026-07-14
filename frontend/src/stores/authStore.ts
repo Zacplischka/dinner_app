@@ -93,9 +93,3 @@ export const useAuthStore = create<AuthState>()(
     { name: 'AuthStore' }
   )
 );
-
-// Selector hooks
-export const useUser = () => useAuthStore((state) => state.user);
-export const useSession = () => useAuthStore((state) => state.session);
-export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
-export const useAuthLoading = () => useAuthStore((state) => state.isLoading);
