@@ -7,10 +7,10 @@ import type {
 
 export function deriveComparison(snapshot: Snapshot): Comparison {
   const uberEatsMenu = snapshot.payload.ubereats?.status === 'resolved'
-    ? snapshot.payload.ubereats.menu
+    ? uniqueMenuItems(snapshot.payload.ubereats.menu)
     : [];
   const doorDashMenu = snapshot.payload.doordash?.status === 'resolved'
-    ? snapshot.payload.doordash.menu
+    ? uniqueMenuItems(snapshot.payload.doordash.menu)
     : [];
   const matchedDoorDashIndexes = new Set<number>();
   const matchedItems: MatchedItem[] = [];
@@ -55,6 +55,16 @@ export function normalizeComparisonName(value: string): string {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function uniqueMenuItems(menu: MenuItemCapture[]): MenuItemCapture[] {
+  const seen = new Set<string>();
+  return menu.filter((item) => {
+    const key = `${normalizeComparisonName(item.name)}\0${item.price_cents}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function cheaperMenu(matchedItems: MatchedItem[]): Pick<Comparison, 'cheaperMenu'> {

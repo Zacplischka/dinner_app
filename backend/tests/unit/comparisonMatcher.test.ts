@@ -115,4 +115,39 @@ describe('deriveComparison', () => {
     expect(comparison.matchedItems).toHaveLength(2);
     expect(comparison.unmatched).toEqual({ ubereats: [], doordash: [] });
   });
+
+  it('never reports a matched item name as platform-only when one menu repeats it', () => {
+    const zingerBox = { name: 'Zinger® Burger Box', price_cents: 2095, tags: [] };
+    const comparison = deriveComparison(snapshot(
+      [zingerBox],
+      [zingerBox, structuredClone(zingerBox)]
+    ));
+
+    expect(comparison.matchedItems).toHaveLength(1);
+    expect(comparison.unmatched).toEqual({ ubereats: [], doordash: [] });
+  });
+
+  it('lists an identical platform-only capture once', () => {
+    const doorDashOnly = { name: 'Liquid Gold Zinger® Box', price_cents: 2295, tags: [] };
+    const comparison = deriveComparison(snapshot(
+      [],
+      [doorDashOnly, structuredClone(doorDashOnly)]
+    ));
+
+    expect(comparison.unmatched.doordash).toEqual([doorDashOnly]);
+  });
+
+  it('keeps a same-named item with a different price as a one-to-one leftover', () => {
+    const comparison = deriveComparison(snapshot(
+      [{ name: 'Combo Deal', price_cents: 1000, tags: [] }],
+      [
+        { name: 'Combo Deal', price_cents: 1100, tags: [] },
+        { name: 'Combo Deal', price_cents: 2000, tags: [] },
+      ]
+    ));
+
+    expect(comparison.unmatched.doordash).toEqual([
+      { name: 'Combo Deal', price_cents: 2000, tags: [] },
+    ]);
+  });
 });
