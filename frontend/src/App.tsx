@@ -28,10 +28,10 @@ const FriendsPage = lazy(() => import('./pages/FriendsPage'));
 // Loading fallback component - matches dark theme
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-midnight">
+    <div className="flex items-center justify-center min-h-screen bg-ink">
       <div className="text-center">
-        <div className="inline-block w-10 h-10 border-3 border-amber border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-cream-400 font-body">Loading...</p>
+        <div className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-muted font-body">Loading...</p>
       </div>
     </div>
   );

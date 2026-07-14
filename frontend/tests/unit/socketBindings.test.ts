@@ -62,7 +62,7 @@ import * as socketBindings from '../../src/services/socketBindings';
 const participant = {
   participantId: 'participant-1',
   displayName: 'Alice',
-  sessionCode: 'ABC123',
+  sessionCode: 'AB123',
   joinedAt: 1,
   hasSubmitted: false,
   isHost: true,
@@ -82,7 +82,7 @@ describe('socketBindings', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     socketBindings.disconnectSocket();
     useSessionStore.getState().resetSession();
-    useSessionStore.setState({ participants: [participant], sessionCode: 'OLD111' });
+    useSessionStore.setState({ participants: [participant], sessionCode: 'OLD11' });
     useAuthStore.setState({ session: { access_token: 'token' } as any });
   });
 
@@ -182,7 +182,7 @@ describe('socketBindings', () => {
     socketBindings.initializeSocket();
 
     socket.trigger('session:results', {
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       hasOverlap: true,
       overlappingOptions: [{ placeId: 'pizza', name: 'Pizza' }],
       allSelections: { Alice: ['pizza'] },
@@ -190,10 +190,10 @@ describe('socketBindings', () => {
     });
     expect(useSessionStore.getState().sessionStatus).toBe('complete');
 
-    socket.trigger('session:restarted', { sessionCode: 'ABC123' });
+    socket.trigger('session:restarted', { sessionCode: 'AB123' });
     expect(useSessionStore.getState().sessionStatus).toBe('selecting');
 
-    socket.trigger('session:expired', { sessionCode: 'ABC123' });
+    socket.trigger('session:expired', { sessionCode: 'AB123' });
     expect(useSessionStore.getState().sessionStatus).toBe('expired');
 
     socket.trigger('error', { message: 'bad' });
@@ -211,14 +211,14 @@ describe('socketBindings', () => {
       participants: [participant],
     });
 
-    await expect(socketBindings.joinSession('ABC123', 'Alice')).resolves.toMatchObject({
+    await expect(socketBindings.joinSession('AB123', 'Alice')).resolves.toMatchObject({
       success: true,
     });
-    expect(useSessionStore.getState().sessionCode).toBe('ABC123');
+    expect(useSessionStore.getState().sessionCode).toBe('AB123');
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Alice');
 
     socket.acks.set('session:leave', { success: true });
-    await expect(socketBindings.leaveSession('ABC123')).resolves.toEqual({ success: true });
+    await expect(socketBindings.leaveSession('AB123')).resolves.toEqual({ success: true });
     expect(useSessionStore.getState().sessionCode).toBeNull();
   });
 
@@ -232,10 +232,11 @@ describe('socketBindings', () => {
       participants: [participant],
     });
 
-    await socketBindings.joinSession('NEW999', 'Alice');
+    await socketBindings.joinSession('NEW99', 'Alice');
 
     expect(useSessionStore.getState().selections).toEqual([]);
-    expect(useSessionStore.getState().sessionCode).toBe('NEW999');
+    expect(useSessionStore.getState().sessionCode).toBe('NEW99');
+    expect(useSessionStore.getState().sessionStatus).toBe('waiting');
   });
 
   it('clears connection status when disconnecting', () => {

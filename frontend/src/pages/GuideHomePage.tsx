@@ -17,9 +17,9 @@ export default function GuideHomePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-warm-gradient px-4 relative overflow-hidden">
+    <main className="min-h-screen bg-ink px-4 relative overflow-hidden">
       {/* Ambient glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[420px] bg-amber/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[420px] bg-cyan/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Auth section - top right */}
       <div className="absolute top-4 right-4 z-20">
@@ -33,24 +33,24 @@ export default function GuideHomePage() {
       <div className="max-w-2xl mx-auto pt-10 pb-24 relative z-10 animate-fade-in">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-midnight-100/70 border border-midnight-50/40 flex items-center justify-center shadow-card overflow-hidden">
+            <div className="w-10 h-10 rounded-2xl bg-raised/70 border border-line/40 flex items-center justify-center shadow-card overflow-hidden">
               <img src="/dinder-logo.png" alt="Dinder" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className="font-display text-3xl sm:text-4xl font-semibold text-cream text-glow">Dinder</h1>
-              <p className="text-cream-400">Melbourne’s best — curated. Then decided.</p>
+              <h1 className="font-display text-3xl sm:text-4xl font-black text-text">Dinder</h1>
+              <p className="text-muted">Melbourne’s best — curated. Then decided.</p>
             </div>
           </div>
 
           <div className="card overflow-hidden">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs tracking-[0.25em] uppercase text-cream-500 mb-2">Melbourne · East side → Warrandyte</p>
-                <p className="text-sm text-cream-400">A curated guide with Google-backed signals — plus a decider when the group can’t.</p>
+                <p className="text-xs tracking-[0.25em] uppercase text-muted mb-2">Melbourne · East side → Warrandyte</p>
+                <p className="text-sm text-muted">A curated guide with Google-backed signals — plus a decider when the group can’t.</p>
               </div>
               <div className="hidden sm:flex items-center gap-2">
-                <span className="badge badge-amber animate-glow-pulse">Editor-led</span>
-                <span className="badge bg-midnight-200 text-cream-300 border border-midnight-50/30">Google stars</span>
+                <span className="badge badge-cyan animate-glow-pulse">Editor-led</span>
+                <span className="badge bg-surface text-text/80 border border-line/30">Google stars</span>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -61,7 +61,7 @@ export default function GuideHomePage() {
                   placeholder="Try: after-work, Richmond, Italian, date night…"
                   disabled
                 />
-                <p className="mt-2 text-xs text-cream-500/70 italic">Demo UI: search is non-functional.</p>
+                <p className="mt-2 text-xs text-muted/70 italic">Demo UI: search is non-functional.</p>
               </div>
               <div className="flex flex-col gap-2 justify-end">
                 <button className="btn btn-primary" onClick={() => navigate('/create')}>
@@ -81,11 +81,11 @@ export default function GuideHomePage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-amber font-semibold">Tonight</p>
-                  <h2 className="font-display text-xl font-semibold text-cream">After-work winners</h2>
-                  <p className="text-sm text-cream-400 mt-1">Fast picks for 5:30pm decisions.</p>
+                  <p className="text-cyan font-semibold">Tonight</p>
+                  <h2 className="font-display text-xl font-semibold text-text">After-work winners</h2>
+                  <p className="text-sm text-muted mt-1">Fast picks for 5:30pm decisions.</p>
                 </div>
-                <span className="badge badge-amber">Weeknights</span>
+                <span className="badge badge-cyan">Weeknights</span>
               </div>
             </button>
 
@@ -95,19 +95,19 @@ export default function GuideHomePage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-amber font-semibold">The Edit</p>
-                  <h2 className="font-display text-xl font-semibold text-cream">Special occasion</h2>
-                  <p className="text-sm text-cream-400 mt-1">High impact, high confidence.</p>
+                  <p className="text-cyan font-semibold">The Edit</p>
+                  <h2 className="font-display text-xl font-semibold text-text">Special occasion</h2>
+                  <p className="text-sm text-muted mt-1">High impact, high confidence.</p>
                 </div>
-                <span className="badge badge-amber">Celebration</span>
+                <span className="badge badge-cyan">Celebration</span>
               </div>
             </button>
           </div>
 
           <div className="card">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-cream">Shortlists</h2>
-              <button className="text-amber hover:text-amber-200 text-sm" onClick={() => navigate('/lists/tonight')}>
+              <h2 className="font-display text-xl font-semibold text-text">Shortlists</h2>
+              <button className="min-h-[44px] text-cyan hover:text-white text-sm" onClick={() => navigate('/lists/tonight')}>
                 View all
               </button>
             </div>
@@ -117,32 +117,32 @@ export default function GuideHomePage() {
                 <button
                   key={l!.id}
                   onClick={() => navigate(`/lists/${l!.id}`)}
-                  className="text-left p-4 rounded-2xl bg-midnight-200/50 border border-midnight-50/20 hover:border-amber/30 transition-all"
+                  className="text-left p-4 rounded-2xl bg-surface/50 border border-line/20 hover:border-cyan/30 transition-all"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-display text-lg font-semibold text-cream">{l!.title}</p>
-                      <p className="text-sm text-cream-500">{l!.subtitle}</p>
-                      <p className="text-xs text-cream-500/70 mt-2">{l!.restaurantIds.length} places</p>
+                      <p className="font-display text-lg font-semibold text-text">{l!.title}</p>
+                      <p className="text-sm text-muted">{l!.subtitle}</p>
+                      <p className="text-xs text-muted/70 mt-2">{l!.restaurantIds.length} places</p>
                     </div>
-                    {l!.badge && <span className="badge badge-amber">{l!.badge}</span>}
+                    {l!.badge && <span className="badge badge-cyan">{l!.badge}</span>}
                   </div>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="text-center text-xs text-cream-500/60 pt-2">
+          <div className="text-center text-xs text-muted/60 pt-2">
             Demo build: guide data + decider are local only.
           </div>
         </div>
       </div>
 
       {/* Bottom hint */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-cream-500/40 text-xs tracking-widest uppercase">
-        <div className="w-8 h-px bg-cream-500/20" />
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 text-muted/40 text-xs tracking-widest uppercase">
+        <div className="w-8 h-px bg-muted/20" />
         <span>Curate · Decide</span>
-        <div className="w-8 h-px bg-cream-500/20" />
+        <div className="w-8 h-px bg-muted/20" />
       </div>
     </main>
   );

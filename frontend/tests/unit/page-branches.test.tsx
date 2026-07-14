@@ -1,18 +1,19 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const serviceMocks = vi.hoisted(() => ({
   getSession: vi.fn(async () => ({
-    sessionCode: 'ABC123',
+    sessionCode: 'AB123',
     hostName: 'Alice',
     participantCount: 1,
     state: 'waiting',
     expiresAt: new Date().toISOString(),
-    shareableLink: 'http://localhost:3000/join?code=ABC123',
+    shareableLink: 'http://localhost:3000/join?code=AB123',
   })),
   leaveSession: vi.fn(async () => ({ success: true })),
+  restartSession: vi.fn(async () => undefined),
   joinSession: vi.fn(async () => ({ success: true, participantId: 'participant-1' })),
 }));
 
@@ -65,6 +66,7 @@ vi.mock('../../src/services/apiClient', () => ({
 
 vi.mock('../../src/services/socketBindings', () => ({
   leaveSession: serviceMocks.leaveSession,
+  restartSession: serviceMocks.restartSession,
   joinSession: serviceMocks.joinSession,
 }));
 
@@ -91,7 +93,7 @@ import { useSessionStore } from '../../src/stores/sessionStore';
 const participant = {
   participantId: 'participant-1',
   displayName: 'Alice',
-  sessionCode: 'ABC123',
+  sessionCode: 'AB123',
   joinedAt: 1,
   hasSubmitted: false,
   isHost: true,
@@ -121,7 +123,7 @@ const request = {
 
 const invite = {
   id: 'invite-1',
-  sessionCode: 'ABC123',
+  sessionCode: 'AB123',
   inviter: profile,
   status: 'pending' as const,
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -151,7 +153,7 @@ describe('page branch coverage', () => {
     vi.clearAllMocks();
     useSessionStore.getState().resetSession();
     useSessionStore.setState({
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       currentUserId: 'participant-1',
       participants: [participant],
       isConnected: true,
@@ -168,7 +170,7 @@ describe('page branch coverage', () => {
       fetchFriends: vi.fn(async () => undefined) as any,
       fetchFriendRequests: vi.fn(async () => undefined) as any,
       fetchSessionInvites: vi.fn(async () => undefined) as any,
-      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'ABC123' })) as any,
+      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'AB123' })) as any,
       declineSessionInvite: vi.fn(async () => true) as any,
     });
   });
@@ -244,11 +246,21 @@ describe('page branch coverage', () => {
     expect(await screen.findByText('Dinder')).toBeInTheDocument();
     noCode.unmount();
 
-    renderApp('/session/ABC123');
+    renderApp('/session/AB123');
     expect(await screen.findByText('Copy shareable link')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Back'));
     fireEvent.click(await screen.findByText('Leave Session'));
-    await waitFor(() => expect(serviceMocks.leaveSession).toHaveBeenCalledWith('ABC123'));
+    await waitFor(() => expect(serviceMocks.leaveSession).toHaveBeenCalledWith('AB123'));
     expect(await screen.findByText('Dinder')).toBeInTheDocument();
+  });
+
+  it('starts selection through the shared session event and follows its state', async () => {
+    renderApp('/session/AB123');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Start Selecting' }));
+    await waitFor(() => expect(serviceMocks.restartSession).toHaveBeenCalledWith('AB123'));
+
+    act(() => useSessionStore.setState({ sessionStatus: 'selecting' }));
+    expect(await screen.findByText('Select route')).toBeInTheDocument();
   });
 });

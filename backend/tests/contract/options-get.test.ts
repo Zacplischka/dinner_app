@@ -7,7 +7,7 @@ import type { Restaurant } from '@dinder/shared/types';
 
 describe('Contract Test: GET /api/options/:sessionCode', () => {
   const redis = getTestRedis();
-  const sessionCode = 'OPT123';
+  const sessionCode = 'OPT12';
   const restaurants: Restaurant[] = [
     {
       placeId: 'place-pizza',

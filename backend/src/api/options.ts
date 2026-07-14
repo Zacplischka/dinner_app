@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { asyncHandler } from './asyncHandler.js';
 import type { SessionStore } from '../store/sessionStore.js';
+import { SESSION_CODE_PATTERN } from '@dinder/shared/types';
 
 export function createOptionsRouter(store: SessionStore) {
   const router = Router();
@@ -15,8 +16,7 @@ export function createOptionsRouter(store: SessionStore) {
   router.get('/:sessionCode', asyncHandler(async (req, res) => {
     const { sessionCode } = req.params;
 
-    // Validate session code format (6 uppercase alphanumeric)
-    if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
+    if (!SESSION_CODE_PATTERN.test(sessionCode)) {
       req.log.warn({
         sessionCode,
         reason: 'invalid_session_code',

@@ -29,21 +29,21 @@ export default function FriendsList({
 
   if (friends.length === 0) {
     return (
-      <div className="text-center py-8 text-cream-500">
+      <div className="text-center py-8 text-muted">
         <p className="text-lg">No friends yet</p>
-        <p className="text-sm mt-1 text-cream-500/60">Search for users by email to add friends</p>
+        <p className="text-sm mt-1 text-muted/60">Search for users by email to add friends</p>
       </div>
     );
   }
 
   return (
-    <ul className="divide-y divide-midnight-50/30">
+    <ul className="divide-y divide-line/30">
       {friends.map((friend) => (
         <li
           key={friend.id}
           className={`flex items-center justify-between py-3 px-3 rounded-xl transition-all ${
-            selectable ? 'cursor-pointer hover:bg-midnight-200/50' : ''
-          } ${selectedIds.has(friend.id) ? 'bg-amber/10 border border-amber/30' : ''}`}
+            selectable ? 'cursor-pointer hover:bg-surface/50' : ''
+          } ${selectedIds.has(friend.id) ? 'bg-cyan/10 border border-cyan/30' : ''}`}
           onClick={() => selectable && onToggleSelect?.(friend.id)}
         >
           <div className="flex items-center gap-3">
@@ -52,13 +52,13 @@ export default function FriendsList({
               <div
                 className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                   selectedIds.has(friend.id)
-                    ? 'border-amber bg-amber'
-                    : 'border-cream-500/30'
+                    ? 'border-cyan bg-cyan'
+                    : 'border-muted/30'
                 }`}
               >
                 {selectedIds.has(friend.id) && (
                   <svg
-                    className="w-3 h-3 text-midnight"
+                    className="w-3 h-3 text-ink"
                     fill="none"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -78,11 +78,11 @@ export default function FriendsList({
                 src={friend.avatarUrl}
                 alt={friend.displayName}
                 referrerPolicy="no-referrer"
-                className="w-10 h-10 rounded-full ring-2 ring-amber/20"
+                className="w-10 h-10 rounded-full ring-2 ring-cyan/20"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber to-amber-500 flex items-center justify-center shadow-glow">
-                <span className="text-midnight font-medium text-lg">
+              <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
+                <span className="text-ink font-medium text-lg">
                   {friend.displayName.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -90,9 +90,9 @@ export default function FriendsList({
 
             {/* Name and email */}
             <div>
-              <p className="font-medium text-cream">{friend.displayName}</p>
+              <p className="font-medium text-text">{friend.displayName}</p>
               {friend.email && (
-                <p className="text-sm text-cream-500">{friend.email}</p>
+                <p className="text-sm text-muted">{friend.email}</p>
               )}
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function FriendsList({
                     e.stopPropagation();
                     onInvite(friend.id);
                   }}
-                  className="px-3 py-1.5 text-sm font-medium text-amber hover:text-amber-200 hover:bg-amber/10 rounded-lg transition-colors"
+                  className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-white hover:bg-cyan/10 rounded-lg transition-colors"
                 >
                   Invite
                 </button>
@@ -116,7 +116,7 @@ export default function FriendsList({
                   e.stopPropagation();
                   handleRemoveFriend(friend.id, friend.displayName);
                 }}
-                className="px-3 py-1.5 text-sm font-medium text-error-light hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-soft hover:text-white hover:bg-coral/10 rounded-lg transition-colors"
               >
                 Remove
               </button>

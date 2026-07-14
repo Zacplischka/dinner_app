@@ -61,13 +61,13 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 w-full max-w-md p-6 animate-fade-in">
+        <div className="relative bg-raised rounded-2xl shadow-card border border-line/30 w-full max-w-md p-6 animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display font-semibold text-cream">Add Friend</h2>
+            <h2 className="text-xl font-display font-semibold text-text">Add Friend</h2>
             <button
               onClick={handleClose}
-              className="text-cream-500 hover:text-cream transition-colors p-1"
+              className="text-muted hover:text-text transition-colors p-1"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -77,7 +77,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
 
           {/* Search form */}
           <form onSubmit={handleSearch} className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-cream-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-text/80 mb-2">
               Search by email
             </label>
             <div className="flex gap-2">
@@ -87,12 +87,12 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="friend@example.com"
-                className="flex-1 px-4 py-3 text-cream bg-midnight-200 border border-midnight-50/50 rounded-xl placeholder:text-cream-500 focus:border-amber/60 focus:ring-1 focus:ring-amber/30 outline-none transition-all"
+                className="input flex-1"
               />
               <button
                 type="submit"
                 disabled={isSearching || !email.trim()}
-                className="px-4 py-2 bg-gradient-to-r from-amber to-amber-300 text-midnight font-semibold rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed transition-all shadow-glow disabled:shadow-none"
+                className="min-h-[44px] px-4 py-2 bg-coral text-white font-semibold rounded-xl hover:brightness-110 disabled:bg-line disabled:text-muted disabled:cursor-not-allowed transition-all shadow-glow-coral disabled:shadow-none"
               >
                 {isSearching ? 'Searching...' : 'Search'}
               </button>
@@ -101,27 +101,27 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
 
           {/* Error message */}
           {error && (
-            <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-xl">
-              <p className="text-sm text-error-light">{error}</p>
+            <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
+              <p className="text-sm text-coral-soft">{error}</p>
             </div>
           )}
 
           {/* Success message */}
           {successMessage && (
-            <div className="mb-4 p-3 bg-success/10 border border-success/30 rounded-xl">
-              <p className="text-sm text-success-light">{successMessage}</p>
+            <div className="mb-4 p-3 bg-lime/10 border border-lime/30 rounded-xl">
+              <p className="text-sm text-lime">{successMessage}</p>
             </div>
           )}
 
           {/* Search results */}
           {searchResults.length > 0 && (
-            <div className="border-t border-midnight-50/30 pt-4">
-              <h3 className="text-sm font-medium text-cream-400 mb-3">Results</h3>
+            <div className="border-t border-line/30 pt-4">
+              <h3 className="text-sm font-medium text-muted mb-3">Results</h3>
               <ul className="space-y-2">
                 {searchResults.map((user) => (
                   <li
                     key={user.id}
-                    className="flex items-center justify-between p-3 bg-midnight-200/50 rounded-xl border border-midnight-50/20"
+                    className="flex items-center justify-between p-3 bg-surface/50 rounded-xl border border-line/20"
                   >
                     <div className="flex items-center gap-3">
                       {user.avatarUrl ? (
@@ -129,23 +129,23 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                           src={user.avatarUrl}
                           alt={user.displayName}
                           referrerPolicy="no-referrer"
-                          className="w-8 h-8 rounded-full ring-2 ring-amber/20"
+                          className="w-8 h-8 rounded-full ring-2 ring-cyan/20"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber to-amber-500 flex items-center justify-center shadow-glow">
-                          <span className="text-midnight font-medium">
+                        <div className="w-8 h-8 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
+                          <span className="text-ink font-medium">
                             {user.displayName.charAt(0).toUpperCase()}
                           </span>
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-cream">{user.displayName}</p>
-                        <p className="text-xs text-cream-500">{user.email}</p>
+                        <p className="font-medium text-text">{user.displayName}</p>
+                        <p className="text-xs text-muted">{user.email}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => user.email && handleSendRequest(user.email)}
-                      className="px-3 py-1.5 text-sm font-medium text-amber hover:text-amber-200 hover:bg-amber/10 rounded-lg transition-colors"
+                      className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-white hover:bg-cyan/10 rounded-lg transition-colors"
                     >
                       Add Friend
                     </button>
@@ -157,7 +157,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
 
           {/* No results message */}
           {searchResults.length === 0 && !isSearching && email && !error && !successMessage && (
-            <div className="text-center py-4 text-cream-500 text-sm">
+            <div className="text-center py-4 text-muted text-sm">
               No users found with that email
             </div>
           )}

@@ -93,15 +93,15 @@ test.describe('Join Session Page', () => {
   test('should format session code to uppercase', async ({ joinPage }) => {
     await joinPage.goto();
     await joinPage.enterSessionCode('abc123');
-    await joinPage.verifySessionCodeUppercase('ABC123');
+    await joinPage.verifySessionCodeUppercase('ABC12');
   });
 
-  test('should limit session code to 6 characters', async ({ joinPage }) => {
+  test('should limit session code to 5 characters', async ({ joinPage }) => {
     await joinPage.goto();
-    await joinPage.enterSessionCode('ABCDEFGHIJ');
+    await joinPage.enterSessionCode('ABCDEGHIJ');
 
     const value = await joinPage.getSessionCodeValue();
-    expect(value).toBe('ABCDEF');
+    expect(value).toBe('ABCDE');
   });
 
   test('should show character count for name input', async ({ joinPage, page }) => {

@@ -10,7 +10,7 @@ import { shareableLink } from '../config/index.js';
 import { getExpiresAtISO, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
-import type { Restaurant } from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type Restaurant } from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
 export const MAX_PARTICIPANTS = 4;
@@ -21,12 +21,12 @@ interface SessionServiceDeps {
 }
 
 /**
- * Generate a unique 6-character alphanumeric session code (uppercase)
+ * Generate a unique uppercase alphanumeric session code.
  */
 export function generateSessionCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < SESSION_CODE_LENGTH; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;

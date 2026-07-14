@@ -1,6 +1,6 @@
 // ConfirmLeaveModal Component
 // Confirmation dialog before leaving a session
-// UX: "Stay" is primary action (amber), "Leave" is secondary (outlined red)
+// UX: "Stay" is the safe action, "Leave" is destructive.
 
 interface ConfirmLeaveModalProps {
   isOpen: boolean;
@@ -89,67 +89,54 @@ export default function ConfirmLeaveModal({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-ink/80 backdrop-blur-[10px] transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 w-full max-w-sm p-6 animate-fade-in">
-          {/* Warning Icon */}
-          <div className="flex justify-center mb-4">
-            <div className="w-14 h-14 bg-warning/20 rounded-full flex items-center justify-center">
-              <svg
-                className="w-7 h-7 text-warning"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
+        <div className="card relative w-full max-w-sm shadow-glow-coral animate-fade-in">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <h2
+                id="confirm-leave-title"
+                className="text-2xl font-display font-black text-text mb-2"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+                {getTitle()}
+              </h2>
+              <p className="text-muted">
+                {getMessage()}
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="w-11 h-11 flex-shrink-0 rounded-full border border-line bg-surface text-xl text-muted hover:text-text disabled:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
           </div>
 
-          {/* Title */}
-          <h2
-            id="confirm-leave-title"
-            className="text-xl font-display font-semibold text-cream text-center mb-2"
-          >
-            {getTitle()}
-          </h2>
-
-          {/* Message */}
-          <p className="text-cream-400 text-center mb-6">
-            {getMessage()}
-          </p>
-
-          {/* Buttons - UX: Primary action (Stay) is amber, secondary (Leave) is outlined */}
           <div className="flex gap-3">
-            {/* Primary: Stay (non-destructive) */}
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 min-h-[48px] px-4 py-3 font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all shadow-glow hover:shadow-glow-lg disabled:shadow-none"
+              className="flex-1 min-h-[48px] rounded-xl bg-lime px-4 py-3 font-extrabold text-ink shadow-glow-lime transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
               autoFocus
             >
               {getStayLabel()}
             </button>
-            {/* Secondary: Leave (destructive) */}
             <button
               onClick={onConfirm}
               disabled={isLoading}
-              className="flex-1 min-h-[48px] px-4 py-3 font-medium text-error bg-transparent border border-error/40 rounded-xl hover:bg-error/10 hover:border-error disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+              className="flex-1 min-h-[48px] rounded-xl border border-coral bg-transparent px-4 py-3 font-bold text-coral-soft transition-all duration-150 hover:bg-coral/10 disabled:opacity-50 active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-error border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-coral border-t-transparent rounded-full animate-spin" />
                   Leaving...
                 </span>
               ) : (

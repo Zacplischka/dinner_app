@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
 import { MAX_PARTICIPANTS, type SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
+import { SESSION_CODE_PATTERN } from '@dinder/shared/types';
 
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
@@ -111,7 +112,7 @@ export function createSessionsRouter(sessionService: SessionService) {
     const { sessionCode } = req.params;
 
     // Validate session code format
-    if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
+    if (!SESSION_CODE_PATTERN.test(sessionCode)) {
       req.log.warn({
         sessionCode,
         reason: 'invalid_session_code',
@@ -158,7 +159,7 @@ export function createSessionsRouter(sessionService: SessionService) {
       const { sessionCode } = req.params;
 
       // Validate session code format
-      if (!/^[A-Z0-9]{6}$/.test(sessionCode)) {
+      if (!SESSION_CODE_PATTERN.test(sessionCode)) {
         req.log.warn({
           sessionCode,
           reason: 'invalid_session_code',

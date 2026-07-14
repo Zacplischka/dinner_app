@@ -7,16 +7,18 @@ import type { Socket } from 'socket.io';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS, type SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  SessionJoinPayload,
-  SessionJoinResponse,
+import {
+  SESSION_CODE_LENGTH,
+  SESSION_CODE_PATTERN,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  type SessionJoinPayload,
+  type SessionJoinResponse,
 } from '@dinder/shared/types';
 
 // Zod schema for validation
 const sessionJoinPayloadSchema = z.object({
-  sessionCode: z.string().regex(/^[A-Z0-9]{6}$/, 'Session code must be 6 alphanumeric characters'),
+  sessionCode: z.string().regex(SESSION_CODE_PATTERN, `Session code must be ${SESSION_CODE_LENGTH} alphanumeric characters`),
   displayName: z.string().min(1, 'Display name required').max(50, 'Display name too long'),
 });
 

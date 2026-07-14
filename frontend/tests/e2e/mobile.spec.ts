@@ -114,12 +114,12 @@ test.describe('Mobile Layout - Join Session Page', () => {
     await joinPage.enterSessionCode('abc123');
     const value = await joinPage.getSessionCodeValue();
 
-    expect(value).toBe('ABC123');
+    expect(value).toBe('ABC12');
   });
 });
 
 test.describe('Mobile Touch Interactions', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
   test('buttons respond to touch', async ({ page, homePage }) => {
     await homePage.goto();

@@ -27,7 +27,10 @@ export default defineWorkspace([
     test: {
       name: 'integration',
       include: ['tests/integration/**/*.test.ts'],
-      fileParallelism: false,
+      // fileParallelism is ignored inside workspace projects on vitest 1.x;
+      // singleThread is the knob that actually serializes files, which the
+      // shared-Redis cleanupTestData() wildcard requires.
+      poolOptions: { threads: { singleThread: true } },
       testTimeout: 15000,
       env: serviceEnv,
     },
@@ -36,7 +39,7 @@ export default defineWorkspace([
     test: {
       name: 'contract',
       include: ['tests/contract/**/*.test.ts'],
-      fileParallelism: false,
+      poolOptions: { threads: { singleThread: true } },
       testTimeout: 10000,
       env: serviceEnv,
     },

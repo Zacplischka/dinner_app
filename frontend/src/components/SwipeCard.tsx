@@ -112,12 +112,12 @@ export default function SwipeCard({
   const getCardStyle = () => {
     if (swipeDirection === 'left') {
       return {
-        animation: 'swipeLeft 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+        animation: 'swipeLeft 0.25s ease-out forwards',
       };
     }
     if (swipeDirection === 'right') {
       return {
-        animation: 'swipeRight 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+        animation: 'swipeRight 0.25s ease-out forwards',
       };
     }
 
@@ -137,20 +137,21 @@ export default function SwipeCard({
     return {
       transform: `scale(${scale}) translateY(${translateY}px)`,
       opacity,
-      transition: 'transform 0.3s ease, opacity 0.3s ease',
+      transition: 'transform 0.25s ease, opacity 0.25s ease',
       zIndex: 10 - stackPosition,
     };
   };
 
   // Fallback placeholder image when no photo is available
-  const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect fill='%231f1f24' width='400' height='500'/%3E%3Ctext x='200' y='250' text-anchor='middle' fill='%23d4a574' font-family='Georgia' font-size='48'%3E${encodeURIComponent(restaurant.name.charAt(0))}%3C/text%3E%3C/svg%3E`;
+  const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect fill='%2307111f' width='400' height='500'/%3E%3Ctext x='200' y='250' text-anchor='middle' fill='%23ff6b7e' font-family='Inter,sans-serif' font-size='48'%3E${encodeURIComponent(restaurant.name.charAt(0))}%3C/text%3E%3C/svg%3E`;
 
   const priceDisplay = '$'.repeat(restaurant.priceLevel || 0);
 
   return (
     <div
       ref={cardRef}
-      className={`absolute inset-0 rounded-3xl overflow-hidden shadow-card select-none ${
+      data-swipe-card
+      className={`absolute inset-0 flex flex-col rounded-market-lg overflow-hidden shadow-card border border-line bg-raised select-none ${
         isTop ? 'cursor-grab' : 'pointer-events-none'
       }`}
       style={getCardStyle()}
@@ -162,7 +163,7 @@ export default function SwipeCard({
       onMouseUp={handleMouseUp}
     >
       {/* Restaurant Photo */}
-      <div className="absolute inset-0">
+      <div className="relative h-[62%] flex-shrink-0">
         <img
           src={restaurant.photoUrl || placeholderImage}
           alt={restaurant.name}
@@ -170,7 +171,7 @@ export default function SwipeCard({
           draggable={false}
         />
         {/* Gradient overlay for text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
       </div>
 
       {/* Swipe Indicators */}
@@ -178,55 +179,59 @@ export default function SwipeCard({
         <>
           {/* LIKE indicator */}
           <div
-            className={`absolute top-8 left-6 px-4 py-2 border-4 border-success rounded-lg transform -rotate-12 transition-opacity duration-200 ${
+            className={`absolute z-10 top-8 left-6 px-4 py-2 border-4 border-lime rounded-lg transform -rotate-12 transition-opacity duration-150 ${
               showLikeIndicator ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <span className="text-success font-display font-bold text-3xl tracking-wider">LIKE</span>
+            <span className="text-lime font-display font-bold text-3xl tracking-wider">LIKE</span>
           </div>
 
           {/* NOPE indicator */}
           <div
-            className={`absolute top-8 right-6 px-4 py-2 border-4 border-error rounded-lg transform rotate-12 transition-opacity duration-200 ${
+            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft rounded-lg transform rotate-12 transition-opacity duration-150 ${
               showNopeIndicator ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <span className="text-error font-display font-bold text-3xl tracking-wider">NOPE</span>
+            <span className="text-coral-soft font-display font-bold text-3xl tracking-wider">NOPE</span>
           </div>
         </>
       )}
 
       {/* Restaurant Info */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-cream">
-        <h2 className="font-display text-3xl font-semibold mb-2 text-glow drop-shadow-lg">
+      <div className="relative flex-1 p-5 text-text">
+        <h2 className="font-display text-2xl font-black mb-1">
           {restaurant.name}
         </h2>
 
-        <div className="flex items-center gap-3 mb-2">
+        {restaurant.cuisineType && (
+          <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-4 text-sm text-text/80">
           {restaurant.rating && (
-            <div className="flex items-center gap-1.5 bg-midnight/60 backdrop-blur-sm px-3 py-1 rounded-full">
-              <svg className="w-4 h-4 text-amber" fill="currentColor" viewBox="0 0 20 20">
+            <div aria-label={`Rating ${restaurant.rating.toFixed(1)}`} className="flex items-center gap-1.5 text-amber">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
-              <span className="text-sm font-medium">{restaurant.rating.toFixed(1)}</span>
+              <span className="font-semibold">{restaurant.rating.toFixed(1)}</span>
             </div>
           )}
 
           {priceDisplay && (
-            <span className="bg-midnight/60 backdrop-blur-sm px-3 py-1 rounded-full text-sm text-cream-300">
+            <span>
               {priceDisplay}
             </span>
           )}
 
-          {restaurant.cuisineType && (
-            <span className="bg-midnight/60 backdrop-blur-sm px-3 py-1 rounded-full text-sm text-cream-300">
-              {restaurant.cuisineType}
+          {restaurant.openNow !== undefined && (
+            <span className={restaurant.openNow ? 'font-bold text-lime' : 'font-medium text-muted'}>
+              {restaurant.openNow ? 'Open now' : 'Closed now'}
             </span>
           )}
         </div>
 
         {restaurant.address && (
-          <p className="text-sm text-cream-400 truncate flex items-center gap-1.5">
+          <p className="mt-3 text-sm text-muted truncate flex items-center gap-1.5">
             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />

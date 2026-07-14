@@ -33,7 +33,7 @@ describe('REST API internal error branches', () => {
     const logs = captureLogs();
     vi.spyOn(SessionService, 'getSession').mockRejectedValueOnce(error);
 
-    const response = await request(app).get('/api/sessions/ABC123').expect(500);
+    const response = await request(app).get('/api/sessions/AB123').expect(500);
 
     expect(response.body).toEqual({
       error: 'Internal Server Error',
@@ -49,7 +49,7 @@ describe('REST API internal error branches', () => {
     vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(error);
 
     const response = await request(app)
-      .post('/api/sessions/ABC123/join')
+      .post('/api/sessions/AB123/join')
       .send({ participantName: 'Bob' })
       .expect(500);
 
@@ -82,7 +82,7 @@ describe('REST API internal error branches', () => {
     const logs = captureLogs();
     vi.spyOn(redis, 'exists').mockRejectedValueOnce(error);
 
-    const response = await request(app).get('/api/options/ABC123').expect(500);
+    const response = await request(app).get('/api/options/AB123').expect(500);
 
     expect(response.body).toEqual({
       error: 'Internal Server Error',

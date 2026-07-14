@@ -9,14 +9,14 @@ describe('Contract Test: request IDs', () => {
   });
 
   it('sets an X-Request-Id header on every response', async () => {
-    const response = await request(app).get('/api/sessions/ZZZ999').expect(404);
+    const response = await request(app).get('/api/sessions/ZZZ99').expect(404);
 
     expect(response.headers['x-request-id']).toMatch(/\S+/);
   });
 
   it('honors an incoming X-Request-Id header', async () => {
     const response = await request(app)
-      .get('/api/sessions/ZZZ999')
+      .get('/api/sessions/ZZZ99')
       .set('X-Request-Id', 'my-trace-id')
       .expect(404);
 
@@ -27,7 +27,7 @@ describe('Contract Test: request IDs', () => {
     const logs = captureLogs();
 
     await request(app)
-      .get('/api/sessions/ZZZ999')
+      .get('/api/sessions/ZZZ99')
       .set('X-Request-Id', 'trace-abc')
       .expect(404);
 

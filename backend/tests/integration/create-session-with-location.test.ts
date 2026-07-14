@@ -40,7 +40,7 @@ describe('POST /api/sessions with location', () => {
     createdSessionCode = response.body.sessionCode;
 
     expect(response.body).toMatchObject({
-      sessionCode: expect.stringMatching(/^[A-Z0-9]{6}$/),
+      sessionCode: expect.stringMatching(/^[A-Z0-9]{5}$/),
       hostName: 'Alice',
       restaurantCount: 2,
       location: {

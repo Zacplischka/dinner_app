@@ -5,7 +5,7 @@ import { sessionStore as store } from '../../src/server.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Results with Overlap (FR-009, FR-010, FR-011)', () => {
-  const sessionCode = 'OVR123';
+  const sessionCode = 'OVR12';
   let redis: Redis;
 
   const restaurants: Restaurant[] = [

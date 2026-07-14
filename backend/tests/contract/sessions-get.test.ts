@@ -81,14 +81,14 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     // This test would require manipulating Redis TTL or waiting
     // For now, we test with an intentionally invalid code
     const response = await request(app)
-      .get('/api/sessions/EXPIRE')
+      .get('/api/sessions/EXPIR')
       .expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
   });
 
   it('should validate sessionCode format in URL parameter', async () => {
-    // Test with invalid session code format (not 6 alphanumeric uppercase)
+    // Test with an invalid uppercase alphanumeric session code.
     const response = await request(app)
       .get('/api/sessions/abc')  // Too short
       .expect(404);

@@ -15,11 +15,13 @@ export class ResultsPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.restaurantCards = page.locator('[data-testid="result-card"]').or(
-      page.locator('[class*="result-card"]')
+    this.restaurantCards = page.locator('[data-match-card]');
+    this.noMatchesMessage = page.getByText(
+      /No restaurants were selected|No matches|No overlaps|Try again/i
     );
-    this.noMatchesMessage = page.getByText(/No matches|No overlaps|Try again/i);
-    this.startNewSessionButton = page.getByRole('button', { name: /New Session|Start Over/i });
+    this.startNewSessionButton = page.getByRole('button', {
+      name: /New Session|Start Over|Start Fresh/i,
+    });
     this.goHomeButton = page.getByRole('button', { name: /Home|Done/i });
   }
 

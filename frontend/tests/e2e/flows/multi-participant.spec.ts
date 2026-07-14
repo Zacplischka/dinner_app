@@ -23,7 +23,7 @@ test.describe('Multi-Participant Session Flow', () => {
     const { sessionCode, host, participants, all } = await setupSession(2);
 
     // Verify session code was generated
-    expect(sessionCode).toMatch(/^[A-Z0-9]{6}$/);
+    expect(sessionCode).toMatch(/^[A-Z0-9]{5}$/);
 
     // Verify host is in lobby
     await expect(host.page).toHaveURL(/\/session\/[A-Z0-9]+$/);

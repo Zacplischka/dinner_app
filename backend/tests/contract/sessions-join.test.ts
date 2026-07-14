@@ -135,7 +135,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
 
   it('should return 404 when session does not exist', async () => {
     const response = await request(app)
-      .post('/api/sessions/NOTEXIST/join')
+      .post('/api/sessions/NOEXT/join')
       .send({ participantName: 'Bob' })
       .expect('Content-Type', /json/)
       .expect(404);
@@ -149,7 +149,7 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
     const logs = captureLogs();
 
     const response = await request(app)
-      .post('/api/sessions/ZZZ999/join')
+      .post('/api/sessions/ZZZ99/join')
       .send({ participantName: 'Bob' })
       .expect('Content-Type', /json/)
       .expect(404);
@@ -157,10 +157,10 @@ describe('Contract Test: POST /api/sessions/:sessionCode/join', () => {
     expect(response.body).toEqual({
       error: 'Not Found',
       code: 'SESSION_NOT_FOUND',
-      message: 'Session ZZZ999 not found or has expired',
+      message: 'Session ZZZ99 not found or has expired',
     });
     expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
-      sessionCode: 'ZZZ999',
+      sessionCode: 'ZZZ99',
       reason: 'session_not_found',
     });
   });

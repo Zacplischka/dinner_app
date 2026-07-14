@@ -26,7 +26,7 @@ const request = {
 
 const invite = {
   id: 'invite-1',
-  sessionCode: 'ABC123',
+  sessionCode: 'AB123',
   inviter: profile,
   status: 'pending' as const,
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -105,7 +105,7 @@ describe('friendsStore', () => {
       .mockResolvedValueOnce(response({ friends: [friend] }))
       .mockResolvedValueOnce(response({ success: true }))
       .mockResolvedValueOnce(response({ success: true }))
-      .mockResolvedValueOnce(response({ success: true, sessionCode: 'ABC123' }))
+      .mockResolvedValueOnce(response({ success: true, sessionCode: 'AB123' }))
       .mockResolvedValueOnce(response({ success: true }));
 
     await expect(useFriendsStore.getState().sendFriendRequest('bob@example.com')).resolves.toBe(true);
@@ -121,11 +121,11 @@ describe('friendsStore', () => {
     await expect(useFriendsStore.getState().declineFriendRequest('request-1')).resolves.toBe(true);
     expect(useFriendsStore.getState().friendRequests).toEqual([]);
 
-    await expect(useFriendsStore.getState().inviteFriendsToSession('ABC123', ['user-2'])).resolves.toBe(true);
+    await expect(useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])).resolves.toBe(true);
 
     await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toEqual({
       success: true,
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
     });
     expect(useFriendsStore.getState().sessionInvites).toEqual([]);
 
@@ -151,7 +151,7 @@ describe('friendsStore', () => {
     await expect(useFriendsStore.getState().removeFriend('user-2')).resolves.toBe(false);
     await expect(useFriendsStore.getState().acceptFriendRequest('request-1')).resolves.toBe(false);
     await expect(useFriendsStore.getState().declineFriendRequest('request-1')).resolves.toBe(false);
-    await expect(useFriendsStore.getState().inviteFriendsToSession('ABC123', ['user-2'])).resolves.toBe(false);
+    await expect(useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])).resolves.toBe(false);
     await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toEqual({ success: false });
     await expect(useFriendsStore.getState().declineSessionInvite('invite-1')).resolves.toBe(false);
 
@@ -256,7 +256,7 @@ describe('friendsStore', () => {
         expectedError: 'Failed to fetch session invites',
       },
       {
-        run: () => useFriendsStore.getState().inviteFriendsToSession('ABC123', ['user-2']),
+        run: () => useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2']),
         expectedError: 'Failed to invite friends',
         expectedResult: false,
       },

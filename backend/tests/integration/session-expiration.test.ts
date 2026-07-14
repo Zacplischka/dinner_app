@@ -9,7 +9,7 @@ import {
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
-  const sessionCode = 'EXP123';
+  const sessionCode = 'EXP12';
   let redis: Redis;
 
   const restaurants: Restaurant[] = [

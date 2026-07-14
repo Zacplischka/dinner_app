@@ -8,7 +8,7 @@
 
 import type { Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
-import type { Participant, Restaurant, Session } from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type Participant, type Restaurant, type Session } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
 
@@ -55,7 +55,7 @@ export function sessionCodeFromExpiredKey(key: string): string | null {
     return null;
   }
   const sessionCode = key.replace('session:', '');
-  return sessionCode.length === 6 ? sessionCode : null;
+  return sessionCode.length === SESSION_CODE_LENGTH ? sessionCode : null;
 }
 
 export function createSessionStore(redis: Redis) {

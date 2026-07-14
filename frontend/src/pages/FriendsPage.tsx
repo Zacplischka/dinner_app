@@ -48,10 +48,10 @@ export default function FriendsPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-midnight">
+      <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
-          <div className="inline-block w-8 h-8 border-2 border-amber border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-cream-400">Loading...</p>
+          <div className="inline-block w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-muted">Loading...</p>
         </div>
       </div>
     );
@@ -65,23 +65,23 @@ export default function FriendsPage() {
   const invitesCount = sessionInvites.length;
 
   return (
-    <main className="min-h-screen bg-warm-gradient">
+    <main className="shared-table-backdrop min-h-screen">
       {/* Header */}
-      <header className="bg-midnight-100 border-b border-midnight-50/30">
+      <header className="bg-raised/95 border-b border-line/30 backdrop-blur-md">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center text-cream-400 hover:text-amber transition-colors"
+            className="flex items-center text-muted hover:text-cyan transition-colors"
           >
             <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
             </svg>
             Back
           </button>
-          <h1 className="text-xl font-display font-semibold text-cream">Friends</h1>
+          <h1 className="text-xl font-display font-semibold text-text">Friends</h1>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center text-amber hover:text-amber-200 font-medium transition-colors"
+            className="flex min-h-[44px] items-center text-cyan hover:text-white font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -92,13 +92,13 @@ export default function FriendsPage() {
 
         {/* Tabs */}
         <div className="max-w-2xl mx-auto px-4">
-          <div className="flex border-b border-midnight-50/30">
+          <div className="flex border-b border-line/30">
             <button
               onClick={() => setActiveTab('friends')}
               className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'friends'
-                  ? 'border-amber text-amber'
-                  : 'border-transparent text-cream-500 hover:text-cream-300'
+                  ? 'border-cyan text-cyan'
+                  : 'border-transparent text-muted hover:text-text/80'
               }`}
             >
               Friends ({friends.length})
@@ -107,13 +107,13 @@ export default function FriendsPage() {
               onClick={() => setActiveTab('requests')}
               className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                 activeTab === 'requests'
-                  ? 'border-amber text-amber'
-                  : 'border-transparent text-cream-500 hover:text-cream-300'
+                  ? 'border-cyan text-cyan'
+                  : 'border-transparent text-muted hover:text-text/80'
               }`}
             >
               Requests
               {requestsCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-midnight bg-error rounded-full">
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-coral rounded-full">
                   {requestsCount}
                 </span>
               )}
@@ -122,13 +122,13 @@ export default function FriendsPage() {
               onClick={() => setActiveTab('invites')}
               className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                 activeTab === 'invites'
-                  ? 'border-amber text-amber'
-                  : 'border-transparent text-cream-500 hover:text-cream-300'
+                  ? 'border-cyan text-cyan'
+                  : 'border-transparent text-muted hover:text-text/80'
               }`}
             >
               Invites
               {invitesCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-midnight bg-amber rounded-full">
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-ink bg-cyan rounded-full">
                   {invitesCount}
                 </span>
               )}
@@ -141,11 +141,11 @@ export default function FriendsPage() {
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Friends Tab */}
         {activeTab === 'friends' && (
-          <div className="bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30">
+          <div className="bg-raised rounded-2xl shadow-card border border-line/30">
             {isLoadingFriends ? (
               <div className="p-8 text-center">
-                <div className="inline-block w-6 h-6 border-2 border-amber border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-2 text-cream-500">Loading friends...</p>
+                <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-2 text-muted">Loading friends...</p>
               </div>
             ) : (
               <FriendsList friends={friends} />
@@ -157,14 +157,14 @@ export default function FriendsPage() {
         {activeTab === 'requests' && (
           <div className="space-y-3">
             {isLoadingRequests ? (
-              <div className="p-8 text-center bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30">
-                <div className="inline-block w-6 h-6 border-2 border-amber border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-2 text-cream-500">Loading requests...</p>
+              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
+                <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-2 text-muted">Loading requests...</p>
               </div>
             ) : friendRequests.length === 0 ? (
-              <div className="p-8 text-center bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 text-cream-500">
+              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No pending requests</p>
-                <p className="text-sm mt-1 text-cream-500/60">Friend requests you receive will appear here</p>
+                <p className="text-sm mt-1 text-muted/60">Friend requests you receive will appear here</p>
               </div>
             ) : (
               friendRequests.map((request) => (
@@ -178,14 +178,14 @@ export default function FriendsPage() {
         {activeTab === 'invites' && (
           <div className="space-y-3">
             {isLoadingInvites ? (
-              <div className="p-8 text-center bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30">
-                <div className="inline-block w-6 h-6 border-2 border-amber border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-2 text-cream-500">Loading invites...</p>
+              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
+                <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-2 text-muted">Loading invites...</p>
               </div>
             ) : sessionInvites.length === 0 ? (
-              <div className="p-8 text-center bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 text-cream-500">
+              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No session invites</p>
-                <p className="text-sm mt-1 text-cream-500/60">When friends invite you to sessions, they&apos;ll appear here</p>
+                <p className="text-sm mt-1 text-muted/60">When friends invite you to sessions, they&apos;ll appear here</p>
               </div>
             ) : (
               sessionInvites.map((invite) => (

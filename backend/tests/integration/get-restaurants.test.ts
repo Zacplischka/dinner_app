@@ -4,7 +4,7 @@ import { app } from '../../src/server.js';
 import { redis } from '../../src/redis/client.js';
 
 describe('GET /api/options/:sessionCode', () => {
-  const sessionCode = 'TEST12';
+  const sessionCode = 'TEST1';
 
   beforeEach(async () => {
     // Set up test session with restaurants
@@ -55,7 +55,7 @@ describe('GET /api/options/:sessionCode', () => {
           address: '123 Main St',
         },
       ],
-      sessionCode: 'TEST12',
+      sessionCode: 'TEST1',
     });
   });
 
@@ -69,7 +69,7 @@ describe('GET /api/options/:sessionCode', () => {
 
   it('should return 404 for non-existent session', async () => {
     const response = await request(app)
-      .get('/api/options/NOTFND')
+      .get('/api/options/NOTFN')
       .expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');

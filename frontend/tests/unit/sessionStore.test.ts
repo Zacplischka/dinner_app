@@ -149,7 +149,7 @@ describe('sessionStore', () => {
         STORAGE_KEY,
         JSON.stringify({
           state: {
-            sessionCode: 'OLD123',
+            sessionCode: 'OLD12',
             overlappingOptions: [{ optionId: 'legacy', displayName: 'Legacy Shape' }],
             sessionStatus: 'complete',
           },
@@ -168,24 +168,24 @@ describe('sessionStore', () => {
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          state: { sessionCode: 'ABC123', isConnected: true },
+          state: { sessionCode: 'AB123', isConnected: true },
           version: 1,
         })
       );
 
       const store = await freshStore();
 
-      expect(store.getState().sessionCode).toBe('ABC123');
+      expect(store.getState().sessionCode).toBe('AB123');
       expect(store.getState().isConnected).toBe(false);
     });
 
     it('never writes isConnected to storage', () => {
-      useSessionStore.getState().setSessionCode('XYZ789');
+      useSessionStore.getState().setSessionCode('XYZ78');
       useSessionStore.getState().setConnectionStatus(true);
 
       const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
 
-      expect(persisted.state.sessionCode).toBe('XYZ789');
+      expect(persisted.state.sessionCode).toBe('XYZ78');
       expect(persisted.state).not.toHaveProperty('isConnected');
     });
   });
@@ -195,7 +195,7 @@ describe('sessionStore', () => {
       const participant = {
         participantId: 'participant-1',
         displayName: 'Alice',
-        sessionCode: 'ABC123',
+        sessionCode: 'AB123',
         joinedAt: 1,
         hasSubmitted: false,
         isHost: true,
@@ -224,7 +224,7 @@ describe('sessionStore', () => {
     it('should set results and reset only selection state', () => {
       useSessionStore.getState().setSelections(['place-1']);
       useSessionStore.getState().setResults({
-        sessionCode: 'ABC123',
+        sessionCode: 'AB123',
         hasOverlap: true,
         overlappingOptions: [{ placeId: 'place-1', name: 'Pasta House' }],
         allSelections: { Alice: ['place-1'] },

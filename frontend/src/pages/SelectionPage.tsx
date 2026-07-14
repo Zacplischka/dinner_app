@@ -9,6 +9,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
 import type { Restaurant } from '@dinder/shared/types';
+import { participantRingClass } from '../utils/participantStyles';
 
 export default function SelectionPage() {
   const navigate = useNavigate();
@@ -112,10 +113,10 @@ export default function SelectionPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-midnight">
+      <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
-          <div className="inline-block w-10 h-10 border-3 border-amber border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-cream-400 font-display text-lg">Finding restaurants...</p>
+          <div className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-muted font-display text-lg">Finding restaurants...</p>
         </div>
       </div>
     );
@@ -123,7 +124,7 @@ export default function SelectionPage() {
 
   if (hasSubmitted) {
     return (
-      <div className="min-h-screen bg-warm-gradient">
+      <div className="min-h-screen bg-ink">
         <NavigationHeader
           title="Waiting for Others"
           sessionCode={sessionCode}
@@ -138,16 +139,16 @@ export default function SelectionPage() {
 
         <div className="flex items-center justify-center px-4 py-8">
           <div className="max-w-md w-full text-center animate-fade-in">
-            <div className="bg-midnight-100 rounded-3xl shadow-card border border-midnight-50/30 p-8">
-              <div className="w-20 h-20 mx-auto mb-6 bg-success/20 rounded-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="card p-8">
+              <div className="w-20 h-20 mx-auto mb-6 bg-lime/10 border border-lime/30 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-lime" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-3xl font-display font-semibold text-cream mb-3 text-glow">
+              <h2 className="text-3xl font-display font-black text-text mb-3">
                 All Done!
               </h2>
-              <p className="text-cream-400 mb-8 text-lg">
+              <p className="text-muted mb-8 text-lg">
                 Waiting for other diners...
               </p>
 
@@ -157,14 +158,14 @@ export default function SelectionPage() {
                     <div
                       key={i}
                       className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                        p.hasSubmitted ? 'bg-amber scale-110' : 'bg-midnight-50'
+                        p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
                       }`}
                     />
                   ))}
                 </div>
-                <p className="text-sm text-cream-500">
-                  <span className="text-amber font-semibold">{submittedCount}</span> of{' '}
-                  <span className="text-amber font-semibold">{participants.length}</span> have swiped
+                <p className="text-sm text-muted">
+                  <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
+                  <span className="text-cyan font-semibold">{participants.length}</span> have swiped
                 </p>
               </div>
             </div>
@@ -176,7 +177,7 @@ export default function SelectionPage() {
 
   if (isDone) {
     return (
-      <div className="min-h-screen bg-warm-gradient">
+      <div className="min-h-screen bg-ink">
         <NavigationHeader
           title="Submit Your Picks"
           sessionCode={sessionCode}
@@ -191,34 +192,34 @@ export default function SelectionPage() {
 
         <div className="flex flex-col items-center justify-center px-4 py-8">
           <div className="max-w-md w-full text-center animate-fade-in">
-            <div className="bg-midnight-100 rounded-3xl shadow-card border border-midnight-50/30 p-8">
-              <div className="w-20 h-20 mx-auto mb-6 bg-amber/20 rounded-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="card p-8">
+              <div className="w-20 h-20 mx-auto mb-6 bg-lime/10 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-lime" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </div>
 
-              <h2 className="text-3xl font-display font-semibold text-cream mb-3 text-glow">
+              <h2 className="text-3xl font-display font-black text-text mb-3">
                 You&apos;ve seen them all!
               </h2>
-              <p className="text-cream-400 mb-6">
-                You liked <span className="text-amber font-semibold">{selections.length}</span> restaurant{selections.length !== 1 ? 's' : ''}
+              <p className="text-muted mb-6">
+                You liked <span className="text-lime font-semibold">{selections.length}</span> restaurant{selections.length !== 1 ? 's' : ''}
               </p>
 
               {error && (
-                <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-xl">
-                  <p className="text-sm text-error-light">{error}</p>
+                <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
+                  <p className="text-sm text-coral-soft">{error}</p>
                 </div>
               )}
 
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-full min-h-[56px] px-8 py-4 text-xl font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-2xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
+                className="btn btn-primary w-full min-h-[56px] px-8 py-4 text-xl"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-midnight border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     Submitting...
                   </span>
                 ) : (
@@ -227,7 +228,7 @@ export default function SelectionPage() {
               </button>
 
               {selections.length === 0 && (
-                <p className="mt-4 text-sm text-cream-500/70">
+                <p className="mt-4 text-sm text-muted/70">
                   You didn&apos;t like any restaurants, but you can still submit!
                 </p>
               )}
@@ -242,7 +243,7 @@ export default function SelectionPage() {
   const visibleRestaurants = restaurants.slice(currentIndex, currentIndex + 3);
 
   return (
-    <main className="min-h-screen bg-warm-gradient flex flex-col">
+    <main className="min-h-screen bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
         title="Choose Restaurants"
@@ -259,7 +260,7 @@ export default function SelectionPage() {
           total: restaurants.length,
         }}
         rightAction={
-          <div className="flex items-center gap-1.5 text-amber">
+          <div className="flex items-center gap-1.5 text-lime">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
             </svg>
@@ -270,6 +271,22 @@ export default function SelectionPage() {
 
       {/* Card Stack */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+        <div className="mb-3 flex w-full max-w-sm items-center justify-between rounded-full border border-line bg-raised/90 px-3 py-2">
+          <div className="flex -space-x-2" aria-label="Participants choosing">
+            {participants.map((participant, index) => (
+              <div
+                key={participant.participantId}
+                aria-label={`${participant.displayName} is choosing`}
+                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-surface text-xs font-black text-text ${participantRingClass(index)}`}
+              >
+                {participant.displayName.charAt(0).toUpperCase()}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-cyan">
+            {participants.length} together
+          </p>
+        </div>
         <div className="relative w-full max-w-sm aspect-[3/4]">
           {visibleRestaurants.map((restaurant, index) => (
             <SwipeCard
@@ -287,15 +304,15 @@ export default function SelectionPage() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
               <div
                 className={`w-24 h-24 rounded-full flex items-center justify-center animate-pulse-glow ${
-                  lastAction === 'like' ? 'bg-success/30' : 'bg-error/30'
+                  lastAction === 'like' ? 'bg-lime/30' : 'bg-coral/30'
                 }`}
               >
                 {lastAction === 'like' ? (
-                  <svg className="w-12 h-12 text-success animate-heart-pop" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-12 h-12 text-lime animate-heart-pop" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
                   </svg>
                 ) : (
-                  <svg className="w-12 h-12 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <svg className="w-12 h-12 text-coral" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 )}
@@ -311,10 +328,10 @@ export default function SelectionPage() {
           {/* Nope Button */}
           <button
             onClick={handleSwipeLeft}
-            className="w-16 h-16 rounded-full bg-midnight-100 border-2 border-error/40 flex items-center justify-center shadow-card hover:border-error hover:bg-error/10 active:scale-95 transition-all duration-200"
+            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-coral-soft text-coral-soft flex items-center justify-center shadow-glow-coral hover:bg-coral/10 active:scale-95 transition-all duration-150"
             aria-label="Pass"
           >
-            <svg className="w-8 h-8 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg className="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -327,10 +344,10 @@ export default function SelectionPage() {
               }
             }}
             disabled={currentIndex === 0}
-            className="w-12 h-12 rounded-full bg-midnight-100 border border-amber/30 flex items-center justify-center shadow-card hover:border-amber disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-200"
+            className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-cyan hover:text-cyan disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             aria-label="Undo"
           >
-            <svg className="w-5 h-5 text-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
             </svg>
           </button>
@@ -338,17 +355,17 @@ export default function SelectionPage() {
           {/* Like Button */}
           <button
             onClick={handleSwipeRight}
-            className="w-16 h-16 rounded-full bg-midnight-100 border-2 border-success/40 flex items-center justify-center shadow-card hover:border-success hover:bg-success/10 active:scale-95 transition-all duration-200"
+            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-lime text-lime flex items-center justify-center shadow-glow-lime hover:bg-lime/10 active:scale-95 transition-all duration-150"
             aria-label="Like"
           >
-            <svg className="w-8 h-8 text-success" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-9 h-9" fill="currentColor" viewBox="0 0 20 20">
               <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
             </svg>
           </button>
         </div>
 
         {/* Hint text */}
-        <p className="text-center text-xs text-cream-500/60 mt-4">
+        <p className="text-center text-xs text-muted mt-4">
           Swipe or use buttons to choose
         </p>
       </div>

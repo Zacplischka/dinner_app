@@ -20,26 +20,26 @@ export default function UserMenu() {
   };
 
   return (
-    <div className="flex items-center gap-3 p-2 bg-midnight-100 rounded-xl shadow-card border border-midnight-50/30">
+    <div className="flex items-center gap-3 rounded-xl border border-line bg-raised p-2 shadow-card">
       {avatarUrl ? (
         <img
           src={avatarUrl}
-          alt={displayName}
+          alt={`${displayName} profile`}
           referrerPolicy="no-referrer"
-          className="w-8 h-8 rounded-full ring-2 ring-amber/30"
+          className="w-8 h-8 rounded-full ring-2 ring-cyan shadow-glow-cyan"
         />
       ) : (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber to-amber-500 flex items-center justify-center text-midnight font-medium shadow-glow">
+        <div aria-label={`${displayName} profile`} className="w-8 h-8 rounded-full ring-2 ring-cyan bg-raised flex items-center justify-center text-cyan font-bold shadow-glow-cyan">
           {displayName.charAt(0).toUpperCase()}
         </div>
       )}
-      <span className="text-sm text-cream font-medium truncate max-w-[120px]">
+      <span className="text-sm text-text font-medium truncate max-w-[120px]">
         {displayName}
       </span>
       <button
         onClick={handleSignOut}
         disabled={isLoading}
-        className="text-sm text-cream-500 hover:text-amber transition-colors disabled:opacity-50"
+        className="text-sm text-muted hover:text-coral-soft transition-colors disabled:opacity-50"
       >
         Sign out
       </button>

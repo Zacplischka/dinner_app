@@ -30,7 +30,7 @@ function OutboundLink({ name, url }: { name: 'Uber Eats' | 'DoorDash'; url: stri
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-amber px-4 py-2 font-semibold text-midnight"
+      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-coral px-4 py-2 font-semibold text-white shadow-glow-coral transition-all duration-150 hover:brightness-110"
     >
       Open in {name}
     </a>
@@ -43,15 +43,15 @@ function UnmatchedSection({ name, items }: {
 }) {
   if (items.length === 0) return null;
   return (
-    <details className="rounded-2xl border border-midnight-50/30 bg-midnight-100 p-5">
+    <details className="rounded-2xl border border-line/30 bg-raised p-5">
       <summary className="cursor-pointer font-display text-lg font-semibold">
         Only on {name} ({items.length})
       </summary>
-      <ul className="mt-4 divide-y divide-midnight-50/20">
+      <ul className="mt-4 divide-y divide-line/20">
         {items.map((item, index) => (
           <li key={`${item.name}-${index}`} className="flex justify-between gap-4 py-3 text-sm">
             <span>{item.name}</span>
-            <span className="text-cream-400">{formatPrice(item.price_cents)}</span>
+            <span className="text-muted">{formatPrice(item.price_cents)}</span>
           </li>
         ))}
       </ul>
@@ -71,30 +71,30 @@ function PlatformColumn({
   return (
     <section
       data-testid={testId}
-      className="rounded-2xl border border-midnight-50/30 bg-midnight-100 p-5 shadow-card"
+      className="rounded-2xl border border-line/30 bg-raised p-5 shadow-card"
     >
       <h2 className="font-display text-xl font-semibold">{name}</h2>
-      {!capture && <p className="mt-4 animate-pulse text-cream-400">Searching…</p>}
+      {!capture && <p className="mt-4 animate-pulse text-muted">Searching…</p>}
       {capture?.status === 'not_found' && (
-        <p className="mt-4 text-cream-400">Not on {name}.</p>
+        <p className="mt-4 text-muted">Not on {name}.</p>
       )}
       {capture?.status === 'failed' && (
-        <p className="mt-4 text-warning">
+        <p className="mt-4 text-amber">
           Couldn’t reach {name} — try again in a couple of minutes.
         </p>
       )}
       {capture?.status === 'resolved' && (
         <div className="mt-4 space-y-4">
-          <p className="text-sm text-cream-300">
+          <p className="text-sm text-text/80">
             {capture.menu.length} menu item{capture.menu.length === 1 ? '' : 's'}
           </p>
           <div>
-            <p className="text-xs uppercase tracking-wide text-cream-500">Deals</p>
+            <p className="text-xs uppercase tracking-wide text-muted">Deals</p>
             {capture.deals.length > 0 ? (
-              <ul className="mt-1 space-y-2 text-sm text-amber">
+              <ul className="mt-1 space-y-2 text-sm text-cyan">
                 {capture.deals.map((deal) => <li key={deal}>{deal}</li>)}
               </ul>
-            ) : <p className="mt-1 text-cream-400">—</p>}
+            ) : <p className="mt-1 text-muted">—</p>}
           </div>
           {capture.storeUrl && <OutboundLink name={name} url={capture.storeUrl} />}
         </div>
@@ -162,7 +162,7 @@ export default function ComparisonViewPage() {
   }, [placeId]);
 
   return (
-    <main className="min-h-screen bg-warm-gradient text-cream">
+    <main className="min-h-screen bg-ink text-text">
       <NavigationHeader
         title={venueName || 'Price comparison'}
         showBackButton
@@ -170,33 +170,33 @@ export default function ComparisonViewPage() {
       />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {error && (
-          <p role="alert" className="rounded-xl bg-warning/10 p-4 text-warning">
+          <p role="alert" className="rounded-xl bg-amber/10 p-4 text-amber">
             {error}
           </p>
         )}
         {comparison && (
           <div className="space-y-1 text-center">
             {comparison.cheaperMenu && (
-              <p className="font-semibold text-amber">
+              <p className="font-semibold text-lime">
                 {comparison.cheaperMenu.platform === 'ubereats' ? 'Uber Eats' : 'DoorDash'} menu ~{comparison.cheaperMenu.percent}% cheaper
               </p>
             )}
-            {fetchedAt && <p className="text-sm text-cream-500">{fetchedLabel(fetchedAt)}</p>}
+            {fetchedAt && <p className="text-sm text-muted">{fetchedLabel(fetchedAt)}</p>}
             {!neitherFound && (
-              <p className="text-xs text-cream-500">
+              <p className="text-xs text-muted">
                 Prices shown are non-member menu prices.
               </p>
             )}
           </div>
         )}
         {neitherFound ? (
-          <p className="rounded-2xl border border-midnight-50/30 bg-midnight-100 p-6 text-center text-cream-300">
+          <p className="rounded-2xl border border-line/30 bg-raised p-6 text-center text-text/80">
             Couldn’t find this venue on either delivery app.
           </p>
         ) : (
           <>
             {(onlyUberEats || onlyDoorDash) && (
-              <p className="mx-auto w-fit rounded-full bg-amber/10 px-4 py-2 text-sm font-semibold text-amber">
+              <p className="mx-auto w-fit rounded-full bg-cyan/10 px-4 py-2 text-sm font-semibold text-cyan">
                 Only on {onlyUberEats ? 'Uber Eats' : 'DoorDash'}
               </p>
             )}
@@ -221,14 +221,14 @@ export default function ComparisonViewPage() {
         {comparison && !neitherFound && (
           <div className="space-y-5">
             {comparison.matchedItems.length > 0 ? (
-              <section className="overflow-hidden rounded-2xl border border-midnight-50/30 bg-midnight-100 shadow-card">
+              <section className="overflow-hidden rounded-2xl border border-line/30 bg-raised shadow-card">
                 <h2 className="px-5 pt-5 font-display text-xl font-semibold">Matched items</h2>
-                <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] gap-4 px-5 pt-3 text-xs font-semibold text-cream-400">
+                <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] gap-4 px-5 pt-3 text-xs font-semibold text-muted">
                   <span>Item</span>
                   <span className="text-right">Uber Eats</span>
                   <span className="text-right">DoorDash</span>
                 </div>
-                <div className="mt-2 divide-y divide-midnight-50/20">
+                <div className="mt-2 divide-y divide-line/20">
                   {comparison.matchedItems.map((item, index) => {
                     const uberEatsCheaper = item.ubereats.price_cents < item.doordash.price_cents;
                     const doorDashCheaper = item.doordash.price_cents < item.ubereats.price_cents;
@@ -239,10 +239,10 @@ export default function ComparisonViewPage() {
                         className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-center gap-4 px-5 py-4 text-sm"
                       >
                         <span className="font-medium">{item.name}</span>
-                        <span className={`text-right ${uberEatsCheaper ? 'font-semibold text-amber' : 'text-cream-300'}`}>
+                        <span className={`text-right ${uberEatsCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}>
                           {formatPrice(item.ubereats.price_cents)}
                         </span>
-                        <span className={`text-right ${doorDashCheaper ? 'font-semibold text-amber' : 'text-cream-300'}`}>
+                        <span className={`text-right ${doorDashCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}>
                           {formatPrice(item.doordash.price_cents)}
                         </span>
                       </div>
@@ -252,7 +252,7 @@ export default function ComparisonViewPage() {
               </section>
             ) : storefronts.ubereats?.status === 'resolved'
               && storefronts.doordash?.status === 'resolved' && (
-              <p className="rounded-xl bg-midnight-100 p-4 text-center text-cream-400">
+              <p className="rounded-xl bg-raised p-4 text-center text-muted">
                 These menus are too different to compare item by item.
               </p>
             )}

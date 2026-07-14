@@ -34,7 +34,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
   const { fromUser } = request;
 
   return (
-    <div className="flex items-center justify-between p-4 bg-midnight-100 rounded-2xl border border-midnight-50/30 shadow-card">
+    <div className="flex items-center justify-between p-4 bg-raised rounded-2xl border border-line/30 shadow-card">
       <div className="flex items-center gap-3">
         {/* Avatar */}
         {fromUser.avatarUrl ? (
@@ -42,11 +42,11 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
             src={fromUser.avatarUrl}
             alt={fromUser.displayName}
             referrerPolicy="no-referrer"
-            className="w-10 h-10 rounded-full ring-2 ring-amber/20"
+            className="w-10 h-10 rounded-full ring-2 ring-cyan/20"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber to-amber-500 flex items-center justify-center shadow-glow">
-            <span className="text-midnight font-medium text-lg">
+          <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
+            <span className="text-ink font-medium text-lg">
               {fromUser.displayName.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -54,11 +54,11 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
 
         {/* Name and email */}
         <div>
-          <p className="font-medium text-cream">{fromUser.displayName}</p>
+          <p className="font-medium text-text">{fromUser.displayName}</p>
           {fromUser.email && (
-            <p className="text-sm text-cream-500">{fromUser.email}</p>
+            <p className="text-sm text-muted">{fromUser.email}</p>
           )}
-          <p className="text-xs text-cream-500/60">
+          <p className="text-xs text-muted/60">
             {new Date(request.createdAt).toLocaleDateString()}
           </p>
         </div>
@@ -69,14 +69,14 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
         <button
           onClick={handleAccept}
           disabled={isLoading}
-          className="px-4 py-2 text-sm font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow"
+          className="min-h-[44px] px-4 py-2 text-sm font-semibold text-ink bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
         >
           Accept
         </button>
         <button
           onClick={handleDecline}
           disabled={isLoading}
-          className="px-4 py-2 text-sm font-medium text-cream-400 bg-midnight-200 rounded-xl hover:bg-midnight-50 hover:text-cream disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-midnight-50/30"
+          className="px-4 py-2 text-sm font-medium text-muted bg-surface rounded-xl hover:bg-line hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-line/30"
         >
           Decline
         </button>
