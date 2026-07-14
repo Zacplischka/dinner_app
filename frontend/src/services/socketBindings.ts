@@ -160,6 +160,9 @@ const socketConfig: SocketConfig = {
     'session:restarted': (event: SessionRestartedEvent) => {
       console.log('Session restarted:', event);
       useSessionStore.getState().resetSelections();
+      // resetSelections() also flips sessionStatus, but the lobby's
+      // auto-navigate keys off this transition — keep it explicit here.
+      useSessionStore.getState().setSessionStatus('selecting');
     },
 
     // session:expired - Session expired due to inactivity
