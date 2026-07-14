@@ -36,24 +36,24 @@ const icons: Record<ToastVariant, React.ReactNode> = {
 // Colors for each toast type
 const colorClasses: Record<ToastVariant, { border: string; icon: string; bg: string }> = {
   success: {
-    border: 'border-l-success',
-    icon: 'text-success',
-    bg: 'bg-success/10',
+    border: 'border-l-lime',
+    icon: 'text-lime',
+    bg: 'bg-lime/10',
   },
   error: {
-    border: 'border-l-error',
-    icon: 'text-error',
-    bg: 'bg-error/10',
+    border: 'border-l-coral',
+    icon: 'text-coral',
+    bg: 'bg-coral/10',
   },
   warning: {
-    border: 'border-l-warning',
-    icon: 'text-warning',
-    bg: 'bg-warning/10',
-  },
-  info: {
     border: 'border-l-amber',
     icon: 'text-amber',
     bg: 'bg-amber/10',
+  },
+  info: {
+    border: 'border-l-cyan',
+    icon: 'text-cyan',
+    bg: 'bg-cyan/10',
   },
 };
 
@@ -108,8 +108,8 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
     <div
       className={`
         relative flex items-start gap-3 w-full max-w-sm
-        bg-midnight-100/95 backdrop-blur-md
-        border border-midnight-50/30 border-l-4 ${colors.border}
+        bg-raised/95 backdrop-blur-md
+        border border-line border-l-4 ${colors.border}
         rounded-xl shadow-card
         px-4 py-3
         transform transition-all duration-200 ease-out
@@ -129,7 +129,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
 
       {/* Content */}
       <div className="flex-1 min-w-0 pt-0.5">
-        <p className="text-sm text-cream leading-snug">{toast.message}</p>
+        <p className="text-sm text-text leading-snug">{toast.message}</p>
 
         {/* Action button */}
         {toast.action && (
@@ -138,7 +138,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
               toast.action?.onClick();
               handleDismiss();
             }}
-            className="mt-2 text-sm font-medium text-amber hover:text-amber-300 transition-colors"
+            className="mt-2 text-sm font-medium text-cyan hover:text-text transition-colors"
           >
             {toast.action.label}
           </button>
@@ -148,7 +148,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
       {/* Close button */}
       <button
         onClick={handleDismiss}
-        className="flex-shrink-0 p-1 -m-1 text-cream-500 hover:text-cream transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-amber/50"
+        className="flex-shrink-0 p-1 -m-1 text-muted hover:text-text transition-colors rounded-lg"
         aria-label="Dismiss notification"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -158,7 +158,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
 
       {/* Progress bar for auto-dismiss */}
       {!isPaused && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-midnight-50/30 rounded-b-xl overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-line/30 rounded-b-xl overflow-hidden">
           <div
             className={`h-full ${colors.bg.replace('/10', '')}`}
             style={{

@@ -13,6 +13,7 @@ describe('RestaurantSearchService', () => {
         priceLevel: 'PRICE_LEVEL_MODERATE',
         primaryTypeDisplayName: { text: 'Italian Restaurant' },
         formattedAddress: '123 Main St, San Francisco, CA 94102',
+        currentOpeningHours: { openNow: true },
       };
 
       const result = RestaurantSearchService.transformGooglePlaceToRestaurant(googlePlace);
@@ -24,6 +25,7 @@ describe('RestaurantSearchService', () => {
         priceLevel: 2, // MODERATE = 2
         cuisineType: 'Italian Restaurant',
         address: '123 Main St, San Francisco, CA 94102',
+        openNow: true,
       });
     });
 
@@ -289,7 +291,7 @@ describe('RestaurantSearchService', () => {
           headers: {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': expect.any(String),
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,nextPageToken',
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken',
           },
           body: JSON.stringify({
             textQuery: 'restaurants',

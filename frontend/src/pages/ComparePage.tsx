@@ -76,14 +76,14 @@ export default function ComparePage() {
   };
 
   return (
-    <main className="min-h-screen bg-warm-gradient text-cream">
+    <main className="min-h-screen text-text">
       <NavigationHeader title="Compare delivery prices" showBackButton onBack={() => navigate('/')} />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {!location ? (
-          <section className="rounded-2xl border border-midnight-50/30 bg-midnight-100 p-6 text-center shadow-card">
-            <h2 className="font-display text-2xl">Find nearby Venues</h2>
-            <p className="mt-2 text-cream-400">Share your location only when you are ready to browse.</p>
-            <label htmlFor="comparison-radius" className="mt-6 block text-sm text-cream-300">
+          <section className="card text-center">
+            <h2 className="font-display text-2xl font-black">Find nearby Venues</h2>
+            <p className="mt-2 text-muted">Share your location only when you are ready to browse.</p>
+            <label htmlFor="comparison-radius" className="label mt-6">
               Radius: {radiusMiles} mi
             </label>
             <input
@@ -93,31 +93,31 @@ export default function ComparePage() {
               max="15"
               value={radiusMiles}
               onChange={(event) => setRadiusMiles(Number(event.target.value))}
-              className="mt-2 w-full accent-amber"
+              className="mt-2 w-full accent-coral"
             />
             <button
               type="button"
               onClick={requestLocation}
-              className="mt-6 min-h-[48px] w-full rounded-xl bg-amber px-5 py-3 font-semibold text-midnight"
+              className="btn btn-primary mt-6 min-h-[48px] w-full"
             >
               Use my location
             </button>
-            {error && <p role="alert" className="mt-4 text-sm text-warning">{error}</p>}
+            {error && <p role="alert" className="mt-4 text-sm text-coral-soft">{error}</p>}
           </section>
         ) : (
           <>
             <button
               type="button"
               onClick={() => { setVenues([]); setSuburb(undefined); setLocation(undefined); }}
-              className="rounded-full border border-amber/30 px-4 py-2 text-sm text-amber"
+              className="min-h-[44px] rounded-full border border-cyan/40 bg-surface px-4 py-2 text-sm text-cyan"
             >
               near {suburb || 'your location'} · change
             </button>
 
-            {loading && <p className="py-12 text-center text-cream-400">Finding nearby Venues…</p>}
-            {error && <p role="alert" className="rounded-xl bg-warning/10 p-4 text-warning">{error}</p>}
+            {loading && <p className="py-12 text-center text-muted">Finding nearby Venues…</p>}
+            {error && <p role="alert" className="rounded-xl bg-coral/10 p-4 text-coral-soft">{error}</p>}
             {!loading && !error && venues.length === 0 && (
-              <p className="py-12 text-center text-cream-400">No Venues found in this radius.</p>
+              <p className="py-12 text-center text-muted">No Venues found in this radius.</p>
             )}
 
             <div className="space-y-3">
@@ -128,16 +128,16 @@ export default function ComparePage() {
                   aria-label={`Compare ${venue.name}`}
                   data-place-id={venue.placeId}
                   onClick={() => navigate(`/compare/${venue.placeId}`, { state: { fromComparisonList: true } })}
-                  className="flex min-h-[96px] w-full items-center gap-4 rounded-2xl border border-midnight-50/30 bg-midnight-100 p-4 text-left shadow-card"
+                  className="flex min-h-[96px] w-full items-center gap-4 rounded-market-md border border-line bg-gradient-to-br from-raised to-surface p-4 text-left shadow-card"
                 >
                   {venue.photoUrl && <img src={venue.photoUrl} alt="" className="h-20 w-20 rounded-xl object-cover" />}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-lg font-semibold">{venue.name}</span>
-                    <span className="mt-1 block text-sm text-cream-400">
+                    <span className="mt-1 block text-sm text-muted">
                       {venue.cuisineType || 'Venue'} · {venue.rating?.toFixed(1) || 'No rating'} · {venue.distanceMiles.toFixed(1)} mi
                     </span>
                   </span>
-                  <span className="font-semibold text-amber">Compare</span>
+                  <span className="font-semibold text-cyan">Compare</span>
                 </button>
               ))}
             </div>

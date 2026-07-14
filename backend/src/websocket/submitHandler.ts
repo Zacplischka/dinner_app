@@ -7,18 +7,19 @@ import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  SelectionSubmitPayload,
-  SelectionSubmitResponse,
+import {
+  SESSION_CODE_PATTERN,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  type SelectionSubmitPayload,
+  type SelectionSubmitResponse,
 } from '@dinder/shared/types';
 
 // Zod schema for validation
 // Note: We allow 0 selections - a user may not like any options, and that's valid.
 // The overlap calculation will handle empty selections gracefully.
 const selectionSubmitPayloadSchema = z.object({
-  sessionCode: z.string().regex(/^[A-Z0-9]{6}$/),
+  sessionCode: z.string().regex(SESSION_CODE_PATTERN),
   selections: z.array(z.string()).max(50),
 });
 

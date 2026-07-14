@@ -21,7 +21,7 @@ const service = createSessionService({
 });
 
 describe('websocket handlers', () => {
-  const sessionCode = 'WSH123';
+  const sessionCode = 'WSH12';
 
   beforeEach(async () => {
     await cleanup();
@@ -91,7 +91,7 @@ describe('websocket handlers', () => {
       expect(warnSpy).toHaveBeenCalledWith({
         socketId: 'socket-1',
         sessionCode: 'bad',
-        reason: expect.stringContaining('Session code must be 6 alphanumeric characters'),
+        reason: expect.stringContaining('Session code must be 5 alphanumeric characters'),
       }, 'Rejected session:join');
     });
 

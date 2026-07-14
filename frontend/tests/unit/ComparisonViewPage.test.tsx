@@ -228,8 +228,8 @@ describe('ComparisonViewPage', () => {
     expect(matchedRow).toHaveTextContent('Margherita');
     expect(matchedRow).toHaveTextContent('$20.00');
     expect(matchedRow).toHaveTextContent('$22.00');
-    expect(screen.getByText('$20.00')).toHaveClass('text-amber');
-    expect(screen.getByText('$22.00')).not.toHaveClass('text-amber');
+    expect(screen.getByText('$20.00')).toHaveClass('text-lime');
+    expect(screen.getByText('$22.00')).not.toHaveClass('text-lime');
     expect(screen.getByText('Only on Uber Eats (1)')).toBeInTheDocument();
     expect(screen.getByText('Uber special')).toBeInTheDocument();
     expect(screen.getByText('Only on DoorDash (1)')).toBeInTheDocument();

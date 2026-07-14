@@ -1,6 +1,9 @@
 // Shared TypeScript types for data models
 // Based on: specs/001-dinner-decider-enables/data-model.md
 
+export const SESSION_CODE_LENGTH = 5;
+export const SESSION_CODE_PATTERN = /^[A-Z0-9]{5}$/;
+
 export interface Restaurant {
   placeId: string;
   name: string;
@@ -9,6 +12,7 @@ export interface Restaurant {
   cuisineType?: string;
   address?: string;
   photoUrl?: string;
+  openNow?: boolean;
 }
 
 export interface Venue {

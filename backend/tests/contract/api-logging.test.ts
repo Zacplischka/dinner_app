@@ -9,7 +9,7 @@ import type { Restaurant } from '@dinder/shared/types';
 
 describe('Contract Test: API logging', () => {
   const redis = getTestRedis();
-  const sessionCode = 'LOG123';
+  const sessionCode = 'LOG12';
   const restaurants: Restaurant[] = [
     {
       placeId: 'place-noodle',
@@ -131,11 +131,11 @@ describe('Contract Test: API logging', () => {
     const logs = captureLogs();
 
     await request(app)
-      .get('/api/sessions/ZZZ999')
+      .get('/api/sessions/ZZZ99')
       .expect(404);
 
     expect(logs.withMsg('Rejected REST session get')[0]).toMatchObject({
-      sessionCode: 'ZZZ999',
+      sessionCode: 'ZZZ99',
       reason: 'session_not_found',
     });
   });
@@ -157,10 +157,10 @@ describe('Contract Test: API logging', () => {
   it('logs rejected REST joins with validation context', async () => {
     const logs = captureLogs();
 
-    await request(app).post('/api/sessions/ABC123/join').send({}).expect(400);
+    await request(app).post('/api/sessions/AB123/join').send({}).expect(400);
 
     expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       reason: 'validation_error',
       fields: ['participantName'],
     });
@@ -173,12 +173,12 @@ describe('Contract Test: API logging', () => {
     );
 
     await request(app)
-      .post('/api/sessions/ABC123/join')
+      .post('/api/sessions/AB123/join')
       .send({ participantName: 'Bob' })
       .expect(403);
 
     expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       reason: 'session_full',
       participantLimit: 4,
     });
@@ -217,22 +217,22 @@ describe('Contract Test: API logging', () => {
   it('logs missing option sessions before returning 404', async () => {
     const logs = captureLogs();
 
-    await request(app).get('/api/options/ABC123').expect(404);
+    await request(app).get('/api/options/AB123').expect(404);
 
     expect(logs.withMsg('Rejected REST options get')[0]).toMatchObject({
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       reason: 'session_not_found',
     });
   });
 
   it('logs no-restaurant option responses with the reason', async () => {
     const logs = captureLogs();
-    await createSessionRecord('ABC123');
+    await createSessionRecord('AB123');
 
-    await request(app).get('/api/options/ABC123').expect(404);
+    await request(app).get('/api/options/AB123').expect(404);
 
     expect(logs.withMsg('Rejected REST options get')[0]).toMatchObject({
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       reason: 'restaurant_ids_missing',
     });
   });

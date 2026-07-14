@@ -18,10 +18,10 @@ export class HomePage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: /Dinder/i });
-    this.tagline = page.getByText(/Find restaurants everyone agrees on/i);
+    this.heading = page.getByRole('heading', { name: /Find a place everyone likes/i });
+    this.tagline = page.getByText(/Start a dinner session/i);
     this.createSessionButton = page.getByRole('button', { name: /Create Session/i });
-    this.joinSessionButton = page.getByRole('button', { name: /Join Session/i });
+    this.joinSessionButton = page.getByRole('button', { name: /Join with code/i });
     this.guestModeText = page.getByText(/Sign in to save history & invite friends/i);
     this.participantsText = page.getByText(/Up to 4/i);
     this.privateSelectionsText = page.getByText(/Private votes/i);

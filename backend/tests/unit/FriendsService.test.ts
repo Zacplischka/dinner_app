@@ -405,7 +405,7 @@ describe('FriendsService', () => {
     });
 
     it('invites only accepted friends and reports the invited count', async () => {
-      const invitedCount = await FriendsService.inviteFriendsToSession('user-1', 'ABC123', [
+      const invitedCount = await FriendsService.inviteFriendsToSession('user-1', 'AB123', [
         'user-2',
         'user-4',
       ]);
@@ -413,13 +413,13 @@ describe('FriendsService', () => {
       expect(invitedCount).toBe(1);
       const invites = await FriendsService.listSessionInvites('user-2');
       expect(invites).toMatchObject([
-        { sessionCode: 'ABC123', inviter: { id: 'user-1', displayName: 'Alice' } },
+        { sessionCode: 'AB123', inviter: { id: 'user-1', displayName: 'Alice' } },
       ]);
     });
 
     it('rejects when no provided id is a friend', async () => {
       await expect(
-        FriendsService.inviteFriendsToSession('user-1', 'ABC123', ['user-4'])
+        FriendsService.inviteFriendsToSession('user-1', 'AB123', ['user-4'])
       ).rejects.toMatchObject({ code: 'validation_error' });
     });
   });
@@ -431,14 +431,14 @@ describe('FriendsService', () => {
       addProfile('user-1', 'Alice', 'alice@example.com');
       addProfile('user-2', 'Bob', 'bob@example.com');
       addFriendship('friendship-1', 'user-1', 'user-2', 'accepted');
-      await FriendsService.inviteFriendsToSession('user-1', 'ABC123', ['user-2']);
+      await FriendsService.inviteFriendsToSession('user-1', 'AB123', ['user-2']);
       const invites = await FriendsService.listSessionInvites('user-2');
       inviteId = invites[0].id;
     });
 
     it('accept returns the session code and removes the pending invite', async () => {
       await expect(FriendsService.acceptSessionInvite('user-2', inviteId)).resolves.toBe(
-        'ABC123'
+        'AB123'
       );
       await expect(FriendsService.listSessionInvites('user-2')).resolves.toEqual([]);
     });

@@ -33,7 +33,7 @@ describe('Contract Test: POST /api/sessions', () => {
 
     // Validate response matches OpenAPI SessionResponse schema
     expect(response.body).toHaveProperty('sessionCode');
-    expect(response.body.sessionCode).toMatch(/^[A-Z0-9]{6}$/);
+    expect(response.body.sessionCode).toMatch(/^[A-Z0-9]{5}$/);
     expect(response.body).toHaveProperty('hostName', 'Alice');
     expect(response.body).toHaveProperty('participantCount', 1);
     expect(response.body).toHaveProperty('state');

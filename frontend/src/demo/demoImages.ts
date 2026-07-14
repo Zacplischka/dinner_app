@@ -22,11 +22,11 @@ export function demoPhotoUrl(seed: string, label?: string) {
   const h = hash(seed);
 
   const palettes = [
-    { a: '#d4a574', b: '#7a5632', c: '#1f1f24' }, // amber → cocoa
-    { a: '#a8d4a8', b: '#5a9a5a', c: '#1a1a1f' }, // herb
-    { a: '#f0c890', b: '#c08840', c: '#1a1a1f' }, // honey
-    { a: '#f0a0a0', b: '#c05050', c: '#1a1a1f' }, // berry
-    { a: '#d9cfc0', b: '#b8854a', c: '#1a1a1f' }, // cream/amber
+    { a: '#ff6b7e', b: '#ff3858', c: '#030712' },
+    { a: '#35e7ff', b: '#0c7f92', c: '#030712' },
+    { a: '#c7ff1a', b: '#547500', c: '#07111f' },
+    { a: '#b146ff', b: '#5b1b94', c: '#030712' },
+    { a: '#ffb627', b: '#8b5d00', c: '#07111f' },
   ];
 
   const p = pick(palettes, h);
@@ -82,7 +82,7 @@ export function demoPhotoUrl(seed: string, label?: string) {
   <g>
     <circle cx="110" cy="120" r="34" fill="#000" opacity="0.25"/>
     <circle cx="110" cy="120" r="32" fill="${p.a}" opacity="0.20"/>
-    <text x="110" y="132" text-anchor="middle" font-family="Georgia" font-size="28" fill="#f5f0e8" opacity="0.9">${initial}</text>
+    <text x="110" y="132" text-anchor="middle" font-family="Inter, sans-serif" font-size="28" font-weight="800" fill="#f8fafc" opacity="0.9">${initial}</text>
   </g>
 </svg>`;
 

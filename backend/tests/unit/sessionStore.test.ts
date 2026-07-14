@@ -13,7 +13,7 @@ import {
 import { DomainError } from '../../src/services/DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
 
-const sessionCode = 'TEST12';
+const sessionCode = 'TEST1';
 
 const restaurants: Restaurant[] = [
   { placeId: 'place1', name: 'Restaurant 1', rating: 4.5, priceLevel: 2 } as Restaurant,
@@ -275,11 +275,11 @@ describe('SessionStore', () => {
 
   describe('sessionCodeFromExpiredKey', () => {
     it('extracts the code from a root session key', () => {
-      expect(sessionCodeFromExpiredKey('session:ABC123')).toBe('ABC123');
+      expect(sessionCodeFromExpiredKey('session:AB123')).toBe('AB123');
     });
 
     it('ignores sub-keys and unrelated keys', () => {
-      expect(sessionCodeFromExpiredKey('session:ABC123:results')).toBeNull();
+      expect(sessionCodeFromExpiredKey('session:AB123:results')).toBeNull();
       expect(sessionCodeFromExpiredKey('participant:xyz')).toBeNull();
     });
   });

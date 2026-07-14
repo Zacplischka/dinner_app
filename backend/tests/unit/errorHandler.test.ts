@@ -20,7 +20,7 @@ describe('global errorHandler middleware', () => {
 
   it('maps DomainError codes to HTTP statuses with the standard body shape', async () => {
     const response = await request(
-      appThrowing(new DomainError('SESSION_NOT_FOUND', 'Session ABC123 not found'))
+      appThrowing(new DomainError('SESSION_NOT_FOUND', 'Session AB123 not found'))
     )
       .get('/boom')
       .expect(404);
@@ -28,7 +28,7 @@ describe('global errorHandler middleware', () => {
     expect(response.body).toEqual({
       error: 'SESSION_NOT_FOUND',
       code: 'SESSION_NOT_FOUND',
-      message: 'Session ABC123 not found',
+      message: 'Session AB123 not found',
     });
   });
 

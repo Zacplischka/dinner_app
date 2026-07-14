@@ -33,6 +33,7 @@ interface GooglePlaceResult {
   formattedAddress?: string;
   photos?: GooglePlacePhoto[];
   location?: { latitude: number; longitude: number };
+  currentOpeningHours?: { openNow?: boolean };
 }
 
 export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> {
@@ -212,6 +213,7 @@ export function transformGooglePlaceToRestaurant(place: GooglePlaceResult, apiKe
     cuisineType: place.primaryTypeDisplayName?.text,
     address: place.formattedAddress,
     photoUrl,
+    openNow: place.currentOpeningHours?.openNow,
   };
 }
 
@@ -289,7 +291,7 @@ async function fetchTextSearchPage(
   const textSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
 
   // Include nextPageToken in field mask if paginating
-  const fieldMask = 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,nextPageToken';
+  const fieldMask = 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken';
 
   const requestBody: Record<string, unknown> = {
     textQuery: 'restaurants',

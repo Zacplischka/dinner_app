@@ -6,7 +6,7 @@ import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
-  const sessionCode = 'RST123';
+  const sessionCode = 'RST12';
   let redis: Redis;
 
   const restaurants: Restaurant[] = [

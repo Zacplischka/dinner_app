@@ -94,12 +94,12 @@ describe('session expiry notifier', () => {
     );
 
     await initializeSessionExpiryNotifier(io as any);
-    subscriber().emit('message', '__keyevent@0__:expired', 'session:ABC123');
+    subscriber().emit('message', '__keyevent@0__:expired', 'session:AB123');
 
-    expect(logSpy).toHaveBeenCalledWith({ sessionCode: 'ABC123' }, 'Session expired');
-    expect(io.to).toHaveBeenCalledWith('ABC123');
+    expect(logSpy).toHaveBeenCalledWith({ sessionCode: 'AB123' }, 'Session expired');
+    expect(io.to).toHaveBeenCalledWith('AB123');
     expect(emit).toHaveBeenCalledWith('session:expired', {
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       reason: 'inactivity',
       message: 'Session has expired due to inactivity',
     });
@@ -147,7 +147,7 @@ describe('session expiry notifier', () => {
 
     await initializeSessionExpiryNotifier(io as any);
     subscriber().emit('message', '__keyevent@0__:expired', 'session:INVALID');
-    subscriber().emit('message', '__keyevent@0__:expired', 'session:ABC123:results');
+    subscriber().emit('message', '__keyevent@0__:expired', 'session:AB123:results');
     subscriber().emit('message', '__keyevent@0__:expired', 'participant:xyz');
 
     expect(io.to).not.toHaveBeenCalled();

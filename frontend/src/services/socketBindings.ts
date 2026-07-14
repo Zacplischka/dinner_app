@@ -204,6 +204,7 @@ export async function joinSession(
   // Check if joining a different session - reset selections from previous session
   if (store.sessionCode !== sessionCode) {
     store.resetSelections();
+    store.setSessionStatus('waiting');
   }
 
   // Update store with session data

@@ -66,7 +66,7 @@ const friend = {
 
 const invite = {
   id: 'invite-1',
-  sessionCode: 'ABC123',
+  sessionCode: 'AB123',
   inviter: {
     id: 'user-1',
     displayName: 'Alice',
@@ -176,13 +176,13 @@ describe('component and hook branch coverage', () => {
     const { rerender } = render(
       <SwipeCard restaurant={restaurant as any} onSwipeLeft={left} onSwipeRight={right} isTop={false} stackPosition={1} />
     );
-    let card = screen.getByText('Branch Bistro').closest('[class*="rounded-3xl"]') as HTMLElement;
+    let card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
     fireEvent.touchStart(card, { touches: [{ clientX: 10 }] });
     fireEvent.mouseDown(card, { clientX: 10 });
     expect(left).not.toHaveBeenCalled();
 
     rerender(<SwipeCard restaurant={restaurant as any} onSwipeLeft={left} onSwipeRight={right} isTop stackPosition={0} />);
-    card = screen.getByText('Branch Bistro').closest('[class*="rounded-3xl"]') as HTMLElement;
+    card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
     fireEvent.touchMove(card, { touches: [{ clientX: 90 }] });
     fireEvent.touchEnd(card);
     fireEvent.mouseMove(card, { clientX: 60 });
@@ -193,7 +193,7 @@ describe('component and hook branch coverage', () => {
     expect(right).toHaveBeenCalled();
 
     rerender(<SwipeCard restaurant={restaurant as any} onSwipeLeft={left} onSwipeRight={right} isTop stackPosition={0} />);
-    card = screen.getByText('Branch Bistro').closest('[class*="rounded-3xl"]') as HTMLElement;
+    card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
     fireEvent.touchStart(card, { touches: [{ clientX: 160 }] });
     fireEvent.touchMove(card, { touches: [{ clientX: 10 }] });
     fireEvent.touchEnd(card);
@@ -213,12 +213,12 @@ describe('component and hook branch coverage', () => {
 
     useFriendsStore.setState({
       currentUserProfile: null,
-      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'ABC123' })) as any,
+      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'AB123' })) as any,
       declineSessionInvite: vi.fn(async () => true) as any,
     });
     renderAt('/test', <SessionInviteCard invite={invite} />);
     fireEvent.click(screen.getByText('Join'));
-    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('ABC123', 'Guest'));
+    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('AB123', 'Guest'));
 
     useFriendsStore.setState({
       currentUserProfile: {
@@ -227,11 +227,11 @@ describe('component and hook branch coverage', () => {
         avatarUrl: null,
         email: 'alice@example.com',
       },
-      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'ABC123' })) as any,
+      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'AB123' })) as any,
     });
     renderAt('/test', <SessionInviteCard invite={{ ...invite, id: 'invite-profile' }} />);
     fireEvent.click(screen.getAllByText('Join').at(-1)!);
-    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('ABC123', 'Alice Example'));
+    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('AB123', 'Alice Example'));
 
     useFriendsStore.setState({
       acceptSessionInvite: vi.fn(async () => {

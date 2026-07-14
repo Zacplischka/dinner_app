@@ -5,7 +5,7 @@ import { sessionStore as store } from '../../src/server.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Integration Test: Single Participant Session (FR-021)', () => {
-  const sessionCode = 'SOLO12';
+  const sessionCode = 'SOLO1';
   let redis: Redis;
 
   const restaurants: Restaurant[] = [

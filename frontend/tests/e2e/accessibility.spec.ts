@@ -17,7 +17,7 @@ test.describe('Accessibility - Home Page', () => {
     await homePage.goto();
 
     await expect(homePage.createSessionButton).toHaveAccessibleName(/Create Session/i);
-    await expect(homePage.joinSessionButton).toHaveAccessibleName(/Join Session/i);
+    await expect(homePage.joinSessionButton).toHaveAccessibleName(/Join with code/i);
   });
 
   test('page passes accessibility checks', async ({ page, homePage }) => {
@@ -52,8 +52,9 @@ test.describe('Accessibility - Create Session Page', () => {
     // Button should have disabled state communicated
     await expect(createPage.createButton).toBeDisabled();
 
-    // After entering name, button should be enabled
+    // After entering the required name and location, button should be enabled
     await createPage.enterName('TestUser');
+    await createPage.setCurrentLocation();
     await expect(createPage.createButton).toBeEnabled();
   });
 
@@ -88,7 +89,7 @@ test.describe('Accessibility - Join Session Page', () => {
     await joinPage.goto();
 
     // Try to submit without filling in fields
-    await joinPage.enterSessionCode('AAAAAA');
+    await joinPage.enterSessionCode('AAAAA');
     await joinPage.enterName('Test');
 
     // Click join - should show error
@@ -114,16 +115,23 @@ test.describe('Accessibility - Keyboard Navigation', () => {
 
     for (let i = 0; i < 10; i++) {
       await page.keyboard.press('Tab');
-      const focused = page.locator(':focus');
-      const tagName = await focused.evaluate((el) => el.tagName.toLowerCase());
-      const text = await focused.textContent();
-      if (tagName === 'button' || tagName === 'a') {
-        interactiveElements.push(text || tagName);
+      const focused = await page.evaluate(() => {
+        const element = document.activeElement;
+        if (!(element instanceof HTMLElement)) return null;
+        return {
+          tagName: element.tagName.toLowerCase(),
+          name: element.getAttribute('aria-label') || element.textContent || '',
+        };
+      });
+      if (focused?.tagName === 'button' || focused?.tagName === 'a') {
+        interactiveElements.push(focused.name.trim());
       }
     }
 
-    // Should have tabbed through main interactive elements
-    expect(interactiveElements.length).toBeGreaterThan(0);
+    // Main actions should all be reachable in the tab order.
+    expect(interactiveElements.some((name) => name.includes('Create Session'))).toBe(true);
+    expect(interactiveElements.some((name) => name.includes('Join with code'))).toBe(true);
+    expect(interactiveElements).toContain('Compare delivery prices');
   });
 
   test('Enter key activates buttons', async ({ page, homePage }) => {

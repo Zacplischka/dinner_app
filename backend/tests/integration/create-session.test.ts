@@ -22,7 +22,7 @@ describe('Integration Test: Create Session Flow (FR-001, FR-002, FR-003)', () =>
       .send({ hostName: 'Alice' })
       .expect(201);
 
-    expect(response.body.sessionCode).toMatch(/^[A-Z0-9]{6}$/);
+    expect(response.body.sessionCode).toMatch(/^[A-Z0-9]{5}$/);
     expect(response.body.shareableLink).toContain(response.body.sessionCode);
     expect(response.body.shareableLink).toMatch(/^http/);
     expect(response.body).toMatchObject({

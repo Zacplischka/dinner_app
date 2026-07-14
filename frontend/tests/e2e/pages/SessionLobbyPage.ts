@@ -18,14 +18,14 @@ export class SessionLobbyPage extends BasePage {
       page.locator('[class*="participants"]')
     );
     this.startButton = page.getByRole('button', { name: /Start/i });
-    this.leaveButton = page.getByRole('button', { name: /Leave|Exit/i });
+    this.leaveButton = page.getByRole('button', { name: /Back|Leave|Exit/i });
   }
 
   /**
    * Get list of participant names
    */
   async getParticipants(): Promise<string[]> {
-    const participantElements = await this.participantsList.locator('li, [class*="participant"]').all();
+    const participantElements = await this.participantsList.locator('[data-testid="participant-name"]').all();
     const names: string[] = [];
     for (const el of participantElements) {
       const name = await el.textContent();
@@ -38,7 +38,7 @@ export class SessionLobbyPage extends BasePage {
    * Wait for a specific participant to join
    */
   async waitForParticipant(name: string, timeout = 10_000): Promise<void> {
-    await this.page.getByText(name).waitFor({ state: 'visible', timeout });
+    await this.page.getByText(name, { exact: true }).waitFor({ state: 'visible', timeout });
   }
 
   /**
@@ -59,7 +59,7 @@ export class SessionLobbyPage extends BasePage {
     await this.leaveButton.click();
 
     // Handle confirmation modal if present
-    const confirmButton = this.page.getByRole('button', { name: /Confirm|Yes|Leave/i });
+    const confirmButton = this.page.getByRole('button', { name: /^Leave Session$/i });
     if (await confirmButton.isVisible()) {
       await confirmButton.click();
     }

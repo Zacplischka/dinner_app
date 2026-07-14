@@ -540,7 +540,7 @@ describe('friends API router', () => {
 
   it('POST /sessions/:code/invite should validate friendIds', async () => {
     const response = await request(app)
-      .post('/api/sessions/ABC123/invite')
+      .post('/api/sessions/AB123/invite')
       .send({ friendIds: [] })
       .expect(400);
 
@@ -563,7 +563,7 @@ describe('friends API router', () => {
     );
 
     const response = await request(app)
-      .post('/api/sessions/ABC123/invite')
+      .post('/api/sessions/AB123/invite')
       .send({ friendIds: ['user-2', 'user-4'] })
       .expect(201);
 
@@ -582,7 +582,7 @@ describe('friends API router', () => {
     );
 
     const response = await request(app)
-      .post('/api/sessions/ABC123/invite')
+      .post('/api/sessions/AB123/invite')
       .send({ friendIds: ['user-2'] })
       .expect(201);
 
@@ -601,7 +601,7 @@ describe('friends API router', () => {
     });
 
     const response = await request(app)
-      .post('/api/sessions/ABC123/invite')
+      .post('/api/sessions/AB123/invite')
       .send({ friendIds: ['user-4'] })
       .expect(400);
 
@@ -625,7 +625,7 @@ describe('friends API router', () => {
         data: [
           {
             id: 'invite-1',
-            session_code: 'ABC123',
+            session_code: 'AB123',
             inviter_id: 'user-2',
             status: 'pending',
             created_at: '2026-01-03T00:00:00.000Z',
@@ -642,7 +642,7 @@ describe('friends API router', () => {
       invites: [
         {
           id: 'invite-1',
-          sessionCode: 'ABC123',
+          sessionCode: 'AB123',
           inviter: {
             id: 'user-2',
             displayName: 'Unknown User',
@@ -658,7 +658,7 @@ describe('friends API router', () => {
 
   it('POST /invites/:inviteId/accept should accept session invites', async () => {
     mockState.responses.push({
-      data: { id: 'invite-1', session_code: 'ABC123' },
+      data: { id: 'invite-1', session_code: 'AB123' },
       error: null,
     });
 
@@ -666,7 +666,7 @@ describe('friends API router', () => {
 
     expect(response.body).toEqual({
       success: true,
-      sessionCode: 'ABC123',
+      sessionCode: 'AB123',
       message: 'Session invite accepted',
     });
   });
@@ -731,7 +731,7 @@ describe('friends API router', () => {
     ['post', '/api/friends/request-1/accept', undefined],
     ['post', '/api/friends/request-1/decline', undefined],
     ['delete', '/api/friends/user-2', undefined],
-    ['post', '/api/sessions/ABC123/invite', { friendIds: ['user-2'] }],
+    ['post', '/api/sessions/AB123/invite', { friendIds: ['user-2'] }],
     ['get', '/api/invites', undefined],
     ['post', '/api/invites/invite-1/accept', undefined],
     ['post', '/api/invites/invite-1/decline', undefined],
@@ -886,7 +886,7 @@ describe('friends API router', () => {
     mockState.responses.push({ data: null, error: { message: 'friend lookup failed' } });
 
     await request(app)
-      .post('/api/sessions/ABC123/invite')
+      .post('/api/sessions/AB123/invite')
       .send({ friendIds: ['user-2'] })
       .expect(500)
       .expect(({ body }) => {

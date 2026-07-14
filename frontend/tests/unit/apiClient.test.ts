@@ -15,7 +15,7 @@ describe('apiClient', () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          sessionCode: 'ABC123',
+          sessionCode: 'AB123',
           hostName: 'Alice',
           restaurantCount: 10,
           location: {
@@ -55,7 +55,7 @@ describe('apiClient', () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          sessionCode: 'ABC123',
+          sessionCode: 'AB123',
           hostName: 'Alice',
           restaurantCount: 5,
           location: {
@@ -93,7 +93,7 @@ describe('apiClient', () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          sessionCode: 'ABC123',
+          sessionCode: 'AB123',
           hostName: 'Alice',
         }),
       });
@@ -153,9 +153,9 @@ describe('apiClient', () => {
         json: async () => ({}),
       });
 
-      await freshApiClient.getSession('ABC123');
+      await freshApiClient.getSession('AB123');
 
-      expect(fetch).toHaveBeenCalledWith('https://api.example.test/v1/sessions/ABC123');
+      expect(fetch).toHaveBeenCalledWith('https://api.example.test/v1/sessions/AB123');
       vi.unstubAllEnvs();
     });
   });
@@ -211,14 +211,14 @@ describe('apiClient', () => {
         ok: true,
         json: async () => ({
           restaurants: mockRestaurants,
-          sessionCode: 'ABC123',
+          sessionCode: 'AB123',
         }),
       });
       global.fetch = mockFetch;
 
-      const result = await apiClient.getRestaurants('ABC123');
+      const result = await apiClient.getRestaurants('AB123');
 
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/options/ABC123'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/options/AB123'));
       expect(result).toEqual([
         {
           ...mockRestaurants[0],
@@ -235,13 +235,13 @@ describe('apiClient', () => {
         json: async () => ({
           error: 'Not Found',
           code: 'SESSION_NOT_FOUND',
-          message: 'Session ABC123 not found',
+          message: 'Session AB123 not found',
         }),
       });
       global.fetch = mockFetch;
 
-      await expect(apiClient.getRestaurants('ABC123')).rejects.toThrow(
-        'Session ABC123 not found'
+      await expect(apiClient.getRestaurants('AB123')).rejects.toThrow(
+        'Session AB123 not found'
       );
     });
 
@@ -257,7 +257,7 @@ describe('apiClient', () => {
       });
       global.fetch = mockFetch;
 
-      await expect(apiClient.getRestaurants('ABC123')).rejects.toThrow(
+      await expect(apiClient.getRestaurants('AB123')).rejects.toThrow(
         'No restaurants found for this session'
       );
     });
@@ -269,27 +269,27 @@ describe('apiClient', () => {
         json: async () => ({ error: 'Bad Request', code: 'BAD' }),
       });
 
-      await expect(apiClient.getRestaurants('ABC123')).rejects.toThrow('HTTP error 400');
+      await expect(apiClient.getRestaurants('AB123')).rejects.toThrow('HTTP error 400');
     });
   });
 
   describe('getSession', () => {
     it('should fetch session details', async () => {
       const session = {
-        sessionCode: 'ABC123',
+        sessionCode: 'AB123',
         hostName: 'Alice',
         participantCount: 2,
         state: 'waiting',
         expiresAt: new Date().toISOString(),
-        shareableLink: 'http://localhost:3000/join?code=ABC123',
+        shareableLink: 'http://localhost:3000/join?code=AB123',
       };
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => session,
       });
 
-      await expect(apiClient.getSession('ABC123')).resolves.toEqual(session);
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/sessions/ABC123'));
+      await expect(apiClient.getSession('AB123')).resolves.toEqual(session);
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/sessions/AB123'));
     });
 
     it('should use fallback error message for session lookup failures', async () => {
@@ -299,7 +299,7 @@ describe('apiClient', () => {
         json: async () => ({ error: 'Bad Request', code: 'BAD' }),
       });
 
-      await expect(apiClient.getSession('ABC123')).rejects.toThrow('HTTP error 400');
+      await expect(apiClient.getSession('AB123')).rejects.toThrow('HTTP error 400');
     });
   });
 });

@@ -58,7 +58,7 @@ import * as socketService from '../../src/services/socketService';
 const participant = {
   participantId: 'participant-1',
   displayName: 'Alice',
-  sessionCode: 'ABC123',
+  sessionCode: 'AB123',
   joinedAt: 1,
   hasSubmitted: false,
   isHost: true,
@@ -135,45 +135,45 @@ describe('socketService', () => {
       participants: [participant],
     });
 
-    await expect(socketService.joinSession('ABC123', 'Alice')).resolves.toMatchObject({
+    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toMatchObject({
       success: true,
     });
 
     socket.acks.set('session:join', { success: false, error: 'nope' });
-    await expect(socketService.joinSession('ABC123', 'Alice')).rejects.toThrow('nope');
+    await expect(socketService.joinSession('AB123', 'Alice')).rejects.toThrow('nope');
     socket.acks.set('session:join', { success: false });
-    await expect(socketService.joinSession('ABC123', 'Alice')).rejects.toThrow('Failed to join session');
+    await expect(socketService.joinSession('AB123', 'Alice')).rejects.toThrow('Failed to join session');
 
     socket.acks.set('selection:submit', { success: true });
-    await expect(socketService.submitSelection('ABC123', ['place-1'])).resolves.toEqual({ success: true });
+    await expect(socketService.submitSelection('AB123', ['place-1'])).resolves.toEqual({ success: true });
     socket.acks.set('selection:submit', { success: false, error: 'bad submit' });
-    await expect(socketService.submitSelection('ABC123', ['place-1'])).rejects.toThrow('bad submit');
+    await expect(socketService.submitSelection('AB123', ['place-1'])).rejects.toThrow('bad submit');
     socket.acks.set('selection:submit', { success: false });
-    await expect(socketService.submitSelection('ABC123', ['place-1'])).rejects.toThrow('Failed to submit selection');
+    await expect(socketService.submitSelection('AB123', ['place-1'])).rejects.toThrow('Failed to submit selection');
 
     socket.acks.set('session:restart', { success: true });
-    await expect(socketService.restartSession('ABC123')).resolves.toBeUndefined();
+    await expect(socketService.restartSession('AB123')).resolves.toBeUndefined();
     socket.acks.set('session:restart', { success: false, error: 'bad restart' });
-    await expect(socketService.restartSession('ABC123')).rejects.toThrow('bad restart');
+    await expect(socketService.restartSession('AB123')).rejects.toThrow('bad restart');
     socket.acks.set('session:restart', { success: false });
-    await expect(socketService.restartSession('ABC123')).rejects.toThrow('Failed to restart session');
+    await expect(socketService.restartSession('AB123')).rejects.toThrow('Failed to restart session');
 
     socket.acks.set('session:leave', { success: true });
-    await expect(socketService.leaveSession('ABC123')).resolves.toEqual({ success: true });
+    await expect(socketService.leaveSession('AB123')).resolves.toEqual({ success: true });
     socket.acks.set('session:leave', { success: false, error: 'bad leave' });
-    await expect(socketService.leaveSession('ABC123')).rejects.toThrow('bad leave');
+    await expect(socketService.leaveSession('AB123')).rejects.toThrow('bad leave');
     socket.acks.set('session:leave', { success: false });
-    await expect(socketService.leaveSession('ABC123')).rejects.toThrow('Failed to leave session');
+    await expect(socketService.leaveSession('AB123')).rejects.toThrow('Failed to leave session');
   });
 
   it('should reject actions when disconnected and expose socket helpers', async () => {
     const socket = setupSocket(false);
     socketService.initializeSocket();
 
-    await expect(socketService.joinSession('ABC123', 'Alice')).rejects.toThrow('Socket not connected');
-    await expect(socketService.submitSelection('ABC123', [])).rejects.toThrow('Socket not connected');
-    await expect(socketService.restartSession('ABC123')).rejects.toThrow('Socket not connected');
-    await expect(socketService.leaveSession('ABC123')).rejects.toThrow('Socket not connected');
+    await expect(socketService.joinSession('AB123', 'Alice')).rejects.toThrow('Socket not connected');
+    await expect(socketService.submitSelection('AB123', [])).rejects.toThrow('Socket not connected');
+    await expect(socketService.restartSession('AB123')).rejects.toThrow('Socket not connected');
+    await expect(socketService.leaveSession('AB123')).rejects.toThrow('Socket not connected');
 
     expect(socketService.getSocketId()).toBe('socket-1');
 

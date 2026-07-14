@@ -8,11 +8,11 @@ import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
 import { config } from '../../src/config/index.js';
 import { createSessionStore } from '../../src/store/sessionStore.js';
-import { createSessionService, MAX_PARTICIPANTS } from '../../src/services/SessionService.js';
+import { createSessionService, generateSessionCode, MAX_PARTICIPANTS } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
 
 describe('SessionService', () => {
-  const testSessionCode = 'TEST123';
+  const testSessionCode = 'TEST1';
   const originalFrontendUrl = config.frontendUrl;
 
   let redis: Redis;
@@ -39,6 +39,10 @@ describe('SessionService', () => {
   });
 
   describe('createSession code generation', () => {
+    it('generates five-character uppercase alphanumeric codes', () => {
+      expect(generateSessionCode()).toMatch(/^[A-Z0-9]{5}$/);
+    });
+
     it('should log created sessions with operational context', async () => {
       const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
 
@@ -55,7 +59,7 @@ describe('SessionService', () => {
 
     it('should warn when session code generation collides', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await redis.hset('session:AAAAAA', {
+      await redis.hset('session:AAAAA', {
         hostId: 'existing-host',
         state: 'waiting',
         participantCount: '1',
@@ -65,22 +69,22 @@ describe('SessionService', () => {
       let calls = 0;
       const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
         calls++;
-        return calls <= 6 ? 0 : 0.03;
+        return calls <= 5 ? 0 : 0.03;
       });
 
       const result = await SessionService.createSession('Alice');
 
-      expect(result.sessionCode).toBe('BBBBBB');
+      expect(result.sessionCode).toBe('BBBBB');
       expect(randomSpy).toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith({
-        sessionCode: 'AAAAAA',
+        sessionCode: 'AAAAA',
         attempt: 1,
       }, 'Session code collision during createSession');
     });
 
     it('should fail after repeated session code collisions', async () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-      await redis.hset('session:AAAAAA', {
+      await redis.hset('session:AAAAA', {
         hostId: 'existing-host',
         state: 'waiting',
         participantCount: '1',
@@ -134,19 +138,19 @@ describe('SessionService', () => {
 
     it('should use an unknown host fallback and custom frontend URL', async () => {
       config.frontendUrl = 'https://frontend.example.test';
-      await redis.hset('session:NOHST1', {
+      await redis.hset('session:NOHST', {
         hostId: 'host-1',
         state: 'waiting',
         participantCount: '1',
         createdAt: '1700000000',
         lastActivityAt: '1700000000',
       });
-      await redis.expire('session:NOHST1', 1800);
+      await redis.expire('session:NOHST', 1800);
 
-      const session = await SessionService.getSession('NOHST1');
+      const session = await SessionService.getSession('NOHST');
 
       expect(session?.hostName).toBe('Unknown Host');
-      expect(session?.shareableLink).toBe('https://frontend.example.test/join?code=NOHST1');
+      expect(session?.shareableLink).toBe('https://frontend.example.test/join?code=NOHST');
     });
   });
 
@@ -457,7 +461,7 @@ describe('SessionService', () => {
 
     it('rejects submissions to missing sessions', async () => {
       await expect(
-        SessionService.submitSelections('NOPE99', 'p-alice', [])
+        SessionService.submitSelections('NOPE9', 'p-alice', [])
       ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
     });
 
@@ -480,7 +484,7 @@ describe('SessionService', () => {
 
     it('rejects leaves from missing sessions', async () => {
       await expect(
-        SessionService.leaveSession('NOPE99', 'p-alice')
+        SessionService.leaveSession('NOPE9', 'p-alice')
       ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
     });
 
@@ -539,7 +543,7 @@ describe('SessionService', () => {
   describe('restartSession', () => {
     it('rejects restarts from missing sessions', async () => {
       await expect(
-        SessionService.restartSession('NOPE99', 'p-alice')
+        SessionService.restartSession('NOPE9', 'p-alice')
       ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
     });
 

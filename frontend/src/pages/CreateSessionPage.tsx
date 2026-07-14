@@ -86,8 +86,8 @@ export default function CreateSessionPage() {
       setSessionCode(response.sessionCode);
       setStoreLocation(location);
       setStoreRadius(searchRadiusMiles);
-      setSessionStatus('waiting');
       resetSelections();
+      setSessionStatus('waiting');
 
       // Connect WebSocket and wait for connection, then join as host
       await waitForConnection();
@@ -111,7 +111,7 @@ export default function CreateSessionPage() {
   };
 
   return (
-    <main className="min-h-screen bg-warm-gradient">
+    <main className="min-h-screen bg-ink">
       <NavigationHeader
         title="Create Session"
         subtitle="Start a new dinner decision session"
@@ -122,10 +122,10 @@ export default function CreateSessionPage() {
       <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="card space-y-6">
           {/* Name Input */}
           <div>
-            <label htmlFor="hostName" className="block text-sm font-medium text-cream-300 mb-2">
+            <label htmlFor="hostName" className="label">
               Your Name
             </label>
             <input
@@ -136,18 +136,18 @@ export default function CreateSessionPage() {
               onChange={(e) => setHostName(e.target.value)}
               placeholder="Enter your name"
               maxLength={50}
-              className="w-full min-h-[44px] px-4 py-3 text-base text-cream bg-midnight-200 border border-midnight-50/50 rounded-xl placeholder:text-cream-500 focus:border-amber/60 focus:ring-1 focus:ring-amber/30 outline-none transition-all duration-300"
+              className="input"
               autoFocus
               disabled={isLoading || isGettingLocation}
             />
-            <p className="mt-1.5 text-xs text-cream-500">
+            <p className="mt-1.5 text-xs text-muted">
               {hostName.length}/50 characters
             </p>
           </div>
 
           {/* Location Section */}
           <div>
-            <label className="block text-sm font-medium text-cream-300 mb-2">
+            <label className="label">
               Location
             </label>
             {!location ? (
@@ -155,7 +155,7 @@ export default function CreateSessionPage() {
                 type="button"
                 onClick={handleGetLocation}
                 disabled={isLoading || isGettingLocation}
-                className="w-full min-h-[44px] px-4 py-3 text-base font-medium text-amber bg-amber/10 border border-amber/30 rounded-xl hover:bg-amber/20 disabled:bg-midnight-200 disabled:text-cream-500 disabled:border-midnight-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"
+                className="btn btn-secondary w-full flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -164,26 +164,26 @@ export default function CreateSessionPage() {
                 {isGettingLocation ? 'Getting location...' : 'Use My Current Location'}
               </button>
             ) : (
-              <div className="p-4 bg-success/10 border border-success/30 rounded-xl">
+              <div className="p-4 bg-lime/10 border border-lime/30 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center">
-                      <svg className="w-3 h-3 text-midnight" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <span className="w-5 h-5 rounded-full bg-lime flex items-center justify-center">
+                      <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </span>
-                    <span className="text-sm font-medium text-success-light">Location set</span>
+                    <span className="text-sm font-medium text-lime">Location set</span>
                   </div>
                   <button
                     type="button"
                     onClick={handleGetLocation}
                     disabled={isLoading || isGettingLocation}
-                    className="text-xs text-amber hover:text-amber-200 transition-colors"
+                    className="text-xs text-cyan hover:text-text transition-colors"
                   >
                     Update
                   </button>
                 </div>
-                <p className="text-xs text-cream-500 mt-2 font-mono">
+                <p className="text-xs text-muted mt-2 font-mono">
                   {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                 </p>
               </div>
@@ -193,8 +193,8 @@ export default function CreateSessionPage() {
           {/* Radius Slider (only show when location is set) */}
           {location && (
             <div>
-              <label htmlFor="radius" className="block text-sm font-medium text-cream-300 mb-3">
-                Search Radius: <span className="text-amber">{searchRadiusMiles} mile{searchRadiusMiles !== 1 ? 's' : ''}</span>
+              <label htmlFor="radius" className="label mb-3">
+                Search Radius: <span className="text-cyan">{searchRadiusMiles} mile{searchRadiusMiles !== 1 ? 's' : ''}</span>
               </label>
               <input
                 id="radius"
@@ -204,12 +204,12 @@ export default function CreateSessionPage() {
                 value={searchRadiusMiles}
                 onChange={(e) => setSearchRadiusMiles(Number(e.target.value))}
                 disabled={isLoading}
-                className="w-full h-2 bg-midnight-200 rounded-lg appearance-none cursor-pointer accent-amber"
+                className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-coral"
                 style={{
-                  background: `linear-gradient(to right, #d4a574 0%, #d4a574 ${((searchRadiusMiles - 1) / 14) * 100}%, #252529 ${((searchRadiusMiles - 1) / 14) * 100}%, #252529 100%)`
+                  background: `linear-gradient(to right, #ff3858 0%, #ff3858 ${((searchRadiusMiles - 1) / 14) * 100}%, #07111f ${((searchRadiusMiles - 1) / 14) * 100}%, #07111f 100%)`
                 }}
               />
-              <div className="flex justify-between text-xs text-cream-500 mt-2">
+              <div className="flex justify-between text-xs text-muted mt-2">
                 <span>1 mi</span>
                 <span>15 mi</span>
               </div>
@@ -224,8 +224,8 @@ export default function CreateSessionPage() {
 
           {/* Error message */}
           {error && (
-            <div className="p-3 bg-error/10 border border-error/30 rounded-xl">
-              <p className="text-sm text-error-light">{error}</p>
+            <div className="p-3 bg-coral/10 border border-coral/30 rounded-xl">
+              <p className="text-sm text-coral-soft">{error}</p>
             </div>
           )}
 
@@ -234,7 +234,7 @@ export default function CreateSessionPage() {
             <button
               type="submit"
               disabled={isLoading || isGettingLocation || !hostName.trim() || !location}
-              className="w-full min-h-[48px] px-6 py-3 text-lg font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
+              className="btn btn-primary w-full min-h-[48px] text-lg"
             >
               {isLoading ? 'Creating...' : 'Create Session'}
             </button>
@@ -242,7 +242,7 @@ export default function CreateSessionPage() {
         </form>
 
         {/* Info */}
-        <div className="mt-6 text-center text-sm text-cream-500">
+        <div className="mt-6 text-center text-sm text-muted">
           <p>You&apos;ll be able to share a session code with friends</p>
         </div>
       </div>

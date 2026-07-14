@@ -6,6 +6,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
 import { waitForConnection, joinSession } from '../services/socketBindings';
+import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
+
+const cleanSessionCode = (value: string) =>
+  value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, SESSION_CODE_LENGTH);
 
 export default function JoinSessionPage() {
   const navigate = useNavigate();
@@ -20,7 +24,7 @@ export default function JoinSessionPage() {
   useEffect(() => {
     const codeParam = searchParams.get('code');
     if (codeParam) {
-      setSessionCode(codeParam.toUpperCase());
+      setSessionCode(cleanSessionCode(codeParam));
     }
   }, [searchParams]);
 
@@ -29,8 +33,8 @@ export default function JoinSessionPage() {
     setError('');
 
     // Validate inputs
-    if (sessionCode.trim().length !== 6) {
-      setError('Session code must be 6 characters');
+    if (sessionCode.trim().length !== SESSION_CODE_LENGTH) {
+      setError(`Session code must be ${SESSION_CODE_LENGTH} characters`);
       return;
     }
 
@@ -46,8 +50,8 @@ export default function JoinSessionPage() {
       const code = sessionCode.trim().toUpperCase();
 
       storeSessionCode(code);
-      setSessionStatus('waiting');
       resetSelections();
+      setSessionStatus('waiting');
 
       await waitForConnection();
       const joinResponse = await joinSession(code, participantName.trim());
@@ -73,14 +77,8 @@ export default function JoinSessionPage() {
     }
   };
 
-  const handleSessionCodeChange = (value: string) => {
-    // Only allow alphanumeric uppercase, max 6 chars
-    const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-    setSessionCode(cleaned);
-  };
-
   return (
-    <main className="min-h-screen bg-warm-gradient">
+    <main className="min-h-screen bg-ink">
       <NavigationHeader
         title="Join Session"
         subtitle="Enter the session code shared by your host"
@@ -91,10 +89,10 @@ export default function JoinSessionPage() {
       <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-midnight-100 rounded-2xl shadow-card border border-midnight-50/30 p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="card space-y-6">
           {/* Session Code */}
           <div>
-            <label htmlFor="sessionCode" className="block text-sm font-medium text-cream-300 mb-2">
+            <label htmlFor="sessionCode" className="label">
               Session Code
             </label>
             <input
@@ -102,21 +100,21 @@ export default function JoinSessionPage() {
               name="sessionCode"
               type="text"
               value={sessionCode}
-              onChange={(e) => handleSessionCodeChange(e.target.value)}
-              placeholder="ABC123"
-              maxLength={6}
-              className="w-full min-h-[56px] px-4 py-4 text-center font-mono text-2xl tracking-[0.4em] text-amber bg-midnight-200 border border-midnight-50/50 rounded-xl placeholder:text-cream-500/50 focus:border-amber/60 focus:ring-1 focus:ring-amber/30 outline-none transition-all duration-300 uppercase"
+              onChange={(e) => setSessionCode(cleanSessionCode(e.target.value))}
+              placeholder="7K9M2"
+              maxLength={SESSION_CODE_LENGTH}
+              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-[#050d19] px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan outline-none transition-all duration-150 placeholder:text-muted/50"
               autoFocus={!searchParams.get('code')}
               disabled={isLoading}
             />
-            <p className="mt-2 text-xs text-cream-500 text-center">
-              6-character code (letters and numbers)
+            <p className="mt-2 text-xs text-muted text-center">
+              {SESSION_CODE_LENGTH}-character code (letters and numbers)
             </p>
           </div>
 
           {/* Participant Name */}
           <div>
-            <label htmlFor="participantName" className="block text-sm font-medium text-cream-300 mb-2">
+            <label htmlFor="participantName" className="label">
               Your Name
             </label>
             <input
@@ -127,10 +125,10 @@ export default function JoinSessionPage() {
               onChange={(e) => setParticipantName(e.target.value)}
               placeholder="Enter your name"
               maxLength={50}
-              className="w-full min-h-[44px] px-4 py-3 text-base text-cream bg-midnight-200 border border-midnight-50/50 rounded-xl placeholder:text-cream-500 focus:border-amber/60 focus:ring-1 focus:ring-amber/30 outline-none transition-all duration-300"
+              className="input"
               disabled={isLoading}
             />
-            <p className="mt-1.5 text-xs text-cream-500">
+            <p className="mt-1.5 text-xs text-muted">
               {participantName.length}/50 characters
             </p>
           </div>
@@ -138,8 +136,8 @@ export default function JoinSessionPage() {
 
           {/* Error message */}
           {error && (
-            <div className="p-3 bg-error/10 border border-error/30 rounded-xl">
-              <p className="text-sm text-error-light">{error}</p>
+            <div className="p-3 bg-coral/10 border border-coral/30 rounded-xl">
+              <p className="text-sm text-coral-soft">{error}</p>
             </div>
           )}
 
@@ -148,7 +146,7 @@ export default function JoinSessionPage() {
             <button
               type="submit"
               disabled={isLoading || !sessionCode.trim() || !participantName.trim()}
-              className="w-full min-h-[48px] px-6 py-3 text-lg font-semibold text-midnight bg-gradient-to-r from-amber to-amber-300 rounded-xl hover:from-amber-300 hover:to-amber-200 disabled:from-midnight-50 disabled:to-midnight-50 disabled:text-cream-500 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 shadow-glow hover:shadow-glow-lg disabled:shadow-none"
+              className="btn btn-primary w-full min-h-[48px] text-lg"
             >
               {isLoading ? 'Joining...' : 'Join Session'}
             </button>
