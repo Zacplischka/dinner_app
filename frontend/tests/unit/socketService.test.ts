@@ -176,7 +176,6 @@ describe('socketService', () => {
     await expect(socketService.leaveSession('ABC123')).rejects.toThrow('Socket not connected');
 
     expect(socketService.getSocketId()).toBe('socket-1');
-    expect(socketService.isSocketConnected()).toBe(false);
 
     socketService.disconnectSocket();
     expect(socket.disconnect).toHaveBeenCalled();

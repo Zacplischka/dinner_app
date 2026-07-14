@@ -1,7 +1,6 @@
 import { logger } from '../../src/logger.js';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
-  optionalAuth,
   requireAuth,
   verifyToken,
   type AuthenticatedRequest,
@@ -67,94 +66,6 @@ describe('auth middleware', () => {
       error: null,
     });
   }
-
-  describe('optionalAuth', () => {
-    it('should continue without user when token is missing', () => {
-      const req = request();
-      const next = vi.fn();
-
-      optionalAuth(req, response() as any, next);
-
-      expect(req.user).toBeUndefined();
-      expect(next).toHaveBeenCalledOnce();
-      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
-    });
-
-    it('should continue without user when auth header is not a bearer token', () => {
-      const req = request('Basic abc');
-      const next = vi.fn();
-
-      optionalAuth(req, response() as any, next);
-
-      expect(req.user).toBeUndefined();
-      expect(next).toHaveBeenCalledOnce();
-      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
-    });
-
-    it('should skip verification when Supabase Auth is not configured', () => {
-      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      config.supabase.serviceRoleKey = '';
-      const req = request('Bearer token');
-      const next = vi.fn();
-
-      optionalAuth(req, response() as any, next);
-
-      expect(req.user).toBeUndefined();
-      expect(next).toHaveBeenCalledOnce();
-      expect(supabaseMocks.getUser).not.toHaveBeenCalled();
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Supabase Auth is not configured - skipping token verification'
-      );
-    });
-
-    it('should attach user after Supabase Auth validates a bearer token', async () => {
-      mockSupabaseUser();
-      const req = request('Bearer valid-token');
-      const next = vi.fn();
-
-      optionalAuth(req, response() as any, next);
-      await flushAsyncAuth();
-
-      expect(supabaseMocks.getUser).toHaveBeenCalledWith('valid-token');
-      expect(req.user).toEqual({
-        id: 'user-1',
-        email: 'alice@example.com',
-        role: 'authenticated',
-      });
-      expect(next).toHaveBeenCalledOnce();
-    });
-
-    it('should continue without user for an invalid token', async () => {
-      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      supabaseMocks.getUser.mockResolvedValueOnce({
-        data: { user: null },
-        error: { message: 'invalid JWT' },
-      });
-      const req = request('Bearer invalid-token');
-      const next = vi.fn();
-
-      optionalAuth(req, response() as any, next);
-      await flushAsyncAuth();
-
-      expect(req.user).toBeUndefined();
-      expect(next).toHaveBeenCalledOnce();
-      expect(warnSpy).toHaveBeenCalledWith({ detail: 'invalid JWT' }, 'Token verification failed');
-    });
-
-    it('should continue without user when Supabase Auth throws a non-Error value', async () => {
-      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      supabaseMocks.getUser.mockRejectedValueOnce('offline');
-      const req = request('Bearer token');
-      const next = vi.fn();
-
-      optionalAuth(req, response() as any, next);
-      await flushAsyncAuth();
-
-      expect(req.user).toBeUndefined();
-      expect(next).toHaveBeenCalledOnce();
-      expect(warnSpy).toHaveBeenCalledWith({ detail: 'Unknown error' }, 'Token verification failed');
-    });
-  });
 
   describe('requireAuth', () => {
     it('should reject requests without a bearer token', () => {

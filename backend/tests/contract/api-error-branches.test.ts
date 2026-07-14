@@ -40,7 +40,7 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(logs.withMsg('Error getting session')[0]).toMatchObject({ err: { message: error.message } });
+    expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({ err: { message: error.message } });
   });
 
   it('POST /api/sessions/:sessionCode/join should return INTERNAL_ERROR for unexpected join failures', async () => {
@@ -89,6 +89,6 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(logs.withMsg('Error getting restaurants')[0]).toMatchObject({ err: { message: error.message } });
+    expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({ err: { message: error.message } });
   });
 });

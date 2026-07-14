@@ -3,11 +3,10 @@
 
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { ToastProvider } from './components/Toast';
+import ToastProvider from './components/Toast/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useSessionStore } from './stores/sessionStore';
 import { useAuthStore } from './stores/authStore';
-import { AnimatedRoute } from './components/PageTransition';
 
 // Lazy load route components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -38,12 +37,12 @@ function LoadingFallback() {
   );
 }
 
-// Animated routes wrapper - provides smooth page transitions
+// Routes wrapper - provides smooth page transitions
 function AnimatedRoutes() {
   const location = useLocation();
 
   return (
-    <AnimatedRoute key={location.pathname}>
+    <div key={location.pathname} className="animate-slide-up">
       <Routes location={location}>
         {/* Home with auth */}
         <Route path="/" element={<HomePage />} />
@@ -78,7 +77,7 @@ function AnimatedRoutes() {
         {/* 404 - Redirect to home */}
         <Route path="*" element={<HomePage />} />
       </Routes>
-    </AnimatedRoute>
+    </div>
   );
 }
 

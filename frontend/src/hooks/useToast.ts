@@ -67,38 +67,6 @@ interface ToastOptions {
   };
 }
 
-/**
- * Hook to show toast notifications
- *
- * @example
- * const toast = useToast();
- * toast.success('Code copied to clipboard!');
- * toast.error('Failed to connect');
- * toast.info('John joined the session', { duration: 4000 });
- */
-export function useToast() {
-  const { addToast, removeToast, clearAll } = useToastStore();
-
-  const show = (type: ToastType, message: string, options?: ToastOptions) => {
-    const id = addToast({
-      type,
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS[type],
-      action: options?.action,
-    });
-    return id;
-  };
-
-  return {
-    success: (message: string, options?: ToastOptions) => show('success', message, options),
-    error: (message: string, options?: ToastOptions) => show('error', message, options),
-    warning: (message: string, options?: ToastOptions) => show('warning', message, options),
-    info: (message: string, options?: ToastOptions) => show('info', message, options),
-    dismiss: removeToast,
-    clearAll,
-  };
-}
-
 // Export a singleton for use outside React components (e.g., in socket handlers)
 export const toast = {
   success: (message: string, options?: ToastOptions) => {
@@ -136,3 +104,7 @@ export const toast = {
   dismiss: (id: string) => useToastStore.getState().removeToast(id),
   clearAll: () => useToastStore.getState().clearAll(),
 };
+
+export function useToast() {
+  return toast;
+}

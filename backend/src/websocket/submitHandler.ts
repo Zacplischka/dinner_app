@@ -89,10 +89,7 @@ export async function handleSelectionSubmit(
       // Broadcast results to ALL participants (including sender)
       io.in(sessionCode).emit('session:results', {
         sessionCode,
-        overlappingOptions: results.overlappingOptions,
-        allSelections: results.allSelections,
-        restaurantNames: results.restaurantNames,
-        hasOverlap: results.hasOverlap,
+        ...results,
       });
     }
   } catch (error) {

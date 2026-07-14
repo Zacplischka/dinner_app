@@ -9,7 +9,6 @@ vi.mock('../../src/services/socketBindings', () => ({
 
 import GoogleSignInButton from '../../src/components/GoogleSignInButton';
 import NavigationHeader from '../../src/components/NavigationHeader';
-import { AnimatedRoute } from '../../src/components/PageTransition';
 import SwipeCard from '../../src/components/SwipeCard';
 import Toast from '../../src/components/Toast/Toast';
 import AddFriendModal from '../../src/components/friends/AddFriendModal';
@@ -158,14 +157,8 @@ describe('component and hook branch coverage', () => {
     historyBack.mockRestore();
   });
 
-  it('covers animated routes and toast timers', () => {
+  it('covers toast timers', () => {
     vi.useFakeTimers();
-    render(<AnimatedRoute>Animated</AnimatedRoute>);
-    act(() => {
-      vi.runOnlyPendingTimers();
-    });
-    expect(screen.getByText('Animated')).toBeInTheDocument();
-
     const dismiss = vi.fn();
     render(<Toast toast={{ id: 'toast-1', type: 'info', message: 'Auto', duration: 50 }} onDismiss={dismiss} />);
     act(() => {

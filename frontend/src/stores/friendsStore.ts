@@ -239,11 +239,3 @@ export const useFriendsStore = create<FriendsState>()(
     { name: 'FriendsStore' }
   )
 );
-
-// Selector hooks for convenience
-export const useFriends = () => useFriendsStore((state) => state.friends);
-export const useFriendRequests = () => useFriendsStore((state) => state.friendRequests);
-export const useSessionInvites = () => useFriendsStore((state) => state.sessionInvites);
-export const useFriendsLoading = () => useFriendsStore((state) => state.isLoadingFriends);
-export const useFriendRequestsCount = () => useFriendsStore((state) => state.friendRequests.length);
-export const useSessionInvitesCount = () => useFriendsStore((state) => state.sessionInvites.length);

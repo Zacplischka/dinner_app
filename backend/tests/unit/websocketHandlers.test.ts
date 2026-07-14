@@ -12,7 +12,6 @@ import { handleSessionLeave } from '../../src/websocket/leaveHandler.js';
 import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import { handleSelectionSubmit } from '../../src/websocket/submitHandler.js';
-import { emitError, ErrorCodes } from '../../src/websocket/errorHandler.js';
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
@@ -72,24 +71,6 @@ describe('websocket handlers', () => {
       isHost: true,
     });
   }
-
-  describe('emitError', () => {
-    it('should emit structured error events', () => {
-      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-      const testSocket = socket('socket-error');
-
-      emitError(testSocket as any, ErrorCodes.VALIDATION_ERROR, 'Bad payload', {
-        field: 'sessionCode',
-      });
-
-      expect(testSocket.emit).toHaveBeenCalledWith('error', {
-        code: 'VALIDATION_ERROR',
-        message: 'Bad payload',
-        details: { field: 'sessionCode' },
-      });
-      expect(errorSpy).toHaveBeenCalledWith({ socketId: 'socket-error', code: 'VALIDATION_ERROR' }, 'Bad payload');
-    });
-  });
 
   describe('handleSessionJoin', () => {
     it('should reject invalid payloads', async () => {

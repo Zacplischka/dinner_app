@@ -41,17 +41,6 @@ export type ComparisonSnapshot = {
   payload: SnapshotPayload;
 };
 
-// Friend with profile info (for API responses)
-export type FriendWithProfile = {
-  friendship_id: string;
-  friend_id: string;
-  display_name: string;
-  avatar_url: string | null;
-  email: string | null;
-  status: 'pending' | 'accepted' | 'blocked';
-  created_at: string;
-};
-
 type ProfileInsert = {
   id: string;
   display_name?: string | null;
@@ -87,7 +76,7 @@ type ComparisonSnapshotInsert = {
   payload: SnapshotPayload;
 };
 
-export interface Database {
+interface Database {
   public: {
     Tables: {
       profiles: {

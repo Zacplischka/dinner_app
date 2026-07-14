@@ -43,13 +43,6 @@ interface SessionResponse {
   searchRadiusMiles?: number;
 }
 
-interface ErrorResponse {
-  error: string;
-  code: string;
-  message: string;
-  details?: unknown;
-}
-
 /**
  * Create a new session with optional location
  */
@@ -80,50 +73,23 @@ export async function createSession(
     body: JSON.stringify(body),
   });
 
-  if (!response.ok) {
-    const error: ErrorResponse = await response.json();
-    throw new Error(error.message || 'Failed to create session');
-  }
-
-  return response.json();
+  return handleResponse<CreateSessionResponse>(response);
 }
 
 /**
  * Get session details by code
  */
 export async function getSession(sessionCode: string): Promise<SessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/sessions/${sessionCode}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error: ErrorResponse = await response.json();
-    throw new Error(error.message || 'Failed to get session');
-  }
-
-  return response.json();
+  const response = await fetch(`${API_BASE_URL}/sessions/${sessionCode}`);
+  return handleResponse<SessionResponse>(response);
 }
 
 /**
  * Get restaurants for a session
  */
 export async function getRestaurants(sessionCode: string): Promise<Restaurant[]> {
-  const response = await fetch(`${API_BASE_URL}/options/${sessionCode}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error: ErrorResponse = await response.json();
-    throw new Error(error.message || 'Failed to fetch restaurants');
-  }
-
-  const data = await response.json();
+  const response = await fetch(`${API_BASE_URL}/options/${sessionCode}`);
+  const data = await handleResponse<{ restaurants: Restaurant[] }>(response);
   return resolvePhotoUrls(data.restaurants);
 }
 
@@ -136,7 +102,7 @@ export async function getVenues(
     longitude: String(location.longitude),
     radiusMiles: String(radiusMiles),
   });
-  const response = await fetch(`${API_BASE_URL}/comparison/venues?${query}`, { method: 'GET' });
+  const response = await fetch(`${API_BASE_URL}/comparison/venues?${query}`);
   const result = await handleResponse<{ venues: Venue[]; suburb?: string }>(response);
   return { ...result, venues: resolvePhotoUrls(result.venues) };
 }
@@ -170,16 +136,6 @@ function resolvePhotoUrls<T extends { photoUrl?: string }>(items: T[]): T[] {
     const apiOrigin = new URL(API_BASE_URL, locationOrigin).origin;
     return { ...item, photoUrl: `${apiOrigin}${proxyPath}` };
   });
-}
-
-/**
- * Generic error handler for API calls
- */
-export function handleApiError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return 'An unexpected error occurred';
 }
 
 // ============================================================================

@@ -1,6 +1,5 @@
-// Global Express error middleware — the safety net for errors that fall
-// through asyncHandler's next(err) path and body-parse failures. Per-route
-// try/catches remain the primary handlers. See issue #30.
+// Global Express error middleware for errors forwarded by asyncHandler and
+// body-parse failures. Routes keep catches for route-specific shaping or logs.
 import type { NextFunction, Request, Response } from 'express';
 import { DomainError, type DomainErrorCode } from '../services/DomainError.js';
 import { logger } from '../logger.js';
