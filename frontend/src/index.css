@@ -123,19 +123,10 @@
     @apply block text-xs font-extrabold text-cyan mb-2 uppercase tracking-[0.14em];
   }
 
-  /* Divider with warm accent */
-  .divider {
-    @apply border-t border-line;
-  }
-
   /* Badge styles */
   .badge {
     @apply inline-flex items-center justify-center;
     @apply px-2.5 py-0.5 text-xs font-semibold rounded-full;
-  }
-
-  .badge-cyan {
-    @apply bg-cyan/10 text-cyan border border-cyan/30;
   }
 
   .logo-mark {

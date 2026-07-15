@@ -17,49 +17,6 @@ const serviceMocks = vi.hoisted(() => ({
   joinSession: vi.fn(async () => ({ success: true, participantId: 'participant-1' })),
 }));
 
-const guideMocks = vi.hoisted(() => {
-  const restaurant = {
-    placeId: 'mock-place',
-    name: 'Fallback Bistro',
-    suburb: 'Nowhere',
-    photoUrl: 'https://example.com/fallback.jpg',
-    take: 'A deliberately sparse listing.',
-    priceLevel: undefined,
-    rating: undefined,
-    cuisineType: undefined,
-    badges: [],
-    bestFor: [],
-    whatToOrder: ['Soup'],
-    goodToKnow: ['Book ahead'],
-  };
-  const list = {
-    id: 'mock-list',
-    title: 'Fallback List',
-    subtitle: undefined,
-    description: 'Sparse list description',
-    badge: undefined,
-    restaurantIds: ['mock-place'],
-  };
-
-  return {
-    restaurant,
-    list,
-    GUIDE_LISTS: [
-      list,
-      { ...list, id: 'tonight', title: 'Tonight', subtitle: 'Tonight picks', restaurantIds: [] },
-      { ...list, id: 'after-work', title: 'After Work', subtitle: 'Fast picks', restaurantIds: [] },
-      { ...list, id: 'special', title: 'Special', subtitle: 'Celebration picks', restaurantIds: [] },
-      { ...list, id: 'east-to-warrandyte', title: 'East', subtitle: 'Drive-worthy', restaurantIds: [] },
-    ],
-    GUIDE_RESTAURANTS: [restaurant],
-    getGuideList: vi.fn((id: string) => (id === 'mock-list' ? list : undefined)),
-    getRestaurantsForList: vi.fn((id: string) => (id === 'mock-list' ? [restaurant] : [])),
-    getGuideRestaurant: vi.fn((id: string) => (id === 'mock-place' ? restaurant : undefined)),
-  };
-});
-
-vi.mock('../../src/demo/guideData', () => guideMocks);
-
 vi.mock('../../src/services/apiClient', () => ({
   getSession: serviceMocks.getSession,
 }));
@@ -82,9 +39,6 @@ vi.mock('../../src/services/supabase', () => ({
 }));
 
 import FriendsPage from '../../src/pages/FriendsPage';
-import GuideHomePage from '../../src/pages/GuideHomePage';
-import GuideListPage from '../../src/pages/GuideListPage';
-import RestaurantDetailPage from '../../src/pages/RestaurantDetailPage';
 import SessionLobbyPage from '../../src/pages/SessionLobbyPage';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
@@ -133,11 +87,8 @@ function renderApp(route: string) {
   return render(
     <MemoryRouter initialEntries={[route]}>
       <Routes>
-        <Route path="/" element={<GuideHomePage />} />
+        <Route path="/" element={<div>Dinder</div>} />
         <Route path="/friends" element={<FriendsPage />} />
-        <Route path="/lists" element={<GuideListPage />} />
-        <Route path="/lists/:listId" element={<GuideListPage />} />
-        <Route path="/r/:placeId" element={<RestaurantDetailPage />} />
         <Route path="/session/:sessionCode" element={<SessionLobbyPage />} />
         <Route path="/lobby" element={<SessionLobbyPage />} />
         <Route path="/create" element={<div>Create route</div>} />
@@ -198,44 +149,6 @@ describe('page branch coverage', () => {
     expect(screen.getByText('Friend')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Invites'));
     expect(screen.getByText('Session:')).toBeInTheDocument();
-  });
-
-  it('covers guide and restaurant fallbacks from sparse guide data', () => {
-    useAuthStore.setState({
-      isAuthenticated: true,
-      isLoading: false,
-      user: {
-        id: 'user-1',
-        email: 'guide@example.com',
-        user_metadata: { full_name: 'Guide User' },
-      } as any,
-    });
-
-    const home = renderApp('/');
-    expect(screen.getByText('Guide User')).toBeInTheDocument();
-    home.unmount();
-
-    useAuthStore.setState({
-      isAuthenticated: false,
-      isLoading: true,
-      user: null,
-    });
-    const loadingAuthHome = renderApp('/');
-    expect(screen.getByText('Dinder')).toBeInTheDocument();
-    loadingAuthHome.unmount();
-
-    const list = renderApp('/lists/mock-list');
-    expect(screen.getByText('4.4')).toBeInTheDocument();
-    expect(screen.getByText(/Nowhere .*$/)).toBeInTheDocument();
-    list.unmount();
-
-    const emptyList = renderApp('/lists/missing');
-    expect(screen.getByText('No restaurants found for this list.')).toBeInTheDocument();
-    emptyList.unmount();
-
-    renderApp('/r/mock-place');
-    expect(screen.getByText(/Nowhere .* Restaurant/)).toBeInTheDocument();
-    expect(screen.getByText('4.4')).toBeInTheDocument();
   });
 
   it('covers lobby route without a session code and non-demo leave success', async () => {
