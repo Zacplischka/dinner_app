@@ -7,13 +7,15 @@ cd "$(dirname "$0")/.."
 
 if [ "${1:-}" = "--prod" ]; then
   shift
+  # No bare interactive prod sessions — the denylist below can't see commands typed at a REPL.
+  [ $# -gt 0 ] || { echo "refusing interactive session against prod; pass an explicit command" >&2; exit 1; }
   # ponytail: denylist not allowlist — blocks the destructive stuff, raw redis-cli for deliberate prod writes
-  case "$(printf '%s' "${1:-}" | tr '[:lower:]' '[:upper:]')" in
-    FLUSHALL|FLUSHDB|DEL|UNLINK|CONFIG|SHUTDOWN|RENAME|RESTORE|MIGRATE)
+  case "$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')" in
+    FLUSHALL|FLUSHDB|DEL|UNLINK|CONFIG|SHUTDOWN|RENAME|RESTORE|MIGRATE|EVAL|EVALSHA|FCALL*|SCRIPT|FUNCTION)
       echo "refusing destructive '$1' against prod; use raw redis-cli if you really mean it" >&2
       exit 1 ;;
   esac
-  URL=$(railway variables --service redis-bbxI --kv 2>/dev/null | grep '^REDIS_PUBLIC_URL=' | cut -d= -f2-)
+  URL=$(railway variables --service redis-bbxI --kv 2>/dev/null | grep '^REDIS_PUBLIC_URL=' | cut -d= -f2- || true)
   [ -n "$URL" ] || { echo "could not fetch REDIS_PUBLIC_URL — run 'railway login' and 'railway link' first" >&2; exit 1; }
   exec redis-cli --no-auth-warning -u "$URL" "$@"
 fi

@@ -43,6 +43,8 @@ echo "redis-debug.sh:"
 RD=backend/scripts/redis-debug.sh
 OUT=$("$RD" --prod DEL foo 2>&1) && fail "prod DEL was not refused" || { echo "$OUT" | grep -q refusing && ok "prod DEL refused" || fail "prod DEL failed for wrong reason: $OUT"; }
 OUT=$("$RD" --prod flushall 2>&1) && fail "prod flushall was not refused" || { echo "$OUT" | grep -q refusing && ok "prod flushall (lowercase) refused" || fail "prod flushall failed for wrong reason: $OUT"; }
+OUT=$("$RD" --prod EVAL "return redis.call('flushall')" 0 2>&1) && fail "prod EVAL was not refused" || { echo "$OUT" | grep -q refusing && ok "prod EVAL refused" || fail "prod EVAL failed for wrong reason: $OUT"; }
+OUT=$("$RD" --prod 2>&1) && fail "bare --prod interactive session was not refused" || { echo "$OUT" | grep -q interactive && ok "bare --prod (interactive) refused" || fail "bare --prod failed for wrong reason: $OUT"; }
 
 if redis-cli -h localhost -p 6379 PING >/dev/null 2>&1; then
   [ "$("$RD" PING)" = "PONG" ] && ok "localhost PING via .env creds" || fail "localhost PING failed"
