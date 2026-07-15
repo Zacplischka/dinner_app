@@ -66,7 +66,7 @@ Real captured payloads from these actors (Melbourne, July 2026) live in `backend
 
 ## UX flow (grilled 2026-07-13)
 
-Entry: standalone `/compare` route via a HomePage quick-action card, plus a `NavigationHeader` link if it fits (an earlier flows doc described a FloatingNav — that component doesn't exist). No entry from RestaurantDetailPage in v1 (would need Google→platform matching before the user asks for it). Route params follow the existing `/r/:placeId` convention.
+Entry: standalone `/compare` route via a HomePage quick-action card, plus a `NavigationHeader` link if it fits (an earlier flows doc described a FloatingNav — that component doesn't exist).
 
 1. **Location**: explicit "Use my location" tap + 1–15 mi radius slider (CreateSessionPage pattern), persisted in localStorage — return visits skip straight to the list ("near <suburb> · change"). Geolocation denied → explainer + retry, no manual entry (consistent with rest of app).
 2. **Venue list**: powered by the existing Google Places search — cards show name/photo/cuisine/rating/distance and a **Compare** button. No cross-platform claims on cards; actors never run during browsing.
@@ -113,7 +113,6 @@ Shared TS types (in `@dinder/shared`): `StorefrontCapture`, `SnapshotPayload`, `
 | `/compare/:placeId` | Uber Eats store page | "Open in Uber Eats" button → `url` from the UE payload, new tab; universal-links into the UE app on mobile |
 | `/compare/:placeId` | DoorDash store page | "Open in DoorDash" button → store URL from the DD payload, same behavior |
 | Anywhere (external) | `/compare/:placeId` | Shareable URL — cold open runs the normal resolution flow; venue name fills immediately from the server-side Place Details lookup, storefront columns stream in |
-| Session/guide/detail pages | — | No links to compare in v1 (RestaurantDetailPage integration deferred — see Entry) |
 
 ## Per-screen interactions
 
@@ -167,7 +166,7 @@ Sequencing: backend steps 1–4 are built test-first against fixtures and fakes;
 
 ## Out of scope for v1 (decided — don't re-litigate)
 
-No fees, no membership pricing, no HungryPanda, no history UI (data accrues silently), no refresh button, no RestaurantDetailPage entry, no adapter architecture, no Redis.
+No fees, no membership pricing, no HungryPanda, no history UI (data accrues silently), no refresh button, no adapter architecture, no Redis.
 
 ## Known risks
 

@@ -14,7 +14,6 @@ import Toast from '../../src/components/Toast/Toast';
 import AddFriendModal from '../../src/components/friends/AddFriendModal';
 import FriendsList from '../../src/components/friends/FriendsList';
 import SessionInviteCard from '../../src/components/friends/SessionInviteCard';
-import { demoPhotoUrl } from '../../src/demo/demoImages';
 import { toast as singletonToast, useToastStore } from '../../src/hooks/useToast';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
@@ -38,7 +37,6 @@ function renderAt(route: string, element: React.ReactElement) {
         <Route path="/create" element={<div>Create Route</div>} />
         <Route path="/join" element={<div>Join Route</div>} />
         <Route path="/restaurant/:id" element={<div>Restaurant Route</div>} />
-        <Route path="/guides/:id" element={<div>Guide Route</div>} />
         <Route path="/friends" element={<div>Friends Route</div>} />
       </Routes>
     </MemoryRouter>
@@ -202,7 +200,7 @@ describe('component and hook branch coverage', () => {
     vi.useRealTimers();
   });
 
-  it('covers friend modal, list, invite card, toast singleton, and demo image branches', async () => {
+  it('covers friend modal, list, invite card, and toast singleton branches', async () => {
     useFriendsStore.setState({ isSearching: true });
     render(<AddFriendModal isOpen onClose={vi.fn()} />);
     fireEvent.change(screen.getByLabelText('Search by email'), { target: { value: 'bob@example.com' } });
@@ -248,7 +246,5 @@ describe('component and hook branch coverage', () => {
     singletonToast.warning('warning', { duration: 3, action: { label: 'Wait', onClick: action } });
     singletonToast.info('info', { duration: 4, action: { label: 'Read', onClick: action } });
     expect(useToastStore.getState().toasts).toHaveLength(4);
-
-    expect(demoPhotoUrl('')).toContain('data:image/svg+xml');
   });
 });

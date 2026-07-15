@@ -10,9 +10,6 @@ import { useAuthStore } from './stores/authStore';
 
 // Lazy load route components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
-const GuideHomePage = lazy(() => import('./pages/GuideHomePage'));
-const GuideListPage = lazy(() => import('./pages/GuideListPage'));
-const RestaurantDetailPage = lazy(() => import('./pages/RestaurantDetailPage'));
 const ComparePage = lazy(() => import('./pages/ComparePage'));
 const ComparisonViewPage = lazy(() => import('./pages/ComparisonViewPage'));
 
@@ -46,11 +43,6 @@ function AnimatedRoutes() {
       <Routes location={location}>
         {/* Home with auth */}
         <Route path="/" element={<HomePage />} />
-
-        {/* Guide pages */}
-        <Route path="/guide" element={<GuideHomePage />} />
-        <Route path="/lists/:listId" element={<GuideListPage />} />
-        <Route path="/r/:placeId" element={<RestaurantDetailPage />} />
 
         {/* Standalone delivery price comparison */}
         <Route path="/compare" element={<ComparePage />} />
