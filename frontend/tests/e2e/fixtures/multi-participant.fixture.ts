@@ -33,25 +33,12 @@ export type Participant = {
 };
 
 type MultiParticipantFixture = {
-  // Create host and specified number of participants
   setupSession: (participantCount: number) => Promise<{
     sessionCode: string;
     host: Participant;
     participants: Participant[];
     all: Participant[];
   }>;
-
-  // Run action on all participants concurrently
-  forAll: <T>(
-    participants: Participant[],
-    action: (p: Participant) => Promise<T>
-  ) => Promise<T[]>;
-
-  // Run action on all participants sequentially
-  forAllSequential: <T>(
-    participants: Participant[],
-    action: (p: Participant, index: number) => Promise<T>
-  ) => Promise<T[]>;
 };
 
 export const multiParticipantTest = base.extend<MultiParticipantFixture>({
@@ -130,29 +117,5 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
     for (const context of allContexts) {
       await context.close().catch(() => {});
     }
-  },
-
-  forAll: async ({}, use) => {
-    const runForAll = async <T>(
-      participants: Participant[],
-      action: (p: Participant) => Promise<T>
-    ): Promise<T[]> => {
-      return Promise.all(participants.map(action));
-    };
-    await use(runForAll);
-  },
-
-  forAllSequential: async ({}, use) => {
-    const runSequential = async <T>(
-      participants: Participant[],
-      action: (p: Participant, index: number) => Promise<T>
-    ): Promise<T[]> => {
-      const results: T[] = [];
-      for (let i = 0; i < participants.length; i++) {
-        results.push(await action(participants[i], i));
-      }
-      return results;
-    };
-    await use(runSequential);
   },
 });

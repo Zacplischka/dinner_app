@@ -40,7 +40,6 @@ test.describe('Multi-Participant Session Flow', () => {
 
   test('host can start session and all move to selection', async ({
     setupSession,
-    forAll,
   }) => {
     const { sessionCode, host, participants, all } = await setupSession(2);
 
@@ -60,7 +59,6 @@ test.describe('Multi-Participant Session Flow', () => {
 
   test('all participants can make selections and submit', async ({
     setupSession,
-    forAll,
   }) => {
     const { sessionCode, host, participants, all } = await setupSession(1);
 

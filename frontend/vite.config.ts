@@ -11,16 +11,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'router': ['react-router-dom'],
-          'state': ['zustand'],
-          'socket': ['socket.io-client'],
-        },
-      },
-    },
   },
   test: {
     environment: 'jsdom',

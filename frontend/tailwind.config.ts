@@ -4,22 +4,6 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
-      // Mobile-first breakpoints (per research.md)
-      screens: {
-        xs: '390px', // iPhone 12 Pro baseline
-        sm: '640px', // Tablets
-        md: '768px', // Small laptops
-        lg: '1024px', // Desktops
-      },
-      // Touch-friendly minimum sizes (WCAG AAA)
-      minHeight: {
-        '44': '44px', // 44x44px minimum touch target
-        '48': '48px', // Primary action buttons
-      },
-      minWidth: {
-        '44': '44px',
-        '48': '48px',
-      },
       colors: {
         ink: '#030712',
         surface: '#07111f',
