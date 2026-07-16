@@ -54,7 +54,7 @@ npm run lint                                 # root; lints backend + frontend sr
 
 - Build `@dinder/shared` first (`npm run build --workspace=shared`) — backend/frontend typecheck resolves the `file:` dep against `shared/dist/`.
 - Backend unit tests run in parallel against in-memory `ioredis-mock` (inject via `createSessionStore(redis)` / `createSessionService(deps)`); only contract/integration tests hit a real Redis on localhost:6379.
-- Backend env is in `backend/.env` (GOOGLE_PLACES_API_KEY, SUPABASE_URL, SUPABASE_JWT_SECRET, SUPABASE_SERVICE_ROLE_KEY, REDIS_*). Frontend uses VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL.
+- Backend env is in `backend/.env` (GOOGLE_PLACES_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REDIS_*). Frontend uses VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL.
 
 ## Agent skills
 
