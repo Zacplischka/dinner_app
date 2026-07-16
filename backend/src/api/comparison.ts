@@ -59,7 +59,8 @@ export function createComparisonRouter({
         }
 
         const cacheKey = `comparison:photo:${photoName}`;
-        const cachedPhotoUrl = await photoCache?.get(cacheKey);
+        // Cache errors fail open to the Google lookup — Redis must never break photos.
+        const cachedPhotoUrl = await photoCache?.get(cacheKey).catch(() => null);
         if (cachedPhotoUrl) {
           res.setHeader('Cache-Control', `private, max-age=${PHOTO_CACHE_SECONDS}`);
           return res.redirect(302, cachedPhotoUrl);
@@ -84,7 +85,7 @@ export function createComparisonRouter({
 
         const photoUrl = await fetchPlacePhoto(photoName);
         // Google Places ToS permits caching the resolved URL, not the photo bytes.
-        await photoCache?.set(cacheKey, photoUrl, 'EX', PHOTO_CACHE_SECONDS);
+        await photoCache?.set(cacheKey, photoUrl, 'EX', PHOTO_CACHE_SECONDS).catch(() => undefined);
         res.setHeader('Cache-Control', `private, max-age=${PHOTO_CACHE_SECONDS}`);
         return res.redirect(302, photoUrl);
       })

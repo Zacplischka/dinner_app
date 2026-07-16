@@ -198,6 +198,32 @@ describe('GET /api/comparison/photo', () => {
     expect(fetchPlacePhoto).toHaveBeenCalledOnce();
   });
 
+  it('falls open to the Google lookup when the photo cache is unavailable', async () => {
+    const photoCache = {
+      get: vi.fn().mockRejectedValue(new Error('redis down')),
+      set: vi.fn().mockRejectedValue(new Error('redis down')),
+    };
+    const fetchPlacePhoto = vi
+      .fn()
+      .mockResolvedValue('https://lh3.googleusercontent.com/photo.jpg');
+    const app = express();
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        fetchPlacePhoto,
+        photoCache: photoCache as unknown as Redis,
+      })
+    );
+
+    const response = await request(app)
+      .get('/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef')
+      .expect(302);
+
+    expect(response.headers.location).toBe('https://lh3.googleusercontent.com/photo.jpg');
+    expect(fetchPlacePhoto).toHaveBeenCalledOnce();
+  });
+
   it('does not count cached redirects against the photo lookup rate limit', async () => {
     const photoCache = new RedisMock() as Redis;
     await photoCache.flushall();
