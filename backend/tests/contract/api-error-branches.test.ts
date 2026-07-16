@@ -43,24 +43,6 @@ describe('REST API internal error branches', () => {
     expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({ err: { message: error.message } });
   });
 
-  it('POST /api/sessions/:sessionCode/join should return INTERNAL_ERROR for unexpected join failures', async () => {
-    const error = new Error('boom');
-    const logs = captureLogs();
-    vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(error);
-
-    const response = await request(app)
-      .post('/api/sessions/AB123/join')
-      .send({ participantName: 'Bob' })
-      .expect(500);
-
-    expect(response.body).toEqual({
-      error: 'Internal Server Error',
-      code: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred. Please try again later.',
-    });
-    expect(logs.withMsg('Error joining session')[0]).toMatchObject({ err: { message: error.message } });
-  });
-
   it('should return JSON INVALID_JSON for malformed request bodies, not HTML', async () => {
     const response = await request(app)
       .post('/api/sessions')

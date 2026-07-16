@@ -140,69 +140,6 @@ describe('Contract Test: API logging', () => {
     });
   });
 
-  it('logs invalid REST join session codes before returning 404', async () => {
-    const logs = captureLogs();
-
-    await request(app)
-      .post('/api/sessions/bad/join')
-      .send({ participantName: 'Bob' })
-      .expect(404);
-
-    expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
-      sessionCode: 'bad',
-      reason: 'invalid_session_code',
-    });
-  });
-
-  it('logs rejected REST joins with validation context', async () => {
-    const logs = captureLogs();
-
-    await request(app).post('/api/sessions/AB123/join').send({}).expect(400);
-
-    expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
-      sessionCode: 'AB123',
-      reason: 'validation_error',
-      fields: ['participantName'],
-    });
-  });
-
-  it('logs full-session join rejections with capacity context', async () => {
-    const logs = captureLogs();
-    vi.spyOn(SessionService, 'joinSession').mockRejectedValueOnce(
-      new DomainError('SESSION_FULL', 'Session is full (maximum 4 participants)')
-    );
-
-    await request(app)
-      .post('/api/sessions/AB123/join')
-      .send({ participantName: 'Bob' })
-      .expect(403);
-
-    expect(logs.withMsg('Rejected REST session join')[0]).toMatchObject({
-      sessionCode: 'AB123',
-      reason: 'session_full',
-      participantLimit: 4,
-    });
-  });
-
-  it('logs successful REST joins with session context', async () => {
-    const createResponse = await request(app)
-      .post('/api/sessions')
-      .send({ hostName: 'Alice' })
-      .expect(201);
-
-    const logs = captureLogs();
-    const joinResponse = await request(app)
-      .post(`/api/sessions/${createResponse.body.sessionCode}/join`)
-      .send({ participantName: 'Bob' })
-      .expect(200);
-
-    expect(logs.withMsg('Joined REST session')[0]).toMatchObject({
-      sessionCode: createResponse.body.sessionCode,
-      participantId: joinResponse.body.participantId,
-      participantCount: joinResponse.body.participantCount,
-    });
-  });
-
   it('logs invalid option session codes before returning 404', async () => {
     const logs = captureLogs();
 

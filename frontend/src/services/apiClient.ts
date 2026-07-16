@@ -65,31 +65,27 @@ export async function createSession(
     body.searchRadiusMiles = searchRadiusMiles;
   }
 
-  const response = await fetch(`${API_BASE_URL}/sessions`, {
+  return request<CreateSessionResponse>('/sessions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
   });
-
-  return handleResponse<CreateSessionResponse>(response);
 }
 
 /**
  * Get session details by code
  */
 export async function getSession(sessionCode: string): Promise<SessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/sessions/${sessionCode}`);
-  return handleResponse<SessionResponse>(response);
+  return request<SessionResponse>(`/sessions/${sessionCode}`);
 }
 
 /**
  * Get restaurants for a session
  */
 export async function getRestaurants(sessionCode: string): Promise<Restaurant[]> {
-  const response = await fetch(`${API_BASE_URL}/options/${sessionCode}`);
-  const data = await handleResponse<{ restaurants: Restaurant[] }>(response);
+  const data = await request<{ restaurants: Restaurant[] }>(`/options/${sessionCode}`);
   return resolvePhotoUrls(data.restaurants);
 }
 
@@ -102,8 +98,7 @@ export async function getVenues(
     longitude: String(location.longitude),
     radiusMiles: String(radiusMiles),
   });
-  const response = await fetch(`${API_BASE_URL}/comparison/venues?${query}`);
-  const result = await handleResponse<{ venues: Venue[]; suburb?: string }>(response);
+  const result = await request<{ venues: Venue[]; suburb?: string }>(`/comparison/venues?${query}`);
   return { ...result, venues: resolvePhotoUrls(result.venues) };
 }
 
@@ -163,25 +158,28 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = `${API_BASE_URL}${path}`;
+  return handleResponse<T>(await (init ? fetch(url, init) : fetch(url)));
+}
+
 /**
  * Get the current user's profile (created on first sight server-side)
  */
 export async function getCurrentProfile(): Promise<UserProfile> {
-  const response = await fetch(`${API_BASE_URL}/users/me`, {
+  return request<UserProfile>('/users/me', {
     headers: getAuthHeaders(),
   });
-  return handleResponse<UserProfile>(response);
 }
 
 /**
  * Search users by exact email match
  */
 export async function searchUsers(email: string): Promise<UserProfile[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/users/search?email=${encodeURIComponent(email)}`,
+  const data = await request<{ users: UserProfile[] }>(
+    `/users/search?email=${encodeURIComponent(email)}`,
     { headers: getAuthHeaders() }
   );
-  const data = await handleResponse<{ users: UserProfile[] }>(response);
   return data.users;
 }
 
@@ -189,10 +187,9 @@ export async function searchUsers(email: string): Promise<UserProfile[]> {
  * List the current user's accepted friends
  */
 export async function getFriends(): Promise<Friend[]> {
-  const response = await fetch(`${API_BASE_URL}/friends`, {
+  const data = await request<{ friends: Friend[] }>('/friends', {
     headers: getAuthHeaders(),
   });
-  const data = await handleResponse<{ friends: Friend[] }>(response);
   return data.friends;
 }
 
@@ -200,10 +197,9 @@ export async function getFriends(): Promise<Friend[]> {
  * List pending friend requests the current user received
  */
 export async function getFriendRequests(): Promise<FriendRequest[]> {
-  const response = await fetch(`${API_BASE_URL}/friends/requests`, {
+  const data = await request<{ requests: FriendRequest[] }>('/friends/requests', {
     headers: getAuthHeaders(),
   });
-  const data = await handleResponse<{ requests: FriendRequest[] }>(response);
   return data.requests;
 }
 
@@ -211,10 +207,9 @@ export async function getFriendRequests(): Promise<FriendRequest[]> {
  * List pending session invites for the current user
  */
 export async function getSessionInvites(): Promise<SessionInvite[]> {
-  const response = await fetch(`${API_BASE_URL}/invites`, {
+  const data = await request<{ invites: SessionInvite[] }>('/invites', {
     headers: getAuthHeaders(),
   });
-  const data = await handleResponse<{ invites: SessionInvite[] }>(response);
   return data.invites;
 }
 
@@ -222,45 +217,41 @@ export async function getSessionInvites(): Promise<SessionInvite[]> {
  * Send a friend request to a user by email
  */
 export async function sendFriendRequest(email: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/friends/request`, {
+  await request<unknown>('/friends/request', {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ email }),
   });
-  await handleResponse(response);
 }
 
 /**
  * Accept a friend request
  */
 export async function acceptFriendRequest(requestId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/friends/${requestId}/accept`, {
+  await request<unknown>(`/friends/${requestId}/accept`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
-  await handleResponse(response);
 }
 
 /**
  * Decline a friend request
  */
 export async function declineFriendRequest(requestId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/friends/${requestId}/decline`, {
+  await request<unknown>(`/friends/${requestId}/decline`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
-  await handleResponse(response);
 }
 
 /**
  * Remove a friend (unfriend)
  */
 export async function removeFriend(friendId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/friends/${friendId}`, {
+  await request<unknown>(`/friends/${friendId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
-  await handleResponse(response);
 }
 
 /**
@@ -270,23 +261,24 @@ export async function inviteFriendsToSession(
   sessionCode: string,
   friendIds: string[]
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/sessions/${sessionCode}/invite`, {
+  await request<unknown>(`/sessions/${sessionCode}/invite`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ friendIds }),
   });
-  await handleResponse(response);
 }
 
 /**
  * Accept a session invite; returns the session code to join
  */
 export async function acceptSessionInvite(inviteId: string): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/invites/${inviteId}/accept`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-  });
-  const data = await handleResponse<{ success: boolean; sessionCode: string }>(response);
+  const data = await request<{ success: boolean; sessionCode: string }>(
+    `/invites/${inviteId}/accept`,
+    {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    }
+  );
   return data.sessionCode;
 }
 
@@ -294,9 +286,8 @@ export async function acceptSessionInvite(inviteId: string): Promise<string> {
  * Decline a session invite
  */
 export async function declineSessionInvite(inviteId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/invites/${inviteId}/decline`, {
+  await request<unknown>(`/invites/${inviteId}/decline`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
-  await handleResponse(response);
 }

@@ -115,7 +115,7 @@ Or `./start.sh`, which starts Redis (Docker), the backend, and the frontend in o
 |---|---|
 | `GOOGLE_PLACES_API_KEY` | Restaurant search — required at backend boot |
 | `PORT`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `FRONTEND_URL` | All have local defaults |
-| `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` | Optional Google sign-in / friends feature only |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Optional Google sign-in / friends feature only |
 
 ### Testing
 

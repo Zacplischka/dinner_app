@@ -113,8 +113,4 @@ export default defineConfig({
           stderr: 'pipe',
         },
       ],
-
-  // Global setup and teardown
-  globalSetup: './tests/e2e/global-setup.ts',
-  globalTeardown: './tests/e2e/global-teardown.ts',
 });

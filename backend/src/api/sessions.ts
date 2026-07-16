@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
-import { MAX_PARTICIPANTS, type SessionService } from '../services/SessionService.js';
+import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import { SESSION_CODE_PATTERN } from '@dinder/shared/types';
 
@@ -20,10 +20,6 @@ export function createSessionsRouter(sessionService: SessionService) {
       address: z.string().optional(),
     }).optional(),
     searchRadiusMiles: z.number().min(1).max(15).optional(),
-  });
-
-  const joinSessionRequestSchema = z.object({
-    participantName: z.string().min(1).max(50),
   });
 
   function validationFields(error: z.ZodError): string[] {
@@ -148,110 +144,6 @@ export function createSessionsRouter(sessionService: SessionService) {
     }, 'Returned REST session');
 
     return res.status(200).json(session);
-  }));
-
-  /**
-   * POST /api/sessions/:sessionCode/join
-   * Join an existing session
-   */
-  router.post('/:sessionCode/join', asyncHandler(async (req, res) => {
-    try {
-      const { sessionCode } = req.params;
-
-      // Validate session code format
-      if (!SESSION_CODE_PATTERN.test(sessionCode)) {
-        req.log.warn({
-          sessionCode,
-          reason: 'invalid_session_code',
-        }, 'Rejected REST session join');
-
-        return res.status(404).json({
-          error: 'Not Found',
-          code: 'SESSION_NOT_FOUND',
-          message: `Session ${sessionCode} not found or has expired`,
-        });
-      }
-
-      // Validate request body
-      const validation = joinSessionRequestSchema.safeParse(req.body);
-
-      if (!validation.success) {
-        req.log.warn({
-          sessionCode,
-          reason: 'validation_error',
-          fields: validationFields(validation.error),
-        }, 'Rejected REST session join');
-
-        return res.status(400).json({
-          error: 'Bad Request',
-          code: 'VALIDATION_ERROR',
-          message: 'participantName is required and must be 1-50 characters',
-          details: validation.error.flatten(),
-        });
-      }
-
-      const { participantName } = validation.data;
-
-      // Generate participant ID (will be socket.id in WebSocket, UUID for REST)
-      const participantId = `rest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-      // Join session
-      const result = await sessionService.joinSession(
-        sessionCode,
-        participantId,
-        participantName
-      );
-
-      req.log.info({
-        sessionCode,
-        participantId: result.participantId,
-        participantCount: result.participantCount,
-      }, 'Joined REST session');
-
-      // Explicit shape: the service result carries WS-only fields the REST
-      // contract doesn't include
-      return res.status(200).json({
-        participantId: result.participantId,
-        sessionCode: result.sessionCode,
-        participantName: result.participantName,
-        participantCount: result.participantCount,
-      });
-    } catch (error) {
-      if (error instanceof DomainError && error.code === 'SESSION_NOT_FOUND') {
-        req.log.warn({
-          sessionCode: req.params.sessionCode,
-          reason: 'session_not_found',
-        }, 'Rejected REST session join');
-
-        return res.status(404).json({
-          error: 'Not Found',
-          code: 'SESSION_NOT_FOUND',
-          message: `Session ${req.params.sessionCode} not found or has expired`,
-        });
-      }
-
-      if (error instanceof DomainError && error.code === 'SESSION_FULL') {
-        req.log.warn({
-          sessionCode: req.params.sessionCode,
-          reason: 'session_full',
-          participantLimit: MAX_PARTICIPANTS,
-        }, 'Rejected REST session join');
-
-        return res.status(403).json({
-          error: 'Session is full',
-          code: 'SESSION_FULL',
-          message: `This session has reached the maximum of ${MAX_PARTICIPANTS} participants`,
-        });
-      }
-
-      req.log.error({ err: error }, 'Error joining session');
-
-      return res.status(500).json({
-        error: 'Internal Server Error',
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred. Please try again later.',
-      });
-    }
   }));
 
   return router;
