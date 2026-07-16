@@ -8,7 +8,12 @@
 
 import type { Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
-import { SESSION_CODE_LENGTH, type Participant, type Restaurant, type Session } from '@dinder/shared/types';
+import {
+  SESSION_CODE_LENGTH,
+  type Participant,
+  type Restaurant,
+  type Session,
+} from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
 
@@ -411,6 +416,7 @@ export function createSessionStore(redis: Redis) {
    */
   async function resetForRestart(sessionCode: string): Promise<void> {
     const participantIds = await redis.smembers(participantsKey(sessionCode));
+    const wasComplete = (await redis.hget(sessionKey(sessionCode), 'state')) === 'complete';
 
     const pipeline = redis.pipeline();
     participantIds.forEach((pid) => {
@@ -419,9 +425,18 @@ export function createSessionStore(redis: Redis) {
     });
     pipeline.del(resultsKey(sessionCode));
     pipeline.hset(sessionKey(sessionCode), 'state', 'selecting');
+    if (wasComplete) {
+      // Session-outcome metrics: the next completion is a Restart's outcome
+      pipeline.hset(sessionKey(sessionCode), 'restartedAfterComplete', '1');
+    }
     await pipeline.exec();
 
     await touch(sessionCode);
+  }
+
+  /** True once a Restart has wiped a completed outcome (session-outcome metrics). */
+  async function wasRestartedAfterComplete(sessionCode: string): Promise<boolean> {
+    return (await redis.hget(sessionKey(sessionCode), 'restartedAfterComplete')) === '1';
   }
 
   // --- Restaurants -------------------------------------------------------
@@ -458,6 +473,7 @@ export function createSessionStore(redis: Redis) {
     recordSubmission,
     computeAndStoreResults,
     resetForRestart,
+    wasRestartedAfterComplete,
     getRestaurants,
   };
 }

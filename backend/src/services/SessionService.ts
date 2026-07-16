@@ -68,18 +68,24 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Ensure uniqueness (extremely unlikely to collide, but good practice)
     while (attempts < MAX_ATTEMPTS) {
       if (!(await store.sessionExists(sessionCode))) break;
-      logger.warn({
-        sessionCode,
-        attempt: attempts + 1,
-      }, 'Session code collision during createSession');
+      logger.warn(
+        {
+          sessionCode,
+          attempt: attempts + 1,
+        },
+        'Session code collision during createSession'
+      );
       sessionCode = generateSessionCode();
       attempts++;
     }
 
     if (attempts >= MAX_ATTEMPTS) {
-      logger.error({
-        attempts: MAX_ATTEMPTS,
-      }, 'Failed to generate unique session code');
+      logger.error(
+        {
+          attempts: MAX_ATTEMPTS,
+        },
+        'Failed to generate unique session code'
+      );
       throw new Error('Failed to generate unique session code');
     }
 
@@ -98,10 +104,13 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
 
       // Throw error if no restaurants found
       if (restaurants.length === 0) {
-        logger.warn({
-          sessionCode,
-          searchRadiusMiles,
-        }, 'No restaurants found during session creation');
+        logger.warn(
+          {
+            sessionCode,
+            searchRadiusMiles,
+          },
+          'No restaurants found during session creation'
+        );
         throw new DomainError(
           'NO_RESTAURANTS_FOUND',
           'No restaurants found in the specified area. Try expanding your search radius.'
@@ -119,13 +128,16 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       restaurants,
     });
 
-    logger.info({
-      sessionCode,
-      hasLocation: Boolean(location),
-      searchRadiusMiles,
-      participantCount: 1,
-      restaurantCount: restaurants.length,
-    }, 'Session created');
+    logger.info(
+      {
+        sessionCode,
+        hasLocation: Boolean(location),
+        searchRadiusMiles,
+        participantCount: 1,
+        restaurantCount: restaurants.length,
+      },
+      'Session created'
+    );
 
     return {
       sessionCode,
@@ -171,10 +183,13 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Guard against negative TTL values
     // TTL -2 means key doesn't exist, -1 means no expiry set
     if (ttl < 0) {
-      logger.warn({
-        sessionCode,
-        ttl,
-      }, 'Session lookup returned invalid TTL');
+      logger.warn(
+        {
+          sessionCode,
+          ttl,
+        },
+        'Session lookup returned invalid TTL'
+      );
       return null; // Session expired or doesn't exist
     }
 
@@ -215,11 +230,14 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Check session exists
     const session = await store.readSession(sessionCode);
     if (!session) {
-      logger.warn({
-        sessionCode,
-        participantId,
-        reason: 'session_not_found',
-      }, 'Rejected session join');
+      logger.warn(
+        {
+          sessionCode,
+          participantId,
+          reason: 'session_not_found',
+        },
+        'Rejected session join'
+      );
       throw new DomainError('SESSION_NOT_FOUND', `Session ${sessionCode} not found or has expired`);
     }
 
@@ -244,12 +262,15 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     if (!prior) {
       // Check participant limit (FR-004, FR-005)
       if (existing.length + reservedHostSlot >= MAX_PARTICIPANTS) {
-        logger.warn({
-          sessionCode,
-          participantId,
-          reason: 'session_full',
-          participantCount: existing.length + reservedHostSlot,
-        }, 'Rejected session join');
+        logger.warn(
+          {
+            sessionCode,
+            participantId,
+            reason: 'session_full',
+            participantCount: existing.length + reservedHostSlot,
+          },
+          'Rejected session join'
+        );
         throw new DomainError(
           'SESSION_FULL',
           `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
@@ -267,12 +288,15 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // participant.
     if (!prior && setSize + reservedHostSlot > MAX_PARTICIPANTS) {
       await store.removeParticipant(sessionCode, participantId);
-      logger.warn({
-        sessionCode,
-        participantId,
-        reason: 'session_full_after_add',
-        participantCount: setSize + reservedHostSlot,
-      }, 'Rejected session join');
+      logger.warn(
+        {
+          sessionCode,
+          participantId,
+          reason: 'session_full_after_add',
+          participantCount: setSize + reservedHostSlot,
+        },
+        'Rejected session join'
+      );
       throw new DomainError(
         'SESSION_FULL',
         `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
@@ -285,11 +309,14 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
 
     const participants = await store.listParticipants(sessionCode);
 
-    logger.info({
-      sessionCode,
-      participantId,
-      participantCount,
-    }, 'Participant joined session');
+    logger.info(
+      {
+        sessionCode,
+        participantId,
+        participantCount,
+      },
+      'Participant joined session'
+    );
 
     return {
       participantId,
@@ -304,6 +331,47 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
         isHost: p.isHost,
       })),
     };
+  }
+
+  /**
+   * Complete the Session: compute and store the Match, mark the session
+   * complete, and emit the anonymous session-outcome metrics line (#68 kill
+   * gates) — counts and the session code only, never names or ids.
+   */
+  async function completeSession(sessionCode: string) {
+    const results = await store.computeAndStoreResults(sessionCode);
+    await store.updateState(sessionCode, 'complete');
+    logger.info({ sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
+
+    // Near Miss tier: restaurants selected by exactly all-but-one current
+    // Participant. Logged for all group sizes and alongside non-empty Matches
+    // (#69) — the glossary's render rules (empty Match, n>=3) are a UI concern.
+    // allSelections is keyed by displayName; safe as a per-Participant map
+    // because joinSession treats a duplicate name as a rejoin.
+    const selections = Object.values(results.allSelections);
+    const tally = new Map<string, number>();
+    for (const placeIds of selections) {
+      for (const placeId of placeIds) {
+        tally.set(placeId, (tally.get(placeId) ?? 0) + 1);
+      }
+    }
+    const nearMissCount = [...tally.values()].filter((n) => n === selections.length - 1).length;
+    const matchSize = results.overlappingOptions.length;
+    const restartFollowed = await store.wasRestartedAfterComplete(sessionCode);
+
+    logger.info(
+      {
+        sessionCode,
+        participantCount: selections.length,
+        matchSize,
+        nearMissCount,
+        restartFollowed,
+        restartReachedMatch: restartFollowed && matchSize > 0,
+      },
+      'Session outcome'
+    );
+
+    return results;
   }
 
   /**
@@ -338,9 +406,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     }
 
     // Everyone has submitted: compute the Match and complete the session
-    const results = await store.computeAndStoreResults(sessionCode);
-    await store.updateState(sessionCode, 'complete');
-    logger.info({ sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
+    const results = await completeSession(sessionCode);
 
     return { submittedCount, participantCount, results };
   }
@@ -387,9 +453,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       remaining.every((p) => p.hasSubmitted)
     ) {
       // The leaver was the last holdout: complete the session for those remaining
-      const results = await store.computeAndStoreResults(sessionCode);
-      await store.updateState(sessionCode, 'complete');
-      logger.info({ sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');
+      const results = await completeSession(sessionCode);
       return { displayName: participant.displayName, participantCount, results };
     }
 
