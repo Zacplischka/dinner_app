@@ -10,6 +10,12 @@ import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
 
 const FAILED_STOREFRONT: StorefrontCapture = { status: 'failed', deals: [], menu: [] };
+const SEARCHING_MESSAGES = [
+  'Locating the storefront…',
+  'Reading the menu…',
+  'Cooking up prices…',
+  'Comparing tasty options…',
+];
 
 function fetchedLabel(fetchedAt: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(fetchedAt)) / 60_000));
@@ -37,7 +43,10 @@ function OutboundLink({ name, url }: { name: 'Uber Eats' | 'DoorDash'; url: stri
   );
 }
 
-function UnmatchedSection({ name, items }: {
+function UnmatchedSection({
+  name,
+  items,
+}: {
   name: 'Uber Eats' | 'DoorDash';
   items: MenuItemCapture[];
 }) {
@@ -68,20 +77,29 @@ function PlatformColumn({
   testId: string;
   capture?: StorefrontCapture;
 }) {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (capture) return;
+    setMessageIndex(0);
+    const interval = window.setInterval(() => {
+      setMessageIndex((current) => (current + 1) % SEARCHING_MESSAGES.length);
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [capture]);
+
   return (
     <section
       data-testid={testId}
       className="rounded-2xl border border-line/30 bg-raised p-5 shadow-card"
     >
       <h2 className="font-display text-xl font-semibold">{name}</h2>
-      {!capture && <p className="mt-4 animate-pulse text-muted">Searching…</p>}
-      {capture?.status === 'not_found' && (
-        <p className="mt-4 text-muted">Not on {name}.</p>
+      {!capture && (
+        <p className="mt-4 animate-pulse text-muted">{SEARCHING_MESSAGES[messageIndex]}</p>
       )}
+      {capture?.status === 'not_found' && <p className="mt-4 text-muted">Not on {name}.</p>}
       {capture?.status === 'failed' && (
-        <p className="mt-4 text-amber">
-          Couldn’t reach {name} — try again in a couple of minutes.
-        </p>
+        <p className="mt-4 text-amber">Couldn’t reach {name} — try again in a couple of minutes.</p>
       )}
       {capture?.status === 'resolved' && (
         <div className="mt-4 space-y-4">
@@ -92,9 +110,13 @@ function PlatformColumn({
             <p className="text-xs uppercase tracking-wide text-muted">Deals</p>
             {capture.deals.length > 0 ? (
               <ul className="mt-1 space-y-2 text-sm text-cyan">
-                {capture.deals.map((deal) => <li key={deal}>{deal}</li>)}
+                {capture.deals.map((deal) => (
+                  <li key={deal}>{deal}</li>
+                ))}
               </ul>
-            ) : <p className="mt-1 text-muted">—</p>}
+            ) : (
+              <p className="mt-1 text-muted">—</p>
+            )}
           </div>
           {capture.storeUrl && <OutboundLink name={name} url={capture.storeUrl} />}
         </div>
@@ -116,15 +138,18 @@ export default function ComparisonViewPage() {
     (location.state as { fromComparisonList?: boolean } | null)?.fromComparisonList
   );
   const complete = Boolean(fetchedAt);
-  const onlyUberEats = complete
-    && storefronts.ubereats?.status === 'resolved'
-    && storefronts.doordash?.status === 'not_found';
-  const onlyDoorDash = complete
-    && storefronts.doordash?.status === 'resolved'
-    && storefronts.ubereats?.status === 'not_found';
-  const neitherFound = complete
-    && storefronts.ubereats?.status === 'not_found'
-    && storefronts.doordash?.status === 'not_found';
+  const onlyUberEats =
+    complete &&
+    storefronts.ubereats?.status === 'resolved' &&
+    storefronts.doordash?.status === 'not_found';
+  const onlyDoorDash =
+    complete &&
+    storefronts.doordash?.status === 'resolved' &&
+    storefronts.ubereats?.status === 'not_found';
+  const neitherFound =
+    complete &&
+    storefronts.ubereats?.status === 'not_found' &&
+    storefronts.doordash?.status === 'not_found';
 
   useEffect(() => {
     if (!placeId) return;
@@ -166,7 +191,7 @@ export default function ComparisonViewPage() {
       <NavigationHeader
         title={venueName || 'Price comparison'}
         showBackButton
-        onBack={() => fromComparisonList ? navigate(-1) : navigate('/compare', { replace: true })}
+        onBack={() => (fromComparisonList ? navigate(-1) : navigate('/compare', { replace: true }))}
       />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {error && (
@@ -178,14 +203,13 @@ export default function ComparisonViewPage() {
           <div className="space-y-1 text-center">
             {comparison.cheaperMenu && (
               <p className="font-semibold text-lime">
-                {comparison.cheaperMenu.platform === 'ubereats' ? 'Uber Eats' : 'DoorDash'} menu ~{comparison.cheaperMenu.percent}% cheaper
+                {comparison.cheaperMenu.platform === 'ubereats' ? 'Uber Eats' : 'DoorDash'} menu ~
+                {comparison.cheaperMenu.percent}% cheaper
               </p>
             )}
             {fetchedAt && <p className="text-sm text-muted">{fetchedLabel(fetchedAt)}</p>}
             {!neitherFound && (
-              <p className="text-xs text-muted">
-                Prices shown are non-member menu prices.
-              </p>
+              <p className="text-xs text-muted">Prices shown are non-member menu prices.</p>
             )}
           </div>
         )}
@@ -239,10 +263,14 @@ export default function ComparisonViewPage() {
                         className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-center gap-4 px-5 py-4 text-sm"
                       >
                         <span className="font-medium">{item.name}</span>
-                        <span className={`text-right ${uberEatsCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}>
+                        <span
+                          className={`text-right ${uberEatsCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}
+                        >
                           {formatPrice(item.ubereats.price_cents)}
                         </span>
-                        <span className={`text-right ${doorDashCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}>
+                        <span
+                          className={`text-right ${doorDashCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}
+                        >
                           {formatPrice(item.doordash.price_cents)}
                         </span>
                       </div>
@@ -250,11 +278,13 @@ export default function ComparisonViewPage() {
                   })}
                 </div>
               </section>
-            ) : storefronts.ubereats?.status === 'resolved'
-              && storefronts.doordash?.status === 'resolved' && (
-              <p className="rounded-xl bg-raised p-4 text-center text-muted">
-                These menus are too different to compare item by item.
-              </p>
+            ) : (
+              storefronts.ubereats?.status === 'resolved' &&
+              storefronts.doordash?.status === 'resolved' && (
+                <p className="rounded-xl bg-raised p-4 text-center text-muted">
+                  These menus are too different to compare item by item.
+                </p>
+              )
             )}
 
             <UnmatchedSection name="Uber Eats" items={comparison.unmatched.ubereats} />

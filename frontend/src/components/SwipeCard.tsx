@@ -37,24 +37,30 @@ export default function SwipeCard({
   const showLikeIndicator = deltaX > 50;
   const showNopeIndicator = deltaX < -50;
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!isTop) return;
-    const touch = e.touches[0];
-    setDragState({
-      isDragging: true,
-      startX: touch.clientX,
-      currentX: touch.clientX,
-    });
-  }, [isTop]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isTop) return;
+      const touch = e.touches[0];
+      setDragState({
+        isDragging: true,
+        startX: touch.clientX,
+        currentX: touch.clientX,
+      });
+    },
+    [isTop]
+  );
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragState.isDragging) return;
-    const touch = e.touches[0];
-    setDragState((prev) => ({
-      ...prev,
-      currentX: touch.clientX,
-    }));
-  }, [dragState.isDragging]);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!dragState.isDragging) return;
+      const touch = e.touches[0];
+      setDragState((prev) => ({
+        ...prev,
+        currentX: touch.clientX,
+      }));
+    },
+    [dragState.isDragging]
+  );
 
   const handleTouchEnd = useCallback(() => {
     if (!dragState.isDragging) return;
@@ -75,22 +81,28 @@ export default function SwipeCard({
   }, [dragState.isDragging, deltaX, onSwipeLeft, onSwipeRight]);
 
   // Mouse event handlers for desktop
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!isTop) return;
-    setDragState({
-      isDragging: true,
-      startX: e.clientX,
-      currentX: e.clientX,
-    });
-  }, [isTop]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isTop) return;
+      setDragState({
+        isDragging: true,
+        startX: e.clientX,
+        currentX: e.clientX,
+      });
+    },
+    [isTop]
+  );
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragState.isDragging) return;
-    setDragState((prev) => ({
-      ...prev,
-      currentX: e.clientX,
-    }));
-  }, [dragState.isDragging]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!dragState.isDragging) return;
+      setDragState((prev) => ({
+        ...prev,
+        currentX: e.clientX,
+      }));
+    },
+    [dragState.isDragging]
+  );
 
   const handleMouseUp = useCallback(() => {
     handleTouchEnd();
@@ -113,11 +125,15 @@ export default function SwipeCard({
     if (swipeDirection === 'left') {
       return {
         animation: 'swipeLeft 0.25s ease-out forwards',
+        opacity: 1,
+        zIndex: 10,
       };
     }
     if (swipeDirection === 'right') {
       return {
         animation: 'swipeRight 0.25s ease-out forwards',
+        opacity: 1,
+        zIndex: 10,
       };
     }
 
@@ -126,6 +142,8 @@ export default function SwipeCard({
         transform: `translateX(${deltaX}px) rotate(${rotation}deg)`,
         transition: 'none',
         cursor: 'grabbing',
+        opacity: 1,
+        zIndex: 10,
       };
     }
 
@@ -169,6 +187,9 @@ export default function SwipeCard({
           alt={restaurant.name}
           className="w-full h-full object-cover"
           draggable={false}
+          onError={(event) => {
+            event.currentTarget.src = placeholderImage;
+          }}
         />
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
@@ -192,16 +213,16 @@ export default function SwipeCard({
               showNopeIndicator ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <span className="text-coral-soft font-display font-bold text-3xl tracking-wider">NOPE</span>
+            <span className="text-coral-soft font-display font-bold text-3xl tracking-wider">
+              NOPE
+            </span>
           </div>
         </>
       )}
 
       {/* Restaurant Info */}
       <div className="relative flex-1 p-5 text-text">
-        <h2 className="font-display text-2xl font-black mb-1">
-          {restaurant.name}
-        </h2>
+        <h2 className="font-display text-2xl font-black mb-1">{restaurant.name}</h2>
 
         {restaurant.cuisineType && (
           <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
@@ -209,7 +230,10 @@ export default function SwipeCard({
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-text/80">
           {restaurant.rating && (
-            <div aria-label={`Rating ${restaurant.rating.toFixed(1)}`} className="flex items-center gap-1.5 text-amber">
+            <div
+              aria-label={`Rating ${restaurant.rating.toFixed(1)}`}
+              className="flex items-center gap-1.5 text-amber"
+            >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
@@ -217,11 +241,7 @@ export default function SwipeCard({
             </div>
           )}
 
-          {priceDisplay && (
-            <span>
-              {priceDisplay}
-            </span>
-          )}
+          {priceDisplay && <span>{priceDisplay}</span>}
 
           {restaurant.openNow !== undefined && (
             <span className={restaurant.openNow ? 'font-bold text-lime' : 'font-medium text-muted'}>
@@ -232,9 +252,23 @@ export default function SwipeCard({
 
         {restaurant.address && (
           <p className="mt-3 text-sm text-muted truncate flex items-center gap-1.5">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+              />
             </svg>
             {restaurant.address}
           </p>

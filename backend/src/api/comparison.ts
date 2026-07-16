@@ -1,5 +1,6 @@
 import { isIP } from 'node:net';
 import { Router, type Request } from 'express';
+import type { Redis } from 'ioredis';
 import type { GooglePlacesSearchParams } from '../services/RestaurantSearchService.js';
 import type { ComparisonService } from '../services/ComparisonService.js';
 import { asyncHandler } from './asyncHandler.js';
@@ -8,10 +9,12 @@ interface ComparisonRouterDeps {
   searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<unknown[]>;
   reverseGeocodeSuburb?: (latitude: number, longitude: number) => Promise<string | undefined>;
   fetchPlacePhoto?: (photoName: string) => Promise<string>;
+  photoCache?: Pick<Redis, 'get' | 'set'>;
   comparisonService?: ComparisonService;
 }
 
 type RequestWindow = { count: number; resetAt: number };
+const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
 
 function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: number): void {
   // ponytail: O(active IPs) per request; use an expiring cache if traffic makes this costly.
@@ -34,6 +37,7 @@ export function createComparisonRouter({
   searchNearbyVenues,
   reverseGeocodeSuburb,
   fetchPlacePhoto,
+  photoCache,
   comparisonService,
 }: ComparisonRouterDeps) {
   const router = Router();
@@ -42,37 +46,50 @@ export function createComparisonRouter({
   const coldCompareRequests = new Map<string, RequestWindow>();
 
   if (fetchPlacePhoto) {
-    router.get('/photo', asyncHandler(async (req, res) => {
-      const photoName = typeof req.query.name === 'string' ? req.query.name : '';
-      if (!/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(photoName)) {
-        return res.status(400).json({
-          error: 'Bad Request',
-          code: 'VALIDATION_ERROR',
-          message: 'A valid Google Places photo name is required',
-        });
-      }
+    router.get(
+      '/photo',
+      asyncHandler(async (req, res) => {
+        const photoName = typeof req.query.name === 'string' ? req.query.name : '';
+        if (!/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(photoName)) {
+          return res.status(400).json({
+            error: 'Bad Request',
+            code: 'VALIDATION_ERROR',
+            message: 'A valid Google Places photo name is required',
+          });
+        }
 
-      const now = Date.now();
-      const ip = requestIp(req);
-      pruneExpiredRequests(photoRequests, now);
-      const requestCount = photoRequests.get(ip);
-      if (!requestCount) {
-        photoRequests.set(ip, { count: 1, resetAt: now + 60_000 });
-      } else if (requestCount.count >= 60) {
-        res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
-        return res.status(429).json({
-          error: 'Too Many Requests',
-          code: 'RATE_LIMITED',
-          message: 'Too many photo requests. Please try again shortly.',
-        });
-      } else {
-        requestCount.count++;
-      }
+        const cacheKey = `comparison:photo:${photoName}`;
+        // Cache errors fail open to the Google lookup — Redis must never break photos.
+        const cachedPhotoUrl = await photoCache?.get(cacheKey).catch(() => null);
+        if (cachedPhotoUrl) {
+          res.setHeader('Cache-Control', `private, max-age=${PHOTO_CACHE_SECONDS}`);
+          return res.redirect(302, cachedPhotoUrl);
+        }
 
-      const photoUrl = await fetchPlacePhoto(photoName);
-      res.setHeader('Cache-Control', 'private, max-age=3600');
-      return res.redirect(302, photoUrl);
-    }));
+        const now = Date.now();
+        const ip = requestIp(req);
+        pruneExpiredRequests(photoRequests, now);
+        const requestCount = photoRequests.get(ip);
+        if (!requestCount) {
+          photoRequests.set(ip, { count: 1, resetAt: now + 60_000 });
+        } else if (requestCount.count >= 60) {
+          res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
+          return res.status(429).json({
+            error: 'Too Many Requests',
+            code: 'RATE_LIMITED',
+            message: 'Too many photo requests. Please try again shortly.',
+          });
+        } else {
+          requestCount.count++;
+        }
+
+        const photoUrl = await fetchPlacePhoto(photoName);
+        // Google Places ToS permits caching the resolved URL, not the photo bytes.
+        await photoCache?.set(cacheKey, photoUrl, 'EX', PHOTO_CACHE_SECONDS).catch(() => undefined);
+        res.setHeader('Cache-Control', `private, max-age=${PHOTO_CACHE_SECONDS}`);
+        return res.redirect(302, photoUrl);
+      })
+    );
   }
 
   const beginColdCompare = (ip: string) => {
@@ -112,48 +129,59 @@ export function createComparisonRouter({
     });
   }
 
-  router.get('/venues', asyncHandler(async (req, res) => {
-    const latitude = queryNumber(req.query.latitude);
-    const longitude = queryNumber(req.query.longitude);
-    const radiusMiles = queryNumber(req.query.radiusMiles);
+  router.get(
+    '/venues',
+    asyncHandler(async (req, res) => {
+      const latitude = queryNumber(req.query.latitude);
+      const longitude = queryNumber(req.query.longitude);
+      const radiusMiles = queryNumber(req.query.radiusMiles);
 
-    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90
-      || !Number.isFinite(longitude) || longitude < -180 || longitude > 180
-      || !Number.isFinite(radiusMiles) || radiusMiles < 1 || radiusMiles > 15) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        code: 'VALIDATION_ERROR',
-        message: 'Valid latitude, longitude, and radiusMiles (1–15) are required',
-      });
-    }
+      if (
+        !Number.isFinite(latitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        !Number.isFinite(longitude) ||
+        longitude < -180 ||
+        longitude > 180 ||
+        !Number.isFinite(radiusMiles) ||
+        radiusMiles < 1 ||
+        radiusMiles > 15
+      ) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          code: 'VALIDATION_ERROR',
+          message: 'Valid latitude, longitude, and radiusMiles (1–15) are required',
+        });
+      }
 
-    const now = Date.now();
-    const ip = requestIp(req);
-    pruneExpiredRequests(venueRequests, now);
-    const requestCount = venueRequests.get(ip);
-    if (!requestCount) {
-      venueRequests.set(ip, { count: 1, resetAt: now + 60_000 });
-    } else if (requestCount.count >= 30) {
-      res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
-      return res.status(429).json({
-        error: 'Too Many Requests',
-        code: 'RATE_LIMITED',
-        message: 'Too many venue searches. Please try again shortly.',
-      });
-    } else {
-      requestCount.count++;
-    }
+      const now = Date.now();
+      const ip = requestIp(req);
+      pruneExpiredRequests(venueRequests, now);
+      const requestCount = venueRequests.get(ip);
+      if (!requestCount) {
+        venueRequests.set(ip, { count: 1, resetAt: now + 60_000 });
+      } else if (requestCount.count >= 30) {
+        res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
+        return res.status(429).json({
+          error: 'Too Many Requests',
+          code: 'RATE_LIMITED',
+          message: 'Too many venue searches. Please try again shortly.',
+        });
+      } else {
+        requestCount.count++;
+      }
 
-    const [venues, suburb] = await Promise.all([
-      searchNearbyVenues({
-        latitude,
-        longitude,
-        radiusMeters: radiusMiles * 1609.344,
-      }),
-      reverseGeocodeSuburb?.(latitude, longitude).catch(() => undefined),
-    ]);
-    return res.json({ venues, suburb });
-  }));
+      const [venues, suburb] = await Promise.all([
+        searchNearbyVenues({
+          latitude,
+          longitude,
+          radiusMeters: radiusMiles * 1609.344,
+        }),
+        reverseGeocodeSuburb?.(latitude, longitude).catch(() => undefined),
+      ]);
+      return res.json({ venues, suburb });
+    })
+  );
 
   return router;
 }

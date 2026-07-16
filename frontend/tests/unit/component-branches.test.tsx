@@ -94,7 +94,9 @@ describe('component and hook branch coverage', () => {
   it('covers auth button and user menu error branches', async () => {
     const successfulSignIn = vi.fn(async () => undefined);
     useAuthStore.setState({ signInWithGoogle: successfulSignIn as any, isLoading: false });
-    const { unmount: successfulButtonUnmount } = render(<GoogleSignInButton className="extra-class" />);
+    const { unmount: successfulButtonUnmount } = render(
+      <GoogleSignInButton className="extra-class" />
+    );
     fireEvent.click(screen.getByText('Continue with Google'));
     await waitFor(() => expect(successfulSignIn).toHaveBeenCalled());
     successfulButtonUnmount();
@@ -136,9 +138,7 @@ describe('component and hook branch coverage', () => {
 
   it('covers navigation header default back, confirm close, and confirm fallback back branches', async () => {
     const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
-    const { unmount: directUnmount } = render(
-      <NavigationHeader title="Direct" showBackButton />
-    );
+    const { unmount: directUnmount } = render(<NavigationHeader title="Direct" showBackButton />);
     fireEvent.click(screen.getByLabelText('Back'));
     expect(historyBack).toHaveBeenCalledTimes(1);
     directUnmount();
@@ -158,7 +158,12 @@ describe('component and hook branch coverage', () => {
   it('covers toast timers', () => {
     vi.useFakeTimers();
     const dismiss = vi.fn();
-    render(<Toast toast={{ id: 'toast-1', type: 'info', message: 'Auto', duration: 50 }} onDismiss={dismiss} />);
+    render(
+      <Toast
+        toast={{ id: 'toast-1', type: 'info', message: 'Auto', duration: 50 }}
+        onDismiss={dismiss}
+      />
+    );
     act(() => {
       vi.advanceTimersByTime(50);
       vi.advanceTimersByTime(200);
@@ -172,14 +177,28 @@ describe('component and hook branch coverage', () => {
     const left = vi.fn();
     const right = vi.fn();
     const { rerender } = render(
-      <SwipeCard restaurant={restaurant as any} onSwipeLeft={left} onSwipeRight={right} isTop={false} stackPosition={1} />
+      <SwipeCard
+        restaurant={restaurant as any}
+        onSwipeLeft={left}
+        onSwipeRight={right}
+        isTop={false}
+        stackPosition={1}
+      />
     );
     let card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
     fireEvent.touchStart(card, { touches: [{ clientX: 10 }] });
     fireEvent.mouseDown(card, { clientX: 10 });
     expect(left).not.toHaveBeenCalled();
 
-    rerender(<SwipeCard restaurant={restaurant as any} onSwipeLeft={left} onSwipeRight={right} isTop stackPosition={0} />);
+    rerender(
+      <SwipeCard
+        restaurant={restaurant as any}
+        onSwipeLeft={left}
+        onSwipeRight={right}
+        isTop
+        stackPosition={0}
+      />
+    );
     card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
     fireEvent.touchMove(card, { touches: [{ clientX: 90 }] });
     fireEvent.touchEnd(card);
@@ -190,7 +209,15 @@ describe('component and hook branch coverage', () => {
     act(() => vi.advanceTimersByTime(300));
     expect(right).toHaveBeenCalled();
 
-    rerender(<SwipeCard restaurant={restaurant as any} onSwipeLeft={left} onSwipeRight={right} isTop stackPosition={0} />);
+    rerender(
+      <SwipeCard
+        restaurant={restaurant as any}
+        onSwipeLeft={left}
+        onSwipeRight={right}
+        isTop
+        stackPosition={0}
+      />
+    );
     card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
     fireEvent.touchStart(card, { touches: [{ clientX: 160 }] });
     fireEvent.touchMove(card, { touches: [{ clientX: 10 }] });
@@ -200,10 +227,52 @@ describe('component and hook branch coverage', () => {
     vi.useRealTimers();
   });
 
+  it('keeps the top swipe card opaque and above the stack while dragging and flying out', () => {
+    vi.useFakeTimers();
+    render(
+      <SwipeCard
+        restaurant={restaurant as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    const card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
+
+    fireEvent.mouseDown(card, { clientX: 10 });
+    fireEvent.mouseMove(card, { clientX: 160 });
+    expect(card).toHaveStyle({ opacity: '1', zIndex: '10' });
+
+    fireEvent.mouseUp(card);
+    expect(card).toHaveStyle({ opacity: '1', zIndex: '10' });
+    vi.useRealTimers();
+  });
+
+  it('replaces a failed Restaurant photo with its initial placeholder', () => {
+    render(
+      <SwipeCard
+        restaurant={{ ...restaurant, photoUrl: 'https://example.com/broken.jpg' } as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    const image = screen.getByRole('img', { name: 'Branch Bistro' });
+
+    fireEvent.error(image);
+
+    expect(image.getAttribute('src')).toContain('data:image/svg+xml');
+    expect(image.getAttribute('src')).toContain('%3EB%3C');
+  });
+
   it('covers friend modal, list, invite card, and toast singleton branches', async () => {
     useFriendsStore.setState({ isSearching: true });
     render(<AddFriendModal isOpen onClose={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText('Search by email'), { target: { value: 'bob@example.com' } });
+    fireEvent.change(screen.getByLabelText('Search by email'), {
+      target: { value: 'bob@example.com' },
+    });
     expect(screen.getByText('Searching...')).toBeInTheDocument();
 
     render(<FriendsList friends={[friend]} />);

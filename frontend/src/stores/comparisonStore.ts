@@ -13,11 +13,15 @@ interface ComparisonState {
   radiusMiles: number;
   venues: Venue[];
   scrollY: number;
+  selectedCuisine?: string;
+  searchQuery: string;
   setLocation: (location?: ComparisonLocation) => void;
   setSuburb: (suburb?: string) => void;
   setRadiusMiles: (radiusMiles: number) => void;
   setVenues: (venues: Venue[]) => void;
   setScrollY: (scrollY: number) => void;
+  setSelectedCuisine: (selectedCuisine?: string) => void;
+  setSearchQuery: (searchQuery: string) => void;
   reset: () => void;
 }
 
@@ -27,20 +31,26 @@ const initialState = {
   radiusMiles: 5,
   venues: [],
   scrollY: 0,
+  selectedCuisine: undefined,
+  searchQuery: '',
 };
 
-export const useComparisonStore = create<ComparisonState>()(persist(
-  (set) => ({
-    ...initialState,
-    setLocation: (location) => set({ location }),
-    setSuburb: (suburb) => set({ suburb }),
-    setRadiusMiles: (radiusMiles) => set({ radiusMiles }),
-    setVenues: (venues) => set({ venues }),
-    setScrollY: (scrollY) => set({ scrollY }),
-    reset: () => set(initialState),
-  }),
-  {
-    name: 'dinder-comparison',
-    partialize: ({ location, radiusMiles, suburb }) => ({ location, radiusMiles, suburb }),
-  }
-));
+export const useComparisonStore = create<ComparisonState>()(
+  persist(
+    (set) => ({
+      ...initialState,
+      setLocation: (location) => set({ location }),
+      setSuburb: (suburb) => set({ suburb }),
+      setRadiusMiles: (radiusMiles) => set({ radiusMiles }),
+      setVenues: (venues) => set({ venues }),
+      setScrollY: (scrollY) => set({ scrollY }),
+      setSelectedCuisine: (selectedCuisine) => set({ selectedCuisine }),
+      setSearchQuery: (searchQuery) => set({ searchQuery }),
+      reset: () => set(initialState),
+    }),
+    {
+      name: 'dinder-comparison',
+      partialize: ({ location, radiusMiles, suburb }) => ({ location, radiusMiles, suburb }),
+    }
+  )
+);

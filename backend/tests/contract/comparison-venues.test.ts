@@ -1,4 +1,6 @@
 import express from 'express';
+import RedisMock from 'ioredis-mock';
+import type { Redis } from 'ioredis';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createComparisonRouter } from '../../src/api/comparison.js';
@@ -12,15 +14,17 @@ describe('GET /api/comparison/venues', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        places: [{
-          id: 'place-1',
-          displayName: { text: '11 Inch Pizza' },
-          rating: 4.6,
-          primaryType: 'pizza_restaurant',
-          primaryTypeDisplayName: { text: 'Pizza restaurant' },
-          formattedAddress: '7A/353 Little Collins St, Melbourne VIC 3000',
-          location: { latitude: -37.8156157, longitude: 144.9630536 },
-        }],
+        places: [
+          {
+            id: 'place-1',
+            displayName: { text: '11 Inch Pizza' },
+            rating: 4.6,
+            primaryType: 'pizza_restaurant',
+            primaryTypeDisplayName: { text: 'Pizza restaurant' },
+            formattedAddress: '7A/353 Little Collins St, Melbourne VIC 3000',
+            location: { latitude: -37.8156157, longitude: 144.9630536 },
+          },
+        ],
       }),
       headers: { get: () => null },
     });
@@ -28,23 +32,28 @@ describe('GET /api/comparison/venues', () => {
 
     const app = express();
     const reverseGeocodeSuburb = vi.fn().mockResolvedValue('Melbourne');
-    app.use('/api/comparison', createComparisonRouter({
-      searchNearbyVenues,
-      reverseGeocodeSuburb,
-    }));
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues,
+        reverseGeocodeSuburb,
+      })
+    );
 
     const response = await request(app)
       .get('/api/comparison/venues')
       .query({ latitude: -37.8136, longitude: 144.9631, radiusMiles: 5 })
       .expect(200);
 
-    expect(response.body.venues).toEqual([expect.objectContaining({
-      placeId: 'place-1',
-      name: '11 Inch Pizza',
-      rating: 4.6,
-      cuisineType: 'Pizza restaurant',
-      distanceMiles: expect.any(Number),
-    })]);
+    expect(response.body.venues).toEqual([
+      expect.objectContaining({
+        placeId: 'place-1',
+        name: '11 Inch Pizza',
+        rating: 4.6,
+        cuisineType: 'Pizza restaurant',
+        distanceMiles: expect.any(Number),
+      }),
+    ]);
     expect(response.body.venues[0].distanceMiles).toBeCloseTo(0.14, 1);
     expect(response.body.suburb).toBe('Melbourne');
     expect(reverseGeocodeSuburb).toHaveBeenCalledWith(-37.8136, 144.9631);
@@ -55,10 +64,13 @@ describe('GET /api/comparison/venues', () => {
   it('returns nearby Venues when reverse geocoding fails', async () => {
     const venues = [{ placeId: 'place-1', name: '11 Inch Pizza' }];
     const app = express();
-    app.use('/api/comparison', createComparisonRouter({
-      searchNearbyVenues: vi.fn().mockResolvedValue(venues),
-      reverseGeocodeSuburb: vi.fn().mockRejectedValue(new Error('geocoder unavailable')),
-    }));
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn().mockResolvedValue(venues),
+        reverseGeocodeSuburb: vi.fn().mockRejectedValue(new Error('geocoder unavailable')),
+      })
+    );
 
     const response = await request(app)
       .get('/api/comparison/venues')
@@ -139,14 +151,17 @@ describe('GET /api/comparison/venues', () => {
 
 describe('GET /api/comparison/photo', () => {
   it('redirects a validated photo name through a server-authenticated lookup', async () => {
-    const fetchPlacePhoto = vi.fn().mockResolvedValue(
-      'https://lh3.googleusercontent.com/photo.jpg'
-    );
+    const fetchPlacePhoto = vi
+      .fn()
+      .mockResolvedValue('https://lh3.googleusercontent.com/photo.jpg');
     const app = express();
-    app.use('/api/comparison', createComparisonRouter({
-      searchNearbyVenues: vi.fn(),
-      fetchPlacePhoto,
-    }));
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        fetchPlacePhoto,
+      })
+    );
 
     const response = await request(app)
       .get('/api/comparison/photo')
@@ -154,29 +169,114 @@ describe('GET /api/comparison/photo', () => {
       .expect(302);
 
     expect(response.headers.location).toBe('https://lh3.googleusercontent.com/photo.jpg');
-    expect(response.headers['cache-control']).toBe('private, max-age=3600');
+    expect(response.headers['cache-control']).toBe('private, max-age=86400');
     expect(fetchPlacePhoto).toHaveBeenCalledWith('places/abc/photos/def');
   });
 
-  it('limits authenticated Google photo lookups per client IP', async () => {
-    const fetchPlacePhoto = vi.fn().mockResolvedValue(
-      'https://lh3.googleusercontent.com/photo.jpg'
-    );
+  it('caches a resolved photo URL for a day and skips Google on repeat requests', async () => {
+    const photoCache = new RedisMock() as Redis;
+    await photoCache.flushall();
+    const fetchPlacePhoto = vi
+      .fn()
+      .mockResolvedValue('https://lh3.googleusercontent.com/photo.jpg');
     const app = express();
-    app.use('/api/comparison', createComparisonRouter({
-      searchNearbyVenues: vi.fn(),
-      fetchPlacePhoto,
-    }));
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        fetchPlacePhoto,
+        photoCache,
+      })
+    );
+    const url = '/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef';
+
+    const first = await request(app).get(url).expect(302);
+    const second = await request(app).get(url).expect(302);
+
+    expect(first.headers['cache-control']).toBe('private, max-age=86400');
+    expect(second.headers.location).toBe('https://lh3.googleusercontent.com/photo.jpg');
+    expect(fetchPlacePhoto).toHaveBeenCalledOnce();
+  });
+
+  it('falls open to the Google lookup when the photo cache is unavailable', async () => {
+    const photoCache = {
+      get: vi.fn().mockRejectedValue(new Error('redis down')),
+      set: vi.fn().mockRejectedValue(new Error('redis down')),
+    };
+    const fetchPlacePhoto = vi
+      .fn()
+      .mockResolvedValue('https://lh3.googleusercontent.com/photo.jpg');
+    const app = express();
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        fetchPlacePhoto,
+        photoCache: photoCache as unknown as Redis,
+      })
+    );
+
+    const response = await request(app)
+      .get('/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef')
+      .expect(302);
+
+    expect(response.headers.location).toBe('https://lh3.googleusercontent.com/photo.jpg');
+    expect(fetchPlacePhoto).toHaveBeenCalledOnce();
+  });
+
+  it('does not count cached redirects against the photo lookup rate limit', async () => {
+    const photoCache = new RedisMock() as Redis;
+    await photoCache.flushall();
+    await photoCache.set(
+      'comparison:photo:places/abc/photos/cached',
+      'https://lh3.googleusercontent.com/cached.jpg'
+    );
+    const fetchPlacePhoto = vi
+      .fn()
+      .mockResolvedValue('https://lh3.googleusercontent.com/fresh.jpg');
+    const app = express();
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        fetchPlacePhoto,
+        photoCache,
+      })
+    );
+
+    for (let requestNumber = 0; requestNumber <= 60; requestNumber++) {
+      await request(app)
+        .get('/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fcached')
+        .set('X-Real-IP', '203.0.113.30')
+        .expect(302);
+    }
+    await request(app)
+      .get('/api/comparison/photo?name=places%2Fabc%2Fphotos%2Ffresh')
+      .set('X-Real-IP', '203.0.113.30')
+      .expect(302);
+
+    expect(fetchPlacePhoto).toHaveBeenCalledOnce();
+  });
+
+  it('limits authenticated Google photo lookups per client IP', async () => {
+    const fetchPlacePhoto = vi
+      .fn()
+      .mockResolvedValue('https://lh3.googleusercontent.com/photo.jpg');
+    const app = express();
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        fetchPlacePhoto,
+      })
+    );
     const url = '/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef';
 
     for (let requestNumber = 1; requestNumber <= 60; requestNumber++) {
       await request(app).get(url).set('X-Real-IP', '203.0.113.20').expect(302);
     }
     await request(app).get(url).set('X-Real-IP', '203.0.113.21').expect(302);
-    const limited = await request(app)
-      .get(url)
-      .set('X-Real-IP', '203.0.113.20')
-      .expect(429);
+    const limited = await request(app).get(url).set('X-Real-IP', '203.0.113.20').expect(429);
 
     expect(fetchPlacePhoto).toHaveBeenCalledTimes(61);
     expect(limited.headers['retry-after']).toBe('60');
@@ -185,11 +285,16 @@ describe('GET /api/comparison/photo', () => {
 
   it('rejects malformed photo names without calling Google', async () => {
     const fetchPlacePhoto = vi.fn();
+    const photoCache = { get: vi.fn(), set: vi.fn() };
     const app = express();
-    app.use('/api/comparison', createComparisonRouter({
-      searchNearbyVenues: vi.fn(),
-      fetchPlacePhoto,
-    }));
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        fetchPlacePhoto,
+        photoCache,
+      })
+    );
 
     const response = await request(app)
       .get('/api/comparison/photo')
@@ -198,5 +303,6 @@ describe('GET /api/comparison/photo', () => {
 
     expect(response.body.code).toBe('VALIDATION_ERROR');
     expect(fetchPlacePhoto).not.toHaveBeenCalled();
+    expect(photoCache.get).not.toHaveBeenCalled();
   });
 });
