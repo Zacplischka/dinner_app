@@ -106,6 +106,10 @@ _Avoid_: shared item, common item
 A Storefront-level promotion as reported by the data source (e.g. "20% off orders over $25"). Displayed, never applied; membership pricing is not a Deal.
 _Avoid_: promo, offer, discount
 
+**Cuisine**:
+The kind of food a Venue serves (e.g. Italian, Asian Fusion), as reported by the search data — not a curated taxonomy. Venues are filterable by Cuisine; a Venue with no reported Cuisine is still a Venue.
+_Avoid_: category, type, tag
+
 **Snapshot**:
 An immutable record of one Venue's Comparison at a moment in time. The newest Snapshot, if fresh enough, serves as the current Comparison; the full set of a Venue's Snapshots is its price history. Snapshots are never updated or deleted.
 _Avoid_: cache entry, record

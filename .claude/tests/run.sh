@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Live tests for the .claude/ automations: prettier PostToolUse hook + redis-debug.sh.
+# Live tests for the .claude/.codex automations: prettier PostToolUse hook + redis-debug.sh.
 # Run from anywhere: bash .claude/tests/run.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -35,6 +35,15 @@ run_hook "$TMP/c.md"
 grep -q 'hello    world' "$TMP/c.md" && ok "ignores non-TS files" || fail "touched a non-TS file"
 
 run_hook "" && ok "empty file_path is a no-op" || fail "errored on empty file_path"
+
+CODEX_HOOK_CMD=$(python3 -c "
+import json
+h = json.load(open('$ROOT/.codex/hooks.json'))['hooks']['PostToolUse'][0]
+assert h['matcher'] == '^(apply_patch|Edit|Write)$'
+print(h['hooks'][0]['command'])")
+echo 'const z = "double";' > "$TMP/codex.ts"
+printf '{"tool_input":{"command":"*** Begin Patch\\n*** Update File: %s\\n*** End Patch"}}' "$TMP/codex.ts" | bash -c "$CODEX_HOOK_CMD"
+grep -q "const z = 'double';" "$TMP/codex.ts" && ok "formats Codex apply_patch files" || fail "did not format Codex apply_patch file"
 
 [ "$(npx --no-install prettier --find-config-path backend/src/server.ts)" = ".prettierrc" ] \
   && ok "backend resolves root .prettierrc" || fail "backend resolves wrong prettier config"
