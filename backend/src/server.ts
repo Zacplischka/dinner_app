@@ -31,10 +31,7 @@ import {
 } from './websocket/socketAuth.js';
 
 // Import shared types
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from '@dinder/shared/types';
+import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -72,48 +69,56 @@ const app = express();
 app.set('trust proxy', 1); // Railway terminates requests at one edge proxy.
 
 // Middleware
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
 // Request logging: request IDs, per-request child loggers (req.log).
 // Must precede express.json() so body-parse errors still get an X-Request-Id.
-app.use(pinoHttp({
-  logger,
-  genReqId: (req, res) => {
-    const id = (req.headers['x-request-id'] as string) || randomUUID();
-    res.setHeader('X-Request-Id', id);
-    return id;
-  },
-  customLogLevel: (_req, res, err) => {
-    if (err || res.statusCode >= 500) return 'error';
-    if (res.statusCode >= 400) return 'warn';
-    return 'info';
-  },
-  customProps: (req) => {
-    const user = (req as AuthenticatedRequest).user;
-    return user ? { userId: user.id } : {};
-  },
-}));
+app.use(
+  pinoHttp({
+    logger,
+    genReqId: (req, res) => {
+      const id = (req.headers['x-request-id'] as string) || randomUUID();
+      res.setHeader('X-Request-Id', id);
+      return id;
+    },
+    customLogLevel: (_req, res, err) => {
+      if (err || res.statusCode >= 500) return 'error';
+      if (res.statusCode >= 400) return 'warn';
+      return 'info';
+    },
+    customProps: (req) => {
+      const user = (req as AuthenticatedRequest).user;
+      return user ? { userId: user.id } : {};
+    },
+  })
+);
 
 app.use(express.json());
 
 // REST API routes
 app.use('/api/sessions', createSessionsRouter(sessionService));
 app.use('/api/options', createOptionsRouter(sessionStore));
-app.use('/api/comparison', createComparisonRouter({
-  searchNearbyVenues: (...args) => RestaurantSearchService.searchNearbyVenues(...args),
-  reverseGeocodeSuburb: (...args) => RestaurantSearchService.reverseGeocodeSuburb(...args),
-  fetchPlacePhoto: (...args) => RestaurantSearchService.fetchPlacePhoto(...args),
-  comparisonService,
-}));
+app.use(
+  '/api/comparison',
+  createComparisonRouter({
+    searchNearbyVenues: (...args) => RestaurantSearchService.searchNearbyVenues(...args),
+    reverseGeocodeSuburb: (...args) => RestaurantSearchService.reverseGeocodeSuburb(...args),
+    fetchPlacePhoto: (...args) => RestaurantSearchService.fetchPlacePhoto(...args),
+    photoCache: redis,
+    comparisonService,
+  })
+);
 app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes
 
 // Health check endpoint
@@ -162,7 +167,10 @@ import { handleDisconnect } from './websocket/disconnectHandler.js';
 import { verifyToken, type AuthenticatedRequest } from './middleware/auth.js';
 
 // Import session expiry notifier
-import { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } from './redis/sessionExpiryNotifier.js';
+import {
+  initializeSessionExpiryNotifier,
+  disconnectSessionExpiryNotifier,
+} from './redis/sessionExpiryNotifier.js';
 
 // Socket.IO authentication middleware (optional - doesn't reject unauthenticated)
 io.use((socket, next) => {
