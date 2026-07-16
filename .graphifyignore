@@ -1,0 +1,13 @@
+# Shadows .gitignore for graphify, so repeat its entries
+node_modules
+.env*
+.specify
+.cursor
+.fallow
+
+
+# Config manifests: their generic keys (dependencies, scripts, exclude...)
+# pollute graphify query seeding with package.json/tsconfig noise
+package.json
+tsconfig*.json
+package-lock.json

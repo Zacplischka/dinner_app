@@ -3,6 +3,9 @@
 **Project**: Dinder
 **Last Updated**: 2026-07-12
 
+## Preflight
+1. Read `docs/branching.md` for repo branching strategy
+
 ## Tech Stack
 
 **Languages**:
@@ -17,25 +20,6 @@
 **Database**: Redis (in-memory with native TTL for 30-minute session expiration)
 
 **Project Type**: Web application (monorepo: frontend + backend with real-time WebSocket communication)
-
-## Architectural Decisions
-
-### Real-Time Communication
-- Socket.IO room-based architecture
-- Each session = 1 Socket.IO room
-- Event-driven state machine for session lifecycle
-- Selective broadcasting for privacy rules (FR-023)
-
-### Data Storage
-- Redis with TTL for automatic session expiration (30 minutes)
-- Set-based selection storage for efficient intersection calculation
-- Session state is ephemeral by design (Redis only, no history); the social graph (Profiles, Friendships, Session Invites) persists in Supabase — see `docs/adr/0001`
-
-### Frontend Architecture
-- Mobile-first design with Tailwind CSS
-- Zustand for lightweight state management
-- React Router for screen navigation
-- Socket.IO client for real-time updates
 
 ## Commands
 
@@ -60,7 +44,7 @@ npm run lint                                 # root; lints backend + frontend sr
 - **Google Places API (New)**: `places.googleapis.com/v1` (`places:searchNearby`, `places:searchText`, photo media) — called from `backend/src/services/RestaurantSearchService.ts`; key in `backend/.env`.
 - CI (`.github/workflows/ci-cd.yml`) verifies production deploys by polling the backend health endpoint after Railway deploys.
 
-### How Claude can access these
+### How Claude/Codex can access these
 
 - **Supabase**: Supabase MCP tools (`mcp__plugin_supabase_supabase__*`) — list_tables, execute_sql, get_logs, get_advisors, apply_migration, etc. against project `hcjuqvicwuszwqkreklc`.
 - **Railway**: `railway` CLI (installed via Homebrew). Requires `railway login` (interactive — ask the user to run it), then `railway link`, `railway logs`, `railway variables`, `railway up`.

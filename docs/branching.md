@@ -9,6 +9,7 @@ Trunk-based. `main` is the only long-lived branch and is always deployable — e
 - **Naming**: `<type>/<short-slug>`, optionally with issue number — `feat/session-invites`, `fix/123-redis-ttl`, `docs/branching`, `chore/deps`.
 - **Squash-merge** PRs; the squash commit message describes the change. Delete the branch after merge.
 - **Link the GitHub issue** in the PR body (`Closes #123`) when one exists.
+- **Use `.claude/skills/pr-review-loop/SKILL.md`** whenever raising a PR for merge into `main`.
 
 
 
