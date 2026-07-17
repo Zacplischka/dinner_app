@@ -1,15 +1,19 @@
 import { Router } from 'express';
 import type { Redis } from 'ioredis';
-import { COMPARISON_TAP_SOURCES } from '@dinder/shared/types';
+import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
 import type { VenueDetails } from '../services/RestaurantSearchService.js';
 import { asyncHandler } from './asyncHandler.js';
-import { pruneExpiredRequests, requestIp, type RequestWindow } from './rateWindow.js';
+import {
+  pruneExpiredRequests,
+  requestIp,
+  retryAfterSeconds,
+  type RequestWindow,
+} from './rateWindow.js';
 
 // Counting redirect for results-screen delivery buttons (#72): makes "the
 // group acted on a card" server-countable, then 302s to the Platform's
 // public search deep link. Exactly three parameters; no cookies.
 const PLATFORMS = new Set(['ubereats', 'doordash']);
-const SOURCES = new Set<string>(COMPARISON_TAP_SOURCES);
 // Each uncached redirect is a paid Places details lookup; cache the target and
 // cap uncached lookups per IP so anonymous taps cannot run up spend.
 const TARGET_CACHE_SECONDS = 24 * 60 * 60;
@@ -48,7 +52,7 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
         typeof placeId !== 'string' ||
         !placeId.trim() ||
         typeof source !== 'string' ||
-        !SOURCES.has(source)
+        !COMPARISON_TAP_SOURCE_SET.has(source)
       ) {
         return res.status(400).json({
           error: 'Bad Request',
@@ -64,11 +68,7 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
       if (!target) {
         const ip = requestIp(req);
         if (!beginUncachedRedirect(ip)) {
-          const requestCount = redirectRequests.get(ip);
-          const retryAfterSeconds = requestCount
-            ? Math.max(1, Math.ceil((requestCount.resetAt - Date.now()) / 1000))
-            : Math.ceil(REDIRECT_WINDOW_MS / 1000);
-          res.setHeader('Retry-After', retryAfterSeconds);
+          res.setHeader('Retry-After', retryAfterSeconds(redirectRequests, ip, REDIRECT_WINDOW_MS));
           return res.status(429).json({
             error: 'Too Many Requests',
             code: 'RATE_LIMITED',

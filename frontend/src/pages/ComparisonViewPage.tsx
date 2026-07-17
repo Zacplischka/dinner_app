@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type {
   Comparison,
@@ -7,7 +7,7 @@ import type {
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
-import { COMPARISON_TAP_SOURCES } from '@dinder/shared/types';
+import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
 
@@ -132,15 +132,15 @@ export default function ComparisonViewPage() {
   const location = useLocation();
   const { placeId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  // Captured once: the source names the tap, not the page. It is stripped from
-  // the URL below so a refresh or share doesn't re-count the tap (#68 kill gate).
-  const sourceParam = searchParams.get('source');
-  const tapSourceRef = useRef(
-    sourceParam !== null && (COMPARISON_TAP_SOURCES as readonly string[]).includes(sourceParam)
+  // Captured once (lazy init): the source names the tap, not the page. It is
+  // stripped from the URL below so a refresh or share doesn't re-count the tap
+  // (#68 kill gate).
+  const [tapSource] = useState(() => {
+    const sourceParam = searchParams.get('source');
+    return sourceParam !== null && COMPARISON_TAP_SOURCE_SET.has(sourceParam)
       ? (sourceParam as ComparisonTapSource)
-      : undefined
-  );
-  const tapSource = tapSourceRef.current;
+      : undefined;
+  });
 
   useEffect(() => {
     if (!searchParams.has('source')) return;

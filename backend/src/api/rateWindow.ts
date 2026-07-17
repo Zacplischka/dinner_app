@@ -13,6 +13,16 @@ export function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: 
   }
 }
 
+export function retryAfterSeconds(
+  requests: Map<string, RequestWindow>,
+  ip: string,
+  windowMs: number
+): number {
+  const request = requests.get(ip);
+  if (!request) return Math.ceil(windowMs / 1000);
+  return Math.max(1, Math.ceil((request.resetAt - Date.now()) / 1000));
+}
+
 export function requestIp(req: Request): string {
   const railwayClientIp = req.get('x-real-ip')?.trim();
   if (railwayClientIp && isIP(railwayClientIp)) return railwayClientIp;

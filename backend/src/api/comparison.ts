@@ -1,10 +1,15 @@
 import { Router } from 'express';
 import type { Redis } from 'ioredis';
-import { COMPARISON_TAP_SOURCES } from '@dinder/shared/types';
+import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
 import type { GooglePlacesSearchParams } from '../services/RestaurantSearchService.js';
 import type { ComparisonService } from '../services/ComparisonService.js';
 import { asyncHandler } from './asyncHandler.js';
-import { pruneExpiredRequests, requestIp, type RequestWindow } from './rateWindow.js';
+import {
+  pruneExpiredRequests,
+  requestIp,
+  retryAfterSeconds,
+  type RequestWindow,
+} from './rateWindow.js';
 
 interface ComparisonRouterDeps {
   searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<unknown[]>;
@@ -18,8 +23,6 @@ const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
 // Cold Comparisons launch paid Apify actor runs; this caps per-visitor spend (#70).
 const COLD_COMPARE_LIMIT = 5;
 const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
-// Tap sources whose Comparison subscribes are counted for the #68 kill gates.
-const COMPARE_SOURCES = new Set<string>(COMPARISON_TAP_SOURCES);
 
 function queryNumber(value: unknown): number {
   return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
@@ -99,17 +102,12 @@ export function createComparisonRouter({
     return true;
   };
 
-  const coldCompareRetryAfterSeconds = (ip: string) => {
-    const requestCount = coldCompareRequests.get(ip);
-    if (!requestCount) return Math.ceil(COLD_COMPARE_WINDOW_MS / 1000);
-    return Math.max(1, Math.ceil((requestCount.resetAt - Date.now()) / 1000));
-  };
-
   if (comparisonService) {
     router.get('/:placeId/stream', (req, res) => {
       const ip = requestIp(req);
+      // Only known tap sources are counted for the #68 kill gates.
       const source =
-        typeof req.query.source === 'string' && COMPARE_SOURCES.has(req.query.source)
+        typeof req.query.source === 'string' && COMPARISON_TAP_SOURCE_SET.has(req.query.source)
           ? req.query.source
           : undefined;
       req.log?.info({ placeId: req.params.placeId, source }, 'Comparison subscribe');
@@ -125,12 +123,12 @@ export function createComparisonRouter({
           if (res.writableEnded) return;
           if (!streaming) {
             if (event.type === 'error' && event.code === 'RATE_LIMITED') {
-              const retryAfterSeconds = coldCompareRetryAfterSeconds(ip);
-              res.setHeader('Retry-After', retryAfterSeconds);
+              const retryAfter = retryAfterSeconds(coldCompareRequests, ip, COLD_COMPARE_WINDOW_MS);
+              res.setHeader('Retry-After', retryAfter);
               res.status(429).json({
                 error: 'Too Many Requests',
                 code: 'RATE_LIMITED',
-                message: `Limit of ${COLD_COMPARE_LIMIT} new comparisons per hour reached. Try again in about ${Math.ceil(retryAfterSeconds / 60)} minute(s).`,
+                message: `Limit of ${COLD_COMPARE_LIMIT} new comparisons per hour reached. Try again in about ${Math.ceil(retryAfter / 60)} minute(s).`,
               });
               return;
             }
