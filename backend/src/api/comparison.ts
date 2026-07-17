@@ -15,6 +15,9 @@ interface ComparisonRouterDeps {
 
 type RequestWindow = { count: number; resetAt: number };
 const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
+// Cold Comparisons launch paid Apify actor runs; this caps per-visitor spend (#70).
+const COLD_COMPARE_LIMIT = 5;
+const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
 
 function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: number): void {
   // ponytail: O(active IPs) per request; use an expiring cache if traffic makes this costly.
@@ -97,34 +100,58 @@ export function createComparisonRouter({
     pruneExpiredRequests(coldCompareRequests, now);
     const requestCount = coldCompareRequests.get(ip);
     if (!requestCount) {
-      coldCompareRequests.set(ip, { count: 1, resetAt: now + 60_000 });
+      coldCompareRequests.set(ip, { count: 1, resetAt: now + COLD_COMPARE_WINDOW_MS });
       return true;
     }
-    if (requestCount.count >= 5) return false;
+    if (requestCount.count >= COLD_COMPARE_LIMIT) return false;
     requestCount.count++;
     return true;
   };
 
+  const coldCompareRetryAfterSeconds = (ip: string) => {
+    const requestCount = coldCompareRequests.get(ip);
+    if (!requestCount) return Math.ceil(COLD_COMPARE_WINDOW_MS / 1000);
+    return Math.max(1, Math.ceil((requestCount.resetAt - Date.now()) / 1000));
+  };
+
   if (comparisonService) {
     router.get('/:placeId/stream', (req, res) => {
-      res.status(200).set({
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache, no-transform',
-        Connection: 'keep-alive',
-        'X-Accel-Buffering': 'no',
-      });
-      res.flushHeaders();
+      const ip = requestIp(req);
+      // Headers flush lazily on the first event, so a rate-limited cold
+      // Comparison can still answer with a real 429 instead of an SSE error.
+      let streaming = false;
 
       let unsubscribe: () => void = () => undefined;
       res.on('close', () => unsubscribe());
       unsubscribe = comparisonService.subscribe(
         req.params.placeId,
         (event) => {
+          if (res.writableEnded) return;
+          if (!streaming) {
+            if (event.type === 'error' && event.code === 'RATE_LIMITED') {
+              const retryAfterSeconds = coldCompareRetryAfterSeconds(ip);
+              res.setHeader('Retry-After', retryAfterSeconds);
+              res.status(429).json({
+                error: 'Too Many Requests',
+                code: 'RATE_LIMITED',
+                message: `Limit of ${COLD_COMPARE_LIMIT} new comparisons per hour reached. Try again in about ${Math.ceil(retryAfterSeconds / 60)} minute(s).`,
+              });
+              return;
+            }
+            res.status(200).set({
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache, no-transform',
+              Connection: 'keep-alive',
+              'X-Accel-Buffering': 'no',
+            });
+            res.flushHeaders();
+            streaming = true;
+          }
           const { type, ...data } = event;
           res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
           if (type === 'comparison' || type === 'error') res.end();
         },
-        { beginColdCompare: () => beginColdCompare(requestIp(req)) }
+        { beginColdCompare: () => beginColdCompare(ip) }
       );
     });
   }
