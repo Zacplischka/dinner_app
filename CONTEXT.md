@@ -38,6 +38,10 @@ _Avoid_: inferring "submitted" from a non-empty Selection set
 The set of Restaurants every current Participant selected, computed once all current Participants have a Submission — including when the last unsubmitted Participant leaves. May be empty.
 _Avoid_: results, overlap, winners
 
+**Near Miss**:
+A Restaurant selected by every current Participant except one. Surfaced only when the Match is empty and the Session has three or more Participants, always as a count ("2 of 3 liked this"), never with names. A Session with two Participants has no Near Misses — one person's Selections are not a near-Match.
+_Avoid_: almost match, runner-up, partial match
+
 **SessionStore**:
 The sole keeper of everything a live Session remembers — Participants, Selections, Submissions, Restaurants, the Match, and the Session's remaining lifetime. All session state enters and leaves through it.
 _Avoid_: models, repository, DAO
