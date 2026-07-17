@@ -17,9 +17,7 @@ import { expect } from '@playwright/test';
 test.describe('Multi-Participant Session Flow', () => {
   test.describe.configure({ mode: 'serial' }); // Run tests in order
 
-  test('host can create session and participants can join', async ({
-    setupSession,
-  }) => {
+  test('host can create session and participants can join', async ({ setupSession }) => {
     const { sessionCode, host, participants, all } = await setupSession(2);
 
     // Verify session code was generated
@@ -38,9 +36,7 @@ test.describe('Multi-Participant Session Flow', () => {
     expect(participantNames.length).toBeGreaterThanOrEqual(all.length);
   });
 
-  test('host can start session and all move to selection', async ({
-    setupSession,
-  }) => {
+  test('host can start session and all move to selection', async ({ setupSession }) => {
     const { sessionCode, host, participants, all } = await setupSession(2);
 
     // Host starts the session
@@ -57,9 +53,7 @@ test.describe('Multi-Participant Session Flow', () => {
     );
   });
 
-  test('all participants can make selections and submit', async ({
-    setupSession,
-  }) => {
+  test('all participants can make selections and submit', async ({ setupSession }) => {
     const { sessionCode, host, participants, all } = await setupSession(1);
 
     // Host starts session
@@ -68,7 +62,9 @@ test.describe('Multi-Participant Session Flow', () => {
     // Wait for selection pages to load
     await Promise.all(
       all.map(async (p) => {
-        await p.selectionPage.loadingState.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+        await p.selectionPage.loadingState
+          .waitFor({ state: 'hidden', timeout: 30_000 })
+          .catch(() => {});
       })
     );
 
@@ -93,11 +89,7 @@ test.describe('Multi-Participant Session Flow', () => {
     );
 
     // Wait for results (all participants should be redirected)
-    await Promise.all(
-      all.map((p) =>
-        expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })
-      )
-    );
+    await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
   });
 
   test('results show matching restaurants', async ({ setupSession }) => {
@@ -109,7 +101,9 @@ test.describe('Multi-Participant Session Flow', () => {
     // Wait for restaurants to load
     await Promise.all(
       all.map(async (p) => {
-        await p.selectionPage.loadingState.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+        await p.selectionPage.loadingState
+          .waitFor({ state: 'hidden', timeout: 30_000 })
+          .catch(() => {});
       })
     );
 
@@ -126,20 +120,70 @@ test.describe('Multi-Participant Session Flow', () => {
     }
 
     // Wait for results
-    await Promise.all(
-      all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 }))
-    );
+    await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
 
     // Verify results page shows matches
     await host.resultsPage.verifyPageElements();
   });
 });
 
-test.describe('Session Edge Cases', () => {
-  test('participant cannot join full session (max 4)', async ({
-    browser,
+test.describe('Near Miss fallback (#72)', () => {
+  test('empty match with three participants shows Near Miss cards on every screen', async ({
     setupSession,
   }) => {
+    test.setTimeout(120_000); // three full decks of swiping
+    const { host, participants, all } = await setupSession(2); // host + 2 guests = 3
+
+    await host.lobbyPage.startSession();
+
+    await Promise.all(
+      all.map(async (p) => {
+        await p.selectionPage.loadingState
+          .waitFor({ state: 'hidden', timeout: 30_000 })
+          .catch(() => {});
+      })
+    );
+
+    // Host and Guest1 like only the first restaurant; Guest2 passes it and
+    // likes the second. No restaurant is liked by all three (empty Match),
+    // and the first is liked by two of three (a Near Miss).
+    const [guest1, guest2] = participants;
+    const finishDeck = async (p: (typeof all)[number]) => {
+      await p.selectionPage.passAllRemaining();
+      if (await p.selectionPage.submitButton.isVisible()) {
+        await p.selectionPage.submitSelections();
+      }
+    };
+    await Promise.all([
+      (async () => {
+        await host.selectionPage.likeRestaurant();
+        await finishDeck(host);
+      })(),
+      (async () => {
+        await guest1.selectionPage.likeRestaurant();
+        await finishDeck(guest1);
+      })(),
+      (async () => {
+        await guest2.selectionPage.passRestaurant();
+        await guest2.selectionPage.likeRestaurant();
+        await finishDeck(guest2);
+      })(),
+    ]);
+
+    await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
+
+    // The Near Miss card appears on every participant's screen in real time.
+    for (const p of all) {
+      await expect(p.page.locator('[data-near-miss-card]').first()).toBeVisible({
+        timeout: 10_000,
+      });
+      await expect(p.page.getByText('2 of 3 liked this').first()).toBeVisible();
+    }
+  });
+});
+
+test.describe('Session Edge Cases', () => {
+  test('participant cannot join full session (max 4)', async ({ browser, setupSession }) => {
     // Create session with 3 participants (total 4 including host)
     const { sessionCode } = await setupSession(3);
 

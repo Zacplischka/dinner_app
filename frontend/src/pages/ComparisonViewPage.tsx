@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type {
   Comparison,
+  ComparisonTapSource,
   MenuItemCapture,
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
+import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
 
@@ -129,6 +131,23 @@ export default function ComparisonViewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { placeId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Captured once (lazy init): the source names the tap, not the page. It is
+  // stripped from the URL below so a refresh or share doesn't re-count the tap
+  // (#68 kill gate).
+  const [tapSource] = useState(() => {
+    const sourceParam = searchParams.get('source');
+    return sourceParam !== null && COMPARISON_TAP_SOURCE_SET.has(sourceParam)
+      ? (sourceParam as ComparisonTapSource)
+      : undefined;
+  });
+
+  useEffect(() => {
+    if (!searchParams.has('source')) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('source');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
   const [venueName, setVenueName] = useState('');
   const [storefronts, setStorefronts] = useState<Partial<SnapshotPayload>>({});
   const [fetchedAt, setFetchedAt] = useState('');
@@ -159,32 +178,36 @@ export default function ComparisonViewPage() {
     setFetchedAt('');
     setComparison(undefined);
     setError('');
-    return subscribeToComparison(placeId, {
-      onVenue: (event) => setVenueName(event.venueName),
-      onStorefront: (event) => {
-        setStorefronts((current) => ({ ...current, [event.platform]: event.storefront }));
+    return subscribeToComparison(
+      placeId,
+      {
+        onVenue: (event) => setVenueName(event.venueName),
+        onStorefront: (event) => {
+          setStorefronts((current) => ({ ...current, [event.platform]: event.storefront }));
+        },
+        onComparison: (event) => {
+          setVenueName(event.comparison.venueName);
+          setStorefronts((current) => {
+            const storefronts = { ...current, ...event.comparison.storefronts };
+            return {
+              ubereats: storefronts.ubereats ?? FAILED_STOREFRONT,
+              doordash: storefronts.doordash ?? FAILED_STOREFRONT,
+            };
+          });
+          setFetchedAt(event.comparison.fetchedAt);
+          setComparison(event.comparison);
+        },
+        onError: (event) => {
+          setError(event.message);
+          setStorefronts((current) => ({
+            ubereats: current.ubereats ?? FAILED_STOREFRONT,
+            doordash: current.doordash ?? FAILED_STOREFRONT,
+          }));
+        },
       },
-      onComparison: (event) => {
-        setVenueName(event.comparison.venueName);
-        setStorefronts((current) => {
-          const storefronts = { ...current, ...event.comparison.storefronts };
-          return {
-            ubereats: storefronts.ubereats ?? FAILED_STOREFRONT,
-            doordash: storefronts.doordash ?? FAILED_STOREFRONT,
-          };
-        });
-        setFetchedAt(event.comparison.fetchedAt);
-        setComparison(event.comparison);
-      },
-      onError: (event) => {
-        setError(event.message);
-        setStorefronts((current) => ({
-          ubereats: current.ubereats ?? FAILED_STOREFRONT,
-          doordash: current.doordash ?? FAILED_STOREFRONT,
-        }));
-      },
-    });
-  }, [placeId]);
+      tapSource
+    );
+  }, [placeId, tapSource]);
 
   return (
     <main className="min-h-screen bg-ink text-text">

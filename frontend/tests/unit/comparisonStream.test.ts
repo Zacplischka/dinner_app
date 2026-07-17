@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
+  static readonly CLOSED = 2;
 
   readonly listeners = new Map<string, EventListener[]>();
   readonly close = vi.fn();
+  readyState = 1;
 
   constructor(readonly url: string | URL) {
     FakeEventSource.instances.push(this);
@@ -21,6 +23,11 @@ class FakeEventSource {
 
   drop() {
     this.listeners.get('error')?.forEach((listener) => listener(new Event('error')));
+  }
+
+  fatalClose() {
+    this.readyState = FakeEventSource.CLOSED;
+    this.drop();
   }
 }
 
@@ -44,9 +51,7 @@ describe('subscribeToComparison', () => {
     const unsubscribe = subscribeToComparison('place/one', handlers);
     const source = FakeEventSource.instances[0];
 
-    expect(String(source.url)).toBe(
-      'http://localhost:3001/api/comparison/place%2Fone/stream'
-    );
+    expect(String(source.url)).toBe('http://localhost:3001/api/comparison/place%2Fone/stream');
 
     source.emit('venue', { placeId: 'place/one', venueName: '11 Inch Pizza' });
     source.emit('storefront', {
@@ -105,5 +110,38 @@ describe('subscribeToComparison', () => {
       message: 'Please try again shortly.',
     });
     expect(source.close).toHaveBeenCalledOnce();
+  });
+
+  it('appends the tap source to the stream URL only when one is given', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const { subscribeToComparison } = await import('../../src/services/comparisonStream');
+
+    subscribeToComparison('place-1', {}, 'match_card');
+    subscribeToComparison('place-1', {});
+
+    expect(String(FakeEventSource.instances[0].url)).toBe(
+      'http://localhost:3001/api/comparison/place-1/stream?source=match_card'
+    );
+    expect(String(FakeEventSource.instances[1].url)).toBe(
+      'http://localhost:3001/api/comparison/place-1/stream'
+    );
+  });
+
+  it('surfaces a fatal stream close (e.g. the hourly 429) as a terminal error', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const handlers = { onError: vi.fn() };
+    const { subscribeToComparison } = await import('../../src/services/comparisonStream');
+
+    subscribeToComparison('place-1', handlers);
+    const source = FakeEventSource.instances[0];
+    source.fatalClose();
+
+    expect(handlers.onError).toHaveBeenCalledOnce();
+    expect(handlers.onError).toHaveBeenCalledWith({
+      type: 'error',
+      code: 'STREAM_CLOSED',
+      message: expect.stringMatching(/hourly.*limit|try again/i),
+    });
+    expect(source.close).toHaveBeenCalled();
   });
 });

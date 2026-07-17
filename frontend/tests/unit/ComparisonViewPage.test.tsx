@@ -1,5 +1,5 @@
 import { act, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparisonViewPage from '../../src/pages/ComparisonViewPage';
 import type { ComparisonStreamHandlers } from '../../src/services/comparisonStream';
@@ -10,11 +10,24 @@ vi.mock('../../src/services/comparisonStream', () => ({
   subscribeToComparison: streamMock.subscribe,
 }));
 
-function renderPage() {
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location-search">{location.search}</div>;
+}
+
+function renderPage(entry = '/compare/place-1') {
   return render(
-    <MemoryRouter initialEntries={['/compare/place-1']}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
-        <Route path="/compare/:placeId" element={<ComparisonViewPage />} />
+        <Route
+          path="/compare/:placeId"
+          element={
+            <>
+              <ComparisonViewPage />
+              <LocationProbe />
+            </>
+          }
+        />
       </Routes>
     </MemoryRouter>
   );
@@ -31,6 +44,41 @@ describe('ComparisonViewPage', () => {
       handlers = nextHandlers;
       return unsubscribe;
     });
+  });
+
+  it('forwards a valid tap source from the URL to the Comparison subscribe', () => {
+    renderPage('/compare/place-1?source=match_card').unmount();
+    renderPage('/compare/place-1?source=bogus').unmount();
+    renderPage('/compare/place-1').unmount();
+
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      1,
+      'place-1',
+      expect.any(Object),
+      'match_card'
+    );
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      2,
+      'place-1',
+      expect.any(Object),
+      undefined
+    );
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      3,
+      'place-1',
+      expect.any(Object),
+      undefined
+    );
+  });
+
+  it('strips the consumed source from the URL so a refresh does not re-count the tap', () => {
+    renderPage('/compare/place-1?source=match_card');
+
+    // The tap was counted once...
+    expect(streamMock.subscribe).toHaveBeenCalledTimes(1);
+    expect(streamMock.subscribe).toHaveBeenCalledWith('place-1', expect.any(Object), 'match_card');
+    // ...and the URL no longer carries the source.
+    expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
   it('rotates each pending Platform status and stops a column when its Storefront arrives', () => {
@@ -61,7 +109,7 @@ describe('ComparisonViewPage', () => {
   it('streams the venue and Uber Eats column independently while DoorDash stays pending', () => {
     const view = renderPage();
 
-    expect(streamMock.subscribe).toHaveBeenCalledWith('place-1', expect.any(Object));
+    expect(streamMock.subscribe).toHaveBeenCalledWith('place-1', expect.any(Object), undefined);
     expect(screen.getAllByText('Locating the storefront…')).toHaveLength(2);
 
     act(() =>
