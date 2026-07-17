@@ -49,6 +49,10 @@ export interface MatchedItem {
   doordash: MenuItemCapture;
 }
 
+/** Where a results-screen tap came from; counted server-side for the #68 kill gates. */
+export const COMPARISON_TAP_SOURCES = ['match_card', 'near_miss'] as const;
+export type ComparisonTapSource = (typeof COMPARISON_TAP_SOURCES)[number];
+
 export type ComparisonStreamEvent =
   | { type: 'venue'; placeId: string; venueName: string }
   | { type: 'storefront'; platform: 'ubereats' | 'doordash'; storefront: StorefrontCapture }

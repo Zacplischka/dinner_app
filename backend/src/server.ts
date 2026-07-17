@@ -124,6 +124,7 @@ app.use(
   '/api/redirect',
   createRedirectRouter({
     fetchPlaceDetails: (...args) => RestaurantSearchService.fetchPlaceDetails(...args),
+    targetCache: redis,
   })
 );
 app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes

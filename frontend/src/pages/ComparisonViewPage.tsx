@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type {
   Comparison,
+  ComparisonTapSource,
   MenuItemCapture,
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
+import { COMPARISON_TAP_SOURCES } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
 
@@ -129,10 +131,23 @@ export default function ComparisonViewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { placeId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Captured once: the source names the tap, not the page. It is stripped from
+  // the URL below so a refresh or share doesn't re-count the tap (#68 kill gate).
   const sourceParam = searchParams.get('source');
-  const tapSource =
-    sourceParam === 'match_card' || sourceParam === 'near_miss' ? sourceParam : undefined;
+  const tapSourceRef = useRef(
+    sourceParam !== null && (COMPARISON_TAP_SOURCES as readonly string[]).includes(sourceParam)
+      ? (sourceParam as ComparisonTapSource)
+      : undefined
+  );
+  const tapSource = tapSourceRef.current;
+
+  useEffect(() => {
+    if (!searchParams.has('source')) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('source');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
   const [venueName, setVenueName] = useState('');
   const [storefronts, setStorefronts] = useState<Partial<SnapshotPayload>>({});
   const [fetchedAt, setFetchedAt] = useState('');

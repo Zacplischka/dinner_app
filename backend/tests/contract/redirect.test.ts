@@ -19,10 +19,23 @@ describe('GET /api/redirect', () => {
     longitude: 144.9631,
   }));
 
-  function buildApp() {
+  function fakeCache() {
+    const store = new Map<string, string>();
+    return {
+      store,
+      get: vi.fn(async (key: string) => store.get(key) ?? null),
+      set: vi.fn(async (key: string, value: string) => {
+        store.set(key, value);
+        return 'OK' as const;
+      }),
+    };
+  }
+
+  function buildApp(targetCache?: ReturnType<typeof fakeCache>) {
+    fetchPlaceDetails.mockClear();
     const app = express();
     app.use(pinoHttp({ logger }));
-    app.use('/api/redirect', createRedirectRouter({ fetchPlaceDetails }));
+    app.use('/api/redirect', createRedirectRouter({ fetchPlaceDetails, targetCache }));
     return app;
   }
 
@@ -63,6 +76,41 @@ describe('GET /api/redirect', () => {
       placeId: 'place-1',
       source: 'near_miss',
     });
+  });
+
+  it('serves repeat taps from the cache without a second paid Places lookup', async () => {
+    const cache = fakeCache();
+    const app = buildApp(cache);
+
+    const first = await request(app).get(
+      '/api/redirect?platform=ubereats&placeId=place-1&source=near_miss'
+    );
+    const second = await request(app).get(
+      '/api/redirect?platform=ubereats&placeId=place-1&source=near_miss'
+    );
+
+    expect(first.status).toBe(302);
+    expect(second.status).toBe(302);
+    expect(second.headers.location).toBe(first.headers.location);
+    expect(fetchPlaceDetails).toHaveBeenCalledTimes(1);
+  });
+
+  it('rate-limits uncached redirects per IP so anonymous taps cannot run up Places spend', async () => {
+    const app = buildApp();
+
+    for (let i = 1; i <= 30; i++) {
+      const response = await request(app).get(
+        `/api/redirect?platform=ubereats&placeId=place-${i}&source=near_miss`
+      );
+      expect(response.status).toBe(302);
+    }
+    const limited = await request(app).get(
+      '/api/redirect?platform=ubereats&placeId=place-31&source=near_miss'
+    );
+
+    expect(limited.status).toBe(429);
+    expect(limited.body.code).toBe('RATE_LIMITED');
+    expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
   });
 
   it('rejects unknown platforms, unknown sources, and missing parameters with 400', async () => {

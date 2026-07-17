@@ -1,10 +1,7 @@
-import type { ComparisonStreamEvent } from '@dinder/shared/types';
+import type { ComparisonStreamEvent, ComparisonTapSource } from '@dinder/shared/types';
 import { API_BASE_URL } from './apiClient';
 
 const eventTypes: ComparisonStreamEvent['type'][] = ['venue', 'storefront', 'comparison', 'error'];
-
-/** Where a Comparison tap came from; counted server-side for the #68 kill gates. */
-export type ComparisonSource = 'match_card' | 'near_miss';
 
 export interface ComparisonStreamHandlers {
   onVenue?: (event: Extract<ComparisonStreamEvent, { type: 'venue' }>) => void;
@@ -23,7 +20,7 @@ function dispatch(event: ComparisonStreamEvent, handlers: ComparisonStreamHandle
 export function subscribeToComparison(
   placeId: string,
   handlers: ComparisonStreamHandlers,
-  source?: ComparisonSource
+  source?: ComparisonTapSource
 ) {
   const stream = new EventSource(
     `${API_BASE_URL}/comparison/${encodeURIComponent(placeId)}/stream${

@@ -1,9 +1,10 @@
-import { isIP } from 'node:net';
-import { Router, type Request } from 'express';
+import { Router } from 'express';
 import type { Redis } from 'ioredis';
+import { COMPARISON_TAP_SOURCES } from '@dinder/shared/types';
 import type { GooglePlacesSearchParams } from '../services/RestaurantSearchService.js';
 import type { ComparisonService } from '../services/ComparisonService.js';
 import { asyncHandler } from './asyncHandler.js';
+import { pruneExpiredRequests, requestIp, type RequestWindow } from './rateWindow.js';
 
 interface ComparisonRouterDeps {
   searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<unknown[]>;
@@ -13,29 +14,15 @@ interface ComparisonRouterDeps {
   comparisonService?: ComparisonService;
 }
 
-type RequestWindow = { count: number; resetAt: number };
 const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
 // Cold Comparisons launch paid Apify actor runs; this caps per-visitor spend (#70).
 const COLD_COMPARE_LIMIT = 5;
 const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
 // Tap sources whose Comparison subscribes are counted for the #68 kill gates.
-const COMPARE_SOURCES = new Set(['match_card', 'near_miss']);
-
-function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: number): void {
-  // ponytail: O(active IPs) per request; use an expiring cache if traffic makes this costly.
-  for (const [ip, request] of requests) {
-    if (request.resetAt <= now) requests.delete(ip);
-  }
-}
+const COMPARE_SOURCES = new Set<string>(COMPARISON_TAP_SOURCES);
 
 function queryNumber(value: unknown): number {
   return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
-}
-
-function requestIp(req: Request): string {
-  const railwayClientIp = req.get('x-real-ip')?.trim();
-  if (railwayClientIp && isIP(railwayClientIp)) return railwayClientIp;
-  return req.ip || req.socket.remoteAddress || 'unknown';
 }
 
 export function createComparisonRouter({
@@ -46,6 +33,8 @@ export function createComparisonRouter({
   comparisonService,
 }: ComparisonRouterDeps) {
   const router = Router();
+  // ponytail: per-instance in-memory rate windows (matches the in-flight dedupe
+  // ceiling); a second backend instance would need a shared store.
   const venueRequests = new Map<string, RequestWindow>();
   const photoRequests = new Map<string, RequestWindow>();
   const coldCompareRequests = new Map<string, RequestWindow>();
