@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -104,6 +104,29 @@ describe('ResultsPage', () => {
       renderResults();
 
       expect(screen.queryByRole('link', { name: /compare prices/i })).toBeNull();
+    });
+  });
+
+  describe('Match card hero photo (#75)', () => {
+    it('renders a hero img only for winners with a photoUrl and drops it on load error', () => {
+      const photoPizza = { ...pizza, photoUrl: 'https://places.example/pizza.jpg' };
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [photoPizza, noodle],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId, noodle.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      const [withPhoto, withoutPhoto] = [...container.querySelectorAll('[data-match-card]')];
+      const img = withPhoto.querySelector('img');
+      expect(img).toHaveAttribute('src', photoPizza.photoUrl);
+      expect(withoutPhoto.querySelector('img')).toBeNull();
+
+      fireEvent.error(img!);
+      expect(withPhoto.querySelector('img')).toBeNull();
     });
   });
 

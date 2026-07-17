@@ -135,6 +135,22 @@ function DeliveryActions({
   );
 }
 
+// Match card hero (#75): real photo or no hero — a failed load removes the
+// image and restores the text-only layout. Own component so the failure state
+// stays per-card (Rules of Hooks inside the .map()).
+function MatchHero({ photoUrl }: { photoUrl: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <img
+      src={photoUrl}
+      alt=""
+      className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function ResultsPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
@@ -290,6 +306,7 @@ export default function ResultsPage() {
                       data-match-card
                       className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
                     >
+                      {restaurant.photoUrl && <MatchHero photoUrl={restaurant.photoUrl} />}
                       <p className="text-lg font-semibold text-text">{restaurant.name}</p>
 
                       <div className="mt-2 space-y-2">
