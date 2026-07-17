@@ -13,6 +13,7 @@ import { createSessionsRouter } from './api/sessions.js';
 import { createOptionsRouter } from './api/options.js';
 import { createFriendsRouter } from './api/friends.js';
 import { createComparisonRouter } from './api/comparison.js';
+import { createRedirectRouter } from './api/redirect.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createFriendsService } from './services/FriendsService.js';
@@ -117,6 +118,12 @@ app.use(
     fetchPlacePhoto: (...args) => RestaurantSearchService.fetchPlacePhoto(...args),
     photoCache: redis,
     comparisonService,
+  })
+);
+app.use(
+  '/api/redirect',
+  createRedirectRouter({
+    fetchPlaceDetails: (...args) => RestaurantSearchService.fetchPlaceDetails(...args),
   })
 );
 app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes

@@ -106,4 +106,119 @@ describe('ResultsPage', () => {
       expect(screen.queryByRole('link', { name: /compare prices/i })).toBeNull();
     });
   });
+
+  describe('Near Miss cards (#72)', () => {
+    function nearMissCards(container: HTMLElement) {
+      return [...container.querySelectorAll('[data-near-miss-card]')];
+    }
+
+    it('renders the all-but-one tier with a count label for four Participants', () => {
+      seedStore({
+        participants: [alice, bob, cara, dave],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId],
+          Cara: [pizza.placeId],
+          Dave: [taco.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      const cards = nearMissCards(container);
+      expect(cards).toHaveLength(1);
+      expect(cards[0].textContent).toContain('Pizza Palace');
+      expect(cards[0].textContent).toContain('3 of 4 liked this');
+    });
+
+    it('renders "2 of 3 liked this" for three Participants and never Participant names', () => {
+      seedStore({
+        participants: [alice, bob, cara],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [pizza.placeId],
+          Bob: [pizza.placeId],
+          Cara: [noodle.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      const cards = nearMissCards(container);
+      expect(cards).toHaveLength(1);
+      expect(cards[0].textContent).toContain('2 of 3 liked this');
+      for (const name of ['Alice', 'Bob', 'Cara']) {
+        expect(cards[0].textContent).not.toContain(name);
+      }
+    });
+
+    it('renders nothing new for a two-Participant empty Match', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [],
+        allSelections: { Alice: [pizza.placeId], Bob: [noodle.placeId] },
+      });
+      const { container } = renderResults();
+
+      expect(screen.getByText(/no restaurants were selected by all participants/i)).toBeTruthy();
+      expect(nearMissCards(container)).toHaveLength(0);
+    });
+
+    it('renders no Near Miss cards when the Match is non-empty', () => {
+      seedStore({
+        participants: [alice, bob, cara],
+        overlappingOptions: [pizza],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId, noodle.placeId],
+          Cara: [pizza.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      expect(nearMissCards(container)).toHaveLength(0);
+    });
+
+    it('sorts Near Miss cards by rating, highest first', () => {
+      seedStore({
+        participants: [alice, bob, cara, dave],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId, noodle.placeId],
+          Cara: [pizza.placeId],
+          Dave: [noodle.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      const cards = nearMissCards(container);
+      expect(cards).toHaveLength(2);
+      expect(cards[0].textContent).toContain('Noodle House'); // 4.8
+      expect(cards[1].textContent).toContain('Pizza Palace'); // 4.2
+    });
+
+    it('routes Near Miss platform buttons through the counting redirect and tags Compare with near_miss', () => {
+      seedStore({
+        participants: [alice, bob, cara],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [pizza.placeId],
+          Bob: [pizza.placeId],
+          Cara: [noodle.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      const [card] = nearMissCards(container);
+      const links = [...card.querySelectorAll('a')];
+      const hrefs = links.map((link) => link.getAttribute('href'));
+      expect(hrefs).toContain(
+        'http://localhost:3001/api/redirect?platform=ubereats&placeId=place-pizza&source=near_miss'
+      );
+      expect(hrefs).toContain(
+        'http://localhost:3001/api/redirect?platform=doordash&placeId=place-pizza&source=near_miss'
+      );
+      expect(hrefs).toContain('/compare/place-pizza?source=near_miss');
+    });
+  });
 });

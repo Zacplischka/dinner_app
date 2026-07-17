@@ -2,7 +2,9 @@
 // Based on: specs/001-dinner-decider-enables/tasks.md T056
 
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import type { Restaurant } from '@dinder/shared/types';
 import { restartSession, leaveSession } from '../services/socketBindings';
+import { API_BASE_URL } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
@@ -21,6 +23,117 @@ const generateDoorDashUrl = (restaurantName: string, address?: string): string =
   const searchQuery = address ? `${restaurantName} ${address}` : restaurantName;
   return `https://www.doordash.com/search/store/${encodeURIComponent(searchQuery)}/`;
 };
+
+// Near Miss buttons go through the backend counting redirect (#72) so card
+// actions are server-countable; Match card buttons keep their direct links.
+const nearMissRedirectUrl = (platform: 'ubereats' | 'doordash', placeId: string): string =>
+  `${API_BASE_URL}/redirect?platform=${platform}&placeId=${encodeURIComponent(placeId)}&source=near_miss`;
+
+// The Uber Eats / DoorDash / Compare-prices action row shared by Match and
+// Near Miss cards.
+function DeliveryActions({
+  ubereatsHref,
+  doordashHref,
+  comparePath,
+}: {
+  ubereatsHref: string;
+  doordashHref: string;
+  comparePath: string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3 pt-3 mt-1 border-t border-line/20">
+      <a
+        href={ubereatsHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-[#06C167]/50 hover:shadow-[0_0_20px_rgba(6,193,103,0.15)] transition-all duration-300 active:scale-[0.98]"
+      >
+        {/* Uber Eats Logo */}
+        <svg
+          className="w-5 h-5 text-[#06C167] opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.824a9.176 9.176 0 110 18.352 9.176 9.176 0 010-18.352zm0 3.294a5.882 5.882 0 100 11.764 5.882 5.882 0 000-11.764zm0 2.823a3.059 3.059 0 110 6.118 3.059 3.059 0 010-6.118z" />
+        </svg>
+
+        {/* Text */}
+        <span className="text-sm font-medium text-text/80 group-hover:text-text transition-colors duration-300">
+          Uber Eats
+        </span>
+
+        {/* External link indicator */}
+        <svg
+          className="w-3 h-3 text-muted/50 group-hover:text-[#06C167]/70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
+          />
+        </svg>
+      </a>
+
+      <a
+        href={doordashHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-[#FF3008]/50 hover:shadow-[0_0_20px_rgba(255,48,8,0.15)] transition-all duration-300 active:scale-[0.98]"
+      >
+        {/* DoorDash Logo */}
+        <svg
+          className="w-5 h-5 text-[#FF3008] opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path d="M23.071 8.409a6.09 6.09 0 00-5.396-3.228H.584A.589.589 0 00.17 6.184L3.894 9.93a1.752 1.752 0 001.242.516h12.049a1.554 1.554 0 011.553 1.553 1.554 1.554 0 01-1.553 1.553H5.136a1.752 1.752 0 00-1.242.515L.17 17.816a.589.589 0 00.414 1.003h17.091a6.09 6.09 0 005.396-3.228 6.048 6.048 0 000-7.182z" />
+        </svg>
+
+        {/* Text */}
+        <span className="text-sm font-medium text-text/80 group-hover:text-text transition-colors duration-300">
+          DoorDash
+        </span>
+
+        {/* External link indicator */}
+        <svg
+          className="w-3 h-3 text-muted/50 group-hover:text-[#FF3008]/70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
+          />
+        </svg>
+      </a>
+
+      <Link
+        to={comparePath}
+        className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-cyan/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] transition-all duration-300 active:scale-[0.98]"
+      >
+        <span className="text-sm font-medium text-text/80 group-hover:text-text transition-colors duration-300">
+          Compare prices
+        </span>
+        <svg
+          className="w-3 h-3 text-muted/50 group-hover:text-cyan/70 group-hover:translate-x-0.5 transition-all duration-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </Link>
+    </div>
+  );
+}
 
 export default function ResultsPage() {
   const navigate = useNavigate();
@@ -49,6 +162,26 @@ export default function ResultsPage() {
   overlappingOptions.forEach((o) => {
     restaurantNameMap.set(o.placeId, o.name);
   });
+
+  // Near Misses (#72): the all-but-one tier, reduced client-side from the
+  // Selections already in the results payload. Empty Match, 3+ Participants only.
+  const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
+  if (!hasOverlap && participants.length >= 3) {
+    const selectionCounts = new Map<string, number>();
+    participants.forEach((participant) => {
+      (allSelections[participant.displayName] || []).forEach((placeId) => {
+        selectionCounts.set(placeId, (selectionCounts.get(placeId) || 0) + 1);
+      });
+    });
+    const restaurantsById = new Map(restaurants.map((r) => [r.placeId, r]));
+    selectionCounts.forEach((count, placeId) => {
+      if (count !== participants.length - 1) return;
+      nearMisses.push(
+        restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
+      );
+    });
+    nearMisses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+  }
 
   // Helper to format price level
   const formatPriceLevel = (level: number): string => {
@@ -204,101 +337,11 @@ export default function ResultsPage() {
                         )}
 
                         {/* Delivery Order Buttons - Elegant cards with brand logos */}
-                        <div className="flex flex-wrap gap-3 pt-3 mt-1 border-t border-line/20">
-                          <a
-                            href={generateUberEatsUrl(restaurant.name, restaurant.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-[#06C167]/50 hover:shadow-[0_0_20px_rgba(6,193,103,0.15)] transition-all duration-300 active:scale-[0.98]"
-                          >
-                            {/* Uber Eats Logo */}
-                            <svg
-                              className="w-5 h-5 text-[#06C167] opacity-80 group-hover:opacity-100 transition-opacity duration-300"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.824a9.176 9.176 0 110 18.352 9.176 9.176 0 010-18.352zm0 3.294a5.882 5.882 0 100 11.764 5.882 5.882 0 000-11.764zm0 2.823a3.059 3.059 0 110 6.118 3.059 3.059 0 010-6.118z" />
-                            </svg>
-
-                            {/* Text */}
-                            <span className="text-sm font-medium text-text/80 group-hover:text-text transition-colors duration-300">
-                              Uber Eats
-                            </span>
-
-                            {/* External link indicator */}
-                            <svg
-                              className="w-3 h-3 text-muted/50 group-hover:text-[#06C167]/70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
-                              />
-                            </svg>
-                          </a>
-
-                          <a
-                            href={generateDoorDashUrl(restaurant.name, restaurant.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-[#FF3008]/50 hover:shadow-[0_0_20px_rgba(255,48,8,0.15)] transition-all duration-300 active:scale-[0.98]"
-                          >
-                            {/* DoorDash Logo */}
-                            <svg
-                              className="w-5 h-5 text-[#FF3008] opacity-80 group-hover:opacity-100 transition-opacity duration-300"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M23.071 8.409a6.09 6.09 0 00-5.396-3.228H.584A.589.589 0 00.17 6.184L3.894 9.93a1.752 1.752 0 001.242.516h12.049a1.554 1.554 0 011.553 1.553 1.554 1.554 0 01-1.553 1.553H5.136a1.752 1.752 0 00-1.242.515L.17 17.816a.589.589 0 00.414 1.003h17.091a6.09 6.09 0 005.396-3.228 6.048 6.048 0 000-7.182z" />
-                            </svg>
-
-                            {/* Text */}
-                            <span className="text-sm font-medium text-text/80 group-hover:text-text transition-colors duration-300">
-                              DoorDash
-                            </span>
-
-                            {/* External link indicator */}
-                            <svg
-                              className="w-3 h-3 text-muted/50 group-hover:text-[#FF3008]/70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
-                              />
-                            </svg>
-                          </a>
-
-                          <Link
-                            to={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
-                            className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-cyan/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] transition-all duration-300 active:scale-[0.98]"
-                          >
-                            <span className="text-sm font-medium text-text/80 group-hover:text-text transition-colors duration-300">
-                              Compare prices
-                            </span>
-                            <svg
-                              className="w-3 h-3 text-muted/50 group-hover:text-cyan/70 group-hover:translate-x-0.5 transition-all duration-300"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                              />
-                            </svg>
-                          </Link>
-                        </div>
+                        <DeliveryActions
+                          ubereatsHref={generateUberEatsUrl(restaurant.name, restaurant.address)}
+                          doordashHref={generateDoorDashUrl(restaurant.name, restaurant.address)}
+                          comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
+                        />
                       </div>
                     </div>
                   );
@@ -307,31 +350,75 @@ export default function ResultsPage() {
             </div>
           </div>
         ) : (
-          <div className="card p-8 mb-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-muted/10 rounded-full flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-muted"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+          <>
+            <div className="card p-8 mb-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-muted/10 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-muted"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <p className="text-muted mb-6">No restaurants were selected by all participants</p>
+              <button
+                onClick={handleRestart}
+                disabled={isRestarting}
+                className="btn btn-primary px-6 py-3"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+                Try Again
+              </button>
             </div>
-            <p className="text-muted mb-6">No restaurants were selected by all participants</p>
-            <button
-              onClick={handleRestart}
-              disabled={isRestarting}
-              className="btn btn-primary px-6 py-3"
-            >
-              Try Again
-            </button>
-          </div>
+
+            {/* Near Misses: the all-but-one tier, counts only, never names */}
+            {nearMisses.length > 0 && (
+              <div className="card mb-6">
+                <h2 className="text-xl font-display font-semibold text-text mb-1">So Close</h2>
+                <p className="text-sm text-muted mb-4">
+                  All but one of you liked these — worth a second look?
+                </p>
+                <div className="space-y-3">
+                  {nearMisses.map((restaurant) => (
+                    <div
+                      key={restaurant.placeId}
+                      data-near-miss-card
+                      className="p-4 bg-amber/10 border border-amber/60 rounded-market-md"
+                    >
+                      <p className="text-lg font-semibold text-text">{restaurant.name}</p>
+                      <p className="text-sm font-medium text-amber">
+                        {participants.length - 1} of {participants.length} liked this
+                      </p>
+
+                      <div className="mt-2 space-y-2">
+                        {restaurant.rating !== undefined && (
+                          <div className="flex items-center space-x-3 text-sm">
+                            <span className="flex items-center text-amber gap-1">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              {restaurant.rating.toFixed(1)}
+                            </span>
+                          </div>
+                        )}
+                        <DeliveryActions
+                          ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
+                          doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}
+                          comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=near_miss`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* All Selections */}
