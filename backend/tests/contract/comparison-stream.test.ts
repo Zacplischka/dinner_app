@@ -1,9 +1,12 @@
 import express from 'express';
+import { pinoHttp } from 'pino-http';
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/shared/types';
 import { createComparisonRouter } from '../../src/api/comparison.js';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
+import { logger } from '../../src/logger.js';
+import { captureLogs } from '../helpers/logCapture.js';
 
 describe('GET /api/comparison/:placeId/stream', () => {
   it('streams named Venue, Storefront, and terminal Comparison events to a guest', async () => {
@@ -62,6 +65,60 @@ describe('GET /api/comparison/:placeId/stream', () => {
       beginColdCompare: expect.any(Function),
     });
     await vi.waitFor(() => expect(unsubscribe).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('Comparison subscribe source tag', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function buildLoggingApp() {
+    const comparisonService = {
+      subscribe: vi.fn((_placeId, subscriber: (event: ComparisonStreamEvent) => void) => {
+        queueMicrotask(() =>
+          subscriber({ type: 'error', code: 'COMPARISON_FAILED', message: 'stubbed' })
+        );
+        return vi.fn();
+      }),
+    };
+    const app = express();
+    app.use(pinoHttp({ logger }));
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({
+        searchNearbyVenues: vi.fn(),
+        comparisonService,
+      })
+    );
+    return app;
+  }
+
+  it('logs the tap source with the place ID in server-countable form', async () => {
+    const app = buildLoggingApp();
+    const logs = captureLogs();
+
+    await request(app).get('/api/comparison/place-1/stream?source=match_card');
+
+    expect(logs.withMsg('Comparison subscribe')[0]).toMatchObject({
+      placeId: 'place-1',
+      source: 'match_card',
+    });
+  });
+
+  it('logs organic subscribes without a source and drops unknown source values', async () => {
+    const app = buildLoggingApp();
+    const logs = captureLogs();
+
+    await request(app).get('/api/comparison/place-1/stream');
+    await request(app).get('/api/comparison/place-2/stream?source=<script>');
+
+    const lines = logs.withMsg('Comparison subscribe');
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({ placeId: 'place-1' });
+    expect(lines[0]).not.toHaveProperty('source');
+    expect(lines[1]).toMatchObject({ placeId: 'place-2' });
+    expect(lines[1]).not.toHaveProperty('source');
   });
 });
 

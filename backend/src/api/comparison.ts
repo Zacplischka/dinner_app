@@ -18,6 +18,8 @@ const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
 // Cold Comparisons launch paid Apify actor runs; this caps per-visitor spend (#70).
 const COLD_COMPARE_LIMIT = 5;
 const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
+// Tap sources whose Comparison subscribes are counted for the #68 kill gates.
+const COMPARE_SOURCES = new Set(['match_card', 'near_miss']);
 
 function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: number): void {
   // ponytail: O(active IPs) per request; use an expiring cache if traffic makes this costly.
@@ -117,6 +119,11 @@ export function createComparisonRouter({
   if (comparisonService) {
     router.get('/:placeId/stream', (req, res) => {
       const ip = requestIp(req);
+      const source =
+        typeof req.query.source === 'string' && COMPARE_SOURCES.has(req.query.source)
+          ? req.query.source
+          : undefined;
+      req.log?.info({ placeId: req.params.placeId, source }, 'Comparison subscribe');
       // Headers flush lazily on the first event, so a rate-limited cold
       // Comparison can still answer with a real 429 instead of an SSE error.
       let streaming = false;

@@ -112,6 +112,21 @@ describe('subscribeToComparison', () => {
     expect(source.close).toHaveBeenCalledOnce();
   });
 
+  it('appends the tap source to the stream URL only when one is given', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const { subscribeToComparison } = await import('../../src/services/comparisonStream');
+
+    subscribeToComparison('place-1', {}, 'match_card');
+    subscribeToComparison('place-1', {});
+
+    expect(String(FakeEventSource.instances[0].url)).toBe(
+      'http://localhost:3001/api/comparison/place-1/stream?source=match_card'
+    );
+    expect(String(FakeEventSource.instances[1].url)).toBe(
+      'http://localhost:3001/api/comparison/place-1/stream'
+    );
+  });
+
   it('surfaces a fatal stream close (e.g. the hourly 429) as a terminal error', async () => {
     vi.stubGlobal('EventSource', FakeEventSource);
     const handlers = { onError: vi.fn() };

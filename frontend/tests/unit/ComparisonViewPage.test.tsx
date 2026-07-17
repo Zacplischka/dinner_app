@@ -10,9 +10,9 @@ vi.mock('../../src/services/comparisonStream', () => ({
   subscribeToComparison: streamMock.subscribe,
 }));
 
-function renderPage() {
+function renderPage(entry = '/compare/place-1') {
   return render(
-    <MemoryRouter initialEntries={['/compare/place-1']}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/compare/:placeId" element={<ComparisonViewPage />} />
       </Routes>
@@ -31,6 +31,31 @@ describe('ComparisonViewPage', () => {
       handlers = nextHandlers;
       return unsubscribe;
     });
+  });
+
+  it('forwards a valid tap source from the URL to the Comparison subscribe', () => {
+    renderPage('/compare/place-1?source=match_card').unmount();
+    renderPage('/compare/place-1?source=bogus').unmount();
+    renderPage('/compare/place-1').unmount();
+
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      1,
+      'place-1',
+      expect.any(Object),
+      'match_card'
+    );
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      2,
+      'place-1',
+      expect.any(Object),
+      undefined
+    );
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      3,
+      'place-1',
+      expect.any(Object),
+      undefined
+    );
   });
 
   it('rotates each pending Platform status and stops a column when its Storefront arrives', () => {
@@ -61,7 +86,7 @@ describe('ComparisonViewPage', () => {
   it('streams the venue and Uber Eats column independently while DoorDash stays pending', () => {
     const view = renderPage();
 
-    expect(streamMock.subscribe).toHaveBeenCalledWith('place-1', expect.any(Object));
+    expect(streamMock.subscribe).toHaveBeenCalledWith('place-1', expect.any(Object), undefined);
     expect(screen.getAllByText('Locating the storefront…')).toHaveLength(2);
 
     act(() =>

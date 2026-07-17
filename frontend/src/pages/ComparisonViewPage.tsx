@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type {
   Comparison,
   MenuItemCapture,
@@ -129,6 +129,10 @@ export default function ComparisonViewPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { placeId } = useParams();
+  const [searchParams] = useSearchParams();
+  const sourceParam = searchParams.get('source');
+  const tapSource =
+    sourceParam === 'match_card' || sourceParam === 'near_miss' ? sourceParam : undefined;
   const [venueName, setVenueName] = useState('');
   const [storefronts, setStorefronts] = useState<Partial<SnapshotPayload>>({});
   const [fetchedAt, setFetchedAt] = useState('');
@@ -159,32 +163,36 @@ export default function ComparisonViewPage() {
     setFetchedAt('');
     setComparison(undefined);
     setError('');
-    return subscribeToComparison(placeId, {
-      onVenue: (event) => setVenueName(event.venueName),
-      onStorefront: (event) => {
-        setStorefronts((current) => ({ ...current, [event.platform]: event.storefront }));
+    return subscribeToComparison(
+      placeId,
+      {
+        onVenue: (event) => setVenueName(event.venueName),
+        onStorefront: (event) => {
+          setStorefronts((current) => ({ ...current, [event.platform]: event.storefront }));
+        },
+        onComparison: (event) => {
+          setVenueName(event.comparison.venueName);
+          setStorefronts((current) => {
+            const storefronts = { ...current, ...event.comparison.storefronts };
+            return {
+              ubereats: storefronts.ubereats ?? FAILED_STOREFRONT,
+              doordash: storefronts.doordash ?? FAILED_STOREFRONT,
+            };
+          });
+          setFetchedAt(event.comparison.fetchedAt);
+          setComparison(event.comparison);
+        },
+        onError: (event) => {
+          setError(event.message);
+          setStorefronts((current) => ({
+            ubereats: current.ubereats ?? FAILED_STOREFRONT,
+            doordash: current.doordash ?? FAILED_STOREFRONT,
+          }));
+        },
       },
-      onComparison: (event) => {
-        setVenueName(event.comparison.venueName);
-        setStorefronts((current) => {
-          const storefronts = { ...current, ...event.comparison.storefronts };
-          return {
-            ubereats: storefronts.ubereats ?? FAILED_STOREFRONT,
-            doordash: storefronts.doordash ?? FAILED_STOREFRONT,
-          };
-        });
-        setFetchedAt(event.comparison.fetchedAt);
-        setComparison(event.comparison);
-      },
-      onError: (event) => {
-        setError(event.message);
-        setStorefronts((current) => ({
-          ubereats: current.ubereats ?? FAILED_STOREFRONT,
-          doordash: current.doordash ?? FAILED_STOREFRONT,
-        }));
-      },
-    });
-  }, [placeId]);
+      tapSource
+    );
+  }, [placeId, tapSource]);
 
   return (
     <main className="min-h-screen bg-ink text-text">

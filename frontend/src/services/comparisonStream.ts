@@ -3,6 +3,9 @@ import { API_BASE_URL } from './apiClient';
 
 const eventTypes: ComparisonStreamEvent['type'][] = ['venue', 'storefront', 'comparison', 'error'];
 
+/** Where a Comparison tap came from; counted server-side for the #68 kill gates. */
+export type ComparisonSource = 'match_card' | 'near_miss';
+
 export interface ComparisonStreamHandlers {
   onVenue?: (event: Extract<ComparisonStreamEvent, { type: 'venue' }>) => void;
   onStorefront?: (event: Extract<ComparisonStreamEvent, { type: 'storefront' }>) => void;
@@ -17,18 +20,24 @@ function dispatch(event: ComparisonStreamEvent, handlers: ComparisonStreamHandle
   if (event.type === 'error') handlers.onError?.(event);
 }
 
-export function subscribeToComparison(placeId: string, handlers: ComparisonStreamHandlers) {
-  const source = new EventSource(
-    `${API_BASE_URL}/comparison/${encodeURIComponent(placeId)}/stream`
+export function subscribeToComparison(
+  placeId: string,
+  handlers: ComparisonStreamHandlers,
+  source?: ComparisonSource
+) {
+  const stream = new EventSource(
+    `${API_BASE_URL}/comparison/${encodeURIComponent(placeId)}/stream${
+      source ? `?source=${source}` : ''
+    }`
   );
 
   eventTypes.forEach((type) => {
-    source.addEventListener(type, (event) => {
+    stream.addEventListener(type, (event) => {
       if (!(event instanceof MessageEvent)) {
         // A closed connection (e.g. the hourly-limit 429, whose body EventSource
         // cannot read) is terminal; transient drops reconnect automatically.
-        if (type === 'error' && source.readyState === EventSource.CLOSED) {
-          source.close();
+        if (type === 'error' && stream.readyState === EventSource.CLOSED) {
+          stream.close();
           dispatch(
             {
               type: 'error',
@@ -43,9 +52,9 @@ export function subscribeToComparison(placeId: string, handlers: ComparisonStrea
       }
 
       dispatch({ type, ...JSON.parse(event.data) } as ComparisonStreamEvent, handlers);
-      if (type === 'comparison' || type === 'error') source.close();
+      if (type === 'comparison' || type === 'error') stream.close();
     });
   });
 
-  return () => source.close();
+  return () => stream.close();
 }
