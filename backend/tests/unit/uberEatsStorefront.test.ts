@@ -38,6 +38,8 @@ describe('uberEatsStorefront', () => {
     expect(capture).toMatchObject({
       status: 'resolved',
       storeUrl: 'https://ubereats.com/au/store/11-inch-pizza/BGKvxIwATuWgM-xVHJE2lA',
+      imageUrl:
+        'https://tb-static.uber.com/prod/image-proc/processed_images/5caa3a15cf57d547ded1d89463708086/885ba8620d45ab36746a0e8c7b85ee66.jpeg',
       deals: ['Buy 1, get 1 free', '20% off', 'Earn $3 Uber Cash for photo'],
     });
     expect(capture.menu).toHaveLength(51);
@@ -53,6 +55,16 @@ describe('uberEatsStorefront', () => {
       section: 'Drinks',
       tags: ['Buy 1, get 1 free'],
     });
+  });
+
+  it('drops a non-HTTPS hero image instead of failing the capture', () => {
+    const capture = uberEatsStorefront.resolve(
+      [{ ...uberEatsFixture[0], heroImageUrl: 'http://tb-static.uber.com/hero.jpeg' }],
+      venue
+    );
+
+    expect(capture.status).toBe('resolved');
+    expect(capture.imageUrl).toBeUndefined();
   });
 
   it('treats the actor no-restaurant row as not_found', () => {

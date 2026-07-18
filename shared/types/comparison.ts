@@ -10,6 +10,8 @@ export interface MenuItemCapture {
 export interface StorefrontCapture {
   status: StorefrontStatus;
   storeUrl?: string;
+  /** The Storefront's own hero/cover photo — the $0 alternative to a Places photo call. */
+  imageUrl?: string;
   deals: string[];
   menu: MenuItemCapture[];
 }

@@ -52,3 +52,13 @@ export function string(value: unknown): string | undefined {
 export function number(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
+
+export function httpsUrl(value: unknown): string | undefined {
+  const candidate = string(value);
+  if (!candidate) return undefined;
+  try {
+    return new URL(candidate).protocol === 'https:' ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}

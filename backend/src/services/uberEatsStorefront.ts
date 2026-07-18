@@ -6,6 +6,7 @@ import {
   deliveryAreaAddress,
   distanceMeters,
   emptyCapture,
+  httpsUrl,
   nameMatches,
   number,
   record,
@@ -99,9 +100,11 @@ export const uberEatsStorefront: StorefrontResolver = {
         }
       }
 
+      const imageUrl = httpsUrl(candidate.heroImageUrl);
       return {
         status: 'resolved',
         storeUrl,
+        ...(imageUrl ? { imageUrl } : {}),
         deals,
         menu: [...menuById.values()],
       };

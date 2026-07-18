@@ -45,13 +45,32 @@ describe('doorDashStorefront', () => {
   it('captures the real Australian menu', () => {
     const capture = doorDashStorefront.resolve(doorDashFixture, venue);
 
-    expect(capture).toMatchObject({ status: 'resolved', storeUrl: DOORDASH_URL, deals: [] });
+    expect(capture).toMatchObject({
+      status: 'resolved',
+      storeUrl: DOORDASH_URL,
+      imageUrl:
+        'https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/e28a38e2-0eeb-4761-81c8-a630f8f0eb0c-retina-large.jpg',
+      deals: [],
+    });
     expect(capture.menu).toHaveLength(60);
     expect(capture.menu).toContainEqual({
       name: 'Margherita',
       price_cents: 2300,
       section: 'Pizza',
       tags: [],
+    });
+  });
+
+  it('falls back through the cover image variants the actor left null', () => {
+    const noCover = {
+      ...doorDashFixture[0],
+      coverImageUrl: null,
+      businessHeaderImageUrl: 'https://img.cdn4dd.com/media/store/header.jpg',
+    };
+
+    expect(doorDashStorefront.resolve([noCover], venue)).toMatchObject({
+      status: 'resolved',
+      imageUrl: 'https://img.cdn4dd.com/media/store/header.jpg',
     });
   });
 
