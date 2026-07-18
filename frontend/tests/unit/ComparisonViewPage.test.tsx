@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparisonViewPage from '../../src/pages/ComparisonViewPage';
@@ -337,6 +337,48 @@ describe('ComparisonViewPage', () => {
     expect(screen.getByText('DoorDash special')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Open in Uber Eats' })).toHaveLength(2);
     expect(screen.getAllByRole('link', { name: 'Open in DoorDash' })).toHaveLength(2);
+  });
+
+  it('shows the Storefront hero image, preferring Uber Eats, and recovers from a broken one', () => {
+    renderPage();
+
+    expect(screen.queryByTestId('venue-hero-image')).not.toBeInTheDocument();
+    act(() =>
+      handlers.onStorefront?.({
+        type: 'storefront',
+        platform: 'doordash',
+        storefront: {
+          status: 'resolved',
+          imageUrl: 'https://img.cdn4dd.com/cover.jpg',
+          deals: [],
+          menu: [],
+        },
+      })
+    );
+
+    const hero = screen.getByTestId('venue-hero-image');
+    expect(hero).toHaveAttribute('src', 'https://img.cdn4dd.com/cover.jpg');
+    // The DoorDash image 404s and hides itself...
+    fireEvent.error(hero);
+    expect(hero.hidden).toBe(true);
+
+    act(() =>
+      handlers.onStorefront?.({
+        type: 'storefront',
+        platform: 'ubereats',
+        storefront: {
+          status: 'resolved',
+          imageUrl: 'https://tb-static.uber.com/hero.jpeg',
+          deals: [],
+          menu: [],
+        },
+      })
+    );
+
+    // ...and the preferred Uber Eats image replaces it on a fresh, visible node.
+    const replaced = screen.getByTestId('venue-hero-image');
+    expect(replaced).toHaveAttribute('src', 'https://tb-static.uber.com/hero.jpeg');
+    expect(replaced.hidden).toBe(false);
   });
 
   it('explains a zero-match result without treating it as an error', () => {

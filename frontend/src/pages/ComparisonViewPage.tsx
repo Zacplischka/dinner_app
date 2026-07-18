@@ -220,6 +220,9 @@ export default function ComparisonViewPage() {
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {heroImageUrl && (
           <img
+            // A fresh node per URL: a stale onError `hidden` must not survive a
+            // switch to the other platform's image.
+            key={heroImageUrl}
             src={heroImageUrl}
             alt=""
             data-testid="venue-hero-image"
