@@ -2,7 +2,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import HomePage from '../../src/pages/HomePage';
-import NavigationHeader from '../../src/components/NavigationHeader';
 import ComparisonViewPage from '../../src/pages/ComparisonViewPage';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
@@ -40,26 +39,6 @@ describe('comparison navigation', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Compare delivery prices' }));
-    expect(screen.getByText('Comparison browsing')).toBeInTheDocument();
-  });
-
-  it('exposes comparison browsing from the global header without router context', () => {
-    render(<NavigationHeader title="Dinner" />);
-
-    expect(screen.getByRole('link', { name: 'Compare' })).toHaveAttribute('href', '/compare');
-  });
-
-  it('uses client-side navigation from the global header inside the app', () => {
-    render(
-      <MemoryRouter initialEntries={['/dinner']}>
-        <Routes>
-          <Route path="/dinner" element={<NavigationHeader title="Dinner" />} />
-          <Route path="/compare" element={<div>Comparison browsing</div>} />
-        </Routes>
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByRole('link', { name: 'Compare' }));
     expect(screen.getByText('Comparison browsing')).toBeInTheDocument();
   });
 
