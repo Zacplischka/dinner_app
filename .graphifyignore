@@ -1,13 +1,24 @@
-# Shadows .gitignore for graphify, so repeat its entries
+# Shadows .gitignore for graphify, so repeat its entries.
 node_modules
+dist/
+coverage/
 .env*
 .specify
 .cursor
 .fallow
 
+# Code-only scope: agent/tool docs and prose pollute communities and labels
+.claude/
+.codex/
+.github/
+.playwright-cli/
+output/
+docs/
+raw/
+*.md
+*.txt
 
 # Config manifests: their generic keys (dependencies, scripts, exclude...)
 # pollute graphify query seeding with package.json/tsconfig noise
-package.json
-tsconfig*.json
-package-lock.json
+*.json
+.eslintrc*
