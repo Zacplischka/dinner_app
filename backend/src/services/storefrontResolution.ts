@@ -36,11 +36,13 @@ export function distanceMeters(
   return 6_371_000 * 2 * Math.asin(Math.sqrt(haversine));
 }
 
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 export function record(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('Expected an object');
-  }
-  return value as Record<string, unknown>;
+  if (!isRecord(value)) throw new Error('Expected an object');
+  return value;
 }
 
 export function string(value: unknown): string | undefined {

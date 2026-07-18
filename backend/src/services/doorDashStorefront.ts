@@ -6,6 +6,7 @@ import {
   deliveryAreaAddress,
   distanceMeters,
   emptyCapture,
+  isRecord,
   nameMatches,
   number,
   record,
@@ -31,8 +32,8 @@ export const doorDashStorefront: StorefrontResolver = {
 
   resolve(output, venue) {
     for (const value of output) {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
-      const candidate = value as Record<string, unknown>;
+      if (!isRecord(value)) continue;
+      const candidate = value;
       const name = string(candidate.name);
       const url = string(candidate.url);
       const currency = string(candidate.currency);
@@ -50,8 +51,8 @@ export const doorDashStorefront: StorefrontResolver = {
       if (!Array.isArray(actorMenu.items)) throw new Error('DoorDash returned an invalid menu');
       const menu: MenuItemCapture[] = [];
       for (const itemValue of actorMenu.items) {
-        if (!itemValue || typeof itemValue !== 'object' || Array.isArray(itemValue)) continue;
-        const item = itemValue as Record<string, unknown>;
+        if (!isRecord(itemValue)) continue;
+        const item = itemValue;
         const itemName = string(item.name);
         const price = doorDashPriceCents(item.price);
         if (!itemName || price === undefined) continue;
