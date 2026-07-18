@@ -80,7 +80,7 @@ function App() {
 
   useEffect(() => {
     // Initialize auth (Supabase session check)
-    initializeAuth();
+    void initializeAuth();
   }, [initializeAuth]);
 
   // Browser navigation guard - warn before closing/refreshing during active session

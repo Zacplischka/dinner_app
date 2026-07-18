@@ -98,7 +98,9 @@ export async function getVenues(
     longitude: String(location.longitude),
     radiusMiles: String(radiusMiles),
   });
-  const result = await request<{ venues: Venue[]; suburb?: string }>(`/comparison/venues?${query}`);
+  const result = await request<{ venues: Venue[]; suburb?: string }>(
+    `/comparison/venues?${query.toString()}`
+  );
   return { ...result, venues: resolvePhotoUrls(result.venues) };
 }
 
@@ -152,10 +154,12 @@ function getAuthHeaders(): HeadersInit {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+    const error = (await response.json().catch(() => ({ message: 'An error occurred' }))) as {
+      message?: string;
+    };
     throw new Error(error.message || `HTTP error ${response.status}`);
   }
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

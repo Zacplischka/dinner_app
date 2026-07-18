@@ -243,8 +243,10 @@ export default function ResultsPage() {
 
   const handleShareResults = () => {
     const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    toast.success('Results link copied!');
+    navigator.clipboard
+      .writeText(url)
+      .then(() => toast.success('Results link copied!'))
+      .catch(() => toast.error('Could not copy link'));
   };
 
   return (

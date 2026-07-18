@@ -39,10 +39,10 @@ export default function FriendsPage() {
   useEffect(() => {
     if (isAuthenticated) {
       // Ensure user profile exists (creates if needed)
-      useFriendsStore.getState().fetchCurrentProfile();
-      fetchFriends();
-      fetchFriendRequests();
-      fetchSessionInvites();
+      void useFriendsStore.getState().fetchCurrentProfile();
+      void fetchFriends();
+      void fetchFriendRequests();
+      void fetchSessionInvites();
     }
   }, [isAuthenticated, fetchFriends, fetchFriendRequests, fetchSessionInvites]);
 
@@ -74,7 +74,12 @@ export default function FriendsPage() {
             className="flex items-center text-muted hover:text-cyan transition-colors"
           >
             <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back
           </button>
@@ -84,7 +89,12 @@ export default function FriendsPage() {
             className="flex min-h-[44px] items-center text-cyan hover:text-white font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             Add
           </button>
@@ -164,7 +174,9 @@ export default function FriendsPage() {
             ) : friendRequests.length === 0 ? (
               <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No pending requests</p>
-                <p className="text-sm mt-1 text-muted/60">Friend requests you receive will appear here</p>
+                <p className="text-sm mt-1 text-muted/60">
+                  Friend requests you receive will appear here
+                </p>
               </div>
             ) : (
               friendRequests.map((request) => (
@@ -185,12 +197,12 @@ export default function FriendsPage() {
             ) : sessionInvites.length === 0 ? (
               <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No session invites</p>
-                <p className="text-sm mt-1 text-muted/60">When friends invite you to sessions, they&apos;ll appear here</p>
+                <p className="text-sm mt-1 text-muted/60">
+                  When friends invite you to sessions, they&apos;ll appear here
+                </p>
               </div>
             ) : (
-              sessionInvites.map((invite) => (
-                <SessionInviteCard key={invite.id} invite={invite} />
-              ))
+              sessionInvites.map((invite) => <SessionInviteCard key={invite.id} invite={invite} />)
             )}
           </div>
         )}
