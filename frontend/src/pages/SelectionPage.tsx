@@ -42,7 +42,7 @@ export default function SelectionPage() {
       }
     };
 
-    loadRestaurants();
+    void loadRestaurants();
   }, [sessionCode]);
 
   // Listen for participant submissions
@@ -141,16 +141,18 @@ export default function SelectionPage() {
           <div className="max-w-md w-full text-center animate-fade-in">
             <div className="card p-8">
               <div className="w-20 h-20 mx-auto mb-6 bg-lime/10 border border-lime/30 rounded-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-lime" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-10 h-10 text-lime"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-3xl font-display font-black text-text mb-3">
-                All Done!
-              </h2>
-              <p className="text-muted mb-8 text-lg">
-                Waiting for other diners...
-              </p>
+              <h2 className="text-3xl font-display font-black text-text mb-3">All Done!</h2>
+              <p className="text-muted mb-8 text-lg">Waiting for other diners...</p>
 
               <div className="mb-6">
                 <div className="flex justify-center gap-2 mb-3">
@@ -194,8 +196,18 @@ export default function SelectionPage() {
           <div className="max-w-md w-full text-center animate-fade-in">
             <div className="card p-8">
               <div className="w-20 h-20 mx-auto mb-6 bg-lime/10 rounded-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-lime" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                <svg
+                  className="w-10 h-10 text-lime"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
                 </svg>
               </div>
 
@@ -203,7 +215,8 @@ export default function SelectionPage() {
                 You&apos;ve seen them all!
               </h2>
               <p className="text-muted mb-6">
-                You liked <span className="text-lime font-semibold">{selections.length}</span> restaurant{selections.length !== 1 ? 's' : ''}
+                You liked <span className="text-lime font-semibold">{selections.length}</span>{' '}
+                restaurant{selections.length !== 1 ? 's' : ''}
               </p>
 
               {error && (
@@ -308,11 +321,21 @@ export default function SelectionPage() {
                 }`}
               >
                 {lastAction === 'like' ? (
-                  <svg className="w-12 h-12 text-lime animate-heart-pop" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-12 h-12 text-lime animate-heart-pop"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
                   </svg>
                 ) : (
-                  <svg className="w-12 h-12 text-coral" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <svg
+                    className="w-12 h-12 text-coral"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 )}
@@ -331,7 +354,13 @@ export default function SelectionPage() {
             className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-coral-soft text-coral-soft flex items-center justify-center shadow-glow-coral hover:bg-coral/10 active:scale-95 transition-all duration-150"
             aria-label="Pass"
           >
-            <svg className="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <svg
+              className="w-9 h-9"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -347,8 +376,18 @@ export default function SelectionPage() {
             className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-cyan hover:text-cyan disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             aria-label="Undo"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+              />
             </svg>
           </button>
 
@@ -365,9 +404,7 @@ export default function SelectionPage() {
         </div>
 
         {/* Hint text */}
-        <p className="text-center text-xs text-muted mt-4">
-          Swipe or use buttons to choose
-        </p>
+        <p className="text-center text-xs text-muted mt-4">Swipe or use buttons to choose</p>
       </div>
     </main>
   );

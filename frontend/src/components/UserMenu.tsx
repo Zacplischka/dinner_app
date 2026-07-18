@@ -8,8 +8,9 @@ export default function UserMenu() {
 
   if (!user) return null;
 
-  const avatarUrl = user.user_metadata?.avatar_url;
-  const displayName = user.user_metadata?.full_name || user.email || 'User';
+  const meta = (user.user_metadata ?? {}) as { avatar_url?: string; full_name?: string };
+  const avatarUrl = meta.avatar_url;
+  const displayName = meta.full_name || user.email || 'User';
 
   const handleSignOut = async () => {
     try {
@@ -29,13 +30,14 @@ export default function UserMenu() {
           className="w-8 h-8 rounded-full ring-2 ring-cyan shadow-glow-cyan"
         />
       ) : (
-        <div aria-label={`${displayName} profile`} className="w-8 h-8 rounded-full ring-2 ring-cyan bg-raised flex items-center justify-center text-cyan font-bold shadow-glow-cyan">
+        <div
+          aria-label={`${displayName} profile`}
+          className="w-8 h-8 rounded-full ring-2 ring-cyan bg-raised flex items-center justify-center text-cyan font-bold shadow-glow-cyan"
+        >
           {displayName.charAt(0).toUpperCase()}
         </div>
       )}
-      <span className="text-sm text-text font-medium truncate max-w-[120px]">
-        {displayName}
-      </span>
+      <span className="text-sm text-text font-medium truncate max-w-[120px]">{displayName}</span>
       <button
         onClick={handleSignOut}
         disabled={isLoading}

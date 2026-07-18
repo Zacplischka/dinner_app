@@ -48,7 +48,7 @@ export function subscribeToComparison(
         return;
       }
 
-      dispatch({ type, ...JSON.parse(event.data) } as ComparisonStreamEvent, handlers);
+      dispatch({ type, ...JSON.parse(event.data as string) } as ComparisonStreamEvent, handlers);
       if (type === 'comparison' || type === 'error') stream.close();
     });
   });

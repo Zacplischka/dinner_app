@@ -39,14 +39,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Frontend's type-aware lint needs @dinder/shared's built declarations,
+      # so shared must build (which is also its type check) before linting.
+      - name: Build shared types
+        run: npm run build --workspace=@dinder/shared
+
       - name: Lint backend
         run: npm run lint --workspace=@dinder/backend
 
       - name: Lint frontend
         run: npm run lint --workspace=@dinder/frontend
-
-      - name: Type check shared
-        run: npm run build --workspace=@dinder/shared
 
       - name: Type check backend
         run: cd backend && npx tsc --noEmit

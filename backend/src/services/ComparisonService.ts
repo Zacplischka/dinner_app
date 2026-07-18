@@ -1,16 +1,15 @@
 import type {
   Comparison,
   ComparisonStreamEvent,
-  MenuItemCapture,
   Snapshot,
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
 import type { VenueDetails } from './RestaurantSearchService.js';
-import { deriveComparison, normalizeComparisonName } from './comparisonMatcher.js';
-
-const UBER_EATS_ACTOR_ID = 'borderline/uber-eats-scraper-ppr';
-const DOORDASH_ACTOR_ID = 'abotapi/doordash-scraper';
+import { deriveComparison } from './comparisonMatcher.js';
+import { doorDashStorefront } from './doorDashStorefront.js';
+import { emptyCapture } from './storefrontResolution.js';
+import { uberEatsStorefront } from './uberEatsStorefront.js';
 
 interface SnapshotStore {
   getLatest(placeId: string): Promise<Snapshot | null>;
@@ -30,6 +29,15 @@ interface ComparisonServiceDeps {
   freshnessMs: number;
   failureFreshnessMs?: number;
   settleCapMs: number;
+}
+
+export interface StorefrontResolver {
+  defaultActorId: string;
+  urlInput(storedUrl: string): Record<string, unknown>;
+  searchInput(venue: VenueDetails): Record<string, unknown>;
+  // Throws when the payload is malformed (the actor changed shape) — the fetch
+  // flow records that as `failed`; a clean miss returns `not_found`.
+  resolve(output: unknown[], venue: VenueDetails): StorefrontCapture;
 }
 
 interface Flight {
@@ -81,11 +89,23 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
       const venue = await deps.fetchPlaceDetails(placeId);
       emit(flight, { type: 'venue', placeId: venue.placeId, venueName: venue.name });
 
-      const uberEatsPromise = fetchUberEats(deps, latest, venue).then((storefront) => {
+      const uberEatsPromise = fetchStorefront(
+        deps,
+        uberEatsStorefront,
+        deps.uberEatsActorId || uberEatsStorefront.defaultActorId,
+        latest?.payload.ubereats?.storeUrl,
+        venue
+      ).then((storefront) => {
         emit(flight, { type: 'storefront', platform: 'ubereats', storefront });
         return storefront;
       });
-      const doorDashPromise = fetchDoorDash(deps, latest, venue).then((storefront) => {
+      const doorDashPromise = fetchStorefront(
+        deps,
+        doorDashStorefront,
+        deps.doorDashActorId || doorDashStorefront.defaultActorId,
+        latest?.payload.doordash?.storeUrl,
+        venue
+      ).then((storefront) => {
         emit(flight, { type: 'storefront', platform: 'doordash', storefront });
         return storefront;
       });
@@ -127,6 +147,37 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
   };
 }
 
+async function fetchStorefront(
+  deps: ComparisonServiceDeps,
+  resolver: StorefrontResolver,
+  actorId: string,
+  storedUrl: string | undefined,
+  venue: VenueDetails
+): Promise<StorefrontCapture> {
+  if (storedUrl) {
+    try {
+      const output = await settleWithin(
+        deps.runActor(actorId, resolver.urlInput(storedUrl)),
+        deps.settleCapMs
+      );
+      const capture = resolver.resolve(output, venue);
+      if (capture.status === 'resolved') return capture;
+    } catch {
+      // A stale stored URL falls through to name resolution.
+    }
+  }
+
+  try {
+    const output = await settleWithin(
+      deps.runActor(actorId, resolver.searchInput(venue)),
+      deps.settleCapMs
+    );
+    return resolver.resolve(output, venue);
+  } catch {
+    return emptyCapture('failed');
+  }
+}
+
 function emitSnapshot(
   flight: Flight,
   snapshot: Snapshot,
@@ -163,10 +214,6 @@ function isFresh(
   return ageMs >= 0 && ageMs < maxAgeMs;
 }
 
-function emptyCapture(status: 'not_found' | 'failed'): StorefrontCapture {
-  return { status, deals: [], menu: [] };
-}
-
 function settleWithin<T>(promise: Promise<T>, settleCapMs: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Actor run exceeded settle cap')), settleCapMs);
@@ -181,292 +228,4 @@ function settleWithin<T>(promise: Promise<T>, settleCapMs: number): Promise<T> {
       }
     );
   });
-}
-
-async function fetchUberEats(
-  deps: ComparisonServiceDeps,
-  latest: Snapshot | null,
-  venue: VenueDetails
-): Promise<StorefrontCapture> {
-  const actorId = deps.uberEatsActorId || UBER_EATS_ACTOR_ID;
-  const storedUrl = latest?.payload.ubereats?.storeUrl;
-  if (storedUrl) {
-    try {
-      const output = await settleWithin(
-        deps.runActor(actorId, {
-          urls: [storedUrl],
-          locale: 'en-AU',
-          getMenuCustomizations: false,
-        }),
-        deps.settleCapMs
-      );
-      const capture = resolveUberEats(output, venue);
-      if (capture.status === 'resolved') return capture;
-    } catch {
-      // A stale stored URL falls through to the normal name-resolution recipe.
-    }
-  }
-
-  try {
-    const output = await settleWithin(
-      deps.runActor(actorId, {
-        address: deliveryAreaAddress(venue.address),
-        addressCountry: 'AU',
-        query: venue.name,
-        storeType: 'RESTAURANTS',
-        maxRows: 5,
-        locale: 'en-AU',
-        getMenuCustomizations: false,
-      }),
-      deps.settleCapMs
-    );
-    return resolveUberEats(output, venue);
-  } catch {
-    return emptyCapture('failed');
-  }
-}
-
-async function fetchDoorDash(
-  deps: ComparisonServiceDeps,
-  latest: Snapshot | null,
-  venue: VenueDetails
-): Promise<StorefrontCapture> {
-  const actorId = deps.doorDashActorId || DOORDASH_ACTOR_ID;
-  const storedUrl = latest?.payload.doordash?.storeUrl;
-  if (storedUrl) {
-    try {
-      const output = await settleWithin(
-        deps.runActor(actorId, doorDashInput({ mode: 'url', urls: [storedUrl] })),
-        deps.settleCapMs
-      );
-      const capture = resolveDoorDash(output, venue);
-      if (capture.status === 'resolved') return capture;
-    } catch {
-      // A stale stored URL falls through to name resolution.
-    }
-  }
-
-  try {
-    const output = await settleWithin(
-      deps.runActor(actorId, doorDashInput({
-        mode: 'search',
-        search: [venue.name],
-        location: deliveryAreaAddress(venue.address),
-        storeType: 'restaurant',
-        maxPages: 1,
-      })),
-      deps.settleCapMs
-    );
-    return resolveDoorDash(output, venue);
-  } catch {
-    return emptyCapture('failed');
-  }
-}
-
-function doorDashInput(input: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...input,
-    maxStores: 1,
-    includeMenu: true,
-    includeBusiness: false,
-    includeReviews: false,
-    proxy: {
-      useApifyProxy: true,
-      apifyProxyGroups: ['RESIDENTIAL'],
-      apifyProxyCountry: 'AU',
-    },
-  };
-}
-
-function resolveUberEats(output: unknown[], venue: VenueDetails): StorefrontCapture {
-  for (const value of output) {
-    const candidate = record(value);
-    if (string(candidate.error)) continue;
-    const title = string(candidate.title);
-    const url = string(candidate.url);
-    const storeUrl = url ? normalizeUberEatsUrl(url) : undefined;
-    const currencyCode = string(candidate.currencyCode);
-    const location = record(candidate.location);
-    const latitude = number(location.latitude);
-    const longitude = number(location.longitude);
-    if (!title || !storeUrl || !currencyCode || latitude === undefined || longitude === undefined) {
-      throw new Error('Uber Eats returned malformed Storefront details');
-    }
-    if (!nameMatches(venue.name, title) || distanceMeters(venue, { latitude, longitude }) > 100) {
-      continue;
-    }
-    if (currencyCode !== 'AUD' || !Array.isArray(candidate.menu)) {
-      throw new Error('Uber Eats returned an invalid Australian menu');
-    }
-
-    const deals: string[] = [];
-    const menuById = new Map<string, MenuItemCapture>();
-    for (const sectionValue of candidate.menu) {
-      const section = record(sectionValue);
-      const sectionName = string(section.catalogName);
-      if (!Array.isArray(section.catalogItems)) continue;
-      for (const itemValue of section.catalogItems) {
-        const item = record(itemValue);
-        const id = string(item.uuid);
-        const name = string(item.title);
-        const price = number(item.price);
-        if (!id || !name || price === undefined || !Number.isSafeInteger(price) || price < 0) continue;
-
-        const actorTags = Array.isArray(item.tags)
-          ? item.tags.filter((tag): tag is string => typeof tag === 'string' && Boolean(tag.trim()))
-          : [];
-        const promo = string(item.promo);
-        const tags = unique([...actorTags, ...(promo ? [promo] : [])]);
-        if (promo && !deals.includes(promo)) deals.push(promo);
-
-        const existing = menuById.get(id);
-        if (!existing) {
-          menuById.set(id, {
-            name,
-            price_cents: price,
-            ...(sectionName ? { section: sectionName } : {}),
-            tags,
-          });
-          continue;
-        }
-
-        existing.tags = unique([...existing.tags, ...tags]);
-        if (promotionalSection(existing.section) && !promotionalSection(sectionName)) {
-          existing.section = sectionName;
-        }
-      }
-    }
-
-    return {
-      status: 'resolved',
-      storeUrl,
-      deals,
-      menu: [...menuById.values()],
-    };
-  }
-
-  return emptyCapture('not_found');
-}
-
-function deliveryAreaAddress(address: string): string {
-  const parts = address.split(',').map((part) => part.trim()).filter(Boolean);
-  return parts.length >= 2 ? parts.slice(-2).join(', ') : address;
-}
-
-function normalizeUberEatsUrl(value: string): string | undefined {
-  try {
-    const url = new URL(value);
-    if (url.protocol !== 'https:') return undefined;
-    if (url.hostname !== 'www.ubereats.com' && url.hostname !== 'ubereats.com') return undefined;
-    return url.toString();
-  } catch {
-    return undefined;
-  }
-}
-
-function resolveDoorDash(output: unknown[], venue: VenueDetails): StorefrontCapture {
-  for (const value of output) {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
-    const candidate = value as Record<string, unknown>;
-    const name = string(candidate.name);
-    const url = string(candidate.url);
-    const currency = string(candidate.currency);
-    const latitude = number(candidate.latitude);
-    const longitude = number(candidate.longitude);
-    if (!name || !url || !currency || latitude === undefined || longitude === undefined) {
-      continue;
-    }
-
-    const storeUrl = normalizeDoorDashUrl(url);
-    if (!storeUrl || currency !== 'AUD') continue;
-    if (!nameMatches(venue.name, name)) continue;
-    if (distanceMeters(venue, { latitude, longitude }) > 100) continue;
-    const actorMenu = record(candidate.menu);
-    if (!Array.isArray(actorMenu.items)) throw new Error('DoorDash returned an invalid menu');
-    const menu: MenuItemCapture[] = [];
-    for (const itemValue of actorMenu.items) {
-      if (!itemValue || typeof itemValue !== 'object' || Array.isArray(itemValue)) continue;
-      const item = itemValue as Record<string, unknown>;
-      const itemName = string(item.name);
-      const price = doorDashPriceCents(item.price);
-      if (!itemName || price === undefined) continue;
-      const section = string(item.category);
-      menu.push({
-        name: itemName,
-        price_cents: price,
-        ...(section ? { section } : {}),
-        tags: [],
-      });
-    }
-
-    return { status: 'resolved', storeUrl, deals: [], menu };
-  }
-
-  return emptyCapture('not_found');
-}
-
-function doorDashPriceCents(value: unknown): number | undefined {
-  if (typeof value !== 'string') return undefined;
-  const match = /^(?:\d+\s+for\s+)?A\$(\d+)\.(\d{2})$/.exec(value.trim());
-  if (!match) return undefined;
-  const cents = Number(match[1]) * 100 + Number(match[2]);
-  return Number.isSafeInteger(cents) ? cents : undefined;
-}
-
-function normalizeDoorDashUrl(value: string): string | undefined {
-  try {
-    const url = new URL(value);
-    if (url.protocol !== 'https:') return undefined;
-    if (url.hostname !== 'www.doordash.com' && url.hostname !== 'doordash.com') return undefined;
-    if (!url.pathname.startsWith('/store/')) return undefined;
-    return `https://www.doordash.com${url.pathname.replace(/\/+$/, '')}/`;
-  } catch {
-    return undefined;
-  }
-}
-
-function record(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('Expected an object');
-  }
-  return value as Record<string, unknown>;
-}
-
-function string(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
-
-function number(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-function unique(values: string[]): string[] {
-  return [...new Set(values)];
-}
-
-function promotionalSection(section?: string): boolean {
-  return section === 'Featured items' || section === 'Offers';
-}
-
-function nameMatches(left: string, right: string): boolean {
-  const leftTokens = normalizeComparisonName(left).split(' ').filter(Boolean);
-  const rightTokens = normalizeComparisonName(right).split(' ').filter(Boolean);
-  const [shorter, longer] = leftTokens.length <= rightTokens.length
-    ? [leftTokens, rightTokens]
-    : [rightTokens, leftTokens];
-  return shorter.length > 0 && shorter.every((token) => longer.includes(token));
-}
-
-function distanceMeters(
-  left: { latitude: number; longitude: number },
-  right: { latitude: number; longitude: number }
-): number {
-  const radians = (degrees: number) => degrees * Math.PI / 180;
-  const dLat = radians(right.latitude - left.latitude);
-  const dLng = radians(right.longitude - left.longitude);
-  const lat1 = radians(left.latitude);
-  const lat2 = radians(right.latitude);
-  const haversine = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 6_371_000 * 2 * Math.asin(Math.sqrt(haversine));
 }

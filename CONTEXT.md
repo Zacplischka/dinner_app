@@ -98,6 +98,10 @@ _Avoid_: restaurant, place
 One Venue's presence on one Platform: its menu prices, delivery fee, and Deals. Service fees are out of scope — they are a percentage of the basket and don't exist without one. A Venue with a Storefront on only one Platform is still shown, flagged as such.
 _Avoid_: listing, store
 
+**Storefront Resolver**:
+The per-Platform judge that turns a Platform's raw answer into this Venue's Storefront — or the verdict that the Venue is not on that Platform. "Not on the Platform" (a clean miss) is distinct from the Platform answering unusably (a failure); exactly one Resolver exists per Platform.
+_Avoid_: scraper, fetcher, client, adapter
+
 **Comparison**:
 The side-by-side view of one Venue's Storefronts across Platforms — fees, Matched Items, and Deals. Always quoted for a non-member (no DashPass/Uber One pricing).
 _Avoid_: quote, report

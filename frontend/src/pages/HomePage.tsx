@@ -8,12 +8,13 @@ import { useFriendsStore } from '../stores/friendsStore';
 export default function HomePage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuthStore();
-  const { friendRequests, sessionInvites, fetchFriendRequests, fetchSessionInvites } = useFriendsStore();
+  const { friendRequests, sessionInvites, fetchFriendRequests, fetchSessionInvites } =
+    useFriendsStore();
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchFriendRequests();
-      fetchSessionInvites();
+      void fetchFriendRequests();
+      void fetchSessionInvites();
     }
   }, [isAuthenticated, fetchFriendRequests, fetchSessionInvites]);
 
@@ -39,7 +40,12 @@ export default function HomePage() {
               aria-label="Friends"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
               {notificationCount > 0 && (
                 <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-coral text-xs font-bold text-white">
@@ -64,7 +70,8 @@ export default function HomePage() {
           </h1>
 
           <p className="mb-7 max-w-xl text-base leading-relaxed text-text/80 sm:text-lg">
-            Start a dinner session, invite your people, then swipe the same nearby restaurants until the whole group agrees.
+            Start a dinner session, invite your people, then swipe the same nearby restaurants until
+            the whole group agrees.
           </p>
 
           <div className="mb-8 flex items-center gap-3">
@@ -90,10 +97,16 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-3 sm:flex">
-            <button onClick={() => navigate('/create')} className="btn btn-primary min-h-[58px] px-6 text-base">
+            <button
+              onClick={() => navigate('/create')}
+              className="btn btn-primary min-h-[58px] px-6 text-base"
+            >
               <span aria-hidden="true">＋</span> Create Session
             </button>
-            <button onClick={() => navigate('/join')} className="btn btn-secondary min-h-[58px] px-6 text-base">
+            <button
+              onClick={() => navigate('/join')}
+              className="btn btn-secondary min-h-[58px] px-6 text-base"
+            >
               <span aria-hidden="true">⌁</span> Join with code
             </button>
             <button
@@ -108,7 +121,9 @@ export default function HomePage() {
           {!isLoading && !isAuthenticated && (
             <div className="mt-6 max-w-xs space-y-3">
               <GoogleSignInButton />
-              <p className="text-xs text-muted">Sign in to save history & invite friends, or continue as a guest.</p>
+              <p className="text-xs text-muted">
+                Sign in to save history & invite friends, or continue as a guest.
+              </p>
             </div>
           )}
 
@@ -118,15 +133,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="relative hidden min-h-[570px] place-items-center md:grid" aria-label="Restaurant recommendation preview">
+        <div
+          className="relative hidden min-h-[570px] place-items-center md:grid"
+          aria-label="Restaurant recommendation preview"
+        >
           <div className="absolute inset-8 rotate-2 rounded-[48%_52%_42%_58%] border border-coral-soft/40 bg-gradient-to-br from-coral/20 via-surface to-cyan/10 shadow-glow-coral" />
           <article className="relative z-10 mt-20 w-[min(88%,390px)] -rotate-2 overflow-hidden rounded-market-lg border border-line bg-surface/95 shadow-card">
-            <img src="/images/ramen-ichiban.jpg" alt="Ramen Ichiban" className="h-64 w-full object-cover" />
+            <img
+              src="/images/ramen-ichiban.jpg"
+              alt="Ramen Ichiban"
+              className="h-64 w-full object-cover"
+            />
             <div className="p-5">
               <h2 className="text-2xl font-black text-text">Ramen Ichiban</h2>
               <p className="mb-3 text-sm font-bold text-coral-soft">Japanese ramen</p>
               <p className="flex gap-4 text-sm text-text/80">
-                <span className="text-amber">★ 4.6</span><span>$$</span><span>Open until 11</span>
+                <span className="text-amber">★ 4.6</span>
+                <span>$$</span>
+                <span>Open until 11</span>
               </p>
             </div>
           </article>

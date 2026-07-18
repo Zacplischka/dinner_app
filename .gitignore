@@ -10,3 +10,5 @@ graphify-out/
 .env.production.local
 .specify 
 .cursor
+.playwright-cli
+output/

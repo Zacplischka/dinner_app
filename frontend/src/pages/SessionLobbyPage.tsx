@@ -36,7 +36,7 @@ export default function SessionLobbyPage() {
       }
     };
 
-    loadSession();
+    void loadSession();
   }, [sessionCode]);
 
   useEffect(() => {
@@ -47,15 +47,19 @@ export default function SessionLobbyPage() {
 
   const handleCopyCode = () => {
     if (sessionCode) {
-      navigator.clipboard.writeText(sessionCode);
-      toast.success('Session code copied!');
+      navigator.clipboard
+        .writeText(sessionCode)
+        .then(() => toast.success('Session code copied!'))
+        .catch(() => toast.error('Could not copy code'));
     }
   };
 
   const handleCopyLink = () => {
     if (shareableLink) {
-      navigator.clipboard.writeText(shareableLink);
-      toast.success('Link copied to clipboard!');
+      navigator.clipboard
+        .writeText(shareableLink)
+        .then(() => toast.success('Link copied to clipboard!'))
+        .catch(() => toast.error('Could not copy link'));
     }
   };
 
@@ -113,12 +117,9 @@ export default function SessionLobbyPage() {
       />
 
       <div className="max-w-md mx-auto px-4 py-6 animate-fade-in">
-
         {/* Session Code Card */}
         <div className="card mb-6">
-          <h2 className="label text-center">
-            Session Code
-          </h2>
+          <h2 className="label text-center">Session Code</h2>
           <div className="relative">
             <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
               {sessionCode}
@@ -130,7 +131,12 @@ export default function SessionLobbyPage() {
               aria-label="Copy session code"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                />
               </svg>
             </button>
           </div>
@@ -182,7 +188,7 @@ export default function SessionLobbyPage() {
             ))}
 
             {/* Empty slots */}
-            {[...Array(4 - participants.length)].map((_, i) => (
+            {Array.from({ length: 4 - participants.length }).map((_, i) => (
               <div
                 key={`empty-${i}`}
                 className="flex items-center space-x-3 p-3 border border-dashed border-line rounded-xl"

@@ -17,7 +17,7 @@ export interface NavigationHeaderProps {
   /** Show back/exit button */
   showBackButton?: boolean;
   /** Custom back button handler - if not provided, will use browser back */
-  onBack?: () => void;
+  onBack?: () => void | Promise<void>;
   /** Label for back button (default: "Back") */
   backLabel?: string;
   /** Show confirmation modal before navigating back */
@@ -63,7 +63,7 @@ export default function NavigationHeader({
     if (confirmOnBack) {
       setShowConfirmModal(true);
     } else if (onBack) {
-      onBack();
+      void onBack();
     } else {
       window.history.back();
     }
@@ -98,9 +98,7 @@ export default function NavigationHeader({
         aria-label={statusConfig.label}
       >
         <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
-        {!isConnected && (
-          <span className="text-xs text-amber hidden sm:inline">Reconnecting</span>
-        )}
+        {!isConnected && <span className="text-xs text-amber hidden sm:inline">Reconnecting</span>}
       </div>
     );
   };
@@ -145,9 +143,11 @@ export default function NavigationHeader({
             <div className="flex-1 min-w-0 text-center">
               <div className="flex flex-col items-center">
                 {/* Title */}
-                <h1 className={`font-display font-semibold text-text truncate ${
-                  compact ? 'text-lg' : 'text-xl'
-                }`}>
+                <h1
+                  className={`font-display font-semibold text-text truncate ${
+                    compact ? 'text-lg' : 'text-xl'
+                  }`}
+                >
                   {title}
                 </h1>
 
@@ -196,11 +196,7 @@ export default function NavigationHeader({
                 </a>
               )}
               <ConnectionIndicator />
-              {rightAction && (
-                <div className="min-h-[44px] flex items-center">
-                  {rightAction}
-                </div>
-              )}
+              {rightAction && <div className="min-h-[44px] flex items-center">{rightAction}</div>}
               {/* Invisible spacer to balance layout when no right action */}
             </div>
           </div>

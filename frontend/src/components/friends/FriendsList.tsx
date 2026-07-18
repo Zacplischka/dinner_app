@@ -51,9 +51,7 @@ export default function FriendsList({
             {selectable && (
               <div
                 className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  selectedIds.has(friend.id)
-                    ? 'border-cyan bg-cyan'
-                    : 'border-muted/30'
+                  selectedIds.has(friend.id) ? 'border-cyan bg-cyan' : 'border-muted/30'
                 }`}
               >
                 {selectedIds.has(friend.id) && (
@@ -91,9 +89,7 @@ export default function FriendsList({
             {/* Name and email */}
             <div>
               <p className="font-medium text-text">{friend.displayName}</p>
-              {friend.email && (
-                <p className="text-sm text-muted">{friend.email}</p>
-              )}
+              {friend.email && <p className="text-sm text-muted">{friend.email}</p>}
             </div>
           </div>
 
@@ -114,7 +110,7 @@ export default function FriendsList({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleRemoveFriend(friend.id, friend.displayName);
+                  void handleRemoveFriend(friend.id, friend.displayName);
                 }}
                 className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-soft hover:text-white hover:bg-coral/10 rounded-lg transition-colors"
               >
