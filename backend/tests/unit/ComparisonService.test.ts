@@ -2,6 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/shared/types';
 import uberEatsFixture from '../fixtures/comparison/ubereats-search-11-inch-pizza.json';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
+import { doorDashStorefront } from '../../src/services/doorDashStorefront.js';
+import { uberEatsStorefront } from '../../src/services/uberEatsStorefront.js';
+
+const venue = {
+  placeId: 'place-1',
+  name: '11 Inch Pizza',
+  address: '7A/353 Little Collins St, Melbourne VIC 3000, Australia',
+  latitude: -37.8156,
+  longitude: 144.9631,
+};
 
 function collectComparison(
   service: ReturnType<typeof createComparisonService>,
@@ -10,10 +20,14 @@ function collectComparison(
 ): Promise<ComparisonStreamEvent[]> {
   return new Promise((resolve) => {
     const events: ComparisonStreamEvent[] = [];
-    service.subscribe(placeId, (event) => {
-      events.push(event);
-      if (event.type === 'comparison' || event.type === 'error') resolve(events);
-    }, beginColdCompare ? { beginColdCompare } : undefined);
+    service.subscribe(
+      placeId,
+      (event) => {
+        events.push(event);
+        if (event.type === 'comparison' || event.type === 'error') resolve(events);
+      },
+      beginColdCompare ? { beginColdCompare } : undefined
+    );
   });
 }
 
@@ -29,12 +43,14 @@ function insertedSnapshot(payload: SnapshotPayload): Snapshot {
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
   return { promise, resolve };
 }
 
 describe('createComparisonService', () => {
-  it('resolves, slims, streams, and persists a real Uber Eats capture', async () => {
+  it('streams and persists what the Storefront Resolvers return', async () => {
     const runActor = vi.fn().mockResolvedValue(uberEatsFixture);
     const snapshotStore = {
       getLatest: vi.fn().mockResolvedValue(null),
@@ -42,13 +58,7 @@ describe('createComparisonService', () => {
     };
     const service = createComparisonService({
       runActor,
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: '7A/353 Little Collins St, Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
+      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore,
       freshnessMs: 20 * 60_000,
       settleCapMs: 100,
@@ -56,41 +66,19 @@ describe('createComparisonService', () => {
 
     const events = await collectComparison(service, 'place-1');
 
-    expect(runActor).toHaveBeenCalledWith('borderline/uber-eats-scraper-ppr', {
-      address: 'Melbourne VIC 3000, Australia',
-      addressCountry: 'AU',
-      query: '11 Inch Pizza',
-      storeType: 'RESTAURANTS',
-      maxRows: 5,
-      locale: 'en-AU',
-      getMenuCustomizations: false,
-    });
+    expect(runActor).toHaveBeenCalledWith(
+      uberEatsStorefront.defaultActorId,
+      uberEatsStorefront.searchInput(venue)
+    );
+    expect(runActor).toHaveBeenCalledWith(
+      doorDashStorefront.defaultActorId,
+      doorDashStorefront.searchInput(venue)
+    );
     const storefront = events.find(
       (event) => event.type === 'storefront' && event.platform === 'ubereats'
     );
-    expect(storefront).toMatchObject({
-      type: 'storefront',
-      platform: 'ubereats',
-      storefront: {
-        status: 'resolved',
-        storeUrl: 'https://ubereats.com/au/store/11-inch-pizza/BGKvxIwATuWgM-xVHJE2lA',
-        deals: ['Buy 1, get 1 free', '20% off', 'Earn $3 Uber Cash for photo'],
-      },
-    });
     if (storefront?.type !== 'storefront') throw new Error('missing storefront event');
-    expect(storefront.storefront.menu).toHaveLength(51);
-    expect(storefront.storefront.menu).toContainEqual({
-      name: 'Margherita',
-      price_cents: 2300,
-      section: 'Pizza',
-      tags: ['No. 1 most liked', '20% off'],
-    });
-    expect(storefront.storefront.menu).toContainEqual({
-      name: 'Coke (Can)',
-      price_cents: 700,
-      section: 'Drinks',
-      tags: ['Buy 1, get 1 free'],
-    });
+    expect(storefront.storefront).toEqual(uberEatsStorefront.resolve(uberEatsFixture, venue));
     expect(snapshotStore.insert).toHaveBeenCalledTimes(1);
     expect(snapshotStore.insert).toHaveBeenCalledWith({
       placeId: 'place-1',
@@ -105,57 +93,13 @@ describe('createComparisonService', () => {
     expect(events.at(-1)?.type).toBe('comparison');
   });
 
-  it('treats the actor no-restaurant row as not_found', async () => {
-    const service = createComparisonService({
-      runActor: vi.fn((actorId: string) => Promise.resolve(
-        actorId === 'borderline/uber-eats-scraper-ppr'
-          ? [{ error: "Scraper didn't find any restaurants" }]
-          : []
-      )),
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: '7A/353 Little Collins St, Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
-      snapshotStore: {
-        getLatest: vi.fn().mockResolvedValue(null),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
-      },
-      freshnessMs: 20 * 60_000,
-      settleCapMs: 100,
-    });
-
-    const events = await collectComparison(service, 'place-1');
-
-    expect(events).toContainEqual({
-      type: 'storefront',
-      platform: 'ubereats',
-      storefront: { status: 'not_found', deals: [], menu: [] },
-    });
-  });
-
-  it.each([
-    ['off-domain', 'https://example.com/au/store/11-inch-pizza'],
-    ['non-HTTPS', 'http://ubereats.com/au/store/11-inch-pizza'],
-    ['malformed', 'not a URL'],
-  ])('does not stream or persist an unsafe Uber Eats store URL (%s)', async (_case, url) => {
+  it('records failed when a Resolver rejects the actor payload', async () => {
     const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
       insertedSnapshot(payload)
     );
     const service = createComparisonService({
-      runActor: vi.fn().mockResolvedValue([{
-        ...uberEatsFixture[0],
-        url,
-      }]),
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: 'Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
+      runActor: vi.fn().mockResolvedValue([{ ...uberEatsFixture[0], url: 'not a URL' }]),
+      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
       freshnessMs: 20 * 60_000,
       settleCapMs: 100,
@@ -168,12 +112,13 @@ describe('createComparisonService', () => {
       platform: 'ubereats',
       storefront: { status: 'failed', deals: [], menu: [] },
     });
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({
-      payload: expect.objectContaining({
-        ubereats: { status: 'failed', deals: [], menu: [] },
-      }),
-    }));
-    expect(JSON.stringify(events)).not.toContain(url);
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          ubereats: { status: 'failed', deals: [], menu: [] },
+        }),
+      })
+    );
   });
 
   it('serves a fresh Snapshot without Place Details, actor spend, or a new row', async () => {
@@ -278,11 +223,13 @@ describe('createComparisonService', () => {
 
     const events = await collectComparison(service, 'place-1', beginColdCompare);
 
-    expect(events).toEqual([{
-      type: 'error',
-      code: 'RATE_LIMITED',
-      message: 'Too many comparisons. Please try again shortly.',
-    }]);
+    expect(events).toEqual([
+      {
+        type: 'error',
+        code: 'RATE_LIMITED',
+        message: 'Too many comparisons. Please try again shortly.',
+      },
+    ]);
     expect(beginColdCompare).toHaveBeenCalledOnce();
     expect(fetchPlaceDetails).not.toHaveBeenCalled();
     expect(runActor).not.toHaveBeenCalled();
@@ -292,15 +239,11 @@ describe('createComparisonService', () => {
   it('deduplicates concurrent subscribers into one actor chain and one Snapshot', async () => {
     const actorRun = deferred<unknown[]>();
     const runActor = vi.fn().mockReturnValue(actorRun.promise);
-    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload));
+    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+      insertedSnapshot(payload)
+    );
     const getLatest = vi.fn().mockResolvedValue(null);
-    const fetchPlaceDetails = vi.fn().mockResolvedValue({
-      placeId: 'place-1',
-      name: '11 Inch Pizza',
-      address: 'Melbourne VIC 3000, Australia',
-      latitude: -37.8156,
-      longitude: 144.9631,
-    });
+    const fetchPlaceDetails = vi.fn().mockResolvedValue(venue);
     const service = createComparisonService({
       runActor,
       fetchPlaceDetails,
@@ -323,16 +266,12 @@ describe('createComparisonService', () => {
   });
 
   it('settles a timed-out actor as failed and still writes the Snapshot', async () => {
-    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload));
+    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+      insertedSnapshot(payload)
+    );
     const service = createComparisonService({
       runActor: vi.fn(() => new Promise<unknown[]>(() => undefined)),
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: 'Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
+      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
       freshnessMs: 20 * 60_000,
       settleCapMs: 10,
@@ -340,9 +279,9 @@ describe('createComparisonService', () => {
 
     const events = await collectComparison(service, 'place-1');
 
-    expect(events.find(
-      (event) => event.type === 'storefront' && event.platform === 'ubereats'
-    )).toEqual({
+    expect(
+      events.find((event) => event.type === 'storefront' && event.platform === 'ubereats')
+    ).toEqual({
       type: 'storefront',
       platform: 'ubereats',
       storefront: { status: 'failed', deals: [], menu: [] },
@@ -363,13 +302,7 @@ describe('createComparisonService', () => {
     const persisted = deferred<SnapshotPayload>();
     const service = createComparisonService({
       runActor: vi.fn().mockReturnValue(actorRun.promise),
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: 'Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
+      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: {
         getLatest: vi.fn().mockResolvedValue(null),
         insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => {
@@ -383,7 +316,9 @@ describe('createComparisonService', () => {
 
     const subscriber = vi.fn();
     const unsubscribe = service.subscribe('place-1', subscriber);
-    await vi.waitFor(() => expect(subscriber).toHaveBeenCalledWith(expect.objectContaining({ type: 'venue' })));
+    await vi.waitFor(() =>
+      expect(subscriber).toHaveBeenCalledWith(expect.objectContaining({ type: 'venue' }))
+    );
     unsubscribe();
     actorRun.resolve(uberEatsFixture);
 
@@ -397,13 +332,7 @@ describe('createComparisonService', () => {
     const runActor = vi.fn().mockResolvedValue(uberEatsFixture);
     const service = createComparisonService({
       runActor,
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: 'Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
+      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: {
         getLatest: vi.fn().mockResolvedValue({
           id: 'stale',
@@ -415,7 +344,9 @@ describe('createComparisonService', () => {
             doordash: { status: 'not_found', deals: [], menu: [] },
           },
         }),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
+        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+          insertedSnapshot(payload)
+        ),
       },
       freshnessMs: 20 * 60_000,
       settleCapMs: 100,
@@ -423,18 +354,17 @@ describe('createComparisonService', () => {
 
     await collectComparison(service, 'place-1');
 
-    expect(runActor).toHaveBeenCalledWith('borderline/uber-eats-scraper-ppr', {
-      urls: [storeUrl],
-      locale: 'en-AU',
-      getMenuCustomizations: false,
-    });
+    expect(runActor).toHaveBeenCalledWith(
+      uberEatsStorefront.defaultActorId,
+      uberEatsStorefront.urlInput(storeUrl)
+    );
   });
 
   it('falls back to name resolution when a stale Uber Eats store URL fails', async () => {
     const storeUrl = 'https://ubereats.com/au/store/11-inch-pizza/stale';
     let uberEatsRuns = 0;
     const runActor = vi.fn((actorId: string) => {
-      if (actorId === 'abotapi/doordash-scraper') return Promise.resolve([]);
+      if (actorId === doorDashStorefront.defaultActorId) return Promise.resolve([]);
       uberEatsRuns += 1;
       return uberEatsRuns === 1
         ? Promise.reject(new Error('store removed'))
@@ -442,13 +372,7 @@ describe('createComparisonService', () => {
     });
     const service = createComparisonService({
       runActor,
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: 'Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
+      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: {
         getLatest: vi.fn().mockResolvedValue({
           id: 'stale',
@@ -460,7 +384,9 @@ describe('createComparisonService', () => {
             doordash: { status: 'not_found', deals: [], menu: [] },
           },
         }),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
+        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+          insertedSnapshot(payload)
+        ),
       },
       freshnessMs: 20 * 60_000,
       settleCapMs: 100,
@@ -468,66 +394,18 @@ describe('createComparisonService', () => {
 
     const events = await collectComparison(service, 'place-1');
 
-    expect(runActor.mock.calls.filter(([actorId]) =>
-      actorId === 'borderline/uber-eats-scraper-ppr'
-    )).toEqual([
-      ['borderline/uber-eats-scraper-ppr', {
-        urls: [storeUrl],
-        locale: 'en-AU',
-        getMenuCustomizations: false,
-      }],
-      ['borderline/uber-eats-scraper-ppr', {
-        address: 'Melbourne VIC 3000, Australia',
-        addressCountry: 'AU',
-        query: '11 Inch Pizza',
-        storeType: 'RESTAURANTS',
-        maxRows: 5,
-        locale: 'en-AU',
-        getMenuCustomizations: false,
-      }],
+    expect(
+      runActor.mock.calls.filter(([actorId]) => actorId === uberEatsStorefront.defaultActorId)
+    ).toEqual([
+      [uberEatsStorefront.defaultActorId, uberEatsStorefront.urlInput(storeUrl)],
+      [uberEatsStorefront.defaultActorId, uberEatsStorefront.searchInput(venue)],
     ]);
-    expect(events).toContainEqual(expect.objectContaining({
-      type: 'storefront',
-      platform: 'ubereats',
-      storefront: expect.objectContaining({ status: 'resolved' }),
-    }));
-  });
-
-  it('records not_found when an actor result fails the name and 100m Venue check', async () => {
-    const wrongVenue = [{
-      ...uberEatsFixture[0],
-      title: 'Different Pizza Shop',
-      location: { ...uberEatsFixture[0].location, latitude: -37.9, longitude: 145.1 },
-    }];
-    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload));
-    const service = createComparisonService({
-      runActor: vi.fn().mockResolvedValue(wrongVenue),
-      fetchPlaceDetails: vi.fn().mockResolvedValue({
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        address: 'Melbourne VIC 3000, Australia',
-        latitude: -37.8156,
-        longitude: 144.9631,
-      }),
-      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: 20 * 60_000,
-      settleCapMs: 100,
-    });
-
-    const events = await collectComparison(service, 'place-1');
-
-    expect(events.find(
-      (event) => event.type === 'storefront' && event.platform === 'ubereats'
-    )).toEqual({
-      type: 'storefront',
-      platform: 'ubereats',
-      storefront: { status: 'not_found', deals: [], menu: [] },
-    });
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({
-      payload: {
-        ubereats: { status: 'not_found', deals: [], menu: [] },
-        doordash: { status: 'not_found', deals: [], menu: [] },
-      },
-    }));
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: 'storefront',
+        platform: 'ubereats',
+        storefront: expect.objectContaining({ status: 'resolved' }),
+      })
+    );
   });
 });

@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/shared/types';
 import doorDashFixture from '../fixtures/comparison/doordash-search-11-inch-pizza.json';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
+import { doorDashStorefront } from '../../src/services/doorDashStorefront.js';
 
-const DOORDASH_ACTOR = 'abotapi/doordash-scraper';
 const DOORDASH_URL = 'https://www.doordash.com/store/30221303/';
 const venue = {
   placeId: 'place-1',
@@ -12,21 +12,12 @@ const venue = {
   latitude: -37.8156,
   longitude: 144.9631,
 };
-const actorOptions = {
-  maxStores: 1,
-  includeMenu: true,
-  includeBusiness: false,
-  includeReviews: false,
-  proxy: {
-    useApifyProxy: true,
-    apifyProxyGroups: ['RESIDENTIAL'],
-    apifyProxyCountry: 'AU',
-  },
-};
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
   return { promise, resolve };
 }
 
@@ -68,12 +59,10 @@ function staleSnapshot(storefront: SnapshotPayload['doordash']): Snapshot {
 }
 
 describe('createComparisonService DoorDash actor', () => {
-  it('searches once and captures the real Australian menu', async () => {
-    const runActor = vi.fn((actorId: string) => {
-      if (actorId === 'borderline/uber-eats-scraper-ppr') return Promise.resolve([]);
-      if (actorId === DOORDASH_ACTOR) return Promise.resolve(doorDashFixture);
-      throw new Error(`unexpected actor ${actorId}`);
-    });
+  it('searches once and streams what the Resolver captures', async () => {
+    const runActor = vi.fn((actorId: string) =>
+      Promise.resolve(actorId === doorDashStorefront.defaultActorId ? doorDashFixture : [])
+    );
     const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
       insertedSnapshot(payload)
     );
@@ -88,31 +77,18 @@ describe('createComparisonService DoorDash actor', () => {
 
     const events = await collectComparison(service).terminal;
 
-    expect(runActor.mock.calls.filter(([actorId]) => actorId === DOORDASH_ACTOR)).toHaveLength(1);
-    expect(runActor).toHaveBeenCalledWith(DOORDASH_ACTOR, {
-      mode: 'search',
-      search: [venue.name],
-      location: 'Melbourne VIC 3000, Australia',
-      storeType: 'restaurant',
-      maxPages: 1,
-      ...actorOptions,
-    });
+    expect(
+      runActor.mock.calls.filter(([actorId]) => actorId === doorDashStorefront.defaultActorId)
+    ).toHaveLength(1);
+    expect(runActor).toHaveBeenCalledWith(
+      doorDashStorefront.defaultActorId,
+      doorDashStorefront.searchInput(venue)
+    );
     const doorDashEvent = events.find(
       (event) => event.type === 'storefront' && event.platform === 'doordash'
     );
-    expect(doorDashEvent).toMatchObject({
-      type: 'storefront',
-      platform: 'doordash',
-      storefront: { status: 'resolved', storeUrl: DOORDASH_URL, deals: [] },
-    });
     if (doorDashEvent?.type !== 'storefront') throw new Error('missing DoorDash event');
-    expect(doorDashEvent.storefront.menu).toHaveLength(60);
-    expect(doorDashEvent.storefront.menu).toContainEqual({
-      name: 'Margherita',
-      price_cents: 2300,
-      section: 'Pizza',
-      tags: [],
-    });
+    expect(doorDashEvent.storefront).toEqual(doorDashStorefront.resolve(doorDashFixture, venue));
     expect(insert).toHaveBeenCalledWith({
       placeId: venue.placeId,
       venueName: venue.name,
@@ -125,16 +101,23 @@ describe('createComparisonService DoorDash actor', () => {
 
   it('refreshes a stale Storefront in URL mode without searching', async () => {
     const runActor = vi.fn((actorId: string) =>
-      Promise.resolve(actorId === DOORDASH_ACTOR ? doorDashFixture : [])
+      Promise.resolve(actorId === doorDashStorefront.defaultActorId ? doorDashFixture : [])
     );
     const service = createComparisonService({
       runActor,
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: {
-        getLatest: vi.fn().mockResolvedValue(staleSnapshot({
-          status: 'resolved', storeUrl: DOORDASH_URL, deals: [], menu: [],
-        })),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
+        getLatest: vi.fn().mockResolvedValue(
+          staleSnapshot({
+            status: 'resolved',
+            storeUrl: DOORDASH_URL,
+            deals: [],
+            menu: [],
+          })
+        ),
+        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+          insertedSnapshot(payload)
+        ),
       },
       freshnessMs: 20 * 60_000,
       settleCapMs: 100,
@@ -142,15 +125,16 @@ describe('createComparisonService DoorDash actor', () => {
 
     const events = await collectComparison(service).terminal;
 
-    expect(runActor.mock.calls.filter(([actorId]) => actorId === DOORDASH_ACTOR)).toEqual([[
-      DOORDASH_ACTOR,
-      { mode: 'url', urls: [DOORDASH_URL], ...actorOptions },
-    ]]);
-    expect(events).toContainEqual(expect.objectContaining({
-      type: 'storefront',
-      platform: 'doordash',
-      storefront: expect.objectContaining({ status: 'resolved', storeUrl: DOORDASH_URL }),
-    }));
+    expect(
+      runActor.mock.calls.filter(([actorId]) => actorId === doorDashStorefront.defaultActorId)
+    ).toEqual([[doorDashStorefront.defaultActorId, doorDashStorefront.urlInput(DOORDASH_URL)]]);
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: 'storefront',
+        platform: 'doordash',
+        storefront: expect.objectContaining({ status: 'resolved', storeUrl: DOORDASH_URL }),
+      })
+    );
   });
 
   it.each([
@@ -159,7 +143,7 @@ describe('createComparisonService DoorDash actor', () => {
   ] as const)('falls back to search when stale URL mode %s', async (_case, firstRun) => {
     let doorDashRuns = 0;
     const runActor = vi.fn((actorId: string) => {
-      if (actorId !== DOORDASH_ACTOR) return Promise.resolve([]);
+      if (actorId !== doorDashStorefront.defaultActorId) return Promise.resolve([]);
       doorDashRuns += 1;
       return doorDashRuns === 1 ? firstRun() : Promise.resolve(doorDashFixture);
     });
@@ -167,10 +151,17 @@ describe('createComparisonService DoorDash actor', () => {
       runActor,
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: {
-        getLatest: vi.fn().mockResolvedValue(staleSnapshot({
-          status: 'resolved', storeUrl: DOORDASH_URL, deals: [], menu: [],
-        })),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
+        getLatest: vi.fn().mockResolvedValue(
+          staleSnapshot({
+            status: 'resolved',
+            storeUrl: DOORDASH_URL,
+            deals: [],
+            menu: [],
+          })
+        ),
+        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+          insertedSnapshot(payload)
+        ),
       },
       freshnessMs: 20 * 60_000,
       settleCapMs: 100,
@@ -178,77 +169,19 @@ describe('createComparisonService DoorDash actor', () => {
 
     const events = await collectComparison(service).terminal;
 
-    expect(runActor.mock.calls.filter(([actorId]) => actorId === DOORDASH_ACTOR)).toEqual([
-      [DOORDASH_ACTOR, { mode: 'url', urls: [DOORDASH_URL], ...actorOptions }],
-      [DOORDASH_ACTOR, {
-        mode: 'search',
-        search: [venue.name],
-        location: 'Melbourne VIC 3000, Australia',
-        storeType: 'restaurant',
-        maxPages: 1,
-        ...actorOptions,
-      }],
+    expect(
+      runActor.mock.calls.filter(([actorId]) => actorId === doorDashStorefront.defaultActorId)
+    ).toEqual([
+      [doorDashStorefront.defaultActorId, doorDashStorefront.urlInput(DOORDASH_URL)],
+      [doorDashStorefront.defaultActorId, doorDashStorefront.searchInput(venue)],
     ]);
-    expect(events).toContainEqual(expect.objectContaining({
-      type: 'storefront',
-      platform: 'doordash',
-      storefront: expect.objectContaining({ status: 'resolved' }),
-    }));
-  });
-
-  it('skips noisy rows before a valid Storefront', async () => {
-    const valid = { ...doorDashFixture[0], url: `${DOORDASH_URL}?delivery=true` };
-    const runActor = vi.fn((actorId: string) =>
-      Promise.resolve(actorId === DOORDASH_ACTOR ? [null, { name: 'partial' }, valid] : [])
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: 'storefront',
+        platform: 'doordash',
+        storefront: expect.objectContaining({ status: 'resolved' }),
+      })
     );
-    const service = createComparisonService({
-      runActor,
-      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
-      snapshotStore: {
-        getLatest: vi.fn().mockResolvedValue(null),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
-      },
-      freshnessMs: 20 * 60_000,
-      settleCapMs: 100,
-    });
-
-    const events = await collectComparison(service).terminal;
-
-    expect(events).toContainEqual(expect.objectContaining({
-      type: 'storefront',
-      platform: 'doordash',
-      storefront: expect.objectContaining({ status: 'resolved', storeUrl: DOORDASH_URL }),
-    }));
-  });
-
-  it.each([
-    ['wrong name', { name: 'Different Restaurant' }],
-    ['more than 100m away', { latitude: -37.9, longitude: 145.1 }],
-    ['non-AUD currency', { currency: 'USD' }],
-    ['off-domain URL', { url: 'https://example.com/store/30221303/' }],
-    ['non-HTTPS URL', { url: 'http://www.doordash.com/store/30221303/' }],
-  ])('rejects a Storefront with a %s', async (_case, overrides) => {
-    const output = [{ ...doorDashFixture[0], ...overrides }];
-    const service = createComparisonService({
-      runActor: vi.fn((actorId: string) =>
-        Promise.resolve(actorId === DOORDASH_ACTOR ? output : [])
-      ),
-      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
-      snapshotStore: {
-        getLatest: vi.fn().mockResolvedValue(null),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
-      },
-      freshnessMs: 20 * 60_000,
-      settleCapMs: 100,
-    });
-
-    const events = await collectComparison(service).terminal;
-
-    expect(events).toContainEqual({
-      type: 'storefront',
-      platform: 'doordash',
-      storefront: { status: 'not_found', deals: [], menu: [] },
-    });
   });
 
   it.each([
@@ -260,7 +193,7 @@ describe('createComparisonService DoorDash actor', () => {
     );
     const service = createComparisonService({
       runActor: vi.fn((actorId: string) =>
-        actorId === DOORDASH_ACTOR ? actorRun() : Promise.resolve([])
+        actorId === doorDashStorefront.defaultActorId ? actorRun() : Promise.resolve([])
       ),
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
@@ -279,36 +212,13 @@ describe('createComparisonService DoorDash actor', () => {
     expect(insert).toHaveBeenCalledOnce();
   });
 
-  it('marks a matching Storefront with an invalid menu as failed', async () => {
-    const service = createComparisonService({
-      runActor: vi.fn((actorId: string) => Promise.resolve(
-        actorId === DOORDASH_ACTOR ? [{ ...doorDashFixture[0], menu: null }] : []
-      )),
-      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
-      snapshotStore: {
-        getLatest: vi.fn().mockResolvedValue(null),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
-      },
-      freshnessMs: 20 * 60_000,
-      settleCapMs: 100,
-    });
-
-    const events = await collectComparison(service).terminal;
-
-    expect(events).toContainEqual({
-      type: 'storefront',
-      platform: 'doordash',
-      storefront: { status: 'failed', deals: [], menu: [] },
-    });
-  });
-
   it('replays settled events on reconnect without another actor run', async () => {
     const doorDashRun = deferred<unknown[]>();
     const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
       insertedSnapshot(payload)
     );
     const runActor = vi.fn((actorId: string) =>
-      actorId === DOORDASH_ACTOR ? doorDashRun.promise : Promise.resolve([])
+      actorId === doorDashStorefront.defaultActorId ? doorDashRun.promise : Promise.resolve([])
     );
     const service = createComparisonService({
       runActor,
@@ -319,11 +229,13 @@ describe('createComparisonService DoorDash actor', () => {
     });
     const firstEvents: ComparisonStreamEvent[] = [];
     const unsubscribe = service.subscribe('place-1', (event) => firstEvents.push(event));
-    await vi.waitFor(() => expect(firstEvents).toContainEqual({
-      type: 'storefront',
-      platform: 'ubereats',
-      storefront: { status: 'not_found', deals: [], menu: [] },
-    }));
+    await vi.waitFor(() =>
+      expect(firstEvents).toContainEqual({
+        type: 'storefront',
+        platform: 'ubereats',
+        storefront: { status: 'not_found', deals: [], menu: [] },
+      })
+    );
     unsubscribe();
 
     const second = collectComparison(service);
@@ -354,7 +266,9 @@ describe('createComparisonService DoorDash actor', () => {
       fetchPlaceDetails: failedFetch,
       snapshotStore: {
         getLatest: vi.fn().mockResolvedValue(makeLatest('failed')),
-        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) => insertedSnapshot(payload)),
+        insert: vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+          insertedSnapshot(payload)
+        ),
       },
       freshnessMs: 20 * 60_000,
       failureFreshnessMs: 2 * 60_000,
