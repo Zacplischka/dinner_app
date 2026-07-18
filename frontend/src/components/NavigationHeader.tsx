@@ -82,8 +82,12 @@ export default function NavigationHeader({
     }
   };
 
+  const showSubtitle = Boolean(subtitle) && !compact;
   const hasSecondaryContent =
-    Boolean(subtitle) || Boolean(sessionCode) || Boolean(progress) || showConnectionStatus;
+    showSubtitle || Boolean(sessionCode) || Boolean(progress) || showConnectionStatus;
+  const connectionStatus = isConnected
+    ? { dot: 'bg-lime', text: 'text-lime', label: 'Connected' }
+    : { dot: 'bg-amber animate-pulse', text: 'text-amber', label: 'Reconnecting…' };
 
   return (
     <>
@@ -110,6 +114,7 @@ export default function NavigationHeader({
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -150,28 +155,18 @@ export default function NavigationHeader({
               data-testid="nav-header-secondary"
               className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-line/60 pt-2"
             >
-              {showConnectionStatus &&
-                (() => {
-                  const status = isConnected
-                    ? { dot: 'bg-lime', text: 'text-lime', label: 'Connected' }
-                    : {
-                        dot: 'bg-amber animate-pulse',
-                        text: 'text-amber',
-                        label: 'Reconnecting…',
-                      };
-                  return (
-                    <span
-                      role="status"
-                      className={`flex items-center gap-1.5 text-xs ${status.text}`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${status.dot}`}
-                        aria-hidden="true"
-                      />
-                      {status.label}
-                    </span>
-                  );
-                })()}
+              {showConnectionStatus && (
+                <span
+                  role="status"
+                  className={`flex items-center gap-1.5 text-xs ${connectionStatus.text}`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${connectionStatus.dot}`}
+                    aria-hidden="true"
+                  />
+                  {connectionStatus.label}
+                </span>
+              )}
 
               {sessionCode && (
                 <span className="inline-flex items-center px-2 py-0.5 bg-cyan/10 border border-cyan/30 rounded-full">
@@ -181,7 +176,7 @@ export default function NavigationHeader({
                 </span>
               )}
 
-              {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
+              {showSubtitle && <p className="text-xs text-muted">{subtitle}</p>}
 
               {progress && (
                 <div className="flex items-center gap-2">
