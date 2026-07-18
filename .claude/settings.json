@@ -30,6 +30,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && \"$HOME/.local/bin/graphify\" update . >/dev/null 2>&1 || true",
+            "async": true,
+            "statusMessage": "Updating graphify graph"
+          }
+        ]
+      }
     ]
   }
 }
