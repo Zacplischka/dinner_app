@@ -6,6 +6,7 @@ import {
   deliveryAreaAddress,
   distanceMeters,
   emptyCapture,
+  httpsUrl,
   isRecord,
   nameMatches,
   number,
@@ -65,7 +66,12 @@ export const doorDashStorefront: StorefrontResolver = {
         });
       }
 
-      return { status: 'resolved', storeUrl, deals: [], menu };
+      // The actor leaves some cover variants null per store; take the first present.
+      const imageUrl =
+        httpsUrl(candidate.coverImageUrl) ??
+        httpsUrl(candidate.businessHeaderImageUrl) ??
+        httpsUrl(candidate.coverSquareImageUrl);
+      return { status: 'resolved', storeUrl, ...(imageUrl ? { imageUrl } : {}), deals: [], menu };
     }
 
     return emptyCapture('not_found');

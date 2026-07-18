@@ -169,6 +169,7 @@ export default function ComparisonViewPage() {
     complete &&
     storefronts.ubereats?.status === 'not_found' &&
     storefronts.doordash?.status === 'not_found';
+  const heroImageUrl = storefronts.ubereats?.imageUrl || storefronts.doordash?.imageUrl;
 
   useEffect(() => {
     if (!placeId) return;
@@ -217,6 +218,17 @@ export default function ComparisonViewPage() {
         onBack={() => (fromComparisonList ? navigate(-1) : navigate('/compare', { replace: true }))}
       />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
+        {heroImageUrl && (
+          <img
+            src={heroImageUrl}
+            alt=""
+            data-testid="venue-hero-image"
+            className="h-40 w-full rounded-2xl border border-line/30 object-cover shadow-card"
+            onError={(event) => {
+              event.currentTarget.hidden = true;
+            }}
+          />
+        )}
         {error && (
           <p role="alert" className="rounded-xl bg-amber/10 p-4 text-amber">
             {error}
