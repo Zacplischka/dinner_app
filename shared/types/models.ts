@@ -25,6 +25,12 @@ export interface Venue {
   distanceMiles: number;
 }
 
+export interface GeocodedArea {
+  latitude: number;
+  longitude: number;
+  area?: string;
+}
+
 export interface Session {
   sessionCode: string;
   hostId: string;

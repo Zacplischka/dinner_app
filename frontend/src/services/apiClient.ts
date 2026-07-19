@@ -4,6 +4,7 @@
 import type {
   Friend,
   FriendRequest,
+  GeocodedArea,
   Restaurant,
   SessionInvite,
   UserProfile,
@@ -72,12 +73,6 @@ export async function createSession(
     },
     body: JSON.stringify(body),
   });
-}
-
-export interface GeocodedArea {
-  latitude: number;
-  longitude: number;
-  area?: string;
 }
 
 /**

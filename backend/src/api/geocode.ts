@@ -2,10 +2,11 @@
 // location for Session creation, so browser geolocation is never required.
 
 import { Router } from 'express';
+import type { GeocodedArea } from '@dinder/shared/types';
 import { asyncHandler } from './asyncHandler.js';
-import type { GeocodedArea } from '../services/RestaurantSearchService.js';
 import {
   pruneExpiredRequests,
+  queryNumber,
   requestIp,
   retryAfterSeconds,
   type RequestWindow,
@@ -19,10 +20,6 @@ interface GeocodeRouterDeps {
 // Geocoding calls are Google-billed; cap per-visitor spend like /comparison does.
 const GEOCODE_LIMIT = 20;
 const GEOCODE_WINDOW_MS = 60_000;
-
-function queryNumber(value: unknown): number {
-  return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
-}
 
 export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: GeocodeRouterDeps) {
   const router = Router();

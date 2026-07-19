@@ -1,5 +1,5 @@
 import { logger } from '../logger.js';
-import type { Restaurant, Venue } from '@dinder/shared/types';
+import type { GeocodedArea, Restaurant, Venue } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 
 export interface GooglePlacesSearchParams {
@@ -100,12 +100,6 @@ export async function reverseGeocodeSuburb(
   return data.results
     ?.flatMap((result) => result.addressComponents || [])
     .find((component) => component.types?.includes('locality'))?.longText;
-}
-
-export interface GeocodedArea {
-  latitude: number;
-  longitude: number;
-  area?: string;
 }
 
 export async function geocodeArea(query: string): Promise<GeocodedArea | undefined> {
