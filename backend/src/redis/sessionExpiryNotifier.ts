@@ -25,6 +25,7 @@ export async function initializeSessionExpiryNotifier(
     host: REDIS_HOST,
     port: REDIS_PORT,
     password: REDIS_PASSWORD,
+    family: 0,
   });
 
   // Enable keyspace notifications for expired events
