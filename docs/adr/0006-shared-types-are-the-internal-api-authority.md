@@ -2,6 +2,8 @@
 
 Dinder supports its React TypeScript frontend as its only API consumer, so shared TypeScript transport types are the frontend-backend contract authority. `@dinder/shared` contains only wire DTOs, events, and stable cross-boundary values; persistence shapes, application state, backend-only models, and route builders remain local. OpenAPI or generated clients wait until an independent or non-TypeScript consumer exists.
 
+This records the target contract for the contract-hardening work; current endpoints and events may not conform until that work lands.
+
 ## Consequences
 
 - The backend runtime-validates untrusted inputs, type-checks responses, and proves wire shapes with focused contract tests; the frontend does not validate successful backend responses again.
