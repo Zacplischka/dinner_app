@@ -320,18 +320,17 @@ export function deduplicateRestaurants(restaurants: Restaurant[]): Restaurant[] 
 }
 
 /**
- * Fetch a single page of results from Text Search API
+ * Fetch the first (and only) page of results from Text Search API.
+ * Pagination is never followed — see fetchNearbyPlaces.
  */
 async function fetchTextSearchPage(
   apiKey: string,
   latitude: number,
   longitude: number,
-  radiusMeters: number,
-  pageToken?: string
+  radiusMeters: number
 ): Promise<{ places: GooglePlaceResult[]; nextPageToken?: string }> {
   const textSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
 
-  // Include nextPageToken in field mask if paginating
   const fieldMask =
     'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken';
 
@@ -347,11 +346,6 @@ async function fetchTextSearchPage(
     },
     pageSize: 20,
   };
-
-  // Add pageToken for subsequent pages
-  if (pageToken) {
-    requestBody.pageToken = pageToken;
-  }
 
   const response = await fetch(textSearchUrl, {
     method: 'POST',
@@ -388,7 +382,7 @@ async function fetchTextSearchPage(
 async function fetchNearbyPlaces(
   params: GooglePlacesSearchParams
 ): Promise<{ places: GooglePlaceResult[]; apiKey: string }> {
-  const { latitude, longitude, radiusMeters, maxResults = 50 } = params;
+  const { latitude, longitude, radiusMeters } = params;
 
   const apiKey = config.googlePlaces.apiKey;
 
@@ -396,53 +390,38 @@ async function fetchNearbyPlaces(
     throw new Error('Google Places API configuration missing');
   }
 
-  const allPlaces: GooglePlaceResult[] = [];
-  let pageToken: string | undefined;
-  let pageCount = 0;
-  const maxPages = 3; // Text Search allows up to 60 results (3 pages of 20)
+  // Fetch exactly one page and never follow nextPageToken: every extra page
+  // is a full-price Enterprise Text Search call, and 20 results is enough for
+  // both the Comparison browse and the Session swipe search (issue #97).
+  // The 429 retry below re-issues this same first-page request.
   const maxRetries = 3;
+  let retries = 0;
+  let pageData: { places: GooglePlaceResult[]; nextPageToken?: string } | null = null;
 
-  // Fetch pages until we have enough results or no more pages
-  while (pageCount < maxPages && allPlaces.length < maxResults) {
-    let retries = 0;
-    let pageData: { places: GooglePlaceResult[]; nextPageToken?: string } | null = null;
-
-    while (retries < maxRetries) {
-      try {
-        pageData = await fetchTextSearchPage(apiKey, latitude, longitude, radiusMeters, pageToken);
-        break;
-      } catch (error) {
-        if (error instanceof Error && error.message === 'RATE_LIMITED') {
-          retries++;
-          continue;
-        }
-        throw error;
+  while (retries < maxRetries) {
+    try {
+      pageData = await fetchTextSearchPage(apiKey, latitude, longitude, radiusMeters);
+      break;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'RATE_LIMITED') {
+        retries++;
+        continue;
       }
+      throw error;
     }
-
-    if (!pageData) {
-      throw new Error('Max retries exceeded');
-    }
-
-    allPlaces.push(...pageData.places);
-    logger.info(
-      { page: pageCount + 1, fetched: pageData.places.length, total: allPlaces.length },
-      'RestaurantSearch page fetched'
-    );
-
-    pageToken = pageData.nextPageToken;
-    pageCount++;
-
-    // Stop if no more pages
-    if (!pageToken) break;
-
-    // Brief delay before next page request (Google recommends this)
-    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
-  logger.info({ placeCount: allPlaces.length }, 'RestaurantSearch API returned places');
+  if (!pageData) {
+    throw new Error('Max retries exceeded');
+  }
 
-  return { places: allPlaces, apiKey };
+  logger.info(
+    { page: 1, fetched: pageData.places.length, total: pageData.places.length },
+    'RestaurantSearch page fetched'
+  );
+  logger.info({ placeCount: pageData.places.length }, 'RestaurantSearch API returned places');
+
+  return { places: pageData.places, apiKey };
 }
 
 export async function searchNearbyRestaurants(
