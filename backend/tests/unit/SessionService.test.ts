@@ -334,6 +334,42 @@ describe('SessionService', () => {
   });
 
   describe('joinSession race', () => {
+    it('should atomically reject one of two concurrent joins claiming the same display name', async () => {
+      let snapshotCount = 0;
+      let releaseSnapshots!: () => void;
+      const bothSnapshotsTaken = new Promise<void>((resolve) => {
+        releaseSnapshots = resolve;
+      });
+      const racyStore = {
+        ...store,
+        listParticipants: async (code: string) => {
+          const participants = await store.listParticipants(code);
+          snapshotCount += 1;
+          if (snapshotCount <= 2) {
+            if (snapshotCount === 2) releaseSnapshots();
+            await bothSnapshotsTaken;
+          }
+          return participants;
+        },
+      };
+      const racyService = createSessionService({ store: racyStore, searchNearbyRestaurants });
+      const session = await racyService.createSession('Alice');
+
+      const outcomes = await Promise.allSettled([
+        racyService.joinSession(session.sessionCode, 'socket-bob-1', 'Bob'),
+        racyService.joinSession(session.sessionCode, 'socket-bob-2', 'Bob'),
+      ]);
+
+      expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
+      const rejection = outcomes.find((outcome) => outcome.status === 'rejected');
+      expect(rejection).toMatchObject({ reason: { code: 'DISPLAY_NAME_TAKEN' } });
+      expect(
+        (await store.listParticipants(session.sessionCode)).filter(
+          (participant) => participant.displayName === 'Bob'
+        )
+      ).toHaveLength(1);
+    });
+
     it('should roll back and reject when a concurrent join overfills the session', async () => {
       vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const racyStore = {

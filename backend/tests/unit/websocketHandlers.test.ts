@@ -66,6 +66,7 @@ describe('websocket handlers', () => {
 
   async function createSessionWithParticipant(participantId = 'socket-1') {
     await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+    await store.claimDisplayName(sessionCode, 'Alice', participantId, rejoinToken);
     await store.addParticipant(sessionCode, {
       participantId,
       displayName: 'Alice',

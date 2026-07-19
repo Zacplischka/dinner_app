@@ -8,18 +8,13 @@
 import { logger } from '../logger.js';
 import { randomUUID } from 'node:crypto';
 import { shareableLink } from '../config/index.js';
-import { getExpiresAtISO, type Participant, type SessionStore } from '../store/sessionStore.js';
+import { getExpiresAtISO, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
 import { SESSION_CODE_LENGTH, type Restaurant } from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
 export const MAX_PARTICIPANTS = 4;
-
-function findRejoinParticipant(participants: Participant[], rejoinToken?: string) {
-  if (!rejoinToken) return undefined;
-  return participants.find((participant) => participant.rejoinToken === rejoinToken);
-}
 
 interface SessionServiceDeps {
   store: SessionStore;
@@ -252,18 +247,9 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     const existing = await store.listParticipants(sessionCode);
     const hostPresent = existing.some((p) => p.isHost);
     const sameName = existing.filter((p) => p.displayName === displayName);
-    const prior = findRejoinParticipant(sameName, rejoinToken);
-
-    if (sameName.length > 0 && !prior) {
-      logger.warn(
-        { sessionCode, participantId, reason: 'display_name_taken' },
-        'Rejected session join'
-      );
-      throw new DomainError(
-        'DISPLAY_NAME_TAKEN',
-        'That display name is already in use in this session'
-      );
-    }
+    const prior = sameName.find(
+      (participant) => rejoinToken !== undefined && participant.rejoinToken === rejoinToken
+    );
 
     if (!prior && session.state !== 'waiting') {
       logger.warn(
@@ -281,14 +267,13 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       // Rejoin: replace the old entry, preserving host status
       isHost = prior.isHost;
       participantRejoinToken = prior.rejoinToken!;
-      await store.removeParticipant(sessionCode, prior.participantId);
     } else {
       isHost = !hostPresent && displayName === session.hostName;
       participantRejoinToken = randomUUID();
     }
 
     // The host slot stays reserved in the count until the host claims it
-    const reservedHostSlot = hostPresent || isHost ? 0 : 1;
+    const reservedHostSlot = Number(!(hostPresent || isHost));
 
     if (!prior) {
       // Check participant limit (FR-004, FR-005)
@@ -307,6 +292,28 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
           `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
         );
       }
+    }
+
+    const nameClaimed = await store.claimDisplayName(
+      sessionCode,
+      displayName,
+      participantId,
+      participantRejoinToken,
+      prior?.participantId
+    );
+    if (!nameClaimed) {
+      logger.warn(
+        { sessionCode, participantId, reason: 'display_name_taken' },
+        'Rejected session join'
+      );
+      throw new DomainError(
+        'DISPLAY_NAME_TAKEN',
+        'That display name is already in use in this session'
+      );
+    }
+
+    if (prior) {
+      await store.removeParticipant(sessionCode, prior.participantId);
     }
 
     // Add participant (touches TTL and lastActivityAt)
