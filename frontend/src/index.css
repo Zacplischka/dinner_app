@@ -222,6 +222,59 @@
   text-shadow: 0 0 12px rgb(255 56 88 / 70%), 0 0 36px rgb(255 56 88 / 28%);
 }
 
+/* Match celebration (#85): concentrated lime glow on the heading, warm
+   reflected light on the matched Restaurant surface, and a few broad
+   volumetric rays behind the header. The rays are masked to fade inside the
+   header block so they never cross body text or cover the next action. */
+.match-celebration {
+  position: relative;
+  isolation: isolate;
+  padding: 1.5rem 0;
+}
+
+.match-rays {
+  position: absolute;
+  inset: -2.5rem -1rem;
+  z-index: -1;
+  pointer-events: none;
+  background: conic-gradient(
+    from -90deg at 50% 50%,
+    transparent 0deg,
+    rgb(199 255 26 / 13%) 16deg,
+    transparent 34deg,
+    transparent 82deg,
+    rgb(255 182 39 / 11%) 100deg,
+    transparent 118deg,
+    transparent 172deg,
+    rgb(199 255 26 / 10%) 190deg,
+    transparent 208deg,
+    transparent 292deg,
+    rgb(255 182 39 / 10%) 310deg,
+    transparent 328deg
+  );
+  filter: blur(6px);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 0%, transparent 68%);
+  mask-image: radial-gradient(circle at 50% 50%, black 0%, transparent 68%);
+  animation: matchRaysDrift 18s linear infinite;
+}
+
+@keyframes matchRaysDrift {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.match-warm-glow {
+  background: radial-gradient(
+    ellipse 75% 40% at 50% 0%,
+    rgb(255 182 39 / 6%),
+    transparent 70%
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -234,5 +287,11 @@
 
   .animate-pulse {
     animation: none;
+  }
+
+  /* Celebration rays freeze to a faint static glow under reduced motion */
+  .match-rays {
+    animation: none;
+    opacity: 0.35;
   }
 }

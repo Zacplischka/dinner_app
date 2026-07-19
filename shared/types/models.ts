@@ -8,7 +8,7 @@ export interface Restaurant {
   placeId: string;
   name: string;
   rating?: number;
-  priceLevel: number; // 0-4
+  priceLevel?: number; // 0-4 (0 = free); omitted when the source data doesn't know
   cuisineType?: string;
   address?: string;
   photoUrl?: string;

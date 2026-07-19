@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -242,6 +242,193 @@ describe('ResultsPage', () => {
         'http://localhost:3001/api/redirect?platform=doordash&placeId=place-pizza&source=near_miss'
       );
       expect(hrefs).toContain('/compare/place-pizza?source=near_miss');
+    });
+  });
+
+  describe('Price level display (#85)', () => {
+    it('omits the price level entirely when it is unknown instead of rendering "Free"', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [{ placeId: 'place-mystery', name: 'Mystery Diner', rating: 4.0 }],
+        allSelections: { Alice: ['place-mystery'], Bob: ['place-mystery'] },
+      });
+      const { container } = renderResults();
+
+      const card = container.querySelector('[data-match-card]');
+      expect(card).not.toBeNull();
+      expect(card!.textContent).not.toContain('Free');
+      expect(card!.textContent).not.toContain('$');
+    });
+
+    it('renders "Free" only when the price level is genuinely free (0)', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [{ placeId: 'place-free', name: 'Free Bites', priceLevel: 0 }],
+        allSelections: { Alice: ['place-free'], Bob: ['place-free'] },
+      });
+      const { container } = renderResults();
+
+      expect(container.querySelector('[data-match-card]')!.textContent).toContain('Free');
+    });
+  });
+
+  describe('Select Again navigation (#14)', () => {
+    function renderResultsWithSelect() {
+      return render(
+        <MemoryRouter initialEntries={['/session/AB123/results']}>
+          <Routes>
+            <Route path="/session/:sessionCode/results" element={<ResultsPage />} />
+            <Route path="/session/:sessionCode/select" element={<div>SELECTION SCREEN</div>} />
+          </Routes>
+        </MemoryRouter>
+      );
+    }
+
+    it('moves every Participant back to Restaurant Selection when the Session restarts', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        sessionStatus: 'complete',
+      });
+      renderResultsWithSelect();
+      expect(screen.queryByText('SELECTION SCREEN')).toBeNull();
+
+      // Mirror what the session:restarted socket handler applies to the store
+      act(() => {
+        useSessionStore.getState().resetSelections();
+        useSessionStore.getState().setSessionStatus('selecting');
+      });
+
+      expect(screen.getByText('SELECTION SCREEN')).toBeTruthy();
+    });
+
+    it('stays on results while the Session is complete', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        sessionStatus: 'complete',
+      });
+      renderResultsWithSelect();
+
+      expect(screen.queryByText('SELECTION SCREEN')).toBeNull();
+      expect(screen.getAllByText('Pizza Palace').length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Unanimous Selections disclosure (#85)', () => {
+    it('collapses identical per-Participant Selection lists behind a disclosure', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+      });
+      const { container } = renderResults();
+
+      const disclosure = container.querySelector('details[data-unanimous-selections]');
+      expect(disclosure).not.toBeNull();
+      expect(disclosure!.hasAttribute('open')).toBe(false);
+      expect(disclosure!.querySelector('summary')!.textContent).toMatch(
+        /see everyone's selections/i
+      );
+      // The per-Participant copies live inside the closed disclosure
+      expect(disclosure!.textContent).toContain('Alice');
+      expect(disclosure!.textContent).toContain('Bob');
+    });
+
+    it('treats the same Selections in a different order as unanimous', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza, noodle],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [noodle.placeId, pizza.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      expect(container.querySelector('details[data-unanimous-selections]')).not.toBeNull();
+    });
+
+    it('keeps divergent Selections visible by default', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId, noodle.placeId], Bob: [pizza.placeId] },
+      });
+      const { container } = renderResults();
+
+      expect(container.querySelector('details[data-unanimous-selections]')).toBeNull();
+      expect(screen.getByText(/everyone's selections/i)).toBeTruthy();
+    });
+
+    it('keeps identical empty Selection lists visible on an empty Match', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [],
+        allSelections: { Alice: [], Bob: [] },
+      });
+      const { container } = renderResults();
+
+      expect(container.querySelector('details[data-unanimous-selections]')).toBeNull();
+      expect(screen.getByText(/everyone's selections/i)).toBeTruthy();
+    });
+  });
+
+  describe('Celebration (#85)', () => {
+    it('renders a decorative ray layer behind the Match heading only when the Match is non-empty', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+      });
+      const { container } = renderResults();
+
+      const rays = container.querySelector('[data-match-rays]');
+      expect(rays).not.toBeNull();
+      expect(rays!.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('renders no ray layer for an empty Match', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [],
+        allSelections: { Alice: [pizza.placeId], Bob: [noodle.placeId] },
+      });
+      const { container } = renderResults();
+
+      expect(container.querySelector('[data-match-rays]')).toBeNull();
+    });
+  });
+
+  describe('Continuation action hierarchy (#85)', () => {
+    it('orders Select Again (primary), Share Results (secondary), Start Fresh (ghost)', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+      });
+      renderResults();
+
+      const selectAgain = screen.getByRole('button', { name: /select again/i });
+      // The header also exposes a share icon button; the continuation action is the secondary one
+      const share = screen
+        .getAllByRole('button', { name: /share results/i })
+        .find((button) => button.className.includes('btn-secondary'))!;
+      const startFresh = screen.getByRole('button', { name: /start fresh/i });
+
+      expect(selectAgain.className).toContain('btn-primary');
+      expect(share.className).toContain('btn-secondary');
+      expect(startFresh.className).toContain('btn-ghost');
+
+      // DOM order: primary first, then secondary, then tertiary
+      expect(
+        selectAgain.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        share.compareDocumentPosition(startFresh) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
     });
   });
 });

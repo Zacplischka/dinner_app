@@ -137,16 +137,17 @@ export async function geocodeArea(query: string): Promise<GeocodedArea | undefin
   };
 }
 
-export function mapPriceLevel(priceLevel: string): number {
+// Maps Google's PriceLevel enum to 0-4. Unknown or unspecified levels return
+// undefined so clients omit the price instead of implying the venue is free.
+export function mapPriceLevel(priceLevel: string): number | undefined {
   const mapping: Record<string, number> = {
     PRICE_LEVEL_FREE: 0,
     PRICE_LEVEL_INEXPENSIVE: 1,
     PRICE_LEVEL_MODERATE: 2,
     PRICE_LEVEL_EXPENSIVE: 3,
     PRICE_LEVEL_VERY_EXPENSIVE: 4,
-    PRICE_LEVEL_UNSPECIFIED: 0,
   };
-  return mapping[priceLevel] || 0;
+  return mapping[priceLevel];
 }
 
 export function getPhotoUrl(photoName: string, _apiKey: string): string {
@@ -248,7 +249,7 @@ export function transformGooglePlaceToRestaurant(
     placeId: place.id,
     name: place.displayName.text,
     rating: place.rating,
-    priceLevel: place.priceLevel ? mapPriceLevel(place.priceLevel) : 0,
+    priceLevel: place.priceLevel ? mapPriceLevel(place.priceLevel) : undefined,
     cuisineType: place.primaryTypeDisplayName?.text,
     address: place.formattedAddress,
     photoUrl,
