@@ -12,20 +12,20 @@ describe('comparisonStore', () => {
     const venues = [{ placeId: 'place-1', name: '11 Inch Pizza', distanceMiles: 0.2 }];
 
     useComparisonStore.getState().setLocation(location);
-    useComparisonStore.getState().setRadiusMiles(8);
+    useComparisonStore.getState().setRadiusKm(8);
     useComparisonStore.getState().setSuburb('Melbourne');
     useComparisonStore.getState().setVenues(venues);
     useComparisonStore.getState().setScrollY(240);
 
     expect(useComparisonStore.getState()).toMatchObject({
       location,
-      radiusMiles: 8,
+      radiusKm: 8,
       suburb: 'Melbourne',
       venues,
       scrollY: 240,
     });
     const persisted = JSON.parse(localStorage.getItem('dinder-comparison')!);
-    expect(persisted.state).toEqual({ location, radiusMiles: 8, suburb: 'Melbourne' });
+    expect(persisted.state).toEqual({ location, radiusKm: 8, suburb: 'Melbourne' });
   });
 
   it('keeps the selected Cuisine beside cached Venues while the app is open', () => {
@@ -57,12 +57,12 @@ describe('comparisonStore', () => {
     });
   });
 
-  it('rehydrates a persisted location, radius, and suburb on a return visit', async () => {
+  it('falls back to the default radius when only the old miles value was persisted', async () => {
     const location = { latitude: -37.81, longitude: 144.96 };
     localStorage.setItem(
       'dinder-comparison',
       JSON.stringify({
-        state: { location, radiusMiles: 9, suburb: 'Melbourne' },
+        state: { location, radiusMiles: 5, suburb: 'Melbourne' },
         version: 0,
       })
     );
@@ -75,7 +75,31 @@ describe('comparisonStore', () => {
     await vi.waitFor(() => {
       expect(rehydratedStore.getState()).toMatchObject({
         location,
-        radiusMiles: 9,
+        radiusKm: 8,
+        suburb: 'Melbourne',
+      });
+    });
+  });
+
+  it('rehydrates a persisted location, radius, and suburb on a return visit', async () => {
+    const location = { latitude: -37.81, longitude: 144.96 };
+    localStorage.setItem(
+      'dinder-comparison',
+      JSON.stringify({
+        state: { location, radiusKm: 9, suburb: 'Melbourne' },
+        version: 0,
+      })
+    );
+    vi.resetModules();
+
+    const { useComparisonStore: rehydratedStore } = await import(
+      '../../src/stores/comparisonStore'
+    );
+
+    await vi.waitFor(() => {
+      expect(rehydratedStore.getState()).toMatchObject({
+        location,
+        radiusKm: 9,
         suburb: 'Melbourne',
         venues: [],
         scrollY: 0,

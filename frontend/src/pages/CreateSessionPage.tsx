@@ -7,8 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import NavigationHeader from '../components/NavigationHeader';
+import LocationModeToggle from '../components/LocationModeToggle';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
-import { createSession, geocodeArea, reverseGeocode } from '../services/apiClient';
+import { createSession, reverseGeocode } from '../services/apiClient';
+import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
+import { resolveArea } from '../services/resolveArea';
 import { waitForConnection, joinSession } from '../services/socketBindings';
 
 interface Location {
@@ -16,10 +19,6 @@ interface Location {
   longitude: number;
   address?: string;
 }
-
-const KM_PER_MILE = 1.609344;
-const MIN_RADIUS_KM = 2;
-const MAX_RADIUS_KM = 24;
 
 export default function CreateSessionPage() {
   const navigate = useNavigate();
@@ -91,29 +90,17 @@ export default function CreateSessionPage() {
   };
 
   const handleResolveArea = async () => {
-    const query = manualQuery.trim();
-    if (query.length < 2) {
-      setError('Enter a suburb or postcode to search for.');
-      return;
-    }
-
     setError('');
     setIsResolvingArea(true);
     try {
-      const resolved = await geocodeArea(query);
+      const resolved = await resolveArea(manualQuery);
       setLocation({
         latitude: resolved.latitude,
         longitude: resolved.longitude,
         address: resolved.area,
       });
     } catch (err: unknown) {
-      // handleResponse throws Error with the backend message; a network
-      // failure surfaces as TypeError from fetch itself.
-      const message =
-        err instanceof Error && !(err instanceof TypeError)
-          ? err.message
-          : 'We couldn’t look up that area. Check your connection and try again.';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'We couldn’t look up that area.');
     } finally {
       setIsResolvingArea(false);
     }
@@ -142,11 +129,7 @@ export default function CreateSessionPage() {
 
     setIsLoading(true);
 
-    // Backend contract is miles (1-15); the UI speaks kilometres.
-    const searchRadiusMiles = Math.min(
-      15,
-      Math.max(1, Math.round((searchRadiusKm / KM_PER_MILE) * 10) / 10)
-    );
+    const searchRadiusMiles = toBackendRadiusMiles(searchRadiusKm);
 
     try {
       const response = await createSession(hostName.trim(), location, searchRadiusMiles);
@@ -219,37 +202,16 @@ export default function CreateSessionPage() {
             </p>
             {!location ? (
               <>
-                {/* Mode toggle */}
-                <div
-                  className="grid grid-cols-2 gap-2 mb-3"
-                  role="group"
-                  aria-label="How to set your location"
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLocationMode('current');
-                      setError('');
-                    }}
-                    disabled={busy}
-                    aria-pressed={locationMode === 'current'}
-                    className={`btn text-sm ${locationMode === 'current' ? 'border border-cyan/60 bg-cyan/10 text-cyan shadow-glow-cyan' : 'btn-secondary'}`}
-                  >
-                    Current location
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLocationMode('manual');
-                      setError('');
-                    }}
-                    disabled={busy}
-                    aria-pressed={locationMode === 'manual'}
-                    className={`btn text-sm ${locationMode === 'manual' ? 'border border-cyan/60 bg-cyan/10 text-cyan shadow-glow-cyan' : 'btn-secondary'}`}
-                  >
-                    Suburb or postcode
-                  </button>
-                </div>
+                <LocationModeToggle
+                  mode={locationMode}
+                  onSelect={(mode) => {
+                    setLocationMode(mode);
+                    setError('');
+                  }}
+                  disabled={busy}
+                  ariaLabel="How to set your location"
+                  className="mb-3"
+                />
 
                 {locationMode === 'current' ? (
                   <button

@@ -7,19 +7,29 @@ export interface ComparisonLocation {
   longitude: number;
 }
 
+export type VenueSort = 'nearest' | 'rating';
+
+// ponytail: fixed page size for progressive reveal; virtualize only if a
+// measured result set makes "Show more" batches feel slow.
+export const VENUE_PAGE_SIZE = 24;
+
 interface ComparisonState {
   location?: ComparisonLocation;
   suburb?: string;
-  radiusMiles: number;
+  radiusKm: number;
   venues: Venue[];
   scrollY: number;
+  visibleCount: number;
+  sortBy: VenueSort;
   selectedCuisine?: string;
   searchQuery: string;
   setLocation: (location?: ComparisonLocation) => void;
   setSuburb: (suburb?: string) => void;
-  setRadiusMiles: (radiusMiles: number) => void;
+  setRadiusKm: (radiusKm: number) => void;
   setVenues: (venues: Venue[]) => void;
   setScrollY: (scrollY: number) => void;
+  setVisibleCount: (visibleCount: number) => void;
+  setSortBy: (sortBy: VenueSort) => void;
   setSelectedCuisine: (selectedCuisine?: string) => void;
   setSearchQuery: (searchQuery: string) => void;
   reset: () => void;
@@ -28,9 +38,11 @@ interface ComparisonState {
 const initialState = {
   location: undefined,
   suburb: undefined,
-  radiusMiles: 5,
+  radiusKm: 8,
   venues: [],
   scrollY: 0,
+  visibleCount: VENUE_PAGE_SIZE,
+  sortBy: 'nearest' as VenueSort,
   selectedCuisine: undefined,
   searchQuery: '',
 };
@@ -41,16 +53,18 @@ export const useComparisonStore = create<ComparisonState>()(
       ...initialState,
       setLocation: (location) => set({ location }),
       setSuburb: (suburb) => set({ suburb }),
-      setRadiusMiles: (radiusMiles) => set({ radiusMiles }),
+      setRadiusKm: (radiusKm) => set({ radiusKm }),
       setVenues: (venues) => set({ venues }),
       setScrollY: (scrollY) => set({ scrollY }),
+      setVisibleCount: (visibleCount) => set({ visibleCount }),
+      setSortBy: (sortBy) => set({ sortBy }),
       setSelectedCuisine: (selectedCuisine) => set({ selectedCuisine }),
       setSearchQuery: (searchQuery) => set({ searchQuery }),
       reset: () => set(initialState),
     }),
     {
       name: 'dinder-comparison',
-      partialize: ({ location, radiusMiles, suburb }) => ({ location, radiusMiles, suburb }),
+      partialize: ({ location, radiusKm, suburb }) => ({ location, radiusKm, suburb }),
     }
   )
 );
