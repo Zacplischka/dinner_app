@@ -43,7 +43,11 @@ const socketConfig: SocketConfig = {
 
       if (store.sessionCode && previousParticipant) {
         void joinSession(store.sessionCode, previousParticipant.displayName).then((ack) => {
-          if (!ack.success) toast.error(`Could not rejoin session: ${ack.error.message}`);
+          if (!ack.success) {
+            store.setConnectionStatus(false);
+            store.setSessionStatus('expired');
+            toast.error(`Could not rejoin session: ${ack.error.message}`);
+          }
         });
       }
 
