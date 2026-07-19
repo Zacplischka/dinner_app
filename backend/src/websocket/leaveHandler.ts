@@ -43,9 +43,7 @@ export async function handleSessionLeave(
       );
       return callback({
         success: false,
-        error: 'Invalid payload: ' + reason,
-        // ponytail: canonical error alongside legacy string, remove after #116.
-        apiError: { code: 'VALIDATION_ERROR', message: reason },
+        error: { code: 'VALIDATION_ERROR', message: reason },
       });
     }
 
@@ -71,13 +69,7 @@ export async function handleSessionLeave(
         },
         'Rejected session:leave'
       );
-      return callback({
-        success: false,
-        // DomainError messages are the user-facing copy
-        error: error.message,
-        // ponytail: canonical error alongside legacy string, remove after #116.
-        apiError: toApiError(error).body,
-      });
+      return callback({ success: false, error: toApiError(error).body });
     }
 
     // Leave Socket.IO room
@@ -102,11 +94,6 @@ export async function handleSessionLeave(
     }
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in session:leave handler');
-    callback({
-      success: false,
-      error: 'An error occurred while leaving the session',
-      // ponytail: canonical error alongside legacy string, remove after #116.
-      apiError: toApiError(error).body,
-    });
+    callback({ success: false, error: toApiError(error).body });
   }
 }

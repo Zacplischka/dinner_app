@@ -5,7 +5,7 @@
 import { logger } from '../logger.js';
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
-import { MAX_PARTICIPANTS, type SessionService } from '../services/SessionService.js';
+import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import { toApiError } from '../api/toApiError.js';
 import {
@@ -28,10 +28,9 @@ const sessionJoinPayloadSchema = z.object({
   displayName: z.string().min(1, 'Display name required').max(50, 'Display name too long'),
 });
 
-const joinErrorMessages: Record<string, string> = {
-  SESSION_NOT_FOUND: 'Session not found or has expired',
-  SESSION_FULL: `Session is full (maximum ${MAX_PARTICIPANTS} participants)`,
-};
+// Domain rejections that are expected transport outcomes, not handler bugs -
+// they ack a public error without an error-level log.
+const EXPECTED_JOIN_ERRORS = ['SESSION_NOT_FOUND', 'SESSION_FULL'];
 
 export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
@@ -54,9 +53,7 @@ export async function handleSessionJoin(
       );
       return callback({
         success: false,
-        error: 'Invalid payload: ' + reason,
-        // ponytail: canonical error alongside legacy string, remove after #116.
-        apiError: { code: 'VALIDATION_ERROR', message: reason },
+        error: { code: 'VALIDATION_ERROR', message: reason },
       });
     }
 
@@ -75,13 +72,7 @@ export async function handleSessionJoin(
       participantCount: result.participantCount,
       participants: result.participants,
     };
-    callback({
-      success: true,
-      // Canonical success payload (bridge).
-      data,
-      // ponytail: legacy flattened fields, duplicated by `data`, remove after #116.
-      ...data,
-    });
+    callback({ success: true, data });
 
     // Broadcast to OTHER participants in room (FR-022)
     socket.to(sessionCode).emit('participant:joined', {
@@ -101,20 +92,10 @@ export async function handleSessionJoin(
       'Participant joined session'
     );
   } catch (error) {
-    if (error instanceof DomainError && joinErrorMessages[error.code]) {
-      return callback({
-        success: false,
-        error: joinErrorMessages[error.code],
-        // ponytail: canonical error alongside legacy string, remove after #116.
-        apiError: toApiError(error).body,
-      });
+    if (error instanceof DomainError && EXPECTED_JOIN_ERRORS.includes(error.code)) {
+      return callback({ success: false, error: toApiError(error).body });
     }
     logger.error({ err: error, socketId: socket.id }, 'Error in session:join handler');
-    callback({
-      success: false,
-      error: 'An error occurred while joining the session',
-      // ponytail: canonical error alongside legacy string, remove after #116.
-      apiError: toApiError(error).body,
-    });
+    callback({ success: false, error: toApiError(error).body });
   }
 }

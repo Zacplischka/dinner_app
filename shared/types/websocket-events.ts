@@ -7,18 +7,10 @@ import type { ApiError } from './api-errors.js';
 
 // ============= Canonical acknowledgement contract (ADR 0006 / #114) =============
 // The final discriminated shape. `data` and failure never coexist — a success
-// carries data, a failure carries exactly one public ApiError. The #115/#116
-// frontend switch consumes this; the bridge response types below widen it with
-// legacy fields so the currently-deployed frontend keeps working.
+// carries data, a failure carries exactly one public ApiError. Every command
+// acknowledges with this shape; no legacy flattened fields or string errors.
 
 export type Ack<T> = { success: true; data: T } | { success: false; error: ApiError };
-
-// ponytail: the failure-side bridge marker. Every command's bridge failure keeps
-// the legacy human-readable `error: string` AND adds the canonical public error
-// under a non-colliding `apiError` key (the #115 normalizer prefers `apiError`,
-// falling back to the legacy string). remove `apiError` (and let `error` become
-// ApiError per Ack<T>) after the frontend deployment consuming canonical acks is
-// verified (#116).
 
 // ============= Client → Server Events =============
 
@@ -40,70 +32,30 @@ export interface SessionJoinData {
   }>;
 }
 
-export interface SessionJoinResponse {
-  success: boolean;
-  /** Canonical success payload (bridge). Same values as the flattened fields below. */
-  data?: SessionJoinData;
-  // ponytail: legacy flattened success fields, duplicated by `data` during the
-  // bridge. remove after the frontend deployment consuming canonical acks is
-  // verified (#116).
-  participantId?: string;
-  sessionCode?: string;
-  displayName?: string;
-  participantCount?: number;
-  participants?: SessionJoinData['participants'];
-  /** Legacy human-readable failure text (kept through the bridge). */
-  error?: string;
-  // ponytail: canonical public error under a non-colliding key. remove after the
-  // frontend deployment consuming canonical acks is verified (#116).
-  apiError?: ApiError;
-}
+/** session:join acknowledges the canonical success data or a public error. */
+export type SessionJoinResponse = Ack<SessionJoinData>;
 
 export interface SelectionSubmitPayload {
   sessionCode: string;
   selections: string[]; // optionId values
 }
 
-export interface SelectionSubmitResponse {
-  success: boolean;
-  /** Canonical: successful no-data commands acknowledge `data: null` (bridge → Ack<null>). */
-  data?: null;
-  /** Legacy human-readable failure text (kept through the bridge). */
-  error?: string;
-  // ponytail: canonical public error under a non-colliding key. remove after the
-  // frontend deployment consuming canonical acks is verified (#116).
-  apiError?: ApiError;
-}
+/** No-data command: success acknowledges `data: null`. */
+export type SelectionSubmitResponse = Ack<null>;
 
 export interface SessionRestartPayload {
   sessionCode: string;
 }
 
-export interface SessionRestartResponse {
-  success: boolean;
-  /** Canonical: successful no-data commands acknowledge `data: null` (bridge → Ack<null>). */
-  data?: null;
-  /** Legacy human-readable failure text (kept through the bridge). */
-  error?: string;
-  // ponytail: canonical public error under a non-colliding key. remove after the
-  // frontend deployment consuming canonical acks is verified (#116).
-  apiError?: ApiError;
-}
+/** No-data command: success acknowledges `data: null`. */
+export type SessionRestartResponse = Ack<null>;
 
 export interface SessionLeavePayload {
   sessionCode: string;
 }
 
-export interface SessionLeaveResponse {
-  success: boolean;
-  /** Canonical: successful no-data commands acknowledge `data: null` (bridge → Ack<null>). */
-  data?: null;
-  /** Legacy human-readable failure text (kept through the bridge). */
-  error?: string;
-  // ponytail: canonical public error under a non-colliding key. remove after the
-  // frontend deployment consuming canonical acks is verified (#116).
-  apiError?: ApiError;
-}
+/** No-data command: success acknowledges `data: null`. */
+export type SessionLeaveResponse = Ack<null>;
 
 // ============= Server → Client Events =============
 
