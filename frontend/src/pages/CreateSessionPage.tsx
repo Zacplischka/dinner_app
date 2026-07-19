@@ -10,6 +10,7 @@ import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle from '../components/LocationModeToggle';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { createSession, reverseGeocode } from '../services/apiClient';
+import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
 import { waitForConnection, joinSession } from '../services/socketBindings';
 
@@ -18,10 +19,6 @@ interface Location {
   longitude: number;
   address?: string;
 }
-
-const KM_PER_MILE = 1.609344;
-const MIN_RADIUS_KM = 2;
-const MAX_RADIUS_KM = 24;
 
 export default function CreateSessionPage() {
   const navigate = useNavigate();
@@ -132,11 +129,7 @@ export default function CreateSessionPage() {
 
     setIsLoading(true);
 
-    // Backend contract is miles (1-15); the UI speaks kilometres.
-    const searchRadiusMiles = Math.min(
-      15,
-      Math.max(1, Math.round((searchRadiusKm / KM_PER_MILE) * 10) / 10)
-    );
+    const searchRadiusMiles = toBackendRadiusMiles(searchRadiusKm);
 
     try {
       const response = await createSession(hostName.trim(), location, searchRadiusMiles);

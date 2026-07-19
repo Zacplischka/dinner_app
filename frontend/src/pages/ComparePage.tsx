@@ -5,12 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle from '../components/LocationModeToggle';
 import { getVenues } from '../services/apiClient';
+import {
+  KM_PER_MILE,
+  MAX_RADIUS_KM,
+  MIN_RADIUS_KM,
+  toBackendRadiusMiles,
+} from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
 import { useComparisonStore, VENUE_PAGE_SIZE } from '../stores/comparisonStore';
-
-const KM_PER_MILE = 1.609344;
-const MIN_RADIUS_KM = 2;
-const MAX_RADIUS_KM = 24;
 
 function cuisineLabel(cuisine: string) {
   return cuisine.replace(/\s+restaurant$/i, '');
@@ -133,7 +135,7 @@ export default function ComparePage() {
     if (activeRequestKey.current === requestKey) return;
     activeRequestKey.current = requestKey;
     // Backend contract is miles (1-15); the UI speaks kilometres.
-    const radiusMiles = Math.min(15, Math.max(1, Math.round((radiusKm / KM_PER_MILE) * 10) / 10));
+    const radiusMiles = toBackendRadiusMiles(radiusKm);
     setError('');
     setLoading(true);
     getVenues(location, radiusMiles)

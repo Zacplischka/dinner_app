@@ -57,6 +57,30 @@ describe('comparisonStore', () => {
     });
   });
 
+  it('falls back to the default radius when only the old miles value was persisted', async () => {
+    const location = { latitude: -37.81, longitude: 144.96 };
+    localStorage.setItem(
+      'dinder-comparison',
+      JSON.stringify({
+        state: { location, radiusMiles: 5, suburb: 'Melbourne' },
+        version: 0,
+      })
+    );
+    vi.resetModules();
+
+    const { useComparisonStore: rehydratedStore } = await import(
+      '../../src/stores/comparisonStore'
+    );
+
+    await vi.waitFor(() => {
+      expect(rehydratedStore.getState()).toMatchObject({
+        location,
+        radiusKm: 8,
+        suburb: 'Melbourne',
+      });
+    });
+  });
+
   it('rehydrates a persisted location, radius, and suburb on a return visit', async () => {
     const location = { latitude: -37.81, longitude: 144.96 };
     localStorage.setItem(
