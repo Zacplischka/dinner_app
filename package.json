@@ -22,7 +22,8 @@
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",
-    "analyze:pr": "fallow audit --base origin/main"
+    "analyze:pr": "fallow audit --base origin/main",
+    "gen:types": "supabase gen types typescript --project-id hcjuqvicwuszwqkreklc --schema public | npx prettier --parser typescript > supabase/database.types.ts"
   },
   "keywords": [
     "dinder",
