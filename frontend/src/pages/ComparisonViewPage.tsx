@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type {
   Comparison,
-  ComparisonTapSource,
   MenuItemCapture,
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
-import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
+import { isComparisonTapSource } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
 
@@ -172,9 +171,7 @@ export default function ComparisonViewPage() {
   // (#68 kill gate).
   const [tapSource] = useState(() => {
     const sourceParam = searchParams.get('source');
-    return sourceParam !== null && COMPARISON_TAP_SOURCE_SET.has(sourceParam)
-      ? (sourceParam as ComparisonTapSource)
-      : undefined;
+    return isComparisonTapSource(sourceParam) ? sourceParam : undefined;
   });
 
   useEffect(() => {

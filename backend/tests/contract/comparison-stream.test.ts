@@ -67,6 +67,34 @@ describe('GET /api/comparison/:placeId/stream', () => {
     });
     await vi.waitFor(() => expect(unsubscribe).toHaveBeenCalledTimes(1));
   });
+
+  it('streams a canonical named error after a Comparison has started', async () => {
+    const comparisonService = {
+      subscribe: vi.fn((_placeId, subscriber: (event: ComparisonStreamEvent) => void) => {
+        queueMicrotask(() => {
+          subscriber({ type: 'venue', placeId: 'place-1', venueName: '11 Inch Pizza' });
+          subscriber({
+            type: 'error',
+            code: 'COMPARISON_FAILED',
+            message: 'Could not compare this Venue right now.',
+          });
+        });
+        return vi.fn();
+      }),
+    };
+    const app = express();
+    app.use(
+      '/api/comparison',
+      createComparisonRouter({ searchNearbyVenues: vi.fn(), comparisonService })
+    );
+
+    const response = await request(app).get('/api/comparison/place-1/stream').expect(200);
+
+    expect(response.text).toContain('event: venue');
+    expect(response.text).toContain(
+      'event: error\ndata: {"code":"COMPARISON_FAILED","message":"Could not compare this Venue right now."}\n\n'
+    );
+  });
 });
 
 describe('Comparison subscribe source tag', () => {
@@ -107,19 +135,31 @@ describe('Comparison subscribe source tag', () => {
     });
   });
 
-  it('logs organic subscribes without a source and drops unknown source values', async () => {
+  it('logs organic subscribes without a source and rejects unknown source values', async () => {
     const app = buildLoggingApp();
     const logs = captureLogs();
 
     await request(app).get('/api/comparison/place-1/stream');
-    await request(app).get('/api/comparison/place-2/stream?source=<script>');
+    const invalid = await request(app)
+      .get('/api/comparison/place-2/stream?source=<script>')
+      .expect(400);
 
     const lines = logs.withMsg('Comparison subscribe');
-    expect(lines).toHaveLength(2);
+    expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({ placeId: 'place-1' });
     expect(lines[0]).not.toHaveProperty('source');
-    expect(lines[1]).toMatchObject({ placeId: 'place-2' });
-    expect(lines[1]).not.toHaveProperty('source');
+    expect(invalid.body).toEqual({
+      code: 'VALIDATION_ERROR',
+      message: 'A valid placeId and optional Comparison source are required',
+    });
+  });
+
+  it('rejects a malformed place ID before subscribing', async () => {
+    const app = buildLoggingApp();
+
+    const response = await request(app).get('/api/comparison/not!a!place/stream').expect(400);
+
+    expect(response.body.code).toBe('VALIDATION_ERROR');
   });
 });
 

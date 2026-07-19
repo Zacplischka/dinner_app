@@ -13,7 +13,8 @@ import type {
   SessionLocation,
   SessionResponse,
   UserProfile,
-  Venue,
+  VenueSearchRequest,
+  VenueSearchResponse,
 } from '@dinder/shared/types';
 import { useAuthStore } from '../stores/authStore';
 
@@ -79,15 +80,14 @@ export async function getRestaurants(sessionCode: string): Promise<Restaurant[]>
 export async function getVenues(
   location: { latitude: number; longitude: number },
   radiusMiles: number
-): Promise<{ venues: Venue[]; suburb?: string }> {
+): Promise<VenueSearchResponse> {
+  const input: VenueSearchRequest = { ...location, radiusMiles };
   const query = new URLSearchParams({
-    latitude: String(location.latitude),
-    longitude: String(location.longitude),
-    radiusMiles: String(radiusMiles),
+    latitude: String(input.latitude),
+    longitude: String(input.longitude),
+    radiusMiles: String(input.radiusMiles),
   });
-  const result = await request<{ venues: Venue[]; suburb?: string }>(
-    `/comparison/venues?${query.toString()}`
-  );
+  const result = await request<VenueSearchResponse>(`/comparison/venues?${query.toString()}`);
   return { ...result, venues: resolvePhotoUrls(result.venues) };
 }
 
