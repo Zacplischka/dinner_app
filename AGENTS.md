@@ -6,34 +6,6 @@
 ## Preflight
 1. Read `docs/branching.md` for repo branching strategy
 
-## Tech Stack
-
-**Languages**:
-- Backend: Node.js 20 LTS + TypeScript 5.x
-- Frontend: React 18.x + TypeScript 5.x
-
-**Frameworks/Libraries**:
-- Backend: Express 4.x, Socket.IO 4.x, Redis 7.x
-- Frontend: Vite 5.x, Socket.IO Client 4.x, Tailwind CSS 3.x, React Router 6.x, Zustand 4.x
-- Testing: Vitest 1.x, Supertest 6.x, Playwright 1.x
-
-**Database**: Redis (in-memory with native TTL for 30-minute session expiration)
-
-**Project Type**: Web application (monorepo: frontend + backend with real-time WebSocket communication)
-
-## Commands
-
-```bash
-npm install                                  # root; installs all workspaces
-docker run -d -p 6379:6379 redis:7-alpine    # required for backend dev, contract & integration tests
-npm run dev                                  # backend :3001 + frontend :3000
-npm run build                                # shared → backend → frontend
-
-cd backend && npm run test:unit              # no Redis needed (ioredis-mock); test:contract & test:integration need local Redis
-cd frontend && npx vitest run                # unit tests; npm run test:e2e for Playwright
-npm run lint                                 # root; lints backend + frontend src
-```
-
 ## Deployments
 
 - **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns — see `DEPLOY_GUIDE.md`):
@@ -55,6 +27,10 @@ npm run lint                                 # root; lints backend + frontend sr
 - Build `@dinder/shared` first (`npm run build --workspace=shared`) — backend/frontend typecheck resolves the `file:` dep against `shared/dist/`.
 - Backend unit tests run in parallel against in-memory `ioredis-mock` (inject via `createSessionStore(redis)` / `createSessionService(deps)`); only contract/integration tests hit a real Redis on localhost:6379.
 - Backend env is in `backend/.env` (GOOGLE_PLACES_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REDIS_*). Frontend uses VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL.
+
+## Coding agents
+
+- **Kimi Code**: CLI coding agent, started by running `kimi` (subscription-billed).
 
 ## Agent skills
 

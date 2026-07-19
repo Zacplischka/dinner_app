@@ -119,5 +119,9 @@ The kind of food a Venue serves (e.g. Italian, Asian Fusion), as reported by the
 _Avoid_: category, type, tag
 
 **Snapshot**:
-An immutable record of one Venue's Comparison at a moment in time. The newest Snapshot, if fresh enough, serves as the current Comparison; the full set of a Venue's Snapshots is its price history. Snapshots are never updated or deleted.
+An immutable record of one Venue's Comparison at a moment in time. The newest Snapshot, if within the Freshness Window, serves as the current Comparison; the full set of a Venue's Snapshots is its price history. Snapshots are never updated or deleted.
 _Avoid_: cache entry, record
+
+**Freshness Window**:
+How old the newest Snapshot may be and still serve as the current Comparison. A failed Snapshot has a much shorter window than a successful one — a failure is retried soon, a success is trusted for hours.
+_Avoid_: TTL, cache expiry
