@@ -209,7 +209,7 @@ export default function ComparisonViewPage() {
     complete &&
     storefronts.ubereats?.status === 'failed' &&
     storefronts.doordash?.status === 'failed';
-  const heroImageUrl = storefronts.ubereats?.imageUrl || storefronts.doordash?.imageUrl;
+  const heroImageUrl = storefronts.ubereats?.imageUrl ?? storefronts.doordash?.imageUrl;
   const showRecoveryBanner = waitedTooLong && !complete && !error;
   const matchedCount = comparison?.matchedItems.length ?? 0;
   const matchedCountLabel = `${matchedCount} matched item${matchedCount === 1 ? '' : 's'}`;
@@ -249,7 +249,9 @@ export default function ComparisonViewPage() {
         },
         onError: (event) => setError(event.message),
       },
-      tapSource
+      // A Retry is not a new tap; only the first attempt may carry the
+      // source, or the #68 kill-gate metric double-counts it.
+      attempt === 0 ? tapSource : undefined
     );
     return () => {
       window.clearTimeout(waitTimer);

@@ -129,6 +129,30 @@ describe('ComparisonViewPage', () => {
     expect(screen.queryByText('—')).not.toBeInTheDocument();
   });
 
+  it('does not re-count the tap source when Retry starts a fresh attempt', () => {
+    vi.useFakeTimers();
+    const view = renderPage('/compare/place-1?source=match_card');
+
+    act(() => vi.advanceTimersByTime(30_000));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      1,
+      'place-1',
+      expect.any(Object),
+      'match_card'
+    );
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      2,
+      'place-1',
+      expect.any(Object),
+      undefined
+    );
+
+    view.unmount();
+    vi.useRealTimers();
+  });
+
   it('offers bounded recovery after a long wait without losing partial progress', () => {
     vi.useFakeTimers();
     const view = renderPage();
