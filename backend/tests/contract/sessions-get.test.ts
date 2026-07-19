@@ -16,9 +16,7 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     await cleanupTestData(redis);
 
     // Create a test session for GET tests
-    const createResponse = await request(app)
-      .post('/api/sessions')
-      .send({ hostName: 'TestHost' });
+    const createResponse = await request(app).post('/api/sessions').send({ hostName: 'TestHost' });
     testSessionCode = createResponse.body.sessionCode;
   });
 
@@ -66,10 +64,9 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
       .expect('Content-Type', /json/)
       .expect(404);
 
-    // Validate error response matches OpenAPI ErrorResponse schema
-    expect(response.body).toHaveProperty('error', 'Not Found');
-    expect(response.body).toHaveProperty('code', 'SESSION_NOT_FOUND');
-    expect(response.body).toHaveProperty('message');
+    // Canonical failures are exactly { code, message } — no legacy `error` field.
+    expect(Object.keys(response.body).sort()).toEqual(['code', 'message']);
+    expect(response.body.code).toBe('SESSION_NOT_FOUND');
     expect(response.body.message).toContain('not found');
     expect(logs.withMsg('Rejected REST session get')[0]).toMatchObject({
       sessionCode: 'NOTFOUND',
@@ -80,9 +77,7 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
   it('should return 404 for expired session', async () => {
     // This test would require manipulating Redis TTL or waiting
     // For now, we test with an intentionally invalid code
-    const response = await request(app)
-      .get('/api/sessions/EXPIR')
-      .expect(404);
+    const response = await request(app).get('/api/sessions/EXPIR').expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
   });
@@ -90,20 +85,16 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
   it('should validate sessionCode format in URL parameter', async () => {
     // Test with an invalid uppercase alphanumeric session code.
     const response = await request(app)
-      .get('/api/sessions/abc')  // Too short
+      .get('/api/sessions/abc') // Too short
       .expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
   });
 
   it('should return consistent data across multiple GET requests', async () => {
-    const response1 = await request(app)
-      .get(`/api/sessions/${testSessionCode}`)
-      .expect(200);
+    const response1 = await request(app).get(`/api/sessions/${testSessionCode}`).expect(200);
 
-    const response2 = await request(app)
-      .get(`/api/sessions/${testSessionCode}`)
-      .expect(200);
+    const response2 = await request(app).get(`/api/sessions/${testSessionCode}`).expect(200);
 
     expect(response1.body.sessionCode).toBe(response2.body.sessionCode);
     expect(response1.body.hostName).toBe(response2.body.hostName);

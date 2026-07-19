@@ -102,7 +102,6 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       .expect(404);
 
     expect(response.body).toMatchObject({
-      error: 'Not Found',
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
     });
@@ -121,7 +120,6 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       .expect(404);
 
     expect(response.body).toMatchObject({
-      error: 'Not Found',
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
     });
@@ -147,7 +145,6 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       .expect(404);
 
     expect(response.body).toMatchObject({
-      error: 'Not Found',
       code: 'NO_RESTAURANTS',
       message: 'No restaurants found for this session',
     });
@@ -174,7 +171,6 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
       .expect(404);
 
     expect(response.body).toMatchObject({
-      error: 'Not Found',
       code: 'NO_RESTAURANTS',
       message: 'No restaurants found for this session',
     });

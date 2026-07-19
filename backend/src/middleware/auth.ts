@@ -94,16 +94,11 @@ async function verifyTokenInternal(token: string): Promise<TokenVerificationResu
  * Required auth middleware - rejects requests without valid token
  * Use this for protected routes
  */
-export function requireAuth(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): void {
+export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({
-      error: 'unauthorized',
       code: 'MISSING_TOKEN',
       message: 'Authentication required',
     });
@@ -114,10 +109,11 @@ export function requireAuth(
 
   if (!isSupabaseAuthConfigured()) {
     logger.warn('Supabase Auth is not configured - rejecting authenticated request');
+    // A server misconfiguration is an internal failure; never expose it as a
+    // distinct public code, or the body leaks a deployment detail.
     res.status(500).json({
-      error: 'server_error',
-      code: 'AUTH_NOT_CONFIGURED',
-      message: 'Authentication not configured',
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred. Please try again later.',
     });
     return;
   }
@@ -134,7 +130,6 @@ export function requireAuth(
     if (result.failure === 'expired') {
       logger.warn({ detail: result.message }, 'Expired JWT token');
       res.status(401).json({
-        error: 'unauthorized',
         code: 'TOKEN_EXPIRED',
         message: 'Token has expired',
       });
@@ -143,7 +138,6 @@ export function requireAuth(
 
     logger.warn({ detail: result.message }, 'Invalid JWT token');
     res.status(401).json({
-      error: 'unauthorized',
       code: 'INVALID_TOKEN',
       message: 'Invalid authentication token',
     });

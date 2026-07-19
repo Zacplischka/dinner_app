@@ -55,7 +55,6 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
         !COMPARISON_TAP_SOURCE_SET.has(source)
       ) {
         return res.status(400).json({
-          error: 'Bad Request',
           code: 'VALIDATION_ERROR',
           message:
             'platform (ubereats|doordash), placeId, and source (match_card|near_miss) are required',
@@ -70,7 +69,6 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
         if (!beginUncachedRedirect(ip)) {
           res.setHeader('Retry-After', retryAfterSeconds(redirectRequests, ip, REDIRECT_WINDOW_MS));
           return res.status(429).json({
-            error: 'Too Many Requests',
             code: 'RATE_LIMITED',
             message: 'Too many delivery links opened. Please try again later.',
           });

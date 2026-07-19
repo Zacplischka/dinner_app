@@ -18,7 +18,7 @@ describe('global errorHandler middleware', () => {
     vi.restoreAllMocks();
   });
 
-  it('maps DomainError codes to HTTP statuses with the standard body shape', async () => {
+  it('maps a DomainError to its public { code, message } and status', async () => {
     const response = await request(
       appThrowing(new DomainError('SESSION_NOT_FOUND', 'Session AB123 not found'))
     )
@@ -26,20 +26,23 @@ describe('global errorHandler middleware', () => {
       .expect(404);
 
     expect(response.body).toEqual({
-      error: 'SESSION_NOT_FOUND',
       code: 'SESSION_NOT_FOUND',
       message: 'Session AB123 not found',
     });
   });
 
-  it('defaults unmapped DomainError codes to 400', async () => {
-    const response = await request(
-      appThrowing(new DomainError('SOMETHING_ELSE', 'nope'))
-    )
-      .get('/boom')
-      .expect(400);
+  it('maps an unknown DomainError code to a detail-free INTERNAL_ERROR 500', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
 
-    expect(response.body.code).toBe('SOMETHING_ELSE');
+    const response = await request(appThrowing(new DomainError('SOMETHING_ELSE' as never, 'nope')))
+      .get('/boom')
+      .expect(500);
+
+    expect(response.body).toEqual({
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred. Please try again later.',
+    });
+    expect(errorSpy).toHaveBeenCalled();
   });
 
   it('returns a generic 500 for unexpected errors and logs the stack', async () => {
@@ -49,7 +52,6 @@ describe('global errorHandler middleware', () => {
     const response = await request(appThrowing(err)).get('/boom').expect(500);
 
     expect(response.body).toEqual({
-      error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });

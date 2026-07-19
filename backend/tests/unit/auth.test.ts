@@ -1,10 +1,6 @@
 import { logger } from '../../src/logger.js';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import {
-  requireAuth,
-  verifyToken,
-  type AuthenticatedRequest,
-} from '../../src/middleware/auth.js';
+import { requireAuth, verifyToken, type AuthenticatedRequest } from '../../src/middleware/auth.js';
 import { config } from '../../src/config/index.js';
 
 const supabaseMocks = vi.hoisted(() => ({
@@ -75,7 +71,6 @@ describe('auth middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'unauthorized',
         code: 'MISSING_TOKEN',
         message: 'Authentication required',
       });
@@ -91,9 +86,8 @@ describe('auth middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'server_error',
-        code: 'AUTH_NOT_CONFIGURED',
-        message: 'Authentication not configured',
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred. Please try again later.',
       });
       expect(supabaseMocks.getUser).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
@@ -131,7 +125,6 @@ describe('auth middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'unauthorized',
         code: 'TOKEN_EXPIRED',
         message: 'Token has expired',
       });
@@ -151,7 +144,6 @@ describe('auth middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'unauthorized',
         code: 'INVALID_TOKEN',
         message: 'Invalid authentication token',
       });
@@ -166,9 +158,7 @@ describe('auth middleware', () => {
 
       await expect(verifyToken('token')).resolves.toBeNull();
       expect(supabaseMocks.getUser).not.toHaveBeenCalled();
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Supabase Auth is not configured - cannot verify token'
-      );
+      expect(warnSpy).toHaveBeenCalledWith('Supabase Auth is not configured - cannot verify token');
     });
 
     it('should return user info after Supabase Auth validates a token', async () => {
@@ -211,7 +201,10 @@ describe('auth middleware', () => {
       supabaseMocks.getUser.mockRejectedValueOnce('offline');
 
       await expect(verifyToken('invalid-token')).resolves.toBeNull();
-      expect(warnSpy).toHaveBeenCalledWith({ detail: 'Unknown error' }, 'Token verification failed');
+      expect(warnSpy).toHaveBeenCalledWith(
+        { detail: 'Unknown error' },
+        'Token verification failed'
+      );
     });
   });
 });

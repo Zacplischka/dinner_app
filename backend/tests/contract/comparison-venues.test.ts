@@ -112,7 +112,6 @@ describe('GET /api/comparison/venues', () => {
     expect(searchNearbyVenues).toHaveBeenCalledTimes(31);
     expect(limited.headers['retry-after']).toBe('60');
     expect(limited.body).toEqual({
-      error: 'Too Many Requests',
       code: 'RATE_LIMITED',
       message: 'Too many venue searches. Please try again shortly.',
     });
@@ -128,7 +127,6 @@ describe('GET /api/comparison/venues', () => {
       .expect(400);
 
     expect(response.body).toEqual({
-      error: 'Bad Request',
       code: 'VALIDATION_ERROR',
       message: 'Valid latitude, longitude, and radiusMiles (1–15) are required',
     });

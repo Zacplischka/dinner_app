@@ -21,11 +21,12 @@ describe('REST API internal error branches', () => {
       .expect(500);
 
     expect(response.body).toEqual({
-      error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(logs.withMsg('Error creating session')[0]).toMatchObject({ err: { message: error.message } });
+    expect(logs.withMsg('Error creating session')[0]).toMatchObject({
+      err: { message: error.message },
+    });
   });
 
   it('GET /api/sessions/:sessionCode should return INTERNAL_ERROR for unexpected lookup failures', async () => {
@@ -36,14 +37,15 @@ describe('REST API internal error branches', () => {
     const response = await request(app).get('/api/sessions/AB123').expect(500);
 
     expect(response.body).toEqual({
-      error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({ err: { message: error.message } });
+    expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({
+      err: { message: error.message },
+    });
   });
 
-  it('should return JSON INVALID_JSON for malformed request bodies, not HTML', async () => {
+  it('should return JSON VALIDATION_ERROR for malformed request bodies, not HTML', async () => {
     const response = await request(app)
       .post('/api/sessions')
       .set('Content-Type', 'application/json')
@@ -53,8 +55,7 @@ describe('REST API internal error branches', () => {
     expect(response.headers['content-type']).toMatch(/application\/json/);
     expect(response.headers['x-request-id']).toMatch(/\S+/);
     expect(response.body).toEqual({
-      error: 'Bad Request',
-      code: 'INVALID_JSON',
+      code: 'VALIDATION_ERROR',
       message: 'Request body is not valid JSON',
     });
   });
@@ -67,10 +68,11 @@ describe('REST API internal error branches', () => {
     const response = await request(app).get('/api/options/AB123').expect(500);
 
     expect(response.body).toEqual({
-      error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({ err: { message: error.message } });
+    expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({
+      err: { message: error.message },
+    });
   });
 });
