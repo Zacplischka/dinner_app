@@ -4,10 +4,8 @@
 // socketBindings, not from here.
 
 import { io, Socket } from 'socket.io-client';
-import { isApiError } from '@dinder/shared/types';
 import type {
   Ack,
-  ApiError,
   ClientToServerEvents,
   ServerToClientEvents,
   SessionJoinPayload,
@@ -63,43 +61,11 @@ export function initializeSocket(config: SocketConfig = {}): void {
   }
 }
 
-// The ONE ack normalization boundary (#115). Every command's raw ack — legacy
-// (flattened success + `error` string), bridge (`data` + `error` string +
-// `apiError`), or canonical (`data` + ApiError `error`) — collapses into a
-// single Ack<T> here. Failure prefers the canonical public error (`apiError`
-// bridge key, then an ApiError-typed `error`), falling back to the legacy
-// human-readable string. Stores/components downstream only ever see Ack<T>.
-type RawAck = {
-  success?: boolean;
-  data?: unknown;
-  error?: unknown;
-  apiError?: unknown;
-};
-
-function toApiError(raw: RawAck, fallbackMessage: string): ApiError {
-  if (isApiError(raw.apiError)) return raw.apiError; // bridge
-  if (isApiError(raw.error)) return raw.error; // canonical
-  const message = typeof raw.error === 'string' && raw.error ? raw.error : fallbackMessage;
-  return { code: 'UNKNOWN', message }; // legacy string (or nothing)
-}
-
-function normalizeAck<T>(
-  raw: RawAck,
-  fallbackMessage: string,
-  successData: (raw: RawAck) => T
-): Ack<T> {
-  if (raw?.success) {
-    return { success: true, data: successData(raw) };
-  }
-  return { success: false, error: toApiError(raw ?? {}, fallbackMessage) };
-}
-
-function emitAck<T>(
-  event: keyof ClientToServerEvents,
-  payload: unknown,
-  fallbackMessage: string,
-  successData: (raw: RawAck) => T
-): Promise<Ack<T>> {
+// Every command's ack is a canonical Ack<T> from the backend (#116): a
+// discriminated { success: true; data } | { success: false; error: ApiError }.
+// The transport resolves it as-is; the only ack the client mints itself is the
+// not-connected failure below.
+function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promise<Ack<T>> {
   return new Promise((resolve) => {
     if (!socket?.connected) {
       resolve({ success: false, error: { code: 'UNKNOWN', message: 'Socket not connected' } });
@@ -107,10 +73,10 @@ function emitAck<T>(
     }
     // socket.io's typed `emit` can't infer through this generic wrapper; the
     // wire contract is enforced by each caller's declared Ack<T> return type.
-    (socket.emit as (e: string, p: unknown, cb: (raw: RawAck) => void) => void)(
+    (socket.emit as (e: string, p: unknown, cb: (ack: Ack<T>) => void) => void)(
       event,
       payload,
-      (raw) => resolve(normalizeAck(raw, fallbackMessage, successData))
+      resolve
     );
   });
 }
@@ -123,21 +89,7 @@ export function joinSession(
   displayName: string
 ): Promise<Ack<SessionJoinData>> {
   const payload: SessionJoinPayload = { sessionCode, displayName };
-  return emitAck(
-    'session:join',
-    payload,
-    'Failed to join session',
-    (raw) =>
-      // Canonical/bridge carry `data`; legacy only the flattened fields.
-      (raw.data as SessionJoinData | undefined) ?? {
-        participantId: (raw as { participantId?: string }).participantId ?? '',
-        sessionCode: (raw as { sessionCode?: string }).sessionCode ?? sessionCode,
-        displayName: (raw as { displayName?: string }).displayName ?? displayName,
-        participantCount: (raw as { participantCount?: number }).participantCount ?? 0,
-        participants:
-          (raw as { participants?: SessionJoinData['participants'] }).participants ?? [],
-      }
-  );
+  return emitAck<SessionJoinData>('session:join', payload);
 }
 
 /**
@@ -145,7 +97,7 @@ export function joinSession(
  */
 export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
   const payload: SelectionSubmitPayload = { sessionCode, selections: optionIds };
-  return emitAck('selection:submit', payload, 'Failed to submit selection', () => null);
+  return emitAck<null>('selection:submit', payload);
 }
 
 /**
@@ -153,7 +105,7 @@ export function submitSelection(sessionCode: string, optionIds: string[]): Promi
  */
 export function restartSession(sessionCode: string): Promise<Ack<null>> {
   const payload: SessionRestartPayload = { sessionCode };
-  return emitAck('session:restart', payload, 'Failed to restart session', () => null);
+  return emitAck<null>('session:restart', payload);
 }
 
 /**
@@ -161,7 +113,7 @@ export function restartSession(sessionCode: string): Promise<Ack<null>> {
  */
 export function leaveSession(sessionCode: string): Promise<Ack<null>> {
   const payload: SessionLeavePayload = { sessionCode };
-  return emitAck('session:leave', payload, 'Failed to leave session', () => null);
+  return emitAck<null>('session:leave', payload);
 }
 
 /**

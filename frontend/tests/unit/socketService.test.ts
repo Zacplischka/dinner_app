@@ -55,15 +55,6 @@ vi.mock('socket.io-client', () => ({
 
 import * as socketService from '../../src/services/socketService';
 
-const participant = {
-  participantId: 'participant-1',
-  displayName: 'Alice',
-  sessionCode: 'AB123',
-  joinedAt: 1,
-  hasSubmitted: false,
-  isHost: true,
-};
-
 function setupSocket(connected = true) {
   const socket = new FakeSocket();
   socket.connected = connected;
@@ -126,60 +117,25 @@ describe('socketService', () => {
     );
   });
 
-  it('normalizes legacy, bridge, and canonical join acks into one Ack<T>', async () => {
+  it('resolves canonical join acks as-is', async () => {
     const socket = setupSocket();
     socketService.initializeSocket();
 
-    // Legacy: flattened success fields, no `data`.
-    socket.acks.set('session:join', {
-      success: true,
-      participantId: 'participant-1',
+    // Canonical success: the `data` payload is passed through untouched.
+    const joinData = {
+      participantId: 'p9',
       sessionCode: 'AB123',
       displayName: 'Alice',
-      participantCount: 1,
-      participants: [{ participantId: 'participant-1', displayName: 'Alice', isHost: true }],
-    });
+      participantCount: 2,
+      participants: [{ participantId: 'p9', displayName: 'Alice', isHost: false }],
+    };
+    socket.acks.set('session:join', { success: true, data: joinData });
     await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual({
       success: true,
-      data: {
-        participantId: 'participant-1',
-        sessionCode: 'AB123',
-        displayName: 'Alice',
-        participantCount: 1,
-        participants: [{ participantId: 'participant-1', displayName: 'Alice', isHost: true }],
-      },
+      data: joinData,
     });
 
-    // Bridge/canonical success: prefer the canonical `data` payload.
-    socket.acks.set('session:join', {
-      success: true,
-      data: {
-        participantId: 'p9',
-        sessionCode: 'AB123',
-        displayName: 'Alice',
-        participantCount: 2,
-        participants: [{ participantId: 'p9', displayName: 'Alice', isHost: false }],
-      },
-      // stale flat fields the normalizer must ignore in favor of `data`
-      participantId: 'STALE',
-    });
-    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toMatchObject({
-      success: true,
-      data: { participantId: 'p9', participantCount: 2 },
-    });
-
-    // Bridge failure: `apiError` wins over the legacy `error` string.
-    socket.acks.set('session:join', {
-      success: false,
-      error: 'Session is full',
-      apiError: { code: 'SESSION_FULL', message: 'The session already has 4 participants' },
-    });
-    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual({
-      success: false,
-      error: { code: 'SESSION_FULL', message: 'The session already has 4 participants' },
-    });
-
-    // Canonical failure: ApiError-typed `error`.
+    // Canonical failure: the ApiError `error` is passed through untouched.
     socket.acks.set('session:join', {
       success: false,
       error: { code: 'SESSION_NOT_FOUND', message: 'No such session' },
@@ -187,56 +143,30 @@ describe('socketService', () => {
     await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual({
       success: false,
       error: { code: 'SESSION_NOT_FOUND', message: 'No such session' },
-    });
-
-    // Legacy failure: fall back to the human-readable string under UNKNOWN.
-    socket.acks.set('session:join', { success: false, error: 'nope' });
-    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual({
-      success: false,
-      error: { code: 'UNKNOWN', message: 'nope' },
-    });
-
-    // Empty failure: fall back to the command's default message.
-    socket.acks.set('session:join', { success: false });
-    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual({
-      success: false,
-      error: { code: 'UNKNOWN', message: 'Failed to join session' },
     });
   });
 
-  it('normalizes no-data command acks (submit/restart/leave) into Ack<null>', async () => {
+  it('resolves canonical no-data command acks (submit/restart/leave) as-is', async () => {
     const socket = setupSocket();
     socketService.initializeSocket();
 
-    for (const [event, call, fallback] of [
-      [
-        'selection:submit',
-        () => socketService.submitSelection('AB123', ['place-1']),
-        'Failed to submit selection',
-      ],
-      ['session:restart', () => socketService.restartSession('AB123'), 'Failed to restart session'],
-      ['session:leave', () => socketService.leaveSession('AB123'), 'Failed to leave session'],
+    for (const [event, call] of [
+      ['selection:submit', () => socketService.submitSelection('AB123', ['place-1'])],
+      ['session:restart', () => socketService.restartSession('AB123')],
+      ['session:leave', () => socketService.leaveSession('AB123')],
     ] as const) {
       // Canonical success acknowledges `data: null`.
       socket.acks.set(event, { success: true, data: null });
       await expect(call()).resolves.toEqual({ success: true, data: null });
 
-      // Bridge failure prefers apiError.
+      // Canonical failure: the ApiError `error` is passed through untouched.
       socket.acks.set(event, {
         success: false,
-        error: 'legacy text',
-        apiError: { code: 'VALIDATION_ERROR', message: 'bad input' },
+        error: { code: 'VALIDATION_ERROR', message: 'bad input' },
       });
       await expect(call()).resolves.toEqual({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'bad input' },
-      });
-
-      // Empty failure falls back to the command default.
-      socket.acks.set(event, { success: false });
-      await expect(call()).resolves.toEqual({
-        success: false,
-        error: { code: 'UNKNOWN', message: fallback },
       });
     }
   });

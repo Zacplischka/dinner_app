@@ -190,7 +190,7 @@ export function waitForConnection(timeoutMs?: number): Promise<void> {
 
 /**
  * Join a session and, on success, map the ack DTO into local Participant state.
- * Returns the normalized Ack<T> so callers branch on one success-or-failure shape.
+ * Returns the canonical Ack<T> so callers branch on one success-or-failure shape.
  */
 export async function joinSession(
   sessionCode: string,
