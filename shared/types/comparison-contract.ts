@@ -208,7 +208,7 @@ function isComparison(value: unknown): value is Comparison {
   return value.cheaperMenu === undefined || isCheaperMenu(value.cheaperMenu);
 }
 
-function isSnapshotPayload(value: unknown): value is SnapshotPayload {
+export function isSnapshotPayload(value: unknown): value is SnapshotPayload {
   return (
     isRecord(value) && isStorefrontCapture(value.ubereats) && isStorefrontCapture(value.doordash)
   );
