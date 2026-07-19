@@ -45,13 +45,13 @@ describe('RestaurantSearchService', () => {
         placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4',
         name: 'Pizza Palace',
         rating: undefined,
-        priceLevel: 0,
+        priceLevel: undefined,
         cuisineType: undefined,
         address: undefined,
       });
     });
 
-    it('should default missing price levels to free', () => {
+    it('should omit missing price levels instead of defaulting to free', () => {
       const googlePlace = {
         id: 'place-no-price',
         displayName: { text: 'No Price Cafe' },
@@ -59,7 +59,7 @@ describe('RestaurantSearchService', () => {
 
       const result = RestaurantSearchService.transformGooglePlaceToRestaurant(googlePlace);
 
-      expect(result.priceLevel).toBe(0);
+      expect(result.priceLevel).toBeUndefined();
     });
 
     it('returns an API photo URL without exposing the Google API key', () => {
@@ -283,8 +283,12 @@ describe('RestaurantSearchService', () => {
       expect(RestaurantSearchService.mapPriceLevel('PRICE_LEVEL_VERY_EXPENSIVE')).toBe(4);
     });
 
-    it('should map unknown values to 0', () => {
-      expect(RestaurantSearchService.mapPriceLevel('INVALID')).toBe(0);
+    it('should map PRICE_LEVEL_UNSPECIFIED to undefined', () => {
+      expect(RestaurantSearchService.mapPriceLevel('PRICE_LEVEL_UNSPECIFIED')).toBeUndefined();
+    });
+
+    it('should map unknown values to undefined', () => {
+      expect(RestaurantSearchService.mapPriceLevel('INVALID')).toBeUndefined();
     });
   });
 

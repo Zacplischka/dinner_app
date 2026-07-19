@@ -182,6 +182,45 @@ test.describe('Near Miss fallback (#72)', () => {
   });
 });
 
+test.describe('Select Again restart (#14, #85)', () => {
+  test('Select Again returns every participant to Restaurant Selection', async ({
+    setupSession,
+  }) => {
+    const { host, all } = await setupSession(1);
+
+    await host.lobbyPage.startSession();
+
+    await Promise.all(
+      all.map(async (p) => {
+        await p.selectionPage.loadingState
+          .waitFor({ state: 'hidden', timeout: 30_000 })
+          .catch(() => {});
+      })
+    );
+
+    // Everyone selects the first restaurant so the session produces a Match
+    for (const p of all) {
+      if (await p.selectionPage.likeButton.isVisible()) {
+        await p.selectionPage.likeRestaurant();
+      }
+      await p.selectionPage.passAllRemaining();
+      if (await p.selectionPage.submitButton.isVisible()) {
+        await p.selectionPage.submitSelections();
+      }
+    }
+
+    await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
+
+    // The host taps Select Again; every participant's tab — not just the
+    // host's — must leave the results screen for the fresh deck (#14).
+    await host.page.getByRole('button', { name: /select again/i }).click();
+
+    await Promise.all(
+      all.map((p) => expect(p.page).toHaveURL(/\/session\/[A-Z0-9]+\/select/, { timeout: 15_000 }))
+    );
+  });
+});
+
 test.describe('Session Edge Cases', () => {
   test('participant cannot join full session (max 4)', async ({ browser, setupSession }) => {
     // Create session with 3 participants (total 4 including host)

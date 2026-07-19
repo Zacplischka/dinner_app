@@ -2,11 +2,11 @@
 // Based on: specs/001-dinner-decider-enables/tasks.md T056
 
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { Restaurant } from '@dinder/shared/types';
+import type { Participant, Restaurant } from '@dinder/shared/types';
 import { restartSession, leaveSession } from '../services/socketBindings';
 import { API_BASE_URL } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
@@ -151,16 +151,101 @@ function MatchHero({ photoUrl }: { photoUrl: string }) {
   );
 }
 
+// The per-Participant Selection lists, shared by the always-visible
+// "Everyone's Selections" section and the unanimous-vote disclosure (#85).
+function SelectionsList({
+  participants,
+  allSelections,
+  overlappingOptions,
+  restaurantNameMap,
+}: {
+  participants: Participant[];
+  allSelections: Record<string, string[]>;
+  overlappingOptions: Restaurant[];
+  restaurantNameMap: Map<string, string>;
+}) {
+  return (
+    <div className="space-y-4">
+      {participants.map((participant, participantIndex) => {
+        const participantSelections = allSelections[participant.displayName] || [];
+        return (
+          <div
+            key={participant.participantId}
+            className="border-b border-line/30 pb-4 last:border-b-0 last:pb-0"
+          >
+            <div className="flex items-center space-x-2 mb-2">
+              <div
+                className={`w-8 h-8 bg-surface border-2 rounded-full flex items-center justify-center text-text text-sm font-semibold ${participantRingClass(participantIndex)}`}
+              >
+                {participant.displayName.charAt(0).toUpperCase()}
+              </div>
+              <p className="font-semibold text-text">{participant.displayName}</p>
+            </div>
+            <div className="ml-10">
+              {participantSelections.length > 0 ? (
+                <ul className="text-sm text-muted space-y-1">
+                  {participantSelections.map((selectionId) => {
+                    // Check if this selection is a match (in overlappingOptions)
+                    const isMatch = overlappingOptions.some((o) => o.placeId === selectionId);
+
+                    // Get display name from our lookup map, or fall back to selectionId
+                    const displayName = restaurantNameMap.get(selectionId) || selectionId;
+
+                    return (
+                      <li key={selectionId} className="flex items-center space-x-2">
+                        {isMatch && (
+                          <svg
+                            className="w-4 h-4 text-lime"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        <span className={isMatch ? 'font-medium text-lime' : ''}>
+                          {displayName}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted/60 italic">No selections</p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ResultsPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { overlappingOptions, allSelections, restaurantNames, participants, restaurants } =
-    useSessionStore();
+  const {
+    overlappingOptions,
+    allSelections,
+    restaurantNames,
+    participants,
+    restaurants,
+    sessionStatus,
+  } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
 
   const hasOverlap = overlappingOptions.length > 0;
+
+  // #14: a Restart from any Participant flips the Session back to selecting —
+  // every tab still on results follows, not just the one that tapped the button.
+  useEffect(() => {
+    if (sessionStatus === 'selecting' && sessionCode) {
+      navigate(`/session/${sessionCode}/select`);
+    }
+  }, [sessionStatus, sessionCode, navigate]);
 
   // Create a lookup map for restaurant names by placeId
   const restaurantNameMap = new Map<string, string>();
@@ -199,7 +284,21 @@ export default function ResultsPage() {
     nearMisses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
   }
 
-  // Helper to format price level
+  // Unanimous Selections (#85): when every Participant selected the same
+  // non-empty set, the per-Participant copies are redundant — collapse them
+  // behind a disclosure. Identical empty lists don't count: an empty Match
+  // keeps its transparency lists visible.
+  const sameSelections = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((placeId) => b.includes(placeId));
+  const firstSelections =
+    participants.length > 0 ? allSelections[participants[0].displayName] || [] : [];
+  const isUnanimous =
+    firstSelections.length > 0 &&
+    participants.every((participant) =>
+      sameSelections(allSelections[participant.displayName] || [], firstSelections)
+    );
+
+  // priceLevel is omitted from the data when unknown; 0 means genuinely free.
   const formatPriceLevel = (level: number): string => {
     if (level === 0) return 'Free';
     return '$'.repeat(level);
@@ -287,85 +386,82 @@ export default function ResultsPage() {
         {/* Overlapping Options */}
         {hasOverlap ? (
           <div className="mb-6">
-            <div className="mb-6 text-center">
-              <h2 className="inline-block animate-match-pop rounded-market-md px-5 py-2 text-4xl font-black tracking-[0.14em] text-lime shadow-match">
+            {/* Celebration leads; rays sit behind the heading, fade inside the
+                header block, and freeze under reduced motion (see index.css). */}
+            <div className="match-celebration mb-6 text-center">
+              <div className="match-rays" data-match-rays aria-hidden="true" />
+              <h2 className="relative inline-block animate-match-pop rounded-market-md px-5 py-2 text-4xl font-black tracking-[0.14em] text-lime shadow-match">
                 MATCH!
               </h2>
-              <p className="mt-4 text-muted">Everyone found the same spark.</p>
+              <p className="relative mt-4 text-muted">Everyone found the same spark.</p>
             </div>
-            <div className="card">
-              <h2 className="text-xl font-display font-semibold text-text mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-lime" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                Matching Restaurants
-              </h2>
-              <div className="space-y-3">
-                {overlappingOptions.map((restaurant) => {
-                  return (
-                    <div
-                      key={restaurant.placeId}
-                      data-match-card
-                      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
-                    >
-                      {restaurant.photoUrl && <MatchHero photoUrl={restaurant.photoUrl} />}
-                      <p className="text-lg font-semibold text-text">{restaurant.name}</p>
+            {/* The matched Restaurant is the dominant surface — no wrapper card
+                competing with it. Warm glow is reflected light from the celebration. */}
+            <div className="match-warm-glow space-y-4">
+              {overlappingOptions.map((restaurant) => {
+                return (
+                  <div
+                    key={restaurant.placeId}
+                    data-match-card
+                    className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+                  >
+                    {restaurant.photoUrl && <MatchHero photoUrl={restaurant.photoUrl} />}
+                    <p className="text-lg font-semibold text-text">{restaurant.name}</p>
 
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center space-x-3 text-sm">
-                          {restaurant.rating !== undefined && (
-                            <span className="flex items-center text-amber gap-1">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              {restaurant.rating.toFixed(1)}
-                            </span>
-                          )}
-                          {restaurant.priceLevel !== undefined && (
-                            <span className="text-muted font-medium">
-                              {formatPriceLevel(restaurant.priceLevel)}
-                            </span>
-                          )}
-                          {restaurant.cuisineType && (
-                            <span className="text-muted">{restaurant.cuisineType}</span>
-                          )}
-                        </div>
-                        {restaurant.address && (
-                          <p className="text-sm text-muted flex items-center gap-1.5">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center space-x-3 text-sm">
+                        {restaurant.rating !== undefined && (
+                          <span className="flex items-center text-amber gap-1">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
-                            {restaurant.address}
-                          </p>
+                            {restaurant.rating.toFixed(1)}
+                          </span>
                         )}
-
-                        {/* Delivery Order Buttons - Elegant cards with brand logos */}
-                        <DeliveryActions
-                          ubereatsHref={generateUberEatsUrl(restaurant.name, restaurant.address)}
-                          doordashHref={generateDoorDashUrl(restaurant.name, restaurant.address)}
-                          comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
-                        />
+                        {restaurant.priceLevel !== undefined && (
+                          <span className="text-muted font-medium">
+                            {formatPriceLevel(restaurant.priceLevel)}
+                          </span>
+                        )}
+                        {restaurant.cuisineType && (
+                          <span className="text-muted">{restaurant.cuisineType}</span>
+                        )}
                       </div>
+                      {restaurant.address && (
+                        <p className="text-sm text-muted flex items-center gap-1.5">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                          {restaurant.address}
+                        </p>
+                      )}
+
+                      {/* Delivery Order Buttons - Elegant cards with brand logos */}
+                      <DeliveryActions
+                        ubereatsHref={generateUberEatsUrl(restaurant.name, restaurant.address)}
+                        doordashHref={generateDoorDashUrl(restaurant.name, restaurant.address)}
+                        comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
+                      />
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -440,70 +536,44 @@ export default function ResultsPage() {
           </>
         )}
 
-        {/* All Selections */}
-        <div className="card mb-6">
-          <h2 className="text-xl font-display font-semibold text-text mb-4">
-            Everyone&apos;s Selections
-          </h2>
-          <div className="space-y-4">
-            {participants.map((participant, participantIndex) => {
-              const participantSelections = allSelections[participant.displayName] || [];
-              return (
-                <div
-                  key={participant.participantId}
-                  className="border-b border-line/30 pb-4 last:border-b-0 last:pb-0"
-                >
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div
-                      className={`w-8 h-8 bg-surface border-2 rounded-full flex items-center justify-center text-text text-sm font-semibold ${participantRingClass(participantIndex)}`}
-                    >
-                      {participant.displayName.charAt(0).toUpperCase()}
-                    </div>
-                    <p className="font-semibold text-text">{participant.displayName}</p>
-                  </div>
-                  <div className="ml-10">
-                    {participantSelections.length > 0 ? (
-                      <ul className="text-sm text-muted space-y-1">
-                        {participantSelections.map((selectionId, idx) => {
-                          // Check if this selection is a match (in overlappingOptions)
-                          const isMatch = overlappingOptions.some((o) => o.placeId === selectionId);
-
-                          // Get display name from our lookup map, or fall back to selectionId
-                          const displayName = restaurantNameMap.get(selectionId) || selectionId;
-
-                          return (
-                            <li key={idx} className="flex items-center space-x-2">
-                              {isMatch && (
-                                <svg
-                                  className="w-4 h-4 text-lime"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              )}
-                              <span className={isMatch ? 'font-medium text-lime' : ''}>
-                                {displayName}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted/60 italic">No selections</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        {/* All Selections — identical per-Participant copies collapse behind
+            a disclosure (#85); divergent Selections stay visible */}
+        {isUnanimous ? (
+          <details data-unanimous-selections className="card group mb-6">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
+              See everyone&apos;s Selections
+              <svg
+                className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </summary>
+            <div className="mt-4">
+              <SelectionsList
+                participants={participants}
+                allSelections={allSelections}
+                overlappingOptions={overlappingOptions}
+                restaurantNameMap={restaurantNameMap}
+              />
+            </div>
+          </details>
+        ) : (
+          <div className="card mb-6">
+            <h2 className="text-xl font-display font-semibold text-text mb-4">
+              Everyone&apos;s Selections
+            </h2>
+            <SelectionsList
+              participants={participants}
+              allSelections={allSelections}
+              overlappingOptions={overlappingOptions}
+              restaurantNameMap={restaurantNameMap}
+            />
           </div>
-        </div>
+        )}
 
         {/* Error message */}
         {error && (

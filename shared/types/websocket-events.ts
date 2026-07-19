@@ -58,7 +58,7 @@ export interface WsRestaurant {
   placeId: string;
   name: string;
   rating?: number;
-  priceLevel: number;
+  priceLevel?: number;
   cuisineType?: string;
   address?: string;
 }
