@@ -9,6 +9,8 @@ import {
   createSessionStore,
   sessionCodeFromExpiredKey,
   SESSION_TTL_SECONDS,
+  type Participant,
+  type Session,
 } from '../../src/store/sessionStore.js';
 import { DomainError } from '../../src/services/DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
@@ -197,9 +199,7 @@ describe('SessionStore', () => {
       expect(result.hasOverlap).toBe(true);
       expect(result.overlappingOptions).toHaveLength(1);
       expect(result.overlappingOptions[0].placeId).toBe('place2');
-      expect(result.allSelections['Alice']).toEqual(
-        expect.arrayContaining(['place1', 'place2'])
-      );
+      expect(result.allSelections['Alice']).toEqual(expect.arrayContaining(['place1', 'place2']));
       expect(result.restaurantNames['place3']).toBe('Restaurant 3');
     });
 
@@ -270,6 +270,56 @@ describe('SessionStore', () => {
       const leftovers = await redis.keys(`session:${sessionCode}*`);
       expect(leftovers).toEqual([]);
       expect(await store.getParticipant('p1')).toBeNull();
+    });
+  });
+
+  // Guards issue #113: the persistence shapes are backend-owned and must survive
+  // the full write->Redis->read round-trip with their declared types intact.
+  describe('typed round-trip', () => {
+    it('round-trips a fully-typed Session, Participants, Selections, Submissions, Restaurants, and the Match', async () => {
+      const { session } = await store.createSession(sessionCode, {
+        hostId: 'host-1',
+        hostName: 'Alice',
+        location: { latitude: 1, longitude: 2, address: 'Somewhere' },
+        searchRadiusMiles: 3,
+        restaurants,
+      });
+      expect(session.state).toBe('waiting');
+
+      await store.addParticipant(sessionCode, {
+        participantId: 'p1',
+        displayName: 'Alice',
+        isHost: true,
+      });
+      await store.addParticipant(sessionCode, { participantId: 'p2', displayName: 'Bob' });
+      await store.recordSubmission(sessionCode, 'p1', ['place1', 'place2']);
+      await store.recordSubmission(sessionCode, 'p2', ['place2', 'place3']);
+
+      const readSession: Session | null = await store.readSession(sessionCode);
+      expect(readSession?.location).toEqual({ latitude: 1, longitude: 2, address: 'Somewhere' });
+      expect(readSession?.searchRadiusMiles).toBe(3);
+
+      const participant: Participant | null = await store.getParticipant('p1');
+      expect(participant).toMatchObject({
+        participantId: 'p1',
+        displayName: 'Alice',
+        sessionCode,
+        isHost: true,
+        hasSubmitted: true,
+      });
+      expect(typeof participant?.joinedAt).toBe('number');
+
+      const { restaurants: storedRestaurants } = await store.getRestaurants(sessionCode);
+      expect(storedRestaurants.map((r) => r.placeId).sort()).toEqual([
+        'place1',
+        'place2',
+        'place3',
+      ]);
+
+      const match = await store.computeAndStoreResults(sessionCode);
+      expect(match.overlappingOptions.map((r) => r.placeId)).toEqual(['place2']);
+      expect(match.allSelections['Alice']).toEqual(expect.arrayContaining(['place1', 'place2']));
+      expect(match.hasOverlap).toBe(true);
     });
   });
 
