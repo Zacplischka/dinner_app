@@ -8,7 +8,6 @@
 import type * as friendsStore from '../store/friendsStore.js';
 import { getAuthProfileDefaults } from '../api/authMetadata.js';
 import { DomainError } from './DomainError.js';
-import type { Profile } from './supabase.js';
 import type { Friend, FriendRequest, SessionInvite, UserProfile } from '@dinder/shared/types';
 
 /** The FriendsStore surface the service depends on. */
@@ -30,26 +29,23 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
   ): Promise<UserProfile> {
     const profile = await store.getProfileById(userId);
     if (profile) {
-      return mapProfileToUserProfile(profile);
+      return profile;
     }
 
     // Profile doesn't exist yet - create it from Supabase Auth data
     const metadata = await store.getAuthUserMetadata(userId);
     const profileDefaults = getAuthProfileDefaults(metadata, email);
 
-    const created = await store.createProfile({
+    return store.createProfile({
       id: userId,
       email: email || null,
-      display_name: profileDefaults.displayName,
-      avatar_url: profileDefaults.avatarUrl,
+      displayName: profileDefaults.displayName,
+      avatarUrl: profileDefaults.avatarUrl,
     });
-
-    return mapProfileToUserProfile(created);
   }
 
   async function searchUsers(email: string, userId: string): Promise<UserProfile[]> {
-    const profiles = await store.searchProfilesByEmail(email, userId);
-    return profiles.map(mapProfileToUserProfile);
+    return store.searchProfilesByEmail(email, userId);
   }
 
   // --- Friends ---------------------------------------------------------------
@@ -57,10 +53,8 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
   async function listFriends(userId: string): Promise<Friend[]> {
     const friendships = await store.listAcceptedFriendships(userId);
 
-    // The friend is whichever side of the friendship row isn't the user
-    const friendIds = friendships.map((f) =>
-      f.user_id === userId ? f.friend_id : f.user_id
-    );
+    // The friend is whichever side of the friendship isn't the user
+    const friendIds = friendships.map((f) => (f.userId === userId ? f.friendId : f.userId));
 
     if (friendIds.length === 0) {
       return [];
@@ -72,14 +66,14 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
     }
 
     return friendships.map((friendship) => {
-      const friendId = friendship.user_id === userId ? friendship.friend_id : friendship.user_id;
+      const friendId = friendship.userId === userId ? friendship.friendId : friendship.userId;
       const profile = profiles.find((p) => p.id === friendId);
 
       return {
         id: friendId,
         friendshipId: friendship.id,
-        displayName: profile?.display_name || 'Unknown User',
-        avatarUrl: profile?.avatar_url || null,
+        displayName: profile?.displayName || 'Unknown User',
+        avatarUrl: profile?.avatarUrl || null,
         email: profile?.email || null,
         status: 'accepted' as const,
       };
@@ -93,22 +87,20 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
       return [];
     }
 
-    const profiles = await store.listProfilesByIds(requests.map((r) => r.user_id));
+    const profiles = await store.listProfilesByIds(requests.map((r) => r.fromUserId));
     if (!profiles) {
       throw new DomainError('database_error', 'Failed to fetch requester profiles');
     }
 
     return requests.map((request) => ({
       id: request.id,
-      fromUser: mapProfileToUserProfile(
-        profiles.find((p) => p.id === request.user_id) || {
-          id: request.user_id,
-          display_name: 'Unknown User',
-          avatar_url: null,
-          email: null,
-        }
-      ),
-      createdAt: request.created_at,
+      fromUser: profiles.find((p) => p.id === request.fromUserId) || {
+        id: request.fromUserId,
+        displayName: 'Unknown User',
+        avatarUrl: null,
+        email: null,
+      },
+      createdAt: request.createdAt,
     }));
   }
 
@@ -211,14 +203,12 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
     return invites.map((invite) => ({
       id: invite.id,
       sessionCode: invite.session_code,
-      inviter: mapProfileToUserProfile(
-        profiles?.find((p) => p.id === invite.inviter_id) || {
-          id: invite.inviter_id,
-          display_name: 'Unknown User',
-          avatar_url: null,
-          email: null,
-        }
-      ),
+      inviter: profiles?.find((p) => p.id === invite.inviter_id) || {
+        id: invite.inviter_id,
+        displayName: 'Unknown User',
+        avatarUrl: null,
+        email: null,
+      },
       status: invite.status,
       createdAt: invite.created_at,
     }));
@@ -235,18 +225,6 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
 
   async function declineSessionInvite(userId: string, inviteId: string): Promise<void> {
     await store.declineSessionInvite(inviteId, userId);
-  }
-
-  /**
-   * Map a database Profile to a UserProfile API response object
-   */
-  function mapProfileToUserProfile(profile: Partial<Profile>): UserProfile {
-    return {
-      id: profile.id || '',
-      displayName: profile.display_name || 'Unknown User',
-      avatarUrl: profile.avatar_url || null,
-      email: profile.email || null,
-    };
   }
 
   return {

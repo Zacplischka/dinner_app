@@ -6,6 +6,8 @@ import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import type { FriendsService } from '../services/FriendsService.js';
 import type {
+  ApiError,
+  GetProfileResponse,
   SendFriendRequestPayload,
   InviteToSessionPayload,
   SearchUsersResponse,
@@ -31,8 +33,11 @@ export function createFriendsRouter(friendsService: FriendsService) {
   router.get(
     '/users/me',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-      const profile = await friendsService.getCurrentProfile(req.user!.id, req.user!.email);
-      return res.json(profile);
+      const response: GetProfileResponse = await friendsService.getCurrentProfile(
+        req.user!.id,
+        req.user!.email
+      );
+      return res.json(response);
     })
   );
 
@@ -46,10 +51,11 @@ export function createFriendsRouter(friendsService: FriendsService) {
       const { email } = req.query;
 
       if (!email || typeof email !== 'string') {
-        return res.status(400).json({
+        const error: ApiError = {
           code: 'VALIDATION_ERROR',
           message: 'Email query parameter is required',
-        });
+        };
+        return res.status(400).json(error);
       }
 
       const users = await friendsService.searchUsers(email, req.user!.id);

@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DomainError } from '../../src/services/DomainError.js';
 import { createFriendsService } from '../../src/services/FriendsService.js';
+import type { UserProfile } from '@dinder/shared/types';
 
 // In-memory fake of FriendsStore: plain Maps of profiles/friendships/invites.
+// Rows stay snake_case inside the fake (like the real store); every read
+// function maps them to the camelCase values the store boundary guarantees.
 // Tests assert on FriendsService behavior only - never on which queries ran.
 
 type ProfileRow = {
@@ -29,6 +32,16 @@ type InviteRow = {
   created_at: string;
 };
 
+// Mirrors the real store's row→wire mapping, fallbacks included.
+function toUserProfile(row: ProfileRow): UserProfile {
+  return {
+    id: row.id || '',
+    displayName: row.display_name || 'Unknown User',
+    avatarUrl: row.avatar_url || null,
+    email: row.email || null,
+  };
+}
+
 const db = {
   profiles: new Map<string, ProfileRow>(),
   friendships: new Map<string, FriendshipRow>(),
@@ -38,22 +51,36 @@ const db = {
 };
 
 const fakeStore = {
-  getProfileById: async (userId: string) => db.profiles.get(userId) ?? null,
+  getProfileById: async (userId: string) => {
+    const row = db.profiles.get(userId);
+    return row ? toUserProfile(row) : null;
+  },
 
   getAuthUserMetadata: async (userId: string) => db.authMetadata.get(userId),
 
-  createProfile: async (profile: ProfileRow) => {
-    db.profiles.set(profile.id, { ...profile });
-    return { ...profile };
+  createProfile: async (profile: {
+    id: string;
+    email: string | null;
+    displayName: string;
+    avatarUrl: string | null;
+  }) => {
+    const row: ProfileRow = {
+      id: profile.id,
+      email: profile.email,
+      display_name: profile.displayName,
+      avatar_url: profile.avatarUrl,
+    };
+    db.profiles.set(row.id, row);
+    return toUserProfile(row);
   },
 
   searchProfilesByEmail: async (email: string, excludeUserId: string) =>
-    [...db.profiles.values()].filter(
-      (p) => p.email === email.toLowerCase() && p.id !== excludeUserId
-    ),
+    [...db.profiles.values()]
+      .filter((p) => p.email === email.toLowerCase() && p.id !== excludeUserId)
+      .map(toUserProfile),
 
   listProfilesByIds: async (ids: string[]) =>
-    [...db.profiles.values()].filter((p) => ids.includes(p.id)),
+    [...db.profiles.values()].filter((p) => ids.includes(p.id)).map(toUserProfile),
 
   findProfileIdByEmail: async (email: string) => {
     const profile = [...db.profiles.values()].find((p) => p.email === email.toLowerCase());
@@ -61,9 +88,9 @@ const fakeStore = {
   },
 
   listAcceptedFriendships: async (userId: string) =>
-    [...db.friendships.values()].filter(
-      (f) => f.status === 'accepted' && (f.user_id === userId || f.friend_id === userId)
-    ),
+    [...db.friendships.values()]
+      .filter((f) => f.status === 'accepted' && (f.user_id === userId || f.friend_id === userId))
+      .map(({ id, user_id, friend_id }) => ({ id, userId: user_id, friendId: friend_id })),
 
   listAcceptedFriendPairs: async (userId: string) =>
     [...db.friendships.values()]
@@ -73,7 +100,7 @@ const fakeStore = {
   listPendingRequestsForRecipient: async (userId: string) =>
     [...db.friendships.values()]
       .filter((f) => f.status === 'pending' && f.friend_id === userId)
-      .map(({ id, user_id, created_at }) => ({ id, user_id, created_at })),
+      .map(({ id, user_id, created_at }) => ({ id, fromUserId: user_id, createdAt: created_at })),
 
   findFriendshipBetween: async (userId: string, otherUserId: string) => {
     const friendship = [...db.friendships.values()].find(
