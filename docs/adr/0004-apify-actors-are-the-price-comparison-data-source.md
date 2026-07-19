@@ -9,7 +9,7 @@ The validated shape has two consequences we accepted rather than fought:
 
 ## Consequences
 
-- Actors are commodities from individual maintainers: they churn, break, and get delisted. The backend treats the actor IDs as swappable config, and the Snapshot cache (~20-min freshness policy — see ADR 0005) absorbs transient failures.
+- Actors are commodities from individual maintainers: they churn, break, and get delisted. The backend treats the actor IDs as swappable config, and the Snapshot cache (6h freshness policy for successful Snapshots, 2 min for failed ones — see ADR 0005) absorbs transient failures.
 - Scraping DoorDash's AU site violates their consumer terms even via a vendor. Acceptable at personal/hobby scale; revisit with legal advice before any public launch at scale.
 - Cold fetches chain multiple actor runs (seconds, not ms). The cache makes repeat views fast; the first tap on a Venue is slow by design.
 - If a licensed aggregator ever covers Australia, this decision should be revisited — the single client module is the seam.

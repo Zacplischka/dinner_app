@@ -29,6 +29,16 @@ export interface Snapshot {
   payload: SnapshotPayload;
 }
 
+/**
+ * Freshness Window: how long the newest Snapshot serves as the current
+ * Comparison instead of paying for new actor runs. A successful Snapshot is
+ * trusted for 6 hours — prices rarely move intraday, and the longer window is
+ * what keeps the feature viable under Apify's free-plan spend cap (ADR 0005).
+ * A Snapshot containing a failed Storefront is retried after 2 minutes.
+ */
+export const SNAPSHOT_FRESHNESS_MS = 6 * 60 * 60_000;
+export const SNAPSHOT_FAILURE_FRESHNESS_MS = 2 * 60_000;
+
 export interface Comparison {
   placeId: string;
   venueName: string;

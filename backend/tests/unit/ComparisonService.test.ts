@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/shared/types';
+import { SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import uberEatsFixture from '../fixtures/comparison/ubereats-search-11-inch-pizza.json';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
 import { doorDashStorefront } from '../../src/services/doorDashStorefront.js';
@@ -60,7 +61,7 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore,
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -101,7 +102,7 @@ describe('createComparisonService', () => {
       runActor: vi.fn().mockResolvedValue([{ ...uberEatsFixture[0], url: 'not a URL' }]),
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -145,7 +146,7 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(freshSnapshot), insert },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -198,7 +199,7 @@ describe('createComparisonService', () => {
         getLatest: vi.fn().mockResolvedValue(freshSnapshot),
         insert: vi.fn(),
       },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -217,7 +218,7 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -248,7 +249,7 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest, insert },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -273,7 +274,7 @@ describe('createComparisonService', () => {
       runActor: vi.fn(() => new Promise<unknown[]>(() => undefined)),
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 10,
     });
 
@@ -310,7 +311,7 @@ describe('createComparisonService', () => {
           return insertedSnapshot(payload);
         }),
       },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -338,7 +339,7 @@ describe('createComparisonService', () => {
           id: 'stale',
           placeId: 'place-1',
           venueName: '11 Inch Pizza',
-          fetchedAt: new Date(Date.now() - 21 * 60_000).toISOString(),
+          fetchedAt: new Date(Date.now() - SNAPSHOT_FRESHNESS_MS - 60_000).toISOString(),
           payload: {
             ubereats: { status: 'resolved', storeUrl, deals: [], menu: [] },
             doordash: { status: 'not_found', deals: [], menu: [] },
@@ -348,7 +349,7 @@ describe('createComparisonService', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -378,7 +379,7 @@ describe('createComparisonService', () => {
           id: 'stale',
           placeId: 'place-1',
           venueName: '11 Inch Pizza',
-          fetchedAt: new Date(Date.now() - 21 * 60_000).toISOString(),
+          fetchedAt: new Date(Date.now() - SNAPSHOT_FRESHNESS_MS - 60_000).toISOString(),
           payload: {
             ubereats: { status: 'resolved', storeUrl, deals: [], menu: [] },
             doordash: { status: 'not_found', deals: [], menu: [] },
@@ -388,7 +389,7 @@ describe('createComparisonService', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 

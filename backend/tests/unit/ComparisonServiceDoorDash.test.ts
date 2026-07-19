@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/shared/types';
+import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import doorDashFixture from '../fixtures/comparison/doordash-search-11-inch-pizza.json';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
 import { doorDashStorefront } from '../../src/services/doorDashStorefront.js';
@@ -50,7 +51,7 @@ function staleSnapshot(storefront: SnapshotPayload['doordash']): Snapshot {
     id: 'stale',
     placeId: 'place-1',
     venueName: venue.name,
-    fetchedAt: new Date(Date.now() - 21 * 60_000).toISOString(),
+    fetchedAt: new Date(Date.now() - SNAPSHOT_FRESHNESS_MS - 60_000).toISOString(),
     payload: {
       ubereats: { status: 'not_found', deals: [], menu: [] },
       doordash: storefront,
@@ -70,8 +71,8 @@ describe('createComparisonService DoorDash actor', () => {
       runActor,
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: 20 * 60_000,
-      failureFreshnessMs: 2 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
+      failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -119,7 +120,7 @@ describe('createComparisonService DoorDash actor', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -163,7 +164,7 @@ describe('createComparisonService DoorDash actor', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -197,8 +198,8 @@ describe('createComparisonService DoorDash actor', () => {
       ),
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: 20 * 60_000,
-      failureFreshnessMs: 2 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
+      failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
       settleCapMs: 100,
     });
 
@@ -224,7 +225,7 @@ describe('createComparisonService DoorDash actor', () => {
       runActor,
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
     const firstEvents: ComparisonStreamEvent[] = [];
@@ -248,7 +249,7 @@ describe('createComparisonService DoorDash actor', () => {
     expect(insert).toHaveBeenCalledOnce();
   });
 
-  it('retries failed Snapshots after two minutes but keeps not-found Snapshots for twenty', async () => {
+  it('retries failed Snapshots after two minutes but keeps not-found Snapshots for six hours', async () => {
     const threeMinutesAgo = new Date(Date.now() - 3 * 60_000).toISOString();
     const makeLatest = (status: 'failed' | 'not_found'): Snapshot => ({
       id: status,
@@ -270,8 +271,8 @@ describe('createComparisonService DoorDash actor', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: 20 * 60_000,
-      failureFreshnessMs: 2 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
+      failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
       settleCapMs: 100,
     });
     const notFoundFetch = vi.fn();
@@ -282,8 +283,8 @@ describe('createComparisonService DoorDash actor', () => {
         getLatest: vi.fn().mockResolvedValue(makeLatest('not_found')),
         insert: vi.fn(),
       },
-      freshnessMs: 20 * 60_000,
-      failureFreshnessMs: 2 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
+      failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
       settleCapMs: 100,
     });
 

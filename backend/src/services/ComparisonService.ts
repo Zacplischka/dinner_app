@@ -5,6 +5,7 @@ import type {
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
+import { SNAPSHOT_FAILURE_FRESHNESS_MS } from '@dinder/shared/types';
 import type { VenueDetails } from './RestaurantSearchService.js';
 import { deriveComparison } from './comparisonMatcher.js';
 import { doorDashStorefront } from './doorDashStorefront.js';
@@ -204,7 +205,7 @@ function toComparison(snapshot: Snapshot): Comparison {
 function isFresh(
   snapshot: Snapshot,
   freshnessMs: number,
-  failureFreshnessMs = 2 * 60_000
+  failureFreshnessMs = SNAPSHOT_FAILURE_FRESHNESS_MS
 ): boolean {
   const ageMs = Date.now() - Date.parse(snapshot.fetchedAt);
   const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash].some(

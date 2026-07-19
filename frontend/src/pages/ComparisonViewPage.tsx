@@ -12,8 +12,9 @@ import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
 
 const FAILED_STOREFRONT: StorefrontCapture = { status: 'failed', deals: [], menu: [] };
-// ponytail: matches the backend's 20 min Snapshot freshness window; served
-// Snapshots older than this only appear when the tab sat open.
+// ponytail: UI honesty threshold, deliberately shorter than the backend's 6h
+// Snapshot reuse window — a served Snapshot can be hours old, so past 20
+// minutes we flag that prices may have moved since the fetch.
 const STALE_AFTER_MINUTES = 20;
 // How long we let Storefronts resolve before offering recovery. The stream
 // keeps going — this only surfaces Retry / Back to venues.
