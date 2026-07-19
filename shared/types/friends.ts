@@ -39,9 +39,19 @@ export interface AcceptFriendRequestPayload {
   requestId: string;
 }
 
-export interface InviteToSessionPayload {
-  sessionCode: string;
+// Session Invite lifecycle wire contracts (issue #108). The list response
+// (SessionInvitesResponse) is below with the other read contracts. Sending and
+// declining return 204 No Content — no response body, so no contract. Accepting
+// returns the Session Code the frontend consumes to navigate into the Session.
+
+/** POST /api/sessions/:sessionCode/invite — friends to invite (request body). */
+export interface SendSessionInviteRequest {
   friendIds: string[];
+}
+
+/** POST /api/invites/:inviteId/accept — the Session Code to join. */
+export interface AcceptSessionInviteResponse {
+  sessionCode: string;
 }
 
 // Read-operation response contracts — one per endpoint (issue #106).

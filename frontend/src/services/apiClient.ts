@@ -2,6 +2,7 @@
 // (base URL, auth header, error shaping). State stores never call fetch.
 
 import type {
+  AcceptSessionInviteResponse,
   CreateSessionRequest,
   CreateSessionResponse,
   Friend,
@@ -13,7 +14,9 @@ import type {
   LoadRestaurantsResponse,
   Restaurant,
   SearchUsersResponse,
+  SendSessionInviteRequest,
   SessionInvite,
+  SessionInvitesResponse,
   SessionLocation,
   SessionResponse,
   UserProfile,
@@ -230,7 +233,7 @@ export async function getFriendRequests(): Promise<FriendRequest[]> {
  * List pending session invites for the current user
  */
 export async function getSessionInvites(): Promise<SessionInvite[]> {
-  const data = await request<{ invites: SessionInvite[] }>('/invites', {
+  const data = await request<SessionInvitesResponse>('/invites', {
     headers: getAuthHeaders(),
   });
   return data.invites;
@@ -284,10 +287,11 @@ export async function inviteFriendsToSession(
   sessionCode: string,
   friendIds: string[]
 ): Promise<void> {
+  const body: SendSessionInviteRequest = { friendIds };
   await request<unknown>(`/sessions/${sessionCode}/invite`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ friendIds }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -295,13 +299,10 @@ export async function inviteFriendsToSession(
  * Accept a session invite; returns the session code to join
  */
 export async function acceptSessionInvite(inviteId: string): Promise<string> {
-  const data = await request<{ success: boolean; sessionCode: string }>(
-    `/invites/${inviteId}/accept`,
-    {
-      method: 'POST',
-      headers: getAuthHeaders(),
-    }
-  );
+  const data = await request<AcceptSessionInviteResponse>(`/invites/${inviteId}/accept`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
   return data.sessionCode;
 }
 
