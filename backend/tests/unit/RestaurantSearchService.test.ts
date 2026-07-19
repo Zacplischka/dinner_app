@@ -713,43 +713,25 @@ describe('RestaurantSearchService', () => {
       expect(mcdonalds?.rating).toBe(4.2);
     });
 
-    it('should request subsequent pages when nextPageToken is returned', async () => {
-      fetchMock
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            places: [
-              {
-                id: 'page1',
-                displayName: { text: 'Page One' },
-                rating: 4.1,
-                priceLevel: 'PRICE_LEVEL_MODERATE',
-                primaryType: 'restaurant',
-              },
-            ],
-            nextPageToken: 'token-2',
-          }),
-          headers: {
-            get: () => null,
-          },
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            places: [
-              {
-                id: 'page2',
-                displayName: { text: 'Page Two' },
-                rating: 4.4,
-                priceLevel: 'PRICE_LEVEL_MODERATE',
-                primaryType: 'restaurant',
-              },
-            ],
-          }),
-          headers: {
-            get: () => null,
-          },
-        });
+    it('should fetch only one page even when the first page is short and returns a nextPageToken', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [
+            {
+              id: 'page1',
+              displayName: { text: 'Page One' },
+              rating: 4.1,
+              priceLevel: 'PRICE_LEVEL_MODERATE',
+              primaryType: 'restaurant',
+            },
+          ],
+          nextPageToken: 'token-2',
+        }),
+        headers: {
+          get: () => null,
+        },
+      });
 
       const result = await RestaurantSearchService.searchNearbyRestaurants({
         latitude: 37.7749,
@@ -758,11 +740,90 @@ describe('RestaurantSearchService', () => {
         maxResults: 50,
       });
 
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({
-        pageToken: 'token-2',
+      // Single-page cap: nextPageToken is never followed (issue #97)
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('pageToken');
+      expect(result.map((restaurant) => restaurant.placeId)).toEqual(['page1']);
+    });
+  });
+
+  describe('searchNearbyVenues', () => {
+    let fetchMock: any;
+
+    beforeEach(() => {
+      fetchMock = vi.fn();
+      global.fetch = fetchMock;
+      vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it('should fetch only one page even when the first page is short and returns a nextPageToken', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [
+            {
+              id: 'near',
+              displayName: { text: 'Near Restaurant' },
+              rating: 4.2,
+              primaryType: 'restaurant',
+              location: { latitude: 37.775, longitude: -122.4195 },
+            },
+          ],
+          nextPageToken: 'token-2',
+        }),
+        headers: {
+          get: () => null,
+        },
       });
-      expect(result.map((restaurant) => restaurant.placeId)).toEqual(['page2', 'page1']);
+
+      const result = await RestaurantSearchService.searchNearbyVenues({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+      });
+
+      // Single-page cap: nextPageToken is never followed (issue #97)
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('pageToken');
+      expect(result.map((venue) => venue.placeId)).toEqual(['near']);
+    });
+
+    it('should return at most 20 venues sorted nearest first', async () => {
+      // 20 places (one full page) spread west of the origin, furthest first
+      const places = Array.from({ length: 20 }, (_, i) => ({
+        id: `place-${i}`,
+        displayName: { text: `Restaurant ${i}` },
+        rating: 4.0,
+        primaryType: 'restaurant',
+        location: { latitude: 37.7749, longitude: -122.4194 - (20 - i) * 0.001 },
+      }));
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ places, nextPageToken: 'token-2' }),
+        headers: {
+          get: () => null,
+        },
+      });
+
+      const result = await RestaurantSearchService.searchNearbyVenues({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(result).toHaveLength(20);
+      expect(result[0].placeId).toBe('place-19'); // closest to the origin
+      expect(result[19].placeId).toBe('place-0'); // furthest from the origin
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i].distanceMiles).toBeGreaterThanOrEqual(result[i - 1].distanceMiles);
+      }
     });
   });
 
