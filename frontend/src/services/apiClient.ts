@@ -167,12 +167,40 @@ function getAuthHeaders(): HeadersInit {
   return headers;
 }
 
+/**
+ * The one typed error thrown for any failed API response. `code` is a stable
+ * public `ApiErrorCode` once the backend emits canonical errors (#104); during
+ * migration it may be a legacy `error` value verbatim (e.g. `validation_error`),
+ * or `UNKNOWN` when the failure body carries no code at all.
+ */
+export class ApiClientError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly status: number
+  ) {
+    super(message);
+    this.name = 'ApiClientError';
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error = (await response.json().catch(() => ({ message: 'An error occurred' }))) as {
+    // Canonical bodies are { code, message }; legacy bodies have only a
+    // lowercase `error` (and sometimes message); some failures have no body.
+    const body = (await response.json().catch(() => ({}))) as {
+      code?: string;
+      error?: string;
       message?: string;
     };
-    throw new Error(error.message || `HTTP error ${response.status}`);
+    throw new ApiClientError(
+      body.code || body.error || 'UNKNOWN',
+      body.message || `HTTP error ${response.status}`,
+      response.status
+    );
+  }
+  if (response.status === 204) {
+    return undefined as T;
   }
   return response.json() as Promise<T>;
 }

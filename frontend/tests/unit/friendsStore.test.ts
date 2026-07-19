@@ -238,7 +238,7 @@ describe('friendsStore', () => {
     } as unknown as Response);
 
     await useFriendsStore.getState().fetchFriends();
-    expect(useFriendsStore.getState().error).toBe('An error occurred');
+    expect(useFriendsStore.getState().error).toBe('HTTP error 500');
 
     const fallbackCases: Array<{
       run: () => Promise<unknown>;

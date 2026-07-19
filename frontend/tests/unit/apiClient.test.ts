@@ -67,11 +67,7 @@ describe('apiClient', () => {
       });
       global.fetch = mockFetch;
 
-      await apiClient.createSession(
-        'Alice',
-        { latitude: 37.7749, longitude: -122.4194 },
-        5
-      );
+      await apiClient.createSession('Alice', { latitude: 37.7749, longitude: -122.4194 }, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/sessions'),
@@ -125,11 +121,7 @@ describe('apiClient', () => {
       global.fetch = mockFetch;
 
       await expect(
-        apiClient.createSession(
-          'Alice',
-          { latitude: 37.7749, longitude: -122.4194 },
-          5
-        )
+        apiClient.createSession('Alice', { latitude: 37.7749, longitude: -122.4194 }, 5)
       ).rejects.toThrow('No restaurants found in the specified area');
     });
 
@@ -160,27 +152,92 @@ describe('apiClient', () => {
     });
   });
 
+  describe('error normalization', () => {
+    it('preserves code, message, and status from a canonical { code, message } body', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: 'SESSION_NOT_FOUND', message: 'Session AB123 not found' }),
+      });
+
+      await expect(apiClient.getSession('AB123')).rejects.toMatchObject({
+        name: 'ApiClientError',
+        code: 'SESSION_NOT_FOUND',
+        message: 'Session AB123 not found',
+        status: 404,
+      });
+    });
+
+    it('carries a legacy error-only body value verbatim as the code', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'validation_error', message: 'Valid email is required' }),
+      });
+
+      await expect(apiClient.sendFriendRequest('nope')).rejects.toMatchObject({
+        name: 'ApiClientError',
+        code: 'validation_error',
+        message: 'Valid email is required',
+        status: 400,
+      });
+    });
+
+    it('falls back to UNKNOWN and an HTTP message for body-less failures', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        json: async () => {
+          throw new SyntaxError('Unexpected end of JSON input');
+        },
+      });
+
+      await expect(apiClient.getSession('AB123')).rejects.toMatchObject({
+        name: 'ApiClientError',
+        code: 'UNKNOWN',
+        message: 'HTTP error 502',
+        status: 502,
+      });
+    });
+  });
+
+  describe('204 No Content success', () => {
+    it('resolves without parsing a body', async () => {
+      const json = vi.fn().mockRejectedValue(new SyntaxError('Unexpected end of JSON input'));
+      global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 204, json });
+
+      await expect(apiClient.declineFriendRequest('req-1')).resolves.toBeUndefined();
+      expect(json).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getVenues', () => {
     it('fetches nearby Venues without authentication', async () => {
-      const venues = [{
-        placeId: 'place-1',
-        name: '11 Inch Pizza',
-        distanceMiles: 0.2,
-        photoUrl: '/api/comparison/photo?name=places%2Fplace-1%2Fphotos%2Fone',
-      }];
+      const venues = [
+        {
+          placeId: 'place-1',
+          name: '11 Inch Pizza',
+          distanceMiles: 0.2,
+          photoUrl: '/api/comparison/photo?name=places%2Fplace-1%2Fphotos%2Fone',
+        },
+      ];
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ venues, suburb: 'Melbourne' }),
       });
 
-      await expect(apiClient.getVenues({ latitude: -37.81, longitude: 144.96 }, 5))
-        .resolves.toEqual({
-          venues: [{
+      await expect(
+        apiClient.getVenues({ latitude: -37.81, longitude: 144.96 }, 5)
+      ).resolves.toEqual({
+        venues: [
+          {
             ...venues[0],
-            photoUrl: 'http://localhost:3001/api/comparison/photo?name=places%2Fplace-1%2Fphotos%2Fone',
-          }],
-          suburb: 'Melbourne',
-        });
+            photoUrl:
+              'http://localhost:3001/api/comparison/photo?name=places%2Fplace-1%2Fphotos%2Fone',
+          },
+        ],
+        suburb: 'Melbourne',
+      });
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/comparison/venues?latitude=-37.81&longitude=144.96&radiusMiles=5')
       );
@@ -197,7 +254,8 @@ describe('apiClient', () => {
           priceLevel: 2,
           cuisineType: 'Italian',
           address: '123 Main St',
-          photoUrl: 'https://places.googleapis.com/v1/places/place1/photos/one/media?key=old-secret&maxHeightPx=400',
+          photoUrl:
+            'https://places.googleapis.com/v1/places/place1/photos/one/media?key=old-secret&maxHeightPx=400',
         },
         {
           placeId: 'ChIJplace2',
@@ -222,7 +280,8 @@ describe('apiClient', () => {
       expect(result).toEqual([
         {
           ...mockRestaurants[0],
-          photoUrl: 'http://localhost:3001/api/comparison/photo?name=places%2Fplace1%2Fphotos%2Fone',
+          photoUrl:
+            'http://localhost:3001/api/comparison/photo?name=places%2Fplace1%2Fphotos%2Fone',
         },
         mockRestaurants[1],
       ]);
@@ -240,9 +299,7 @@ describe('apiClient', () => {
       });
       global.fetch = mockFetch;
 
-      await expect(apiClient.getRestaurants('AB123')).rejects.toThrow(
-        'Session AB123 not found'
-      );
+      await expect(apiClient.getRestaurants('AB123')).rejects.toThrow('Session AB123 not found');
     });
 
     it('should throw error for session with no restaurants', async () => {
