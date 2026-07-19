@@ -2,12 +2,45 @@
 // Owns every Supabase query for Profiles, Friendships, and Session Invites;
 // nothing else in the backend touches the Supabase client for social data.
 // See CONTEXT.md for the domain language (Profile, Friendship, Session Invite).
+//
+// Boundary rule (#106): snake_case database rows never cross the store. Read
+// functions map rows to camelCase shared values (UserProfile and the shapes
+// below) before returning; only the not-yet-migrated mutation/invite queries
+// still return raw columns, and #107/#108 own those.
 
 import { logger } from '../logger.js';
-import { supabase } from '../services/supabase.js';
+import { supabase, type Profile } from '../services/supabase.js';
 import { DomainError } from '../services/DomainError.js';
+import type { UserProfile } from '@dinder/shared/types';
 
 const profileSelect = 'id, display_name, avatar_url, email';
+
+type ProfileRow = Pick<Profile, 'id' | 'display_name' | 'avatar_url' | 'email'>;
+
+// The single row→wire mapping for profiles. Missing fields fall back the same
+// way the old service-side mapper did (partial rows only occur in tests).
+function toUserProfile(row: ProfileRow): UserProfile {
+  return {
+    id: row.id || '',
+    displayName: row.display_name || 'Unknown User',
+    avatarUrl: row.avatar_url || null,
+    email: row.email || null,
+  };
+}
+
+/** An accepted Friendship as a camelCase value; callers pick which side is the friend. */
+export interface AcceptedFriendship {
+  id: string;
+  userId: string;
+  friendId: string;
+}
+
+/** A pending Friend Request received by a user, as a camelCase value. */
+export interface PendingFriendRequest {
+  id: string;
+  fromUserId: string;
+  createdAt: string;
+}
 
 // Store functions return data and throw DomainError('database_error', ...) on
 // query failure. Functions documented as returning null instead fold specific
@@ -16,7 +49,7 @@ const profileSelect = 'id, display_name, avatar_url, email';
 // --- Profiles ------------------------------------------------------------
 
 /** Returns null when no profile exists yet. */
-export async function getProfileById(userId: string) {
+export async function getProfileById(userId: string): Promise<UserProfile | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select(profileSelect)
@@ -28,7 +61,7 @@ export async function getProfileById(userId: string) {
     logger.error({ err: error }, 'Error fetching profile');
     throw new DomainError('database_error', 'Failed to fetch user profile');
   }
-  return data;
+  return toUserProfile(data);
 }
 
 export async function getAuthUserMetadata(userId: string): Promise<unknown> {
@@ -39,12 +72,17 @@ export async function getAuthUserMetadata(userId: string): Promise<unknown> {
 export async function createProfile(profile: {
   id: string;
   email: string | null;
-  display_name: string;
-  avatar_url: string | null;
-}) {
+  displayName: string;
+  avatarUrl: string | null;
+}): Promise<UserProfile> {
   const { data, error } = await supabase
     .from('profiles')
-    .insert(profile)
+    .insert({
+      id: profile.id,
+      email: profile.email,
+      display_name: profile.displayName,
+      avatar_url: profile.avatarUrl,
+    })
     .select(profileSelect)
     .single();
 
@@ -52,11 +90,14 @@ export async function createProfile(profile: {
     logger.error({ err: error }, 'Error creating profile');
     throw new DomainError('database_error', 'Failed to create user profile');
   }
-  return data;
+  return toUserProfile(data);
 }
 
 // Exact email match only (privacy protection)
-export async function searchProfilesByEmail(email: string, excludeUserId: string) {
+export async function searchProfilesByEmail(
+  email: string,
+  excludeUserId: string
+): Promise<UserProfile[]> {
   const { data, error } = await supabase
     .from('profiles')
     .select(profileSelect)
@@ -68,11 +109,11 @@ export async function searchProfilesByEmail(email: string, excludeUserId: string
     logger.error({ err: error }, 'Error searching users');
     throw new DomainError('database_error', 'Failed to search users');
   }
-  return data || [];
+  return (data || []).map(toUserProfile);
 }
 
 /** Returns null when the query fails; callers decide whether that's fatal. */
-export async function listProfilesByIds(ids: string[]) {
+export async function listProfilesByIds(ids: string[]): Promise<UserProfile[] | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select(profileSelect)
@@ -82,7 +123,7 @@ export async function listProfilesByIds(ids: string[]) {
     logger.error({ err: error }, 'Error fetching profiles');
     return null;
   }
-  return data || [];
+  return (data || []).map(toUserProfile);
 }
 
 /** Returns null when no profile matches (or the lookup fails). */
@@ -100,7 +141,7 @@ export async function findProfileIdByEmail(email: string) {
 
 const friendshipSelect = 'id, user_id, friend_id, status, created_at';
 
-export async function listAcceptedFriendships(userId: string) {
+export async function listAcceptedFriendships(userId: string): Promise<AcceptedFriendship[]> {
   const { data, error } = await supabase
     .from('friendships')
     .select(friendshipSelect)
@@ -111,10 +152,16 @@ export async function listAcceptedFriendships(userId: string) {
     logger.error({ err: error }, 'Error fetching friendships');
     throw new DomainError('database_error', 'Failed to fetch friends');
   }
-  return data || [];
+  return (data || []).map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    friendId: row.friend_id,
+  }));
 }
 
-export async function listPendingRequestsForRecipient(userId: string) {
+export async function listPendingRequestsForRecipient(
+  userId: string
+): Promise<PendingFriendRequest[]> {
   const { data, error } = await supabase
     .from('friendships')
     .select('id, user_id, created_at')
@@ -125,7 +172,11 @@ export async function listPendingRequestsForRecipient(userId: string) {
     logger.error({ err: error }, 'Error fetching friend requests');
     throw new DomainError('database_error', 'Failed to fetch friend requests');
   }
-  return data || [];
+  return (data || []).map((row) => ({
+    id: row.id,
+    fromUserId: row.user_id,
+    createdAt: row.created_at,
+  }));
 }
 
 /** Existence check for a pair, in either direction. Null when no row exists. */

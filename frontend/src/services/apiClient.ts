@@ -6,9 +6,13 @@ import type {
   CreateSessionResponse,
   Friend,
   FriendRequest,
+  FriendRequestsResponse,
+  FriendsListResponse,
   GeocodedArea,
+  GetProfileResponse,
   LoadRestaurantsResponse,
   Restaurant,
+  SearchUsersResponse,
   SessionInvite,
   SessionLocation,
   SessionResponse,
@@ -185,8 +189,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 /**
  * Get the current user's profile (created on first sight server-side)
  */
-export async function getCurrentProfile(): Promise<UserProfile> {
-  return request<UserProfile>('/users/me', {
+export async function getCurrentProfile(): Promise<GetProfileResponse> {
+  return request<GetProfileResponse>('/users/me', {
     headers: getAuthHeaders(),
   });
 }
@@ -195,7 +199,7 @@ export async function getCurrentProfile(): Promise<UserProfile> {
  * Search users by exact email match
  */
 export async function searchUsers(email: string): Promise<UserProfile[]> {
-  const data = await request<{ users: UserProfile[] }>(
+  const data = await request<SearchUsersResponse>(
     `/users/search?email=${encodeURIComponent(email)}`,
     { headers: getAuthHeaders() }
   );
@@ -206,7 +210,7 @@ export async function searchUsers(email: string): Promise<UserProfile[]> {
  * List the current user's accepted friends
  */
 export async function getFriends(): Promise<Friend[]> {
-  const data = await request<{ friends: Friend[] }>('/friends', {
+  const data = await request<FriendsListResponse>('/friends', {
     headers: getAuthHeaders(),
   });
   return data.friends;
@@ -216,7 +220,7 @@ export async function getFriends(): Promise<Friend[]> {
  * List pending friend requests the current user received
  */
 export async function getFriendRequests(): Promise<FriendRequest[]> {
-  const data = await request<{ requests: FriendRequest[] }>('/friends/requests', {
+  const data = await request<FriendRequestsResponse>('/friends/requests', {
     headers: getAuthHeaders(),
   });
   return data.requests;
