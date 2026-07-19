@@ -12,6 +12,7 @@ export const redis = new Redis({
   host: REDIS_HOST,
   port: REDIS_PORT,
   password: REDIS_PASSWORD,
+  family: 0,
   retryStrategy: (times: number) => {
     const delay = Math.min(times * 50, 2000);
     logger.info({ delayMs: delay, attempt: times }, 'Redis reconnecting');

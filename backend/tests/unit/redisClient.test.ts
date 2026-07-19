@@ -102,6 +102,7 @@ describe('redis client helpers', () => {
       host: 'localhost',
       port: 6379,
       password: undefined,
+      family: 0,
       maxRetriesPerRequest: 3,
       enableReadyCheck: true,
       lazyConnect: false,

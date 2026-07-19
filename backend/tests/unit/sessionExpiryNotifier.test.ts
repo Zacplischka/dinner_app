@@ -124,6 +124,7 @@ describe('session expiry notifier', () => {
       host: 'localhost',
       port: 6379,
       password: undefined,
+      family: 0,
     });
     expect(errorSpy).toHaveBeenCalledWith(
       { err: redisState.configError },

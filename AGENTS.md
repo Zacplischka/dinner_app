@@ -1,7 +1,7 @@
 # Claude Code Context
 
 **Project**: Dinder
-**Last Updated**: 2026-07-12
+**Last Updated**: 2026-07-19
 
 ## Preflight
 1. Read `docs/branching.md` for repo branching strategy
@@ -11,7 +11,7 @@
 - **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns — see `DEPLOY_GUIDE.md`):
   - Backend: https://backend-production-4ce9.up.railway.app (health: `/health`; config in `backend/railway.json`)
   - Frontend: https://frontend-production-bdfc.up.railway.app (static Vite site, needs `RAILPACK_SPA_OUTPUT_DIR=frontend/dist`)
-  - Redis: service `redis-bbxI`, reached via public TCP proxy `trolley.proxy.rlwy.net` (internal URL fails in monorepo builds)
+  - Redis: service `redis-bbxI`; backend runtime `REDIS_HOST`/`REDIS_PORT` use the Railway private hostname and port `6379`
 - **Supabase**: project `hcjuqvicwuszwqkreklc` (https://hcjuqvicwuszwqkreklc.supabase.co) — social graph persistence + auth (JWT).
 - **Google Places API (New)**: `places.googleapis.com/v1` (`places:searchNearby`, `places:searchText`, photo media) — called from `backend/src/services/RestaurantSearchService.ts`; key in `backend/.env`.
 - CI (`.github/workflows/ci-cd.yml`) verifies production deploys by polling the backend health endpoint after Railway deploys.
@@ -21,6 +21,13 @@
 - **Supabase**: Supabase MCP tools (`mcp__plugin_supabase_supabase__*`) — list_tables, execute_sql, get_logs, get_advisors, apply_migration, etc. against project `hcjuqvicwuszwqkreklc`.
 - **Railway**: `railway` CLI (installed via Homebrew). Requires `railway login` (interactive — ask the user to run it), then `railway link`, `railway logs`, `railway variables`, `railway up`.
 - **Google Places**: `gcloud` CLI is installed and authenticated, but the active project is `mypickle-486702` — verify/switch project before touching Places quotas or keys (`gcloud config set project <id>`). Runtime access just uses the API key in `backend/.env`.
+
+### Redis runtime rollout
+
+1. Deploy `family: 0` on both ioredis clients while runtime variables still use the public proxy.
+2. Record the previous proxy host/port for rollback, then switch only backend `REDIS_HOST`/`REDIS_PORT` to the private hostname and `6379`; leave `REDIS_PASSWORD` unchanged, redeploy, check `/health` and subscriber initialization, and smoke-test session create/join.
+
+`backend/scripts/redis-debug.sh --prod` remains on `REDIS_PUBLIC_URL` because developer machines cannot resolve Railway private DNS. This is the only public-proxy exception; production backend runtime config must stay private. Roll back by restoring the recorded proxy host/port and redeploying.
 
 ## Gotchas
 
