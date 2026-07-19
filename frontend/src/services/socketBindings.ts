@@ -44,8 +44,10 @@ const socketConfig: SocketConfig = {
       if (store.sessionCode && previousParticipant) {
         void joinSession(store.sessionCode, previousParticipant.displayName).then((ack) => {
           if (!ack.success) {
-            store.setConnectionStatus(false);
-            store.setSessionStatus('expired');
+            localStorage.removeItem(
+              `dinder:rejoin:${store.sessionCode}:${previousParticipant.displayName}`
+            );
+            store.resetSession();
             toast.error(`Could not rejoin session: ${ack.error.message}`);
           }
         });

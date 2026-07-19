@@ -118,7 +118,7 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.success).toHaveBeenCalledWith('Reconnected to server');
   });
 
-  it('rejoins the persisted session after refresh and expires it when rejoin fails', async () => {
+  it('rejoins the persisted session after refresh and clears it when rejoin fails', async () => {
     const socket = setupSocket();
     const emitSpy = vi.spyOn(socket, 'emit');
     localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
@@ -158,9 +158,14 @@ describe('socketBindings', () => {
     });
     socket.trigger('connect');
 
-    await vi.waitFor(() => expect(useSessionStore.getState().sessionStatus).toBe('expired'));
+    await vi.waitFor(() => expect(useSessionStore.getState().sessionCode).toBeNull());
     expect(useSessionStore.getState().isConnected).toBe(false);
+    expect(useSessionStore.getState().participants).toEqual([]);
+    expect(localStorage.getItem('dinder:rejoin:AB123:Alice')).toBeNull();
     expect(socketMocks.toast.error).toHaveBeenCalledWith('Could not rejoin session: expired');
+
+    socket.trigger('connect');
+    expect(emitSpy).toHaveBeenCalledTimes(2);
   });
 
   it('does not toast on an intentional disconnect', () => {
