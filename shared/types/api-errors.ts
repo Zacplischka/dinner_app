@@ -11,6 +11,10 @@ export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'ALREADY_SUBMITTED'
   | 'NOT_IN_SESSION'
+  // Location / restaurant loading
+  | 'AREA_NOT_FOUND'
+  | 'NO_RESTAURANTS'
+  | 'RATE_LIMITED'
   // Friends domain
   | 'NOT_FOUND'
   | 'ALREADY_FRIENDS'

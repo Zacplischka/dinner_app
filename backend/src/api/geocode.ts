@@ -2,7 +2,7 @@
 // location for Session creation, so browser geolocation is never required.
 
 import { Router } from 'express';
-import type { GeocodedArea } from '@dinder/shared/types';
+import type { ApiError, GeocodedArea } from '@dinder/shared/types';
 import { asyncHandler } from './asyncHandler.js';
 import {
   pruneExpiredRequests,
@@ -43,13 +43,13 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
         return res.status(400).json({
           code: 'VALIDATION_ERROR',
           message: 'Enter a suburb or postcode to search for.',
-        });
+        } satisfies ApiError);
       }
       if (hasCoords && (Math.abs(latitude) > 90 || Math.abs(longitude) > 180)) {
         return res.status(400).json({
           code: 'VALIDATION_ERROR',
           message: 'Coordinates are out of range.',
-        });
+        } satisfies ApiError);
       }
 
       const now = Date.now();
@@ -63,7 +63,7 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
         return res.status(429).json({
           code: 'RATE_LIMITED',
           message: 'Too many location lookups. Please try again shortly.',
-        });
+        } satisfies ApiError);
       } else {
         window.count++;
       }
@@ -72,7 +72,7 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
         // Best-effort area name for coordinates the browser already resolved.
         const area = await reverseGeocodeSuburb(latitude, longitude).catch(() => undefined);
         req.log.info({ hasArea: Boolean(area) }, 'Reverse geocoded coordinates');
-        return res.json({ latitude, longitude, area });
+        return res.json({ latitude, longitude, area } satisfies GeocodedArea);
       }
 
       const resolved = await geocodeArea(query);
@@ -82,7 +82,7 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
           code: 'AREA_NOT_FOUND',
           message:
             "We couldn't find that area. Check the spelling or try a nearby suburb or postcode.",
-        });
+        } satisfies ApiError);
       }
 
       req.log.info({ hasArea: Boolean(resolved.area) }, 'Geocoded area query');
