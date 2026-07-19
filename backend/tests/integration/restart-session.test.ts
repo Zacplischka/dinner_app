@@ -50,13 +50,7 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
     const callback = vi.fn();
     const socket = { id: 'alice' };
 
-    await handleSessionRestart(
-      socket as any,
-      io as any,
-      { sessionCode },
-      callback,
-      sessionService
-    );
+    await handleSessionRestart(socket as any, io as any, { sessionCode }, callback, sessionService);
 
     return { callback, io, emit };
   }
@@ -72,7 +66,7 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
   it('should broadcast session:restarted to all participants', async () => {
     const { callback, io, emit } = await restartSession();
 
-    expect(callback).toHaveBeenCalledWith({ success: true });
+    expect(callback).toHaveBeenCalledWith({ success: true, data: null });
     expect(io.in).toHaveBeenCalledWith(sessionCode);
     expect(emit).toHaveBeenCalledWith('session:restarted', {
       sessionCode,

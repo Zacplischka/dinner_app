@@ -84,12 +84,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.stringContaining('Invalid payload:'),
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -111,12 +109,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Session not found or has expired',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_NOT_FOUND', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           sessionCode,
@@ -140,13 +136,16 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
+      expect(callback).toHaveBeenCalledWith({
+        success: true,
+        data: {
           participantId: 'socket-1',
+          sessionCode,
+          displayName: 'Alice',
           participantCount: 1,
-        })
-      );
+          participants: [{ participantId: 'socket-1', displayName: 'Alice', isHost: true }],
+        },
+      });
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:joined', {
         participantId: 'socket-1',
         displayName: 'Alice',
@@ -172,13 +171,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          participantId: 'new-socket',
-          participantCount: 1,
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: true,
+        data: expect.objectContaining({ participantId: 'new-socket', participantCount: 1 }),
+      });
       await expect(redis.exists('participant:old-socket')).resolves.toBe(0);
       await expect(redis.exists('participant:new-socket')).resolves.toBe(1);
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:joined', {
@@ -215,12 +211,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Session is full (maximum 4 participants)',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_FULL', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           sessionCode,
@@ -245,12 +239,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'An error occurred while joining the session',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'INTERNAL_ERROR', message: expect.any(String) },
+      });
       expect(errorSpy).toHaveBeenCalledWith(
         { err: error, socketId: 'socket-1' },
         'Error in session:join handler'
@@ -271,12 +263,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.stringContaining('Invalid payload:'),
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -293,12 +283,10 @@ describe('websocket handlers', () => {
 
       await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, service);
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Session not found or has expired',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_NOT_FOUND', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -322,12 +310,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'You are not a participant in this session',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'NOT_IN_SESSION', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'missing',
@@ -399,12 +385,10 @@ describe('websocket handlers', () => {
 
       await handleSessionLeave(socket() as any, {} as any, { sessionCode }, callback, service);
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'An error occurred while leaving the session',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'INTERNAL_ERROR', message: expect.any(String) },
+      });
       expect(errorSpy).toHaveBeenCalledWith(
         { err: error, socketId: 'socket-1' },
         'Error in session:leave handler'
@@ -485,12 +469,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.stringContaining('Invalid payload:'),
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -507,12 +489,10 @@ describe('websocket handlers', () => {
 
       await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, service);
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Session not found or has expired',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_NOT_FOUND', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -536,12 +516,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'You are not a participant in this session',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'NOT_IN_SESSION', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'missing',
@@ -586,12 +564,10 @@ describe('websocket handlers', () => {
 
       await handleSessionRestart(socket() as any, io() as any, { sessionCode }, callback, service);
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'An error occurred while restarting the session',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'INTERNAL_ERROR', message: expect.any(String) },
+      });
       expect(errorSpy).toHaveBeenCalledWith(
         { err: error, socketId: 'socket-1' },
         'Error in session:restart handler'
@@ -612,12 +588,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: expect.stringContaining('Invalid payload:'),
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -640,12 +614,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'Session not found or has expired',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_NOT_FOUND', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -669,12 +641,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'You are not a participant in this session',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'NOT_IN_SESSION', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'missing',
@@ -698,12 +668,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'One or more selected options are invalid',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -728,12 +696,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'You have already submitted your selections',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'ALREADY_SUBMITTED', message: expect.any(String) },
+      });
       expect(warnSpy).toHaveBeenCalledWith(
         {
           socketId: 'socket-1',
@@ -758,12 +724,10 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          error: 'An error occurred while submitting selections',
-        })
-      );
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'INTERNAL_ERROR', message: expect.any(String) },
+      });
       expect(errorSpy).toHaveBeenCalledWith(
         { err: error, socketId: 'socket-1' },
         'Error in selection:submit handler'
@@ -825,16 +789,17 @@ describe('websocket handlers', () => {
     });
   });
 
-  // #114 bridge: canonical `data` on success and canonical `apiError` on failure,
-  // emitted ALONGSIDE the legacy flattened/string fields the deployed frontend reads.
-  describe('canonical ack bridge fields (#114)', () => {
+  // #116: canonical Ack<T> only - `{ success:true, data }` or
+  // `{ success:false, error: ApiError }`. No flattened success fields, no string
+  // errors, no compatibility `apiError` key; success and failure never coexist.
+  describe('canonical ack wire shape (#116)', () => {
     beforeEach(() => {
       vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       vi.spyOn(logger, 'info').mockImplementation(() => undefined);
       vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     });
 
-    it('join success carries canonical data mirroring the legacy flattened fields', async () => {
+    it('join success is exactly { success, data } with no flattened fields', async () => {
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
       const callback = vi.fn();
 
@@ -846,24 +811,22 @@ describe('websocket handlers', () => {
       );
 
       const ack = callback.mock.calls[0][0];
-      expect(ack.success).toBe(true);
-      const expectedParticipants = [
-        { participantId: 'socket-1', displayName: 'Alice', isHost: true },
-      ];
-      expect(ack.data).toEqual({
-        participantId: 'socket-1',
-        sessionCode,
-        displayName: 'Alice',
-        participantCount: 1,
-        participants: expectedParticipants,
+      expect(ack).toEqual({
+        success: true,
+        data: {
+          participantId: 'socket-1',
+          sessionCode,
+          displayName: 'Alice',
+          participantCount: 1,
+          participants: [{ participantId: 'socket-1', displayName: 'Alice', isHost: true }],
+        },
       });
-      // Canonical data mirrors the legacy flattened fields still present during the bridge.
-      expect(ack.participantId).toBe('socket-1');
-      expect(ack.participantCount).toBe(1);
-      expect(ack.participants).toEqual(expectedParticipants);
+      // The removed legacy flattened fields are absent.
+      expect(ack.participantId).toBeUndefined();
+      expect(ack.participants).toBeUndefined();
     });
 
-    it('join failure keeps the legacy error string and adds the canonical apiError', async () => {
+    it('join failure is exactly { success:false, error: ApiError } with no legacy fields', async () => {
       const callback = vi.fn();
 
       // Missing session → SESSION_NOT_FOUND.
@@ -875,11 +838,14 @@ describe('websocket handlers', () => {
       );
 
       const ack = callback.mock.calls[0][0];
-      expect(ack.error).toBe('Session not found or has expired');
-      expect(ack.apiError).toEqual({ code: 'SESSION_NOT_FOUND', message: expect.any(String) });
+      expect(ack).toEqual({
+        success: false,
+        error: { code: 'SESSION_NOT_FOUND', message: expect.any(String) },
+      });
+      expect(ack.apiError).toBeUndefined();
     });
 
-    it('invalid payloads surface a VALIDATION_ERROR apiError', async () => {
+    it('invalid payloads surface a VALIDATION_ERROR in error', async () => {
       const callback = vi.fn();
 
       await handleSelectionSubmit(
@@ -891,8 +857,8 @@ describe('websocket handlers', () => {
       );
 
       const ack = callback.mock.calls[0][0];
-      expect(ack.error).toContain('Invalid payload:');
-      expect(ack.apiError.code).toBe('VALIDATION_ERROR');
+      expect(ack.success).toBe(false);
+      expect(ack.error.code).toBe('VALIDATION_ERROR');
     });
 
     it('domain failures map to their public codes (already-submitted → ALREADY_SUBMITTED)', async () => {
@@ -908,7 +874,7 @@ describe('websocket handlers', () => {
         service
       );
 
-      expect(callback.mock.calls[0][0].apiError.code).toBe('ALREADY_SUBMITTED');
+      expect(callback.mock.calls[0][0].error.code).toBe('ALREADY_SUBMITTED');
     });
 
     it('unexpected failures map to INTERNAL_ERROR without leaking the cause', async () => {
@@ -924,8 +890,8 @@ describe('websocket handlers', () => {
       );
 
       const ack = callback.mock.calls[0][0];
-      expect(ack.apiError.code).toBe('INTERNAL_ERROR');
-      expect(ack.apiError.message).not.toContain('redis down');
+      expect(ack.error.code).toBe('INTERNAL_ERROR');
+      expect(ack.error.message).not.toContain('redis down');
     });
 
     it('no-data commands ack canonical data: null', async () => {

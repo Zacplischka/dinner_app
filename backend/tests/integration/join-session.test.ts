@@ -63,22 +63,19 @@ describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
 
     expect(alice.response).toMatchObject({
       success: true,
-      displayName: 'Alice',
-      participantCount: 1,
+      data: { displayName: 'Alice', participantCount: 1 },
     });
-    expect(alice.response.participants).toEqual([
+    expect(alice.response.data.participants).toEqual([
       expect.objectContaining({ displayName: 'Alice', isHost: true }),
     ]);
 
     expect(bob.response).toMatchObject({
       success: true,
-      displayName: 'Bob',
-      participantCount: 2,
+      data: { displayName: 'Bob', participantCount: 2 },
     });
     expect(charlie.response).toMatchObject({
       success: true,
-      displayName: 'Charlie',
-      participantCount: 3,
+      data: { displayName: 'Charlie', participantCount: 3 },
     });
 
     await expect(redis.scard(`session:${testSessionCode}:participants`)).resolves.toBe(3);
@@ -117,7 +114,7 @@ describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
 
     expect(fifth.response).toMatchObject({
       success: false,
-      error: 'Session is full (maximum 4 participants)',
+      error: { code: 'SESSION_FULL' },
     });
     await expect(redis.scard(`session:${testSessionCode}:participants`)).resolves.toBe(4);
 
