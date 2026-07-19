@@ -20,6 +20,7 @@ describe('canonical Socket.IO ack wire contract (shared event map)', () => {
       sessionCode: 'ABC12',
       displayName: 'Alice',
       participantCount: 1,
+      rejoinToken: '00000000-0000-4000-8000-000000000001',
       participants: [{ participantId: 'p1', displayName: 'Alice', isHost: true }],
     };
     const ack: SessionJoinResponse = { success: true, data };

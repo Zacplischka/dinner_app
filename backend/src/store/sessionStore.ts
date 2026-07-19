@@ -41,11 +41,13 @@ export interface Participant {
   joinedAt: number;
   hasSubmitted: boolean;
   isHost: boolean;
+  rejoinToken?: string;
 }
 
 // --- Keyspace (private) ------------------------------------------------
 // session:{code}                     hash: session metadata
 // session:{code}:participants       set:  participant ids
+// session:{code}:display_names      hash: display name -> [participant id, rejoin token]
 // session:{code}:{pid}:selections   set:  place ids a participant selected
 // session:{code}:results            set:  the Match ('__empty__' sentinel keeps TTL on empty)
 // session:{code}:restaurant_ids     set:  valid place ids for the session
@@ -54,6 +56,7 @@ export interface Participant {
 
 const sessionKey = (code: string) => `session:${code}`;
 const participantsKey = (code: string) => `session:${code}:participants`;
+const displayNamesKey = (code: string) => `session:${code}:display_names`;
 const selectionsKey = (code: string, pid: string) => `session:${code}:${pid}:selections`;
 const resultsKey = (code: string) => `session:${code}:results`;
 const restaurantIdsKey = (code: string) => `session:${code}:restaurant_ids`;
@@ -67,6 +70,27 @@ for i = 1, #KEYS do
     redis.call('EXPIREAT', KEYS[i], expireAt)
 end
 return expireAt
+`;
+
+// Atomically create a display-name claim or transfer an existing claim from
+// the participant being rejoined to their replacement connection.
+const CLAIM_DISPLAY_NAME_LUA = `
+local current = redis.call('HGET', KEYS[1], ARGV[1])
+if current then
+    if current ~= ARGV[2] then return 0 end
+elseif ARGV[2] ~= '' then
+    return 0
+end
+redis.call('HSET', KEYS[1], ARGV[1], ARGV[3])
+redis.call('EXPIREAT', KEYS[1], ARGV[4])
+return 1
+`;
+
+// A stale connection must not release a claim already transferred to its
+// replacement.
+const RELEASE_DISPLAY_NAME_LUA = `
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return 0 end
+return redis.call('HDEL', KEYS[1], ARGV[1])
 `;
 
 function calculateExpireAt(): number {
@@ -101,6 +125,7 @@ export function createSessionStore(redis: Redis) {
     const keys = [
       sessionKey(sessionCode),
       participantsKey(sessionCode),
+      displayNamesKey(sessionCode),
       resultsKey(sessionCode),
       restaurantIdsKey(sessionCode),
       restaurantsKey(sessionCode),
@@ -226,6 +251,7 @@ export function createSessionStore(redis: Redis) {
     const pipeline = redis.pipeline();
     pipeline.del(sessionKey(sessionCode));
     pipeline.del(participantsKey(sessionCode));
+    pipeline.del(displayNamesKey(sessionCode));
     pipeline.del(resultsKey(sessionCode));
     pipeline.del(restaurantIdsKey(sessionCode));
     pipeline.del(restaurantsKey(sessionCode));
@@ -238,23 +264,53 @@ export function createSessionStore(redis: Redis) {
 
   // --- Participants ------------------------------------------------------
 
+  async function claimDisplayName(
+    sessionCode: string,
+    displayName: string,
+    participantId: string,
+    rejoinToken: string,
+    previousParticipantId?: string
+  ): Promise<boolean> {
+    const previousOwner = previousParticipantId
+      ? JSON.stringify([previousParticipantId, rejoinToken])
+      : '';
+    const nextOwner = JSON.stringify([participantId, rejoinToken]);
+    const claimed = await redis.eval(
+      CLAIM_DISPLAY_NAME_LUA,
+      1,
+      displayNamesKey(sessionCode),
+      displayName,
+      previousOwner,
+      nextOwner,
+      calculateExpireAt()
+    );
+    return claimed === 1;
+  }
+
   /** Adds a Participant and returns the new participant set size. Touches TTL. */
   async function addParticipant(
     sessionCode: string,
-    participant: { participantId: string; displayName: string; isHost?: boolean }
+    participant: {
+      participantId: string;
+      displayName: string;
+      isHost?: boolean;
+      rejoinToken?: string;
+    }
   ): Promise<number> {
-    const { participantId, displayName, isHost = false } = participant;
+    const { participantId, displayName, isHost = false, rejoinToken } = participant;
     const now = Math.floor(Date.now() / 1000);
 
     const pipeline = redis.pipeline();
     pipeline.sadd(participantsKey(sessionCode), participantId);
-    pipeline.hset(participantKey(participantId), {
+    const participantData: Record<string, string | number> = {
       displayName,
       sessionCode,
       joinedAt: now,
       isHost: isHost ? '1' : '0',
       hasSubmitted: '0',
-    });
+    };
+    if (rejoinToken) participantData.rejoinToken = rejoinToken;
+    pipeline.hset(participantKey(participantId), participantData);
     await pipeline.exec();
 
     await touch(sessionCode);
@@ -263,11 +319,22 @@ export function createSessionStore(redis: Redis) {
 
   /** Removes a Participant and their Selections; returns the remaining count. */
   async function removeParticipant(sessionCode: string, participantId: string): Promise<number> {
+    const participant = await getParticipant(participantId);
     const pipeline = redis.pipeline();
     pipeline.srem(participantsKey(sessionCode), participantId);
     pipeline.del(participantKey(participantId));
     pipeline.del(selectionsKey(sessionCode, participantId));
     await pipeline.exec();
+
+    if (participant?.rejoinToken) {
+      await redis.eval(
+        RELEASE_DISPLAY_NAME_LUA,
+        1,
+        displayNamesKey(sessionCode),
+        participant.displayName,
+        JSON.stringify([participantId, participant.rejoinToken])
+      );
+    }
 
     return await redis.scard(participantsKey(sessionCode));
   }
@@ -284,6 +351,7 @@ export function createSessionStore(redis: Redis) {
       joinedAt: parseInt(data.joinedAt, 10),
       hasSubmitted: data.hasSubmitted === '1',
       isHost: data.isHost === '1',
+      rejoinToken: data.rejoinToken || undefined,
     };
   }
 
@@ -489,6 +557,7 @@ export function createSessionStore(redis: Redis) {
     getSessionTtl,
     updateState,
     deleteSession,
+    claimDisplayName,
     addParticipant,
     removeParticipant,
     getParticipant,

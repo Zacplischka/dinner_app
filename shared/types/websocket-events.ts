@@ -17,6 +17,7 @@ export type Ack<T> = { success: true; data: T } | { success: false; error: ApiEr
 export interface SessionJoinPayload {
   sessionCode: string;
   displayName: string;
+  rejoinToken?: string;
 }
 
 /** Canonical success payload for session:join (the `data` of Ack<SessionJoinData>). */
@@ -25,6 +26,7 @@ export interface SessionJoinData {
   sessionCode: string;
   displayName: string;
   participantCount: number;
+  rejoinToken: string;
   participants: Array<{
     participantId: string;
     displayName: string;

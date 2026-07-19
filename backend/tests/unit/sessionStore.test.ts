@@ -88,6 +88,39 @@ describe('SessionStore', () => {
   });
 
   describe('participants', () => {
+    it('atomically transfers and releases display-name claims', async () => {
+      await createTestSession();
+      const token = 'rejoin-token';
+
+      await expect(store.claimDisplayName(sessionCode, 'Alice', 'p1', token)).resolves.toBe(true);
+      await store.addParticipant(sessionCode, {
+        participantId: 'p1',
+        displayName: 'Alice',
+        rejoinToken: token,
+      });
+      await expect(
+        store.claimDisplayName(sessionCode, 'Alice', 'impostor', 'other-token')
+      ).resolves.toBe(false);
+
+      await expect(store.claimDisplayName(sessionCode, 'Alice', 'p2', token, 'p1')).resolves.toBe(
+        true
+      );
+      await store.removeParticipant(sessionCode, 'p1');
+      await expect(
+        store.claimDisplayName(sessionCode, 'Alice', 'impostor', 'other-token')
+      ).resolves.toBe(false);
+
+      await store.addParticipant(sessionCode, {
+        participantId: 'p2',
+        displayName: 'Alice',
+        rejoinToken: token,
+      });
+      await store.removeParticipant(sessionCode, 'p2');
+      await expect(store.claimDisplayName(sessionCode, 'Alice', 'p3', 'new-token')).resolves.toBe(
+        true
+      );
+    });
+
     it('adds, lists, and counts participants', async () => {
       await createTestSession();
       const count1 = await store.addParticipant(sessionCode, {

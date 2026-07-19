@@ -86,9 +86,10 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
  */
 export function joinSession(
   sessionCode: string,
-  displayName: string
+  displayName: string,
+  rejoinToken?: string
 ): Promise<Ack<SessionJoinData>> {
-  const payload: SessionJoinPayload = { sessionCode, displayName };
+  const payload: SessionJoinPayload = { sessionCode, displayName, rejoinToken };
   return emitAck<SessionJoinData>('session:join', payload);
 }
 
