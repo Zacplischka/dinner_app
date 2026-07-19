@@ -184,7 +184,7 @@ function SelectionsList({
             <div className="ml-10">
               {participantSelections.length > 0 ? (
                 <ul className="text-sm text-muted space-y-1">
-                  {participantSelections.map((selectionId, idx) => {
+                  {participantSelections.map((selectionId) => {
                     // Check if this selection is a match (in overlappingOptions)
                     const isMatch = overlappingOptions.some((o) => o.placeId === selectionId);
 
@@ -192,7 +192,7 @@ function SelectionsList({
                     const displayName = restaurantNameMap.get(selectionId) || selectionId;
 
                     return (
-                      <li key={idx} className="flex items-center space-x-2">
+                      <li key={selectionId} className="flex items-center space-x-2">
                         {isMatch && (
                           <svg
                             className="w-4 h-4 text-lime"
