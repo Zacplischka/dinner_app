@@ -9,13 +9,20 @@
 // still return raw columns, and #107/#108 own those.
 
 import { logger } from '../logger.js';
-import { supabase, type Profile } from '../services/supabase.js';
+import { supabase, type Database } from '../services/supabase.js';
 import { DomainError } from '../services/DomainError.js';
-import type { UserProfile } from '@dinder/shared/types';
+import type { SessionInvite, UserProfile } from '@dinder/shared/types';
+
+type Tables = Database['public']['Tables'];
+
+// Generated status columns come back as plain `string`; the schema only ever
+// stores these values, so we narrow them at the mapper — no runtime decoder.
+type FriendshipStatus = 'pending' | 'accepted' | 'blocked';
+type InviteStatus = SessionInvite['status'];
 
 const profileSelect = 'id, display_name, avatar_url, email';
 
-type ProfileRow = Pick<Profile, 'id' | 'display_name' | 'avatar_url' | 'email'>;
+type ProfileRow = Pick<Tables['profiles']['Row'], 'id' | 'display_name' | 'avatar_url' | 'email'>;
 
 // The single row→wire mapping for profiles. Missing fields fall back the same
 // way the old service-side mapper did (partial rows only occur in tests).
@@ -194,7 +201,7 @@ export async function findFriendshipBetween(userId: string, otherUserId: string)
     logger.error({ err: error }, 'Error checking existing friendship');
     throw new DomainError('database_error', 'Failed to check existing friendship');
   }
-  return data;
+  return data && { id: data.id, status: data.status as FriendshipStatus };
 }
 
 export async function createFriendRequest(userId: string, friendId: string) {
@@ -289,14 +296,9 @@ export async function listAcceptedFriendPairs(userId: string) {
 
 const sessionInviteSelect = 'id, session_code, inviter_id, status, created_at';
 
-type SessionInviteRow = {
-  session_code: string;
-  inviter_id: string;
-  invitee_id: string;
-  status: 'pending';
-};
+type SessionInviteInsert = Tables['session_invites']['Insert'];
 
-export async function createSessionInvites(invites: SessionInviteRow[]): Promise<void> {
+export async function createSessionInvites(invites: SessionInviteInsert[]): Promise<void> {
   // Upsert to handle duplicate invites gracefully
   const { error } = await supabase
     .from('session_invites')
@@ -326,7 +328,7 @@ export async function listPendingInvitesForInvitee(userId: string) {
     logger.error({ err: error }, 'Error fetching invites');
     throw new DomainError('database_error', 'Failed to fetch session invites');
   }
-  return data || [];
+  return (data || []).map((row) => ({ ...row, status: row.status as InviteStatus }));
 }
 
 /**

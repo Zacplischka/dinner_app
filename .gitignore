@@ -8,7 +8,12 @@ graphify-out/
 .env.development.local
 .env.test.local
 .env.production.local
-.specify 
+.specify
 .cursor
+# Backend's tsc build emits these next to the generated-types source (it sits
+# outside backend/src's rootDir). The committed database.types.ts is the authority.
+supabase/database.types.js
+supabase/database.types.d.ts
+supabase/database.types.*.map
 .playwright-cli
 output/
