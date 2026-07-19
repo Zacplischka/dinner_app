@@ -65,7 +65,8 @@ describe('ComparePage', () => {
     await waitFor(() => expect(screen.getByText('Comparison view')).toBeInTheDocument());
   });
 
-  it('replaces a failed Venue thumbnail with its initial tile', () => {
+  it('lazy-loads the thumbnail, retries a failed load once, then falls back to the initial tile', () => {
+    vi.useFakeTimers();
     useComparisonStore.setState({
       location: { latitude: -37.81, longitude: 144.96 },
       venues: [
@@ -81,10 +82,22 @@ describe('ComparePage', () => {
     renderPage();
     const venueCard = screen.getByRole('button', { name: /Compare Bella Pizza/ });
     const image = venueCard.querySelector('img') as HTMLImageElement;
-    fireEvent.error(image);
+    expect(image).toHaveAttribute('loading', 'lazy');
 
-    expect(image).not.toBeVisible();
+    // A transient failure keeps the photo up while one retry is pending.
+    fireEvent.error(image);
+    expect(image).toBeVisible();
+
+    act(() => vi.advanceTimersByTime(2000));
+    const retry = venueCard.querySelector('img') as HTMLImageElement;
+    expect(retry).not.toBe(image);
+    expect(retry).toHaveAttribute('src', 'https://example.com/broken.jpg');
+
+    // A second failure gives up and leaves the initial tile.
+    fireEvent.error(retry);
+    expect(venueCard.querySelector('img')).toBeNull();
     expect(venueCard).toHaveTextContent('B');
+    vi.useRealTimers();
   });
 
   it('derives Cuisine chips from Venues, ranked by frequency with labels and icons', () => {
