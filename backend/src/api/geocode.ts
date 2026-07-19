@@ -72,7 +72,7 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
         // Best-effort area name for coordinates the browser already resolved.
         const area = await reverseGeocodeSuburb(latitude, longitude).catch(() => undefined);
         req.log.info({ hasArea: Boolean(area) }, 'Reverse geocoded coordinates');
-        return res.json({ latitude, longitude, area });
+        return res.json({ latitude, longitude, area } satisfies GeocodedArea);
       }
 
       const resolved = await geocodeArea(query);

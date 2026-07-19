@@ -20,18 +20,6 @@ export interface CreateSessionRequest {
   searchRadiusMiles?: number;
 }
 
-export interface CreateSessionResponse {
-  sessionCode: string;
-  hostName: string;
-  participantCount: number;
-  state: string;
-  expiresAt: string;
-  shareableLink: string;
-  location?: SessionLocation;
-  searchRadiusMiles?: number;
-  restaurantCount?: number;
-}
-
 // GET /api/sessions/:sessionCode
 export interface SessionResponse {
   sessionCode: string;
@@ -40,6 +28,13 @@ export interface SessionResponse {
   state: string;
   expiresAt: string;
   shareableLink: string;
+}
+
+// POST /api/sessions response — a Session plus the host-supplied setup echoed back.
+export interface CreateSessionResponse extends SessionResponse {
+  location?: SessionLocation;
+  searchRadiusMiles?: number;
+  restaurantCount?: number;
 }
 
 // GET /api/options/:sessionCode — restaurant loading
