@@ -28,7 +28,7 @@ interface GooglePlaceResult {
   displayName: { text: string };
   rating?: number;
   priceLevel?: string;
-  primaryType?: string;  // e.g., "mexican_restaurant", "golf_course"
+  primaryType?: string; // e.g., "mexican_restaurant", "golf_course"
   primaryTypeDisplayName?: { text: string };
   formattedAddress?: string;
   photos?: GooglePlacePhoto[];
@@ -56,7 +56,7 @@ export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> 
     throw new Error(`Places API error: ${response.statusText}`);
   }
 
-  const place = await response.json() as GooglePlaceResult;
+  const place = (await response.json()) as GooglePlaceResult;
   if (!place.id || !place.displayName?.text || !place.formattedAddress || !place.location) {
     throw new Error('Places API returned incomplete Venue details');
   }
@@ -92,15 +92,55 @@ export async function reverseGeocodeSuburb(
     throw new Error(`Geocoding API error: ${response.statusText}`);
   }
 
-  const data = await response.json() as {
+  const data = (await response.json()) as {
     results?: Array<{
       addressComponents?: Array<{ longText?: string; types?: string[] }>;
     }>;
   };
   return data.results
     ?.flatMap((result) => result.addressComponents || [])
-    .find((component) => component.types?.includes('locality'))
-    ?.longText;
+    .find((component) => component.types?.includes('locality'))?.longText;
+}
+
+export interface GeocodedArea {
+  latitude: number;
+  longitude: number;
+  area?: string;
+}
+
+export async function geocodeArea(query: string): Promise<GeocodedArea | undefined> {
+  const apiKey = config.googlePlaces.apiKey;
+  if (!apiKey) {
+    throw new Error('Google Places API configuration missing');
+  }
+
+  const response = await fetch(
+    `https://geocode.googleapis.com/v4/geocode/address/${encodeURIComponent(query)}?regionCode=AU&languageCode=en`,
+    {
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'results.location,results.formattedAddress',
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Geocoding API error: ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as {
+    results?: Array<{
+      location?: { latitude: number; longitude: number };
+      formattedAddress?: string;
+    }>;
+  };
+  const match = data.results?.find((result) => result.location);
+  if (!match?.location) return undefined;
+
+  return {
+    latitude: match.location.latitude,
+    longitude: match.location.longitude,
+    area: match.formattedAddress,
+  };
 }
 
 export function mapPriceLevel(priceLevel: string): number {
@@ -132,13 +172,16 @@ export async function fetchPlacePhoto(photoName: string): Promise<string> {
   );
   if (!response.ok) throw new Error(`Places photo API error: ${response.statusText}`);
 
-  const output = await response.json() as { photoUri?: unknown };
-  if (typeof output.photoUri !== 'string') throw new Error('Places API returned an invalid photo URL');
+  const output = (await response.json()) as { photoUri?: unknown };
+  if (typeof output.photoUri !== 'string')
+    throw new Error('Places API returned an invalid photo URL');
   try {
     const photoUrl = new URL(output.photoUri);
-    if (photoUrl.protocol !== 'https:'
-      || (photoUrl.hostname !== 'googleusercontent.com'
-        && !photoUrl.hostname.endsWith('.googleusercontent.com'))) {
+    if (
+      photoUrl.protocol !== 'https:' ||
+      (photoUrl.hostname !== 'googleusercontent.com' &&
+        !photoUrl.hostname.endsWith('.googleusercontent.com'))
+    ) {
       throw new Error();
     }
     return photoUrl.toString();
@@ -200,10 +243,12 @@ export function isRestaurantType(primaryType?: string): boolean {
   return FOOD_PLACE_TYPES.has(primaryType) || primaryType.endsWith('_restaurant');
 }
 
-export function transformGooglePlaceToRestaurant(place: GooglePlaceResult, apiKey?: string): Restaurant {
-  const photoUrl = place.photos?.[0]?.name && apiKey
-    ? getPhotoUrl(place.photos[0].name, apiKey)
-    : undefined;
+export function transformGooglePlaceToRestaurant(
+  place: GooglePlaceResult,
+  apiKey?: string
+): Restaurant {
+  const photoUrl =
+    place.photos?.[0]?.name && apiKey ? getPhotoUrl(place.photos[0].name, apiKey) : undefined;
 
   return {
     placeId: place.id,
@@ -222,7 +267,8 @@ export function transformGooglePlaceToRestaurant(place: GooglePlaceResult, apiKe
  * Only these chains will have location suffixes stripped for deduplication.
  * This is intentionally conservative to avoid false positives.
  */
-const KNOWN_CHAINS = /^(mcdonalds|wendys|dennys|arbys|hardees|churchs|carls|starbucks|kfc|subway|dominos|burger\s*king|taco\s*bell|pizza\s*hut|hungry\s*jacks|red\s*rooster|nandos|guzman\s*y\s*gomez)$/i;
+const KNOWN_CHAINS =
+  /^(mcdonalds|wendys|dennys|arbys|hardees|churchs|carls|starbucks|kfc|subway|dominos|burger\s*king|taco\s*bell|pizza\s*hut|hungry\s*jacks|red\s*rooster|nandos|guzman\s*y\s*gomez)$/i;
 
 /**
  * Normalize restaurant name for deduplication matching.
@@ -231,10 +277,10 @@ const KNOWN_CHAINS = /^(mcdonalds|wendys|dennys|arbys|hardees|churchs|carls|star
 export function normalizeRestaurantName(name: string): string {
   const normalized = name
     .toLowerCase()
-    .replace(/['']/g, '')               // Remove apostrophes (McDonald's -> mcdonalds)
-    .replace(/\s*[-#(].*$/, '')         // Remove suffixes (- Downtown, #123, (Airport))
-    .replace(/[^a-z0-9\s]/g, '')        // Remove special chars
-    .replace(/\s+/g, ' ')               // Collapse multiple spaces
+    .replace(/['']/g, '') // Remove apostrophes (McDonald's -> mcdonalds)
+    .replace(/\s*[-#(].*$/, '') // Remove suffixes (- Downtown, #123, (Airport))
+    .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+    .replace(/\s+/g, ' ') // Collapse multiple spaces
     .trim();
 
   // Only extract brand name for KNOWN chains
@@ -291,7 +337,8 @@ async function fetchTextSearchPage(
   const textSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
 
   // Include nextPageToken in field mask if paginating
-  const fieldMask = 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken';
+  const fieldMask =
+    'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken';
 
   const requestBody: Record<string, unknown> = {
     textQuery: 'restaurants',
@@ -323,17 +370,20 @@ async function fetchTextSearchPage(
 
   if (response.status === 429) {
     const retryAfter = parseFloat(response.headers.get('Retry-After') || '1');
-    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
     throw new Error('RATE_LIMITED');
   }
 
   if (!response.ok) {
     const errorBody = await response.text();
-    logger.error({ status: response.status, statusText: response.statusText, errorBody }, 'Places API error');
+    logger.error(
+      { status: response.status, statusText: response.statusText, errorBody },
+      'Places API error'
+    );
     throw new Error(`Places API error: ${response.statusText}`);
   }
 
-  const data = await response.json() as { places?: GooglePlaceResult[]; nextPageToken?: string };
+  const data = (await response.json()) as { places?: GooglePlaceResult[]; nextPageToken?: string };
   return {
     places: data.places || [],
     nextPageToken: data.nextPageToken,
@@ -380,7 +430,10 @@ async function fetchNearbyPlaces(
     }
 
     allPlaces.push(...pageData.places);
-    logger.info({ page: pageCount + 1, fetched: pageData.places.length, total: allPlaces.length }, 'RestaurantSearch page fetched');
+    logger.info(
+      { page: pageCount + 1, fetched: pageData.places.length, total: allPlaces.length },
+      'RestaurantSearch page fetched'
+    );
 
     pageToken = pageData.nextPageToken;
     pageCount++;
@@ -389,7 +442,7 @@ async function fetchNearbyPlaces(
     if (!pageToken) break;
 
     // Brief delay before next page request (Google recommends this)
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   logger.info({ placeCount: allPlaces.length }, 'RestaurantSearch API returned places');
@@ -415,19 +468,18 @@ export async function searchNearbyRestaurants(
 
   // Deduplicate chain restaurants (keeps highest-rated instance)
   const uniqueRestaurants = deduplicateRestaurants(transformedRestaurants);
-  logger.info({ restaurantCount: uniqueRestaurants.length }, 'RestaurantSearch after deduplication');
+  logger.info(
+    { restaurantCount: uniqueRestaurants.length },
+    'RestaurantSearch after deduplication'
+  );
 
   // Sort by rating descending
-  const restaurants = uniqueRestaurants.sort((a, b) =>
-    (b.rating || 0) - (a.rating || 0)
-  );
+  const restaurants = uniqueRestaurants.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
   return restaurants;
 }
 
-export async function searchNearbyVenues(
-  params: GooglePlacesSearchParams
-): Promise<Venue[]> {
+export async function searchNearbyVenues(params: GooglePlacesSearchParams): Promise<Venue[]> {
   const { places, apiKey } = await fetchNearbyPlaces(params);
   const origin = { latitude: params.latitude, longitude: params.longitude };
   const maxDistanceMiles = params.radiusMeters / 1609.344;
@@ -452,12 +504,11 @@ function distanceMiles(
   a: { latitude: number; longitude: number },
   b: { latitude: number; longitude: number }
 ): number {
-  const radians = (degrees: number) => degrees * Math.PI / 180;
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
   const dLat = radians(b.latitude - a.latitude);
   const dLng = radians(b.longitude - a.longitude);
   const lat1 = radians(a.latitude);
   const lat2 = radians(b.latitude);
-  const h = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 3958.8 * 2 * Math.asin(Math.sqrt(h));
 }

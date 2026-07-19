@@ -74,6 +74,26 @@ export async function createSession(
   });
 }
 
+export interface GeocodedArea {
+  latitude: number;
+  longitude: number;
+  area?: string;
+}
+
+/**
+ * Resolve a suburb or postcode to coordinates and a human-readable area
+ */
+export async function geocodeArea(query: string): Promise<GeocodedArea> {
+  return request<GeocodedArea>(`/geocode?query=${encodeURIComponent(query)}`);
+}
+
+/**
+ * Resolve browser coordinates to a best-effort human-readable area
+ */
+export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodedArea> {
+  return request<GeocodedArea>(`/geocode?latitude=${latitude}&longitude=${longitude}`);
+}
+
 /**
  * Get session details by code
  */

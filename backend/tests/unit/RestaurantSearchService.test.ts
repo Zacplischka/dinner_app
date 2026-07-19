@@ -84,9 +84,7 @@ describe('RestaurantSearchService', () => {
 
   describe('getPhotoUrl', () => {
     it('builds a keyless API photo URL', () => {
-      expect(
-        RestaurantSearchService.getPhotoUrl('places/abc/photos/def', 'key-123')
-      ).toBe(
+      expect(RestaurantSearchService.getPhotoUrl('places/abc/photos/def', 'key-123')).toBe(
         '/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef'
       );
     });
@@ -102,9 +100,9 @@ describe('RestaurantSearchService', () => {
       });
       vi.stubGlobal('fetch', fetchMock);
 
-      await expect(
-        RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')
-      ).resolves.toBe('https://lh3.googleusercontent.com/photo.jpg');
+      await expect(RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')).resolves.toBe(
+        'https://lh3.googleusercontent.com/photo.jpg'
+      );
       expect(fetchMock).toHaveBeenCalledWith(
         'https://places.googleapis.com/v1/places/abc/photos/def/media?maxHeightPx=400&skipHttpRedirect=true',
         { headers: { 'X-Goog-Api-Key': expect.any(String) } }
@@ -113,10 +111,13 @@ describe('RestaurantSearchService', () => {
     });
 
     it('rejects an untrusted image redirect returned by Google', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ photoUri: 'https://example.com/photo.jpg' }),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ photoUri: 'https://example.com/photo.jpg' }),
+        })
+      );
 
       await expect(
         RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')
@@ -141,9 +142,7 @@ describe('RestaurantSearchService', () => {
       });
       vi.stubGlobal('fetch', fetchMock);
 
-      await expect(
-        RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')
-      ).resolves.toEqual({
+      await expect(RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')).resolves.toEqual({
         placeId: 'ChIJ11InchPizza',
         name: '11 Inch Pizza',
         address: '7A/353 Little Collins St, Melbourne VIC 3000, Australia',
@@ -171,27 +170,94 @@ describe('RestaurantSearchService', () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          results: [{
-            addressComponents: [{
-              longText: 'Melbourne',
-              types: ['locality', 'political'],
-            }],
-          }],
+          results: [
+            {
+              addressComponents: [
+                {
+                  longText: 'Melbourne',
+                  types: ['locality', 'political'],
+                },
+              ],
+            },
+          ],
         }),
       });
       vi.stubGlobal('fetch', fetchMock);
 
-      await expect(
-        RestaurantSearchService.reverseGeocodeSuburb(-37.81, 144.96)
-      ).resolves.toBe('Melbourne');
+      await expect(RestaurantSearchService.reverseGeocodeSuburb(-37.81, 144.96)).resolves.toBe(
+        'Melbourne'
+      );
       expect(fetchMock).toHaveBeenCalledWith(
         'https://geocode.googleapis.com/v4/geocode/location/-37.81,144.96?types=locality&regionCode=AU&languageCode=en',
         {
           headers: {
             'X-Goog-Api-Key': expect.any(String),
-            'X-Goog-FieldMask': 'results.addressComponents.longText,results.addressComponents.types',
+            'X-Goog-FieldMask':
+              'results.addressComponents.longText,results.addressComponents.types',
           },
         }
+      );
+    });
+  });
+
+  describe('geocodeArea', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('resolves a suburb/postcode query to coordinates and formatted address', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          results: [
+            {
+              location: { latitude: -37.8238936, longitude: 144.9982667 },
+              formattedAddress: 'Richmond VIC 3121, Australia',
+            },
+          ],
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(RestaurantSearchService.geocodeArea('Richmond 3121')).resolves.toEqual({
+        latitude: -37.8238936,
+        longitude: 144.9982667,
+        area: 'Richmond VIC 3121, Australia',
+      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://geocode.googleapis.com/v4/geocode/address/Richmond%203121?regionCode=AU&languageCode=en',
+        {
+          headers: {
+            'X-Goog-Api-Key': expect.any(String),
+            'X-Goog-FieldMask': 'results.location,results.formattedAddress',
+          },
+        }
+      );
+    });
+
+    it('returns undefined when the query does not resolve to a location', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({}),
+        })
+      );
+
+      await expect(RestaurantSearchService.geocodeArea('xzqnotaplace')).resolves.toBeUndefined();
+    });
+
+    it('throws on a Geocoding API error response', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          statusText: 'Bad Gateway',
+        })
+      );
+
+      await expect(RestaurantSearchService.geocodeArea('Richmond')).rejects.toThrow(
+        'Geocoding API error: Bad Gateway'
       );
     });
   });
@@ -284,47 +350,75 @@ describe('RestaurantSearchService', () => {
       });
 
       // Text Search API uses different endpoint and request structure
-      expect(fetchMock).toHaveBeenCalledWith(
-        'https://places.googleapis.com/v1/places:searchText',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key': expect.any(String),
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken',
-          },
-          body: JSON.stringify({
-            textQuery: 'restaurants',
-            includedType: 'restaurant',
-            strictTypeFiltering: true,
-            locationBias: {
-              circle: {
-                center: {
-                  latitude: 37.7749,
-                  longitude: -122.4194,
-                },
-                radius: 8046.72,
+      expect(fetchMock).toHaveBeenCalledWith('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': expect.any(String),
+          'X-Goog-FieldMask':
+            'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken',
+        },
+        body: JSON.stringify({
+          textQuery: 'restaurants',
+          includedType: 'restaurant',
+          strictTypeFiltering: true,
+          locationBias: {
+            circle: {
+              center: {
+                latitude: 37.7749,
+                longitude: -122.4194,
               },
+              radius: 8046.72,
             },
-            pageSize: 20,
-          }),
-        }
-      );
+          },
+          pageSize: 20,
+        }),
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Restaurant 1');
-      expect(logSpy).toHaveBeenCalledWith({ page: 1, fetched: 1, total: 1 }, 'RestaurantSearch page fetched');
-      expect(logSpy).toHaveBeenCalledWith({ placeCount: 1 }, 'RestaurantSearch API returned places');
-      expect(logSpy).toHaveBeenCalledWith({ restaurantCount: 1 }, 'RestaurantSearch after type filter');
-      expect(logSpy).toHaveBeenCalledWith({ restaurantCount: 1 }, 'RestaurantSearch after deduplication');
+      expect(logSpy).toHaveBeenCalledWith(
+        { page: 1, fetched: 1, total: 1 },
+        'RestaurantSearch page fetched'
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        { placeCount: 1 },
+        'RestaurantSearch API returned places'
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        { restaurantCount: 1 },
+        'RestaurantSearch after type filter'
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        { restaurantCount: 1 },
+        'RestaurantSearch after deduplication'
+      );
     });
 
     it('should sort results by rating descending', async () => {
       const mockResponse = {
         places: [
-          { id: '1', displayName: { text: 'R1' }, rating: 3.5, priceLevel: 'PRICE_LEVEL_MODERATE', primaryType: 'restaurant' },
-          { id: '2', displayName: { text: 'R2' }, rating: 4.8, priceLevel: 'PRICE_LEVEL_MODERATE', primaryType: 'mexican_restaurant' },
-          { id: '3', displayName: { text: 'R3' }, rating: 4.2, priceLevel: 'PRICE_LEVEL_MODERATE', primaryType: 'italian_restaurant' },
+          {
+            id: '1',
+            displayName: { text: 'R1' },
+            rating: 3.5,
+            priceLevel: 'PRICE_LEVEL_MODERATE',
+            primaryType: 'restaurant',
+          },
+          {
+            id: '2',
+            displayName: { text: 'R2' },
+            rating: 4.8,
+            priceLevel: 'PRICE_LEVEL_MODERATE',
+            primaryType: 'mexican_restaurant',
+          },
+          {
+            id: '3',
+            displayName: { text: 'R3' },
+            rating: 4.2,
+            priceLevel: 'PRICE_LEVEL_MODERATE',
+            primaryType: 'italian_restaurant',
+          },
         ],
       };
 
@@ -366,7 +460,10 @@ describe('RestaurantSearchService', () => {
           radiusMeters: 8046.72,
         })
       ).rejects.toThrow('Places API error: Bad Request');
-      expect(errorSpy).toHaveBeenCalledWith({ status: 400, statusText: 'Bad Request', errorBody: 'Error details' }, 'Places API error');
+      expect(errorSpy).toHaveBeenCalledWith(
+        { status: 400, statusText: 'Bad Request', errorBody: 'Error details' },
+        'Places API error'
+      );
     });
 
     it('should retry on 429 rate limiting', async () => {
@@ -375,7 +472,7 @@ describe('RestaurantSearchService', () => {
         ok: false,
         status: 429,
         headers: {
-          get: (name: string) => name === 'Retry-After' ? '0.1' : null,
+          get: (name: string) => (name === 'Retry-After' ? '0.1' : null),
         },
       });
 
@@ -428,7 +525,6 @@ describe('RestaurantSearchService', () => {
       vi.useRealTimers();
     });
 
-
     it('should throw error after max retries', async () => {
       // Mock 3 consecutive 429 responses
       for (let i = 0; i < 3; i++) {
@@ -436,7 +532,7 @@ describe('RestaurantSearchService', () => {
           ok: false,
           status: 429,
           headers: {
-            get: (name: string) => name === 'Retry-After' ? '0.1' : null,
+            get: (name: string) => (name === 'Retry-After' ? '0.1' : null),
           },
         });
       }
@@ -506,20 +602,40 @@ describe('RestaurantSearchService', () => {
         radiusMeters: 8046.72,
       });
 
-      expect(result.map((restaurant) => restaurant.name)).toEqual([
-        'Unrated One',
-        'Unrated Two',
-      ]);
+      expect(result.map((restaurant) => restaurant.name)).toEqual(['Unrated One', 'Unrated Two']);
     });
-
 
     it('should filter out non-restaurant places by primaryType', async () => {
       const mockResponse = {
         places: [
-          { id: '1', displayName: { text: 'Good Restaurant' }, rating: 4.5, priceLevel: 'PRICE_LEVEL_MODERATE', primaryType: 'italian_restaurant' },
-          { id: '2', displayName: { text: 'Golf Club' }, rating: 4.8, priceLevel: 'PRICE_LEVEL_EXPENSIVE', primaryType: 'golf_course' },
-          { id: '3', displayName: { text: 'Supermarket Deli' }, rating: 4.0, priceLevel: 'PRICE_LEVEL_INEXPENSIVE', primaryType: 'supermarket' },
-          { id: '4', displayName: { text: 'Another Restaurant' }, rating: 4.2, priceLevel: 'PRICE_LEVEL_MODERATE', primaryType: 'restaurant' },
+          {
+            id: '1',
+            displayName: { text: 'Good Restaurant' },
+            rating: 4.5,
+            priceLevel: 'PRICE_LEVEL_MODERATE',
+            primaryType: 'italian_restaurant',
+          },
+          {
+            id: '2',
+            displayName: { text: 'Golf Club' },
+            rating: 4.8,
+            priceLevel: 'PRICE_LEVEL_EXPENSIVE',
+            primaryType: 'golf_course',
+          },
+          {
+            id: '3',
+            displayName: { text: 'Supermarket Deli' },
+            rating: 4.0,
+            priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
+            primaryType: 'supermarket',
+          },
+          {
+            id: '4',
+            displayName: { text: 'Another Restaurant' },
+            rating: 4.2,
+            priceLevel: 'PRICE_LEVEL_MODERATE',
+            primaryType: 'restaurant',
+          },
         ],
       };
 
@@ -539,18 +655,36 @@ describe('RestaurantSearchService', () => {
 
       // Should only include the 2 actual restaurants
       expect(result).toHaveLength(2);
-      expect(result.map(r => r.name)).toContain('Good Restaurant');
-      expect(result.map(r => r.name)).toContain('Another Restaurant');
-      expect(result.map(r => r.name)).not.toContain('Golf Club');
-      expect(result.map(r => r.name)).not.toContain('Supermarket Deli');
+      expect(result.map((r) => r.name)).toContain('Good Restaurant');
+      expect(result.map((r) => r.name)).toContain('Another Restaurant');
+      expect(result.map((r) => r.name)).not.toContain('Golf Club');
+      expect(result.map((r) => r.name)).not.toContain('Supermarket Deli');
     });
 
     it('should deduplicate chain restaurants keeping highest rated', async () => {
       const mockResponse = {
         places: [
-          { id: '1', displayName: { text: "McDonald's" }, rating: 3.5, priceLevel: 'PRICE_LEVEL_INEXPENSIVE', primaryType: 'fast_food_restaurant' },
-          { id: '2', displayName: { text: "McDonald's - Downtown" }, rating: 4.2, priceLevel: 'PRICE_LEVEL_INEXPENSIVE', primaryType: 'fast_food_restaurant' },
-          { id: '3', displayName: { text: 'Burger King' }, rating: 4.0, priceLevel: 'PRICE_LEVEL_INEXPENSIVE', primaryType: 'fast_food_restaurant' },
+          {
+            id: '1',
+            displayName: { text: "McDonald's" },
+            rating: 3.5,
+            priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
+            primaryType: 'fast_food_restaurant',
+          },
+          {
+            id: '2',
+            displayName: { text: "McDonald's - Downtown" },
+            rating: 4.2,
+            priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
+            primaryType: 'fast_food_restaurant',
+          },
+          {
+            id: '3',
+            displayName: { text: 'Burger King' },
+            rating: 4.0,
+            priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
+            primaryType: 'fast_food_restaurant',
+          },
         ],
       };
 
@@ -571,7 +705,7 @@ describe('RestaurantSearchService', () => {
       // Should have 2 unique restaurants (1 McDonald's, 1 Burger King)
       expect(result).toHaveLength(2);
       // McDonald's should be the highest-rated one (4.2)
-      const mcdonalds = result.find(r => r.name.toLowerCase().includes('mcdonald'));
+      const mcdonalds = result.find((r) => r.name.toLowerCase().includes('mcdonald'));
       expect(mcdonalds?.rating).toBe(4.2);
     });
 
@@ -693,7 +827,9 @@ describe('RestaurantSearchService', () => {
     });
 
     it('should remove location suffixes with dash', () => {
-      expect(RestaurantSearchService.normalizeRestaurantName('Burger King - Airport')).toBe('burger king');
+      expect(RestaurantSearchService.normalizeRestaurantName('Burger King - Airport')).toBe(
+        'burger king'
+      );
     });
 
     it('should remove location suffixes with parentheses', () => {
@@ -714,28 +850,46 @@ describe('RestaurantSearchService', () => {
 
     it('should extract brand name for known chains with embedded locations', () => {
       // McDonald's with various location formats
-      expect(RestaurantSearchService.normalizeRestaurantName("McDonald's mt waverly")).toBe('mcdonalds');
-      expect(RestaurantSearchService.normalizeRestaurantName("McDonald's Balwyn")).toBe('mcdonalds');
-      expect(RestaurantSearchService.normalizeRestaurantName("McDonald's Glen Waverley")).toBe('mcdonalds');
+      expect(RestaurantSearchService.normalizeRestaurantName("McDonald's mt waverly")).toBe(
+        'mcdonalds'
+      );
+      expect(RestaurantSearchService.normalizeRestaurantName("McDonald's Balwyn")).toBe(
+        'mcdonalds'
+      );
+      expect(RestaurantSearchService.normalizeRestaurantName("McDonald's Glen Waverley")).toBe(
+        'mcdonalds'
+      );
     });
 
     it('should extract brand name for other known chains', () => {
-      expect(RestaurantSearchService.normalizeRestaurantName("Subway Box Hill")).toBe('subway');
-      expect(RestaurantSearchService.normalizeRestaurantName("KFC Doncaster")).toBe('kfc');
-      expect(RestaurantSearchService.normalizeRestaurantName("Domino's Mt Waverley")).toBe('dominos');
+      expect(RestaurantSearchService.normalizeRestaurantName('Subway Box Hill')).toBe('subway');
+      expect(RestaurantSearchService.normalizeRestaurantName('KFC Doncaster')).toBe('kfc');
+      expect(RestaurantSearchService.normalizeRestaurantName("Domino's Mt Waverley")).toBe(
+        'dominos'
+      );
     });
 
     it('should extract brand name for multi-word chains', () => {
-      expect(RestaurantSearchService.normalizeRestaurantName('Burger King Box Hill')).toBe('burger king');
+      expect(RestaurantSearchService.normalizeRestaurantName('Burger King Box Hill')).toBe(
+        'burger king'
+      );
       expect(RestaurantSearchService.normalizeRestaurantName('Pizza Hut East')).toBe('pizza hut');
-      expect(RestaurantSearchService.normalizeRestaurantName('Guzman y Gomez - Box Hill')).toBe('guzman y gomez');
+      expect(RestaurantSearchService.normalizeRestaurantName('Guzman y Gomez - Box Hill')).toBe(
+        'guzman y gomez'
+      );
     });
 
     it('should NOT strip location from non-chain restaurants (conservative)', () => {
       // Non-chain restaurants should keep their full name to avoid false deduplication
-      expect(RestaurantSearchService.normalizeRestaurantName('Local Cafe Mt Waverley')).toBe('local cafe mt waverley');
-      expect(RestaurantSearchService.normalizeRestaurantName('The Pancake Parlour Doncaster')).toBe('the pancake parlour doncaster');
-      expect(RestaurantSearchService.normalizeRestaurantName('Haidilao Hotpot Glen Waverley')).toBe('haidilao hotpot glen waverley');
+      expect(RestaurantSearchService.normalizeRestaurantName('Local Cafe Mt Waverley')).toBe(
+        'local cafe mt waverley'
+      );
+      expect(RestaurantSearchService.normalizeRestaurantName('The Pancake Parlour Doncaster')).toBe(
+        'the pancake parlour doncaster'
+      );
+      expect(RestaurantSearchService.normalizeRestaurantName('Haidilao Hotpot Glen Waverley')).toBe(
+        'haidilao hotpot glen waverley'
+      );
     });
   });
 
