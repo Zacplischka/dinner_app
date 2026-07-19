@@ -2,6 +2,7 @@
 // Handles user profiles, friendships, and session invites
 
 import { Router, Response } from 'express';
+import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import type { FriendsService } from '../services/FriendsService.js';
@@ -9,15 +10,21 @@ import type {
   ApiError,
   GetProfileResponse,
   SendFriendRequestPayload,
-  InviteToSessionPayload,
   SearchUsersResponse,
   FriendsListResponse,
   FriendRequestsResponse,
   SessionInvitesResponse,
+  SendSessionInviteRequest,
+  AcceptSessionInviteResponse,
 } from '@dinder/shared/types';
 
 export function createFriendsRouter(friendsService: FriendsService) {
   const router = Router();
+
+  // At least one friend id — an empty array or missing body is a validation error.
+  const sendSessionInviteSchema = z.object({
+    friendIds: z.array(z.string().min(1)).min(1),
+  });
 
   // All routes require authentication
   router.use(requireAuth);
@@ -174,31 +181,25 @@ export function createFriendsRouter(friendsService: FriendsService) {
 
   /**
    * POST /api/sessions/:code/invite
-   * Invite friends to join a session
+   * Invite friends to join a session. Returns 204 No Content.
    */
   router.post(
     '/sessions/:code/invite',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-      const { friendIds } = req.body as InviteToSessionPayload;
-
-      if (!friendIds || !Array.isArray(friendIds) || friendIds.length === 0) {
-        return res.status(400).json({
+      const validation = sendSessionInviteSchema.safeParse(req.body);
+      if (!validation.success) {
+        const error: ApiError = {
           code: 'VALIDATION_ERROR',
           message: 'At least one friend ID is required',
-        });
+        };
+        return res.status(400).json(error);
       }
 
-      const invitedCount = await friendsService.inviteFriendsToSession(
-        req.user!.id,
-        req.params.code,
-        friendIds
-      );
+      const { friendIds }: SendSessionInviteRequest = validation.data;
 
-      return res.status(201).json({
-        success: true,
-        invitedCount,
-        message: `Invited ${invitedCount} friend(s) to session`,
-      });
+      await friendsService.inviteFriendsToSession(req.user!.id, req.params.code, friendIds);
+
+      return res.status(204).send();
     })
   );
 
@@ -210,14 +211,14 @@ export function createFriendsRouter(friendsService: FriendsService) {
     '/invites',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       const invites = await friendsService.listSessionInvites(req.user!.id);
-      const response: SessionInvitesResponse = { invites };
-      return res.json(response);
+      return res.json({ invites } satisfies SessionInvitesResponse);
     })
   );
 
   /**
    * POST /api/invites/:inviteId/accept
-   * Accept a session invite
+   * Accept a session invite. Retains a JSON body with the Session Code the
+   * frontend consumes to navigate into the Session.
    */
   router.post(
     '/invites/:inviteId/accept',
@@ -227,27 +228,20 @@ export function createFriendsRouter(friendsService: FriendsService) {
         req.params.inviteId
       );
 
-      return res.json({
-        success: true,
-        sessionCode,
-        message: 'Session invite accepted',
-      });
+      return res.json({ sessionCode } satisfies AcceptSessionInviteResponse);
     })
   );
 
   /**
    * POST /api/invites/:inviteId/decline
-   * Decline a session invite
+   * Decline a session invite. Returns 204 No Content.
    */
   router.post(
     '/invites/:inviteId/decline',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       await friendsService.declineSessionInvite(req.user!.id, req.params.inviteId);
 
-      return res.json({
-        success: true,
-        message: 'Session invite declined',
-      });
+      return res.status(204).send();
     })
   );
 

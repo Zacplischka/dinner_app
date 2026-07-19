@@ -565,13 +565,9 @@ describe('friends API router', () => {
     const response = await request(app)
       .post('/api/sessions/AB123/invite')
       .send({ friendIds: ['user-2', 'user-4'] })
-      .expect(201);
+      .expect(204);
 
-    expect(response.body).toEqual({
-      success: true,
-      invitedCount: 1,
-      message: 'Invited 1 friend(s) to session',
-    });
+    expect(response.body).toEqual({});
   });
 
   it('POST /sessions/:code/invite should fall back to individual inserts on upsert failure', async () => {
@@ -581,12 +577,11 @@ describe('friends API router', () => {
       { data: { id: 'invite-1' }, error: null }
     );
 
-    const response = await request(app)
+    await request(app)
       .post('/api/sessions/AB123/invite')
       .send({ friendIds: ['user-2'] })
-      .expect(201);
+      .expect(204);
 
-    expect(response.body.invitedCount).toBe(1);
     expect(mockState.calls).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ table: 'session_invites', operation: 'insert' }),
@@ -664,11 +659,7 @@ describe('friends API router', () => {
 
     const response = await request(app).post('/api/invites/invite-1/accept').expect(200);
 
-    expect(response.body).toEqual({
-      success: true,
-      sessionCode: 'AB123',
-      message: 'Session invite accepted',
-    });
+    expect(response.body).toEqual({ sessionCode: 'AB123' });
   });
 
   it('POST /invites/:inviteId/accept should return 404 for missing invites', async () => {
@@ -685,12 +676,9 @@ describe('friends API router', () => {
   it('POST /invites/:inviteId/decline should decline session invites', async () => {
     mockState.responses.push({ data: null, error: null });
 
-    const response = await request(app).post('/api/invites/invite-1/decline').expect(200);
+    const response = await request(app).post('/api/invites/invite-1/decline').expect(204);
 
-    expect(response.body).toEqual({
-      success: true,
-      message: 'Session invite declined',
-    });
+    expect(response.body).toEqual({});
   });
 
   it('GET /users/me should return database errors for profile fetch and create failures', async () => {
