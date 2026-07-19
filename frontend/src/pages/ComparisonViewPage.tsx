@@ -12,17 +12,21 @@ import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
 
 const FAILED_STOREFRONT: StorefrontCapture = { status: 'failed', deals: [], menu: [] };
-const SEARCHING_MESSAGES = [
-  'Locating the storefront…',
-  'Reading the menu…',
-  'Cooking up prices…',
-  'Comparing tasty options…',
-];
+// ponytail: matches the backend's 20 min Snapshot freshness window; served
+// Snapshots older than this only appear when the tab sat open.
+const STALE_AFTER_MINUTES = 20;
+// How long we let Storefronts resolve before offering recovery. The stream
+// keeps going — this only surfaces Retry / Back to venues.
+const WAIT_RECOVERY_MS = 30_000;
+
+const PLATFORM_NAMES = { ubereats: 'Uber Eats', doordash: 'DoorDash' } as const;
+type PlatformName = (typeof PLATFORM_NAMES)[keyof typeof PLATFORM_NAMES];
 
 function fetchedLabel(fetchedAt: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(fetchedAt)) / 60_000));
   if (minutes === 0) return 'Fetched just now';
-  return `Fetched ${minutes} min${minutes === 1 ? '' : 's'} ago`;
+  const base = `Fetched ${minutes} min${minutes === 1 ? '' : 's'} ago`;
+  return minutes >= STALE_AFTER_MINUTES ? `${base} — may be out of date` : base;
 }
 
 function formatPrice(priceCents: number) {
@@ -32,7 +36,7 @@ function formatPrice(priceCents: number) {
   }).format(priceCents / 100);
 }
 
-function OutboundLink({ name, url }: { name: 'Uber Eats' | 'DoorDash'; url: string }) {
+function OutboundLink({ name, url }: { name: PlatformName; url: string }) {
   return (
     <a
       href={url}
@@ -45,13 +49,26 @@ function OutboundLink({ name, url }: { name: 'Uber Eats' | 'DoorDash'; url: stri
   );
 }
 
-function UnmatchedSection({
-  name,
-  items,
-}: {
-  name: 'Uber Eats' | 'DoorDash';
-  items: MenuItemCapture[];
-}) {
+function RecoveryActions({ onRetry, onBack }: { onRetry: () => void; onBack: () => void }) {
+  return (
+    <div className="flex justify-center gap-3">
+      <button
+        onClick={onRetry}
+        className="min-h-[44px] rounded-xl bg-cyan px-4 py-2 font-semibold text-ink transition-all duration-150 hover:brightness-110"
+      >
+        Retry
+      </button>
+      <button
+        onClick={onBack}
+        className="min-h-[44px] rounded-xl border border-line/40 px-4 py-2 font-semibold text-text transition-all duration-150 hover:bg-raised"
+      >
+        Back to venues
+      </button>
+    </div>
+  );
+}
+
+function UnmatchedSection({ name, items }: { name: PlatformName; items: MenuItemCapture[] }) {
   if (items.length === 0) return null;
   return (
     <details className="rounded-2xl border border-line/30 bg-raised p-5">
@@ -70,37 +87,41 @@ function UnmatchedSection({
   );
 }
 
+const STATUS_PRESENTATION = {
+  checking: { label: 'Still checking…', className: 'animate-pulse text-muted' },
+  resolved: { label: 'Ready', className: 'text-lime' },
+  not_found: { label: 'Not found', className: 'text-muted' },
+  failed: { label: 'Failed', className: 'text-amber' },
+  unavailable: { label: 'Unavailable', className: 'text-amber' },
+} as const;
+
 function PlatformColumn({
   name,
   testId,
   capture,
+  streamClosed,
 }: {
-  name: 'Uber Eats' | 'DoorDash';
+  name: PlatformName;
   testId: string;
   capture?: StorefrontCapture;
+  streamClosed: boolean;
 }) {
-  const [messageIndex, setMessageIndex] = useState(0);
-
-  useEffect(() => {
-    if (capture) return;
-    setMessageIndex(0);
-    const interval = window.setInterval(() => {
-      setMessageIndex((current) => (current + 1) % SEARCHING_MESSAGES.length);
-    }, 3000);
-    return () => window.clearInterval(interval);
-  }, [capture]);
+  const status = capture?.status ?? (streamClosed ? 'unavailable' : 'checking');
+  const presentation = STATUS_PRESENTATION[status];
 
   return (
     <section
       data-testid={testId}
       className="rounded-2xl border border-line/30 bg-raised p-5 shadow-card"
     >
-      <h2 className="font-display text-xl font-semibold">{name}</h2>
-      {!capture && (
-        <p className="mt-4 animate-pulse text-muted">{SEARCHING_MESSAGES[messageIndex]}</p>
-      )}
-      {capture?.status === 'not_found' && <p className="mt-4 text-muted">Not on {name}.</p>}
-      {capture?.status === 'failed' && (
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-xl font-semibold">{name}</h2>
+        <span className={`text-sm font-semibold ${presentation.className}`}>
+          {presentation.label}
+        </span>
+      </div>
+      {status === 'not_found' && <p className="mt-4 text-muted">Not on {name}.</p>}
+      {status === 'failed' && (
         <p className="mt-4 text-amber">Couldn’t reach {name} — try again in a couple of minutes.</p>
       )}
       {capture?.status === 'resolved' && (
@@ -117,13 +138,26 @@ function PlatformColumn({
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 text-muted">—</p>
+              <p className="mt-1 text-muted">No deals reported</p>
             )}
           </div>
-          {capture.storeUrl && <OutboundLink name={name} url={capture.storeUrl} />}
         </div>
       )}
     </section>
+  );
+}
+
+function MatchedPrice({ priceCents, otherCents }: { priceCents: number; otherCents: number }) {
+  const cheaper = priceCents < otherCents;
+  return (
+    <span className={`text-right ${cheaper ? 'font-semibold text-lime' : 'text-text/80'}`}>
+      {formatPrice(priceCents)}
+      {cheaper && (
+        <span className="block text-[10px] font-semibold uppercase tracking-wide text-lime">
+          Save {formatPrice(otherCents - priceCents)}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -153,6 +187,8 @@ export default function ComparisonViewPage() {
   const [fetchedAt, setFetchedAt] = useState('');
   const [comparison, setComparison] = useState<Comparison>();
   const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [waitedTooLong, setWaitedTooLong] = useState(false);
   const fromComparisonList = Boolean(
     (location.state as { fromComparisonList?: boolean } | null)?.fromComparisonList
   );
@@ -169,7 +205,18 @@ export default function ComparisonViewPage() {
     complete &&
     storefronts.ubereats?.status === 'not_found' &&
     storefronts.doordash?.status === 'not_found';
+  const bothFailed =
+    complete &&
+    storefronts.ubereats?.status === 'failed' &&
+    storefronts.doordash?.status === 'failed';
   const heroImageUrl = storefronts.ubereats?.imageUrl || storefronts.doordash?.imageUrl;
+  const showRecoveryBanner = waitedTooLong && !complete && !error;
+  const matchedCount = comparison?.matchedItems.length ?? 0;
+  const matchedCountLabel = `${matchedCount} matched item${matchedCount === 1 ? '' : 's'}`;
+
+  const backToVenues = () =>
+    fromComparisonList ? navigate(-1) : navigate('/compare', { replace: true });
+  const retry = () => setAttempt((current) => current + 1);
 
   useEffect(() => {
     if (!placeId) return;
@@ -179,7 +226,9 @@ export default function ComparisonViewPage() {
     setFetchedAt('');
     setComparison(undefined);
     setError('');
-    return subscribeToComparison(
+    setWaitedTooLong(false);
+    const waitTimer = window.setTimeout(() => setWaitedTooLong(true), WAIT_RECOVERY_MS);
+    const unsubscribe = subscribeToComparison(
       placeId,
       {
         onVenue: (event) => setVenueName(event.venueName),
@@ -198,24 +247,22 @@ export default function ComparisonViewPage() {
           setFetchedAt(event.comparison.fetchedAt);
           setComparison(event.comparison);
         },
-        onError: (event) => {
-          setError(event.message);
-          setStorefronts((current) => ({
-            ubereats: current.ubereats ?? FAILED_STOREFRONT,
-            doordash: current.doordash ?? FAILED_STOREFRONT,
-          }));
-        },
+        onError: (event) => setError(event.message),
       },
       tapSource
     );
-  }, [placeId, tapSource]);
+    return () => {
+      window.clearTimeout(waitTimer);
+      unsubscribe();
+    };
+  }, [placeId, tapSource, attempt]);
 
   return (
     <main className="min-h-screen bg-ink text-text">
       <NavigationHeader
         title={venueName || 'Price comparison'}
         showBackButton
-        onBack={() => (fromComparisonList ? navigate(-1) : navigate('/compare', { replace: true }))}
+        onBack={backToVenues}
       />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {heroImageUrl && (
@@ -233,29 +280,101 @@ export default function ComparisonViewPage() {
           />
         )}
         {error && (
-          <p role="alert" className="rounded-xl bg-amber/10 p-4 text-amber">
-            {error}
-          </p>
-        )}
-        {comparison && (
-          <div className="space-y-1 text-center">
-            {comparison.cheaperMenu && (
-              <p className="font-semibold text-lime">
-                {comparison.cheaperMenu.platform === 'ubereats' ? 'Uber Eats' : 'DoorDash'} menu ~
-                {comparison.cheaperMenu.percent}% cheaper
-              </p>
-            )}
-            {fetchedAt && <p className="text-sm text-muted">{fetchedLabel(fetchedAt)}</p>}
-            {!neitherFound && (
-              <p className="text-xs text-muted">Prices shown are non-member menu prices.</p>
-            )}
+          <div className="space-y-4">
+            <p role="alert" className="rounded-xl bg-amber/10 p-4 text-amber">
+              {error}
+            </p>
+            <RecoveryActions onRetry={retry} onBack={backToVenues} />
           </div>
         )}
-        {neitherFound ? (
+        {showRecoveryBanner && (
+          <div className="space-y-4 rounded-2xl border border-line/30 bg-raised p-5 text-center">
+            <p className="text-text/80">
+              This is taking longer than usual. You can keep waiting, retry, or go back — anything
+              already found stays below.
+            </p>
+            <RecoveryActions onRetry={retry} onBack={backToVenues} />
+          </div>
+        )}
+        {comparison && !neitherFound && !bothFailed && (
+          <div className="space-y-1 text-center">
+            {comparison.cheaperMenu ? (
+              <>
+                <p className="font-display text-2xl font-bold text-lime">
+                  {PLATFORM_NAMES[comparison.cheaperMenu.platform]} is cheaper here
+                </p>
+                {matchedCount > 0 && (
+                  <p className="text-sm text-text/80">
+                    Menu prices ~{comparison.cheaperMenu.percent}% lower across {matchedCountLabel}
+                  </p>
+                )}
+              </>
+            ) : (
+              matchedCount > 0 && (
+                <>
+                  <p className="font-display text-2xl font-bold text-text">
+                    Prices are about the same on both apps
+                  </p>
+                  <p className="text-sm text-text/80">Across {matchedCountLabel}</p>
+                </>
+              )
+            )}
+            {fetchedAt && <p className="text-sm text-muted">{fetchedLabel(fetchedAt)}</p>}
+            <p className="text-xs text-muted">Prices shown are non-member menu prices.</p>
+          </div>
+        )}
+        {comparison && !neitherFound && !bothFailed && (
+          <>
+            {comparison.matchedItems.length > 0 ? (
+              <section className="overflow-hidden rounded-2xl border border-line/30 bg-raised shadow-card">
+                <h2 className="px-5 pt-5 font-display text-xl font-semibold">Matched items</h2>
+                <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] gap-4 px-5 pt-3 text-xs font-semibold text-muted">
+                  <span>Item</span>
+                  <span className="text-right">Uber Eats</span>
+                  <span className="text-right">DoorDash</span>
+                </div>
+                <div className="mt-2 divide-y divide-line/20">
+                  {comparison.matchedItems.map((item, index) => (
+                    <div
+                      key={`${item.name}-${index}`}
+                      data-testid={`matched-item-${index}`}
+                      className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-center gap-4 px-5 py-4 text-sm"
+                    >
+                      <span className="font-medium">{item.name}</span>
+                      <MatchedPrice
+                        priceCents={item.ubereats.price_cents}
+                        otherCents={item.doordash.price_cents}
+                      />
+                      <MatchedPrice
+                        priceCents={item.doordash.price_cents}
+                        otherCents={item.ubereats.price_cents}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              storefronts.ubereats?.status === 'resolved' &&
+              storefronts.doordash?.status === 'resolved' && (
+                <p className="rounded-xl bg-raised p-4 text-center text-muted">
+                  These menus are too different to compare item by item.
+                </p>
+              )
+            )}
+          </>
+        )}
+        {neitherFound && (
           <p className="rounded-2xl border border-line/30 bg-raised p-6 text-center text-text/80">
             Couldn’t find this venue on either delivery app.
           </p>
-        ) : (
+        )}
+        {bothFailed && (
+          <div className="space-y-4 rounded-2xl border border-line/30 bg-raised p-6 text-center">
+            <p className="text-text/80">Couldn’t reach either delivery app right now.</p>
+            <RecoveryActions onRetry={retry} onBack={backToVenues} />
+          </div>
+        )}
+        {!neitherFound && !bothFailed && (
           <>
             {(onlyUberEats || onlyDoorDash) && (
               <p className="mx-auto w-fit rounded-full bg-cyan/10 px-4 py-2 text-sm font-semibold text-cyan">
@@ -268,6 +387,7 @@ export default function ComparisonViewPage() {
                   name="Uber Eats"
                   testId="ubereats-column"
                   capture={storefronts.ubereats}
+                  streamClosed={Boolean(error)}
                 />
               )}
               {!onlyUberEats && (
@@ -275,56 +395,14 @@ export default function ComparisonViewPage() {
                   name="DoorDash"
                   testId="doordash-column"
                   capture={storefronts.doordash}
+                  streamClosed={Boolean(error)}
                 />
               )}
             </div>
           </>
         )}
-        {comparison && !neitherFound && (
+        {comparison && !neitherFound && !bothFailed && (
           <div className="space-y-5">
-            {comparison.matchedItems.length > 0 ? (
-              <section className="overflow-hidden rounded-2xl border border-line/30 bg-raised shadow-card">
-                <h2 className="px-5 pt-5 font-display text-xl font-semibold">Matched items</h2>
-                <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] gap-4 px-5 pt-3 text-xs font-semibold text-muted">
-                  <span>Item</span>
-                  <span className="text-right">Uber Eats</span>
-                  <span className="text-right">DoorDash</span>
-                </div>
-                <div className="mt-2 divide-y divide-line/20">
-                  {comparison.matchedItems.map((item, index) => {
-                    const uberEatsCheaper = item.ubereats.price_cents < item.doordash.price_cents;
-                    const doorDashCheaper = item.doordash.price_cents < item.ubereats.price_cents;
-                    return (
-                      <div
-                        key={`${item.name}-${index}`}
-                        data-testid={`matched-item-${index}`}
-                        className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-center gap-4 px-5 py-4 text-sm"
-                      >
-                        <span className="font-medium">{item.name}</span>
-                        <span
-                          className={`text-right ${uberEatsCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}
-                        >
-                          {formatPrice(item.ubereats.price_cents)}
-                        </span>
-                        <span
-                          className={`text-right ${doorDashCheaper ? 'font-semibold text-lime' : 'text-text/80'}`}
-                        >
-                          {formatPrice(item.doordash.price_cents)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ) : (
-              storefronts.ubereats?.status === 'resolved' &&
-              storefronts.doordash?.status === 'resolved' && (
-                <p className="rounded-xl bg-raised p-4 text-center text-muted">
-                  These menus are too different to compare item by item.
-                </p>
-              )
-            )}
-
             <UnmatchedSection name="Uber Eats" items={comparison.unmatched.ubereats} />
             <UnmatchedSection name="DoorDash" items={comparison.unmatched.doordash} />
 
