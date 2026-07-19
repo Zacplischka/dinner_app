@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DomainError } from '../../src/services/DomainError.js';
 
 const mockState = vi.hoisted(() => ({
   response: { data: null as unknown, error: null as unknown },
@@ -81,6 +82,40 @@ describe('comparisonSnapshotStore', () => {
       },
       { table: 'comparison_snapshots', operation: 'limit', args: [1] },
     ]);
+  });
+
+  it('returns null when no Snapshot exists for the Venue', async () => {
+    mockState.response = { data: null, error: null };
+
+    await expect(getLatest('place-missing')).resolves.toBeNull();
+  });
+
+  it('rejects a malformed payload without exposing database details', async () => {
+    mockState.response = {
+      data: {
+        id: 'snapshot-bad',
+        place_id: 'place-1',
+        venue_name: '11 Inch Pizza',
+        fetched_at: '2026-07-13T01:02:03.000Z',
+        // status is not a StorefrontStatus and menu is missing — actor drift.
+        payload: { ubereats: { status: 'weird', deals: [] }, doordash: null },
+      },
+      error: null,
+    };
+
+    const error = await getLatest('place-1').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(DomainError);
+    expect((error as DomainError).code).toBe('database_error');
+    expect((error as DomainError).message).not.toMatch(/supabase|postgres|jsonb|column/i);
+  });
+
+  it('surfaces a database failure as a generic DomainError', async () => {
+    mockState.response = { data: null, error: { message: 'connection refused', code: '500' } };
+
+    const error = await getLatest('place-1').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(DomainError);
+    expect((error as DomainError).code).toBe('database_error');
+    expect((error as DomainError).message).not.toMatch(/connection refused/i);
   });
 
   it('inserts an immutable capture and returns its generated Snapshot fields', async () => {
