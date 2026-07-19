@@ -4,6 +4,7 @@
 import type {
   Friend,
   FriendRequest,
+  GeocodedArea,
   Restaurant,
   SessionInvite,
   UserProfile,
@@ -72,6 +73,20 @@ export async function createSession(
     },
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * Resolve a suburb or postcode to coordinates and a human-readable area
+ */
+export async function geocodeArea(query: string): Promise<GeocodedArea> {
+  return request<GeocodedArea>(`/geocode?query=${encodeURIComponent(query)}`);
+}
+
+/**
+ * Resolve browser coordinates to a best-effort human-readable area
+ */
+export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodedArea> {
+  return request<GeocodedArea>(`/geocode?latitude=${latitude}&longitude=${longitude}`);
 }
 
 /**

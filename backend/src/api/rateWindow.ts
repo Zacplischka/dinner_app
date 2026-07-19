@@ -28,3 +28,7 @@ export function requestIp(req: Request): string {
   if (railwayClientIp && isIP(railwayClientIp)) return railwayClientIp;
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
+
+export function queryNumber(value: unknown): number {
+  return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
+}

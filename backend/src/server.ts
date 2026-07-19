@@ -14,6 +14,7 @@ import { createOptionsRouter } from './api/options.js';
 import { createFriendsRouter } from './api/friends.js';
 import { createComparisonRouter } from './api/comparison.js';
 import { createRedirectRouter } from './api/redirect.js';
+import { createGeocodeRouter } from './api/geocode.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createFriendsService } from './services/FriendsService.js';
@@ -118,6 +119,13 @@ app.use(
     fetchPlacePhoto: (...args) => RestaurantSearchService.fetchPlacePhoto(...args),
     photoCache: redis,
     comparisonService,
+  })
+);
+app.use(
+  '/api/geocode',
+  createGeocodeRouter({
+    geocodeArea: (...args) => RestaurantSearchService.geocodeArea(...args),
+    reverseGeocodeSuburb: (...args) => RestaurantSearchService.reverseGeocodeSuburb(...args),
   })
 );
 app.use(

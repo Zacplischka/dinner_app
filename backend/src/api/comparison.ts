@@ -6,6 +6,7 @@ import type { ComparisonService } from '../services/ComparisonService.js';
 import { asyncHandler } from './asyncHandler.js';
 import {
   pruneExpiredRequests,
+  queryNumber,
   requestIp,
   retryAfterSeconds,
   type RequestWindow,
@@ -23,10 +24,6 @@ const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
 // Cold Comparisons launch paid Apify actor runs; this caps per-visitor spend (#70).
 const COLD_COMPARE_LIMIT = 5;
 const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
-
-function queryNumber(value: unknown): number {
-  return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
-}
 
 export function createComparisonRouter({
   searchNearbyVenues,
