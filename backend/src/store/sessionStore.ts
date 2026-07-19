@@ -41,6 +41,7 @@ export interface Participant {
   joinedAt: number;
   hasSubmitted: boolean;
   isHost: boolean;
+  rejoinToken?: string;
 }
 
 // --- Keyspace (private) ------------------------------------------------
@@ -241,20 +242,27 @@ export function createSessionStore(redis: Redis) {
   /** Adds a Participant and returns the new participant set size. Touches TTL. */
   async function addParticipant(
     sessionCode: string,
-    participant: { participantId: string; displayName: string; isHost?: boolean }
+    participant: {
+      participantId: string;
+      displayName: string;
+      isHost?: boolean;
+      rejoinToken?: string;
+    }
   ): Promise<number> {
-    const { participantId, displayName, isHost = false } = participant;
+    const { participantId, displayName, isHost = false, rejoinToken } = participant;
     const now = Math.floor(Date.now() / 1000);
 
     const pipeline = redis.pipeline();
     pipeline.sadd(participantsKey(sessionCode), participantId);
-    pipeline.hset(participantKey(participantId), {
+    const participantData: Record<string, string | number> = {
       displayName,
       sessionCode,
       joinedAt: now,
       isHost: isHost ? '1' : '0',
       hasSubmitted: '0',
-    });
+    };
+    if (rejoinToken) participantData.rejoinToken = rejoinToken;
+    pipeline.hset(participantKey(participantId), participantData);
     await pipeline.exec();
 
     await touch(sessionCode);
@@ -284,6 +292,7 @@ export function createSessionStore(redis: Redis) {
       joinedAt: parseInt(data.joinedAt, 10),
       hasSubmitted: data.hasSubmitted === '1',
       isHost: data.isHost === '1',
+      rejoinToken: data.rejoinToken || undefined,
     };
   }
 

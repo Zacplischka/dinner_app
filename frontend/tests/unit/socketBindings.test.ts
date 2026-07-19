@@ -78,6 +78,7 @@ function setupSocket(connected = true) {
 describe('socketBindings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     socketBindings.disconnectSocket();
@@ -206,7 +207,7 @@ describe('socketBindings', () => {
     socketBindings.initializeSocket();
     socket.acks.set('session:join', {
       success: true,
-      data: { participants: [participant] },
+      data: { participants: [participant], rejoinToken: 'rejoin-token' },
     });
 
     await expect(socketBindings.joinSession('AB123', 'Alice')).resolves.toMatchObject({
@@ -214,6 +215,15 @@ describe('socketBindings', () => {
     });
     expect(useSessionStore.getState().sessionCode).toBe('AB123');
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Alice');
+    expect(localStorage.getItem('dinder:rejoin:AB123:Alice')).toBe('rejoin-token');
+
+    const emitSpy = vi.spyOn(socket, 'emit');
+    await socketBindings.joinSession('AB123', 'Alice');
+    expect(emitSpy).toHaveBeenCalledWith(
+      'session:join',
+      { sessionCode: 'AB123', displayName: 'Alice', rejoinToken: 'rejoin-token' },
+      expect.any(Function)
+    );
 
     socket.acks.set('session:leave', { success: true, data: null });
     await expect(socketBindings.leaveSession('AB123')).resolves.toEqual({
@@ -235,6 +245,7 @@ describe('socketBindings', () => {
         sessionCode: 'CN456',
         displayName: 'Carol',
         participantCount: 1,
+        rejoinToken: 'carol-rejoin-token',
         participants: [{ participantId: 'p-canon', displayName: 'Carol', isHost: true }],
       },
     });
@@ -258,7 +269,7 @@ describe('socketBindings', () => {
     useSessionStore.setState({ selections: ['stale'] } as any);
     socket.acks.set('session:join', {
       success: true,
-      data: { participants: [participant] },
+      data: { participants: [participant], rejoinToken: 'rejoin-token' },
     });
 
     await socketBindings.joinSession('NEW99', 'Alice');

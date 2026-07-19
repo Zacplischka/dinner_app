@@ -38,6 +38,18 @@ describe('canonical error transport', () => {
     },
     { domain: 'SESSION_FULL', domainMessage: 'Session is full', status: 409, code: 'SESSION_FULL' },
     {
+      domain: 'DISPLAY_NAME_TAKEN',
+      domainMessage: 'Display name taken',
+      status: 409,
+      code: 'DISPLAY_NAME_TAKEN',
+    },
+    {
+      domain: 'SESSION_ALREADY_STARTED',
+      domainMessage: 'Session already started',
+      status: 409,
+      code: 'SESSION_ALREADY_STARTED',
+    },
+    {
       domain: 'NO_RESTAURANTS_FOUND',
       domainMessage: 'No restaurants',
       status: 404,

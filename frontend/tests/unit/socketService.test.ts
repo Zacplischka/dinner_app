@@ -120,6 +120,7 @@ describe('socketService', () => {
   it('resolves canonical join acks as-is', async () => {
     const socket = setupSocket();
     socketService.initializeSocket();
+    const emitSpy = vi.spyOn(socket, 'emit');
 
     // Canonical success: the `data` payload is passed through untouched.
     const joinData = {
@@ -127,13 +128,19 @@ describe('socketService', () => {
       sessionCode: 'AB123',
       displayName: 'Alice',
       participantCount: 2,
+      rejoinToken: 'rejoin-token',
       participants: [{ participantId: 'p9', displayName: 'Alice', isHost: false }],
     };
     socket.acks.set('session:join', { success: true, data: joinData });
-    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual({
+    await expect(socketService.joinSession('AB123', 'Alice', 'rejoin-token')).resolves.toEqual({
       success: true,
       data: joinData,
     });
+    expect(emitSpy).toHaveBeenCalledWith(
+      'session:join',
+      { sessionCode: 'AB123', displayName: 'Alice', rejoinToken: 'rejoin-token' },
+      expect.any(Function)
+    );
 
     // Canonical failure: the ApiError `error` is passed through untouched.
     socket.acks.set('session:join', {

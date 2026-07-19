@@ -7,6 +7,8 @@ export type DomainErrorCode =
   // Session domain
   | 'SESSION_NOT_FOUND'
   | 'SESSION_FULL'
+  | 'DISPLAY_NAME_TAKEN'
+  | 'SESSION_ALREADY_STARTED'
   | 'NO_RESTAURANTS_FOUND'
   | 'VALIDATION_ERROR'
   | 'ALREADY_SUBMITTED'

@@ -196,8 +196,15 @@ export async function joinSession(
   sessionCode: string,
   displayName: string
 ): Promise<Ack<SessionJoinData>> {
-  const ack = await socketService.joinSession(sessionCode, displayName);
+  const tokenKey = `dinder:rejoin:${sessionCode}:${displayName}`;
+  const ack = await socketService.joinSession(
+    sessionCode,
+    displayName,
+    localStorage.getItem(tokenKey) ?? undefined
+  );
   if (!ack.success) return ack;
+
+  localStorage.setItem(tokenKey, ack.data.rejoinToken);
 
   const store = useSessionStore.getState();
 

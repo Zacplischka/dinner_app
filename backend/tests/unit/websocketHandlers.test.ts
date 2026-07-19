@@ -19,6 +19,7 @@ const service = createSessionService({
   store,
   searchNearbyRestaurants: vi.fn(async () => []),
 });
+const rejoinToken = '00000000-0000-4000-8000-000000000001';
 
 describe('websocket handlers', () => {
   const sessionCode = 'WSH12';
@@ -69,6 +70,7 @@ describe('websocket handlers', () => {
       participantId,
       displayName: 'Alice',
       isHost: true,
+      rejoinToken,
     });
   }
 
@@ -143,6 +145,7 @@ describe('websocket handlers', () => {
           sessionCode,
           displayName: 'Alice',
           participantCount: 1,
+          rejoinToken: expect.any(String),
           participants: [{ participantId: 'socket-1', displayName: 'Alice', isHost: true }],
         },
       });
@@ -166,7 +169,7 @@ describe('websocket handlers', () => {
 
       await handleSessionJoin(
         testSocket as any,
-        { sessionCode, displayName: 'Alice' },
+        { sessionCode, displayName: 'Alice', rejoinToken },
         callback,
         service
       );
@@ -187,6 +190,46 @@ describe('websocket handlers', () => {
         { socketId: 'new-socket', sessionCode, isRejoin: true, participantCount: 1 },
         'Participant joined session'
       );
+    });
+
+    it('should reject a duplicate display name without its rejoin token', async () => {
+      await createSessionWithParticipant('original-socket');
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        socket('impostor-socket') as any,
+        { sessionCode, displayName: 'Alice' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'DISPLAY_NAME_TAKEN', message: expect.any(String) },
+      });
+      await expect(store.getParticipant('original-socket')).resolves.toMatchObject({
+        isHost: true,
+      });
+      await expect(store.getParticipant('impostor-socket')).resolves.toBeNull();
+    });
+
+    it('should reject a brand-new participant after the session starts', async () => {
+      await createSessionWithParticipant();
+      await store.updateState(sessionCode, 'selecting');
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        socket('late-socket') as any,
+        { sessionCode, displayName: 'Bob' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_ALREADY_STARTED', message: expect.any(String) },
+      });
+      await expect(store.getParticipant('late-socket')).resolves.toBeNull();
     });
 
     it('should reject full sessions before adding and log the rejection', async () => {
@@ -818,6 +861,7 @@ describe('websocket handlers', () => {
           sessionCode,
           displayName: 'Alice',
           participantCount: 1,
+          rejoinToken: expect.any(String),
           participants: [{ participantId: 'socket-1', displayName: 'Alice', isHost: true }],
         },
       });

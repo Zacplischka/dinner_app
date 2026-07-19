@@ -8,7 +8,11 @@ import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
 import { config } from '../../src/config/index.js';
 import { createSessionStore } from '../../src/store/sessionStore.js';
-import { createSessionService, generateSessionCode, MAX_PARTICIPANTS } from '../../src/services/SessionService.js';
+import {
+  createSessionService,
+  generateSessionCode,
+  MAX_PARTICIPANTS,
+} from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
 
 describe('SessionService', () => {
@@ -48,13 +52,16 @@ describe('SessionService', () => {
 
       const result = await SessionService.createSession('Alice');
 
-      expect(logSpy).toHaveBeenCalledWith({
-        sessionCode: result.sessionCode,
-        hasLocation: false,
-        searchRadiusMiles: undefined,
-        participantCount: 1,
-        restaurantCount: 0,
-      }, 'Session created');
+      expect(logSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: result.sessionCode,
+          hasLocation: false,
+          searchRadiusMiles: undefined,
+          participantCount: 1,
+          restaurantCount: 0,
+        },
+        'Session created'
+      );
     });
 
     it('should warn when session code generation collides', async () => {
@@ -76,10 +83,13 @@ describe('SessionService', () => {
 
       expect(result.sessionCode).toBe('BBBBB');
       expect(randomSpy).toHaveBeenCalled();
-      expect(warnSpy).toHaveBeenCalledWith({
-        sessionCode: 'AAAAA',
-        attempt: 1,
-      }, 'Session code collision during createSession');
+      expect(warnSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: 'AAAAA',
+          attempt: 1,
+        },
+        'Session code collision during createSession'
+      );
     });
 
     it('should fail after repeated session code collisions', async () => {
@@ -96,9 +106,12 @@ describe('SessionService', () => {
       await expect(SessionService.createSession('Alice')).rejects.toThrow(
         'Failed to generate unique session code'
       );
-      expect(errorSpy).toHaveBeenCalledWith({
-        attempts: 10,
-      }, 'Failed to generate unique session code');
+      expect(errorSpy).toHaveBeenCalledWith(
+        {
+          attempts: 10,
+        },
+        'Failed to generate unique session code'
+      );
     });
   });
 
@@ -115,10 +128,13 @@ describe('SessionService', () => {
       });
 
       await expect(SessionService.getSession(testSessionCode)).resolves.toBeNull();
-      expect(warnSpy).toHaveBeenCalledWith({
-        sessionCode: testSessionCode,
-        ttl: -1,
-      }, 'Session lookup returned invalid TTL');
+      expect(warnSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: testSessionCode,
+          ttl: -1,
+        },
+        'Session lookup returned invalid TTL'
+      );
     });
 
     it('should prefer the joined host participant display name', async () => {
@@ -166,11 +182,14 @@ describe('SessionService', () => {
       expect(error).toBeInstanceOf(DomainError);
       expect(error.code).toBe('SESSION_NOT_FOUND');
 
-      expect(warnSpy).toHaveBeenCalledWith({
-        sessionCode: testSessionCode,
-        participantId: 'participant-1',
-        reason: 'session_not_found',
-      }, 'Rejected session join');
+      expect(warnSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: testSessionCode,
+          participantId: 'participant-1',
+          reason: 'session_not_found',
+        },
+        'Rejected session join'
+      );
     });
 
     it('should reject a fifth participant with a SESSION_FULL domain error', async () => {
@@ -181,19 +200,26 @@ describe('SessionService', () => {
       await SessionService.joinSession(session.sessionCode, 'socket-3', 'Cara');
       await SessionService.joinSession(session.sessionCode, 'socket-4', 'Dan');
 
-      const error = await SessionService.joinSession(session.sessionCode, 'participant-5', 'Eve').then(
+      const error = await SessionService.joinSession(
+        session.sessionCode,
+        'participant-5',
+        'Eve'
+      ).then(
         () => null,
         (e) => e
       );
 
       expect(error).toBeInstanceOf(DomainError);
       expect(error.code).toBe('SESSION_FULL');
-      expect(warnSpy).toHaveBeenCalledWith({
-        sessionCode: session.sessionCode,
-        participantId: 'participant-5',
-        reason: 'session_full',
-        participantCount: 4,
-      }, 'Rejected session join');
+      expect(warnSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: session.sessionCode,
+          participantId: 'participant-5',
+          reason: 'session_full',
+          participantCount: 4,
+        },
+        'Rejected session join'
+      );
     });
 
     it('should keep the host slot reserved: cap non-hosts at 3 but still admit the host', async () => {
@@ -223,22 +249,63 @@ describe('SessionService', () => {
       ]);
     });
 
-    it('should treat a same-name join as a rejoin that replaces the old participant', async () => {
+    it('should reject a duplicate name without its rejoin token and keep the original host', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-old', 'Alice');
 
-      const result = await SessionService.joinSession(session.sessionCode, 'socket-new', 'Alice');
+      await expect(
+        SessionService.joinSession(session.sessionCode, 'socket-impostor', 'Alice')
+      ).rejects.toMatchObject({ code: 'DISPLAY_NAME_TAKEN' });
+
+      await expect(store.getParticipant('socket-old')).resolves.toMatchObject({
+        displayName: 'Alice',
+        isHost: true,
+      });
+      await expect(store.getParticipant('socket-impostor')).resolves.toBeNull();
+    });
+
+    it('should allow a token-authorized rejoin after the session starts', async () => {
+      const session = await SessionService.createSession('Alice');
+      const firstJoin = await SessionService.joinSession(
+        session.sessionCode,
+        'socket-old',
+        'Alice'
+      );
+      await store.updateState(session.sessionCode, 'selecting');
+
+      const result = await SessionService.joinSession(
+        session.sessionCode,
+        'socket-new',
+        'Alice',
+        firstJoin.rejoinToken
+      );
 
       expect(result).toMatchObject({
         participantId: 'socket-new',
         participantCount: 1,
         isHost: true,
         isRejoin: true,
+        rejoinToken: firstJoin.rejoinToken,
       });
       expect(result.participants).toEqual([
-        expect.objectContaining({ participantId: 'socket-new', displayName: 'Alice', isHost: true }),
+        expect.objectContaining({
+          participantId: 'socket-new',
+          displayName: 'Alice',
+          isHost: true,
+        }),
       ]);
       await expect(store.getParticipant('socket-old')).resolves.toBeNull();
+    });
+
+    it('should reject a brand-new participant after the session starts', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await store.updateState(session.sessionCode, 'selecting');
+
+      await expect(
+        SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob')
+      ).rejects.toMatchObject({ code: 'SESSION_ALREADY_STARTED' });
+      await expect(store.getParticipant('socket-bob')).resolves.toBeNull();
     });
 
     it('should log successful joins with the updated participant count', async () => {
@@ -255,11 +322,14 @@ describe('SessionService', () => {
         isHost: false,
         isRejoin: false,
       });
-      expect(logSpy).toHaveBeenCalledWith({
-        sessionCode: session.sessionCode,
-        participantId: 'participant-1',
-        participantCount: 2,
-      }, 'Participant joined session');
+      expect(logSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: session.sessionCode,
+          participantId: 'participant-1',
+          participantCount: 2,
+        },
+        'Participant joined session'
+      );
     });
   });
 
@@ -306,8 +376,22 @@ describe('SessionService', () => {
     it('should search for nearby restaurants', async () => {
       const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
       const mockRestaurants = [
-        { placeId: 'place1', name: 'Restaurant 1', rating: 4.5, priceLevel: 2, cuisineType: 'Italian', address: '123 Main St' },
-        { placeId: 'place2', name: 'Restaurant 2', rating: 4.2, priceLevel: 3, cuisineType: 'Chinese', address: '456 Oak Ave' },
+        {
+          placeId: 'place1',
+          name: 'Restaurant 1',
+          rating: 4.5,
+          priceLevel: 2,
+          cuisineType: 'Italian',
+          address: '123 Main St',
+        },
+        {
+          placeId: 'place2',
+          name: 'Restaurant 2',
+          rating: 4.2,
+          priceLevel: 3,
+          cuisineType: 'Chinese',
+          address: '456 Oak Ave',
+        },
       ];
       searchNearbyRestaurants.mockResolvedValue(mockRestaurants);
 
@@ -325,13 +409,16 @@ describe('SessionService', () => {
       });
 
       expect(result.restaurantCount).toBe(2);
-      expect(logSpy).toHaveBeenCalledWith({
-        sessionCode: result.sessionCode,
-        hasLocation: true,
-        searchRadiusMiles: 5,
-        participantCount: 1,
-        restaurantCount: 2,
-      }, 'Session created');
+      expect(logSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: result.sessionCode,
+          hasLocation: true,
+          searchRadiusMiles: 5,
+          participantCount: 1,
+          restaurantCount: 2,
+        },
+        'Session created'
+      );
     });
 
     it('should store restaurant Place IDs in Redis Set', async () => {
@@ -386,10 +473,13 @@ describe('SessionService', () => {
       expect(error).toBeInstanceOf(DomainError);
       expect(error.code).toBe('NO_RESTAURANTS_FOUND');
 
-      expect(warnSpy).toHaveBeenCalledWith({
-        sessionCode: expect.any(String),
-        searchRadiusMiles: 5,
-      }, 'No restaurants found during session creation');
+      expect(warnSpy).toHaveBeenCalledWith(
+        {
+          sessionCode: expect.any(String),
+          searchRadiusMiles: 5,
+        },
+        'No restaurants found during session creation'
+      );
     });
 
     it('should set TTL on restaurant keys', async () => {
@@ -413,11 +503,7 @@ describe('SessionService', () => {
         { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
       ]);
 
-      await SessionService.createSession(
-        'Alice',
-        { latitude: 37.7749, longitude: -122.4194 },
-        10
-      );
+      await SessionService.createSession('Alice', { latitude: 37.7749, longitude: -122.4194 }, 10);
 
       expect(searchNearbyRestaurants).toHaveBeenCalledWith({
         latitude: 37.7749,
@@ -460,9 +546,9 @@ describe('SessionService', () => {
     });
 
     it('rejects submissions to missing sessions', async () => {
-      await expect(
-        SessionService.submitSelections('NOPE9', 'p-alice', [])
-      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
+      await expect(SessionService.submitSelections('NOPE9', 'p-alice', [])).rejects.toMatchObject({
+        code: 'SESSION_NOT_FOUND',
+      });
     });
 
     it('rejects submissions from non-participants', async () => {
@@ -483,17 +569,17 @@ describe('SessionService', () => {
     }
 
     it('rejects leaves from missing sessions', async () => {
-      await expect(
-        SessionService.leaveSession('NOPE9', 'p-alice')
-      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
+      await expect(SessionService.leaveSession('NOPE9', 'p-alice')).rejects.toMatchObject({
+        code: 'SESSION_NOT_FOUND',
+      });
     });
 
     it('rejects leaves from non-participants', async () => {
       const sessionCode = await createTwoParticipantSession();
 
-      await expect(
-        SessionService.leaveSession(sessionCode, 'p-stranger')
-      ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
+      await expect(SessionService.leaveSession(sessionCode, 'p-stranger')).rejects.toMatchObject({
+        code: 'NOT_IN_SESSION',
+      });
     });
 
     it('re-reserves the host slot when the host leaves', async () => {
@@ -542,17 +628,17 @@ describe('SessionService', () => {
 
   describe('restartSession', () => {
     it('rejects restarts from missing sessions', async () => {
-      await expect(
-        SessionService.restartSession('NOPE9', 'p-alice')
-      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND' });
+      await expect(SessionService.restartSession('NOPE9', 'p-alice')).rejects.toMatchObject({
+        code: 'SESSION_NOT_FOUND',
+      });
     });
 
     it('rejects restarts from non-participants', async () => {
       const { sessionCode } = await SessionService.createSession('Alice');
 
-      await expect(
-        SessionService.restartSession(sessionCode, 'p-stranger')
-      ).rejects.toMatchObject({ code: 'NOT_IN_SESSION' });
+      await expect(SessionService.restartSession(sessionCode, 'p-stranger')).rejects.toMatchObject({
+        code: 'NOT_IN_SESSION',
+      });
     });
 
     it('wipes submissions and puts the session back in selecting', async () => {

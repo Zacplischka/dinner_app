@@ -26,11 +26,17 @@ const sessionJoinPayloadSchema = z.object({
       `Session code must be ${SESSION_CODE_LENGTH} alphanumeric characters`
     ),
   displayName: z.string().min(1, 'Display name required').max(50, 'Display name too long'),
+  rejoinToken: z.string().uuid().optional(),
 });
 
 // Domain rejections that are expected transport outcomes, not handler bugs -
 // they ack a public error without an error-level log.
-const EXPECTED_JOIN_ERRORS = ['SESSION_NOT_FOUND', 'SESSION_FULL'];
+const EXPECTED_JOIN_ERRORS = [
+  'SESSION_NOT_FOUND',
+  'SESSION_FULL',
+  'DISPLAY_NAME_TAKEN',
+  'SESSION_ALREADY_STARTED',
+];
 
 export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
@@ -57,9 +63,9 @@ export async function handleSessionJoin(
       });
     }
 
-    const { sessionCode, displayName } = validation.data;
+    const { sessionCode, displayName, rejoinToken } = validation.data;
 
-    const result = await service.joinSession(sessionCode, socket.id, displayName);
+    const result = await service.joinSession(sessionCode, socket.id, displayName, rejoinToken);
 
     // Join Socket.IO room
     await socket.join(sessionCode);
@@ -70,6 +76,7 @@ export async function handleSessionJoin(
       sessionCode,
       displayName,
       participantCount: result.participantCount,
+      rejoinToken: result.rejoinToken,
       participants: result.participants,
     };
     callback({ success: true, data });
