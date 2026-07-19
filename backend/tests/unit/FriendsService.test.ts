@@ -327,10 +327,11 @@ describe('FriendsService', () => {
     });
 
     it('creates a pending request visible to the recipient', async () => {
-      const requestId = await FriendsService.sendFriendRequest('user-1', 'bob@example.com');
+      await FriendsService.sendFriendRequest('user-1', 'bob@example.com');
 
       const requests = await FriendsService.listFriendRequests('user-2');
-      expect(requests.map((r) => r.id)).toEqual([requestId]);
+      expect(requests).toHaveLength(1);
+      expect(requests[0].fromUser.id).toBe('user-1');
     });
 
     it('rejects unknown emails', async () => {

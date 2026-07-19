@@ -29,6 +29,11 @@ export function createFriendsRouter(friendsService: FriendsService) {
   // All routes require authentication
   router.use(requireAuth);
 
+  // Zod schema for the one friend mutation that carries a body
+  const sendFriendRequestSchema = z.object({
+    email: z.string().min(1),
+  });
+
   // ============================================================================
   // USER PROFILE ENDPOINTS
   // ============================================================================
@@ -108,22 +113,20 @@ export function createFriendsRouter(friendsService: FriendsService) {
   router.post(
     '/friends/request',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-      const { email } = req.body as SendFriendRequestPayload;
+      const validation = sendFriendRequestSchema.safeParse(req.body);
 
-      if (!email) {
-        return res.status(400).json({
+      if (!validation.success) {
+        const error: ApiError = {
           code: 'VALIDATION_ERROR',
           message: 'Email is required',
-        });
+        };
+        return res.status(400).json(error);
       }
 
-      const requestId = await friendsService.sendFriendRequest(req.user!.id, email);
+      const { email }: SendFriendRequestPayload = validation.data;
+      await friendsService.sendFriendRequest(req.user!.id, email);
 
-      return res.status(201).json({
-        success: true,
-        requestId,
-        message: 'Friend request sent',
-      });
+      return res.status(204).send();
     })
   );
 
@@ -136,10 +139,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       await friendsService.acceptFriendRequest(req.user!.id, req.params.requestId);
 
-      return res.json({
-        success: true,
-        message: 'Friend request accepted',
-      });
+      return res.status(204).send();
     })
   );
 
@@ -152,10 +152,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       await friendsService.declineFriendRequest(req.user!.id, req.params.requestId);
 
-      return res.json({
-        success: true,
-        message: 'Friend request declined',
-      });
+      return res.status(204).send();
     })
   );
 
@@ -168,10 +165,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       await friendsService.removeFriend(req.user!.id, req.params.friendId);
 
-      return res.json({
-        success: true,
-        message: 'Friend removed',
-      });
+      return res.status(204).send();
     })
   );
 

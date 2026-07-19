@@ -14,6 +14,7 @@ import type {
   LoadRestaurantsResponse,
   Restaurant,
   SearchUsersResponse,
+  SendFriendRequestPayload,
   SendSessionInviteRequest,
   SessionInvite,
   SessionInvitesResponse,
@@ -243,10 +244,11 @@ export async function getSessionInvites(): Promise<SessionInvite[]> {
  * Send a friend request to a user by email
  */
 export async function sendFriendRequest(email: string): Promise<void> {
-  await request<unknown>('/friends/request', {
+  const body: SendFriendRequestPayload = { email };
+  await request<void>('/friends/request', {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -254,7 +256,7 @@ export async function sendFriendRequest(email: string): Promise<void> {
  * Accept a friend request
  */
 export async function acceptFriendRequest(requestId: string): Promise<void> {
-  await request<unknown>(`/friends/${requestId}/accept`, {
+  await request<void>(`/friends/${requestId}/accept`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -264,7 +266,7 @@ export async function acceptFriendRequest(requestId: string): Promise<void> {
  * Decline a friend request
  */
 export async function declineFriendRequest(requestId: string): Promise<void> {
-  await request<unknown>(`/friends/${requestId}/decline`, {
+  await request<void>(`/friends/${requestId}/decline`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
@@ -274,7 +276,7 @@ export async function declineFriendRequest(requestId: string): Promise<void> {
  * Remove a friend (unfriend)
  */
 export async function removeFriend(friendId: string): Promise<void> {
-  await request<unknown>(`/friends/${friendId}`, {
+  await request<void>(`/friends/${friendId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });

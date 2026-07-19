@@ -106,9 +106,8 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
 
   /**
    * Send a friend request to a user by email.
-   * Returns the new request's id.
    */
-  async function sendFriendRequest(userId: string, email: string): Promise<string> {
+  async function sendFriendRequest(userId: string, email: string): Promise<void> {
     const targetUser = await store.findProfileIdByEmail(email);
     if (!targetUser) {
       throw new DomainError('not_found', 'User not found with that email');
@@ -131,8 +130,7 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
       }
     }
 
-    const newRequest = await store.createFriendRequest(userId, targetUser.id);
-    return newRequest.id;
+    await store.createFriendRequest(userId, targetUser.id);
   }
 
   /** Only the recipient of a pending request may accept it. */
