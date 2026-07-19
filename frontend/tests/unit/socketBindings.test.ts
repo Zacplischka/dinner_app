@@ -118,6 +118,56 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.success).toHaveBeenCalledWith('Reconnected to server');
   });
 
+  it('rejoins the persisted session after refresh and clears it when rejoin fails', async () => {
+    const socket = setupSocket();
+    const emitSpy = vi.spyOn(socket, 'emit');
+    localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: participant.participantId,
+      participants: [participant],
+      isConnected: false,
+    });
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        participantCount: 1,
+        rejoinToken: 'next-rejoin-token',
+        participants: [{ participantId: socket.id, displayName: 'Alice', isHost: true }],
+      },
+    });
+
+    socketBindings.initializeSocket();
+    socket.trigger('connect');
+
+    await vi.waitFor(() =>
+      expect(emitSpy).toHaveBeenCalledWith(
+        'session:join',
+        { sessionCode: 'AB123', displayName: 'Alice', rejoinToken: 'rejoin-token' },
+        expect.any(Function)
+      )
+    );
+    expect(useSessionStore.getState().currentUserId).toBe(socket.id);
+
+    socket.acks.set('session:join', {
+      success: false,
+      error: { code: 'SESSION_NOT_FOUND', message: 'expired' },
+    });
+    socket.trigger('connect');
+
+    await vi.waitFor(() => expect(useSessionStore.getState().sessionCode).toBeNull());
+    expect(useSessionStore.getState().isConnected).toBe(false);
+    expect(useSessionStore.getState().participants).toEqual([]);
+    expect(localStorage.getItem('dinder:rejoin:AB123:Alice')).toBeNull();
+    expect(socketMocks.toast.error).toHaveBeenCalledWith('Could not rejoin session: expired');
+
+    socket.trigger('connect');
+    expect(emitSpy).toHaveBeenCalledTimes(2);
+  });
+
   it('does not toast on an intentional disconnect', () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
