@@ -7,6 +7,7 @@ import type { Socket } from 'socket.io';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS, type SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
+import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_LENGTH,
   SESSION_CODE_PATTERN,
@@ -18,7 +19,12 @@ import {
 
 // Zod schema for validation
 const sessionJoinPayloadSchema = z.object({
-  sessionCode: z.string().regex(SESSION_CODE_PATTERN, `Session code must be ${SESSION_CODE_LENGTH} alphanumeric characters`),
+  sessionCode: z
+    .string()
+    .regex(
+      SESSION_CODE_PATTERN,
+      `Session code must be ${SESSION_CODE_LENGTH} alphanumeric characters`
+    ),
   displayName: z.string().min(1, 'Display name required').max(50, 'Display name too long'),
 });
 
@@ -38,14 +44,19 @@ export async function handleSessionJoin(
     const validation = sessionJoinPayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      logger.warn({
-        socketId: socket.id,
-        sessionCode: (payload as Partial<SessionJoinPayload>).sessionCode,
-        reason,
-      }, 'Rejected session:join');
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode: (payload as Partial<SessionJoinPayload>).sessionCode,
+          reason,
+        },
+        'Rejected session:join'
+      );
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: { code: 'VALIDATION_ERROR', message: reason },
       });
     }
 
@@ -57,13 +68,19 @@ export async function handleSessionJoin(
     await socket.join(sessionCode);
 
     // Send acknowledgment to joining client
-    callback({
-      success: true,
+    const data = {
       participantId: socket.id,
       sessionCode,
       displayName,
       participantCount: result.participantCount,
       participants: result.participants,
+    };
+    callback({
+      success: true,
+      // Canonical success payload (bridge).
+      data,
+      // ponytail: legacy flattened fields, duplicated by `data`, remove after #116.
+      ...data,
     });
 
     // Broadcast to OTHER participants in room (FR-022)
@@ -74,18 +91,30 @@ export async function handleSessionJoin(
       isRejoin: result.isRejoin,
     });
 
-    logger.info({ socketId: socket.id, sessionCode, isRejoin: result.isRejoin, participantCount: result.participantCount }, 'Participant joined session');
+    logger.info(
+      {
+        socketId: socket.id,
+        sessionCode,
+        isRejoin: result.isRejoin,
+        participantCount: result.participantCount,
+      },
+      'Participant joined session'
+    );
   } catch (error) {
     if (error instanceof DomainError && joinErrorMessages[error.code]) {
       return callback({
         success: false,
         error: joinErrorMessages[error.code],
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: toApiError(error).body,
       });
     }
     logger.error({ err: error, socketId: socket.id }, 'Error in session:join handler');
     callback({
       success: false,
       error: 'An error occurred while joining the session',
+      // ponytail: canonical error alongside legacy string, remove after #116.
+      apiError: toApiError(error).body,
     });
   }
 }

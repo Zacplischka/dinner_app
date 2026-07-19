@@ -7,6 +7,7 @@ import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
+import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
   type ClientToServerEvents,
@@ -32,14 +33,19 @@ export async function handleSessionRestart(
     const validation = sessionRestartPayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      logger.warn({
-        socketId: socket.id,
-        sessionCode: (payload as Partial<SessionRestartPayload>).sessionCode,
-        reason,
-      }, 'Rejected session:restart');
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode: (payload as Partial<SessionRestartPayload>).sessionCode,
+          reason,
+        },
+        'Rejected session:restart'
+      );
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: { code: 'VALIDATION_ERROR', message: reason },
       });
     }
 
@@ -51,20 +57,25 @@ export async function handleSessionRestart(
       if (!(error instanceof DomainError)) {
         throw error;
       }
-      logger.warn({
-        socketId: socket.id,
-        sessionCode,
-        reason: error.code,
-      }, 'Rejected session:restart');
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode,
+          reason: error.code,
+        },
+        'Rejected session:restart'
+      );
       return callback({
         success: false,
         // DomainError messages are the user-facing copy
         error: error.message,
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: toApiError(error).body,
       });
     }
 
-    // Send acknowledgment
-    callback({ success: true });
+    // Send acknowledgment. No-data command → canonical data is null.
+    callback({ success: true, data: null });
 
     // Broadcast to ALL participants (including sender - FR-013)
     io.in(sessionCode).emit('session:restarted', {
@@ -76,6 +87,8 @@ export async function handleSessionRestart(
     callback({
       success: false,
       error: 'An error occurred while restarting the session',
+      // ponytail: canonical error alongside legacy string, remove after #116.
+      apiError: toApiError(error).body,
     });
   }
 }

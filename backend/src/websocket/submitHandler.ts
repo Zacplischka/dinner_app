@@ -7,6 +7,7 @@ import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
+import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
   type ClientToServerEvents,
@@ -35,14 +36,19 @@ export async function handleSelectionSubmit(
     const validation = selectionSubmitPayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      logger.warn({
-        socketId: socket.id,
-        sessionCode: (payload as Partial<SelectionSubmitPayload>).sessionCode,
-        reason,
-      }, 'Rejected selection:submit');
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode: (payload as Partial<SelectionSubmitPayload>).sessionCode,
+          reason,
+        },
+        'Rejected selection:submit'
+      );
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: { code: 'VALIDATION_ERROR', message: reason },
       });
     }
 
@@ -61,20 +67,25 @@ export async function handleSelectionSubmit(
       if (!(error instanceof DomainError)) {
         throw error;
       }
-      logger.warn({
-        socketId: socket.id,
-        sessionCode,
-        reason: error.code,
-      }, 'Rejected selection:submit');
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode,
+          reason: error.code,
+        },
+        'Rejected selection:submit'
+      );
       return callback({
         success: false,
         // DomainError messages are the user-facing copy
         error: error.message,
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: toApiError(error).body,
       });
     }
 
-    // Send acknowledgment
-    callback({ success: true });
+    // Send acknowledgment. No-data command → canonical data is null.
+    callback({ success: true, data: null });
 
     // Broadcast participant:submitted to ALL participants (count only, not selections - FR-023)
     io.in(sessionCode).emit('participant:submitted', {
@@ -83,7 +94,10 @@ export async function handleSelectionSubmit(
       participantCount,
     });
 
-    logger.info({ socketId: socket.id, sessionCode, submittedCount, participantCount }, 'Participant submitted selections');
+    logger.info(
+      { socketId: socket.id, sessionCode, submittedCount, participantCount },
+      'Participant submitted selections'
+    );
 
     // When everyone has submitted, the service returns the computed Match
     if (results) {
@@ -98,6 +112,8 @@ export async function handleSelectionSubmit(
     callback({
       success: false,
       error: 'An error occurred while submitting selections',
+      // ponytail: canonical error alongside legacy string, remove after #116.
+      apiError: toApiError(error).body,
     });
   }
 }
