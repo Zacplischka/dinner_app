@@ -15,6 +15,18 @@ interface SwipeCardProps {
 const SWIPE_THRESHOLD = 100; // pixels needed to trigger a swipe
 const ROTATION_FACTOR = 0.1; // degrees per pixel of drag
 
+// Pure drag-visual math: gentle tilt plus progressive decision feedback that
+// ramps from 0 to 1 at the swipe threshold. Reduced motion drops the tilt
+// but keeps the colour feedback so decisions stay legible.
+export function swipeVisuals(deltaX: number, reducedMotion: boolean) {
+  const intensity = Math.min(Math.abs(deltaX) / SWIPE_THRESHOLD, 1);
+  return {
+    rotation: reducedMotion ? 0 : deltaX * ROTATION_FACTOR,
+    likeIntensity: deltaX > 0 ? intensity : 0,
+    nopeIntensity: deltaX < 0 ? intensity : 0,
+  };
+}
+
 export default function SwipeCard({
   restaurant,
   onSwipeLeft,
@@ -31,11 +43,9 @@ export default function SwipeCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const deltaX = dragState.currentX - dragState.startX;
-  const rotation = deltaX * ROTATION_FACTOR;
-
-  // Determine swipe indicator based on drag position
-  const showLikeIndicator = deltaX > 50;
-  const showNopeIndicator = deltaX < -50;
+  const prefersReducedMotion =
+    window.matchMedia('(prefers-reduced-motion: reduce)')?.matches ?? false;
+  const { rotation, likeIntensity, nopeIntensity } = swipeVisuals(deltaX, prefersReducedMotion);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
@@ -139,7 +149,9 @@ export default function SwipeCard({
 
     if (dragState.isDragging && isTop) {
       return {
-        transform: `translateX(${deltaX}px) rotate(${rotation}deg)`,
+        transform: prefersReducedMotion
+          ? `translateX(${deltaX}px)`
+          : `translateX(${deltaX}px) rotate(${rotation}deg)`,
         transition: 'none',
         cursor: 'grabbing',
         opacity: 1,
@@ -195,23 +207,38 @@ export default function SwipeCard({
         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
       </div>
 
-      {/* Swipe Indicators */}
+      {/* Swipe feedback: edge lights and badges strengthen with the drag */}
       {isTop && (
         <>
+          <div
+            data-testid="edge-light-like"
+            className="absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-lime/70 to-transparent pointer-events-none"
+            style={{ opacity: likeIntensity }}
+            aria-hidden="true"
+          />
+          <div
+            data-testid="edge-light-nope"
+            className="absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-coral/70 to-transparent pointer-events-none"
+            style={{ opacity: nopeIntensity }}
+            aria-hidden="true"
+          />
+
           {/* LIKE indicator */}
           <div
-            className={`absolute z-10 top-8 left-6 px-4 py-2 border-4 border-lime rounded-lg transform -rotate-12 transition-opacity duration-150 ${
-              showLikeIndicator ? 'opacity-100' : 'opacity-0'
+            className={`absolute z-10 top-8 left-6 px-4 py-2 border-4 border-lime rounded-lg ${
+              prefersReducedMotion ? '' : 'transform -rotate-12'
             }`}
+            style={{ opacity: likeIntensity }}
           >
             <span className="text-lime font-display font-bold text-3xl tracking-wider">LIKE</span>
           </div>
 
           {/* NOPE indicator */}
           <div
-            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft rounded-lg transform rotate-12 transition-opacity duration-150 ${
-              showNopeIndicator ? 'opacity-100' : 'opacity-0'
+            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft rounded-lg ${
+              prefersReducedMotion ? '' : 'transform rotate-12'
             }`}
+            style={{ opacity: nopeIntensity }}
           >
             <span className="text-coral-soft font-display font-bold text-3xl tracking-wider">
               NOPE
@@ -221,8 +248,8 @@ export default function SwipeCard({
       )}
 
       {/* Restaurant Info */}
-      <div className="relative flex-1 p-5 text-text">
-        <h2 className="font-display text-2xl font-black mb-1">{restaurant.name}</h2>
+      <div className="relative flex-1 min-h-0 overflow-hidden p-5 text-text">
+        <h2 className="font-display text-2xl font-black mb-1 line-clamp-2">{restaurant.name}</h2>
 
         {restaurant.cuisineType && (
           <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
@@ -241,7 +268,9 @@ export default function SwipeCard({
             </div>
           )}
 
-          {priceDisplay && <span>{priceDisplay}</span>}
+          {priceDisplay && (
+            <span aria-label={`Price level ${restaurant.priceLevel} of 4`}>{priceDisplay}</span>
+          )}
 
           {restaurant.openNow !== undefined && (
             <span className={restaurant.openNow ? 'font-bold text-lime' : 'font-medium text-muted'}>
@@ -251,7 +280,7 @@ export default function SwipeCard({
         </div>
 
         {restaurant.address && (
-          <p className="mt-3 text-sm text-muted truncate flex items-center gap-1.5">
+          <p className="mt-3 text-sm text-muted flex items-center gap-1.5">
             <svg
               className="w-4 h-4 flex-shrink-0"
               fill="none"
@@ -270,7 +299,7 @@ export default function SwipeCard({
                 d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
               />
             </svg>
-            {restaurant.address}
+            <span className="min-w-0 truncate">{restaurant.address}</span>
           </p>
         )}
       </div>
