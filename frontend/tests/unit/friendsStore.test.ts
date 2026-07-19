@@ -108,7 +108,9 @@ describe('friendsStore', () => {
       .mockResolvedValueOnce(response({ success: true, sessionCode: 'AB123' }))
       .mockResolvedValueOnce(response({ success: true }));
 
-    await expect(useFriendsStore.getState().sendFriendRequest('bob@example.com')).resolves.toBe(true);
+    await expect(useFriendsStore.getState().sendFriendRequest('bob@example.com')).resolves.toBe(
+      true
+    );
     expect(useFriendsStore.getState().searchResults).toEqual([]);
 
     await expect(useFriendsStore.getState().removeFriend('user-2')).resolves.toBe(true);
@@ -121,7 +123,9 @@ describe('friendsStore', () => {
     await expect(useFriendsStore.getState().declineFriendRequest('request-1')).resolves.toBe(true);
     expect(useFriendsStore.getState().friendRequests).toEqual([]);
 
-    await expect(useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])).resolves.toBe(true);
+    await expect(
+      useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])
+    ).resolves.toBe(true);
 
     await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toEqual({
       success: true,
@@ -147,12 +151,18 @@ describe('friendsStore', () => {
     await useFriendsStore.getState().fetchFriendRequests();
     await useFriendsStore.getState().fetchSessionInvites();
     await expect(useFriendsStore.getState().searchUsers('x@example.com')).resolves.toEqual([]);
-    await expect(useFriendsStore.getState().sendFriendRequest('x@example.com')).resolves.toBe(false);
+    await expect(useFriendsStore.getState().sendFriendRequest('x@example.com')).resolves.toBe(
+      false
+    );
     await expect(useFriendsStore.getState().removeFriend('user-2')).resolves.toBe(false);
     await expect(useFriendsStore.getState().acceptFriendRequest('request-1')).resolves.toBe(false);
     await expect(useFriendsStore.getState().declineFriendRequest('request-1')).resolves.toBe(false);
-    await expect(useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])).resolves.toBe(false);
-    await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toEqual({ success: false });
+    await expect(
+      useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])
+    ).resolves.toBe(false);
+    await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toEqual({
+      success: false,
+    });
     await expect(useFriendsStore.getState().declineSessionInvite('invite-1')).resolves.toBe(false);
 
     expect(useFriendsStore.getState().error).toBe('failed');
@@ -168,6 +178,27 @@ describe('friendsStore', () => {
     expect(errorSpy).toHaveBeenCalledWith('Error inviting friends to session:', expect.any(Error));
     expect(errorSpy).toHaveBeenCalledWith('Error accepting session invite:', expect.any(Error));
     expect(errorSpy).toHaveBeenCalledWith('Error declining session invite:', expect.any(Error));
+  });
+
+  it('should track per-list fetch errors and clear them on retry success', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    global.fetch = vi.fn().mockRejectedValue(new Error('down'));
+
+    await useFriendsStore.getState().fetchFriends();
+    await useFriendsStore.getState().fetchFriendRequests();
+    await useFriendsStore.getState().fetchSessionInvites();
+
+    expect(useFriendsStore.getState()).toMatchObject({
+      friendsError: 'down',
+      requestsError: 'down',
+      invitesError: 'down',
+    });
+
+    global.fetch = vi.fn().mockResolvedValue(response({ friends: [friend] }));
+    await useFriendsStore.getState().fetchFriends();
+
+    expect(useFriendsStore.getState().friendsError).toBeNull();
+    expect(useFriendsStore.getState().friends).toEqual([friend]);
   });
 
   it('should clear loading flags when requests fail', async () => {

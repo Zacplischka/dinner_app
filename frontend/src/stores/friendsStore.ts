@@ -3,12 +3,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type {
-  Friend,
-  FriendRequest,
-  SessionInvite,
-  UserProfile,
-} from '@dinder/shared/types';
+import type { Friend, FriendRequest, SessionInvite, UserProfile } from '@dinder/shared/types';
 import * as apiClient from '../services/apiClient';
 
 interface FriendsState {
@@ -29,6 +24,10 @@ interface FriendsState {
 
   // Error state
   error: string | null;
+  // Per-list fetch errors so each Friends tab can show its own failure state
+  friendsError: string | null;
+  requestsError: string | null;
+  invitesError: string | null;
 
   // Actions - Profile
   fetchCurrentProfile: () => Promise<void>;
@@ -56,6 +55,7 @@ interface FriendsState {
 }
 
 type LoadingKey = 'isLoadingFriends' | 'isLoadingRequests' | 'isLoadingInvites' | 'isSearching';
+type FetchErrorKey = 'friendsError' | 'requestsError' | 'invitesError';
 
 export const useFriendsStore = create<FriendsState>()(
   devtools(
@@ -68,10 +68,15 @@ export const useFriendsStore = create<FriendsState>()(
         label: string,
         fallback: string,
         fn: () => Promise<T>,
-        opts: { loading?: LoadingKey; onError?: Partial<FriendsState> } = {}
+        opts: {
+          loading?: LoadingKey;
+          errorKey?: FetchErrorKey;
+          onError?: Partial<FriendsState>;
+        } = {}
       ): Promise<T | undefined> {
         const start: Partial<FriendsState> = { error: null };
         if (opts.loading) start[opts.loading] = true;
+        if (opts.errorKey) start[opts.errorKey] = null;
         set(start);
         try {
           const result = await fn();
@@ -79,10 +84,12 @@ export const useFriendsStore = create<FriendsState>()(
           return result;
         } catch (error) {
           console.error(`Error ${label}:`, error);
+          const message = error instanceof Error ? error.message : fallback;
           const failure: Partial<FriendsState> = {
-            error: error instanceof Error ? error.message : fallback,
+            error: message,
             ...opts.onError,
           };
+          if (opts.errorKey) failure[opts.errorKey] = message;
           if (opts.loading) failure[opts.loading] = false;
           set(failure);
           return undefined;
@@ -101,6 +108,9 @@ export const useFriendsStore = create<FriendsState>()(
         isSearching: false,
         searchResults: [],
         error: null,
+        friendsError: null,
+        requestsError: null,
+        invitesError: null,
 
         // Profile actions
         fetchCurrentProfile: async () => {
@@ -117,7 +127,7 @@ export const useFriendsStore = create<FriendsState>()(
             async () => {
               set({ friends: await apiClient.getFriends() });
             },
-            { loading: 'isLoadingFriends' }
+            { loading: 'isLoadingFriends', errorKey: 'friendsError' }
           );
         },
 
@@ -158,7 +168,7 @@ export const useFriendsStore = create<FriendsState>()(
             async () => {
               set({ friendRequests: await apiClient.getFriendRequests() });
             },
-            { loading: 'isLoadingRequests' }
+            { loading: 'isLoadingRequests', errorKey: 'requestsError' }
           );
         },
 
@@ -190,7 +200,7 @@ export const useFriendsStore = create<FriendsState>()(
             async () => {
               set({ sessionInvites: await apiClient.getSessionInvites() });
             },
-            { loading: 'isLoadingInvites' }
+            { loading: 'isLoadingInvites', errorKey: 'invitesError' }
           );
         },
 
@@ -233,6 +243,9 @@ export const useFriendsStore = create<FriendsState>()(
             isSearching: false,
             searchResults: [],
             error: null,
+            friendsError: null,
+            requestsError: null,
+            invitesError: null,
           }),
       };
     },
