@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavigationHeader from '../components/NavigationHeader';
-import { geocodeArea, getVenues } from '../services/apiClient';
+import LocationModeToggle from '../components/LocationModeToggle';
+import { getVenues } from '../services/apiClient';
+import { resolveArea } from '../services/resolveArea';
 import { useComparisonStore, VENUE_PAGE_SIZE } from '../stores/comparisonStore';
 
 const KM_PER_MILE = 1.609344;
@@ -193,26 +195,15 @@ export default function ComparePage() {
   };
 
   const handleResolveArea = async () => {
-    const query = manualQuery.trim();
-    if (query.length < 2) {
-      setError('Enter a suburb or postcode to search for.');
-      return;
-    }
     setError('');
     setIsResolvingArea(true);
     try {
-      const resolved = await geocodeArea(query);
+      const resolved = await resolveArea(manualQuery);
       setVenues([]);
       setSuburb(resolved.area);
       setLocation({ latitude: resolved.latitude, longitude: resolved.longitude });
     } catch (cause: unknown) {
-      // handleResponse throws Error with the backend message; a network
-      // failure surfaces as TypeError from fetch itself.
-      const message =
-        cause instanceof Error && !(cause instanceof TypeError)
-          ? cause.message
-          : 'We couldn’t look up that area. Check your connection and try again.';
-      setError(message);
+      setError(cause instanceof Error ? cause.message : 'We couldn’t look up that area.');
     } finally {
       setIsResolvingArea(false);
     }
@@ -239,36 +230,16 @@ export default function ComparePage() {
               and current Deals on Uber Eats and DoorDash. We only show what each app lists.
             </p>
 
-            <div
-              role="group"
-              aria-label="How to set your area"
-              className="mt-6 grid grid-cols-2 gap-2"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  setLocationMode('current');
-                  setError('');
-                }}
-                disabled={busy}
-                aria-pressed={locationMode === 'current'}
-                className={`btn text-sm ${locationMode === 'current' ? 'border border-cyan/60 bg-cyan/10 text-cyan shadow-glow-cyan' : 'btn-secondary'}`}
-              >
-                Current location
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLocationMode('manual');
-                  setError('');
-                }}
-                disabled={busy}
-                aria-pressed={locationMode === 'manual'}
-                className={`btn text-sm ${locationMode === 'manual' ? 'border border-cyan/60 bg-cyan/10 text-cyan shadow-glow-cyan' : 'btn-secondary'}`}
-              >
-                Suburb or postcode
-              </button>
-            </div>
+            <LocationModeToggle
+              mode={locationMode}
+              onSelect={(mode) => {
+                setLocationMode(mode);
+                setError('');
+              }}
+              disabled={busy}
+              ariaLabel="How to set your area"
+              className="mt-6"
+            />
 
             <label htmlFor="comparison-radius" className="label mt-6">
               Search radius: {radiusKm} km
