@@ -6,3 +6,4 @@ Session state (Participants, Selections, Submissions, the Match) lives only in R
 
 - There is no session history and no "past matches" feature without revisiting this decision.
 - Docs that say "no persistent database" predate the social layer; the claim now applies to session state only.
+- Redis representation is a private `SessionStore` detail with typed round-trip tests, not a versioned cross-layer contract. Add runtime validation or versioning only if another writer appears or session data begins surviving deployments.
