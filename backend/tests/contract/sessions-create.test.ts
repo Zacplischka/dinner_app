@@ -59,10 +59,8 @@ describe('Contract Test: POST /api/sessions', () => {
       .expect('Content-Type', /json/)
       .expect(400);
 
-    // Validate error response matches OpenAPI ErrorResponse schema
-    expect(response.body).toHaveProperty('error');
-    expect(response.body).toHaveProperty('code');
-    expect(response.body).toHaveProperty('message');
+    // Canonical failures are exactly { code, message } — no legacy `error` field.
+    expect(Object.keys(response.body).sort()).toEqual(['code', 'message']);
     expect(response.body.code).toBe('VALIDATION_ERROR');
     expect(logs.withMsg('Rejected REST session create')[0]).toMatchObject({
       reason: 'validation_error',
@@ -101,13 +99,11 @@ describe('Contract Test: POST /api/sessions', () => {
 
   it('should generate unique session codes for concurrent requests', async () => {
     const requests = Array.from({ length: 5 }, () =>
-      request(app)
-        .post('/api/sessions')
-        .send({ hostName: 'TestUser' })
+      request(app).post('/api/sessions').send({ hostName: 'TestUser' })
     );
 
     const responses = await Promise.all(requests);
-    const sessionCodes = responses.map(r => r.body.sessionCode);
+    const sessionCodes = responses.map((r) => r.body.sessionCode);
     const uniqueCodes = new Set(sessionCodes);
 
     expect(uniqueCodes.size).toBe(5); // All codes should be unique

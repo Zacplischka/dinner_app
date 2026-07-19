@@ -49,10 +49,7 @@ describe('Contract Test: API logging', () => {
     await redis.hset(
       `session:${sessionCode}:restaurants`,
       Object.fromEntries(
-        restaurants.map((restaurant) => [
-          restaurant.placeId,
-          JSON.stringify(restaurant),
-        ])
+        restaurants.map((restaurant) => [restaurant.placeId, JSON.stringify(restaurant)])
       )
     );
   }
@@ -76,10 +73,7 @@ describe('Contract Test: API logging', () => {
   it('logs create-session validation rejections without user input values', async () => {
     const logs = captureLogs();
 
-    await request(app)
-      .post('/api/sessions')
-      .send({ hostName: '' })
-      .expect(400);
+    await request(app).post('/api/sessions').send({ hostName: '' }).expect(400);
 
     expect(logs.withMsg('Rejected REST session create')[0]).toMatchObject({
       reason: 'validation_error',
@@ -100,7 +94,7 @@ describe('Contract Test: API logging', () => {
         location: { latitude: -37.8136, longitude: 144.9631 },
         searchRadiusMiles: 1,
       })
-      .expect(400);
+      .expect(404);
 
     expect(logs.withMsg('Rejected REST session create')[0]).toMatchObject({
       reason: 'no_restaurants_found',
@@ -116,9 +110,7 @@ describe('Contract Test: API logging', () => {
       .expect(201);
 
     const logs = captureLogs();
-    await request(app)
-      .get(`/api/sessions/${createResponse.body.sessionCode}`)
-      .expect(200);
+    await request(app).get(`/api/sessions/${createResponse.body.sessionCode}`).expect(200);
 
     expect(logs.withMsg('Returned REST session')[0]).toMatchObject({
       sessionCode: createResponse.body.sessionCode,
@@ -130,9 +122,7 @@ describe('Contract Test: API logging', () => {
   it('logs missing session lookups with the requested session code', async () => {
     const logs = captureLogs();
 
-    await request(app)
-      .get('/api/sessions/ZZZ99')
-      .expect(404);
+    await request(app).get('/api/sessions/ZZZ99').expect(404);
 
     expect(logs.withMsg('Rejected REST session get')[0]).toMatchObject({
       sessionCode: 'ZZZ99',
@@ -178,9 +168,7 @@ describe('Contract Test: API logging', () => {
     const logs = captureLogs();
     await createSessionRestaurants();
 
-    await request(app)
-      .get(`/api/options/${sessionCode}`)
-      .expect(200);
+    await request(app).get(`/api/options/${sessionCode}`).expect(200);
 
     expect(logs.withMsg('Returned REST session options')[0]).toMatchObject({
       sessionCode,
@@ -190,9 +178,7 @@ describe('Contract Test: API logging', () => {
 
     await redis.del(`session:${sessionCode}:restaurants`);
 
-    await request(app)
-      .get(`/api/options/${sessionCode}`)
-      .expect(404);
+    await request(app).get(`/api/options/${sessionCode}`).expect(404);
 
     expect(logs.withMsg('Rejected REST options get')[0]).toMatchObject({
       sessionCode,

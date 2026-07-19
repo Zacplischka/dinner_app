@@ -18,11 +18,10 @@ describe('POST /api/sessions with location', () => {
 
   it('should create session with location and restaurants', async () => {
     // Mock RestaurantSearchService
-    vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-      .mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-        { placeId: 'place2', name: 'R2', rating: 4.2, priceLevel: 3 },
-      ]);
+    vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants').mockResolvedValue([
+      { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
+      { placeId: 'place2', name: 'R2', rating: 4.2, priceLevel: 3 },
+    ]);
 
     const response = await request(app)
       .post('/api/sessions')
@@ -67,9 +66,8 @@ describe('POST /api/sessions with location', () => {
     expect(response.body.location).toBeUndefined();
   });
 
-  it('should return 400 if no restaurants found', async () => {
-    vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-      .mockResolvedValue([]);
+  it('should return 404 if no restaurants found', async () => {
+    vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants').mockResolvedValue([]);
 
     const response = await request(app)
       .post('/api/sessions')
@@ -78,16 +76,15 @@ describe('POST /api/sessions with location', () => {
         location: { latitude: 37.7749, longitude: -122.4194 },
         searchRadiusMiles: 5,
       })
-      .expect(400);
+      .expect(404);
 
     expect(response.body.code).toBe('NO_RESTAURANTS_FOUND');
   });
 
   it('should default searchRadiusMiles to 5 if not provided', async () => {
-    vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
-      .mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
+    vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants').mockResolvedValue([
+      { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
+    ]);
 
     const response = await request(app)
       .post('/api/sessions')

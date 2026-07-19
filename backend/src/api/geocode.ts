@@ -41,14 +41,12 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
 
       if (!hasCoords && (query.length < 2 || query.length > 100)) {
         return res.status(400).json({
-          error: 'Bad Request',
           code: 'VALIDATION_ERROR',
           message: 'Enter a suburb or postcode to search for.',
         });
       }
       if (hasCoords && (Math.abs(latitude) > 90 || Math.abs(longitude) > 180)) {
         return res.status(400).json({
-          error: 'Bad Request',
           code: 'VALIDATION_ERROR',
           message: 'Coordinates are out of range.',
         });
@@ -63,7 +61,6 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
       } else if (window.count >= GEOCODE_LIMIT) {
         res.setHeader('Retry-After', retryAfterSeconds(geocodeRequests, ip, GEOCODE_WINDOW_MS));
         return res.status(429).json({
-          error: 'Too Many Requests',
           code: 'RATE_LIMITED',
           message: 'Too many location lookups. Please try again shortly.',
         });
@@ -82,7 +79,6 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
       if (!resolved) {
         req.log.warn({ reason: 'area_not_found' }, 'Rejected geocode lookup');
         return res.status(404).json({
-          error: 'Not Found',
           code: 'AREA_NOT_FOUND',
           message:
             "We couldn't find that area. Check the spelling or try a nearby suburb or postcode.",

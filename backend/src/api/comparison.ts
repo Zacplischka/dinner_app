@@ -46,7 +46,6 @@ export function createComparisonRouter({
         const photoName = typeof req.query.name === 'string' ? req.query.name : '';
         if (!/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(photoName)) {
           return res.status(400).json({
-            error: 'Bad Request',
             code: 'VALIDATION_ERROR',
             message: 'A valid Google Places photo name is required',
           });
@@ -69,7 +68,6 @@ export function createComparisonRouter({
         } else if (requestCount.count >= 60) {
           res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
           return res.status(429).json({
-            error: 'Too Many Requests',
             code: 'RATE_LIMITED',
             message: 'Too many photo requests. Please try again shortly.',
           });
@@ -123,7 +121,6 @@ export function createComparisonRouter({
               const retryAfter = retryAfterSeconds(coldCompareRequests, ip, COLD_COMPARE_WINDOW_MS);
               res.setHeader('Retry-After', retryAfter);
               res.status(429).json({
-                error: 'Too Many Requests',
                 code: 'RATE_LIMITED',
                 message: `Limit of ${COLD_COMPARE_LIMIT} new comparisons per hour reached. Try again in about ${Math.ceil(retryAfter / 60)} minute(s).`,
               });
@@ -166,7 +163,6 @@ export function createComparisonRouter({
         radiusMiles > 15
       ) {
         return res.status(400).json({
-          error: 'Bad Request',
           code: 'VALIDATION_ERROR',
           message: 'Valid latitude, longitude, and radiusMiles (1–15) are required',
         });
@@ -181,7 +177,6 @@ export function createComparisonRouter({
       } else if (requestCount.count >= 30) {
         res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
         return res.status(429).json({
-          error: 'Too Many Requests',
           code: 'RATE_LIMITED',
           message: 'Too many venue searches. Please try again shortly.',
         });

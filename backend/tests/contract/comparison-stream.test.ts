@@ -188,7 +188,6 @@ describe('per-IP rate limit on cold Comparisons', () => {
 
     expect(limited.status).toBe(429);
     expect(limited.body).toMatchObject({
-      error: 'Too Many Requests',
       code: 'RATE_LIMITED',
     });
     expect(limited.body.message).toMatch(/5 new comparisons per hour/i);

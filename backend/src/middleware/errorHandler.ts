@@ -1,15 +1,9 @@
 // Global Express error middleware for errors forwarded by asyncHandler and
-// body-parse failures. Routes keep catches for route-specific shaping or logs.
+// body-parse failures. All shaping runs through the single transport mapping in
+// toApiError; the wire body is always exactly { code, message }.
 import type { NextFunction, Request, Response } from 'express';
-import { DomainError, type DomainErrorCode } from '../services/DomainError.js';
+import { toApiError } from '../api/toApiError.js';
 import { logger } from '../logger.js';
-
-const statusByCode: Partial<Record<DomainErrorCode, number>> = {
-  SESSION_NOT_FOUND: 404,
-  SESSION_FULL: 403,
-  NO_RESTAURANTS_FOUND: 400,
-  VALIDATION_ERROR: 400,
-};
 
 export function errorHandler(
   err: unknown,
@@ -18,30 +12,13 @@ export function errorHandler(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction
 ): Response {
-  if (err instanceof DomainError) {
-    // Note: unmapped codes default to 400, mirroring the friends router's
-    // convention; server-fault codes (e.g. database_error) are mapped there
-    // before they can reach this handler. Extend statusByCode if that changes.
-    return res.status(statusByCode[err.code] ?? 400).json({
-      error: err.code,
-      code: err.code,
-      message: err.message,
-    });
+  const { status, body } = toApiError(err);
+
+  // Server faults (including anything that mapped to INTERNAL_ERROR) get logged
+  // with the real error; the client only ever sees the detail-free body.
+  if (status >= 500) {
+    (req.log ?? logger).error({ err }, 'Unhandled request error');
   }
 
-  // express.json() throws SyntaxError with a status for malformed bodies
-  if (err instanceof SyntaxError && 'status' in err && err.status === 400) {
-    return res.status(400).json({
-      error: 'Bad Request',
-      code: 'INVALID_JSON',
-      message: 'Request body is not valid JSON',
-    });
-  }
-
-  (req.log ?? logger).error({ err }, 'Unhandled request error');
-  return res.status(500).json({
-    error: 'Internal Server Error',
-    code: 'INTERNAL_ERROR',
-    message: 'An unexpected error occurred. Please try again later.',
-  });
+  return res.status(status).json(body);
 }

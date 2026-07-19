@@ -61,9 +61,7 @@ vi.mock('../../src/services/supabase.js', () => {
     query.single = async () => nextResponse();
     query.maybeSingle = async () => nextResponse();
     query.then = (resolve: any, reject: any) =>
-      Promise.resolve()
-        .then(nextResponse)
-        .then(resolve, reject);
+      Promise.resolve().then(nextResponse).then(resolve, reject);
     return query;
   }
 
@@ -81,13 +79,17 @@ vi.mock('../../src/services/supabase.js', () => {
 
 const { createFriendsRouter } = await import('../../src/api/friends.js');
 const { createFriendsService } = await import('../../src/services/FriendsService.js');
+const { errorHandler } = await import('../../src/middleware/errorHandler.js');
 const friendsStore = await import('../../src/store/friendsStore.js');
 const friendsRouter = createFriendsRouter(createFriendsService({ store: friendsStore }));
 
+// Thrown DomainErrors now flow to the app-level errorHandler (the single
+// transport mapping), exactly as they do in the real server wiring.
 function makeApp() {
   const app = express();
   app.use(express.json());
   app.use('/api', friendsRouter);
+  app.use(errorHandler);
   return app;
 }
 
@@ -153,9 +155,7 @@ describe('friends API router', () => {
 
     expect(response.body.displayName).toBe('Alice');
     expect(mockState.calls).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ table: 'profiles', operation: 'insert' }),
-      ])
+      expect.arrayContaining([expect.objectContaining({ table: 'profiles', operation: 'insert' })])
     );
   });
 
@@ -250,7 +250,7 @@ describe('friends API router', () => {
     const response = await request(app).get('/api/users/search').expect(400);
 
     expect(response.body).toEqual({
-      error: 'validation_error',
+      code: 'VALIDATION_ERROR',
       message: 'Email query parameter is required',
     });
   });
@@ -258,9 +258,7 @@ describe('friends API router', () => {
   it('GET /users/search should return exact email matches excluding the current user', async () => {
     mockState.responses.push({ data: [bobProfile], error: null });
 
-    const response = await request(app)
-      .get('/api/users/search?email=BOB@example.com')
-      .expect(200);
+    const response = await request(app).get('/api/users/search?email=BOB@example.com').expect(200);
 
     expect(response.body).toEqual({
       users: [
@@ -428,7 +426,7 @@ describe('friends API router', () => {
     const response = await request(app).post('/api/friends/request').send({}).expect(400);
 
     expect(response.body).toEqual({
-      error: 'validation_error',
+      code: 'VALIDATION_ERROR',
       message: 'Email is required',
     });
   });
@@ -453,12 +451,14 @@ describe('friends API router', () => {
   });
 
   it.each([
-    ['accepted', 'already_friends', 'You are already friends with this user'],
-    ['pending', 'request_pending', 'A friend request is already pending'],
-    ['blocked', 'blocked', 'Unable to send friend request'],
+    ['accepted', 409, 'ALREADY_FRIENDS', 'You are already friends with this user'],
+    ['pending', 409, 'REQUEST_PENDING', 'A friend request is already pending'],
+    // A block is never revealed: it maps to the same 404 NOT_FOUND and the same
+    // message as the missing-user path, so the code doesn't leak what it conceals.
+    ['blocked', 404, 'NOT_FOUND', 'User not found with that email'],
   ])(
-    'POST /friends/request should reject existing %s friendships',
-    async (status, error, message) => {
+    'POST /friends/request should reject existing %s friendships with a canonical error',
+    async (status, httpStatus, code, message) => {
       mockState.responses.push(
         { data: { id: 'user-2' }, error: null },
         { data: { id: 'friendship-1', status }, error: null }
@@ -467,9 +467,9 @@ describe('friends API router', () => {
       const response = await request(app)
         .post('/api/friends/request')
         .send({ email: 'bob@example.com' })
-        .expect(400);
+        .expect(httpStatus);
 
-      expect(response.body).toEqual({ error, message });
+      expect(response.body).toEqual({ code, message });
     }
   );
 
@@ -511,7 +511,7 @@ describe('friends API router', () => {
     const response = await request(app).post('/api/friends/request-1/accept').expect(404);
 
     expect(response.body).toEqual({
-      error: 'not_found',
+      code: 'NOT_FOUND',
       message: 'Friend request not found',
     });
   });
@@ -545,7 +545,7 @@ describe('friends API router', () => {
       .expect(400);
 
     expect(response.body).toEqual({
-      error: 'validation_error',
+      code: 'VALIDATION_ERROR',
       message: 'At least one friend ID is required',
     });
   });
@@ -606,7 +606,7 @@ describe('friends API router', () => {
       .expect(400);
 
     expect(response.body).toEqual({
-      error: 'validation_error',
+      code: 'VALIDATION_ERROR',
       message: 'No valid friend IDs provided',
     });
   });
@@ -677,7 +677,7 @@ describe('friends API router', () => {
     const response = await request(app).post('/api/invites/invite-1/accept').expect(404);
 
     expect(response.body).toEqual({
-      error: 'not_found',
+      code: 'NOT_FOUND',
       message: 'Session invite not found',
     });
   });
@@ -701,8 +701,8 @@ describe('friends API router', () => {
       .expect(500)
       .expect(({ body }) => {
         expect(body).toEqual({
-          error: 'database_error',
-          message: 'Failed to fetch user profile',
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
         });
       });
 
@@ -716,8 +716,8 @@ describe('friends API router', () => {
       .expect(500)
       .expect(({ body }) => {
         expect(body).toEqual({
-          error: 'database_error',
-          message: 'Failed to create user profile',
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
         });
       });
   });
@@ -735,44 +735,48 @@ describe('friends API router', () => {
     ['get', '/api/invites', undefined],
     ['post', '/api/invites/invite-1/accept', undefined],
     ['post', '/api/invites/invite-1/decline', undefined],
-  ] as const)('%s %s should return internal_error when Supabase throws', async (method, path, body) => {
-    mockState.responses.push(new Error('supabase unavailable'));
+  ] as const)(
+    '%s %s should return internal_error when Supabase throws',
+    async (method, path, body) => {
+      mockState.responses.push(new Error('supabase unavailable'));
 
-    let pending = request(app)[method](path);
-    if (body) {
-      pending = pending.send(body);
-    }
+      let pending = request(app)[method](path);
+      if (body) {
+        pending = pending.send(body);
+      }
 
-    await pending.expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'internal_error',
-        message: 'An unexpected error occurred',
+      await pending.expect(500).expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
-  });
+    }
+  );
 
   it('GET /users/search should return database errors', async () => {
     mockState.responses.push({ data: null, error: { message: 'search failed' } });
 
-    const response = await request(app)
-      .get('/api/users/search?email=bob@example.com')
-      .expect(500);
+    const response = await request(app).get('/api/users/search?email=bob@example.com').expect(500);
 
     expect(response.body).toEqual({
-      error: 'database_error',
-      message: 'Failed to search users',
+      code: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred. Please try again later.',
     });
   });
 
   it('GET /friends should return database errors for friendships and profiles', async () => {
     mockState.responses.push({ data: null, error: { message: 'friendship failed' } });
 
-    await request(app).get('/api/friends').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to fetch friends',
+    await request(app)
+      .get('/api/friends')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
 
     mockState.responses.push(
       {
@@ -782,23 +786,29 @@ describe('friends API router', () => {
       { data: null, error: { message: 'profile failed' } }
     );
 
-    await request(app).get('/api/friends').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to fetch friend profiles',
+    await request(app)
+      .get('/api/friends')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
   });
 
   it('GET /friends/requests should return database errors for request lookup failures', async () => {
     mockState.responses.push({ data: null, error: { message: 'request failed' } });
 
-    await request(app).get('/api/friends/requests').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to fetch friend requests',
+    await request(app)
+      .get('/api/friends/requests')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
   });
 
   it('GET /friends/requests should return database errors for profile lookup failures', async () => {
@@ -807,12 +817,15 @@ describe('friends API router', () => {
       { data: null, error: { message: 'profile failed' } }
     );
 
-    await request(app).get('/api/friends/requests').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to fetch requester profiles',
+    await request(app)
+      .get('/api/friends/requests')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
   });
 
   it('POST /friends/request should return database errors for check and create failures', async () => {
@@ -827,8 +840,8 @@ describe('friends API router', () => {
       .expect(500)
       .expect(({ body }) => {
         expect(body).toEqual({
-          error: 'database_error',
-          message: 'Failed to check existing friendship',
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
         });
       });
 
@@ -844,8 +857,8 @@ describe('friends API router', () => {
       .expect(500)
       .expect(({ body }) => {
         expect(body).toEqual({
-          error: 'database_error',
-          message: 'Failed to create friend request',
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
         });
       });
   });
@@ -856,30 +869,39 @@ describe('friends API router', () => {
       { data: null, error: { message: 'accept failed' } }
     );
 
-    await request(app).post('/api/friends/request-1/accept').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to accept friend request',
+    await request(app)
+      .post('/api/friends/request-1/accept')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
 
     mockState.responses.push({ data: null, error: { message: 'decline failed' } });
 
-    await request(app).post('/api/friends/request-1/decline').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to decline friend request',
+    await request(app)
+      .post('/api/friends/request-1/decline')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
 
     mockState.responses.push({ data: null, error: { message: 'delete failed' } });
 
-    await request(app).delete('/api/friends/user-2').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to remove friend',
+    await request(app)
+      .delete('/api/friends/user-2')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
   });
 
   it('session invite endpoints should return database errors', async () => {
@@ -891,27 +913,33 @@ describe('friends API router', () => {
       .expect(500)
       .expect(({ body }) => {
         expect(body).toEqual({
-          error: 'database_error',
-          message: 'Failed to verify friendships',
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
         });
       });
 
     mockState.responses.push({ data: null, error: { message: 'invite fetch failed' } });
 
-    await request(app).get('/api/invites').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to fetch session invites',
+    await request(app)
+      .get('/api/invites')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
 
     mockState.responses.push({ data: null, error: { message: 'decline invite failed' } });
 
-    await request(app).post('/api/invites/invite-1/decline').expect(500).expect(({ body }) => {
-      expect(body).toEqual({
-        error: 'database_error',
-        message: 'Failed to decline invite',
+    await request(app)
+      .post('/api/invites/invite-1/decline')
+      .expect(500)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred. Please try again later.',
+        });
       });
-    });
   });
 });

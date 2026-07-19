@@ -23,7 +23,6 @@ export function createOptionsRouter(store: SessionStore) {
       }, 'Rejected REST options get');
 
       return res.status(404).json({
-        error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
         message: 'Session not found',
       });
@@ -37,7 +36,6 @@ export function createOptionsRouter(store: SessionStore) {
       }, 'Rejected REST options get');
 
       return res.status(404).json({
-        error: 'Not Found',
         code: 'SESSION_NOT_FOUND',
         message: 'Session not found',
       });
@@ -56,7 +54,6 @@ export function createOptionsRouter(store: SessionStore) {
       }, 'Rejected REST options get');
 
       return res.status(404).json({
-        error: 'Not Found',
         code: 'NO_RESTAURANTS',
         message: 'No restaurants found for this session',
       });
