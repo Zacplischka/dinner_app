@@ -3,6 +3,23 @@
 
 // Note: Socket type imports are added in backend/frontend packages where socket.io is installed
 
+import type { ApiError } from './api-errors.js';
+
+// ============= Canonical acknowledgement contract (ADR 0006 / #114) =============
+// The final discriminated shape. `data` and failure never coexist — a success
+// carries data, a failure carries exactly one public ApiError. The #115/#116
+// frontend switch consumes this; the bridge response types below widen it with
+// legacy fields so the currently-deployed frontend keeps working.
+
+export type Ack<T> = { success: true; data: T } | { success: false; error: ApiError };
+
+// ponytail: the failure-side bridge marker. Every command's bridge failure keeps
+// the legacy human-readable `error: string` AND adds the canonical public error
+// under a non-colliding `apiError` key (the #115 normalizer prefers `apiError`,
+// falling back to the legacy string). remove `apiError` (and let `error` become
+// ApiError per Ack<T>) after the frontend deployment consuming canonical acks is
+// verified (#116).
+
 // ============= Client → Server Events =============
 
 export interface SessionJoinPayload {
@@ -10,18 +27,36 @@ export interface SessionJoinPayload {
   displayName: string;
 }
 
-export interface SessionJoinResponse {
-  success: boolean;
-  participantId?: string;
-  sessionCode?: string;
-  displayName?: string;
-  participantCount?: number;
-  participants?: Array<{
+/** Canonical success payload for session:join (the `data` of Ack<SessionJoinData>). */
+export interface SessionJoinData {
+  participantId: string;
+  sessionCode: string;
+  displayName: string;
+  participantCount: number;
+  participants: Array<{
     participantId: string;
     displayName: string;
     isHost: boolean;
   }>;
+}
+
+export interface SessionJoinResponse {
+  success: boolean;
+  /** Canonical success payload (bridge). Same values as the flattened fields below. */
+  data?: SessionJoinData;
+  // ponytail: legacy flattened success fields, duplicated by `data` during the
+  // bridge. remove after the frontend deployment consuming canonical acks is
+  // verified (#116).
+  participantId?: string;
+  sessionCode?: string;
+  displayName?: string;
+  participantCount?: number;
+  participants?: SessionJoinData['participants'];
+  /** Legacy human-readable failure text (kept through the bridge). */
   error?: string;
+  // ponytail: canonical public error under a non-colliding key. remove after the
+  // frontend deployment consuming canonical acks is verified (#116).
+  apiError?: ApiError;
 }
 
 export interface SelectionSubmitPayload {
@@ -31,7 +66,13 @@ export interface SelectionSubmitPayload {
 
 export interface SelectionSubmitResponse {
   success: boolean;
+  /** Canonical: successful no-data commands acknowledge `data: null` (bridge → Ack<null>). */
+  data?: null;
+  /** Legacy human-readable failure text (kept through the bridge). */
   error?: string;
+  // ponytail: canonical public error under a non-colliding key. remove after the
+  // frontend deployment consuming canonical acks is verified (#116).
+  apiError?: ApiError;
 }
 
 export interface SessionRestartPayload {
@@ -40,7 +81,13 @@ export interface SessionRestartPayload {
 
 export interface SessionRestartResponse {
   success: boolean;
+  /** Canonical: successful no-data commands acknowledge `data: null` (bridge → Ack<null>). */
+  data?: null;
+  /** Legacy human-readable failure text (kept through the bridge). */
   error?: string;
+  // ponytail: canonical public error under a non-colliding key. remove after the
+  // frontend deployment consuming canonical acks is verified (#116).
+  apiError?: ApiError;
 }
 
 export interface SessionLeavePayload {
@@ -49,7 +96,13 @@ export interface SessionLeavePayload {
 
 export interface SessionLeaveResponse {
   success: boolean;
+  /** Canonical: successful no-data commands acknowledge `data: null` (bridge → Ack<null>). */
+  data?: null;
+  /** Legacy human-readable failure text (kept through the bridge). */
   error?: string;
+  // ponytail: canonical public error under a non-colliding key. remove after the
+  // frontend deployment consuming canonical acks is verified (#116).
+  apiError?: ApiError;
 }
 
 // ============= Server → Client Events =============

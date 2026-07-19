@@ -7,6 +7,7 @@ import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
+import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
   type ClientToServerEvents,
@@ -32,14 +33,19 @@ export async function handleSessionLeave(
     const validation = sessionLeavePayloadSchema.safeParse(payload);
     if (!validation.success) {
       const reason = validation.error.errors[0].message;
-      logger.warn({
-        socketId: socket.id,
-        sessionCode: (payload as Partial<SessionLeavePayload>).sessionCode,
-        reason,
-      }, 'Rejected session:leave');
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode: (payload as Partial<SessionLeavePayload>).sessionCode,
+          reason,
+        },
+        'Rejected session:leave'
+      );
       return callback({
         success: false,
         error: 'Invalid payload: ' + reason,
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: { code: 'VALIDATION_ERROR', message: reason },
       });
     }
 
@@ -57,23 +63,28 @@ export async function handleSessionLeave(
       if (!(error instanceof DomainError)) {
         throw error;
       }
-      logger.warn({
-        socketId: socket.id,
-        sessionCode,
-        reason: error.code,
-      }, 'Rejected session:leave');
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode,
+          reason: error.code,
+        },
+        'Rejected session:leave'
+      );
       return callback({
         success: false,
         // DomainError messages are the user-facing copy
         error: error.message,
+        // ponytail: canonical error alongside legacy string, remove after #116.
+        apiError: toApiError(error).body,
       });
     }
 
     // Leave Socket.IO room
     await socket.leave(sessionCode);
 
-    // Send acknowledgment to leaving client
-    callback({ success: true });
+    // Send acknowledgment to leaving client. No-data command → canonical data is null.
+    callback({ success: true, data: null });
 
     // Broadcast to remaining participants
     socket.to(sessionCode).emit('participant:left', {
@@ -94,6 +105,8 @@ export async function handleSessionLeave(
     callback({
       success: false,
       error: 'An error occurred while leaving the session',
+      // ponytail: canonical error alongside legacy string, remove after #116.
+      apiError: toApiError(error).body,
     });
   }
 }
