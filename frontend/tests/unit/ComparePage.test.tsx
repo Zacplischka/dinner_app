@@ -3,10 +3,10 @@ import { StrictMode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparePage from '../../src/pages/ComparePage';
-import { getVenues } from '../../src/services/apiClient';
+import { geocodeArea, getVenues } from '../../src/services/apiClient';
 import { useComparisonStore } from '../../src/stores/comparisonStore';
 
-vi.mock('../../src/services/apiClient', () => ({ getVenues: vi.fn() }));
+vi.mock('../../src/services/apiClient', () => ({ getVenues: vi.fn(), geocodeArea: vi.fn() }));
 
 function renderPage() {
   return render(
@@ -23,10 +23,20 @@ function renderPage() {
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => {
+  let reject!: (cause: unknown) => void;
+  const promise = new Promise<T>((done, fail) => {
     resolve = done;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
+}
+
+function venueList(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    placeId: `place-${index}`,
+    name: `Venue ${index}`,
+    distanceMiles: (index + 1) / 10,
+  }));
 }
 
 describe('ComparePage', () => {
@@ -53,16 +63,64 @@ describe('ComparePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
 
     expect(await screen.findByText('11 Inch Pizza')).toBeInTheDocument();
-    const venueCard = screen.getByRole('button', { name: /Compare 11 Inch Pizza/ });
+    const venueCard = screen.getByRole('button', { name: /11 Inch Pizza/ });
     expect(venueCard).toHaveAttribute('data-place-id', 'place-1');
-    expect(venueCard).toHaveTextContent('4.6');
-    expect(venueCard).toHaveTextContent('0.2 mi');
+    expect(venueCard).toHaveTextContent('★ 4.6');
+    expect(venueCard).toHaveTextContent('0.3 km');
+    expect(venueCard).not.toHaveTextContent('Compare');
+    expect(venueCard).toHaveTextContent('›');
+    // Default 8 km radius converts to the backend's 5-mile contract.
     expect(getVenues).toHaveBeenCalledWith({ latitude: 37.7749, longitude: -122.4194 }, 5);
     expect(getVenues).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'near Melbourne · change' })).toBeInTheDocument();
 
     fireEvent.click(venueCard);
     await waitFor(() => expect(screen.getByText('Comparison view')).toBeInTheDocument());
+  });
+
+  it('resolves a manual suburb entry and keeps its area name when reverse geocoding is silent', async () => {
+    vi.mocked(geocodeArea).mockResolvedValue({
+      latitude: -37.82,
+      longitude: 145.0,
+      area: 'Richmond',
+    });
+    vi.mocked(getVenues).mockResolvedValue({
+      venues: [{ placeId: 'place-1', name: 'Richmond Ramen', distanceMiles: 0.4 }],
+    });
+
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Suburb or postcode' }), {
+      target: { value: 'Richmond' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
+
+    expect(await screen.findByText('Richmond Ramen')).toBeInTheDocument();
+    expect(geocodeArea).toHaveBeenCalledWith('Richmond');
+    expect(getVenues).toHaveBeenCalledWith({ latitude: -37.82, longitude: 145.0 }, 5);
+    expect(screen.getByRole('button', { name: 'near Richmond · change' })).toBeInTheDocument();
+  });
+
+  it('keeps the typed area and explains recovery when the lookup fails', async () => {
+    vi.mocked(geocodeArea).mockRejectedValue(new Error('No matching area found'));
+
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
+    const input = screen.getByRole('textbox', { name: 'Suburb or postcode' });
+    fireEvent.change(input, { target: { value: 'Nowhereville' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No matching area found');
+    expect(input).toHaveValue('Nowhereville');
+    expect(getVenues).not.toHaveBeenCalled();
+  });
+
+  it('shows the radius in kilometres before searching', () => {
+    renderPage();
+    expect(screen.getByText('Search radius: 8 km')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/Search radius/), { target: { value: '12' } });
+    expect(screen.getByText('Search radius: 12 km')).toBeInTheDocument();
   });
 
   it('lazy-loads the thumbnail, retries a failed load once, then falls back to the initial tile', () => {
@@ -80,7 +138,7 @@ describe('ComparePage', () => {
     });
 
     renderPage();
-    const venueCard = screen.getByRole('button', { name: /Compare Bella Pizza/ });
+    const venueCard = screen.getByRole('button', { name: /Bella Pizza/ });
     const image = venueCard.querySelector('img') as HTMLImageElement;
     expect(image).toHaveAttribute('loading', 'lazy');
 
@@ -160,14 +218,63 @@ describe('ComparePage', () => {
     fireEvent.click(pizzaChip);
     expect(pizzaChip).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Pizza Place')).toBeInTheDocument();
+    expect(screen.getByText('1 of 3 Venues · 8 km radius')).toBeInTheDocument();
     expect(screen.queryByText('Wok This Way')).not.toBeInTheDocument();
     expect(screen.queryByText('Mystery Venue')).not.toBeInTheDocument();
 
     fireEvent.click(pizzaChip);
     expect(screen.getByText('Wok This Way')).toBeInTheDocument();
+    expect(screen.getByText('3 Venues · 8 km radius')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '🥡 Asian Fusion' }));
     fireEvent.click(screen.getByRole('button', { name: '🍽️ All' }));
     expect(screen.getByText('Mystery Venue')).toBeInTheDocument();
+  });
+
+  it('sorts by distance by default and by rating on request, hiding Top rated without data', () => {
+    useComparisonStore.setState({
+      location: { latitude: -37.81, longitude: 144.96 },
+      venues: [
+        { placeId: 'near', name: 'Near Venue', rating: 3.9, distanceMiles: 0.1 },
+        { placeId: 'far', name: 'Far Venue', rating: 4.8, distanceMiles: 0.9 },
+        { placeId: 'mid', name: 'Mid Venue', distanceMiles: 0.5 },
+      ],
+    });
+    const { container } = renderPage();
+    const order = () =>
+      [...container.querySelectorAll('[data-place-id]')].map((row) =>
+        row.getAttribute('data-place-id')
+      );
+
+    expect(screen.getByRole('button', { name: 'Nearest' })).toHaveAttribute('aria-pressed', 'true');
+    expect(order()).toEqual(['near', 'mid', 'far']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Top rated' }));
+    expect(order()).toEqual(['far', 'near', 'mid']);
+
+    // Without any rated Venue there is no rating order to offer.
+    act(() => {
+      useComparisonStore.setState({
+        venues: [{ placeId: 'plain', name: 'Mystery Venue', distanceMiles: 0.3 }],
+      });
+    });
+    expect(screen.queryByRole('button', { name: 'Top rated' })).not.toBeInTheDocument();
+  });
+
+  it('reveals a large result set progressively while preserving filters', () => {
+    useComparisonStore.setState({
+      location: { latitude: -37.81, longitude: 144.96 },
+      venues: venueList(30),
+      searchQuery: 'Venue',
+    });
+    const { container } = renderPage();
+
+    expect(container.querySelectorAll('[data-place-id]')).toHaveLength(24);
+    expect(screen.getByText('30 Venues · 8 km radius')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show 6 more Venues' }));
+    expect(container.querySelectorAll('[data-place-id]')).toHaveLength(30);
+    expect(screen.queryByRole('button', { name: /more Venues/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search Venues' })).toHaveValue('Venue');
   });
 
   it('restores a Cuisine filter and offers one-tap clear when it matches no Venues', () => {
@@ -269,7 +376,7 @@ describe('ComparePage', () => {
     });
   });
 
-  it('explains denied geolocation and leaves a retry action', async () => {
+  it('explains denied geolocation and opens the manual entry path', async () => {
     vi.mocked(navigator.geolocation.getCurrentPosition).mockImplementation((_success, failure) => {
       failure?.({ code: 1 } as GeolocationPositionError);
     });
@@ -277,9 +384,38 @@ describe('ComparePage', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Location permission was denied');
-    expect(screen.getByRole('button', { name: 'Use my location' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Location access is blocked');
+    expect(screen.getByRole('textbox', { name: 'Suburb or postcode' })).toBeInTheDocument();
     expect(getVenues).not.toHaveBeenCalled();
+  });
+
+  it('offers a retry and a change of area when the Venue fetch fails', async () => {
+    vi.mocked(getVenues)
+      .mockRejectedValueOnce(new Error('Too many venue searches. Please try again shortly.'))
+      .mockResolvedValueOnce({
+        suburb: 'Melbourne',
+        venues: [{ placeId: 'place-1', name: '11 Inch Pizza', distanceMiles: 0.2 }],
+      });
+
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Too many venue searches');
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByText('11 Inch Pizza')).toBeInTheDocument();
+    expect(getVenues).toHaveBeenCalledTimes(2);
+  });
+
+  it('explains an empty result set and offers to change the area', async () => {
+    vi.mocked(getVenues).mockResolvedValue({ suburb: 'Melbourne', venues: [] });
+
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+
+    expect(await screen.findByText('No Venues within 8 km')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Change area' }));
+    expect(screen.getByRole('heading', { name: 'Find nearby Venues' })).toBeInTheDocument();
   });
 
   it('restores cached Venues and scroll position without a Google refetch', async () => {
@@ -297,7 +433,7 @@ describe('ComparePage', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 240);
     expect(getVenues).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: /Compare 11 Inch Pizza/ }));
+    fireEvent.click(screen.getByRole('button', { name: /11 Inch Pizza/ }));
     await waitFor(() => expect(screen.getByText('Comparison view')).toBeInTheDocument());
     expect(useComparisonStore.getState().scrollY).toBe(321);
   });

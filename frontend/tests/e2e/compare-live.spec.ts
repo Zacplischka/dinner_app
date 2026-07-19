@@ -12,8 +12,9 @@ interface SnapshotRow {
 
 function snapshotIsFresh(snapshot: SnapshotRow | null): boolean {
   if (!snapshot) return false;
-  const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash]
-    .some((storefront) => storefront?.status === 'failed');
+  const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash].some(
+    (storefront) => storefront?.status === 'failed'
+  );
   const maxAgeMs = hasFailure ? 2 * 60_000 : 20 * 60_000;
   const ageMs = Date.now() - Date.parse(snapshot.fetched_at);
   return ageMs >= 0 && ageMs < maxAgeMs;
@@ -47,7 +48,7 @@ test.describe('live delivery comparison', () => {
     await page.getByRole('button', { name: 'Use my location' }).click();
 
     const compareButton = page.getByRole('button', {
-      name: new RegExp(`Compare ${venueName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'),
+      name: new RegExp(venueName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
     });
     await expect(compareButton).toBeVisible({ timeout: 30_000 });
     const placeId = await compareButton.getAttribute('data-place-id');
@@ -76,14 +77,19 @@ test.describe('live delivery comparison', () => {
     await expect(page.getByRole('link', { name: 'Open in DoorDash' }).first()).toBeVisible();
 
     expect(decodeURIComponent(new URL(page.url()).pathname.split('/').at(-1) || '')).toBe(placeId);
-    await expect.poll(async () => {
-      const result = await supabase
-        .from('comparison_snapshots')
-        .select('id', { count: 'exact', head: true })
-        .eq('place_id', placeId!);
-      if (result.error) throw result.error;
-      return result.count || 0;
-    }, { timeout: 30_000 }).toBe(beforeCount + 1);
+    await expect
+      .poll(
+        async () => {
+          const result = await supabase
+            .from('comparison_snapshots')
+            .select('id', { count: 'exact', head: true })
+            .eq('place_id', placeId!);
+          if (result.error) throw result.error;
+          return result.count || 0;
+        },
+        { timeout: 30_000 }
+      )
+      .toBe(beforeCount + 1);
 
     const { data, error } = await supabase
       .from('comparison_snapshots')
