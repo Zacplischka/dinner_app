@@ -179,7 +179,14 @@ export default function NavigationHeader({
               {showSubtitle && <p className="text-xs text-muted">{subtitle}</p>}
 
               {progress && (
-                <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-2"
+                  role="progressbar"
+                  aria-label="Restaurant progress"
+                  aria-valuemin={1}
+                  aria-valuemax={progress.total}
+                  aria-valuenow={progress.current}
+                >
                   <div className="w-16 h-1 bg-surface rounded-full overflow-hidden">
                     <div
                       className="h-full bg-coral rounded-full transition-all duration-300"

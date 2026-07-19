@@ -14,7 +14,7 @@ import { participantRingClass } from '../utils/participantStyles';
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, participants } = useSessionStore();
+  const { selections, addSelection, removeSelection, participants } = useSessionStore();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -256,7 +256,7 @@ export default function SelectionPage() {
   const visibleRestaurants = restaurants.slice(currentIndex, currentIndex + 3);
 
   return (
-    <main className="min-h-screen bg-ink flex flex-col">
+    <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
         title="Choose Restaurants"
@@ -278,12 +278,7 @@ export default function SelectionPage() {
             role="status"
             aria-label={`${selections.length} liked`}
           >
-            <svg
-              className="w-4 h-4"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-            >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
               <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
             </svg>
             <span className="font-semibold">{selections.length}</span>
@@ -292,8 +287,8 @@ export default function SelectionPage() {
       />
 
       {/* Card Stack */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
-        <div className="mb-3 flex w-full max-w-sm items-center justify-between rounded-full border border-line bg-raised/90 px-3 py-2">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 py-3">
+        <div className="mb-3 flex w-full max-w-sm flex-shrink-0 items-center justify-between rounded-full border border-line bg-raised/90 px-3 py-2">
           <div className="flex -space-x-2" aria-label="Participants choosing">
             {participants.map((participant, index) => (
               <div
@@ -309,7 +304,10 @@ export default function SelectionPage() {
             {participants.length} together
           </p>
         </div>
-        <div className="relative w-full max-w-sm aspect-[3/4]">
+        <div
+          data-testid="card-stack"
+          className="relative w-full max-w-sm flex-1 min-h-0 max-h-[30rem]"
+        >
           {visibleRestaurants.map((restaurant, index) => (
             <SwipeCard
               key={restaurant.placeId}
@@ -355,7 +353,7 @@ export default function SelectionPage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="safe-bottom px-4 pb-6 pt-2">
+      <div className="safe-bottom flex-shrink-0 px-4 pb-4 pt-2">
         <div className="max-w-sm mx-auto flex items-center justify-center gap-8">
           {/* Nope Button */}
           <button
@@ -378,6 +376,10 @@ export default function SelectionPage() {
           <button
             onClick={() => {
               if (currentIndex > 0) {
+                const previous = restaurants[currentIndex - 1];
+                if (previous) {
+                  removeSelection(previous.placeId);
+                }
                 setCurrentIndex((prev) => prev - 1);
               }
             }}
@@ -413,7 +415,7 @@ export default function SelectionPage() {
         </div>
 
         {/* Hint text */}
-        <p className="text-center text-xs text-muted mt-4">Swipe or use buttons to choose</p>
+        <p className="text-center text-xs text-muted mt-2">Swipe or use buttons to choose</p>
       </div>
     </main>
   );

@@ -192,6 +192,13 @@
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Full visible height on mobile: dvh tracks the dynamic browser chrome,
+     vh is the fallback for browsers without dvh support. */
+  .h-screen-dvh {
+    height: 100vh;
+    height: 100dvh;
+  }
 }
 
 /* Referenced by inline animation styles in SwipeCard */
