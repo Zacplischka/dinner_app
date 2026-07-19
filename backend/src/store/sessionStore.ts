@@ -8,14 +8,40 @@
 
 import type { Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
-import {
-  SESSION_CODE_LENGTH,
-  type Participant,
-  type Restaurant,
-  type Session,
-} from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type Restaurant } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
+
+// --- Persistence models (backend-only) ---------------------------------
+// How a live Session and its Participants are represented in Redis. These are
+// not wire contracts and never leave the backend — SessionStore is their sole
+// reader and writer (ADR 0001; issue #113). Data expires in 30 min, so there is
+// no schema version or runtime decoder: the shapes below are the only encoding.
+
+export interface Session {
+  sessionCode: string;
+  hostId: string;
+  state: 'waiting' | 'selecting' | 'complete' | 'expired';
+  participantCount: number;
+  createdAt: number;
+  lastActivityAt: number;
+  hostName?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  searchRadiusMiles?: number;
+}
+
+export interface Participant {
+  participantId: string;
+  displayName: string;
+  sessionCode: string;
+  joinedAt: number;
+  hasSubmitted: boolean;
+  isHost: boolean;
+}
 
 // --- Keyspace (private) ------------------------------------------------
 // session:{code}                     hash: session metadata

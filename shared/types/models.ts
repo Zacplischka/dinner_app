@@ -31,41 +31,7 @@ export interface GeocodedArea {
   area?: string;
 }
 
-export interface Session {
-  sessionCode: string;
-  hostId: string;
-  state: 'waiting' | 'selecting' | 'complete' | 'expired';
-  participantCount: number;
-  createdAt: number;
-  lastActivityAt: number;
-  hostName?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address?: string;
-  };
-  searchRadiusMiles?: number;
-}
-
-export interface Participant {
-  participantId: string;
-  displayName: string;
-  sessionCode: string;
-  joinedAt: number;
-  hasSubmitted: boolean;
-  isHost: boolean;
-}
-
-export interface Selection {
-  participantId: string;
-  sessionCode: string;
-  optionIds: string[];
-}
-
-export interface Result {
-  sessionCode: string;
-  overlappingOptions: Restaurant[];
-  allSelections: Record<string, string[]>; // displayName -> optionIds/placeIds
-  restaurantNames?: Record<string, string>; // placeId -> name mapping for display
-  hasOverlap: boolean;
-}
+// The ephemeral Session, its Participants, Selections, and the Match live only
+// as long as their Redis keys do. They are NOT wire contracts: the backend owns
+// its persistence shapes (backend/src/store/sessionStore.ts) and the frontend
+// owns its local state shapes (frontend/src/types.ts). See issue #113.

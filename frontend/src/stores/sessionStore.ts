@@ -3,7 +3,8 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { Participant, Restaurant, Result } from '@dinder/shared/types';
+import type { Restaurant } from '@dinder/shared/types';
+import type { Participant, Result } from '../types';
 
 interface Location {
   latitude: number;
