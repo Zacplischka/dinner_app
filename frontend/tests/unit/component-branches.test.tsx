@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/services/socketBindings', () => ({
-  joinSession: vi.fn(async () => ({ success: true, participantId: 'participant-1' })),
+  joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
 }));
 
 import GoogleSignInButton from '../../src/components/GoogleSignInButton';

@@ -105,10 +105,9 @@ describe('socketBindings', () => {
 
     socket.trigger('disconnect', 'transport close');
     expect(useSessionStore.getState().isConnected).toBe(false);
-    expect(socketMocks.toast.warning).toHaveBeenCalledWith(
-      'Connection lost. Reconnecting...',
-      { duration: 4000 }
-    );
+    expect(socketMocks.toast.warning).toHaveBeenCalledWith('Connection lost. Reconnecting...', {
+      duration: 4000,
+    });
 
     socket.trigger('connect_error', new Error('down'));
     expect(useSessionStore.getState().isConnected).toBe(false);
@@ -217,9 +216,42 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().sessionCode).toBe('AB123');
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Alice');
 
-    socket.acks.set('session:leave', { success: true });
-    await expect(socketBindings.leaveSession('AB123')).resolves.toEqual({ success: true });
+    socket.acks.set('session:leave', { success: true, data: null });
+    await expect(socketBindings.leaveSession('AB123')).resolves.toEqual({
+      success: true,
+      data: null,
+    });
     expect(useSessionStore.getState().sessionCode).toBeNull();
+  });
+
+  it('maps a canonical join ack DTO into Participant state and leaves store untouched on failure', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+
+    // Canonical success: only `data`, no flattened fields.
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: 'p-canon',
+        sessionCode: 'CN456',
+        displayName: 'Carol',
+        participantCount: 1,
+        participants: [{ participantId: 'p-canon', displayName: 'Carol', isHost: true }],
+      },
+    });
+    await socketBindings.joinSession('CN456', 'Carol');
+    expect(useSessionStore.getState().sessionCode).toBe('CN456');
+    expect(useSessionStore.getState().participants.map((p) => p.displayName)).toEqual(['Carol']);
+
+    // Bridge failure: store must not be mutated, ack surfaces the ApiError.
+    socket.acks.set('session:join', {
+      success: false,
+      error: 'Session is full',
+      apiError: { code: 'SESSION_FULL', message: 'full' },
+    });
+    const ack = await socketBindings.joinSession('OTHER', 'Dave');
+    expect(ack).toEqual({ success: false, error: { code: 'SESSION_FULL', message: 'full' } });
+    expect(useSessionStore.getState().sessionCode).toBe('CN456'); // unchanged
   });
 
   it('resets selections when joining a different session than the stored one', async () => {

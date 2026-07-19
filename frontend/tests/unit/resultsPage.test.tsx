@@ -4,8 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/services/socketBindings', () => ({
-  restartSession: vi.fn(async () => undefined),
-  leaveSession: vi.fn(async () => ({ success: true })),
+  restartSession: vi.fn(async () => ({ success: true, data: null })),
+  leaveSession: vi.fn(async () => ({ success: true, data: null })),
 }));
 
 import ResultsPage from '../../src/pages/ResultsPage';

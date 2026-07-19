@@ -33,20 +33,15 @@ export class ResultsPage extends BasePage {
   }
 
   /**
-   * Verify results page elements
+   * Verify the Match results page. This is the Match scenario's assertion: a
+   * Match card MUST be shown. The no-match fallback is a failure here — an
+   * either/or check would let a broken Match silently pass as "no matches".
    */
   async verifyPageElements(): Promise<void> {
-    // Either show matches or no-matches message
-    const hasMatches = await this.hasMatches();
-    if (hasMatches) {
-      await expect(this.restaurantCards.first()).toBeVisible();
-    } else {
-      await expect(this.noMatchesMessage).toBeVisible();
-    }
+    await expect(this.restaurantCards.first()).toBeVisible();
+    await expect(this.noMatchesMessage).toBeHidden();
 
     // Navigation should always be visible
-    await expect(
-      this.goHomeButton.or(this.startNewSessionButton)
-    ).toBeVisible();
+    await expect(this.goHomeButton.or(this.startNewSessionButton)).toBeVisible();
   }
 }

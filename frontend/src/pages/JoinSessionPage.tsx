@@ -9,7 +9,10 @@ import { waitForConnection, joinSession } from '../services/socketBindings';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 
 const cleanSessionCode = (value: string) =>
-  value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, SESSION_CODE_LENGTH);
+  value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, SESSION_CODE_LENGTH);
 
 export default function JoinSessionPage() {
   const navigate = useNavigate();
@@ -18,7 +21,13 @@ export default function JoinSessionPage() {
   const [participantName, setParticipantName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { setSessionCode: storeSessionCode, setCurrentUserId, setConnectionStatus, setSessionStatus, resetSelections } = useSessionStore();
+  const {
+    setSessionCode: storeSessionCode,
+    setCurrentUserId,
+    setConnectionStatus,
+    setSessionStatus,
+    resetSelections,
+  } = useSessionStore();
 
   // Pre-fill session code if provided in URL query params
   useEffect(() => {
@@ -43,7 +52,6 @@ export default function JoinSessionPage() {
       return;
     }
 
-
     setIsLoading(true);
 
     try {
@@ -54,24 +62,26 @@ export default function JoinSessionPage() {
       setSessionStatus('waiting');
 
       await waitForConnection();
-      const joinResponse = await joinSession(code, participantName.trim());
+      const ack = await joinSession(code, participantName.trim());
 
-      if (joinResponse.success && joinResponse.participantId) {
-        setCurrentUserId(joinResponse.participantId);
+      if (ack.success) {
+        setCurrentUserId(ack.data.participantId);
         setConnectionStatus(true);
         navigate(`/session/${code}`);
+      } else {
+        // Handle specific error cases by canonical code, falling back to message text.
+        const errorMessage = ack.error.message;
+        if (ack.error.code === 'SESSION_FULL' || errorMessage.includes('full')) {
+          setError('This session is full (maximum 4 participants)');
+        } else if (ack.error.code === 'SESSION_NOT_FOUND' || errorMessage.includes('not found')) {
+          setError('Session not found or has expired');
+        } else {
+          setError(errorMessage);
+        }
+        setIsLoading(false);
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to join session';
-
-      // Handle specific error cases
-      if (errorMessage.includes('full')) {
-        setError('This session is full (maximum 4 participants)');
-      } else if (errorMessage.includes('not found')) {
-        setError('Session not found or has expired');
-      } else {
-        setError(errorMessage);
-      }
+      setError(err instanceof Error ? err.message : 'Failed to join session');
 
       setIsLoading(false);
     }
@@ -87,7 +97,6 @@ export default function JoinSessionPage() {
       />
 
       <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
-
         {/* Form */}
         <form onSubmit={handleSubmit} className="card space-y-6">
           {/* Session Code */}
@@ -128,11 +137,8 @@ export default function JoinSessionPage() {
               className="input"
               disabled={isLoading}
             />
-            <p className="mt-1.5 text-xs text-muted">
-              {participantName.length}/50 characters
-            </p>
+            <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
           </div>
-
 
           {/* Error message */}
           {error && (

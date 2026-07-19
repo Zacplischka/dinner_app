@@ -142,10 +142,10 @@ export default function CreateSessionPage() {
 
       // Connect WebSocket and wait for connection, then join as host
       await waitForConnection();
-      const joinResponse = await joinSession(response.sessionCode, hostName.trim());
+      const ack = await joinSession(response.sessionCode, hostName.trim());
 
-      if (joinResponse.success && joinResponse.participantId) {
-        setCurrentUserId(joinResponse.participantId);
+      if (ack.success) {
+        setCurrentUserId(ack.data.participantId);
         setConnectionStatus(true);
 
         // Invite selected friends if any
@@ -154,6 +154,9 @@ export default function CreateSessionPage() {
         }
 
         navigate(`/session/${response.sessionCode}`);
+      } else {
+        setError(ack.error.message);
+        setIsLoading(false);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create session');

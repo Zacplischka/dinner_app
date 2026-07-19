@@ -312,11 +312,16 @@ export default function ResultsPage() {
     setError('');
 
     try {
-      await restartSession(sessionCode);
-      // Reset local store selections/results
-      useSessionStore.getState().resetSelections();
-      // Navigate back to selection page
-      navigate(`/session/${sessionCode}/select`);
+      const ack = await restartSession(sessionCode);
+      if (ack.success) {
+        // Reset local store selections/results
+        useSessionStore.getState().resetSelections();
+        // Navigate back to selection page
+        navigate(`/session/${sessionCode}/select`);
+      } else {
+        setError(ack.error.message);
+        setIsRestarting(false);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to restart session');
       setIsRestarting(false);

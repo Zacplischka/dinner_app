@@ -8,7 +8,7 @@ const serviceMocks = vi.hoisted(() => ({
   geocodeArea: vi.fn(),
   reverseGeocode: vi.fn(),
   waitForConnection: vi.fn(async () => undefined),
-  joinSession: vi.fn(async () => ({ success: true, participantId: 'participant-1' })),
+  joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
 }));
 
 vi.mock('../../src/services/apiClient', () => ({

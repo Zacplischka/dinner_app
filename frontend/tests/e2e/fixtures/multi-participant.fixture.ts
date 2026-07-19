@@ -42,12 +42,15 @@ type MultiParticipantFixture = {
 };
 
 export const multiParticipantTest = base.extend<MultiParticipantFixture>({
-  setupSession: async ({ browser }, use) => {
+  setupSession: async ({ browser, baseURL }, use) => {
     const allContexts: BrowserContext[] = [];
 
     const setup = async (participantCount: number) => {
-      // Create host context
+      // Create host context. Manually-created contexts do NOT inherit the config
+      // baseURL, so pass it explicitly or the page objects' relative navigations
+      // resolve against about:blank.
       const hostContext = await browser.newContext({
+        baseURL,
         viewport: { width: 390, height: 844 },
       });
       const hostPage = await hostContext.newPage();
@@ -73,6 +76,7 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
       const participants: Participant[] = [];
       for (let i = 0; i < participantCount; i++) {
         const context = await browser.newContext({
+          baseURL,
           viewport: { width: 390, height: 844 },
         });
         const page = await context.newPage();
