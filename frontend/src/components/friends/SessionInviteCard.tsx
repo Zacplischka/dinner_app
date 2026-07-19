@@ -29,7 +29,11 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
         const displayName = currentUserProfile?.displayName || 'Guest';
 
         // Join the session via WebSocket (this adds us to the Socket.IO room)
-        await joinSession(result.sessionCode, displayName);
+        const ack = await joinSession(result.sessionCode, displayName);
+        if (!ack.success) {
+          setError(ack.error.message);
+          return;
+        }
 
         // Store session code
         setSessionCode(result.sessionCode);
@@ -62,7 +66,12 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
         {/* Session icon */}
         <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
           <svg className="w-5 h-5 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+            />
           </svg>
         </div>
 
@@ -74,9 +83,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           <p className="text-sm text-muted">
             Session: <span className="font-mono font-semibold text-cyan">{invite.sessionCode}</span>
           </p>
-          <p className="text-xs text-muted/60">
-            {new Date(invite.createdAt).toLocaleDateString()}
-          </p>
+          <p className="text-xs text-muted/60">{new Date(invite.createdAt).toLocaleDateString()}</p>
         </div>
       </div>
 

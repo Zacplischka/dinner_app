@@ -12,9 +12,9 @@ const serviceMocks = vi.hoisted(() => ({
     expiresAt: new Date().toISOString(),
     shareableLink: 'http://localhost:3000/join?code=AB123',
   })),
-  leaveSession: vi.fn(async () => ({ success: true })),
-  restartSession: vi.fn(async () => undefined),
-  joinSession: vi.fn(async () => ({ success: true, participantId: 'participant-1' })),
+  leaveSession: vi.fn(async () => ({ success: true, data: null })),
+  restartSession: vi.fn(async () => ({ success: true, data: null })),
+  joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
 }));
 
 vi.mock('../../src/services/apiClient', () => ({

@@ -69,7 +69,10 @@ export default function SessionLobbyPage() {
     try {
       // The existing restart contract moves the shared session into the
       // selecting state and broadcasts that transition to every participant.
-      await restartSession(sessionCode);
+      const ack = await restartSession(sessionCode);
+      if (!ack.success) {
+        toast.error(ack.error.message);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start selecting');
     }

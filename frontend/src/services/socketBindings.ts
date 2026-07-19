@@ -3,9 +3,8 @@
 // transport. Pages import from here; socketService stays UI-free.
 
 import type {
-  SessionJoinResponse,
-  SelectionSubmitResponse,
-  SessionLeaveResponse,
+  Ack,
+  SessionJoinData,
   ParticipantJoinedEvent,
   ParticipantLeftEvent,
   ParticipantDisconnectedEvent,
@@ -104,9 +103,7 @@ const socketConfig: SocketConfig = {
       const store = useSessionStore.getState();
 
       // Find participant name before removing
-      const participant = store.participants.find(
-        (p) => p.participantId === event.participantId
-      );
+      const participant = store.participants.find((p) => p.participantId === event.participantId);
       const displayName = participant?.displayName || 'Someone';
 
       store.removeParticipant(event.participantId);
@@ -123,9 +120,7 @@ const socketConfig: SocketConfig = {
       const store = useSessionStore.getState();
 
       // Find participant to get their name
-      const participant = store.participants.find(
-        (p) => p.participantId === event.participantId
-      );
+      const participant = store.participants.find((p) => p.participantId === event.participantId);
       const displayName = participant?.displayName || event.displayName;
 
       // Do NOT remove the participant - they may reconnect (FR-025)
@@ -194,13 +189,15 @@ export function waitForConnection(timeoutMs?: number): Promise<void> {
 }
 
 /**
- * Join a session and mirror the ack into the session store.
+ * Join a session and, on success, map the ack DTO into local Participant state.
+ * Returns the normalized Ack<T> so callers branch on one success-or-failure shape.
  */
 export async function joinSession(
   sessionCode: string,
   displayName: string
-): Promise<SessionJoinResponse> {
+): Promise<Ack<SessionJoinData>> {
   const ack = await socketService.joinSession(sessionCode, displayName);
+  if (!ack.success) return ack;
 
   const store = useSessionStore.getState();
 
@@ -213,7 +210,7 @@ export async function joinSession(
   // Update store with session data
   store.setSessionCode(sessionCode);
   store.updateParticipants(
-    (ack.participants ?? []).map((p) => ({
+    ack.data.participants.map((p) => ({
       ...p,
       sessionCode,
       joinedAt: Date.now(),
@@ -227,24 +224,22 @@ export async function joinSession(
 /**
  * Submit selections
  */
-export function submitSelection(
-  sessionCode: string,
-  optionIds: string[]
-): Promise<SelectionSubmitResponse> {
+export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
   return socketService.submitSelection(sessionCode, optionIds);
 }
 
 /**
  * Restart session
  */
-export function restartSession(sessionCode: string): Promise<void> {
+export function restartSession(sessionCode: string): Promise<Ack<null>> {
   return socketService.restartSession(sessionCode);
 }
 
 /**
- * Leave session intentionally and clear local session state.
+ * Leave session intentionally and clear local session state. The store is reset
+ * regardless of ack outcome — every caller navigates away either way.
  */
-export async function leaveSession(sessionCode: string): Promise<SessionLeaveResponse> {
+export async function leaveSession(sessionCode: string): Promise<Ack<null>> {
   const ack = await socketService.leaveSession(sessionCode);
   useSessionStore.getState().resetSession();
   return ack;

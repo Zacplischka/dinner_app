@@ -26,9 +26,9 @@ vi.mock('../../src/services/apiClient', () => ({
 }));
 
 vi.mock('../../src/services/socketBindings', () => ({
-  submitSelection: vi.fn(async () => undefined),
-  leaveSession: vi.fn(async () => ({ success: true })),
-  restartSession: vi.fn(async () => ({ success: true })),
+  submitSelection: vi.fn(async () => ({ success: true, data: null })),
+  leaveSession: vi.fn(async () => ({ success: true, data: null })),
+  restartSession: vi.fn(async () => ({ success: true, data: null })),
 }));
 
 import SelectionPage from '../../src/pages/SelectionPage';
@@ -49,8 +49,22 @@ describe('Neon Night Market components', () => {
   it('keeps restaurant decisions colour-coded and touch-friendly', async () => {
     useSessionStore.setState({
       participants: [
-        { participantId: 'p1', displayName: 'Alice', sessionCode: 'AB123', joinedAt: 1, hasSubmitted: false, isHost: true },
-        { participantId: 'p2', displayName: 'Bo', sessionCode: 'AB123', joinedAt: 2, hasSubmitted: false, isHost: false },
+        {
+          participantId: 'p1',
+          displayName: 'Alice',
+          sessionCode: 'AB123',
+          joinedAt: 1,
+          hasSubmitted: false,
+          isHost: true,
+        },
+        {
+          participantId: 'p2',
+          displayName: 'Bo',
+          sessionCode: 'AB123',
+          joinedAt: 2,
+          hasSubmitted: false,
+          isHost: false,
+        },
       ],
     });
 
@@ -84,9 +98,18 @@ describe('Neon Night Market components', () => {
   it('uses lime, coral, and cyan for toast severity', () => {
     render(
       <>
-        <Toast toast={{ id: '1', type: 'success', message: 'Saved', duration: 10_000 }} onDismiss={vi.fn()} />
-        <Toast toast={{ id: '2', type: 'error', message: 'Failed', duration: 10_000 }} onDismiss={vi.fn()} />
-        <Toast toast={{ id: '3', type: 'info', message: 'Connected', duration: 10_000 }} onDismiss={vi.fn()} />
+        <Toast
+          toast={{ id: '1', type: 'success', message: 'Saved', duration: 10_000 }}
+          onDismiss={vi.fn()}
+        />
+        <Toast
+          toast={{ id: '2', type: 'error', message: 'Failed', duration: 10_000 }}
+          onDismiss={vi.fn()}
+        />
+        <Toast
+          toast={{ id: '3', type: 'info', message: 'Connected', duration: 10_000 }}
+          onDismiss={vi.fn()}
+        />
       </>
     );
 
@@ -111,14 +134,16 @@ describe('Neon Night Market components', () => {
     useSessionStore.setState({
       sessionCode: 'AB123',
       isConnected: true,
-      participants: [{
-        participantId: 'p1',
-        displayName: 'Alice',
-        sessionCode: 'AB123',
-        joinedAt: 1,
-        hasSubmitted: false,
-        isHost: true,
-      }],
+      participants: [
+        {
+          participantId: 'p1',
+          displayName: 'Alice',
+          sessionCode: 'AB123',
+          joinedAt: 1,
+          hasSubmitted: false,
+          isHost: true,
+        },
+      ],
     });
 
     render(
@@ -130,22 +155,28 @@ describe('Neon Night Market components', () => {
     );
 
     await waitFor(() => expect(screen.getByText('Copy shareable link')).toBeInTheDocument());
-    expect(screen.getAllByText('AB123').some((element) => element.classList.contains('shadow-glow-cyan'))).toBe(true);
+    expect(
+      screen.getAllByText('AB123').some((element) => element.classList.contains('shadow-glow-cyan'))
+    ).toBe(true);
     expect(screen.getByLabelText('Alice, host, live')).toHaveClass('border-coral');
-    expect(screen.getAllByText('Waiting for participant...')[0].previousElementSibling).toHaveClass('border-amber');
+    expect(screen.getAllByText('Waiting for participant...')[0].previousElementSibling).toHaveClass(
+      'border-amber'
+    );
   });
 
   it('reserves the brightest animation for a real match', () => {
     useSessionStore.setState({
       sessionCode: 'AB123',
-      participants: [{
-        participantId: 'p1',
-        displayName: 'Alice',
-        sessionCode: 'AB123',
-        joinedAt: 1,
-        hasSubmitted: true,
-        isHost: true,
-      }],
+      participants: [
+        {
+          participantId: 'p1',
+          displayName: 'Alice',
+          sessionCode: 'AB123',
+          joinedAt: 1,
+          hasSubmitted: true,
+          isHost: true,
+        },
+      ],
       overlappingOptions: [restaurant],
       allSelections: { Alice: ['place-1'] },
       restaurantNames: { 'place-1': 'Ramen Ichiban' },
@@ -166,12 +197,18 @@ describe('Neon Night Market components', () => {
       'text-lime',
       'shadow-match'
     );
-    expect(screen.getAllByText('Ramen Ichiban')[0].closest('[data-match-card]')).toHaveClass('border-lime');
+    expect(screen.getAllByText('Ramen Ichiban')[0].closest('[data-match-card]')).toHaveClass(
+      'border-lime'
+    );
   });
 
   it('gives the profile avatar a cyan ring', () => {
     useAuthStore.setState({
-      user: { id: 'user-1', email: 'alice@example.com', user_metadata: { full_name: 'Alice' } } as any,
+      user: {
+        id: 'user-1',
+        email: 'alice@example.com',
+        user_metadata: { full_name: 'Alice' },
+      } as any,
       isAuthenticated: true,
       isLoading: false,
     });

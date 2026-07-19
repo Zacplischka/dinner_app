@@ -85,9 +85,14 @@ export default function SelectionPage() {
     setError('');
 
     try {
-      await submitSelection(sessionCode, selections);
-      setHasSubmitted(true);
-      // Results will be received via WebSocket session:results event
+      const ack = await submitSelection(sessionCode, selections);
+      if (ack.success) {
+        setHasSubmitted(true);
+        // Results will be received via WebSocket session:results event
+      } else {
+        setError(ack.error.message);
+        setIsSubmitting(false);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit selections');
       setIsSubmitting(false);

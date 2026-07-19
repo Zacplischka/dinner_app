@@ -22,8 +22,8 @@ vi.mock('../../src/services/apiClient', () => ({
 }));
 
 vi.mock('../../src/services/socketBindings', () => ({
-  submitSelection: vi.fn(async () => undefined),
-  leaveSession: vi.fn(async () => ({ success: true })),
+  submitSelection: vi.fn(async () => ({ success: true, data: null })),
+  leaveSession: vi.fn(async () => ({ success: true, data: null })),
 }));
 
 import SelectionPage from '../../src/pages/SelectionPage';

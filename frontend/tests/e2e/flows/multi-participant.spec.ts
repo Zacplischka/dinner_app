@@ -222,12 +222,17 @@ test.describe('Select Again restart (#14, #85)', () => {
 });
 
 test.describe('Session Edge Cases', () => {
-  test('participant cannot join full session (max 4)', async ({ browser, setupSession }) => {
+  test('participant cannot join full session (max 4)', async ({
+    browser,
+    setupSession,
+    baseURL,
+  }) => {
     // Create session with 3 participants (total 4 including host)
     const { sessionCode } = await setupSession(3);
 
-    // Try to join as 5th participant
-    const extraContext = await browser.newContext();
+    // Try to join as 5th participant. Manually-created contexts don't inherit the
+    // config baseURL, so pass it or the relative goto('/join') hits about:blank.
+    const extraContext = await browser.newContext({ baseURL });
     const extraPage = await extraContext.newPage();
 
     try {
@@ -245,8 +250,10 @@ test.describe('Session Edge Cases', () => {
     }
   });
 
-  test('participant sees error for invalid session code', async ({ browser }) => {
-    const context = await browser.newContext();
+  test('participant sees error for invalid session code', async ({ browser, baseURL }) => {
+    // Manually-created contexts don't inherit the config baseURL; pass it so the
+    // relative goto('/join') resolves against the app rather than about:blank.
+    const context = await browser.newContext({ baseURL });
     const page = await context.newPage();
 
     try {
