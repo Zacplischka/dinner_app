@@ -3,6 +3,7 @@ import { pinoHttp } from 'pino-http';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/shared/types';
+import { SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import { createComparisonRouter } from '../../src/api/comparison.js';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
 import { logger } from '../../src/logger.js';
@@ -151,7 +152,7 @@ describe('per-IP rate limit on cold Comparisons', () => {
         longitude: 144.9631,
       })),
       snapshotStore,
-      freshnessMs: 20 * 60_000,
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
       settleCapMs: 100,
     });
     const app = express();

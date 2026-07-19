@@ -1,4 +1,5 @@
 import type { ComparisonStreamEvent, Snapshot, Venue } from '@dinder/shared/types';
+import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 
 const comparisonEventTypes = new Set<ComparisonStreamEvent['type']>([
   'venue',
@@ -70,7 +71,7 @@ export function assertColdSnapshot(snapshot: Snapshot | null, now = Date.now()):
   if (!snapshot) return;
   const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash]
     .some((storefront) => storefront.status === 'failed');
-  const maxAgeMs = hasFailure ? 2 * 60_000 : 20 * 60_000;
+  const maxAgeMs = hasFailure ? SNAPSHOT_FAILURE_FRESHNESS_MS : SNAPSHOT_FRESHNESS_MS;
   const ageMs = now - Date.parse(snapshot.fetchedAt);
   if (ageMs >= 0 && ageMs < maxAgeMs) {
     throw new Error(

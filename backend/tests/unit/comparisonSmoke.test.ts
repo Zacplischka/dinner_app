@@ -79,13 +79,29 @@ describe('parseComparisonSse', () => {
     };
 
     expect(() => assertColdSnapshot(null, now)).not.toThrow();
+    // A successful Snapshot stays fresh for 6 hours: 19 minutes old...
     expect(() => assertColdSnapshot(snapshot, now)).toThrow(
       'already has a fresh Snapshot'
     );
+    // ...and anything between the old 20-minute window and 6 hours is rejected too.
     expect(() => assertColdSnapshot(
-      { ...snapshot, fetchedAt: '2026-07-13T08:00:00.000Z' },
+      { ...snapshot, fetchedAt: '2026-07-13T05:20:00.000Z' },
+      now
+    )).toThrow('already has a fresh Snapshot');
+    // At exactly 6 hours the Snapshot is cold and live credentials may run.
+    expect(() => assertColdSnapshot(
+      { ...snapshot, fetchedAt: '2026-07-13T02:20:00.000Z' },
       now
     )).not.toThrow();
+    // A failed Snapshot keeps its short 2-minute window.
+    expect(() => assertColdSnapshot({
+      ...snapshot,
+      fetchedAt: '2026-07-13T08:19:00.000Z',
+      payload: {
+        ...snapshot.payload,
+        doordash: { status: 'failed' as const, deals: [], menu: [] },
+      },
+    }, now)).toThrow('already has a fresh Snapshot');
     expect(() => assertColdSnapshot({
       ...snapshot,
       fetchedAt: '2026-07-13T08:17:59.999Z',

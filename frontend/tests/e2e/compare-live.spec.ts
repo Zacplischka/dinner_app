@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import { test, expect } from './fixtures';
 
 interface SnapshotRow {
@@ -15,7 +16,7 @@ function snapshotIsFresh(snapshot: SnapshotRow | null): boolean {
   const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash].some(
     (storefront) => storefront?.status === 'failed'
   );
-  const maxAgeMs = hasFailure ? 2 * 60_000 : 20 * 60_000;
+  const maxAgeMs = hasFailure ? SNAPSHOT_FAILURE_FRESHNESS_MS : SNAPSHOT_FRESHNESS_MS;
   const ageMs = Date.now() - Date.parse(snapshot.fetched_at);
   return ageMs >= 0 && ageMs < maxAgeMs;
 }
