@@ -206,8 +206,7 @@ describe('socketBindings', () => {
     socketBindings.initializeSocket();
     socket.acks.set('session:join', {
       success: true,
-      participantId: 'participant-1',
-      participants: [participant],
+      data: { participants: [participant] },
     });
 
     await expect(socketBindings.joinSession('AB123', 'Alice')).resolves.toMatchObject({
@@ -243,11 +242,10 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().sessionCode).toBe('CN456');
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toEqual(['Carol']);
 
-    // Bridge failure: store must not be mutated, ack surfaces the ApiError.
+    // Canonical failure: store must not be mutated, ack surfaces the ApiError.
     socket.acks.set('session:join', {
       success: false,
-      error: 'Session is full',
-      apiError: { code: 'SESSION_FULL', message: 'full' },
+      error: { code: 'SESSION_FULL', message: 'full' },
     });
     const ack = await socketBindings.joinSession('OTHER', 'Dave');
     expect(ack).toEqual({ success: false, error: { code: 'SESSION_FULL', message: 'full' } });
@@ -260,8 +258,7 @@ describe('socketBindings', () => {
     useSessionStore.setState({ selections: ['stale'] } as any);
     socket.acks.set('session:join', {
       success: true,
-      participantId: 'participant-1',
-      participants: [participant],
+      data: { participants: [participant] },
     });
 
     await socketBindings.joinSession('NEW99', 'Alice');
