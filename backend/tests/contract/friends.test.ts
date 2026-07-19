@@ -431,6 +431,21 @@ describe('friends API router', () => {
     });
   });
 
+  // A truthy non-string email used to reach email.toLowerCase() in the store
+  // and surface as a 500; the body is now validated before the service call.
+  it.each([[{ email: 123 }], [{ email: {} }], [{ email: ['bob@example.com'] }], [{ email: '' }]])(
+    'POST /friends/request should reject malformed body %j with a canonical error',
+    async (body) => {
+      const response = await request(app).post('/api/friends/request').send(body).expect(400);
+
+      expect(response.body).toEqual({
+        code: 'VALIDATION_ERROR',
+        message: 'Email is required',
+      });
+      expect(mockState.calls).toEqual([]);
+    }
+  );
+
   it('POST /friends/request should create a pending friend request', async () => {
     mockState.responses.push(
       { data: { id: 'user-2' }, error: null },
@@ -441,13 +456,9 @@ describe('friends API router', () => {
     const response = await request(app)
       .post('/api/friends/request')
       .send({ email: 'bob@example.com' })
-      .expect(201);
+      .expect(204);
 
-    expect(response.body).toEqual({
-      success: true,
-      requestId: 'request-1',
-      message: 'Friend request sent',
-    });
+    expect(response.text).toBe('');
   });
 
   it.each([
@@ -497,12 +508,9 @@ describe('friends API router', () => {
       { data: null, error: null }
     );
 
-    const response = await request(app).post('/api/friends/request-1/accept').expect(200);
+    const response = await request(app).post('/api/friends/request-1/accept').expect(204);
 
-    expect(response.body).toEqual({
-      success: true,
-      message: 'Friend request accepted',
-    });
+    expect(response.text).toBe('');
   });
 
   it('POST /friends/:requestId/accept should return 404 for missing requests', async () => {
@@ -519,23 +527,17 @@ describe('friends API router', () => {
   it('POST /friends/:requestId/decline should decline pending requests', async () => {
     mockState.responses.push({ data: null, error: null });
 
-    const response = await request(app).post('/api/friends/request-1/decline').expect(200);
+    const response = await request(app).post('/api/friends/request-1/decline').expect(204);
 
-    expect(response.body).toEqual({
-      success: true,
-      message: 'Friend request declined',
-    });
+    expect(response.text).toBe('');
   });
 
   it('DELETE /friends/:friendId should remove a friend', async () => {
     mockState.responses.push({ data: null, error: null });
 
-    const response = await request(app).delete('/api/friends/user-2').expect(200);
+    const response = await request(app).delete('/api/friends/user-2').expect(204);
 
-    expect(response.body).toEqual({
-      success: true,
-      message: 'Friend removed',
-    });
+    expect(response.text).toBe('');
   });
 
   it('POST /sessions/:code/invite should validate friendIds', async () => {
