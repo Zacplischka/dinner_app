@@ -7,7 +7,12 @@ import { asyncHandler } from './asyncHandler.js';
 import { toApiError } from './toApiError.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
-import { SESSION_CODE_PATTERN } from '@dinder/shared/types';
+import {
+  SESSION_CODE_PATTERN,
+  type CreateSessionRequest,
+  type CreateSessionResponse,
+  type SessionResponse,
+} from '@dinder/shared/types';
 
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
@@ -63,7 +68,7 @@ export function createSessionsRouter(sessionService: SessionService) {
           });
         }
 
-        const { hostName, location, searchRadiusMiles } = validation.data;
+        const { hostName, location, searchRadiusMiles }: CreateSessionRequest = validation.data;
 
         // Default searchRadiusMiles to 5 if location is provided but radius is not
         const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;
@@ -84,7 +89,7 @@ export function createSessionsRouter(sessionService: SessionService) {
           'Created REST session'
         );
 
-        return res.status(201).json(session);
+        return res.status(201).json(session satisfies CreateSessionResponse);
       } catch (error) {
         if (error instanceof DomainError && error.code === 'NO_RESTAURANTS_FOUND') {
           req.log.warn(
@@ -156,7 +161,7 @@ export function createSessionsRouter(sessionService: SessionService) {
         'Returned REST session'
       );
 
-      return res.status(200).json(session);
+      return res.status(200).json(session satisfies SessionResponse);
     })
   );
 

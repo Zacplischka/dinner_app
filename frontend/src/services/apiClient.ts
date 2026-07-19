@@ -2,11 +2,16 @@
 // (base URL, auth header, error shaping). State stores never call fetch.
 
 import type {
+  CreateSessionRequest,
+  CreateSessionResponse,
   Friend,
   FriendRequest,
   GeocodedArea,
+  LoadRestaurantsResponse,
   Restaurant,
   SessionInvite,
+  SessionLocation,
+  SessionResponse,
   UserProfile,
   Venue,
 } from '@dinder/shared/types';
@@ -15,48 +20,15 @@ import { useAuthStore } from '../stores/authStore';
 /* v8 ignore next */
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
-interface Location {
-  latitude: number;
-  longitude: number;
-  address?: string;
-}
-
-interface CreateSessionResponse {
-  sessionCode: string;
-  hostName: string;
-  participantCount: number;
-  state: string;
-  expiresAt: string;
-  shareableLink: string;
-  location?: Location;
-  searchRadiusMiles?: number;
-  restaurantCount?: number;
-}
-
-interface SessionResponse {
-  sessionCode: string;
-  hostName: string;
-  participantCount: number;
-  state: string;
-  expiresAt: string;
-  shareableLink: string;
-  location?: Location;
-  searchRadiusMiles?: number;
-}
-
 /**
  * Create a new session with optional location
  */
 export async function createSession(
   hostName: string,
-  location?: Location,
+  location?: SessionLocation,
   searchRadiusMiles?: number
 ): Promise<CreateSessionResponse> {
-  const body: {
-    hostName: string;
-    location?: Location;
-    searchRadiusMiles?: number;
-  } = { hostName };
+  const body: CreateSessionRequest = { hostName };
 
   if (location) {
     body.location = location;
@@ -100,7 +72,7 @@ export async function getSession(sessionCode: string): Promise<SessionResponse> 
  * Get restaurants for a session
  */
 export async function getRestaurants(sessionCode: string): Promise<Restaurant[]> {
-  const data = await request<{ restaurants: Restaurant[] }>(`/options/${sessionCode}`);
+  const data = await request<LoadRestaurantsResponse>(`/options/${sessionCode}`);
   return resolvePhotoUrls(data.restaurants);
 }
 
