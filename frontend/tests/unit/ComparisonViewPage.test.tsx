@@ -19,6 +19,7 @@ function renderPage(entry = '/compare/place-1') {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
+        <Route path="/compare" element={<div>Venue list</div>} />
         <Route
           path="/compare/:placeId"
           element={
@@ -81,13 +82,10 @@ describe('ComparisonViewPage', () => {
     expect(screen.getByTestId('location-search').textContent).toBe('');
   });
 
-  it('rotates each pending Platform status and stops a column when its Storefront arrives', () => {
-    vi.useFakeTimers();
-    const view = renderPage();
+  it('reports each Platform status explicitly and keeps a resolved column while the other checks', () => {
+    renderPage();
 
-    expect(screen.getAllByText('Locating the storefront…')).toHaveLength(2);
-    act(() => vi.advanceTimersByTime(3000));
-    expect(screen.getAllByText('Reading the menu…')).toHaveLength(2);
+    expect(screen.getAllByText('Still checking…')).toHaveLength(2);
 
     act(() =>
       handlers.onStorefront?.({
@@ -96,80 +94,117 @@ describe('ComparisonViewPage', () => {
         storefront: { status: 'resolved', deals: [], menu: [] },
       })
     );
-    expect(screen.getByTestId('ubereats-column')).toHaveTextContent('0 menu items');
 
-    act(() => vi.advanceTimersByTime(3000));
-    expect(screen.getByTestId('doordash-column')).toHaveTextContent('Cooking up prices…');
-    expect(screen.getByTestId('ubereats-column')).not.toHaveTextContent('Cooking up prices…');
+    const uberEats = screen.getByTestId('ubereats-column');
+    const doorDash = screen.getByTestId('doordash-column');
+    expect(within(uberEats).getByText('Ready')).toBeInTheDocument();
+    expect(uberEats).toHaveTextContent('0 menu items');
+    expect(within(doorDash).getByText('Still checking…')).toBeInTheDocument();
+
+    act(() =>
+      handlers.onStorefront?.({
+        type: 'storefront',
+        platform: 'doordash',
+        storefront: { status: 'failed', deals: [], menu: [] },
+      })
+    );
+    expect(within(doorDash).getByText('Failed')).toBeInTheDocument();
+    expect(doorDash).toHaveTextContent('Couldn’t reach DoorDash');
+    // The resolved column is untouched by the other Platform's failure.
+    expect(within(uberEats).getByText('Ready')).toBeInTheDocument();
+  });
+
+  it('says No deals reported instead of a bare dash', () => {
+    renderPage();
+
+    act(() =>
+      handlers.onStorefront?.({
+        type: 'storefront',
+        platform: 'ubereats',
+        storefront: { status: 'resolved', deals: [], menu: [] },
+      })
+    );
+
+    expect(screen.getByText('No deals reported')).toBeInTheDocument();
+    expect(screen.queryByText('—')).not.toBeInTheDocument();
+  });
+
+  it('does not re-count the tap source when Retry starts a fresh attempt', () => {
+    vi.useFakeTimers();
+    const view = renderPage('/compare/place-1?source=match_card');
+
+    act(() => vi.advanceTimersByTime(30_000));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      1,
+      'place-1',
+      expect.any(Object),
+      'match_card'
+    );
+    expect(streamMock.subscribe).toHaveBeenNthCalledWith(
+      2,
+      'place-1',
+      expect.any(Object),
+      undefined
+    );
 
     view.unmount();
     vi.useRealTimers();
   });
 
-  it('streams the venue and Uber Eats column independently while DoorDash stays pending', () => {
+  it('offers bounded recovery after a long wait without losing partial progress', () => {
+    vi.useFakeTimers();
     const view = renderPage();
 
-    expect(streamMock.subscribe).toHaveBeenCalledWith('place-1', expect.any(Object), undefined);
-    expect(screen.getAllByText('Locating the storefront…')).toHaveLength(2);
-
-    act(() =>
-      handlers.onVenue?.({
-        type: 'venue',
-        placeId: 'place-1',
-        venueName: '11 Inch Pizza',
-      })
-    );
-    expect(screen.getByRole('heading', { name: '11 Inch Pizza' })).toBeInTheDocument();
-
-    const uberEats = {
-      status: 'resolved' as const,
-      storeUrl: 'https://www.ubereats.com/au/store/11-inch-pizza/example',
-      deals: ['20% off'],
-      menu: [
-        { name: 'Margherita', price_cents: 2300, section: 'Pizza', tags: ['20% off'] },
-        { name: 'Coke', price_cents: 700, section: 'Drinks', tags: [] },
-      ],
-    };
     act(() =>
       handlers.onStorefront?.({
         type: 'storefront',
         platform: 'ubereats',
-        storefront: uberEats,
-      })
-    );
-
-    expect(screen.getByText('2 menu items')).toBeInTheDocument();
-    expect(screen.getByText('20% off')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open in Uber Eats' })).toHaveAttribute(
-      'href',
-      'https://www.ubereats.com/au/store/11-inch-pizza/example'
-    );
-    expect(screen.getByTestId('doordash-column')).toHaveTextContent('Locating the storefront…');
-
-    act(() =>
-      handlers.onComparison?.({
-        type: 'comparison',
-        comparison: {
-          placeId: 'place-1',
-          venueName: '11 Inch Pizza',
-          fetchedAt: new Date().toISOString(),
-          storefronts: {
-            ubereats: uberEats,
-            doordash: { status: 'failed', deals: [], menu: [] },
-          },
-          matchedItems: [],
-          unmatched: { ubereats: [], doordash: [] },
+        storefront: {
+          status: 'resolved',
+          deals: [],
+          menu: [{ name: 'Margherita', price_cents: 2000, tags: [] }],
         },
       })
     );
-    expect(screen.getByText('Fetched just now')).toBeInTheDocument();
-    expect(screen.queryByText('Locating the storefront…')).not.toBeInTheDocument();
+    expect(screen.queryByText(/taking longer than usual/i)).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(30_000));
+
+    expect(screen.getByText(/taking longer than usual/i)).toBeInTheDocument();
+    // Completed partial information stays on screen.
+    expect(screen.getByTestId('ubereats-column')).toHaveTextContent('1 menu item');
+    expect(
+      within(screen.getByTestId('doordash-column')).getByText('Still checking…')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to venues' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    // A fresh visible attempt: resubscribed, no stale progress or banner left.
+    expect(streamMock.subscribe).toHaveBeenCalledTimes(2);
+    expect(unsubscribe).toHaveBeenCalledOnce();
+    expect(screen.queryByText(/taking longer than usual/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText('Still checking…')).toHaveLength(2);
+    expect(screen.queryByText('1 menu item')).not.toBeInTheDocument();
 
     view.unmount();
-    expect(unsubscribe).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 
-  it('renders platform failure and terminal stream errors without leaving a skeleton', () => {
+  it('navigates back to the Venue list from the recovery banner', () => {
+    vi.useFakeTimers();
+    renderPage();
+
+    act(() => vi.advanceTimersByTime(30_000));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to venues' }));
+
+    expect(screen.getByText('Venue list')).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('marks unreported Platforms as Unavailable on a terminal stream error, with recovery', () => {
     renderPage();
 
     act(() =>
@@ -193,7 +228,12 @@ describe('ComparisonViewPage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Too many comparisons. Please try again shortly.'
     );
-    expect(screen.queryByText('Locating the storefront…')).not.toBeInTheDocument();
+    expect(screen.queryByText('Still checking…')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('ubereats-column')).getByText('Unavailable')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to venues' })).toBeInTheDocument();
   });
 
   it('shows a one-platform result as a single column with an honest badge', () => {
@@ -235,8 +275,9 @@ describe('ComparisonViewPage', () => {
     );
 
     expect(screen.getByText('Only on Uber Eats')).toBeInTheDocument();
-    expect(screen.getByTestId('ubereats-column')).toHaveTextContent('Deals—');
     expect(screen.queryByTestId('doordash-column')).not.toBeInTheDocument();
+    // One final set of Platform actions.
+    expect(screen.getAllByRole('link', { name: 'Open in Uber Eats' })).toHaveLength(1);
   });
 
   it('shows a definitive state when neither platform has the Venue', () => {
@@ -264,7 +305,31 @@ describe('ComparisonViewPage', () => {
     expect(screen.queryByTestId('doordash-column')).not.toBeInTheDocument();
   });
 
-  it('renders matched prices, median summary, unmatched menus, and footer links', () => {
+  it('offers recovery when both Platforms failed', () => {
+    renderPage();
+    const failed = { status: 'failed' as const, deals: [], menu: [] };
+
+    act(() =>
+      handlers.onComparison?.({
+        type: 'comparison',
+        comparison: {
+          placeId: 'place-1',
+          venueName: 'Flaky Venue',
+          fetchedAt: new Date().toISOString(),
+          storefronts: { ubereats: failed, doordash: failed },
+          matchedItems: [],
+          unmatched: { ubereats: [], doordash: [] },
+        },
+      })
+    );
+
+    expect(screen.getByText('Couldn’t reach either delivery app right now.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to venues' })).toBeInTheDocument();
+    expect(screen.queryByTestId('ubereats-column')).not.toBeInTheDocument();
+  });
+
+  it('leads a completed Comparison with the conclusion, matched count, and freshness', () => {
     renderPage();
     const uberEats = {
       status: 'resolved' as const,
@@ -309,34 +374,94 @@ describe('ComparisonViewPage', () => {
       })
     );
 
-    const summary = screen.getByText('Uber Eats menu ~10% cheaper');
+    // Answer first: conclusion, evidence scope, freshness — before the evidence.
+    const conclusion = screen.getByText('Uber Eats is cheaper here');
+    expect(screen.getByText('Menu prices ~10% lower across 1 matched item')).toBeInTheDocument();
+    expect(screen.getByText('Fetched just now')).toBeInTheDocument();
     expect(
-      summary.compareDocumentPosition(screen.getByTestId('ubereats-column')) &
+      conclusion.compareDocumentPosition(screen.getByTestId('matched-item-0')) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
-    const fetchedAt = screen.getByText('Fetched just now');
-    expect(
-      fetchedAt.compareDocumentPosition(screen.getByTestId('ubereats-column')) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    const matchedSection = screen
-      .getByRole('heading', { name: 'Matched items' })
-      .closest('section');
-    expect(within(matchedSection!).getByText('Uber Eats')).toBeInTheDocument();
-    expect(within(matchedSection!).getByText('DoorDash')).toBeInTheDocument();
-    expect(screen.getByText('Prices shown are non-member menu prices.')).toBeInTheDocument();
+
+    // Cheaper price marked by text weight and a savings label, not colour alone.
     const matchedRow = screen.getByTestId('matched-item-0');
     expect(matchedRow).toHaveTextContent('Margherita');
     expect(matchedRow).toHaveTextContent('$20.00');
     expect(matchedRow).toHaveTextContent('$22.00');
-    expect(screen.getByText('$20.00')).toHaveClass('text-lime');
-    expect(screen.getByText('$22.00')).not.toHaveClass('text-lime');
+    expect(within(matchedRow).getByText('Save $2.00')).toBeInTheDocument();
+    expect(screen.getByText('$20.00')).toHaveClass('font-semibold');
+
+    expect(screen.getByText('Prices shown are non-member menu prices.')).toBeInTheDocument();
     expect(screen.getByText('Only on Uber Eats (1)')).toBeInTheDocument();
     expect(screen.getByText('Uber special')).toBeInTheDocument();
     expect(screen.getByText('Only on DoorDash (1)')).toBeInTheDocument();
     expect(screen.getByText('DoorDash special')).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'Open in Uber Eats' })).toHaveLength(2);
-    expect(screen.getAllByRole('link', { name: 'Open in DoorDash' })).toHaveLength(2);
+
+    // Platform actions appear exactly once, after the evidence.
+    expect(screen.getAllByRole('link', { name: 'Open in Uber Eats' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: 'Open in DoorDash' })).toHaveLength(1);
+  });
+
+  it('concludes prices are about the same when no menu is cheaper', () => {
+    renderPage();
+    const uberEats = {
+      status: 'resolved' as const,
+      deals: [],
+      menu: [{ name: 'Margherita', price_cents: 2000, tags: [] }],
+    };
+    const doorDash = {
+      status: 'resolved' as const,
+      deals: [],
+      menu: [{ name: 'Margherita', price_cents: 2000, tags: [] }],
+    };
+
+    act(() =>
+      handlers.onComparison?.({
+        type: 'comparison',
+        comparison: {
+          placeId: 'place-1',
+          venueName: 'Even Venue',
+          fetchedAt: new Date().toISOString(),
+          storefronts: { ubereats: uberEats, doordash: doorDash },
+          matchedItems: [
+            { name: 'Margherita', ubereats: uberEats.menu[0], doordash: doorDash.menu[0] },
+          ],
+          unmatched: { ubereats: [], doordash: [] },
+        },
+      })
+    );
+
+    expect(screen.getByText('Prices are about the same on both apps')).toBeInTheDocument();
+    expect(screen.getByText('Across 1 matched item')).toBeInTheDocument();
+    // An evenly priced row carries no savings label.
+    expect(screen.queryByText(/^Save /)).not.toBeInTheDocument();
+  });
+
+  it('flags a Snapshot older than the freshness window', () => {
+    renderPage();
+    const resolved = {
+      status: 'resolved' as const,
+      deals: [],
+      menu: [{ name: 'Margherita', price_cents: 2000, tags: [] }],
+    };
+
+    act(() =>
+      handlers.onComparison?.({
+        type: 'comparison',
+        comparison: {
+          placeId: 'place-1',
+          venueName: 'Old Snapshot Venue',
+          fetchedAt: new Date(Date.now() - 25 * 60_000).toISOString(),
+          storefronts: { ubereats: resolved, doordash: resolved },
+          matchedItems: [
+            { name: 'Margherita', ubereats: resolved.menu[0], doordash: resolved.menu[0] },
+          ],
+          unmatched: { ubereats: [], doordash: [] },
+        },
+      })
+    );
+
+    expect(screen.getByText('Fetched 25 mins ago — may be out of date')).toBeInTheDocument();
   });
 
   it('shows the Storefront hero image, preferring Uber Eats, and recovers from a broken one', () => {
@@ -412,5 +537,10 @@ describe('ComparisonViewPage', () => {
       screen.getByText('These menus are too different to compare item by item.')
     ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('unsubscribes the stream on unmount', () => {
+    renderPage().unmount();
+    expect(unsubscribe).toHaveBeenCalledOnce();
   });
 });
