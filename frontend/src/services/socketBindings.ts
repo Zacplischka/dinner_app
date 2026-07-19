@@ -29,10 +29,22 @@ const socketConfig: SocketConfig = {
   onEvent: {
     connect: () => {
       const socketId = socketService.getSocketId();
+      const store = useSessionStore.getState();
+      const previousParticipant = store.participants.find(
+        (participant) =>
+          participant.participantId === store.currentUserId &&
+          participant.sessionCode === store.sessionCode
+      );
       console.log('Socket connected:', socketId);
-      useSessionStore.getState().setConnectionStatus(true);
+      store.setConnectionStatus(true);
       if (socketId) {
-        useSessionStore.getState().setCurrentUserId(socketId);
+        store.setCurrentUserId(socketId);
+      }
+
+      if (store.sessionCode && previousParticipant) {
+        void joinSession(store.sessionCode, previousParticipant.displayName).then((ack) => {
+          if (!ack.success) toast.error(`Could not rejoin session: ${ack.error.message}`);
+        });
       }
 
       // Show reconnected toast (only if we had a previous connection)

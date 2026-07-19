@@ -5,6 +5,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import ToastProvider from './components/Toast/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
+import { disconnectSocket, initializeSocket } from './services/socketBindings';
 import { useSessionStore } from './stores/sessionStore';
 import { useAuthStore } from './stores/authStore';
 
@@ -82,6 +83,12 @@ function App() {
     // Initialize auth (Supabase session check)
     void initializeAuth();
   }, [initializeAuth]);
+
+  useEffect(() => {
+    if (!useSessionStore.getState().sessionCode) return;
+    initializeSocket();
+    return disconnectSocket;
+  }, []);
 
   // Browser navigation guard - warn before closing/refreshing during active session
   useEffect(() => {

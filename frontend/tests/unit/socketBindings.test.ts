@@ -118,6 +118,41 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.success).toHaveBeenCalledWith('Reconnected to server');
   });
 
+  it('rejoins the persisted session after a page refresh creates a new socket', async () => {
+    const socket = setupSocket();
+    const emitSpy = vi.spyOn(socket, 'emit');
+    localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: participant.participantId,
+      participants: [participant],
+      isConnected: false,
+    });
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        participantCount: 1,
+        rejoinToken: 'next-rejoin-token',
+        participants: [{ participantId: socket.id, displayName: 'Alice', isHost: true }],
+      },
+    });
+
+    socketBindings.initializeSocket();
+    socket.trigger('connect');
+
+    await vi.waitFor(() =>
+      expect(emitSpy).toHaveBeenCalledWith(
+        'session:join',
+        { sessionCode: 'AB123', displayName: 'Alice', rejoinToken: 'rejoin-token' },
+        expect.any(Function)
+      )
+    );
+    expect(useSessionStore.getState().currentUserId).toBe(socket.id);
+  });
+
   it('does not toast on an intentional disconnect', () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
