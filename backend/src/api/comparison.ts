@@ -1,19 +1,24 @@
 import { Router } from 'express';
 import type { Redis } from 'ioredis';
-import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
+import {
+  parseComparisonEntryRequest,
+  parseVenueSearchRequest,
+  type ApiError,
+  type Venue,
+  type VenueSearchResponse,
+} from '@dinder/shared/types';
 import type { GooglePlacesSearchParams } from '../services/RestaurantSearchService.js';
 import type { ComparisonService } from '../services/ComparisonService.js';
 import { asyncHandler } from './asyncHandler.js';
 import {
   pruneExpiredRequests,
-  queryNumber,
   requestIp,
   retryAfterSeconds,
   type RequestWindow,
 } from './rateWindow.js';
 
 interface ComparisonRouterDeps {
-  searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<unknown[]>;
+  searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<Venue[]>;
   reverseGeocodeSuburb?: (latitude: number, longitude: number) => Promise<string | undefined>;
   fetchPlacePhoto?: (photoName: string) => Promise<string>;
   photoCache?: Pick<Redis, 'get' | 'set'>;
@@ -48,7 +53,7 @@ export function createComparisonRouter({
           return res.status(400).json({
             code: 'VALIDATION_ERROR',
             message: 'A valid Google Places photo name is required',
-          });
+          } satisfies ApiError);
         }
 
         const cacheKey = `comparison:photo:${photoName}`;
@@ -70,7 +75,7 @@ export function createComparisonRouter({
           return res.status(429).json({
             code: 'RATE_LIMITED',
             message: 'Too many photo requests. Please try again shortly.',
-          });
+          } satisfies ApiError);
         } else {
           requestCount.count++;
         }
@@ -99,13 +104,19 @@ export function createComparisonRouter({
 
   if (comparisonService) {
     router.get('/:placeId/stream', (req, res) => {
+      const input = parseComparisonEntryRequest({
+        placeId: req.params.placeId,
+        source: req.query.source,
+      });
+      if (!input) {
+        return res.status(400).json({
+          code: 'VALIDATION_ERROR',
+          message: 'A valid placeId and optional Comparison source are required',
+        } satisfies ApiError);
+      }
+
       const ip = requestIp(req);
-      // Only known tap sources are counted for the #68 kill gates.
-      const source =
-        typeof req.query.source === 'string' && COMPARISON_TAP_SOURCE_SET.has(req.query.source)
-          ? req.query.source
-          : undefined;
-      req.log?.info({ placeId: req.params.placeId, source }, 'Comparison subscribe');
+      req.log?.info({ placeId: input.placeId, source: input.source }, 'Comparison subscribe');
       // Headers flush lazily on the first event, so a rate-limited cold
       // Comparison can still answer with a real 429 instead of an SSE error.
       let streaming = false;
@@ -113,7 +124,7 @@ export function createComparisonRouter({
       let unsubscribe: () => void = () => undefined;
       res.on('close', () => unsubscribe());
       unsubscribe = comparisonService.subscribe(
-        req.params.placeId,
+        input.placeId,
         (event) => {
           if (res.writableEnded) return;
           if (!streaming) {
@@ -123,7 +134,7 @@ export function createComparisonRouter({
               res.status(429).json({
                 code: 'RATE_LIMITED',
                 message: `Limit of ${COLD_COMPARE_LIMIT} new comparisons per hour reached. Try again in about ${Math.ceil(retryAfter / 60)} minute(s).`,
-              });
+              } satisfies ApiError);
               return;
             }
             res.status(200).set({
@@ -141,31 +152,19 @@ export function createComparisonRouter({
         },
         { beginColdCompare: () => beginColdCompare(ip) }
       );
+      return undefined;
     });
   }
 
   router.get(
     '/venues',
     asyncHandler(async (req, res) => {
-      const latitude = queryNumber(req.query.latitude);
-      const longitude = queryNumber(req.query.longitude);
-      const radiusMiles = queryNumber(req.query.radiusMiles);
-
-      if (
-        !Number.isFinite(latitude) ||
-        latitude < -90 ||
-        latitude > 90 ||
-        !Number.isFinite(longitude) ||
-        longitude < -180 ||
-        longitude > 180 ||
-        !Number.isFinite(radiusMiles) ||
-        radiusMiles < 1 ||
-        radiusMiles > 15
-      ) {
+      const input = parseVenueSearchRequest(req.query);
+      if (!input) {
         return res.status(400).json({
           code: 'VALIDATION_ERROR',
           message: 'Valid latitude, longitude, and radiusMiles (1–15) are required',
-        });
+        } satisfies ApiError);
       }
 
       const now = Date.now();
@@ -179,20 +178,21 @@ export function createComparisonRouter({
         return res.status(429).json({
           code: 'RATE_LIMITED',
           message: 'Too many venue searches. Please try again shortly.',
-        });
+        } satisfies ApiError);
       } else {
         requestCount.count++;
       }
 
       const [venues, suburb] = await Promise.all([
         searchNearbyVenues({
-          latitude,
-          longitude,
-          radiusMeters: radiusMiles * 1609.344,
+          latitude: input.latitude,
+          longitude: input.longitude,
+          radiusMeters: input.radiusMiles * 1609.344,
         }),
-        reverseGeocodeSuburb?.(latitude, longitude).catch(() => undefined),
+        reverseGeocodeSuburb?.(input.latitude, input.longitude).catch(() => undefined),
       ]);
-      return res.json({ venues, suburb });
+      const body: VenueSearchResponse = suburb === undefined ? { venues } : { venues, suburb };
+      return res.json(body);
     })
   );
 

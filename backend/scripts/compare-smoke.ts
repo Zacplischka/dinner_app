@@ -1,4 +1,8 @@
-import type { ComparisonStreamEvent, Venue } from '@dinder/shared/types';
+import {
+  isVenueSearchResponse,
+  type ComparisonStreamEvent,
+  type Venue,
+} from '@dinder/shared/types';
 import { getLatest } from '../src/store/comparisonSnapshotStore.js';
 import {
   assertActorRunIdsUnchanged,
@@ -35,8 +39,8 @@ async function findVenue(): Promise<Venue> {
   });
   const response = await fetch(`${baseUrl}/api/comparison/venues?${query}`);
   assert(response.ok, `Venue search failed with status ${response.status}`);
-  const output = await response.json() as { venues?: Venue[] };
-  assert(Array.isArray(output.venues), 'Venue search returned an invalid body');
+  const output: unknown = await response.json();
+  assert(isVenueSearchResponse(output), 'Venue search returned an invalid body');
 
   const requestedPlaceId = process.env.COMPARE_PLACE_ID;
   const venue = selectSmokeVenue(output.venues, targetName, requestedPlaceId);
@@ -48,10 +52,9 @@ async function findVenue(): Promise<Venue> {
 }
 
 async function streamComparison(placeId: string): Promise<ComparisonStreamEvent[]> {
-  const response = await fetch(
-    `${baseUrl}/api/comparison/${encodeURIComponent(placeId)}/stream`,
-    { headers: { Accept: 'text/event-stream' } }
-  );
+  const response = await fetch(`${baseUrl}/api/comparison/${encodeURIComponent(placeId)}/stream`, {
+    headers: { Accept: 'text/event-stream' },
+  });
   assert(response.ok, `Comparison stream failed with status ${response.status}`);
   assert(
     response.headers.get('content-type')?.includes('text/event-stream'),
@@ -96,15 +99,21 @@ async function main() {
     `Fresh compare inserted ${afterSecondCount - afterFirstCount} unexpected Snapshot(s)`
   );
 
-  console.log(JSON.stringify({
-    ok: true,
-    baseUrl,
-    venue: venue.name,
-    placeId: venue.placeId,
-    firstCompareSnapshotDelta: 1,
-    freshCompareSnapshotDelta: 0,
-    freshCompareActorRunDelta: 0,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        baseUrl,
+        venue: venue.name,
+        placeId: venue.placeId,
+        firstCompareSnapshotDelta: 1,
+        freshCompareSnapshotDelta: 0,
+        freshCompareActorRunDelta: 0,
+      },
+      null,
+      2
+    )
+  );
 }
 
 main().catch((error: unknown) => {

@@ -21,6 +21,11 @@ class FakeEventSource {
     this.listeners.get(type)?.forEach((listener) => listener(event));
   }
 
+  emitRaw(type: string, data: string) {
+    const event = new MessageEvent(type, { data });
+    this.listeners.get(type)?.forEach((listener) => listener(event));
+  }
+
   drop() {
     this.listeners.get('error')?.forEach((listener) => listener(new Event('error')));
   }
@@ -143,5 +148,40 @@ describe('subscribeToComparison', () => {
       message: expect.stringMatching(/hourly.*limit|try again/i),
     });
     expect(source.close).toHaveBeenCalled();
+  });
+
+  it('rejects malformed named payloads without an unsafe dispatch', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const handlers = { onVenue: vi.fn(), onError: vi.fn() };
+    const { subscribeToComparison } = await import('../../src/services/comparisonStream');
+
+    subscribeToComparison('place-1', handlers);
+    const source = FakeEventSource.instances[0];
+    source.emitRaw('venue', '{not json');
+
+    expect(handlers.onVenue).not.toHaveBeenCalled();
+    expect(handlers.onError).toHaveBeenCalledWith({
+      type: 'error',
+      code: 'UNKNOWN',
+      message: expect.stringMatching(/invalid update/i),
+    });
+    expect(source.close).toHaveBeenCalledOnce();
+  });
+
+  it('does not accept frontend-local STREAM_CLOSED as a backend wire error', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const handlers = { onError: vi.fn() };
+    const { subscribeToComparison } = await import('../../src/services/comparisonStream');
+
+    subscribeToComparison('place-1', handlers);
+    const source = FakeEventSource.instances[0];
+    source.emit('error', { code: 'STREAM_CLOSED', message: 'spoofed wire value' });
+
+    expect(handlers.onError).toHaveBeenCalledWith({
+      type: 'error',
+      code: 'UNKNOWN',
+      message: expect.stringMatching(/invalid update/i),
+    });
+    expect(source.close).toHaveBeenCalledOnce();
   });
 });

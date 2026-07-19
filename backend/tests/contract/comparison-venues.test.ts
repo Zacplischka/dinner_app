@@ -62,7 +62,7 @@ describe('GET /api/comparison/venues', () => {
   });
 
   it('returns nearby Venues when reverse geocoding fails', async () => {
-    const venues = [{ placeId: 'place-1', name: '11 Inch Pizza' }];
+    const venues = [{ placeId: 'place-1', name: '11 Inch Pizza', distanceMiles: 0.2 }];
     const app = express();
     app.use(
       '/api/comparison',
@@ -140,6 +140,19 @@ describe('GET /api/comparison/venues', () => {
 
     const response = await request(app)
       .get('/api/comparison/venues?latitude=&longitude=&radiusMiles=5')
+      .expect(400);
+
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+    expect(searchNearbyVenues).not.toHaveBeenCalled();
+  });
+
+  it('rejects repeated query values instead of coercing an array', async () => {
+    const searchNearbyVenues = vi.fn().mockResolvedValue([]);
+    const app = express();
+    app.use('/api/comparison', createComparisonRouter({ searchNearbyVenues }));
+
+    const response = await request(app)
+      .get('/api/comparison/venues?latitude=-37.81&latitude=-38&longitude=144.96&radiusMiles=5')
       .expect(400);
 
     expect(response.body.code).toBe('VALIDATION_ERROR');
