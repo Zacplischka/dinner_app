@@ -12,14 +12,8 @@ interface AddFriendModalProps {
 export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps) {
   const [email, setEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const {
-    searchUsers,
-    sendFriendRequest,
-    searchResults,
-    isSearching,
-    error,
-    clearError,
-  } = useFriendsStore();
+  const { searchUsers, sendFriendRequest, searchResults, isSearching, error, clearError } =
+    useFriendsStore();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,10 +61,16 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
             <h2 className="text-xl font-display font-semibold text-text">Add Friend</h2>
             <button
               onClick={handleClose}
+              aria-label="Close"
               className="text-muted hover:text-text transition-colors p-1"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>

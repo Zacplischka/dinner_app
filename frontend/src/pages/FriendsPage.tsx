@@ -10,6 +10,30 @@ import FriendRequestCard from '../components/friends/FriendRequestCard';
 import SessionInviteCard from '../components/friends/SessionInviteCard';
 import AddFriendModal from '../components/friends/AddFriendModal';
 
+function LoadingCard({ label }: { label: string }) {
+  return (
+    <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
+      <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
+      <p className="mt-2 text-muted">Loading {label}...</p>
+    </div>
+  );
+}
+
+function FailureCard({ label, onRetry }: { label: string; onRetry: () => void }) {
+  return (
+    <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
+      <p className="text-lg text-text">Couldn&apos;t load {label}</p>
+      <p className="text-sm mt-1 text-muted/60">Check your connection and try again.</p>
+      <button
+        onClick={onRetry}
+        className="mt-4 min-h-[44px] px-6 py-2 font-medium text-ink bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
 export default function FriendsPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
@@ -20,6 +44,9 @@ export default function FriendsPage() {
     isLoadingFriends,
     isLoadingRequests,
     isLoadingInvites,
+    friendsError,
+    requestsError,
+    invitesError,
     fetchFriends,
     fetchFriendRequests,
     fetchSessionInvites,
@@ -111,7 +138,9 @@ export default function FriendsPage() {
                   : 'border-transparent text-muted hover:text-text/80'
               }`}
             >
-              Friends ({friends.length})
+              {/* Hide the count until it's known, so a failed or in-flight
+                  fetch never advertises "(0)" as fact */}
+              {isLoadingFriends || friendsError ? 'Friends' : `Friends (${friends.length})`}
             </button>
             <button
               onClick={() => setActiveTab('requests')}
@@ -150,27 +179,37 @@ export default function FriendsPage() {
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Friends Tab */}
-        {activeTab === 'friends' && (
-          <div className="bg-raised rounded-2xl shadow-card border border-line/30">
-            {isLoadingFriends ? (
-              <div className="p-8 text-center">
-                <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-2 text-muted">Loading friends...</p>
-              </div>
-            ) : (
+        {activeTab === 'friends' &&
+          (isLoadingFriends ? (
+            <LoadingCard label="friends" />
+          ) : friendsError ? (
+            <FailureCard label="friends" onRetry={() => void fetchFriends()} />
+          ) : friends.length === 0 ? (
+            <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
+              <p className="text-lg text-text">No friends yet</p>
+              <p className="text-sm mt-1 text-muted/60">
+                Friends can be invited straight into your Sessions — no code sharing needed.
+              </p>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="mt-4 min-h-[44px] px-6 py-2 font-medium text-ink bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
+              >
+                Add a friend
+              </button>
+            </div>
+          ) : (
+            <div className="bg-raised rounded-2xl shadow-card border border-line/30">
               <FriendsList friends={friends} />
-            )}
-          </div>
-        )}
+            </div>
+          ))}
 
         {/* Requests Tab */}
         {activeTab === 'requests' && (
           <div className="space-y-3">
             {isLoadingRequests ? (
-              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
-                <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-2 text-muted">Loading requests...</p>
-              </div>
+              <LoadingCard label="requests" />
+            ) : requestsError ? (
+              <FailureCard label="requests" onRetry={() => void fetchFriendRequests()} />
             ) : friendRequests.length === 0 ? (
               <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No pending requests</p>
@@ -190,10 +229,9 @@ export default function FriendsPage() {
         {activeTab === 'invites' && (
           <div className="space-y-3">
             {isLoadingInvites ? (
-              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
-                <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-2 text-muted">Loading invites...</p>
-              </div>
+              <LoadingCard label="invites" />
+            ) : invitesError ? (
+              <FailureCard label="invites" onRetry={() => void fetchSessionInvites()} />
             ) : sessionInvites.length === 0 ? (
               <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No session invites</p>

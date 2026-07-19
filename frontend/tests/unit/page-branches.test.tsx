@@ -151,6 +151,46 @@ describe('page branch coverage', () => {
     expect(screen.getByText('Session:')).toBeInTheDocument();
   });
 
+  it('covers friends empty and failure states with retry preserving the tab', async () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      isLoading: false,
+      user: { id: 'user-1', email: 'alice@example.com', user_metadata: {} } as any,
+      session: { access_token: 'token' } as any,
+    });
+
+    renderApp('/friends');
+
+    // Empty Friends tab explains Friendship and offers the real add flow
+    expect(screen.getByText('No friends yet')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Add a friend'));
+    expect(screen.getByRole('heading', { name: 'Add Friend' })).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Close'));
+
+    // A failed friends fetch hides the count and offers Retry
+    act(() => useFriendsStore.setState({ friendsError: 'down' }));
+    expect(screen.getByRole('button', { name: 'Friends' })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Retry'));
+    expect(useFriendsStore.getState().fetchFriends).toHaveBeenCalledTimes(2);
+    act(() => useFriendsStore.setState({ friendsError: null }));
+
+    // Requests failure keeps the Requests tab selected and retries requests
+    fireEvent.click(screen.getByText('Requests'));
+    expect(screen.getByText('No pending requests')).toBeInTheDocument();
+    act(() => useFriendsStore.setState({ requestsError: 'down' }));
+    expect(screen.getByText("Couldn't load requests")).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Retry'));
+    expect(useFriendsStore.getState().fetchFriendRequests).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Couldn't load requests")).toBeInTheDocument();
+
+    // Invites failure offers its own Retry
+    fireEvent.click(screen.getByText('Invites'));
+    expect(screen.getByText('No session invites')).toBeInTheDocument();
+    act(() => useFriendsStore.setState({ invitesError: 'down' }));
+    fireEvent.click(screen.getByText('Retry'));
+    expect(useFriendsStore.getState().fetchSessionInvites).toHaveBeenCalledTimes(2);
+  });
+
   it('covers lobby route without a session code and non-demo leave success', async () => {
     const noCode = renderApp('/lobby');
     await waitFor(() => expect(screen.queryByText('Loading session...')).not.toBeInTheDocument());
