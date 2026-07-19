@@ -847,16 +847,20 @@ describe('websocket handlers', () => {
 
       const ack = callback.mock.calls[0][0];
       expect(ack.success).toBe(true);
+      const expectedParticipants = [
+        { participantId: 'socket-1', displayName: 'Alice', isHost: true },
+      ];
       expect(ack.data).toEqual({
         participantId: 'socket-1',
         sessionCode,
         displayName: 'Alice',
         participantCount: 1,
-        participants: ack.participants,
+        participants: expectedParticipants,
       });
-      // Legacy flattened fields still present during the bridge.
+      // Canonical data mirrors the legacy flattened fields still present during the bridge.
       expect(ack.participantId).toBe('socket-1');
       expect(ack.participantCount).toBe(1);
+      expect(ack.participants).toEqual(expectedParticipants);
     });
 
     it('join failure keeps the legacy error string and adds the canonical apiError', async () => {
