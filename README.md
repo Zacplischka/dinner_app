@@ -26,16 +26,6 @@
   <img src="docs/media/dinder-demo.gif" alt="Walkthrough: create a session, friends join with a code, everyone swipes, the group's matches appear" width="720">
 </p>
 
-## Screenshots
-
-<p align="center">
-  <img src="docs/screenshots/lobby.png" alt="Session lobby with shareable 6-character code and live participant list" width="24%">
-  <img src="docs/screenshots/selection.png" alt="Swipe screen with a restaurant card — like, pass, undo" width="24%">
-  <img src="docs/screenshots/results.png" alt="Perfect Match results screen showing the restaurants everyone liked" width="24%">
-</p>
-
-<p align="center"><em>Share a code → everyone swipes → the group's overlap, revealed in real time.</em></p>
-
 ## Features
 
 - **No account needed** — enter a name, get a 6-character session code, share it. The core flow is fully anonymous.
@@ -107,8 +97,6 @@ cd backend && npm run dev
 cd frontend && npm run dev
 ```
 
-Or `./start.sh`, which starts Redis (Docker), the backend, and the frontend in one go.
-
 ### Environment variables
 
 | Variable | Needed for |
@@ -131,7 +119,7 @@ Honest status: the suite is extensive (~200 cases across unit, contract, integra
 
 ## Deployment
 
-Both services deploy to [Railway](https://railway.app): the backend via Railpack (`npm ci && npm run build && npm run start` from the repo root), the frontend as a static SPA. See [`DEPLOY_GUIDE.md`](DEPLOY_GUIDE.md).
+Both services deploy to [Railway](https://railway.app): the backend via Railpack (`npm ci && npm run build && npm run start` from the repo root), the frontend as a static SPA.
 
 ## License
 

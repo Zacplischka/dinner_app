@@ -8,7 +8,7 @@
 
 ## Deployments
 
-- **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns — see `DEPLOY_GUIDE.md`):
+- **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns):
   - Backend: https://backend-production-4ce9.up.railway.app (health: `/health`; config in `backend/railway.json`)
   - Frontend: https://frontend-production-bdfc.up.railway.app (static Vite site, needs `RAILPACK_SPA_OUTPUT_DIR=frontend/dist`)
   - Redis: service `redis-bbxI`; backend runtime `REDIS_HOST`/`REDIS_PORT` use the Railway private hostname and port `6379`
