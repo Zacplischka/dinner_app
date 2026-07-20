@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
-import { waitForConnection, joinSession } from '../services/socketBindings';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 
 const cleanSessionCode = (value: string) =>
@@ -55,12 +54,14 @@ export default function JoinSessionPage() {
     setIsLoading(true);
 
     try {
+      const socketBindingsPromise = import('../services/socketBindings');
       const code = sessionCode.trim().toUpperCase();
 
       storeSessionCode(code);
       resetSelections();
       setSessionStatus('waiting');
 
+      const { waitForConnection, joinSession } = await socketBindingsPromise;
       await waitForConnection();
       const ack = await joinSession(code, participantName.trim());
 

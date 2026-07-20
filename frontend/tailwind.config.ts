@@ -21,8 +21,8 @@ export default {
         violet: '#b146ff',
       },
       fontFamily: {
-        display: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+        body: ['ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         'market-md': '18px',
@@ -32,8 +32,8 @@ export default {
         'glow-coral': '0 0 12px rgb(255 56 88 / 70%), 0 0 36px rgb(255 56 88 / 28%)',
         'glow-cyan': '0 0 12px rgb(53 231 255 / 60%), 0 0 30px rgb(53 231 255 / 20%)',
         'glow-lime': '0 0 12px rgb(199 255 26 / 55%), 0 0 28px rgb(199 255 26 / 18%)',
-        'match': '0 0 18px rgb(199 255 26 / 85%), 0 0 54px rgb(199 255 26 / 42%)',
-        'card': '0 24px 70px rgb(0 0 0 / 40%)',
+        match: '0 0 18px rgb(199 255 26 / 85%), 0 0 54px rgb(199 255 26 / 42%)',
+        card: '0 24px 70px rgb(0 0 0 / 40%)',
         'card-hover': '0 28px 80px rgb(0 0 0 / 48%)',
       },
       animation: {

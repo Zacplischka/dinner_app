@@ -12,7 +12,6 @@ import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { createSession, reverseGeocode } from '../services/apiClient';
 import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
-import { waitForConnection, joinSession } from '../services/socketBindings';
 
 interface Location {
   latitude: number;
@@ -132,7 +131,10 @@ export default function CreateSessionPage() {
     const searchRadiusMiles = toBackendRadiusMiles(searchRadiusKm);
 
     try {
-      const response = await createSession(hostName.trim(), location, searchRadiusMiles);
+      const [response, { waitForConnection, joinSession }] = await Promise.all([
+        createSession(hostName.trim(), location, searchRadiusMiles),
+        import('../services/socketBindings'),
+      ]);
 
       setSessionCode(response.sessionCode);
       setStoreLocation(location);

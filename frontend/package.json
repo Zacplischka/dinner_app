@@ -17,6 +17,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:live": "set -a && . ../backend/.env && set +a && VITE_API_BASE_URL=http://localhost:3001/api VITE_BACKEND_URL=http://localhost:3001 BASE_URL=http://localhost:3000 BACKEND_URL=http://localhost:3001 RUN_LIVE_COMPARE=1 playwright test --project=mobile-chrome compare-live.spec.ts",
     "test:e2e:report": "playwright show-report",
+    "benchmark:pages": "node scripts/benchmark-pages.mjs",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
