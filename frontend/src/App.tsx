@@ -5,9 +5,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import ToastProvider from './components/Toast/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
-import { disconnectSocket, initializeSocket } from './services/socketBindings';
 import { useSessionStore } from './stores/sessionStore';
-import { useAuthStore } from './stores/authStore';
 
 // Lazy load route components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -77,17 +75,26 @@ function AnimatedRoutes() {
 function App() {
   const sessionCode = useSessionStore((state) => state.sessionCode);
   const sessionStatus = useSessionStore((state) => state.sessionStatus);
-  const initializeAuth = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
-    // Initialize auth (Supabase session check)
-    void initializeAuth();
-  }, [initializeAuth]);
+    void import('./stores/authStore').then(({ useAuthStore }) =>
+      useAuthStore.getState().initialize()
+    );
+  }, []);
 
   useEffect(() => {
     if (!useSessionStore.getState().sessionCode) return;
-    initializeSocket();
-    return disconnectSocket;
+    let active = true;
+    let disconnect: (() => void) | undefined;
+    void import('./services/socketBindings').then(({ disconnectSocket, initializeSocket }) => {
+      if (!active) return;
+      initializeSocket();
+      disconnect = disconnectSocket;
+    });
+    return () => {
+      active = false;
+      disconnect?.();
+    };
   }, []);
 
   // Browser navigation guard - warn before closing/refreshing during active session

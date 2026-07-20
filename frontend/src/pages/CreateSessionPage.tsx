@@ -12,7 +12,6 @@ import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { createSession, reverseGeocode } from '../services/apiClient';
 import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
-import { waitForConnection, joinSession } from '../services/socketBindings';
 
 interface Location {
   latitude: number;
@@ -141,6 +140,7 @@ export default function CreateSessionPage() {
       setSessionStatus('waiting');
 
       // Connect WebSocket and wait for connection, then join as host
+      const { waitForConnection, joinSession } = await import('../services/socketBindings');
       await waitForConnection();
       const ack = await joinSession(response.sessionCode, hostName.trim());
 
