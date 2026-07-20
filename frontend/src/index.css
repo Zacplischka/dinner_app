@@ -216,6 +216,23 @@
   }
 }
 
+/* Reduced-motion variants: same fly-off, no tilt. The transform function list
+   matches the reduced-motion base transform so it interpolates per-function
+   instead of falling back to matrix interpolation (which reintroduces rotation). */
+@keyframes swipeLeftFlat {
+  to {
+    transform: translateX(-150%);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeRightFlat {
+  to {
+    transform: translateX(150%);
+    opacity: 0;
+  }
+}
+
 .neon-outline {
   color: transparent;
   -webkit-text-stroke: 2px #ff6b7e;

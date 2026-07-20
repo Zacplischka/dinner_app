@@ -78,11 +78,18 @@ export default function SwipeCard({
     if (deltaX > SWIPE_THRESHOLD) {
       setSwipeDirection('right');
       setTimeout(onSwipeRight, 300);
-    } else if (deltaX < -SWIPE_THRESHOLD) {
+      // Keep the release offset so the fly-off animation starts from the lift point.
+      setDragState((prev) => ({ ...prev, isDragging: false }));
+      return;
+    }
+    if (deltaX < -SWIPE_THRESHOLD) {
       setSwipeDirection('left');
       setTimeout(onSwipeLeft, 300);
+      setDragState((prev) => ({ ...prev, isDragging: false }));
+      return;
     }
 
+    // Below threshold: spring back to centre.
     setDragState({
       isDragging: false,
       startX: 0,
@@ -132,16 +139,25 @@ export default function SwipeCard({
 
   // Calculate card style based on drag state and stack position
   const getCardStyle = () => {
+    // Follows the pointer while dragging. On release it also seeds the `to`-only
+    // fly-off keyframes' implicit `from`, so the card exits from the drag point
+    // instead of snapping back to centre first.
+    const releaseTransform = prefersReducedMotion
+      ? `translateX(${deltaX}px)`
+      : `translateX(${deltaX}px) rotate(${rotation}deg)`;
+
     if (swipeDirection === 'left') {
       return {
-        animation: 'swipeLeft 0.25s ease-out forwards',
+        transform: releaseTransform,
+        animation: `${prefersReducedMotion ? 'swipeLeftFlat' : 'swipeLeft'} 0.25s ease-out forwards`,
         opacity: 1,
         zIndex: 10,
       };
     }
     if (swipeDirection === 'right') {
       return {
-        animation: 'swipeRight 0.25s ease-out forwards',
+        transform: releaseTransform,
+        animation: `${prefersReducedMotion ? 'swipeRightFlat' : 'swipeRight'} 0.25s ease-out forwards`,
         opacity: 1,
         zIndex: 10,
       };
@@ -149,9 +165,7 @@ export default function SwipeCard({
 
     if (dragState.isDragging && isTop) {
       return {
-        transform: prefersReducedMotion
-          ? `translateX(${deltaX}px)`
-          : `translateX(${deltaX}px) rotate(${rotation}deg)`,
+        transform: releaseTransform,
         transition: 'none',
         cursor: 'grabbing',
         opacity: 1,

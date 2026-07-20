@@ -249,6 +249,73 @@ describe('component and hook branch coverage', () => {
     vi.useRealTimers();
   });
 
+  it('flies the card out from the release point, not the centre', () => {
+    vi.useFakeTimers();
+    render(
+      <SwipeCard
+        restaurant={restaurant as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    const card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
+
+    fireEvent.mouseDown(card, { clientX: 10 });
+    fireEvent.mouseMove(card, { clientX: 160 }); // deltaX = 150, past threshold
+    fireEvent.mouseUp(card);
+
+    // The fly-off keyframe is `to`-only, so the base transform must carry the
+    // release offset; otherwise the card snaps back to centre before animating.
+    expect(card.style.transform).toContain('translateX(150px)');
+    expect(card.style.animation).toContain('swipeRight');
+    vi.useRealTimers();
+  });
+
+  it('flies a left swipe out from its negative release offset', () => {
+    vi.useFakeTimers();
+    render(
+      <SwipeCard
+        restaurant={restaurant as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    const card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
+
+    fireEvent.mouseDown(card, { clientX: 160 });
+    fireEvent.mouseMove(card, { clientX: 10 }); // deltaX = -150, past threshold
+    fireEvent.mouseUp(card);
+
+    expect(card.style.transform).toContain('translateX(-150px)');
+    expect(card.style.animation).toContain('swipeLeft');
+    vi.useRealTimers();
+  });
+
+  it('springs a sub-threshold release back to centre', () => {
+    render(
+      <SwipeCard
+        restaurant={restaurant as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    const card = screen.getByText('Branch Bistro').closest('[data-swipe-card]') as HTMLElement;
+
+    fireEvent.mouseDown(card, { clientX: 10 });
+    fireEvent.mouseMove(card, { clientX: 60 }); // deltaX = 50, below threshold
+    fireEvent.mouseUp(card);
+
+    // No fly-off, and the card returns to the stack transform (no translateX offset).
+    expect(card.style.animation).toBe('');
+    expect(card.style.transform).not.toContain('translateX(50px)');
+  });
+
   it('replaces a failed Restaurant photo with its initial placeholder', () => {
     render(
       <SwipeCard
