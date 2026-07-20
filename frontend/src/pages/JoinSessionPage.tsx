@@ -54,13 +54,14 @@ export default function JoinSessionPage() {
     setIsLoading(true);
 
     try {
+      const socketBindingsPromise = import('../services/socketBindings');
       const code = sessionCode.trim().toUpperCase();
 
       storeSessionCode(code);
       resetSelections();
       setSessionStatus('waiting');
 
-      const { waitForConnection, joinSession } = await import('../services/socketBindings');
+      const { waitForConnection, joinSession } = await socketBindingsPromise;
       await waitForConnection();
       const ack = await joinSession(code, participantName.trim());
 

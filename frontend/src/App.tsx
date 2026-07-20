@@ -77,20 +77,22 @@ function App() {
   const sessionStatus = useSessionStore((state) => state.sessionStatus);
 
   useEffect(() => {
-    void import('./stores/authStore').then(({ useAuthStore }) =>
-      useAuthStore.getState().initialize()
-    );
+    void import('./stores/authStore')
+      .then(({ useAuthStore }) => useAuthStore.getState().initialize())
+      .catch((error) => console.error('Failed to initialize auth:', error));
   }, []);
 
   useEffect(() => {
     if (!useSessionStore.getState().sessionCode) return;
     let active = true;
     let disconnect: (() => void) | undefined;
-    void import('./services/socketBindings').then(({ disconnectSocket, initializeSocket }) => {
-      if (!active) return;
-      initializeSocket();
-      disconnect = disconnectSocket;
-    });
+    void import('./services/socketBindings')
+      .then(({ disconnectSocket, initializeSocket }) => {
+        if (!active) return;
+        initializeSocket();
+        disconnect = disconnectSocket;
+      })
+      .catch((error) => console.error('Failed to initialize socket:', error));
     return () => {
       active = false;
       disconnect?.();

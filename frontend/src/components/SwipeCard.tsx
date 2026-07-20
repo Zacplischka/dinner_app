@@ -187,7 +187,7 @@ export default function SwipeCard({
   };
 
   // Fallback placeholder image when no photo is available
-  const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect fill='%2307111f' width='400' height='500'/%3E%3Ctext x='200' y='250' text-anchor='middle' fill='%23ff6b7e' font-family='Inter,sans-serif' font-size='48'%3E${encodeURIComponent(restaurant.name.charAt(0))}%3C/text%3E%3C/svg%3E`;
+  const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect fill='%2307111f' width='400' height='500'/%3E%3Ctext x='200' y='250' text-anchor='middle' fill='%23ff6b7e' font-family='system-ui,sans-serif' font-size='48'%3E${encodeURIComponent(restaurant.name.charAt(0))}%3C/text%3E%3C/svg%3E`;
 
   const priceDisplay = '$'.repeat(restaurant.priceLevel || 0);
 

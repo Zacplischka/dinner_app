@@ -23,7 +23,7 @@ test('uses the Neon Night Market foundation', async ({ page }) => {
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#030712');
 
   const body = page.locator('body');
-  await expect(body).toHaveCSS('font-family', /Inter/);
+  await expect(body).toHaveCSS('font-family', /system-ui/);
   await expect(body).toHaveCSS('color', 'rgb(248, 250, 252)');
   await expect(body).toHaveCSS('background-color', 'rgb(3, 7, 18)');
 
@@ -106,7 +106,10 @@ test('uses Neon panels and micro-labels on secondary pages', async ({ page }) =>
 
   const panel = page.getByRole('heading', { name: 'Find nearby Venues' }).locator('..');
   await expect(panel).toHaveCSS('border-color', 'rgb(36, 48, 68)');
-  await expect(page.locator('label[for="comparison-radius"]')).toHaveCSS('color', 'rgb(53, 231, 255)');
+  await expect(page.locator('label[for="comparison-radius"]')).toHaveCSS(
+    'color',
+    'rgb(53, 231, 255)'
+  );
 
   const locate = page.getByRole('button', { name: 'Use my location' });
   await expect(locate).toHaveCSS('background-image', /rgb\(255, 56, 88\)/);

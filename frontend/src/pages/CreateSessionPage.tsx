@@ -131,7 +131,10 @@ export default function CreateSessionPage() {
     const searchRadiusMiles = toBackendRadiusMiles(searchRadiusKm);
 
     try {
-      const response = await createSession(hostName.trim(), location, searchRadiusMiles);
+      const [response, { waitForConnection, joinSession }] = await Promise.all([
+        createSession(hostName.trim(), location, searchRadiusMiles),
+        import('../services/socketBindings'),
+      ]);
 
       setSessionCode(response.sessionCode);
       setStoreLocation(location);
@@ -140,7 +143,6 @@ export default function CreateSessionPage() {
       setSessionStatus('waiting');
 
       // Connect WebSocket and wait for connection, then join as host
-      const { waitForConnection, joinSession } = await import('../services/socketBindings');
       await waitForConnection();
       const ack = await joinSession(response.sessionCode, hostName.trim());
 
