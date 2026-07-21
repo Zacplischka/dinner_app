@@ -3,41 +3,51 @@
 **Project**: Dinder
 **Last Updated**: 2026-07-19
 
-## Preflight
-1. Read `docs/branching.md` for repo branching strategy
+# ⚠️ CRITICAL DEVELOPMENT GUIDELINES
 
-## Deployments
+## 1. Primary Environment
+- **/herdr** is the main development workspace.
+    - All team and agent interactions must take place within herdr panes.
+    - If you are the **Orchestrator** and spawning agents, create their panes in your current tab.
 
-- **Railway** (project has 3 services; auto-deploys on push to `main`, filtered by watch patterns):
-  - Backend: https://backend-production-4ce9.up.railway.app (health: `/health`; config in `backend/railway.json`)
-  - Frontend: https://frontend-production-bdfc.up.railway.app (static Vite site, needs `RAILPACK_SPA_OUTPUT_DIR=frontend/dist`)
-  - Redis: service `redis-bbxI`; backend runtime `REDIS_HOST`/`REDIS_PORT` use the Railway private hostname and port `6379`
-- **Supabase**: project `hcjuqvicwuszwqkreklc` (https://hcjuqvicwuszwqkreklc.supabase.co) — social graph persistence + auth (JWT).
-- **Google Places API (New)**: `places.googleapis.com/v1` (`places:searchNearby`, `places:searchText`, photo media) — called from `backend/src/services/RestaurantSearchService.ts`; key in `backend/.env`.
-- CI (`.github/workflows/ci-cd.yml`) verifies production deploys by polling the backend health endpoint after Railway deploys.
+**Role Assignment:**  
+Each participant is either an *Orchestrator*, *Implementer*, or *Researcher*. Your role will be given in the prompt.
 
-### How Claude/Codex can access these
+## 2. Claude Model Usage
+- Use **Claude Opus 4.8** for orchestration and implementation.
+    - If Fable 5 usage limits are reached, switch to Claude Opus 4.8 to maintain workflow.
+
+## 3. Web Development Requirements
+- For all web dev tasks:
+    - Always use the `k3-implement` skill.
+    - All front-end work must utilize **kimi code**.
+
+- For lighter tasks:
+    - Use Claude Code with Opus 4.8 xhigh as kimi usage is limited
+
+> 🚩 *Not following the above rules causes workflow issues and delays. Treat these as default standards.* 🚩
+
+---
+
+### Orchestrator Responsibilities
+- Review `docs/branching.md`
+- Assign a ROLE to each agent created
+- Manage implementation of issues
+
+---
+
+### Supported Deployment Platforms
+
+- Railway
+- Supabase
+- Google Places API
+- Cloudflare
+
+### How you should access these
 
 - **Supabase**: Supabase MCP tools (`mcp__plugin_supabase_supabase__*`) — list_tables, execute_sql, get_logs, get_advisors, apply_migration, etc. against project `hcjuqvicwuszwqkreklc`.
 - **Railway**: `railway` CLI (installed via Homebrew). Requires `railway login` (interactive — ask the user to run it), then `railway link`, `railway logs`, `railway variables`, `railway up`.
 - **Google Places**: `gcloud` CLI is installed and authenticated, but the active project is `mypickle-486702` — verify/switch project before touching Places quotas or keys (`gcloud config set project <id>`). Runtime access just uses the API key in `backend/.env`.
-
-### Redis runtime rollout
-
-1. Deploy `family: 0` on both ioredis clients while runtime variables still use the public proxy.
-2. Record the previous proxy host/port for rollback, then switch only backend `REDIS_HOST`/`REDIS_PORT` to the private hostname and `6379`; leave `REDIS_PASSWORD` unchanged, redeploy, check `/health` and subscriber initialization, and smoke-test session create/join.
-
-`backend/scripts/redis-debug.sh --prod` remains on `REDIS_PUBLIC_URL` because developer machines cannot resolve Railway private DNS. This is the only public-proxy exception; production backend runtime config must stay private. Roll back by restoring the recorded proxy host/port and redeploying.
-
-## Gotchas
-
-- Build `@dinder/shared` first (`npm run build --workspace=shared`) — backend/frontend typecheck resolves the `file:` dep against `shared/dist/`.
-- Backend unit tests run in parallel against in-memory `ioredis-mock` (inject via `createSessionStore(redis)` / `createSessionService(deps)`); only contract/integration tests hit a real Redis on localhost:6379.
-- Backend env is in `backend/.env` (GOOGLE_PLACES_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REDIS_*). Frontend uses VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL.
-
-## Coding agents
-
-- **Kimi Code**: CLI coding agent, started by running `kimi` (subscription-billed).
 
 ## Agent skills
 
@@ -52,13 +62,3 @@ Default label vocabulary — each triage role uses its canonical name (`needs-tr
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-
-## graphify
-
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
