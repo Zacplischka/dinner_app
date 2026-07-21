@@ -437,10 +437,15 @@ export function evaluatePostCutover(statistics, baselineStatistics) {
   return checks;
 }
 
+// fallow-ignore-next-line complexity
 function failedCheckReason(check) {
   const actual = Number.isFinite(check.actual) ? check.actual.toFixed(3) : String(check.actual);
   const limit = Number.isFinite(check.limit) ? check.limit.toFixed(3) : String(check.limit);
-  return `${check.kind} failed for ${check.statistic}: ${actual} > ${limit}`;
+  const comparison =
+    Number.isFinite(check.actual) && Number.isFinite(check.limit)
+      ? `${actual} > ${limit}`
+      : `${actual} (limit ${limit})`;
+  return `${check.kind} failed for ${check.statistic}: ${comparison}`;
 }
 
 export function expectedBatchReasons(batch, mode, expectedBaseUrl, checks = []) {
@@ -540,7 +545,7 @@ export function validateArtifactShape(artifact, baseline = null) {
       errors.push(`${batch.route} must contain checks`);
     } else if (artifact.mode === 'baseline') {
       if (batch.checks.length !== 0) errors.push(`${batch.route} baseline checks must be empty`);
-    } else if (calculated && baseline) {
+    } else if (baseline) {
       const baselineRoute = baseline.routes?.find(({ route }) => route === batch.route);
       expectedChecks = isRecord(baselineRoute?.statistics)
         ? evaluatePostCutover(calculated, baselineRoute.statistics)

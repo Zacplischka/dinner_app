@@ -309,7 +309,8 @@ test('cache-invalidated post-cutover evidence serializes as a complete FAIL arti
 });
 
 test('captured navigation errors serialize as truthful FAIL evidence with all sample keys', () => {
-  const evidence = artifact();
+  const baseline = artifact();
+  const evidence = artifact('post-cutover', baseline);
   Object.assign(evidence.routes[0].cold[0], {
     routeReadyMs: null,
     documentTtfbMs: null,
@@ -318,17 +319,19 @@ test('captured navigation errors serialize as truthful FAIL evidence with all sa
     etag: null,
     error: 'navigation returned no document response',
   });
-  finalizeArtifact(evidence);
-  const parsed = JSON.parse(serializeArtifact(evidence));
+  finalizeArtifact(evidence, baseline);
+  const parsed = JSON.parse(serializeArtifact(evidence, baseline));
   const failedSample = parsed.routes[0].cold[0];
 
   assert.equal(parsed.result, 'FAIL');
   assert.equal(parsed.routes[0].statistics.coldRouteReadyMedianMs, null);
+  assert.equal(parsed.routes[0].checks.length, 8);
   assert.equal(parsed.routes[0].cold.length, SAMPLE_COUNT);
   for (const field of ['routeReadyMs', 'documentTtfbMs', 'status', 'bodyHash', 'etag', 'error']) {
     assert.ok(Object.hasOwn(failedSample, field));
   }
   assert.match(parsed.routes[0].reasons.join('\n'), /navigation returned no document response/);
+  assert.match(parsed.routes[0].reasons.join('\n'), /null \(limit /);
 });
 
 test('serialization rejects tampered batch and artifact reasons or results', () => {
