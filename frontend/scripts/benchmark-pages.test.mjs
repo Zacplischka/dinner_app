@@ -8,8 +8,10 @@ import {
   VIEWPORT,
   documentTtfbMs,
   evaluatePostCutover,
+  expectedBatchReasons,
   median,
   nearestRank,
+  reproduceStatistics,
   resolveConfig,
   serializeArtifact,
   summarizeSamples,
@@ -77,11 +79,12 @@ function batch(
 
 function artifact(mode = 'baseline', baselineArtifact = null) {
   const baseUrl = mode === 'post-cutover' ? POST_URL : BASELINE_URL;
-  return {
+  const evidence = {
     schemaVersion: 1,
     kind: 'dinder-route-performance-evidence',
     mode,
     result: 'PASS',
+    failureReasons: [],
     target: {
       baseUrl,
       commit: 'a'.repeat(40),
@@ -99,26 +102,48 @@ function artifact(mode = 'baseline', baselineArtifact = null) {
       viewport: { ...VIEWPORT },
       throttling: 'none',
     },
-    routes: ROUTES.map((route) => {
-      const measured = batch(route, mode, baseUrl);
-      const statistics = {
-        coldRouteReadyMedianMs: 15.5,
-        coldRouteReadyP95Ms: 29,
-        coldDocumentTtfbP95Ms: 29,
-        warmRouteReadyP95Ms: 29,
-      };
-      const baselineStatistics = baselineArtifact?.routes.find(
-        (baselineRoute) => baselineRoute.route === route
-      )?.statistics;
-      return {
-        ...measured,
-        statistics,
-        checks: mode === 'post-cutover' ? evaluatePostCutover(statistics, baselineStatistics) : [],
-        result: 'PASS',
-        reasons: [],
-      };
-    }),
+    routes: ROUTES.map((route) => ({
+      ...batch(route, mode, baseUrl),
+      statistics: null,
+      checks: [],
+      result: 'PASS',
+      reasons: [],
+    })),
   };
+  return finalizeArtifact(evidence, baselineArtifact);
+}
+
+// fallow-ignore-next-line complexity
+function finalizeArtifact(evidence, baselineArtifact = null) {
+  evidence.failureReasons = [];
+  for (const measured of evidence.routes) {
+    measured.statistics = reproduceStatistics(measured.cold, measured.warm);
+    const baselineStatistics = baselineArtifact?.routes.find(
+      ({ route }) => route === measured.route
+    )?.statistics;
+    measured.checks = baselineStatistics
+      ? evaluatePostCutover(measured.statistics, baselineStatistics)
+      : [];
+    measured.reasons = expectedBatchReasons(
+      measured,
+      evidence.mode,
+      evidence.target.baseUrl,
+      measured.checks
+    );
+    measured.result = measured.reasons.length > 0 ? 'FAIL' : 'PASS';
+    evidence.failureReasons.push(
+      ...measured.reasons.map((reason) => `${measured.route}: ${reason}`)
+    );
+  }
+  evidence.result = evidence.failureReasons.length > 0 ? 'FAIL' : 'PASS';
+  return evidence;
+}
+
+function cacheFailureArtifact() {
+  const baseline = artifact();
+  const evidence = artifact('post-cutover', baseline);
+  evidence.routes[0].cold[4].cfCacheStatus = 'MISS';
+  return { baseline, evidence: finalizeArtifact(evidence, baseline) };
 }
 
 test('statistics use the exact 30-sample median and nearest-rank p95', () => {
@@ -170,12 +195,9 @@ test('configuration fixes Railway baseline, Melbourne runner, and hosted-CI sema
 });
 
 test('route validation requires exactly 30 cold samples and 30 warm reloads', () => {
-  const measured = batch('/');
-  measured.cold.pop();
-  assert.match(
-    validateRouteBatch(measured, 'baseline', BASELINE_URL).join('\n'),
-    /exactly 30 cold samples/
-  );
+  const evidence = artifact();
+  evidence.routes[0].cold.pop();
+  assert.throws(() => serializeArtifact(evidence), /exactly 30 cold samples/);
 });
 
 test('route validation rejects HTTPS same-path redirects to every other origin', () => {
@@ -196,7 +218,10 @@ test('route validation rejects HTTPS same-path redirects to every other origin',
 
   const evidence = artifact();
   evidence.routes[0].cold[0].url = 'https://www.dinder.it.com/';
-  assert.throws(() => serializeArtifact(evidence), /response URL origin .* does not match/);
+  finalizeArtifact(evidence);
+  const parsed = JSON.parse(serializeArtifact(evidence));
+  assert.equal(parsed.result, 'FAIL');
+  assert.match(parsed.failureReasons[0], /response URL origin .* does not match/);
 });
 
 test('post-prime invalid cache status and POP change invalidate the whole route batch', () => {
@@ -270,6 +295,70 @@ test('serialization preserves every raw sample field and rejects incomplete arti
 
   delete evidence.routes[0].cold[0].cfRay;
   assert.throws(() => serializeArtifact(evidence), /missing cfRay/);
+});
+
+test('cache-invalidated post-cutover evidence serializes as a complete FAIL artifact', () => {
+  const { baseline, evidence } = cacheFailureArtifact();
+  const parsed = JSON.parse(serializeArtifact(evidence, baseline));
+
+  assert.equal(parsed.result, 'FAIL');
+  assert.equal(parsed.routes[0].result, 'FAIL');
+  assert.equal(parsed.routes[0].cold.length, SAMPLE_COUNT);
+  assert.equal(parsed.routes[0].warm.length, SAMPLE_COUNT);
+  assert.match(parsed.routes[0].reasons[0], /cold sample 5 returned invalidating MISS/);
+});
+
+test('captured navigation errors serialize as truthful FAIL evidence with all sample keys', () => {
+  const evidence = artifact();
+  Object.assign(evidence.routes[0].cold[0], {
+    routeReadyMs: null,
+    documentTtfbMs: null,
+    status: null,
+    bodyHash: null,
+    etag: null,
+    error: 'navigation returned no document response',
+  });
+  finalizeArtifact(evidence);
+  const parsed = JSON.parse(serializeArtifact(evidence));
+  const failedSample = parsed.routes[0].cold[0];
+
+  assert.equal(parsed.result, 'FAIL');
+  assert.equal(parsed.routes[0].statistics.coldRouteReadyMedianMs, null);
+  assert.equal(parsed.routes[0].cold.length, SAMPLE_COUNT);
+  for (const field of ['routeReadyMs', 'documentTtfbMs', 'status', 'bodyHash', 'etag', 'error']) {
+    assert.ok(Object.hasOwn(failedSample, field));
+  }
+  assert.match(parsed.routes[0].reasons.join('\n'), /navigation returned no document response/);
+});
+
+test('serialization rejects tampered batch and artifact reasons or results', () => {
+  let failed = cacheFailureArtifact();
+  failed.evidence.routes[0].reasons = [];
+  assert.throws(
+    () => serializeArtifact(failed.evidence, failed.baseline),
+    /reasons do not match its samples and checks/
+  );
+
+  failed = cacheFailureArtifact();
+  failed.evidence.routes[0].result = 'PASS';
+  assert.throws(
+    () => serializeArtifact(failed.evidence, failed.baseline),
+    /result does not match its reasons/
+  );
+
+  failed = cacheFailureArtifact();
+  failed.evidence.failureReasons = [];
+  assert.throws(
+    () => serializeArtifact(failed.evidence, failed.baseline),
+    /failureReasons do not match its route batches/
+  );
+
+  failed = cacheFailureArtifact();
+  failed.evidence.result = 'PASS';
+  assert.throws(
+    () => serializeArtifact(failed.evidence, failed.baseline),
+    /result does not match its failureReasons/
+  );
 });
 
 test('serialization requires reproduced statistics and empty baseline checks', () => {

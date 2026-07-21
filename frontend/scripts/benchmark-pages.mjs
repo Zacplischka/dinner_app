@@ -13,12 +13,12 @@ import {
   VIEWPORT,
   documentTtfbMs,
   evaluatePostCutover,
+  expectedBatchReasons,
+  reproduceStatistics,
   resolveConfig,
   serializeArtifact,
-  summarizeSamples,
   validateArtifactShape,
   validateComparableBaseline,
-  validateRouteBatch,
 } from './benchmark-pages-core.mjs';
 
 const usage = `Usage:
@@ -237,16 +237,13 @@ async function loadBaseline(path, runner) {
 }
 
 function logRoute(batch) {
-  if (!batch.statistics) {
-    console.log(`${batch.route.padEnd(30)} FAIL ${batch.reasons[0]}`);
-    return;
-  }
   const stats = batch.statistics;
+  const display = (value) => (Number.isFinite(value) ? value.toFixed(1) : 'n/a');
   console.log(
-    `${batch.route.padEnd(30)} cold median ${stats.coldRouteReadyMedianMs.toFixed(1)} ms  ` +
-      `cold p95 ${stats.coldRouteReadyP95Ms.toFixed(1)} ms  ` +
-      `TTFB p95 ${stats.coldDocumentTtfbP95Ms.toFixed(1)} ms  ` +
-      `warm p95 ${stats.warmRouteReadyP95Ms.toFixed(1)} ms  ${batch.result}`
+    `${batch.route.padEnd(30)} cold median ${display(stats.coldRouteReadyMedianMs)} ms  ` +
+      `cold p95 ${display(stats.coldRouteReadyP95Ms)} ms  ` +
+      `TTFB p95 ${display(stats.coldDocumentTtfbP95Ms)} ms  ` +
+      `warm p95 ${display(stats.warmRouteReadyP95Ms)} ms  ${batch.result}`
   );
 }
 
@@ -272,23 +269,13 @@ async function run(config) {
 
     for (const route of ROUTES) {
       const measured = await measureRoute(browser, runner.browserVersion, route, config);
-      const reasons = validateRouteBatch(measured, config.mode, config.baseUrl);
-      let statistics = null;
+      const statistics = reproduceStatistics(measured.cold, measured.warm);
       let checks = [];
-      try {
-        statistics = summarizeSamples(measured.cold, measured.warm);
-      } catch (error) {
-        reasons.push(error instanceof Error ? error.message : String(error));
-      }
-      if (statistics && baseline) {
+      if (baseline) {
         const baselineRoute = baseline.routes.find((batch) => batch.route === route);
         checks = evaluatePostCutover(statistics, baselineRoute.statistics);
-        for (const check of checks.filter(({ pass }) => !pass)) {
-          reasons.push(
-            `${check.kind} failed for ${check.statistic}: ${check.actual.toFixed(3)} > ${check.limit.toFixed(3)}`
-          );
-        }
       }
+      const reasons = expectedBatchReasons(measured, config.mode, config.baseUrl, checks);
 
       const batch = {
         ...measured,
