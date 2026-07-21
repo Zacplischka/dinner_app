@@ -21,6 +21,7 @@
     "test:e2e:live": "npm run test:e2e:live --workspace=frontend --",
     "compare:smoke": "npm run compare:smoke --workspace=backend --",
     "check:cloudflare-staging": "node scripts/check-cloudflare-staging.mjs",
+    "check:production-edge": "node --test scripts/check-production-edge.test.mjs",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",
