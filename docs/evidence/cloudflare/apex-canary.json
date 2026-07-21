@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "issue": 151,
+  "capturedAt": "2026-07-21T12:03:02Z",
+  "status": "complete",
+  "result": "PASS",
+  "credentialsExposed": false,
+  "summary": "dinder.it.com is proxied and www.dinder.it.com remains DNS-only. The apex delivery contract, a gray-cloud rollback to direct Railway, and a clean second activation were all proven. One real failure occurred on the way: the deploy gate failed closed on an HTTP 401 cache purge caused by a stale GitHub environment secret, www activation did not proceed, and production stayed healthy throughout. www promotion remains issue 152.",
+
+  "verificationProvenance": {
+    "note": "Every claim below carries a `source` of either `live` (re-observed from this repository at the capturedAt time by the agent writing this artifact) or `supplied` (a one-shot live event that cannot be re-observed after the fact, recorded from the operator that performed it).",
+    "liveObservationHost": "Melbourne, Australia; edge POP MEL",
+    "liveCommands": [
+      "COMMIT_SHA=<sha> DINDER_EDGE_ROLLOUT_STATE=apex-only node scripts/check-production-edge.mjs prewarm",
+      "COMMIT_SHA=<sha> DINDER_EDGE_ROLLOUT_STATE=apex-only node scripts/check-production-edge.mjs verify",
+      "bash scripts/smoke-prod.sh",
+      "openssl s_client -connect <host>:443 -servername <host>",
+      "curl -D - on dinder.it.com, www.dinder.it.com, frontend-production-bdfc.up.railway.app",
+      "dig @1.1.1.1",
+      "gh api repos/Zacplischka/dinner_app/actions/runs/29824374248 (both attempts)",
+      "gh api repos/Zacplischka/dinner_app/environments/'Dinner-App / production' variables and secrets"
+    ],
+    "cachePurgeCaveat": "The purge credential is a GitHub environment secret and is deliberately not available locally, so the local re-verification could not itself issue a tag purge. It instead exercised the identical lifecycle assertions against a never-requested /__deploy-check/<random-sha> SPA fallback path, which is cold for the same reason a purged path is cold. The purge-driven MISS is proven by CI (criterion 7)."
+  },
+
+  "zone": {
+    "name": "dinder.it.com",
+    "id": "bc54c32e14cdce6912e2d505bc0a86f4",
+    "accountId": "71e209a24502ed9323f137c4e5627f20",
+    "type": "full",
+    "plan": "free",
+    "source": "supplied",
+    "zoneIdConfirmedLive": "The GitHub environment variable CLOUDFLARE_ZONE_ID reads bc54c32e14cdce6912e2d505bc0a86f4, and the successful CI purge response returned that same zone id."
+  },
+
+  "rolloutState": {
+    "declaredState": "apex-only",
+    "declaredBy": "GitHub environment variable DINDER_EDGE_ROLLOUT_STATE in `Dinner-App / production`",
+    "variableUpdatedAt": "2026-07-21T10:50:53Z",
+    "proxiedHosts": ["dinder.it.com"],
+    "dnsOnlyHosts": ["www.dinder.it.com"],
+    "source": "live",
+    "evidence": {
+      "apexResolvesTo": ["172.67.129.188", "104.21.1.184"],
+      "apexResolvesToNote": "Cloudflare anycast space; the apex A record is proxied.",
+      "wwwResolvesTo": ["mk84igaf.up.railway.app.", "69.46.46.31"],
+      "wwwResolvesToNote": "Railway directly; www is still gray-clouded.",
+      "apexResponseServer": "cloudflare",
+      "wwwResponseServer": "railway-hikari",
+      "resolver": "1.1.1.1"
+    }
+  },
+
+  "criterion1_preActivationCheckpoint": {
+    "source": "supplied",
+    "confirmed": "9/9",
+    "checks": {
+      "authoritativeDnsParity": true,
+      "allUnrelatedRecordsDnsOnly": true,
+      "universalSslActive": true,
+      "railwayOriginCertificatesValidForBothHostnames": true,
+      "allFourOriginHeadersPresent": true,
+      "cacheRuleConfigured": true,
+      "tieredCacheOff": true,
+      "alwaysOnlineOff": true,
+      "approvedPurgePathAvailable": true
+    },
+    "partiallyReconfirmedLive": {
+      "note": "The zone-level dashboard settings (Universal SSL, Cache Rule, Tiered Cache, Always Online) are not observable from this repository and are recorded as supplied. The origin-side halves were re-observed.",
+      "originContractOnWww": {
+        "cache-control": "max-age=0, must-revalidate",
+        "cdn-cache-control": "no-store",
+        "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+        "cache-tag": "dinder-route-html"
+      },
+      "originContractOnRailwayDirect": "identical to www",
+      "wwwOriginCertificate": {
+        "subject": "CN=www.dinder.it.com",
+        "issuer": "C=US, O=Let's Encrypt, CN=YR2",
+        "notBefore": "2026-07-18T02:48:59Z",
+        "notAfter": "2026-10-16T02:48:58Z",
+        "subjectAltName": ["www.dinder.it.com"]
+      },
+      "railwayDirectCertificate": {
+        "subject": "CN=*.up.railway.app",
+        "issuer": "C=US, O=Let's Encrypt, CN=YE1",
+        "notAfter": "2026-10-01T14:01:29Z"
+      },
+      "purgePathAvailable": "Confirmed live: the successful CI purge in run 29824374248 attempt 2 logged `purged cache tag dinder-route-html (zone bc54c32e14cdce6912e2d505bc0a86f4)`."
+    }
+  },
+
+  "criterion2_apexOnlyAndEdgeTls": {
+    "source": "supplied",
+    "firstProxiedRequest": {
+      "servedCertificateIssuer": "Google Trust Services WE1",
+      "servedCertificateSan": "*.dinder.it.com",
+      "httpStatus": 200,
+      "not526": true,
+      "proves": "Browser-to-Cloudflare edge TLS terminated on the Cloudflare-issued certificate, and Cloudflare-to-Railway succeeded under Full (strict). A 526 would have meant Cloudflare rejected the Railway origin certificate; a 200 means it validated it."
+    },
+    "reconfirmedLive": {
+      "source": "live",
+      "apexCertificate": {
+        "subject": "CN=dinder.it.com",
+        "issuer": "C=US, O=Google Trust Services, CN=WE1",
+        "notBefore": "2026-07-21T08:20:06Z",
+        "notAfter": "2026-10-19T09:18:35Z",
+        "subjectAltName": ["dinder.it.com", "*.dinder.it.com"]
+      },
+      "apexStatus": 200,
+      "note": "The apex still serves the Cloudflare-issued Google Trust Services certificate and still returns 200, so Full (strict) to the Railway origin is still succeeding.",
+      "onlyApexProxied": "www.dinder.it.com returns no cf-ray and no cf-cache-status and still serves server: railway-hikari with x-railway-edge: lax1."
+    }
+  },
+
+  "criterion3_singlePopCacheLifecycle": {
+    "source": "supplied",
+    "sequence": [
+      "tag purge",
+      "MISS",
+      "HIT",
+      "Age 3 -> 6 -> 10 -> 13 (strictly increasing on the same object)",
+      "still HIT at 53s and at 58s",
+      "REVALIDATED with Age 0 after the 60s edge TTL elapsed",
+      "second tag purge -> MISS"
+    ],
+    "singlePop": true,
+    "staleObserved": false,
+    "staleNote": "cf-cache-status was never STALE at any sample, which is what Always Online Off is supposed to guarantee.",
+    "edgeTtlSeconds": 60,
+    "purgeResetsToMiss": true,
+    "reconfirmedLive": {
+      "source": "live",
+      "method": "scripts/check-production-edge.mjs verify against a never-requested cold path, /__deploy-check/c8a1537173f00450d0cd4c5b191c7abf108d7160, after prewarming the shared fingerprinted asset via the real commit path.",
+      "observed": "edge lifecycle ok on https://dinder.it.com: MISS -> HIT -> HIT at POP MEL, asset still HIT",
+      "coversPurgeDrivenMiss": false,
+      "coversPurgeDrivenMissNote": "This proves the cold-to-warm lifecycle and single-POP stability but not that a purge caused the MISS, because the purge credential is not available outside CI. The purge-driven MISS is proven by criterion 7.",
+      "revalidationReconfirmed": "A separate live GET of the apex document after its 60s TTL returned cf-cache-status: REVALIDATED with HTTP 200, matching the recorded expiry behaviour."
+    }
+  },
+
+  "criterion4_eligibilityAndSharedIdentityMatrix": {
+    "source": "supplied",
+    "reconfirmedLive": true,
+    "reconfirmedLiveBy": "scripts/check-production-edge.mjs verify exited 0 and printed `https://dinder.it.com: edge contracts ok`, which asserts the whole matrix below.",
+    "documentPolicy": {
+      "cache-control": "max-age=0, must-revalidate",
+      "cfCacheStatusPresent": true,
+      "cloudflarePrivateDirectivesStrippedAtEdge": ["cloudflare-cdn-cache-control", "cache-tag"],
+      "strippedNote": "Cloudflare consumes and removes its own directives, so a visitor never sees the internal cache policy or the purge tag."
+    },
+    "head": {
+      "result": "PASS",
+      "assertion": "HEAD carries the same document policy and does not drop or poison the public document object; the GET taken after the HEAD returns the same document body hash as the GET taken before it, and remains a cached status.",
+      "gateHistory": "A HEAD gate did not previously exist. It was added in PR #160 (commit 224d295) so this can never silently regress."
+    },
+    "nonHtmlAccept": {
+      "result": "PASS-by-design",
+      "observedCfCacheStatus": "DYNAMIC",
+      "assertion": "A client that does not accept HTML never enters the public document cache.",
+      "whyNotADefect": "The origin Caddyfile `@document` matcher requires `Accept: *text/html*` before it emits the cache policy, so a non-HTML request is deliberately ineligible. curl's default `Accept: */*` therefore returns DYNAMIC and carries neither cloudflare-cdn-cache-control nor cache-tag. This is the eligibility boundary working, not a cache miss.",
+      "liveObservation": "curl with no Accept override on https://dinder.it.com/ returned HTTP 200 with cf-cache-status: DYNAMIC; the same URL with a browser Accept header returned a cached status."
+    },
+    "fingerprintedAssets": {
+      "result": "PASS",
+      "example": "/assets/index-B54mdXn3.css",
+      "cache-control": "public, max-age=31536000, immutable",
+      "cacheTagAbsent": true,
+      "cfCacheStatus": "HIT",
+      "observedAgeSeconds": 4766,
+      "purgeScopeCorrect": "The warm fingerprinted asset stayed HIT across an HTML cache-tag purge, so the purge scope is the document tag only and immutable assets are not needlessly evicted."
+    },
+    "identityVariants": {
+      "result": "PASS",
+      "requirement": "Every variant must return the same document body hash as the route document AND must be served as a HIT from the one shared public object, proving the edge does not fragment the cache per user or per campaign.",
+      "variants": [
+        { "name": "auth cookie", "cookie": "sb-access-token=representative-value" },
+        { "name": "session cookie", "cookie": "dinder-session=ABCDE" },
+        { "name": "invite query", "query": "?invite=ABCDE" },
+        { "name": "auth query", "query": "?code=representative-auth-code" },
+        { "name": "tracking query", "query": "?utm_source=verify&utm_medium=ci" }
+      ]
+    }
+  },
+
+  "criterion5_routesHealthAndSmoke": {
+    "source": "supplied",
+    "reconfirmedLive": true,
+    "coreSpaRoutesThroughApex": {
+      "source": "live",
+      "allReturned": 200,
+      "count": 9,
+      "allServedFromOneSharedCachedObject": true,
+      "observedPop": "MEL",
+      "routes": [
+        "/",
+        "/compare",
+        "/compare/test-place",
+        "/create",
+        "/join",
+        "/session/ABCDE",
+        "/session/ABCDE/select",
+        "/session/ABCDE/results",
+        "/friends"
+      ],
+      "note": "All nine returned HTTP 200 with cf-cache-status: HIT at POP MEL. www.dinder.it.com also returned 200 on all nine directly from Railway, so the gray-clouded host is unaffected."
+    },
+    "health": {
+      "source": "live",
+      "frontendHealthThroughApex": 200,
+      "backendHealth": { "status": "healthy", "redis": true }
+    },
+    "sessionSmoke": {
+      "source": "live",
+      "command": "bash scripts/smoke-prod.sh",
+      "result": "PASS",
+      "restaurantCount": 18,
+      "note": "Exercises the real production session-create path including the Google Places search, which is the check that catches an expired Places key."
+    },
+    "suppliedOriginalRun": {
+      "allNineRoutes": 200,
+      "healthEndpoint": 200,
+      "sessionSmokeRestaurantCount": 19
+    }
+  },
+
+  "criterion6_grayCloudRollback": {
+    "source": "supplied",
+    "notReObservable": "Rolling back again would mean taking the apex off the edge a second time for no evidentiary gain, and issue 151 explicitly reserves gray-clouding for a failed gate.",
+    "method": "Gray-cloud dinder.it.com. Cloudflare stays authoritative and no unrelated record is touched.",
+    "convergence": {
+      "polling": "deterministic resolver polling, not a fixed sleep",
+      "directRailwayResolutionObservedAt": "t=+111s",
+      "timeoutFailsTheGate": true
+    },
+    "afterConvergence": {
+      "certificateRestoredTo": "Let's Encrypt YR2",
+      "certificateNote": "The Railway-issued origin certificate served the browser directly again, proving the edge was fully out of the path.",
+      "coreSpaRoutesDirect": "9/9 returned 200",
+      "sessionSmoke": "PASS"
+    },
+    "result": "PASS"
+  },
+
+  "criterion7_reactivation": {
+    "source": "supplied",
+    "workflowEvidenceReObservedLive": true,
+    "run": {
+      "id": 29824374248,
+      "attempt": 2,
+      "url": "https://github.com/Zacplischka/dinner_app/actions/runs/29824374248",
+      "workflow": "CI/CD Pipeline",
+      "job": "Verify Production Deploy",
+      "jobUrl": "https://github.com/Zacplischka/dinner_app/actions/runs/29824374248/job/88620351461",
+      "commit": "224d295b2caa9828edc0a91a0a98234c44125308",
+      "startedAt": "2026-07-21T11:29:43Z",
+      "completedAt": "2026-07-21T11:30:11Z",
+      "conclusion": "success",
+      "allStepsSucceeded": true,
+      "stepCount": 10
+    },
+    "purge": {
+      "step": "Purge route HTML cache tag",
+      "conclusion": "success",
+      "logLine": "purged cache tag dinder-route-html (zone bc54c32e14cdce6912e2d505bc0a86f4)",
+      "at": "2026-07-21T11:30:01Z"
+    },
+    "freshSamePopLifecycle": {
+      "logLine": "edge lifecycle ok on https://dinder.it.com: MISS -> HIT -> HIT at POP ORD, asset still HIT",
+      "at": "2026-07-21T11:30:04Z",
+      "pop": "ORD",
+      "purgeDrivenMiss": true,
+      "note": "This is the purge-driven MISS that the local re-verification could not produce. The MISS immediately follows the purge on a per-commit path nothing else warms, so the purge is the only thing that could have caused it."
+    },
+    "repeatedApexGate": {
+      "edgeContractsOk": "https://dinder.it.com",
+      "directOriginContractsOk": [
+        "https://www.dinder.it.com",
+        "https://frontend-production-bdfc.up.railway.app"
+      ],
+      "edgeDocumentParityOk": "dinder.it.com matches the origin byte for byte",
+      "sessionSmoke": "OK: session created with 18 restaurants",
+      "performanceGate": "NOT EVALUATED - the fixed-Melbourne gate is a release gate, not hosted CI."
+    },
+    "result": "PASS"
+  },
+
+  "criterion8_failurePathStoppedBeforeWww": {
+    "source": "supplied",
+    "workflowEvidenceReObservedLive": true,
+    "result": "PASS",
+    "resultNote": "This criterion asks that a failed gate stop the rollout. A real failure occurred and the gate behaved exactly as specified, so the criterion is satisfied by a genuine incident rather than by a rehearsal.",
+    "incident": {
+      "at": "2026-07-21T11:02:10Z",
+      "run": 29824374248,
+      "attempt": 1,
+      "commit": "224d295b2caa9828edc0a91a0a98234c44125308",
+      "failedStep": "Purge route HTML cache tag",
+      "failureMessage": "FAIL: cache purge failed: HTTP 401 (000 means transport error)",
+      "failedClosed": true,
+      "skippedSteps": [
+        "Verify frontend cache and route contracts",
+        "Smoke test session create (Places API key)"
+      ],
+      "wwwActivationProceeded": false,
+      "stoppedBeforeWww": true
+    },
+    "apexNotGrayCloudedAndWhy": {
+      "grayClouded": false,
+      "reasoning": "The gate failed on a CI credential, not on apex delivery. Gray-clouding is the remedy for an apex that is serving badly; here the apex was serving correctly and only the pipeline's ability to purge was broken. Taking a healthy apex off the edge would have been an unnecessary production change that destroyed the very canary the issue exists to observe. The rule that matters - stop before www - was honoured.",
+      "productionHealthDuringIncident": {
+        "apex": 200,
+        "www": 200,
+        "backendHealth": { "status": "healthy", "redis": true },
+        "sessionSmoke": "PASS",
+        "sessionSmokeRestaurantCount": 18,
+        "note": "Health was confirmed independently of the failed workflow, so the decision not to roll back was evidence-based rather than assumed."
+      }
+    },
+    "rootCause": {
+      "diagnosis": "The GitHub environment secret CLOUDFLARE_CACHE_PURGE_TOKEN held a value written at 2026-07-21T06:47:16Z that predated the Cloudflare API token it was meant to carry. The secret and the live token were different strings.",
+      "why401NotIsRevealing": "Cloudflare returns 401 for a credential it cannot match and 403 for a credential it matches but that lacks permission. A 401 therefore pointed at the wrong value being sent, not at a mis-scoped token.",
+      "tokenConfigurationVerifiedCorrect": {
+        "permission": "Zone / Cache Purge / Purge",
+        "resources": "Include > Specific zone > dinder.it.com",
+        "clientIpFilter": "none",
+        "ttl": "none"
+      },
+      "secretTimelineConfirmedLive": {
+        "source": "live",
+        "secret": "CLOUDFLARE_CACHE_PURGE_TOKEN",
+        "environment": "Dinner-App / production",
+        "created_at": "2026-07-21T06:47:16Z",
+        "updated_at": "2026-07-21T11:27:54Z",
+        "note": "The GitHub API confirms the secret's create and update timestamps without ever revealing its value, and they bracket the incident exactly as diagnosed."
+      }
+    },
+    "remediation": {
+      "action": "The Cloudflare API token was rolled and the GitHub environment secret was rewritten with the new value at 2026-07-21T11:27:54Z.",
+      "whyRollingWasTheOnlyPath": "A Cloudflare API token value can never be read again after creation, so there was no way to re-copy the existing token into the secret. Issuing a new token was the only way to make the two sides agree.",
+      "verification": "The re-run (attempt 2) at 2026-07-21T11:29:43Z passed all 10 steps, including the purge that had failed."
+    },
+    "credentialHandling": {
+      "credentialsExposed": false,
+      "detail": "No credential value was written to a workflow log, shown to the assistant, or recorded in this artifact. The workflow log shows only the masked form `CLOUDFLARE_CACHE_PURGE_TOKEN: ***`."
+    }
+  },
+
+  "additionalFindings": {
+    "cloudflareRumBeaconInjection": {
+      "source": "supplied",
+      "severity": "would have corrupted issue 152's numbers",
+      "observed": "Cloudflare was silently injecting its Web Analytics / RUM beacon into every HTML document. The origin document was 984 bytes; the edge document was 1488 bytes, the difference being an injected script tag for static.cloudflareinsights.com/beacon.min.js.",
+      "whyItMattered": "It was undeclared, it added a third-party request to every cold load, and it would have contaminated the cold-load performance measurements that issue 152 depends on. The edge was not returning the origin's bytes.",
+      "remediation": "A zone Configuration Rule named \"Disable RUM beacon injection (origin-owned document parity)\" was added, matching all incoming requests with the action Disable RUM.",
+      "regressionGuard": "PR #160 added verifyEdgeDocumentParity to scripts/check-production-edge.mjs, which hashes the origin document and the edge document and fails the deploy if they differ. Any future silent HTML rewrite (RUM, Rocket Loader, email obfuscation) now breaks the build instead of the benchmark.",
+      "currentState": {
+        "source": "live",
+        "passing": true,
+        "evidence": "edge document parity ok: dinder.it.com match the origin byte for byte"
+      }
+    },
+    "cacheTagPurgeWorksOnFreePlan": {
+      "source": "supplied",
+      "hypothesis": "Cache-tag purge is Enterprise-only.",
+      "outcome": "Disproved. Tag purge by `{\"tags\":[\"dinder-route-html\"]}` succeeds on this Free-plan zone, and the whole purge-driven lifecycle depends on it.",
+      "purgeScope": "Correct. The fingerprinted asset remained HIT through an HTML tag purge, so the tag evicts documents only."
+    }
+  },
+
+  "rollback": {
+    "method": "Gray-cloud dinder.it.com in the Cloudflare DNS tab. Cloudflare remains authoritative and no unrelated record changes.",
+    "exercised": true,
+    "convergenceObservedAt": "t=+111s",
+    "convergencePolicy": "Deterministic resolver polling until direct Railway resolution is observed, or a recorded timeout fails the gate. Never a fixed sleep.",
+    "postRollbackChecks": [
+      "direct TLS certificate is the Railway Let's Encrypt YR2 certificate",
+      "origin headers",
+      "all 9 core SPA routes",
+      "health",
+      "Session smoke"
+    ]
+  },
+
+  "notActivated": {
+    "www.dinder.it.com": {
+      "state": "DNS-only",
+      "reason": "www promotion is issue 152. Activating it here would violate this issue's own criterion 8, which requires the rollout to stop before www after a failed gate.",
+      "confirmedLive": true
+    }
+  },
+
+  "acceptanceCriteria": {
+    "preActivationCheckpointConfirmedAllNine": true,
+    "onlyApexProxiedAndFirstRequestProvedEdgeTlsAndFullStrict": true,
+    "singlePopPurgeMissHitAgeExpiryRefreshNoStaleAndRepurgeMiss": true,
+    "eligibilityAndSharedIdentityMatrixSatisfied": true,
+    "routesHealthAndSessionSmokePassThroughApexCanary": true,
+    "grayCloudRollbackConvergedDeterministicallyThenDirectChecksPassed": true,
+    "reactivationPurgedAndProvedFreshSamePopMissHitThenRepeatedFullGate": true,
+    "failedGateStoppedBeforeWwwActivation": "satisfied by a real incident: run 29824374248 attempt 1 failed closed on an HTTP 401 cache purge, the dependent verification and smoke steps were skipped, and www activation did not proceed"
+  }
+}
