@@ -38,7 +38,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-dist_dir="$repo_root/frontend/dist"
+cp -R "$repo_root/frontend/dist" "$tmp_dir/dist"
+dist_dir="$tmp_dir/dist"
 mkdir -p "$dist_dir/__contract-directory" "$dist_dir/.git"
 cp "$dist_dir/index.html" "$dist_dir/__contract-directory/index.html"
 touch "$dist_dir/.env-contract" "$dist_dir/.git/config"
