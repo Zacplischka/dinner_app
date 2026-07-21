@@ -18,7 +18,7 @@ npm run analyze:pr
 
 ```bash
 git checkout -b <type>/<short-slug>
-git add <files>            # never add graphify-out/ or .env
+git add <files>            # never add .env
 git commit                 # end message with Co-Authored-By: Claude <model> <noreply@anthropic.com>
 git push -u origin <branch>
 gh pr create --title "..." --body "..."   # reference the issue: "Closes #N"; end body with the Claude Code attribution line
