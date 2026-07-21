@@ -16,3 +16,4 @@ supabase/database.types.d.ts
 supabase/database.types.*.map
 .playwright-cli
 output/
+docs/production-cold-load-cdn-plan.md

@@ -3,39 +3,6 @@
 **Project**: Dinder
 **Last Updated**: 2026-07-19
 
-# ⚠️ CRITICAL DEVELOPMENT GUIDELINES
-
-## 1. Primary Environment
-- **/herdr** is the main development workspace.
-    - All team and agent interactions must take place within herdr panes.
-    - If you are the **Orchestrator** and spawning agents, create their panes in your current tab.
-
-**Role Assignment:**  
-Each participant is either an *Orchestrator*, *Implementer*, or *Researcher*. Your role will be given in the prompt.
-
-## 2. Claude Model Usage
-- Use **Claude Opus 4.8** for orchestration and implementation.
-    - If Fable 5 usage limits are reached, switch to Claude Opus 4.8 to maintain workflow.
-
-## 3. Web Development Requirements
-- For all web dev tasks:
-    - Always use the `k3-implement` skill.
-    - All front-end work must utilize **kimi code**.
-
-- For lighter tasks:
-    - Use Claude Code with Opus 4.8 xhigh as kimi usage is limited
-
-> 🚩 *Not following the above rules causes workflow issues and delays. Treat these as default standards.* 🚩
-
----
-
-### Orchestrator Responsibilities
-- Review `docs/branching.md`
-- Assign a ROLE to each agent created
-- Manage implementation of issues
-
----
-
 ### Supported Deployment Platforms
 
 - Railway
