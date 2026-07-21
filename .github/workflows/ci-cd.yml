@@ -56,6 +56,11 @@ jobs:
       - name: Run frontend unit tests
         run: npm run test:unit --workspace=@dinder/frontend
 
+      # Offline validators for the Cloudflare artifacts and the production-edge
+      # purge/cache assertions. Neither touches the network.
+      - name: Run delivery-infrastructure checks
+        run: npm run check:cloudflare-staging && npm run check:production-edge
+
   contract-tests:
     name: Contract Tests
     runs-on: ubuntu-latest
