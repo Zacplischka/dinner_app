@@ -8,12 +8,12 @@ import {
   CLIENT_STATE_SEED,
   ROUTES,
   SAMPLE_COUNT,
-  THRESHOLDS,
   THROTTLING,
   VIEWPORT,
   documentTtfbMs,
   evaluatePostCutover,
   expectedBatchReasons,
+  measurementContract,
   reproduceStatistics,
   resolveConfig,
   serializeArtifact,
@@ -303,20 +303,7 @@ async function run(config) {
         deployment: config.deployment,
       },
       clientStateSeed: CLIENT_STATE_SEED,
-      measurement: {
-        routes: [...ROUTES],
-        coldSamplesPerRoute: SAMPLE_COUNT,
-        warmReloadsPerRoute: SAMPLE_COUNT,
-        excludedPrimePerRoute: config.mode === 'post-cutover' ? 1 : 0,
-        coldContext: 'new non-persistent browser context per sample',
-        warmContext: '30 reloads of the context retained from cold sample 30',
-        median: 'mean of the two middle sorted values; for 30 samples, positions 15 and 16',
-        p95: 'nearest-rank: sorted[ceil(0.95 * count) - 1]',
-        documentTtfb: 'PerformanceNavigationTiming.responseStart - requestStart',
-        thresholds: config.mode === 'post-cutover' ? THRESHOLDS : null,
-        hostedCISemantics:
-          'GitHub-hosted CI cannot claim this fixed-Melbourne performance gate; it may only run deterministic contract checks.',
-      },
+      measurement: measurementContract(config.mode),
       baseline:
         baseline === null
           ? null

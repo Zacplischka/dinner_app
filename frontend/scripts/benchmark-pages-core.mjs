@@ -65,9 +65,28 @@ export const THRESHOLDS = Object.freeze({
   warmRouteReadyP95Ms: 50,
 });
 
+export function measurementContract(mode) {
+  return {
+    routes: [...ROUTES],
+    coldSamplesPerRoute: SAMPLE_COUNT,
+    warmReloadsPerRoute: SAMPLE_COUNT,
+    excludedPrimePerRoute: mode === 'post-cutover' ? 1 : 0,
+    coldContext: 'new non-persistent browser context per sample',
+    warmContext: '30 reloads of the context retained from cold sample 30',
+    median: 'mean of the two middle sorted values; for 30 samples, positions 15 and 16',
+    p95: 'nearest-rank: sorted[ceil(0.95 * count) - 1]',
+    documentTtfb: 'PerformanceNavigationTiming.responseStart - requestStart',
+    thresholds: mode === 'post-cutover' ? THRESHOLDS : null,
+    hostedCISemantics:
+      'GitHub-hosted CI cannot claim this fixed-Melbourne performance gate; it may only run deterministic contract checks.',
+  };
+}
+
 const STATISTIC_NAMES = Object.keys(THRESHOLDS);
 const INVALID_EDGE_STATUSES = new Set(['MISS', 'BYPASS', 'DYNAMIC', 'UPDATING']);
 const ALLOWED_EDGE_STATUSES = { cold: ['HIT'], warm: ['HIT', 'REVALIDATED'] };
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const SHA256 = /^[0-9a-f]{64}$/i;
 const SAMPLE_FIELDS = [
   'timestamp',
   'url',
@@ -188,6 +207,65 @@ function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isIsoTimestamp(value) {
+  return typeof value === 'string' && ISO_TIMESTAMP.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+// fallow-ignore-next-line complexity
+function targetHostPolicyError(mode, target) {
+  if (mode === 'baseline' && !target.hostname.endsWith('.up.railway.app')) {
+    return 'baseline evidence must target the direct Railway frontend';
+  }
+  if (
+    mode === 'post-cutover' &&
+    !['dinder.it.com', 'www.dinder.it.com'].includes(target.hostname)
+  ) {
+    return 'post-cutover evidence must target dinder.it.com or www.dinder.it.com';
+  }
+  return null;
+}
+
+// fallow-ignore-next-line complexity
+function validateRunner(runner) {
+  const errors = [];
+  if (!isRecord(runner)) return ['artifact runner must be an object'];
+  if (runner.location !== 'Melbourne, Australia') errors.push('runner location must be Melbourne');
+  for (const field of ['machine', 'platform', 'architecture', 'browserVersion']) {
+    if (typeof runner[field] !== 'string' || !runner[field].trim()) {
+      errors.push(`runner ${field} must be nonempty`);
+    }
+  }
+  if (runner.browser !== 'Chromium') errors.push('runner browser must be Chromium');
+  if (JSON.stringify(runner.viewport) !== JSON.stringify(VIEWPORT)) {
+    errors.push('runner viewport differs');
+  }
+  if (runner.throttling !== THROTTLING) errors.push('runner must be unthrottled');
+  if (runner.hostedCIEligibleForMelbourneGate !== false) {
+    errors.push('runner must be ineligible for the hosted-CI Melbourne gate');
+  }
+  return errors;
+}
+
+// fallow-ignore-next-line complexity
+function validateRunnerMatch(baselineRunner, runner) {
+  const errors = [];
+  for (const [field, label] of [
+    ['location', 'location'],
+    ['machine', 'machine'],
+    ['platform', 'platform'],
+    ['architecture', 'architecture'],
+    ['browser', 'browser'],
+    ['browserVersion', 'browser version'],
+    ['throttling', 'throttling'],
+  ]) {
+    if (baselineRunner?.[field] !== runner?.[field]) errors.push(`baseline ${label} differs`);
+  }
+  if (JSON.stringify(baselineRunner?.viewport) !== JSON.stringify(runner?.viewport)) {
+    errors.push('baseline viewport differs');
+  }
+  return errors;
+}
+
 // fallow-ignore-next-line complexity
 export function resolveConfig(options, env = {}) {
   const config = {
@@ -211,16 +289,8 @@ export function resolveConfig(options, env = {}) {
   } catch {
     errors.push('--base-url must be an absolute HTTPS origin');
   }
-  if (target && config.mode === 'baseline' && !target.hostname.endsWith('.up.railway.app')) {
-    errors.push('baseline evidence must target the direct Railway frontend');
-  }
-  if (
-    target &&
-    config.mode === 'post-cutover' &&
-    !['dinder.it.com', 'www.dinder.it.com'].includes(target.hostname)
-  ) {
-    errors.push('post-cutover evidence must target dinder.it.com or www.dinder.it.com');
-  }
+  const targetPolicyError = target ? targetHostPolicyError(config.mode, target) : null;
+  if (targetPolicyError) errors.push(targetPolicyError);
   if (!/^[0-9a-f]{40}$/i.test(config.commit ?? '')) errors.push('--commit must be a full Git SHA');
   if (!config.deployment?.trim()) errors.push('--deployment is required');
   if (config.runnerLocation !== 'Melbourne, Australia') {
@@ -307,8 +377,7 @@ function validateBatchShape(batch, mode, artifact) {
     for (const field of SAMPLE_FIELDS) {
       if (!Object.hasOwn(sample, field)) errors.push(`${prefix} is missing ${field}`);
     }
-    if (Number.isNaN(Date.parse(sample.timestamp)))
-      errors.push(`${prefix} has an invalid timestamp`);
+    if (!isIsoTimestamp(sample.timestamp)) errors.push(`${prefix} has an invalid timestamp`);
     if (!sample.browserVersion?.trim()) errors.push(`${prefix} has no browser version`);
     if (!/^[0-9a-f]{40}$/i.test(sample.commit ?? ''))
       errors.push(`${prefix} has an invalid commit`);
@@ -340,6 +409,12 @@ function validateBatchShape(batch, mode, artifact) {
     if (sample.throttling !== THROTTLING) errors.push(`${prefix} is not unthrottled`);
     if (sample.viewport?.width !== VIEWPORT.width || sample.viewport?.height !== VIEWPORT.height) {
       errors.push(`${prefix} has the wrong viewport`);
+    }
+    if (
+      sample.bodyHash !== null &&
+      (typeof sample.bodyHash !== 'string' || !SHA256.test(sample.bodyHash))
+    ) {
+      errors.push(`${prefix} has invalid bodyHash`);
     }
     for (const field of ['etag', 'cacheControl', 'cfCacheStatus', 'age', 'cfRay', 'error']) {
       if (sample[field] !== null && typeof sample[field] !== 'string') {
@@ -457,19 +532,10 @@ export function expectedBatchReasons(batch, mode, expectedBaseUrl, checks = []) 
 
 // fallow-ignore-next-line complexity
 export function validateComparableBaseline(baseline, runner) {
-  const errors = [];
+  const errors = validateRunnerMatch(baseline.runner, runner);
   if (baseline.mode !== 'baseline' || baseline.result !== 'PASS') {
     errors.push('comparison artifact must be a passing baseline');
   }
-  if (baseline.runner?.location !== runner.location)
-    errors.push('baseline runner location differs');
-  if (baseline.runner?.machine !== runner.machine) errors.push('baseline machine differs');
-  if (baseline.runner?.browserVersion !== runner.browserVersion)
-    errors.push('baseline browser version differs');
-  if (JSON.stringify(baseline.runner?.viewport) !== JSON.stringify(runner.viewport)) {
-    errors.push('baseline viewport differs');
-  }
-  if (baseline.runner?.throttling !== runner.throttling) errors.push('baseline throttling differs');
   if (JSON.stringify(baseline.clientStateSeed) !== JSON.stringify(CLIENT_STATE_SEED)) {
     errors.push('baseline client-state seed differs');
   }
@@ -491,14 +557,23 @@ export function validateArtifactShape(artifact, baseline = null) {
     errors.push('unsupported artifact mode');
   if (!['PASS', 'FAIL'].includes(artifact.result))
     errors.push('artifact result must be PASS or FAIL');
+  if (!isIsoTimestamp(artifact.generatedAt))
+    errors.push('artifact generatedAt must be an ISO timestamp');
+  if (JSON.stringify(artifact.measurement) !== JSON.stringify(measurementContract(artifact.mode))) {
+    errors.push('artifact measurement does not match the deterministic contract');
+  }
+  errors.push(...validateRunner(artifact.runner));
   if (routeBatches.length !== ROUTES.length) {
     errors.push(`artifact must contain exactly ${ROUTES.length} route batches`);
   }
+  let target;
   try {
-    exactHttpsOrigin(artifact.target?.baseUrl);
+    target = new URL(exactHttpsOrigin(artifact.target?.baseUrl));
   } catch {
     errors.push('artifact target base URL must be an absolute HTTPS origin');
   }
+  const targetPolicyError = target ? targetHostPolicyError(artifact.mode, target) : null;
+  if (targetPolicyError) errors.push(targetPolicyError);
   if (JSON.stringify(artifact.clientStateSeed) !== JSON.stringify(CLIENT_STATE_SEED)) {
     errors.push('artifact client-state seed differs');
   }
@@ -513,6 +588,7 @@ export function validateArtifactShape(artifact, baseline = null) {
       if (JSON.stringify(artifact.baseline?.target) !== JSON.stringify(baseline.target)) {
         errors.push('post-cutover artifact references a different baseline target');
       }
+      errors.push(...validateRunnerMatch(baseline.runner, artifact.runner));
     }
   }
   for (const [index, batch] of routeBatches.entries()) {

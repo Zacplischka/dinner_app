@@ -9,6 +9,7 @@ import {
   documentTtfbMs,
   evaluatePostCutover,
   expectedBatchReasons,
+  measurementContract,
   median,
   nearestRank,
   reproduceStatistics,
@@ -40,7 +41,7 @@ function sample(route, phase, index, overrides = {}, baseUrl = BASELINE_URL) {
     routeReadyMs: index,
     documentTtfbMs: index,
     status: 200,
-    bodyHash: 'sha256',
+    bodyHash: 'a'.repeat(64),
     etag: null,
     cacheControl: 'max-age=0, must-revalidate',
     cfCacheStatus: null,
@@ -85,6 +86,7 @@ function artifact(mode = 'baseline', baselineArtifact = null) {
     mode,
     result: 'PASS',
     failureReasons: [],
+    generatedAt: '2026-07-21T00:00:00.000Z',
     target: {
       baseUrl,
       commit: 'a'.repeat(40),
@@ -98,10 +100,15 @@ function artifact(mode = 'baseline', baselineArtifact = null) {
     runner: {
       location: 'Melbourne, Australia',
       machine: 'fixed-mac',
+      platform: 'darwin',
+      architecture: 'arm64',
+      browser: 'Chromium',
       browserVersion: '140.0.0.0',
       viewport: { ...VIEWPORT },
       throttling: 'none',
+      hostedCIEligibleForMelbourneGate: false,
     },
+    measurement: measurementContract(mode),
     routes: ROUTES.map((route) => ({
       ...batch(route, mode, baseUrl),
       statistics: null,
@@ -192,6 +199,68 @@ test('configuration fixes Railway baseline, Melbourne runner, and hosted-CI sema
     () => resolveConfig({ ...options, mode: 'post-cutover', baseline: undefined }),
     /--baseline is required/
   );
+});
+
+test('artifact targets enforce the mode-specific Railway and Dinder host policy', () => {
+  const wrongBaseline = artifact();
+  wrongBaseline.target.baseUrl = POST_URL;
+  assert.throws(
+    () => serializeArtifact(wrongBaseline),
+    /baseline evidence must target the direct Railway frontend/
+  );
+
+  const baseline = artifact();
+  const wrongPostCutover = artifact('post-cutover', baseline);
+  wrongPostCutover.target.baseUrl = BASELINE_URL;
+  assert.throws(
+    () => serializeArtifact(wrongPostCutover, baseline),
+    /post-cutover evidence must target dinder\.it\.com or www\.dinder\.it\.com/
+  );
+});
+
+test('artifact envelope requires deterministic measurement and complete Melbourne runner data', () => {
+  const invalidGeneratedAt = artifact();
+  invalidGeneratedAt.generatedAt = 'not-an-iso-timestamp';
+  assert.throws(
+    () => serializeArtifact(invalidGeneratedAt),
+    /generatedAt must be an ISO timestamp/
+  );
+
+  const missingMeasurement = artifact();
+  delete missingMeasurement.measurement;
+  assert.throws(() => serializeArtifact(missingMeasurement), /measurement does not match/);
+
+  const changedMeasurement = artifact();
+  changedMeasurement.measurement.coldSamplesPerRoute = SAMPLE_COUNT + 1;
+  assert.throws(() => serializeArtifact(changedMeasurement), /measurement does not match/);
+
+  const incompleteRunner = artifact();
+  incompleteRunner.runner.platform = '';
+  assert.throws(() => serializeArtifact(incompleteRunner), /runner platform must be nonempty/);
+
+  const hostedRunner = artifact();
+  hostedRunner.runner.hostedCIEligibleForMelbourneGate = true;
+  assert.throws(() => serializeArtifact(hostedRunner), /hosted-CI Melbourne gate/);
+});
+
+test('post-cutover runner identity and profile must exactly match the baseline', () => {
+  const mutations = [
+    ['location', 'Sydney, Australia', /baseline location differs/],
+    ['machine', 'other-mac', /baseline machine differs/],
+    ['platform', 'linux', /baseline platform differs/],
+    ['architecture', 'x64', /baseline architecture differs/],
+    ['browser', 'Firefox', /baseline browser differs/],
+    ['browserVersion', '141.0.0.0', /baseline browser version differs/],
+    ['viewport', { width: 800, height: 600 }, /baseline viewport differs/],
+    ['throttling', '3g', /baseline throttling differs/],
+  ];
+
+  for (const [field, value, message] of mutations) {
+    const baseline = artifact();
+    const evidence = artifact('post-cutover', baseline);
+    evidence.runner[field] = value;
+    assert.throws(() => serializeArtifact(evidence, baseline), message);
+  }
 });
 
 test('route validation requires exactly 30 cold samples and 30 warm reloads', () => {
@@ -295,6 +364,21 @@ test('serialization preserves every raw sample field and rejects incomplete arti
 
   delete evidence.routes[0].cold[0].cfRay;
   assert.throws(() => serializeArtifact(evidence), /missing cfRay/);
+});
+
+test('sample timestamps and body hashes enforce their serialized types', () => {
+  const numericTimestamp = artifact();
+  numericTimestamp.routes[0].cold[0].timestamp = 42;
+  assert.throws(() => serializeArtifact(numericTimestamp), /invalid timestamp/);
+
+  const numericBodyHash = artifact();
+  numericBodyHash.routes[0].cold[0].bodyHash = 42;
+  assert.throws(() => serializeArtifact(numericBodyHash), /invalid bodyHash/);
+
+  const etagOnly = artifact();
+  etagOnly.routes[0].cold[0].bodyHash = null;
+  etagOnly.routes[0].cold[0].etag = '"route-etag"';
+  assert.doesNotThrow(() => serializeArtifact(etagOnly));
 });
 
 test('cache-invalidated post-cutover evidence serializes as a complete FAIL artifact', () => {
