@@ -1,0 +1,340 @@
+{
+  "schemaVersion": 1,
+  "issue": 148,
+  "capturedAt": "2026-07-21T07:14:23Z",
+  "status": "staged",
+  "credentialsExposed": false,
+  "providerCapabilities": "docs/evidence/cloudflare/provider-capabilities.md",
+  "canonicalManifest": {
+    "path": "cloudflare/zone-manifest.json",
+    "complete": true,
+    "registrarExportCapturedBeforeImport": true,
+    "registrarExportPath": "docs/evidence/cloudflare/namecheap-zone-export-2026-07-21.json"
+  },
+  "authoritativeDns": {
+    "provider": "Namecheap BasicDNS",
+    "nameservers": ["dns1.registrar-servers.com", "dns2.registrar-servers.com"],
+    "soa": {
+      "primary": "dns1.registrar-servers.com",
+      "hostmaster": "hostmaster.registrar-servers.com",
+      "serial": 1782010825,
+      "refresh": 43200,
+      "retry": 3600,
+      "expire": 604800,
+      "minimum": 3601
+    },
+    "delegationTtl": 300,
+    "dnssecDsAtDelegation": [],
+    "authoritativeServersAgree": true,
+    "zoneTransferAllowed": false,
+    "records": [
+      {
+        "owner": "@",
+        "type": "CNAME",
+        "content": "kbsae634.up.railway.app",
+        "priority": null,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "frontend"
+      },
+      {
+        "owner": "@",
+        "type": "MX",
+        "content": "eforward1.registrar-servers.com",
+        "priority": 10,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "email"
+      },
+      {
+        "owner": "@",
+        "type": "MX",
+        "content": "eforward2.registrar-servers.com",
+        "priority": 10,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "email"
+      },
+      {
+        "owner": "@",
+        "type": "MX",
+        "content": "eforward3.registrar-servers.com",
+        "priority": 10,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "email"
+      },
+      {
+        "owner": "@",
+        "type": "MX",
+        "content": "eforward4.registrar-servers.com",
+        "priority": 15,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "email"
+      },
+      {
+        "owner": "@",
+        "type": "MX",
+        "content": "eforward5.registrar-servers.com",
+        "priority": 20,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "email"
+      },
+      {
+        "owner": "@",
+        "type": "TXT",
+        "content": "v=spf1 include:spf.efwd.registrar-servers.com ~all",
+        "priority": null,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "email"
+      },
+      {
+        "owner": "_railway-verify",
+        "type": "TXT",
+        "content": "railway-verify=4bd65758ace73c2254f86bc6efc57c70fccc625413e725d71f006e000fea0566",
+        "priority": null,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "verification"
+      },
+      {
+        "owner": "www",
+        "type": "CNAME",
+        "content": "mk84igaf.up.railway.app",
+        "priority": null,
+        "intendedTtl": 1800,
+        "proxied": false,
+        "category": "frontend"
+      }
+    ]
+  },
+  "namecheapEmailForwarding": {
+    "capturedAt": "2026-07-21T07:14:23Z",
+    "source": "authenticated Domain > Redirect Email",
+    "nameserverEligibility": ["Namecheap BasicDNS", "PremiumDNS", "FreeDNS"],
+    "activeAliases": [],
+    "activeCatchAll": false,
+    "destinationValuesCaptured": false,
+    "redacted": true,
+    "authoritativeCutoverBlocked": false,
+    "cutoverDisposition": "no active forwarding dependency",
+    "recheckRequiredAtCutover": true
+  },
+  "railway": {
+    "project": "Dinner-App",
+    "environment": "production",
+    "service": "frontend",
+    "serviceId": "f17f016d-e052-40b5-83e6-55710c6f7bb6",
+    "builder": "RAILPACK",
+    "latestDeployment": {
+      "id": "09133a50-d01e-4669-ae14-30e27ddfeb53",
+      "commit": "893ecd2d3433b44a5f0e5709727d2daab4765c26",
+      "status": "SUCCESS"
+    },
+    "domains": [
+      {
+        "host": "dinder.it.com",
+        "target": "kbsae634.up.railway.app",
+        "syncStatus": "ACTIVE",
+        "certificateStatus": "VALID",
+        "certificateExpiresAt": "2026-09-19T02:02:44Z"
+      },
+      {
+        "host": "www.dinder.it.com",
+        "target": "mk84igaf.up.railway.app",
+        "syncStatus": "ACTIVE",
+        "certificateStatus": "VALID",
+        "certificateExpiresAt": "2026-10-16T02:48:58Z"
+      }
+    ],
+    "documentHeaders": {
+      "cache-control": "max-age=0, must-revalidate",
+      "cdn-cache-control": null,
+      "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+      "cache-tag": "dinder-route-html"
+    }
+  },
+  "repositoryOriginContract": {
+    "status": "staged; not deployed by issue 148",
+    "verifiedWith": "Caddy v2.11.4",
+    "documentHeaders": {
+      "cache-control": "max-age=0, must-revalidate",
+      "cdn-cache-control": "no-store",
+      "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+      "cache-tag": "dinder-route-html"
+    },
+    "cloudflareSpecificHeaderAbsent": "BYPASS"
+  },
+  "cloudflare": {
+    "authentication": {
+      "browserSession": "authenticated",
+      "accountIdentityCaptured": false,
+      "credentialsCaptured": false
+    },
+    "zone": {
+      "id": "bc54c32e14cdce6912e2d505bc0a86f4",
+      "name": "dinder.it.com",
+      "type": "full",
+      "plan": "free",
+      "status": "pending",
+      "assignedNameservers": ["ada.ns.cloudflare.com", "keenan.ns.cloudflare.com"],
+      "authoritativeNameserversChanged": false
+    },
+    "records": {
+      "count": 9,
+      "limit": 200,
+      "fullParityWithCanonicalManifest": true,
+      "allDnsOnly": true,
+      "proxyEligibleRecordsDnsOnly": ["dinder.it.com CNAME", "www.dinder.it.com CNAME"],
+      "cloudflareTtl": "30 minutes (1800 seconds)",
+      "canonicalTtl": 1800,
+      "inventory": [
+        {
+          "owner": "@",
+          "type": "CNAME",
+          "content": "kbsae634.up.railway.app",
+          "priority": null,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "content": "eforward1.registrar-servers.com",
+          "priority": 10,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "content": "eforward2.registrar-servers.com",
+          "priority": 10,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "content": "eforward3.registrar-servers.com",
+          "priority": 10,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "content": "eforward4.registrar-servers.com",
+          "priority": 15,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "content": "eforward5.registrar-servers.com",
+          "priority": 20,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "@",
+          "type": "TXT",
+          "content": "v=spf1 include:spf.efwd.registrar-servers.com ~all",
+          "priority": null,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "_railway-verify",
+          "type": "TXT",
+          "content": "railway-verify=4bd65758ace73c2254f86bc6efc57c70fccc625413e725d71f006e000fea0566",
+          "priority": null,
+          "intendedTtl": 1800,
+          "proxied": false
+        },
+        {
+          "owner": "www",
+          "type": "CNAME",
+          "content": "mk84igaf.up.railway.app",
+          "priority": null,
+          "intendedTtl": 1800,
+          "proxied": false
+        }
+      ]
+    },
+    "cacheRule": {
+      "id": "cbb07f37ce484377ae6d6ffe59ac9468",
+      "name": "Dinder HTML cache",
+      "status": "active",
+      "expression": "(http.host in {\"dinder.it.com\" \"www.dinder.it.com\"} and http.request.method in {\"GET\" \"HEAD\"} and any(lower(http.request.headers[\"accept\"][*])[*] contains \"text/html\"))",
+      "cacheEligibility": "eligible",
+      "edgeTtl": "respect origin; bypass when absent",
+      "browserTtl": "respect origin",
+      "queryString": "ignore all",
+      "cacheDeceptionArmor": true,
+      "cacheByDeviceType": false,
+      "sortQueryString": false,
+      "customHeaders": [],
+      "customCookies": [],
+      "customHost": null,
+      "customUserFeatures": [],
+      "varyConfigured": false,
+      "serveStaleWhileUpdating": false,
+      "providerDefaultCacheKey": {
+        "retains": ["scheme", "host", "path", "Origin header", "documented override headers"],
+        "queryStringIncluded": false,
+        "originHeaderControl": {
+          "checked": true,
+          "disabled": true,
+          "availabilityToChange": "enterprise-only",
+          "configuredByThisRule": false
+        },
+        "addedCustomIdentityVariation": []
+      }
+    },
+    "cacheSettings": {
+      "sharedHtmlLifetimeOverridden": false,
+      "alwaysOnline": "off",
+      "tieredCache": "off"
+    },
+    "tlsMode": "full_strict",
+    "tokenMetadata": {
+      "name": "Dinder production cache purge",
+      "status": "active",
+      "permission": "Zone.Cache Purge:Purge",
+      "resources": ["dinder.it.com"],
+      "resourceCount": 1,
+      "lastUsed": null,
+      "expires": null,
+      "tokenValueCaptured": false
+    },
+    "plannedFrontendOnlyProxyScope": ["dinder.it.com", "www.dinder.it.com"]
+  },
+  "productionConfig": {
+    "environment": "Dinner-App / production",
+    "zoneIdVariablePresent": true,
+    "purgeTokenSecretPresent": true,
+    "namesOnlyVerified": true
+  },
+  "plannedFrontendOnlyProxyScope": ["dinder.it.com", "www.dinder.it.com"],
+  "externalMutations": [
+    "Created a pending Cloudflare Free full zone; assigned nameservers were recorded but registrar delegation was not changed.",
+    "Imported nine records and kept every record DNS-only; no record was proxied.",
+    "Set only the TTL on all nine staged records to 30 minutes, matching the canonical 1800-second TTL; content, priority, and proxy state were unchanged.",
+    "Created the active Dinder HTML cache rule with origin-controlled lifetimes, query exclusion, cache-deception armor, and stale-while-updating disabled.",
+    "Saved zone TLS mode Full (strict); no traffic is proxied.",
+    "Created one active token restricted to dinder.it.com and Zone.Cache Purge:Purge; the token value is not present in evidence or git.",
+    "Stored CLOUDFLARE_ZONE_ID as a production environment variable and CLOUDFLARE_CACHE_PURGE_TOKEN as a production environment secret."
+  ],
+  "externalAuthenticationEvents": [
+    "A human completed provider authentication; account identity was intentionally omitted from evidence."
+  ],
+  "externalReadOnlyChecks": [
+    "Namecheap Domain > Redirect Email showed no defined email redirect, no aliases, and no catch-all; destination values were not present or captured."
+  ],
+  "blockers": []
+}

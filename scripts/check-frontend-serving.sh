@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 caddy_bin="${CADDY_BIN:-caddy}"
 expected_caddy_version="${EXPECTED_CADDY_VERSION:-v2.11.4}"
 document_cache_control='max-age=0, must-revalidate'
+cdn_cache_control='no-store'
 cloudflare_cache_control='public, max-age=60, must-revalidate'
 asset_cache_control='public, max-age=31536000, immutable'
 
@@ -109,11 +110,13 @@ request() {
 
 assert_document_headers() {
   assert_header "$headers" Cache-Control "$document_cache_control"
+  assert_header "$headers" CDN-Cache-Control "$cdn_cache_control"
   assert_header "$headers" Cloudflare-CDN-Cache-Control "$cloudflare_cache_control"
   assert_header "$headers" Cache-Tag dinder-route-html
 }
 
 assert_no_document_headers() {
+  assert_no_header "$headers" CDN-Cache-Control
   assert_no_header "$headers" Cloudflare-CDN-Cache-Control
   assert_no_header "$headers" Cache-Tag
 }

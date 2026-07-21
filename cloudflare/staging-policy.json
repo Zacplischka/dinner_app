@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "representation": "normalized-live-state-not-api-payload",
+  "zone": {
+    "name": "dinder.it.com",
+    "type": "full",
+    "plan": "free"
+  },
+  "ruleset": {
+    "name": "Dinder HTML cache",
+    "kind": "zone",
+    "phase": "http_request_cache_settings",
+    "rules": [
+      {
+        "ref": "dinder_route_html",
+        "description": "Cache public SPA HTML on the two frontend hosts",
+        "enabled": true,
+        "expression": "(http.host in {\"dinder.it.com\" \"www.dinder.it.com\"} and http.request.method in {\"GET\" \"HEAD\"} and any(lower(http.request.headers[\"accept\"][*])[*] contains \"text/html\"))",
+        "action": "set_cache_settings",
+        "action_parameters": {
+          "cache": true,
+          "edge_ttl": {
+            "mode": "bypass_by_default"
+          },
+          "browser_ttl": {
+            "mode": "respect_origin"
+          },
+          "origin_cache_control": true,
+          "serve_stale": {
+            "disable_stale_while_updating": true
+          },
+          "cache_key": {
+            "cache_deception_armor": true,
+            "free_plan_query_string_mode": "ignore",
+            "added_custom_dimensions": []
+          }
+        }
+      }
+    ]
+  },
+  "providerConstraints": {
+    "cacheKey": {
+      "freePlanSettings": ["cache_deception_armor", "ignore_query_string"],
+      "providerDefaultComponentsRetained": [
+        "scheme",
+        "host",
+        "path",
+        "Origin header",
+        "documented override headers"
+      ],
+      "addedCustomIdentityVariation": []
+    }
+  },
+  "originHtmlContract": {
+    "cache-control": "max-age=0, must-revalidate",
+    "cdn-cache-control": "no-store",
+    "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+    "cache-tag": "dinder-route-html",
+    "cloudflareSpecificHeaderAbsent": "BYPASS"
+  },
+  "zoneSettings": {
+    "ssl": "full_strict",
+    "alwaysOnline": "off",
+    "tieredCache": "off"
+  },
+  "proxyScope": {
+    "current": [],
+    "futureFrontendOnly": ["dinder.it.com", "www.dinder.it.com"]
+  },
+  "credentialPolicy": {
+    "zoneId": {
+      "name": "CLOUDFLARE_ZONE_ID",
+      "secret": false,
+      "store": "GitHub environment variable",
+      "environment": "Dinner-App / production"
+    },
+    "purgeToken": {
+      "name": "CLOUDFLARE_CACHE_PURGE_TOKEN",
+      "secret": true,
+      "store": "GitHub environment secret",
+      "environment": "Dinner-App / production",
+      "resource": {
+        "type": "zone",
+        "name": "dinder.it.com"
+      },
+      "permissions": ["Cache Purge:Purge"]
+    }
+  }
+}

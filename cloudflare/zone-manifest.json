@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "zone": "dinder.it.com",
+  "capturedAt": "2026-07-21T06:17:50Z",
+  "complete": true,
+  "source": {
+    "provider": "Namecheap BasicDNS",
+    "authoritativeNameservers": ["dns1.registrar-servers.com", "dns2.registrar-servers.com"],
+    "registrarExport": {
+      "status": "captured",
+      "path": "docs/evidence/cloudflare/namecheap-zone-export-2026-07-21.json",
+      "sha256": "28937cd97a2baed548a5c271ec2754658f6b59f60d3c213d7696be89603c289b"
+    },
+    "independentAuthoritativeQuery": {
+      "status": "captured",
+      "serversAgree": true,
+      "zoneTransferAllowed": false
+    }
+  },
+  "proxyPolicy": {
+    "importedRecordState": "dns-only",
+    "currentProxiedHosts": [],
+    "futureFrontendOnlyHosts": ["dinder.it.com", "www.dinder.it.com"],
+    "defaultForUnknownOrNewRecords": "dns-only",
+    "neverProxyCategories": ["backend", "supabase", "email", "verification", "unrelated"]
+  },
+  "records": [
+    {
+      "owner": "@",
+      "type": "CNAME",
+      "content": "kbsae634.up.railway.app",
+      "priority": null,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "frontend"
+    },
+    {
+      "owner": "@",
+      "type": "MX",
+      "content": "eforward1.registrar-servers.com",
+      "priority": 10,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "email"
+    },
+    {
+      "owner": "@",
+      "type": "MX",
+      "content": "eforward2.registrar-servers.com",
+      "priority": 10,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "email"
+    },
+    {
+      "owner": "@",
+      "type": "MX",
+      "content": "eforward3.registrar-servers.com",
+      "priority": 10,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "email"
+    },
+    {
+      "owner": "@",
+      "type": "MX",
+      "content": "eforward4.registrar-servers.com",
+      "priority": 15,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "email"
+    },
+    {
+      "owner": "@",
+      "type": "MX",
+      "content": "eforward5.registrar-servers.com",
+      "priority": 20,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "email"
+    },
+    {
+      "owner": "@",
+      "type": "TXT",
+      "content": "v=spf1 include:spf.efwd.registrar-servers.com ~all",
+      "priority": null,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "email"
+    },
+    {
+      "owner": "_railway-verify",
+      "type": "TXT",
+      "content": "railway-verify=4bd65758ace73c2254f86bc6efc57c70fccc625413e725d71f006e000fea0566",
+      "priority": null,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "verification"
+    },
+    {
+      "owner": "www",
+      "type": "CNAME",
+      "content": "mk84igaf.up.railway.app",
+      "priority": null,
+      "intendedTtl": 1800,
+      "proxied": false,
+      "category": "frontend"
+    }
+  ]
+}
