@@ -317,7 +317,9 @@ async function verifyHost(base, path, { proxied }) {
   assertDocumentHeaders(`${base}${path} (HEAD)`, head.headers, { proxied });
   const afterHead = await request(`${base}${path}`);
   assertSameDocument(`${base}${path} (GET after HEAD)`, afterHead.hash, beforeHead.hash);
-  if (proxied && BYPASS_STATUSES.has(afterHead.cacheStatus)) {
+  // A missing cf-cache-status is a failure too: on a proxied host the header is
+  // always present, so its absence means the check lost sight of the edge.
+  if (proxied && (afterHead.cacheStatus == null || BYPASS_STATUSES.has(afterHead.cacheStatus))) {
     throw new Error(
       `${base}${path}: HEAD dropped the public document object (${afterHead.cacheStatus ?? '<missing>'})`
     );
