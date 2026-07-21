@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "issue": 149,
+  "capturedAt": "2026-07-21T09:35:00Z",
+  "status": "complete",
+  "result": "PASS",
+  "credentialsExposed": false,
+  "summary": "Cloudflare is authoritative for dinder.it.com with every record DNS-only. No frontend host is proxied; proxy activation remains issue 151 (apex canary) and issue 152 (www).",
+
+  "preCutover": {
+    "capturedAt": "2026-07-21T09:04:36Z",
+    "authoritativeProvider": "Namecheap BasicDNS",
+    "nameservers": ["dns1.registrar-servers.com", "dns2.registrar-servers.com"],
+    "soa": {
+      "primary": "dns1.registrar-servers.com",
+      "hostmaster": "hostmaster.registrar-servers.com",
+      "serial": 1782010825,
+      "refresh": 43200,
+      "retry": 3600,
+      "expire": 604800,
+      "minimum": 3601
+    },
+    "parentDelegationTtl": 300,
+    "dnssec": {
+      "dsAtParent": [],
+      "dnskeyAtOrigin": [],
+      "enabled": false,
+      "disposition": "No DNSSEC existed before migration. Nothing to remove, no TTL wait required, and no parent DS chain to restore after migration.",
+      "restorationRequired": false
+    },
+    "resolverAgreement": {
+      "1.1.1.1": ["dns1.registrar-servers.com", "dns2.registrar-servers.com"],
+      "8.8.8.8": ["dns1.registrar-servers.com", "dns2.registrar-servers.com"],
+      "9.9.9.9": ["dns1.registrar-servers.com", "dns2.registrar-servers.com"]
+    },
+    "registrarExport": {
+      "path": "docs/evidence/cloudflare/namecheap-zone-export-2026-07-21.json",
+      "sha256": "28937cd97a2baed548a5c271ec2754658f6b59f60d3c213d7696be89603c289b"
+    },
+    "namecheapEmailForwarding": {
+      "recheckedAtCutover": true,
+      "activeAliases": [],
+      "activeCatchAll": false,
+      "redirectDomain": null,
+      "disposition": "No email forwarder and no catch-all were defined, so the eforward* MX records carry no live mail flow. Leaving Namecheap BasicDNS breaks no mail dependency.",
+      "cutoverBlocked": false
+    },
+    "serviceHealth": {
+      "backendHealth": 200,
+      "apex": 200,
+      "www": 200,
+      "supabaseRest": 401,
+      "supabaseNote": "401 is the expected unauthenticated response for the REST root; it proves reachability.",
+      "mxResolves": true
+    },
+    "originTls": {
+      "dinder.it.com": {
+        "subject": "CN=dinder.it.com",
+        "issuer": "C=US, O=Let's Encrypt, CN=YR2",
+        "notBefore": "2026-06-21T02:02:45Z",
+        "notAfter": "2026-09-19T02:02:44Z",
+        "port443": true
+      },
+      "www.dinder.it.com": {
+        "subject": "CN=www.dinder.it.com",
+        "issuer": "C=US, O=Let's Encrypt, CN=YR2",
+        "notBefore": "2026-07-18T02:48:59Z",
+        "notAfter": "2026-10-16T02:48:58Z",
+        "port443": true
+      }
+    }
+  },
+
+  "cutover": {
+    "performedAt": "2026-07-21T09:11:00Z",
+    "registrar": "Namecheap",
+    "method": "Domain List > dinder.it.com > NAMESERVERS > Custom DNS",
+    "from": ["dns1.registrar-servers.com", "dns2.registrar-servers.com"],
+    "to": ["ada.ns.cloudflare.com", "keenan.ns.cloudflare.com"],
+    "dnssecRemovalRequired": false,
+    "registryDelegationObservedAt": "~100s after save",
+    "allResolversConvergedAt": "~80s after registry delegation"
+  },
+
+  "postCutover": {
+    "capturedAt": "2026-07-21T09:16:25Z",
+    "delegationTrace": {
+      "parent": "it.com",
+      "answer": ["ada.ns.cloudflare.com", "keenan.ns.cloudflare.com"],
+      "ttl": 86400,
+      "respondingAuthority": "keenan.ns.cloudflare.com"
+    },
+    "resolverAgreement": {
+      "1.1.1.1": ["ada.ns.cloudflare.com", "keenan.ns.cloudflare.com"],
+      "8.8.8.8": ["ada.ns.cloudflare.com", "keenan.ns.cloudflare.com"],
+      "9.9.9.9": ["ada.ns.cloudflare.com", "keenan.ns.cloudflare.com"]
+    },
+    "zone": {
+      "id": "bc54c32e14cdce6912e2d505bc0a86f4",
+      "accountId": "71e209a24502ed9323f137c4e5627f20",
+      "name": "dinder.it.com",
+      "type": "full",
+      "plan": "free",
+      "status": "active",
+      "statusEvidence": "Dashboard overview reports \"Your domain is now protected by Cloudflare\"."
+    },
+    "recordParity": {
+      "userManagedRrsetsMatchManifest": true,
+      "manifestPath": "cloudflare/zone-manifest.json",
+      "recordCount": 9,
+      "allDnsOnly": true,
+      "observedFromAuthoritative": "ada.ns.cloudflare.com",
+      "records": [
+        {
+          "owner": "@",
+          "type": "A",
+          "content": "69.46.46.14",
+          "ttl": 60,
+          "note": "apex CNAME to kbsae634.up.railway.app flattened by Cloudflare"
+        },
+        { "owner": "www", "type": "CNAME", "content": "mk84igaf.up.railway.app", "ttl": 1800 },
+        {
+          "owner": "@",
+          "type": "MX",
+          "priority": 10,
+          "content": "eforward1.registrar-servers.com",
+          "ttl": 1800
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "priority": 10,
+          "content": "eforward2.registrar-servers.com",
+          "ttl": 1800
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "priority": 10,
+          "content": "eforward3.registrar-servers.com",
+          "ttl": 1800
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "priority": 15,
+          "content": "eforward4.registrar-servers.com",
+          "ttl": 1800
+        },
+        {
+          "owner": "@",
+          "type": "MX",
+          "priority": 20,
+          "content": "eforward5.registrar-servers.com",
+          "ttl": 1800
+        },
+        {
+          "owner": "@",
+          "type": "TXT",
+          "content": "v=spf1 include:spf.efwd.registrar-servers.com ~all",
+          "ttl": 1800
+        },
+        {
+          "owner": "_railway-verify",
+          "type": "TXT",
+          "content": "railway-verify=4bd65758ace73c2254f86bc6efc57c70fccc625413e725d71f006e000fea0566",
+          "ttl": 1800
+        }
+      ],
+      "providerOwnedTransformations": [
+        "authoritative NS replaced with ada/keenan.ns.cloudflare.com at TTL 86400",
+        "SOA replaced with ada.ns.cloudflare.com / dns.cloudflare.com, serial 2410102908",
+        "apex CNAME flattened to an A record at TTL 60",
+        "TTL countdown and answer order are not compared"
+      ]
+    },
+    "proxyState": {
+      "proxiedHosts": [],
+      "everyRecordDnsOnly": true,
+      "apexCloudflareResponseHeaders": 0,
+      "wwwCloudflareResponseHeaders": 0,
+      "evidence": "Neither frontend host returns cf-ray or cf-cache-status; both still serve server: railway-hikari with x-railway-edge: lax1, proving browser-to-Railway delivery is unchanged."
+    },
+    "serviceHealth": {
+      "backendHealth": 200,
+      "apex": 200,
+      "www": 200,
+      "mxResolvesIdentically": true,
+      "spfResolvesIdentically": true,
+      "railwayVerifyResolvesIdentically": true
+    },
+    "originContractUnchanged": {
+      "cache-control": "max-age=0, must-revalidate",
+      "cdn-cache-control": "no-store",
+      "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+      "cache-tag": "dinder-route-html",
+      "verifiedOn": ["dinder.it.com", "www.dinder.it.com"],
+      "verifiedWith": "scripts/check-production-edge.mjs verify (bootstrap state) exited 0"
+    },
+    "tls": {
+      "universalSsl": {
+        "hosts": "*.dinder.it.com, dinder.it.com",
+        "type": "Universal",
+        "status": "Active",
+        "expiresOn": "2026-10-19",
+        "backupIssued": true
+      },
+      "encryptionMode": "Full (strict)",
+      "encryptionModeEvidence": "SSL/TLS > Overview radio set to Full (Strict); mode details panel reports Full (strict).",
+      "cloudflareToOriginFullStrictProof": "Deferred to the first proxied request, which is an issue 151 gate. Railway origin certificates for both hostnames are valid, hostname-matching and serving on port 443."
+    },
+    "dnssec": {
+      "enabled": false,
+      "dsAtParent": [],
+      "disposition": "Matches the pre-cutover state. No DNSSEC existed, so none was restored. Re-enabling through Cloudflare is out of scope for this issue."
+    }
+  },
+
+  "rollback": {
+    "nameserverRollback": {
+      "reservedFor": "authoritative-DNS failure only",
+      "executed": false,
+      "reason": "Not executed. This ticket's evidence does not require an unnecessary live nameserver reversal, and record-level rollback is the normal path once hosts are proxied.",
+      "procedure": [
+        "Namecheap > Domain List > dinder.it.com > NAMESERVERS > select Namecheap BasicDNS (or Custom DNS with the recorded pair).",
+        "Restore dns1.registrar-servers.com and dns2.registrar-servers.com.",
+        "Parent delegation TTL is 300 seconds, so public resolvers converge in about five minutes.",
+        "No DNSSEC DS record exists at the parent, so no DS removal or TTL wait is required in either direction.",
+        "Namecheap BasicDNS retains the original zone; re-verify all 9 records against cloudflare/zone-manifest.json after reversal."
+      ]
+    },
+    "normalRollback": {
+      "applicableFrom": "issue 151 onward",
+      "method": "Gray-cloud the affected frontend host(s); Cloudflare remains authoritative and unrelated records are untouched."
+    }
+  },
+
+  "acceptanceCriteria": {
+    "priorStateAndRollbackRecorded": true,
+    "dnssecHandledInSafeOrder": true,
+    "zoneActiveAndNameserversObservedFromAllResolversAndTrace": true,
+    "knownRrsetsMatchManifestModuloProviderTransformations": true,
+    "everyRecordDnsOnlyAndServicesHealthy": true,
+    "universalSslActiveAndOriginCertificateValid": true,
+    "dnssecRestored": "not applicable - none existed before migration",
+    "nameserverRollbackReservedNotExercised": true
+  }
+}
