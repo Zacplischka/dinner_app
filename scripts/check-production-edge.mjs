@@ -212,15 +212,16 @@ function headerMap(headers) {
   return Object.fromEntries([...headers].map(([name, value]) => [name.toLowerCase(), value]));
 }
 
-async function request(url, { accept = 'text/html', cookie = null, expect = 200 } = {}) {
+async function request(url, { accept = 'text/html', cookie = null, expect = 200, method = 'GET' } = {}) {
   const headers = { accept };
   if (cookie) {
     headers.cookie = cookie;
   }
-  const response = await fetch(url, { headers, redirect: 'manual' });
-  const body = await response.text();
+  const response = await fetch(url, { method, headers, redirect: 'manual' });
+  // A HEAD response has no body, so its hash is never compared against a document.
+  const body = method === 'HEAD' ? '' : await response.text();
   if (response.status !== expect) {
-    throw new Error(`GET ${url} returned ${response.status}, expected ${expect}`);
+    throw new Error(`${method} ${url} returned ${response.status}, expected ${expect}`);
   }
   const map = headerMap(response.headers);
   return {
@@ -308,6 +309,22 @@ async function verifyHost(base, path, { proxied }) {
     }
   }
 
+  // HEAD carries the same document policy. The bracketing GETs are compared to each
+  // other, not to the run's opening document, so the assertion isolates HEAD's effect
+  // instead of straddling an edge revalidation boundary.
+  const beforeHead = await request(`${base}${path}`);
+  const head = await request(`${base}${path}`, { method: 'HEAD' });
+  assertDocumentHeaders(`${base}${path} (HEAD)`, head.headers, { proxied });
+  const afterHead = await request(`${base}${path}`);
+  assertSameDocument(`${base}${path} (GET after HEAD)`, afterHead.hash, beforeHead.hash);
+  // A missing cf-cache-status is a failure too: on a proxied host the header is
+  // always present, so its absence means the check lost sight of the edge.
+  if (proxied && (afterHead.cacheStatus == null || BYPASS_STATUSES.has(afterHead.cacheStatus))) {
+    throw new Error(
+      `${base}${path}: HEAD dropped the public document object (${afterHead.cacheStatus ?? '<missing>'})`
+    );
+  }
+
   const nonHtml = await request(`${base}${path}`, { accept: 'application/json' });
   assertNonHtmlBypass(`${base}${path} (non-HTML Accept)`, nonHtml.headers, { proxied });
 
@@ -328,9 +345,31 @@ async function verify(rollout, path) {
     await verifyHost(`https://${host}`, path, { proxied: false });
   }
   await verifyHost(DIRECT_ORIGIN, path, { proxied: false });
+  await verifyEdgeDocumentParity(rollout, path);
   console.log(
     'performance: NOT EVALUATED — the fixed-Melbourne gate is a release gate, not hosted CI.'
   );
+}
+
+// The edge must hand back the origin's bytes. Cloudflare will silently inject content
+// into HTML responses when features such as the RUM/Web Analytics beacon, Rocket Loader
+// or email obfuscation are on, so this compares the served document against the origin's
+// rather than trusting that those features stay off.
+async function verifyEdgeDocumentParity({ proxiedHosts }, path) {
+  if (proxiedHosts.length === 0) {
+    return;
+  }
+  const origin = await request(`${DIRECT_ORIGIN}${path}`);
+  for (const host of proxiedHosts) {
+    const edge = await request(`https://${host}${path}`);
+    if (edge.hash !== origin.hash) {
+      throw new Error(
+        `https://${host}${path}: edge document differs from the origin document ` +
+          `(${edge.body.length} vs ${origin.body.length} chars); Cloudflare is rewriting the HTML`
+      );
+    }
+  }
+  console.log(`edge document parity ok: ${proxiedHosts.join(', ')} match the origin byte for byte`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
