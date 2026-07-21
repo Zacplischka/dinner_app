@@ -13,6 +13,7 @@
     "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
     "build:backend": "npm run build --workspace=shared && npm run build --workspace=backend",
     "build:frontend": "npm run build --workspace=shared && npm run build --workspace=frontend",
+    "check:frontend-serving": "bash scripts/check-frontend-serving.sh",
     "start": "node backend/dist/server.js",
     "start:backend": "node backend/dist/server.js",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
