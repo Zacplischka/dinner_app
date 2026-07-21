@@ -109,10 +109,9 @@ export function median(values) {
   return sorted.length % 2 === 0 ? (sorted[midpoint - 1] + sorted[midpoint]) / 2 : sorted[midpoint];
 }
 
-export function nearestRank(values, percentile = 0.95) {
-  if (!(percentile > 0 && percentile <= 1)) throw new Error('percentile must be in (0, 1]');
+export function nearestRank(values) {
   const sorted = finiteValues(values, 'nearest-rank percentile');
-  return sorted[Math.ceil(percentile * sorted.length) - 1];
+  return sorted[Math.ceil(0.95 * sorted.length) - 1];
 }
 
 export function documentTtfbMs({ requestStart, responseStart }) {
@@ -151,6 +150,22 @@ function cfPop(cfRay) {
 }
 
 // fallow-ignore-next-line complexity
+function exactHttpsOrigin(value) {
+  const target = new URL(value);
+  if (
+    target.protocol !== 'https:' ||
+    target.username ||
+    target.password ||
+    target.pathname !== '/' ||
+    target.search ||
+    target.hash
+  ) {
+    throw new Error();
+  }
+  return target.origin;
+}
+
+// fallow-ignore-next-line complexity
 export function resolveConfig(options, env = {}) {
   const config = {
     mode: options.mode,
@@ -168,11 +183,10 @@ export function resolveConfig(options, env = {}) {
   }
   let target;
   try {
+    config.baseUrl = exactHttpsOrigin(config.baseUrl);
     target = new URL(config.baseUrl);
-    if (!['http:', 'https:'].includes(target.protocol)) throw new Error();
-    config.baseUrl = target.href.replace(/\/$/, '');
   } catch {
-    errors.push('--base-url must be an absolute HTTP(S) URL');
+    errors.push('--base-url must be an absolute HTTPS origin');
   }
   if (target && config.mode === 'baseline' && !target.hostname.endsWith('.up.railway.app')) {
     errors.push('baseline evidence must target the direct Railway frontend');
@@ -201,7 +215,22 @@ export function resolveConfig(options, env = {}) {
 }
 
 // fallow-ignore-next-line complexity
-function validateRecordedSample(sample, route, phase, index) {
+function validateSampleUrl(value, expectedOrigin, route, prefix, label) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return `${prefix} ${label} must use HTTPS`;
+    if (url.origin !== expectedOrigin) {
+      return `${prefix} ${label} origin ${url.origin} does not match ${expectedOrigin}`;
+    }
+    if (url.pathname !== route) return `${prefix} ${label} ended at ${url.pathname}`;
+  } catch {
+    return `${prefix} has invalid ${label} ${value}`;
+  }
+  return null;
+}
+
+// fallow-ignore-next-line complexity
+function validateRecordedSample(sample, route, phase, index, expectedOrigin) {
   const errors = [];
   const prefix = `${route} ${phase} sample ${index}`;
 
@@ -231,16 +260,12 @@ function validateRecordedSample(sample, route, phase, index) {
   if (sample.viewport?.width !== VIEWPORT.width || sample.viewport?.height !== VIEWPORT.height) {
     errors.push(`${prefix} has the wrong viewport`);
   }
-  try {
-    if (new URL(sample.url).pathname !== route) errors.push(`${prefix} ended at ${sample.url}`);
-  } catch {
-    errors.push(`${prefix} has invalid URL ${sample.url}`);
-  }
-  try {
-    if (new URL(sample.pageUrl).pathname !== route)
-      errors.push(`${prefix} rendered at ${sample.pageUrl}`);
-  } catch {
-    errors.push(`${prefix} has invalid page URL ${sample.pageUrl}`);
+  for (const [value, label] of [
+    [sample.url, 'response URL'],
+    [sample.pageUrl, 'final page URL'],
+  ]) {
+    const error = validateSampleUrl(value, expectedOrigin, route, prefix, label);
+    if (error) errors.push(error);
   }
   for (const field of ['etag', 'cacheControl', 'cfCacheStatus', 'age', 'cfRay']) {
     if (sample[field] !== null && typeof sample[field] !== 'string') {
@@ -252,9 +277,16 @@ function validateRecordedSample(sample, route, phase, index) {
 }
 
 // fallow-ignore-next-line complexity
-export function validateRouteBatch(batch, mode) {
+export function validateRouteBatch(batch, mode, expectedBaseUrl) {
   const errors = [];
   const { route, prime, cold, warm } = batch;
+  let expectedOrigin;
+
+  try {
+    expectedOrigin = exactHttpsOrigin(expectedBaseUrl);
+  } catch {
+    errors.push(`${route} expected base URL must be an absolute HTTPS origin`);
+  }
 
   if (!ROUTES.includes(route)) errors.push(`unknown route ${route}`);
   if (!Array.isArray(cold) || cold.length !== SAMPLE_COUNT) {
@@ -268,12 +300,14 @@ export function validateRouteBatch(batch, mode) {
   if (mode === 'post-cutover' && !prime)
     errors.push(`${route} post-cutover batch requires one excluded prime`);
 
-  if (prime) errors.push(...validateRecordedSample(prime, route, 'prime', 1));
-  for (const [index, sample] of (cold ?? []).entries()) {
-    errors.push(...validateRecordedSample(sample, route, 'cold', index + 1));
-  }
-  for (const [index, sample] of (warm ?? []).entries()) {
-    errors.push(...validateRecordedSample(sample, route, 'warm', index + 1));
+  if (expectedOrigin) {
+    if (prime) errors.push(...validateRecordedSample(prime, route, 'prime', 1, expectedOrigin));
+    for (const [index, sample] of (cold ?? []).entries()) {
+      errors.push(...validateRecordedSample(sample, route, 'cold', index + 1, expectedOrigin));
+    }
+    for (const [index, sample] of (warm ?? []).entries()) {
+      errors.push(...validateRecordedSample(sample, route, 'warm', index + 1, expectedOrigin));
+    }
   }
 
   if (mode === 'post-cutover' && prime) {
@@ -292,6 +326,10 @@ export function validateRouteBatch(batch, mode) {
       } else if (sample.phase === 'cold' && status !== 'HIT') {
         errors.push(
           `${route} cold sample ${sample.sample} must be HIT, got ${status ?? 'missing'}`
+        );
+      } else if (sample.phase === 'warm' && !['HIT', 'REVALIDATED'].includes(status)) {
+        errors.push(
+          `${route} warm sample ${sample.sample} must be HIT or REVALIDATED, got ${status ?? 'missing'}`
         );
       }
       const samplePop = cfPop(sample.cfRay);
@@ -355,7 +393,7 @@ export function validateComparableBaseline(baseline, runner) {
 }
 
 // fallow-ignore-next-line complexity
-export function validateArtifactShape(artifact) {
+export function validateArtifactShape(artifact, baseline = null) {
   const errors = [];
   if (artifact.schemaVersion !== 1) errors.push('unsupported artifact schemaVersion');
   if (artifact.kind !== 'dinder-route-performance-evidence')
@@ -367,15 +405,25 @@ export function validateArtifactShape(artifact) {
   if (!Array.isArray(artifact.routes) || artifact.routes.length !== ROUTES.length) {
     errors.push(`artifact must contain exactly ${ROUTES.length} route batches`);
   }
+  if (artifact.mode === 'post-cutover') {
+    if (!baseline) {
+      errors.push('post-cutover artifact validation requires its baseline artifact');
+    } else {
+      errors.push(...validateArtifactShape(baseline).map((error) => `baseline: ${error}`));
+      if (baseline.mode !== 'baseline' || baseline.result !== 'PASS') {
+        errors.push('post-cutover comparison must reference a passing baseline');
+      }
+      if (JSON.stringify(artifact.baseline?.target) !== JSON.stringify(baseline.target)) {
+        errors.push('post-cutover artifact references a different baseline target');
+      }
+    }
+  }
   for (const [index, batch] of (artifact.routes ?? []).entries()) {
     if (batch.route !== ROUTES[index])
       errors.push(`route batch ${index + 1} is not ${ROUTES[index]}`);
     for (const sample of [batch.prime, ...(batch.cold ?? []), ...(batch.warm ?? [])].filter(
       Boolean
     )) {
-      for (const field of SAMPLE_FIELDS) {
-        if (!Object.hasOwn(sample, field)) errors.push(`${batch.route} sample is missing ${field}`);
-      }
       if (sample.browserVersion !== artifact.runner?.browserVersion) {
         errors.push(`${batch.route} sample browser version differs from the runner`);
       }
@@ -395,9 +443,19 @@ export function validateArtifactShape(artifact) {
         errors.push(`${batch.route} sample client-state seed differs from the artifact`);
       }
     }
-    if (batch.statistics) {
+    let calculated;
+    if (!batch.statistics || typeof batch.statistics !== 'object') {
+      errors.push(`${batch.route} must contain statistics`);
+    } else {
+      const statisticKeys = Object.keys(batch.statistics);
+      if (
+        statisticKeys.length !== STATISTIC_NAMES.length ||
+        STATISTIC_NAMES.some((name) => !Object.hasOwn(batch.statistics, name))
+      ) {
+        errors.push(`${batch.route} statistics must contain exactly the four named values`);
+      }
       try {
-        const calculated = summarizeSamples(batch.cold, batch.warm);
+        calculated = summarizeSamples(batch.cold, batch.warm);
         for (const name of STATISTIC_NAMES) {
           if (batch.statistics[name] !== calculated[name]) {
             errors.push(`${batch.route} ${name} does not match its raw samples`);
@@ -407,9 +465,22 @@ export function validateArtifactShape(artifact) {
         errors.push(`${batch.route} statistics cannot be reproduced: ${error.message}`);
       }
     }
-    const batchFailed =
-      validateRouteBatch(batch, artifact.mode).length > 0 ||
-      (batch.checks ?? []).some(({ pass }) => !pass);
+    if (!Array.isArray(batch.checks)) {
+      errors.push(`${batch.route} must contain checks`);
+    } else if (artifact.mode === 'baseline') {
+      if (batch.checks.length !== 0) errors.push(`${batch.route} baseline checks must be empty`);
+    } else if (calculated && baseline) {
+      const baselineRoute = baseline.routes?.find(({ route }) => route === batch.route);
+      const expectedChecks = baselineRoute
+        ? evaluatePostCutover(calculated, baselineRoute.statistics)
+        : null;
+      if (!expectedChecks || JSON.stringify(batch.checks) !== JSON.stringify(expectedChecks)) {
+        errors.push(`${batch.route} post-cutover checks do not match raw statistics and baseline`);
+      }
+    }
+    const routeErrors = validateRouteBatch(batch, artifact.mode, artifact.target?.baseUrl);
+    const batchFailed = routeErrors.length > 0 || (batch.checks ?? []).some(({ pass }) => !pass);
+    errors.push(...routeErrors);
     if (batch.result !== (batchFailed ? 'FAIL' : 'PASS')) {
       errors.push(`${batch.route} result does not match its samples and checks`);
     }
@@ -421,8 +492,8 @@ export function validateArtifactShape(artifact) {
   return errors;
 }
 
-export function serializeArtifact(artifact) {
-  const errors = validateArtifactShape(artifact);
+export function serializeArtifact(artifact, baseline = null) {
+  const errors = validateArtifactShape(artifact, baseline);
   if (errors.length > 0) throw new Error(errors.join('\n'));
   return `${JSON.stringify(artifact, null, 2)}\n`;
 }

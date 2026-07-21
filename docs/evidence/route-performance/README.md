@@ -2,7 +2,7 @@
 
 `frontend/scripts/benchmark-pages.mjs` is the single measurement path for issue #147. It always runs the existing nine routes in Playwright Chromium at 1280x720 with no throttling and records exactly 30 new-context cold samples plus 30 reloads per route.
 
-The direct-Railway baseline has no excluded prime. A post-cutover run requires one fresh-context `MISS` prime per route, excludes it from statistics, and then requires every recorded response to be a same-POP `HIT`. Any post-prime `MISS`, `BYPASS`, `DYNAMIC`, `UPDATING`, other non-`HIT` status, or POP change fails the route batch without dropping samples.
+The direct-Railway baseline has no excluded prime. A post-cutover run requires one fresh-context `MISS` prime per route and excludes it from statistics. Every recorded cold response must then be `HIT`; every warm response must be `HIT` or `REVALIDATED`; and the prime, cold, and warm responses must all come from the same POP. Any other cache status or POP change fails the route batch without dropping samples.
 
 Run from the repository root after proving that the supplied deployment belongs to the supplied commit:
 

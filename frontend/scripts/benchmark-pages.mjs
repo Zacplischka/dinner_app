@@ -231,7 +231,6 @@ async function loadBaseline(path, runner) {
   const errors = [
     ...validateArtifactShape(baseline),
     ...validateComparableBaseline(baseline, runner),
-    ...(baseline.routes ?? []).flatMap((batch) => validateRouteBatch(batch, 'baseline')),
   ];
   if (errors.length > 0) throw new Error(`Invalid baseline:\n${errors.join('\n')}`);
   return baseline;
@@ -273,7 +272,7 @@ async function run(config) {
 
     for (const route of ROUTES) {
       const measured = await measureRoute(browser, runner.browserVersion, route, config);
-      const reasons = validateRouteBatch(measured, config.mode);
+      const reasons = validateRouteBatch(measured, config.mode, config.baseUrl);
       let statistics = null;
       let checks = [];
       try {
@@ -303,7 +302,7 @@ async function run(config) {
       logRoute(batch);
     }
 
-    return {
+    const artifact = {
       schemaVersion: 1,
       kind: 'dinder-route-performance-evidence',
       mode: config.mode,
@@ -340,6 +339,7 @@ async function run(config) {
             },
       routes: batches,
     };
+    return { artifact, baseline };
   } finally {
     await browser.close();
   }
@@ -348,10 +348,10 @@ async function run(config) {
 async function main() {
   try {
     const config = cliConfig();
-    const artifact = await run(config);
+    const { artifact, baseline } = await run(config);
     const output = resolve(config.output);
     await mkdir(dirname(output), { recursive: true });
-    await writeFile(output, serializeArtifact(artifact), 'utf8');
+    await writeFile(output, serializeArtifact(artifact, baseline), 'utf8');
     console.log(`Evidence: ${output}`);
     if (artifact.result !== 'PASS') process.exitCode = 1;
   } catch (error) {
