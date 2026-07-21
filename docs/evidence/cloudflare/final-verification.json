@@ -1,0 +1,837 @@
+{
+  "schemaVersion": 1,
+  "issue": 153,
+  "capturedAt": "2026-07-21T13:20:00Z",
+  "status": "complete",
+  "result": "PASS",
+  "credentialsExposed": false,
+  "summary": "Independent read-only verification of the completed CDN rollout (parent #145, children #146-#152). Every claim was re-derived from primary sources - the repository at HEAD eedca4c, the live Cloudflare edge and Railway origin from Melbourne, public DNS resolvers, the GitHub Actions API, the Railway API, and the raw benchmark samples - without relying on the implementer summary. All nine routes were recomputed from raw data and matched the committed statistics exactly: 72/72 threshold and baseline checks pass with zero numeric discrepancies. Three items are recorded as requires-operator-confirmation because they exist only in the Cloudflare dashboard; each is corroborated by observable behaviour where corroboration is possible. Two apparent defects were investigated and resolved as verifier-side artefacts, not rollout defects, and are documented in full. Result: PASS.",
+  "verifierIndependence": {
+    "method": "Every finding below carries the primary source it was derived from. Where an existing artifact asserts a value, the value was recomputed or re-observed rather than copied. Existing evidence files were read only after the underlying data had been measured, so the recomputation could not be anchored on the claim.",
+    "liveObservationHost": "Melbourne, Australia; edge POP MEL",
+    "productionChangesMadeByVerifier": "none",
+    "workflowDispatchTriggeredByVerifier": false,
+    "commandsUsed": [
+      "dig @1.1.1.1 / @8.8.8.8 / @9.9.9.9 for NS, A, CNAME, MX, TXT, DS; dig +trace for the parent delegation",
+      "curl with a browser Accept header against dinder.it.com, www.dinder.it.com and frontend-production-bdfc.up.railway.app",
+      "openssl s_client -servername on both frontend hosts and the direct Railway origin",
+      "a 170-second 5-second-interval poll of both edge documents and one fingerprinted asset (99 samples)",
+      "gh api for environment variables, environment and repository secret metadata, workflow runs, job steps and raw job logs",
+      "railway status --json; railway variables --kv piped through sed to strip values before display",
+      "node recomputation of every route statistic directly from the raw sample arrays",
+      "npm run check:cloudflare-staging and npm run check:production-edge (offline validators)"
+    ],
+    "credentialHandling": "No credential value was requested, read, printed or stored. Railway variable output was reduced to names before display. GitHub secret metadata was read as name/created_at/updated_at only."
+  },
+  "midRunProductionChangeByOrchestrator": {
+    "at": "~2026-07-21T13:0xZ",
+    "change": "Zone SSL/TLS setting moved from \"Automatic SSL/TLS\" to an explicitly pinned Full (Strict). The encryption mode VALUE did not change; only its pinning did.",
+    "madeBy": "orchestrator, not the verifier",
+    "effectOnThisVerification": "None material. The edge certificate observed before the change (Google Trust Services WE1, SAN dinder.it.com + *.dinder.it.com, notAfter 2026-10-19T09:18:35Z) is the same certificate observed after it, both frontend hosts returned HTTP 200 rather than 526 throughout, and no cache, header or DNS observation changed across the boundary. Recorded here so the artifact reflects the real timeline rather than an implied static one."
+  },
+  "criterion1_primarySourceInspection": {
+    "acceptanceCriterion": "The verifier inspects actual source changes, resolved serving configuration, relevant Railway state, filtered variables, Cloudflare exports, DNS answers, purge audit entries, workflow logs, raw browser artifacts, and rollback evidence.",
+    "result": "PASS",
+    "sourceChanges": {
+      "primarySource": "git log/diff over ab63718..eedca4c in this working tree",
+      "finding": "Six rollout commits: 8af790e (Caddyfile SPA cache policy + scripts/check-frontend-serving.sh), 893ecd2 (benchmark core/tests + baseline artifact), d4da065 (cloudflare/ manifests, staging validator, CDN-Cache-Control: no-store), d174978 (phase-aware ci-cd.yml + scripts/check-production-edge.mjs + unit tests), 224d295 (HEAD eligibility and edge document parity gates), 2a7c85a / e997fce / eedca4c (evidence artifacts). No application source under frontend/src or shared/ changed at any point in the rollout, so the delivery change is isolated from product behaviour.",
+      "workingTreeIntegrity": "git status --porcelain over Caddyfile, cloudflare/, scripts/, .github/, docs/evidence/ and frontend/scripts/ is empty: the files inspected are exactly the committed ones, with no local modification."
+    },
+    "resolvedServingConfiguration": {
+      "primarySource": "the root Caddyfile at HEAD, cross-checked against live origin response headers",
+      "finding": "The repo-owned Caddyfile is demonstrably the deployed configuration. It preserves the Railpack defaults (admin off, persist_config off, trusted_proxies for Railway private ranges + 100.0.0.0/8, JSON request logging, /health, nosniff, -Server, gzip+zstd, /app/frontend/dist root, hidden .git and .env*, try_files SPA fallback) and adds only the cache policy. Every header it declares was observed live on the direct Railway origin: Cache-Control: max-age=0, must-revalidate; CDN-Cache-Control: no-store; Cloudflare-CDN-Cache-Control: public, max-age=60, must-revalidate; Cache-Tag: dinder-route-html on documents, and public, max-age=31536000, immutable with no Cache-Tag on /assets/index-B54mdXn3.css. X-Content-Type-Options: nosniff is present and no Caddy Server header is emitted.",
+      "documentMatcherNote": "The @document matcher requires Accept to contain text/html, so a default curl (Accept: */*) deliberately receives no document policy. All document checks in this artifact used a browser Accept header."
+    },
+    "railwayState": {
+      "primarySource": "railway status --json against project Dinner-App (91eccbe4-5e17-44e7-ac56-5585831fa581), environment production",
+      "finding": "frontend service: region us-west2, numReplicas 1, Railpack 0.31.1, deployment 39d2ead8-7c26-4d1e-882d-22f347d7b1a5 for commit eedca4c, instance RUNNING. Custom domains on the frontend service are exactly www.dinder.it.com and dinder.it.com (targetPort 8080) plus the service domain frontend-production-bdfc.up.railway.app. backend service: us-west2, 1 replica, deployment 48e3938a for eedca4c, RUNNING, no custom domain. Region, replica count and architecture are unchanged, which the parent spec places out of scope.",
+      "deploymentProvenanceForTheReleaseGate": "The benchmark artifact names deployment 69ad69b1-863a-4a18-85e1-4f473d52e03b for commit e997fce. The GitHub commit status API for e997fce returns Dinner-App - frontend = success with target_url containing id=69ad69b1-863a-4a18-85e1-4f473d52e03b on service f17f016d, so the deployment id genuinely belongs to that commit. Independently confirmed, not asserted."
+    },
+    "filteredVariables": {
+      "primarySource": "railway variables --service frontend --environment production --kv, reduced to names before display",
+      "finding": "The frontend service exposes RAILPACK_SPA_OUTPUT_DIR (the required SPA output variable) and no cache, CDN, Cloudflare or Caddy variable of any kind. The remaining names are Railway-injected RAILWAY_* values and the four VITE_* build values. This matches the parent spec expectation that the origin cache contract lives in the repo Caddyfile and not in a platform variable."
+    },
+    "cloudflareExports": {
+      "primarySource": "cloudflare/zone-manifest.json, docs/evidence/cloudflare/namecheap-zone-export-2026-07-21.json",
+      "finding": "The pre-cutover registrar export records 9 user-managed records. Both cloudflare/zone-manifest.json and docs/evidence/cloudflare/authoritative-dns-cutover.json record its sha256 as 28937cd97a2baed548a5c271ec2754658f6b59f60d3c213d7696be89603c289b; shasum -a 256 of the committed file returns exactly that value, so the export referenced by the rollback procedure is the file actually in the repository and has not drifted."
+    },
+    "dnsAnswers": {
+      "seeCriterion": 2
+    },
+    "purgeAuditEntries": {
+      "primarySource": "raw Verify Production Deploy job logs for runs 29824374248 (attempts 1 and 2), 29828997923, 29829351522, 29830476606 and 29831854423",
+      "finding": "Five successful purges are recorded, each logged as \"purged cache tag dinder-route-html (zone bc54c32e14cdce6912e2d505bc0a86f4)\", and one deliberate failure. The zone id in every log line matches the non-secret CLOUDFLARE_ZONE_ID environment variable read live. The purge body is fixed at {\"tags\":[\"dinder-route-html\"]} in the workflow, so no wider purge shape is reachable from automation.",
+      "limitation": "The Cloudflare-side audit log is dashboard-only and was not read. It is not required: the workflow validates the API response (success===true) before printing, and the purge effect was independently observed (see criterion 3, tag scope)."
+    },
+    "workflowLogs": {
+      "seeCriterion": 3
+    },
+    "rawBrowserArtifacts": {
+      "seeCriterion": 4
+    },
+    "rollbackEvidence": {
+      "seeCriterion": 5
+    }
+  },
+  "criterion2_proxyScopeAndUnrelatedDnsRecords": {
+    "acceptanceCriterion": "The verifier proves only the intended frontend hosts are proxied and every unrelated record remains DNS-only with preserved user-managed RRsets.",
+    "result": "PASS",
+    "primarySource": "dig against 1.1.1.1, 8.8.8.8 and 9.9.9.9, plus dig +trace from the root through it.com",
+    "delegation": {
+      "parentAnswer": ["ada.ns.cloudflare.com", "keenan.ns.cloudflare.com"],
+      "parentDelegationTtlSeconds": 300,
+      "zoneApexNsTtlSeconds": 86400,
+      "respondingAuthority": "keenan.ns.cloudflare.com",
+      "note": "The it.com nameservers return the Cloudflare delegation directly, so Cloudflare authority is proven from the parent rather than from a recursive cache. The observed parent TTL of 300 s matches the value the nameserver-rollback procedure relies on."
+    },
+    "proxiedHosts": {
+      "dinder.it.com": {
+        "resolvers": {
+          "1.1.1.1": ["104.21.1.184", "172.67.129.188"],
+          "8.8.8.8": ["104.21.1.184", "172.67.129.188"],
+          "9.9.9.9": ["104.21.1.184", "172.67.129.188"]
+        },
+        "proxied": true,
+        "evidence": "Cloudflare anycast space from all three resolvers; live responses carry server: cloudflare, cf-ray ...-MEL and cf-cache-status."
+      },
+      "www.dinder.it.com": {
+        "resolvers": {
+          "1.1.1.1": ["104.21.1.184", "172.67.129.188"],
+          "8.8.8.8": ["104.21.1.184", "172.67.129.188"],
+          "9.9.9.9": ["104.21.1.184", "172.67.129.188"]
+        },
+        "proxied": true,
+        "evidence": "Identical anycast pair to the apex; live responses carry server: cloudflare, cf-ray ...-MEL and cf-cache-status."
+      }
+    },
+    "dnsOnlyRecordsObservedLive": {
+      "count": 7,
+      "MX": [
+        "10 eforward1.registrar-servers.com.",
+        "10 eforward2.registrar-servers.com.",
+        "10 eforward3.registrar-servers.com.",
+        "15 eforward4.registrar-servers.com.",
+        "20 eforward5.registrar-servers.com."
+      ],
+      "TXT dinder.it.com": "v=spf1 include:spf.efwd.registrar-servers.com ~all",
+      "TXT _railway-verify.dinder.it.com": "railway-verify=4bd65758ace73c2254f86bc6efc57c70fccc625413e725d71f006e000fea0566",
+      "finding": "All 7 unrelated records resolve identically from all three resolvers and byte-for-byte match the pre-cutover Namecheap export, including MX priorities 10/10/10/15/20. MX and TXT are not proxy-eligible record types, so resolving to their true targets is exactly what DNS-only looks like. 2 proxied + 7 DNS-only = the 9 records in the manifest."
+    },
+    "dnssec": {
+      "dsAtParent": [],
+      "finding": "No DS record exists at the parent. The it.com NSEC record for dinder.it.com lists type bitmap \"NS RRSIG NSEC\" with no DS, which is a signed proof of non-existence rather than an empty answer. This matches the recorded pre-cutover state (DNSSEC off) and confirms the rollback procedure claim that no DS removal or TTL wait is required in either direction."
+    },
+    "negativeSweep": {
+      "namesQueried": ["api", "backend", "app", "supabase", "mail", "ftp", "cdn", "staging"],
+      "result": "NXDOMAIN for all 8",
+      "note": "No additional proxied hostname was found. Backend and Supabase are not in this zone at all - the backend is reached at backend-production-4ce9.up.railway.app and Supabase at hcjuqvicwuszwqkreklc.supabase.co - so they are structurally outside the proxy scope."
+    },
+    "limitation": "The Cloudflare zone record list cannot be enumerated without a Cloudflare API credential, which is deliberately CI-only. Proof here is DNS-side: all 9 manifest records were observed live and a negative sweep found no unexpected hostname. A record whose name was neither in the manifest nor in the sweep could not be excluded by this method.",
+    "unrelatedServiceHealth": {
+      "backend": "{\"status\":\"healthy\",\"redis\":true} from https://backend-production-4ce9.up.railway.app/health",
+      "supabaseRest": "401 from the REST root, the expected unauthenticated response, proving reachability"
+    }
+  },
+  "criterion3_contractChecks": {
+    "acceptanceCriterion": "The verifier independently checks document, asset, missing-asset, health, cache-key, 60-second no-stale, Tiered-Cache-Off, purge, credential-scope, and deployment-order contracts.",
+    "result": "PASS",
+    "document": {
+      "result": "PASS",
+      "primarySource": "live curl with a browser Accept header on both edge hosts and the direct Railway origin",
+      "atOrigin": {
+        "cache-control": "max-age=0, must-revalidate",
+        "cdn-cache-control": "no-store",
+        "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+        "cache-tag": "dinder-route-html",
+        "server": "railway-hikari"
+      },
+      "atEdgeBothHosts": {
+        "cache-control": "max-age=0, must-revalidate",
+        "cdn-cache-control": "no-store",
+        "cloudflare-cdn-cache-control": "absent (consumed by Cloudflare)",
+        "cache-tag": "absent (consumed by Cloudflare)",
+        "cf-cache-status": "present"
+      },
+      "noStaleDirectives": "Neither stale-while-revalidate nor stale-if-error appears in any observed policy, as the parent spec requires.",
+      "deepRouteFallback": "A deep SPA route (/session/ABCDE/results) returns the same document policy and the same body, so edge caching is not limited to the home route.",
+      "edgeDocumentParity": "sha256 of the served document is 14c678ebcc0cb3287f487e16d86a5a96f25ccd0ffeb0344d57d65552bb7dc6a3 on dinder.it.com, www.dinder.it.com and frontend-production-bdfc.up.railway.app - byte-for-byte identical. This independently confirms that the RUM beacon injection found during the apex canary is still disabled and that Cloudflare is not rewriting HTML.",
+      "headParity": "HEAD returns the same document policy on both edge hosts and is served from the cached object (cf-cache-status HIT), so HEAD neither bypasses nor poisons the public document."
+    },
+    "asset": {
+      "result": "PASS",
+      "fingerprinted": {
+        "example": "/assets/index-B54mdXn3.css",
+        "cache-control": "public, max-age=31536000, immutable",
+        "cache-tag": "absent",
+        "cf-cache-status": "HIT on both hosts"
+      },
+      "nonFingerprinted": {
+        "example": "/favicon.png",
+        "cache-control": "absent - the origin default validators (ETag \"dk49ha7uowsg17of\" and Last-Modified) are preserved unchanged",
+        "cf-cache-status": "BYPASS",
+        "note": "Confirms the parent decision that non-fingerprinted public assets keep their existing validator/default behaviour and are not given the immutable policy."
+      }
+    },
+    "missingAsset": {
+      "result": "PASS",
+      "primarySource": "live GET /assets/missing-ABCDEFGH.js",
+      "atOrigin": "HTTP 404, no Cache-Control, no CDN-Cache-Control, no Cloudflare-CDN-Cache-Control, no Cache-Tag - a missing real asset never receives the document policy.",
+      "atEdge": "HTTP 404, cf-cache-status MISS, and Cloudflare supplies its own zone-default browser policy cache-control: max-age=14400.",
+      "observation": "The 14400 s browser TTL on the edge 404 is the Cloudflare Free zone-default Browser Cache TTL applied because the origin sends no Cache-Control on that response. It is outside the HTML Cache Rule (the request carries Accept: */*), it is not a behaviour this rollout introduced, and no parent or child acceptance criterion asserts otherwise. Recorded as an observation, not a gate failure. Practical risk is nil because fingerprinted asset names are content-addressed, so a name that 404s can never later become valid."
+    },
+    "health": {
+      "result": "PASS",
+      "primarySource": "live GET /health on both edge hosts and the origin",
+      "finding": "HTTP 200 on all three. No document cache policy and no Cache-Tag are emitted. At the edge cf-cache-status is DYNAMIC with Accept: */* (outside the rule) and BYPASS with a browser Accept header (inside the rule, but the origin declares no Cloudflare directive). The health endpoint is never cached under either shape. Backend health separately returns {\"status\":\"healthy\",\"redis\":true}."
+    },
+    "cacheKey": {
+      "result": "PASS",
+      "primarySource": "live requests with identity cookies and identity query strings, plus per-host and per-path probes issued in the same instant",
+      "queryStringIgnored": "Plain, ?invite=ABCDE, ?code=representative-auth-code and ?utm_source=verify&utm_medium=ci all return body hash 14c678eb... and are served HIT from the one shared object with the same Age. The query string is excluded from the document identity while the browser retains the full visible URL.",
+      "identityIndependent": "Cookie sb-access-token=representative-value and cookie dinder-session=ABCDE both return the same body hash and are served HIT from the same object. Authentication and Session cookies neither bypass nor fragment the public document.",
+      "schemeHostPathRetained": "Issued simultaneously, https://dinder.it.com/verify153-a, https://www.dinder.it.com/verify153-a and https://dinder.it.com/verify153-b each returned MISS and then each independently returned HIT, proving host and path are retained in the key and only the query dimension was removed.",
+      "failClosedWhenOriginDirectiveAbsent": "GET /favicon.png and GET /health with a browser Accept header match the Cache Rule expression (host, method, Accept) but carry no origin Cloudflare-CDN-Cache-Control. Both return cf-cache-status: BYPASS rather than an invented lifetime. This is direct live proof of the required bypass-when-absent Edge TTL mode and of the CDN-Cache-Control: no-store fail-closed layer.",
+      "nonHtmlAcceptIneligible": "GET / with Accept: application/json returns HTTP 200 with cf-cache-status DYNAMIC and neither cloudflare-cdn-cache-control nor cache-tag: a client that does not accept HTML can never enter the public document cache."
+    },
+    "sixtySecondNoStale": {
+      "result": "PASS",
+      "primarySource": "a verifier-run 170-second poll at 5-second intervals against both edge documents and one fingerprinted asset from Melbourne (33 samples per target, 99 total), 12:59:11Z to 13:01:58Z",
+      "observed": {
+        "dinder.it.com": "Age climbed 47 -> 57, then REVALIDATED with Age reset, then 5 -> 58, then REVALIDATED, then 5 -> 58, then REVALIDATED. Three complete expiry cycles.",
+        "www.dinder.it.com": "Age climbed 45 -> 55, then REVALIDATED, then 5 -> 57, then REVALIDATED, then 5 -> 57, then REVALIDATED. Three complete expiry cycles.",
+        "maxAgeObservedSeconds": 58,
+        "cacheStatusesObserved": ["HIT", "REVALIDATED"],
+        "staleObserved": false,
+        "updatingObserved": false,
+        "popsObserved": ["MEL"],
+        "bodyHashConstant": true
+      },
+      "conclusions": [
+        "The shared edge lifetime is the origin-directed 60 seconds. Age never reached 60 on either host across six independent expiry cycles, so the Free-plan two-hour Edge TTL override is demonstrably not in use.",
+        "Expiry produced REVALIDATED with a reset Age, never STALE and never UPDATING, so stale delivery is not occurring and stale-while-updating is not in effect.",
+        "Every one of the 99 samples came from POP MEL, so no cross-POP averaging is involved.",
+        "Cloudflare private directives were stripped on every single sample: no cloudflare-cdn-cache-control and no cache-tag ever reached the client."
+      ]
+    },
+    "tieredCacheOff": {
+      "result": "requires-operator-confirmation",
+      "setting": "Cloudflare dashboard: Caching > Tiered Cache > Argo Tiered Cache topology",
+      "expectedValue": "Off (and Smart Tiered Cache Topology unselected)",
+      "whyNotIndependentlyVerifiable": "Tiered Cache state is not exposed in any response header and cannot be falsified from outside without dashboard or API access. The 99-sample single-POP observation is consistent with it being off but does not prove it, so it is not claimed as PASS on inference.",
+      "operatorConfirmationReceived": "Off (topology toggle off, Smart Tiered Cache unselected and disabled)"
+    },
+    "purge": {
+      "result": "PASS",
+      "primarySource": "raw job logs plus a verifier-observed cache-object age",
+      "purgeDrivenMiss": "Five runs each logged a successful tag purge immediately followed by \"edge lifecycle ok on <host>: MISS -> HIT -> HIT at POP <pop>, asset still HIT\" - at POP ORD (29829351522), SJC (29830476606), IAD (29831854423), LAX (29828997923, apex only) and ORD (29824374248 attempt 2). The MISS is asserted on a per-commit /__deploy-check/<sha> path that nothing else warms, so the purge is the only possible cause.",
+      "tagScopeProvenIndependently": "At 13:01:58Z the verifier observed /assets/index-B54mdXn3.css served HIT at POP MEL with Age 8310 s, i.e. cached since about 10:43Z. That single edge object therefore survived the global tag purges at 12:17:48Z, 12:34:18Z and 12:53:37Z. The HTML cache tag evicts documents only; immutable fingerprinted assets are not evicted. This is derived from a live Age value, not copied from any artifact.",
+      "failClosed": "Run 29824374248 attempt 1: the purge step failed with \"FAIL: cache purge failed: HTTP 401 (000 means transport error)\" and the GitHub API shows the two dependent steps (\"Verify frontend cache and route contracts\", \"Smoke test session create\") as skipped and the job conclusion as failure. The pipeline genuinely fails closed on a purge error. scripts/check-production-edge.mjs assertPurgeResponse additionally rejects non-2xx, unparseable JSON and success !== true.",
+      "retryPath": "Attempt 2 of the same run re-ran the identical idempotent purge and passed all 10 steps, confirming that GitHub \"Re-run failed jobs\" is a safe retry.",
+      "soleOwner": "The purge exists only in .github/workflows/ci-cd.yml. No Worker, SDK, Terraform provider, third-party action or separate service was introduced anywhere in the diff."
+    },
+    "credentialScope": {
+      "result": "PASS for everything observable outside Cloudflare; the Cloudflare-side token scope is requires-operator-confirmation",
+      "primarySource": "GitHub environment/repository secret and variable APIs",
+      "finding": [
+        "CLOUDFLARE_CACHE_PURGE_TOKEN exists only as an environment secret in \"Dinner-App / production\" (created 2026-07-21T06:47:16Z, updated 2026-07-21T11:27:54Z). It is not a repository secret and is not present in any other environment.",
+        "CLOUDFLARE_ZONE_ID is a non-secret environment variable with value bc54c32e14cdce6912e2d505bc0a86f4, matching the zone id echoed by every successful purge response.",
+        "The workflow injects the token into the purge step alone; every log line shows the masked form (CLOUDFLARE_CACHE_PURGE_TOKEN: *** and --header \"Authorization: ***\"). No credential value appears in any log the verifier read.",
+        "The 401-versus-403 distinction recorded during the apex incident is consistent with a correctly scoped token being mismatched rather than under-permissioned, but that is corroboration, not proof."
+      ],
+      "requiresOperatorConfirmation": {
+        "setting": "Cloudflare dashboard: My Profile > API Tokens > the production purge token",
+        "expectedValue": "Permissions: Zone / Cache Purge / Purge only. Resources: Include > Specific zone > dinder.it.com. No client IP filter, no TTL.",
+        "operatorConfirmationReceived": "permission Zone / Cache Purge / Purge; resources Include > Specific zone > dinder.it.com; no client IP filter; no TTL"
+      }
+    },
+    "deploymentOrder": {
+      "result": "PASS",
+      "primarySource": "raw job logs and the GitHub step timeline",
+      "finding": "Step 4 \"Wait for Railway deployments\" polls repos/<repo>/commits/<sha>/status for both \"Dinner-App - backend\" and \"Dinner-App - frontend\" and only exits 0 when both are success; it exits 1 immediately on failure or error. The purge is step 8. Run 29828997923 is the decisive proof that the gate actually blocks: the log shows \"Dinner-App - backend: pending\" at 12:12:08Z, the job waited, re-polled, and only after \"Dinner-App - backend: success / Dinner-App - frontend: success\" at 12:12:19Z did it proceed to the purge at 12:12:24Z. This is observed ordering, not inferred from configuration.",
+      "workflowScope": "The job is gated on (push or workflow_dispatch) and refs/heads/main, is bound to the \"Dinner-App / production\" environment, and uses concurrency group production-deploy with cancel-in-progress false, so two purges cannot interleave."
+    }
+  },
+  "criterion4_recomputedStatistics": {
+    "acceptanceCriterion": "The verifier recalculates every route's median, nearest-rank p95, document TTFB p95, warm p95, baseline comparison, POP consistency, and sample count from raw Melbourne artifacts.",
+    "result": "PASS",
+    "primarySource": "the raw sample arrays inside docs/evidence/route-performance/post-cutover-cloudflare.json and docs/evidence/route-performance/pre-cutover-direct-railway.json",
+    "method": "Every value below was computed by the verifier directly from the routes[].prime / routes[].cold / routes[].warm sample arrays. No statistics block, checks block, or narrative table from any existing artifact was read into the computation; the committed values were loaded only afterwards, purely to be compared. median = mean of sorted positions 15 and 16 for 30 samples; p95 = sorted[ceil(0.95*n)-1], which is index 28 (the 29th smallest) for n=30.",
+    "retentionAndIntegrity": {
+      "postCutoverSamplesRetained": 549,
+      "postCutoverComposition": "9 routes x (1 prime + 30 cold + 30 warm)",
+      "baselineSamplesRetained": 540,
+      "baselineComposition": "9 routes x (30 cold + 30 warm); a direct-Railway baseline has no edge prime, as the README specifies",
+      "cfRayEndingMel": "549 of 549 post-cutover samples",
+      "distinctCfRayValues": 549,
+      "distinctBodyHashPostCutover": 1,
+      "postPrimeNonHitSamples": 0,
+      "nonTwoHundredSamples": 0,
+      "erroredSamples": 0,
+      "primeCfCacheStatusEveryRoute": "MISS",
+      "environmentIdentity": "The baseline and post-cutover runner blocks are byte-identical (Zacharys-MacBook-Pro.local, darwin/arm64, Chromium 140.0.7339.186, 1280x720, throttling none, Melbourne) and the client-state seed blocks are byte-identical (dinder-route-evidence-v2). Every sample independently carries the same commit, deployment, browser version, viewport and throttling as its artifact header. The comparison is therefore like-for-like across machines, browser versions and network settings.",
+      "baselineTraversedCloudflare": "No. Every baseline sample has cfCacheStatus null, confirming the baseline is a genuine direct-Railway capture.",
+      "bundleComparability": "The baseline commit 8af790e and the benchmark commit e997fce differ in no file under frontend/src or shared/. The only Caddyfile change between them is the additive CDN-Cache-Control: no-store line, and the browser-facing Cache-Control was already in place at 8af790e, so the baseline isolates the CDN effect rather than the header change.",
+      "samplingWindowVersusExpiry": "Per route, the whole prime+cold+warm sequence ran in 5.2-7.0 s with a maximum observed Age of 6 s, so no route's samples straddled a 60 s expiry boundary. This is a stricter statement than the artifact's own '56 seconds for the whole collection'."
+    },
+    "thresholds": {
+      "coldRouteReadyMedianMs": 600,
+      "coldRouteReadyP95Ms": 900,
+      "coldDocumentTtfbP95Ms": 200,
+      "warmRouteReadyP95Ms": 50
+    },
+    "checkTally": {
+      "total": 72,
+      "passed": 72,
+      "failed": 0
+    },
+    "checkComposition": "9 routes x (4 absolute thresholds + 4 same-route direct-Railway baseline comparisons), evaluated by the verifier from recomputed values",
+    "worstCaseAcrossAllNineRoutes": {
+      "coldRouteReadyMedianMs": 128.6,
+      "coldRouteReadyP95Ms": 334.9,
+      "coldDocumentTtfbP95Ms": 23.2,
+      "warmRouteReadyP95Ms": 40.5
+    },
+    "recomputedPerRoute": [
+      {
+        "route": "/",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 7.05,
+        "maxObservedAgeSeconds": 6,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 121.55,
+          "coldRouteReadyP95Ms": 158.1,
+          "coldDocumentTtfbP95Ms": 21.7,
+          "warmRouteReadyP95Ms": 40.5
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 121.55,
+          "coldRouteReadyP95Ms": 158.1,
+          "coldDocumentTtfbP95Ms": 21.7,
+          "warmRouteReadyP95Ms": 40.5
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1256.5,
+          "coldRouteReadyP95Ms": 2366.7,
+          "coldDocumentTtfbP95Ms": 189.7,
+          "warmRouteReadyP95Ms": 539.2
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/compare",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 6.3,
+        "maxObservedAgeSeconds": 6,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 128.6,
+          "coldRouteReadyP95Ms": 239.9,
+          "coldDocumentTtfbP95Ms": 20.5,
+          "warmRouteReadyP95Ms": 21.3
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 128.6,
+          "coldRouteReadyP95Ms": 239.9,
+          "coldDocumentTtfbP95Ms": 20.5,
+          "warmRouteReadyP95Ms": 21.3
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1270.5,
+          "coldRouteReadyP95Ms": 1422.9,
+          "coldDocumentTtfbP95Ms": 193.7,
+          "warmRouteReadyP95Ms": 246.3
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/compare/test-place",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 6.46,
+        "maxObservedAgeSeconds": 6,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 126.8,
+          "coldRouteReadyP95Ms": 194.5,
+          "coldDocumentTtfbP95Ms": 23.2,
+          "warmRouteReadyP95Ms": 20.1
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 126.8,
+          "coldRouteReadyP95Ms": 194.5,
+          "coldDocumentTtfbP95Ms": 23.2,
+          "warmRouteReadyP95Ms": 20.1
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1306.4,
+          "coldRouteReadyP95Ms": 1386.1,
+          "coldDocumentTtfbP95Ms": 201.2,
+          "warmRouteReadyP95Ms": 186.3
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/create",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 5.93,
+        "maxObservedAgeSeconds": 5,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 127.65,
+          "coldRouteReadyP95Ms": 147.5,
+          "coldDocumentTtfbP95Ms": 22.8,
+          "warmRouteReadyP95Ms": 28.3
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 127.65,
+          "coldRouteReadyP95Ms": 147.5,
+          "coldDocumentTtfbP95Ms": 22.8,
+          "warmRouteReadyP95Ms": 28.3
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1253.7,
+          "coldRouteReadyP95Ms": 1288.7,
+          "coldDocumentTtfbP95Ms": 176.3,
+          "warmRouteReadyP95Ms": 184.9
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/join",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 5.19,
+        "maxObservedAgeSeconds": 4,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 102.1,
+          "coldRouteReadyP95Ms": 127.8,
+          "coldDocumentTtfbP95Ms": 19.1,
+          "warmRouteReadyP95Ms": 24.5
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 102.1,
+          "coldRouteReadyP95Ms": 127.8,
+          "coldDocumentTtfbP95Ms": 19.1,
+          "warmRouteReadyP95Ms": 24.5
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1180.2,
+          "coldRouteReadyP95Ms": 2145.1,
+          "coldDocumentTtfbP95Ms": 191.3,
+          "warmRouteReadyP95Ms": 298.7
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/session/ABCDE",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 6.5,
+        "maxObservedAgeSeconds": 6,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 118.8,
+          "coldRouteReadyP95Ms": 334.9,
+          "coldDocumentTtfbP95Ms": 21,
+          "warmRouteReadyP95Ms": 23
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 118.8,
+          "coldRouteReadyP95Ms": 334.9,
+          "coldDocumentTtfbP95Ms": 21,
+          "warmRouteReadyP95Ms": 23
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1384.1,
+          "coldRouteReadyP95Ms": 1974.2,
+          "coldDocumentTtfbP95Ms": 178.9,
+          "warmRouteReadyP95Ms": 290.5
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/session/ABCDE/select",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 5.66,
+        "maxObservedAgeSeconds": 5,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 114.95,
+          "coldRouteReadyP95Ms": 134.6,
+          "coldDocumentTtfbP95Ms": 19,
+          "warmRouteReadyP95Ms": 25.3
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 114.95,
+          "coldRouteReadyP95Ms": 134.6,
+          "coldDocumentTtfbP95Ms": 19,
+          "warmRouteReadyP95Ms": 25.3
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1324.55,
+          "coldRouteReadyP95Ms": 1458.5,
+          "coldDocumentTtfbP95Ms": 208.4,
+          "warmRouteReadyP95Ms": 194.8
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/session/ABCDE/results",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 5.74,
+        "maxObservedAgeSeconds": 5,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 117,
+          "coldRouteReadyP95Ms": 142.3,
+          "coldDocumentTtfbP95Ms": 21.7,
+          "warmRouteReadyP95Ms": 23.1
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 117,
+          "coldRouteReadyP95Ms": 142.3,
+          "coldDocumentTtfbP95Ms": 21.7,
+          "warmRouteReadyP95Ms": 23.1
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1260.55,
+          "coldRouteReadyP95Ms": 1577.5,
+          "coldDocumentTtfbP95Ms": 211.8,
+          "warmRouteReadyP95Ms": 185.3
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      },
+      {
+        "route": "/friends",
+        "sampleCounts": {
+          "prime": 1,
+          "cold": 30,
+          "warm": 30
+        },
+        "primeCfCacheStatus": "MISS",
+        "postPrimeCfCacheStatuses": ["HIT"],
+        "httpStatuses": [200],
+        "pops": ["MEL"],
+        "distinctBodyHashes": 1,
+        "collectionWindowSeconds": 6.57,
+        "maxObservedAgeSeconds": 6,
+        "recomputed": {
+          "coldRouteReadyMedianMs": 122.85,
+          "coldRouteReadyP95Ms": 142.6,
+          "coldDocumentTtfbP95Ms": 23.2,
+          "warmRouteReadyP95Ms": 30
+        },
+        "artifactClaimed": {
+          "coldRouteReadyMedianMs": 122.85,
+          "coldRouteReadyP95Ms": 142.6,
+          "coldDocumentTtfbP95Ms": 23.2,
+          "warmRouteReadyP95Ms": 30
+        },
+        "recomputedBaseline": {
+          "coldRouteReadyMedianMs": 1380.4,
+          "coldRouteReadyP95Ms": 1721.6,
+          "coldDocumentTtfbP95Ms": 254.2,
+          "warmRouteReadyP95Ms": 231.8
+        },
+        "thresholdPass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        },
+        "baselinePass": {
+          "coldRouteReadyMedianMs": true,
+          "coldRouteReadyP95Ms": true,
+          "coldDocumentTtfbP95Ms": true,
+          "warmRouteReadyP95Ms": true
+        }
+      }
+    ],
+    "discrepanciesAgainstCommittedArtifacts": [],
+    "discrepancySummary": "None. Every recomputed statistic equals the value committed in post-cutover-cloudflare.json to within 1e-6; every baseline limit used by the artifact equals the verifier-recomputed same-route baseline; every one of the nine per-route rows in docs/evidence/cloudflare/www-promotion.json matches the recomputation; and every baseline statistic in pre-cutover-direct-railway.json equals its own recomputation. 72 of 72 checks pass.",
+    "invalidationRuleNotTriggered": "Zero route batches were invalidated because no post-prime sample was anything but HIT and no POP varied. The rule being untriggered is not evidence that it works; frontend/scripts/benchmark-pages.test.mjs carries the regression tests for batch invalidation, and npm run check:production-edge and npm run check:cloudflare-staging both pass offline in this working tree."
+  },
+  "criterion5_rollbackEvidence": {
+    "acceptanceCriterion": "Normal record-level rollback evidence covers both frontend hosts, while authoritative nameserver recovery is supported by the recorded export and rollback procedure without requiring an unnecessary live nameserver reversal.",
+    "result": "PASS",
+    "apexHost": {
+      "host": "dinder.it.com",
+      "rollbackExercised": true,
+      "primarySource": "docs/evidence/cloudflare/apex-canary.json criterion6, recorded by the operator that performed it",
+      "recorded": "Gray-clouded, deterministic resolver polling (never a fixed sleep) with direct Railway resolution observed at t=+111 s, the Railway Let's Encrypt YR2 certificate restored to the browser, 9/9 core SPA routes 200 direct, Session smoke PASS. A one-shot live event that cannot be re-observed without taking a healthy apex off the edge.",
+      "verifierPosition": "Accepted as supplied. Re-executing it would be a self-inflicted production change and is explicitly outside the verifier remit."
+    },
+    "wwwHost": {
+      "host": "www.dinder.it.com",
+      "rollbackExercised": false,
+      "finding": "PASS on independently located primary evidence that the existing artifact does not cite. www.dinder.it.com was DNS-only - that is, in exactly the state a record-level rollback produces - until 12:14:11Z. CI run 29828997923, on the release-gate commit e997fce at 12:12:29Z, logged \"https://www.dinder.it.com: direct-origin contracts ok\" while the rollout state was apex-only. That single log line is a machine-asserted proof that, with www gray-clouded, the host served the full direct Railway origin contract: document Cache-Control, CDN-Cache-Control, Cloudflare-CDN-Cache-Control and Cache-Tag all present, no cf-cache-status, correct asset policy, identity variants sharing one document, and /health 200. The same run also passed the Session smoke.",
+      "standingPrecondition": "The rollback destination is re-gated on every production run: \"https://frontend-production-bdfc.up.railway.app: direct-origin contracts ok\" appears in all five successful runs, and the verifier re-observed the full direct-origin contract live at 13:0xZ.",
+      "whyNotExercisedIsCorrect": "Gray-clouding two healthy production hostnames purely to manufacture evidence would be a self-inflicted outage. docs/evidence/cloudflare/www-promotion.json records criteria 7 and 8 honestly as NOT EXERCISED rather than claiming PASS, which is the correct disclosure and is itself a mark of trustworthy evidence."
+    },
+    "authoritativeNameserverRecovery": {
+      "reversalExecuted": false,
+      "requiredToBeExecuted": false,
+      "verifierCorroboration": [
+        "The recorded pre-cutover export is intact: the sha256 in cloudflare/zone-manifest.json and in authoritative-dns-cutover.json both equal the shasum of the committed docs/evidence/cloudflare/namecheap-zone-export-2026-07-21.json.",
+        "The old nameserver pair (dns1/dns2.registrar-servers.com) and the reversal steps are recorded.",
+        "The procedure asserts a 300 s parent delegation TTL; the verifier measured the it.com delegation TTL live at 300 s.",
+        "The procedure asserts that no DS record exists at the parent so no DNSSEC removal or TTL wait is needed in either direction; the verifier confirmed this with a signed NSEC proof of non-existence from it.com.",
+        "The procedure asserts all 9 records must be re-verified against cloudflare/zone-manifest.json after reversal; the verifier confirmed all 9 of those records resolve correctly today."
+      ],
+      "conclusion": "Authoritative recovery is supported by a verified export and a procedure whose every checkable precondition was independently confirmed. The criterion explicitly does not require a live nameserver reversal, and performing one would be the highest-blast-radius change available for no evidentiary gain."
+    },
+    "normalRollbackPreservesTheRestOfTheZone": {
+      "finding": "Confirmed live after the promotion: Cloudflare remains authoritative (ada/keenan.ns.cloudflare.com from the parent and all three resolvers) and all 7 unrelated records remain DNS-only and byte-identical to the pre-cutover export. A per-record proxy toggle cannot disturb delegation or unrelated RRsets, and the observed state demonstrates that the www promotion did not."
+    }
+  },
+  "investigatedAndDismissed": {
+    "note": "Two live observations initially looked like defects. Both were traced to the verifier's own probe design rather than to the rollout, and are recorded in full so the distinction is auditable rather than silently dropped.",
+    "findings": [
+      {
+        "observation": "GET /.env and GET /.git/config return HTTP 200 on the origin and through the edge.",
+        "firstImpression": "Possible hidden-file exposure through the Caddy file_server hide directive.",
+        "investigation": "The response body sha256 is 14c678ebcc0cb3287f487e16d86a5a96f25ccd0ffeb0344d57d65552bb7dc6a3 - byte-identical to index.html - with Content-Type text/html, and the body begins \"<!doctype html>\". Neither file exists in frontend/dist, so try_files falls through to /index.html and returns the SPA document, which is the correct SPA behaviour for any unknown path. scripts/check-frontend-serving.sh asserts 404 for these paths only because it deliberately creates the files in the test dist, where hide then makes file_server return 404.",
+        "verdict": "Verifier-side false positive. No file content is exposed. Not a rollout defect."
+      },
+      {
+        "observation": "An HTML SPA fallback served under an asset-shaped path (/deception-probe-153/style.css, /deception-probe-153/app.js) is cached at the edge: MISS then HIT, Content-Type text/html.",
+        "firstImpression": "Possible evidence that the Cache Rule's cache deception armor is not enabled.",
+        "investigation": "Cloudflare's own documentation states that \"Cache Deception Armor depends upon Origin Cache Control. A Cache-Control header from the origin, or an Edge Cache TTL Cache Rule may override the protection.\" This origin explicitly emits Cloudflare-CDN-Cache-Control: public, max-age=60, must-revalidate on every SPA fallback document, so the documented override applies and the probe cannot falsify the setting either way. The probe is therefore inconclusive, not disconfirming.",
+        "securityImpact": "Nil in this deployment. Every eligible response is the same identity-independent public document - one body hash across all nine routes, both hosts, the direct origin, all cookie variants and all query variants. There is no private or unintended response that a deception-shaped path could cause to be cached, which is precisely the outcome the parent user story asks for.",
+        "verdict": "Not a rollout defect and not a valid falsification. The setting itself is dashboard-only and is carried below as requires-operator-confirmation."
+      }
+    ]
+  },
+  "requiresOperatorConfirmation": {
+    "note": "These exist only in the Cloudflare dashboard and cannot be read from this repository, from response headers, or from any credential available outside CI. The verifier did not use the browser (the orchestrator holds live dashboard tabs). Each item records the exact setting, the expected value, any independent corroboration, and the confirmation the orchestrator supplied. None is marked PASS on inference alone.",
+    "items": [
+      {
+        "setting": "Caching > Tiered Cache > Argo Tiered Cache topology",
+        "expectedValue": "Off; Smart Tiered Cache Topology unselected",
+        "independentCorroboration": "none available - not exposed in any response header",
+        "operatorConfirmed": "Off (topology toggle off, Smart Tiered Cache unselected and disabled)"
+      },
+      {
+        "setting": "Caching > Configuration > Always Online",
+        "expectedValue": "Off",
+        "independentCorroboration": "Strong behavioural corroboration: cf-cache-status was never STALE across 66 document samples spanning six complete 60 s expiry cycles; expiry produced REVALIDATED, never an archived response.",
+        "operatorConfirmed": "Off"
+      },
+      {
+        "setting": "Caching > Configuration > Development Mode",
+        "expectedValue": "Off",
+        "independentCorroboration": "Corroborated: documents are being cached at all (HIT with increasing Age), which Development Mode would prevent.",
+        "operatorConfirmed": "Off"
+      },
+      {
+        "setting": "SSL/TLS > Edge Certificates > Universal SSL",
+        "expectedValue": "Active; hosts *.dinder.it.com, dinder.it.com; expires 2026-10-19; backup certificate issued",
+        "independentCorroboration": "Corroborated live: both frontend hosts serve CN=dinder.it.com issued by Google Trust Services WE1, SAN [dinder.it.com, *.dinder.it.com], notAfter 2026-10-19T09:18:35Z. Universal SSL is demonstrably active because that certificate is being served.",
+        "operatorConfirmed": "Active, hosts *.dinder.it.com and dinder.it.com, expires 2026-10-19, backup certificate issued"
+      },
+      {
+        "setting": "SSL/TLS > Overview > encryption mode",
+        "expectedValue": "Full (strict), explicitly pinned (automatic mode disabled)",
+        "independentCorroboration": "Partial: both hosts return HTTP 200 rather than 526, and the Railway origin presents a valid, hostname-matching, publicly trusted certificate on port 443 - the conditions Full (strict) requires. A 200 alone cannot distinguish Full from Full (strict), so the mode value itself is not independently provable.",
+        "operatorConfirmed": "Full (strict), automatic mode disabled, pinned during this verification run"
+      },
+      {
+        "setting": "Caching > Cache Rules > \"Dinder HTML cache\"",
+        "expectedValue": "Active, order 1; expression (http.host in {\"dinder.it.com\" \"www.dinder.it.com\"} and http.request.method in {\"GET\" \"HEAD\"} and any(lower(http.request.headers[\"accept\"][*])[*] contains \"text/html\")); Cache eligibility on; Browser TTL respect origin; Edge TTL use cache-control if present, bypass if not; Cache key: cache deception armor ON, ignore query string ON, no device/cookie/header/host/country/language dimension; do not serve stale content while updating ON",
+        "independentCorroboration": "Every externally observable clause was proven live: hostname scope (only these two hosts answer from Cloudflare), method (HEAD shares the document policy and the cached object), Accept gating (application/json returns DYNAMIC), bypass-when-origin-directive-absent (/favicon.png and /health return BYPASS under a browser Accept), respect-origin browser TTL (max-age=0, must-revalidate reaches the browser unchanged), ignore query string (five variants share one object), no cookie dimension (two cookie variants share the same object), and no stale-while-updating (never STALE, never UPDATING across six expiry cycles). Only cache deception armor could not be tested, for the documented reason above.",
+        "operatorConfirmed": "exactly as expected above"
+      },
+      {
+        "setting": "Rules > Configuration Rules > \"Disable RUM beacon injection (origin-owned document parity)\"",
+        "expectedValue": "Active, order 1, all incoming requests, action Disable RUM",
+        "independentCorroboration": "Strong: the edge document is byte-for-byte identical to the origin document (identical sha256, 984 bytes) on both hosts, so no beacon is being injected. CI additionally gates this on every run via verifyEdgeDocumentParity.",
+        "operatorConfirmed": "Active, order 1, all incoming requests, Disable RUM"
+      },
+      {
+        "setting": "Rules > URL Rewrite / Redirect / Origin / Request Header Transform / Cache Response rules",
+        "expectedValue": "none configured",
+        "independentCorroboration": "Corroborated: edge and origin documents are byte-identical, no redirect was observed on any probed path with redirect handling disabled, and origin headers arrive unmodified apart from Cloudflare consuming its own private directives.",
+        "operatorConfirmed": "none configured"
+      },
+      {
+        "setting": "My Profile > API Tokens > production cache purge token",
+        "expectedValue": "Permissions Zone / Cache Purge / Purge only; Resources Include > Specific zone > dinder.it.com; no client IP filter; no TTL",
+        "independentCorroboration": "GitHub side fully verified: the secret exists only in the \"Dinner-App / production\" environment, is masked in every log, and the zone id is non-secret. The Cloudflare-side permission set cannot be read without the token.",
+        "operatorConfirmed": "permission Zone / Cache Purge / Purge; resources Include > Specific zone > dinder.it.com; no client IP filter; no TTL"
+      },
+      {
+        "setting": "Cloudflare audit log > cache purge entries",
+        "expectedValue": "entries corresponding to the five successful CI purges",
+        "independentCorroboration": "Not required for the result. The workflow validates the Cloudflare API response before printing, the zone id in each response matches the configured variable, and the purge effect was independently observed (documents MISS immediately after each purge; the fingerprinted asset survived all three global purges with Age 8310 s).",
+        "operatorConfirmed": "not supplied; not blocking"
+      }
+    ]
+  },
+  "couldNotVerify": [
+    "The Cloudflare zone record list could not be enumerated (no Cloudflare credential outside CI, by design). Proxy scope was proven DNS-side instead: all 9 manifest records observed live from three resolvers, plus an NXDOMAIN sweep of 8 likely subdomains.",
+    "scripts/check-frontend-serving.sh could not be executed locally because Caddy v2.11.4 is not installed on this machine. Its assertions were instead verified against the live Railway origin, where every contract it checks (document policy, fingerprinted asset policy, non-fingerprinted asset defaults, missing-asset 404, /health, non-HTML client, deep SPA fallback) was confirmed directly.",
+    "node scripts/check-production-edge.mjs verify was deliberately not run locally: assertEdgeCacheSequence requires a post-purge MISS that exists only in the seconds after a tag purge, and the purge credential is CI-only. Running it without a preceding purge would be an invalid invocation producing a false FAIL. The authoritative evidence is the five CI runs.",
+    "One-shot operator events (the apex gray-cloud rollback, the first proxied request, the pre-promotion checkpoint) cannot be re-observed after the fact and are accepted as recorded, since reproducing them would require changing production."
+  ],
+  "acceptanceCriteria": {
+    "verifierInspectedAllPrimarySources": true,
+    "onlyIntendedFrontendHostsProxiedAndUnrelatedRecordsPreservedDnsOnly": true,
+    "allNamedContractsIndependentlyChecked": "true for document, asset, missing-asset, health, cache-key, 60-second no-stale, purge, credential-scope and deployment-order; Tiered-Cache-Off is recorded as requires-operator-confirmation and was confirmed by the operator",
+    "everyRouteStatisticRecalculatedFromRawSamples": true,
+    "rollbackEvidenceCoversBothHostsAndNameserverRecoveryIsSupportedWithoutAnUnnecessaryReversal": true,
+    "outcomeIsOneOfPassBlockedOrFail": true,
+    "parentRolloutMayBeDeclaredComplete": true
+  },
+  "finalResult": "PASS"
+}
