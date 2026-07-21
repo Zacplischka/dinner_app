@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "issue": 148,
-  "capturedAt": "2026-07-21T07:00:06Z",
+  "capturedAt": "2026-07-21T07:14:23Z",
   "status": "staged",
   "credentialsExposed": false,
   "providerCapabilities": "docs/evidence/cloudflare/provider-capabilities.md",
@@ -111,6 +111,18 @@
       }
     ]
   },
+  "namecheapEmailForwarding": {
+    "capturedAt": "2026-07-21T07:14:23Z",
+    "source": "authenticated Domain > Redirect Email",
+    "nameserverEligibility": ["Namecheap BasicDNS", "PremiumDNS", "FreeDNS"],
+    "activeAliases": [],
+    "activeCatchAll": false,
+    "destinationValuesCaptured": false,
+    "redacted": true,
+    "authoritativeCutoverBlocked": false,
+    "cutoverDisposition": "no active forwarding dependency",
+    "recheckRequiredAtCutover": true
+  },
   "railway": {
     "project": "Dinner-App",
     "environment": "production",
@@ -140,9 +152,21 @@
     ],
     "documentHeaders": {
       "cache-control": "max-age=0, must-revalidate",
+      "cdn-cache-control": null,
       "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
       "cache-tag": "dinder-route-html"
     }
+  },
+  "repositoryOriginContract": {
+    "status": "staged; not deployed by issue 148",
+    "verifiedWith": "Caddy v2.11.4",
+    "documentHeaders": {
+      "cache-control": "max-age=0, must-revalidate",
+      "cdn-cache-control": "no-store",
+      "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+      "cache-tag": "dinder-route-html"
+    },
+    "cloudflareSpecificHeaderAbsent": "BYPASS"
   },
   "cloudflare": {
     "authentication": {
@@ -308,6 +332,9 @@
   ],
   "externalAuthenticationEvents": [
     "A human completed provider authentication; account identity was intentionally omitted from evidence."
+  ],
+  "externalReadOnlyChecks": [
+    "Namecheap Domain > Redirect Email showed no defined email redirect, no aliases, and no catch-all; destination values were not present or captured."
   ],
   "blockers": []
 }

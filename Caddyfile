@@ -53,6 +53,7 @@
 			@document `method('GET', 'HEAD') && header({'Accept': '*text/html*'}) && (path('*.html') || {file_match.type} == 'directory')`
 			header @document {
 				Cache-Control "max-age=0, must-revalidate"
+				CDN-Cache-Control "no-store"
 				Cloudflare-CDN-Cache-Control "public, max-age=60, must-revalidate"
 				Cache-Tag "dinder-route-html"
 			}

@@ -21,6 +21,12 @@ Verified against current official provider documentation on 2026-07-21. These ar
 
 The canonical pre-import manifest must therefore enumerate every user-managed record's owner, type, content/data, priority where applicable, intended TTL, and `proxied: false`; it must be compared with independent authoritative answers before import. No registrar nameserver or live authoritative DNS change belongs to this issue.
 
+## Namecheap email forwarding dependency
+
+Namecheap's free Email Forwarding service works only while the domain uses Namecheap BasicDNS, PremiumDNS, or FreeDNS; copying its MX and SPF records to another authoritative DNS provider does not preserve the forwarding control-plane service. ([Namecheap free Email Forwarding](https://www.namecheap.com/support/knowledgebase/article.aspx/308/2214/how-to-set-up-free-email-forwarding/), [Namecheap DNS dependency](https://www.namecheap.com/support/knowledgebase/article.aspx/323/46/why-cant-i-modify-email-domain-redirect-and-host-records-in-my-namecheap-account/))
+
+The authenticated **Domain > Redirect Email** panel was inspected on 2026-07-21. It reported that no Email Redirect was defined and exposed only the actions to add a forwarder or catch-all. The redacted evidence therefore records zero active aliases and no catch-all, with no destination values present or captured. Issue #149 is not blocked by an existing forwarding dependency, but must repeat this check immediately before changing nameservers; any newly active forwarder blocks cutover until a compatible replacement and delivery test are staged.
+
 ## HTML Cache Rule on Free
 
 Cache Rules exist on every plan, with **10 rules on Free**, but affect traffic only for proxied DNS records. The staged rule is inert while issue #148 keeps all records DNS-only. ([Cache Rules availability](https://developers.cloudflare.com/cache/how-to/cache-rules/))
@@ -47,7 +53,7 @@ The rule policy is:
 
 `cloudflare/staging-policy.json` is a normalized record of the saved dashboard state, not a deployable Cloudflare API payload. In particular, its Free-plan Ignore Query String mode is not represented as an Enterprise `custom_key` query-string, header, cookie, host, or user component.
 
-Cloudflare gives `Cloudflare-CDN-Cache-Control` precedence over `CDN-Cache-Control` and ordinary `Cache-Control`, and consumes the Cloudflare-specific header rather than sending it to browsers. Thus `bypass_by_default` preserves Dinder's separate shared-cache HTML lifetime and avoids inventing one when the header is absent. ([CDN-Cache-Control precedence](https://developers.cloudflare.com/cache/concepts/cdn-cache-control/))
+Cloudflare gives `Cloudflare-CDN-Cache-Control` precedence over `CDN-Cache-Control` and ordinary `Cache-Control`, and consumes the Cloudflare-specific header rather than sending it to browsers. Dinder HTML therefore emits all three layers: `Cloudflare-CDN-Cache-Control: public, max-age=60, must-revalidate` controls the intended Cloudflare lifetime; `CDN-Cache-Control: no-store` makes an accidentally missing Cloudflare-specific header fail closed to `BYPASS`; and browser-facing `Cache-Control: max-age=0, must-revalidate` remains unchanged. The Cache Rule's `bypass_by_default` mode does not invent a lifetime when these origin headers are absent. ([CDN-Cache-Control precedence](https://developers.cloudflare.com/cache/concepts/cdn-cache-control/), [Origin Cache Control](https://developers.cloudflare.com/cache/concepts/cache-control/))
 
 Cloudflare's default cache key is not URL-only: it includes the full URL, client `Origin`, and documented method/forwarded override headers. Ignore Query String removes only the URI query. On Free, the header, cookie, host, and user custom-key sections are unavailable; the dashboard therefore shows **Include origin header** checked and disabled. The staged rule adds no custom identity or representation dimension, but later rollout evidence must not describe the resulting key as literally header-free. ([Cache keys](https://developers.cloudflare.com/cache/how-to/cache-keys/), [Cache Rule settings](https://developers.cloudflare.com/cache/how-to/cache-rules/settings/))
 

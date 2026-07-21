@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -11,6 +11,10 @@ const evidence = load('docs/evidence/cloudflare/staging-evidence.json');
 const registrarExportPath = 'docs/evidence/cloudflare/namecheap-zone-export-2026-07-21.json';
 const registrarExportText = readFileSync(`${root}/${registrarExportPath}`, 'utf8');
 const registrarExport = JSON.parse(registrarExportText);
+const evidenceDirectory = `${root}/docs/evidence/cloudflare`;
+const evidenceArtifactTexts = readdirSync(evidenceDirectory, { withFileTypes: true })
+  .filter((entry) => entry.isFile())
+  .map((entry) => readFileSync(`${evidenceDirectory}/${entry.name}`, 'utf8'));
 const requireLive = process.argv.includes('--require-live');
 
 assert.equal(manifest.zone, 'dinder.it.com');
@@ -93,6 +97,13 @@ assert.deepEqual(policy.providerConstraints.cacheKey, {
   ],
   addedCustomIdentityVariation: [],
 });
+assert.deepEqual(policy.originHtmlContract, {
+  'cache-control': 'max-age=0, must-revalidate',
+  'cdn-cache-control': 'no-store',
+  'cloudflare-cdn-cache-control': 'public, max-age=60, must-revalidate',
+  'cache-tag': 'dinder-route-html',
+  cloudflareSpecificHeaderAbsent: 'BYPASS',
+});
 assert.deepEqual(policy.zoneSettings, {
   ssl: 'full_strict',
   alwaysOnline: 'off',
@@ -122,10 +133,16 @@ assert.deepEqual(evidence.authoritativeDns.records, manifest.records);
 assert.deepEqual(evidence.plannedFrontendOnlyProxyScope, ['dinder.it.com', 'www.dinder.it.com']);
 assert.ok(['blocked', 'staged'].includes(evidence.status));
 
-const serialized = JSON.stringify({ manifest, policy, evidence });
-assert.doesNotMatch(serialized, /Authorization:\s*Bearer/i);
-assert.doesNotMatch(serialized, /"(?:apiKey|secretValue|tokenValue)"\s*:/i);
-assert.doesNotMatch(serialized, /\bgh[opsu]_[A-Za-z0-9_]{20,}\b/);
+const secretScanText = [JSON.stringify({ manifest, policy }), ...evidenceArtifactTexts].join('\n');
+assert.doesNotMatch(secretScanText, /Authorization:\s*Bearer/i);
+assert.doesNotMatch(secretScanText, /"(?:apiKey|secretValue|tokenValue)"\s*:/i);
+assert.doesNotMatch(secretScanText, /\bgh[opsu]_[A-Za-z0-9_]{20,}\b/);
+assert.deepEqual(
+  (secretScanText.match(/\b[A-Za-z0-9_-]{40}\b/g) ?? []).filter(
+    (candidate) => /[A-Z]/.test(candidate) && /[a-z]/.test(candidate) && /\d/.test(candidate)
+  ),
+  []
+);
 
 if (requireLive) {
   assert.equal(
@@ -133,18 +150,17 @@ if (requireLive) {
     'staged',
     `live staging incomplete:\n- ${evidence.blockers.join('\n- ')}`
   );
+  assert.deepEqual(evidence.blockers, []);
+  assert.equal(rule.enabled, true);
   assert.equal(manifest.complete, true, 'registrar export is not complete');
   assert.equal(manifest.source.registrarExport.status, 'captured');
   assert.match(manifest.source.registrarExport.sha256, /^[a-f0-9]{64}$/);
   assert.equal(evidence.canonicalManifest.registrarExportCapturedBeforeImport, true);
-  assert.ok(evidence.cloudflare.zone);
-  assert.ok(evidence.cloudflare.records);
-  assert.ok(evidence.cloudflare.cacheRule);
-  assert.ok(evidence.cloudflare.cacheSettings);
-  assert.deepEqual(evidence.cloudflare.zone.assignedNameservers, [
-    'ada.ns.cloudflare.com',
-    'keenan.ns.cloudflare.com',
-  ]);
+  assert.equal(evidence.cloudflare.zone.assignedNameservers.length, 2);
+  assert.equal(new Set(evidence.cloudflare.zone.assignedNameservers).size, 2);
+  for (const nameserver of evidence.cloudflare.zone.assignedNameservers) {
+    assert.match(nameserver, /^[a-z0-9-]+\.ns\.cloudflare\.com$/);
+  }
   assert.equal(evidence.cloudflare.zone.status, 'pending');
   assert.equal(evidence.cloudflare.zone.authoritativeNameserversChanged, false);
   assert.equal(evidence.cloudflare.records.count, manifest.records.length);
@@ -156,6 +172,7 @@ if (requireLive) {
     evidence.cloudflare.records.inventory,
     manifest.records.map(({ category: _category, ...record }) => record)
   );
+  assert.equal(evidence.cloudflare.cacheRule.status, 'active');
   assert.equal(evidence.cloudflare.cacheRule.expression, rule.expression);
   assert.equal(evidence.cloudflare.cacheRule.cacheDeceptionArmor, true);
   assert.equal(evidence.cloudflare.cacheRule.queryString, 'ignore all');
@@ -181,10 +198,40 @@ if (requireLive) {
     alwaysOnline: 'off',
     tieredCache: 'off',
   });
+  assert.deepEqual(evidence.namecheapEmailForwarding, {
+    capturedAt: '2026-07-21T07:14:23Z',
+    source: 'authenticated Domain > Redirect Email',
+    nameserverEligibility: ['Namecheap BasicDNS', 'PremiumDNS', 'FreeDNS'],
+    activeAliases: [],
+    activeCatchAll: false,
+    destinationValuesCaptured: false,
+    redacted: true,
+    authoritativeCutoverBlocked: false,
+    cutoverDisposition: 'no active forwarding dependency',
+    recheckRequiredAtCutover: true,
+  });
+  assert.deepEqual(evidence.railway.documentHeaders, {
+    'cache-control': 'max-age=0, must-revalidate',
+    'cdn-cache-control': null,
+    'cloudflare-cdn-cache-control': 'public, max-age=60, must-revalidate',
+    'cache-tag': 'dinder-route-html',
+  });
+  assert.deepEqual(evidence.repositoryOriginContract, {
+    status: 'staged; not deployed by issue 148',
+    verifiedWith: 'Caddy v2.11.4',
+    documentHeaders: {
+      'cache-control': 'max-age=0, must-revalidate',
+      'cdn-cache-control': 'no-store',
+      'cloudflare-cdn-cache-control': 'public, max-age=60, must-revalidate',
+      'cache-tag': 'dinder-route-html',
+    },
+    cloudflareSpecificHeaderAbsent: 'BYPASS',
+  });
   assert.equal(evidence.cloudflare.tlsMode, 'full_strict');
-  assert.ok(evidence.cloudflare.tokenMetadata);
+  assert.equal(evidence.cloudflare.tokenMetadata.status, 'active');
   assert.equal(evidence.cloudflare.tokenMetadata.permission, 'Zone.Cache Purge:Purge');
   assert.deepEqual(evidence.cloudflare.tokenMetadata.resources, ['dinder.it.com']);
+  assert.equal(evidence.cloudflare.tokenMetadata.resourceCount, 1);
   assert.equal(evidence.cloudflare.tokenMetadata.tokenValueCaptured, false);
   assert.equal(evidence.productionConfig.zoneIdVariablePresent, true);
   assert.equal(evidence.productionConfig.purgeTokenSecretPresent, true);

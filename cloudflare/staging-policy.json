@@ -51,6 +51,13 @@
       "addedCustomIdentityVariation": []
     }
   },
+  "originHtmlContract": {
+    "cache-control": "max-age=0, must-revalidate",
+    "cdn-cache-control": "no-store",
+    "cloudflare-cdn-cache-control": "public, max-age=60, must-revalidate",
+    "cache-tag": "dinder-route-html",
+    "cloudflareSpecificHeaderAbsent": "BYPASS"
+  },
   "zoneSettings": {
     "ssl": "full_strict",
     "alwaysOnline": "off",
