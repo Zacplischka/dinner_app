@@ -19,6 +19,7 @@ import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createFriendsService } from './services/FriendsService.js';
 import { createComparisonService } from './services/ComparisonService.js';
+import { createOrderService } from './services/OrderService.js';
 import { createApifyClient } from './services/apifyClient.js';
 import * as friendsStore from './store/friendsStore.js';
 import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
@@ -65,6 +66,12 @@ const comparisonService = createComparisonService({
   freshnessMs: SNAPSHOT_FRESHNESS_MS,
   failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
   settleCapMs: 300_000,
+});
+const orderService = createOrderService({
+  store: sessionStore,
+  snapshotStore: comparisonSnapshotStore,
+  freshnessMs: SNAPSHOT_FRESHNESS_MS,
+  failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
 });
 
 // Initialize Express app
@@ -176,6 +183,7 @@ const io = new SocketIOServer<
 // Import WebSocket handlers (they run over the store/service built above)
 import { handleSessionJoin } from './websocket/joinHandler.js';
 import { handleSelectionSubmit } from './websocket/submitHandler.js';
+import { handleOrderOpen } from './websocket/orderHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
 import { handleSessionLeave } from './websocket/leaveHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
@@ -240,6 +248,11 @@ io.on('connection', (socket) => {
   // session:leave event handler - intentional departure
   socket.on('session:leave', (payload, callback) => {
     void handleSessionLeave(socket, io, payload, callback, sessionService);
+  });
+
+  // order:open event handler - open the Group Order for the crowned Venue
+  socket.on('order:open', (payload, callback) => {
+    void handleOrderOpen(socket, payload, callback, orderService);
   });
 
   // T045: disconnect handler

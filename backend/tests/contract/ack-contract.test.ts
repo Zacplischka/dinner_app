@@ -4,6 +4,7 @@
 // flattened fields, no string errors, and no success/failure coexistence.
 
 import { describe, it, expect } from 'vitest';
+import { isApiError } from '@dinder/shared/types';
 import type {
   Ack,
   SessionJoinResponse,
@@ -11,6 +12,7 @@ import type {
   SessionRestartResponse,
   SessionLeaveResponse,
   SessionJoinData,
+  OrderUnavailableError,
 } from '@dinder/shared/types';
 
 describe('canonical Socket.IO ack wire contract (shared event map)', () => {
@@ -48,6 +50,17 @@ describe('canonical Socket.IO ack wire contract (shared event map)', () => {
     for (const ack of acks) {
       expect(ack).toEqual({ success: true, data: null });
     }
+  });
+
+  it('OrderUnavailableError is still an ApiError, carrying one extra reason field', () => {
+    const err: OrderUnavailableError = {
+      code: 'NOT_FOUND',
+      message: 'Prices for this Venue are stale. Please try again.',
+      reason: 'stale',
+    };
+    // It extends ApiError structurally — isApiError must still accept it.
+    expect(isApiError(err)).toBe(true);
+    expect(err.reason).toBe('stale');
   });
 
   it('success and failure never coexist (discriminated union)', () => {

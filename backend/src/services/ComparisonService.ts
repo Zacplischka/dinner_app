@@ -202,7 +202,7 @@ function toComparison(snapshot: Snapshot): Comparison {
   return deriveComparison(snapshot);
 }
 
-function isFresh(
+export function isFresh(
   snapshot: Snapshot,
   freshnessMs: number,
   failureFreshnessMs = SNAPSHOT_FAILURE_FRESHNESS_MS

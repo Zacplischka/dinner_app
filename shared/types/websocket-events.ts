@@ -4,6 +4,7 @@
 // Note: Socket type imports are added in backend/frontend packages where socket.io is installed
 
 import type { ApiError } from './api-errors.js';
+import type { MenuItemCapture } from './comparison.js';
 
 // ============= Canonical acknowledgement contract (ADR 0006 / #114) =============
 // The final discriminated shape. `data` and failure never coexist — a success
@@ -139,6 +140,76 @@ export interface ErrorEvent {
   details?: Record<string, unknown>;
 }
 
+// ============= Group Order =============
+
+export type OrderPlatform = 'ubereats' | 'doordash';
+
+export interface OrderLine {
+  index: number; // array index into the Pinned Menu
+  name: string; // resolved server-side from the Pinned Menu
+  priceCents: number; // resolved server-side from the Pinned Menu
+  qty: number;
+  by: string; // displayName
+}
+
+export interface OrderShare {
+  displayName: string;
+  itemsCents: number;
+  feeCents: number; // this person's slice of the Buyer's fee
+  totalCents: number; // itemsCents + feeCents
+}
+
+export interface OrderState {
+  sessionCode: string;
+  placeId: string;
+  venueName: string;
+  platform: OrderPlatform;
+  storeUrl?: string;
+  pricesAt: string; // ISO, the Snapshot's fetchedAt
+  cheaperPercent?: number; // only when cheaperMenu named this platform
+  lines: OrderLine[];
+  buyer?: string; // displayName
+  feeCents: number;
+  itemsCents: number;
+  totalCents: number; // itemsCents + feeCents
+  shares: OrderShare[];
+  state: 'building' | 'locked';
+  /** Present ONLY on the order:open ack — the ~4 KB Pinned Menu. */
+  menu?: MenuItemCapture[];
+}
+
+export interface OrderOpenPayload {
+  sessionCode: string;
+  placeId: string;
+}
+
+/** NOT_FOUND carries a machine-readable reason so the page knows whether to retry. */
+export interface OrderUnavailableError extends ApiError {
+  code: 'NOT_FOUND';
+  reason: 'stale' | 'no_menu';
+}
+export type OrderOpenResponse = Ack<OrderState> | { success: false; error: OrderUnavailableError };
+
+export interface OrderItemPayload {
+  sessionCode: string;
+  index: number;
+  delta: 1 | -1;
+}
+export type OrderItemResponse = Ack<null>;
+
+export interface OrderBuyPayload {
+  sessionCode: string;
+  feeCents?: number;
+}
+export type OrderBuyResponse = Ack<null>;
+
+export interface OrderStateEvent {
+  sessionCode: string;
+  order: OrderState;
+  /** What this broadcast was caused by. Absent on the open/reconnect emit. */
+  change?: { by: string; name: string; delta: 1 | -1 };
+}
+
 // ============= Socket.IO Typed Interfaces =============
 
 export interface ClientToServerEvents {
@@ -161,6 +232,10 @@ export interface ClientToServerEvents {
     payload: SessionLeavePayload,
     callback: (response: SessionLeaveResponse) => void
   ) => void;
+
+  'order:open': (payload: OrderOpenPayload, callback: (r: OrderOpenResponse) => void) => void;
+  'order:item': (payload: OrderItemPayload, callback: (r: OrderItemResponse) => void) => void;
+  'order:buy': (payload: OrderBuyPayload, callback: (r: OrderBuyResponse) => void) => void;
 }
 
 export interface ServerToClientEvents {
@@ -171,6 +246,7 @@ export interface ServerToClientEvents {
   'session:expired': (data: SessionExpiredEvent) => void;
   'participant:left': (data: ParticipantLeftEvent) => void;
   'participant:disconnected': (data: ParticipantDisconnectedEvent) => void;
+  'order:state': (data: OrderStateEvent) => void;
   error: (data: ErrorEvent) => void;
 }
 

@@ -13,6 +13,7 @@ describe('composition root', () => {
     await import('../../src/store/sessionStore.js');
     await import('../../src/services/SessionService.js');
     await import('../../src/services/FriendsService.js');
+    await import('../../src/services/OrderService.js');
     await import('../../src/api/sessions.js');
     await import('../../src/api/options.js');
     await import('../../src/api/friends.js');

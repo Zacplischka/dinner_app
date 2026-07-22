@@ -282,6 +282,62 @@ describe('SessionStore', () => {
     });
   });
 
+  describe('Group Order keyspace', () => {
+    it('slides a live TTL onto both order keys on touch', async () => {
+      await createTestSession();
+      // order:lines has no writer yet — hset it directly so touch() has a key to EXPIREAT.
+      await store.openOrder(sessionCode, { placeId: 'place1', state: 'building' });
+      await redis.hset(`session:${sessionCode}:order:lines`, '0:Alice', '1');
+      // A later mutation runs touch(), which must EXPIREAT the directly-hset lines key too.
+      await store.addParticipant(sessionCode, { participantId: 'p1', displayName: 'Alice' });
+
+      for (const key of [`session:${sessionCode}:order`, `session:${sessionCode}:order:lines`]) {
+        const ttl = await redis.ttl(key);
+        expect(ttl).toBeGreaterThan(0);
+        expect(ttl).toBeLessThanOrEqual(SESSION_TTL_SECONDS);
+      }
+    });
+
+    it('readOrder returns null until an order is opened, then the raw hash', async () => {
+      await createTestSession();
+      expect(await store.readOrder(sessionCode)).toBeNull();
+      await store.openOrder(sessionCode, { placeId: 'place1', state: 'building' });
+      expect(await store.readOrder(sessionCode)).toMatchObject({
+        placeId: 'place1',
+        state: 'building',
+      });
+    });
+
+    it('isResultPlaceId reads the results set', async () => {
+      await createTestSession();
+      await store.addResultPlaceId(sessionCode, 'place1');
+      expect(await store.isResultPlaceId(sessionCode, 'place1')).toBe(true);
+      expect(await store.isResultPlaceId(sessionCode, 'nope')).toBe(false);
+    });
+
+    it('resetForRestart deletes both order keys', async () => {
+      await createTestSession();
+      await store.openOrder(sessionCode, { placeId: 'place1', state: 'building' });
+      await redis.hset(`session:${sessionCode}:order:lines`, '0:Alice', '1');
+
+      await store.resetForRestart(sessionCode);
+
+      expect(await redis.exists(`session:${sessionCode}:order`)).toBe(0);
+      expect(await redis.exists(`session:${sessionCode}:order:lines`)).toBe(0);
+    });
+
+    it('deleteSession removes both order keys', async () => {
+      await createTestSession();
+      await store.openOrder(sessionCode, { placeId: 'place1', state: 'building' });
+      await redis.hset(`session:${sessionCode}:order:lines`, '0:Alice', '1');
+
+      await store.deleteSession(sessionCode);
+
+      expect(await redis.exists(`session:${sessionCode}:order`)).toBe(0);
+      expect(await redis.exists(`session:${sessionCode}:order:lines`)).toBe(0);
+    });
+  });
+
   describe('restaurants', () => {
     it('round-trips the session restaurant list', async () => {
       await createTestSession();

@@ -141,3 +141,25 @@ _Avoid_: cache entry, record
 **Freshness Window**:
 How old the newest Snapshot may be and still serve as the current Comparison. A failed Snapshot has a much shorter window than a successful one — a failure is retried soon, a success is trusted for hours.
 _Avoid_: TTL, cache expiry
+
+### Group order
+
+**Group Order**:
+One shared basket that every Participant of a Session adds to from their own phone, for the Venue the Session matched on. It exists only in Redis for the life of the Session, is priced from a Pinned Menu, and ends when a Buyer locks it. Dinder never places it.
+_Avoid_: cart, group cart, shared cart, checkout — **as names for the Group Order**. "Checkout" and "cart" refer only to the Platform's own, which is where the human actually pays, and this document uses them that way throughout.
+
+**Pinned Menu**:
+The Storefront menu copied verbatim out of a Snapshot into the Group Order when it opens, and never re-read. Item identity inside a Group Order is the array index into it, which is immutable because the copy is frozen and the source Snapshot is append-only (ADR 0005).
+_Avoid_: cached menu, menu snapshot, catalogue
+
+**Order Line**:
+One Participant's quantity of one Pinned Menu item. Two Participants ordering the same dish are two Order Lines, never one — that is what makes the per-person split fall out with no line ids.
+_Avoid_: cart item, basket item, order item
+
+**Buyer**:
+The Participant who tapped "I'll order". Claiming the Buyer and locking the Group Order is one action; the first tap wins and there is no transfer. Authority follows the money.
+_Avoid_: host, owner, payer, orderer
+
+**Share**:
+What one Participant owes: their Order Lines plus their portion of the Buyer's stated delivery-and-fees number, split evenly across Participants with at least one Order Line. Shares always sum exactly to the Group Order total.
+_Avoid_: split, tab, portion, IOU

@@ -12,6 +12,13 @@ import { handleSessionLeave } from '../../src/websocket/leaveHandler.js';
 import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import { handleSelectionSubmit } from '../../src/websocket/submitHandler.js';
+import { handleOrderOpen } from '../../src/websocket/orderHandler.js';
+import { createOrderService } from '../../src/services/OrderService.js';
+import {
+  SNAPSHOT_FRESHNESS_MS,
+  SNAPSHOT_FAILURE_FRESHNESS_MS,
+  type Snapshot,
+} from '@dinder/shared/types';
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
@@ -954,6 +961,112 @@ describe('websocket handlers', () => {
       );
 
       expect(callback).toHaveBeenCalledWith({ success: true, data: null });
+    });
+  });
+
+  describe('handleOrderOpen', () => {
+    const placeId = 'place-crown';
+
+    function orderSnapshot(): Snapshot {
+      return {
+        id: 'snap-1',
+        placeId,
+        venueName: 'Pizza Place',
+        fetchedAt: new Date().toISOString(),
+        payload: {
+          ubereats: {
+            status: 'resolved',
+            deals: [],
+            storeUrl: 'https://store',
+            menu: [{ name: 'Margherita', price_cents: 1500, tags: [] }],
+          },
+          doordash: { status: 'not_found', deals: [], menu: [] },
+        },
+      };
+    }
+
+    function orderService(getLatest = vi.fn().mockResolvedValue(orderSnapshot())) {
+      return createOrderService({
+        store,
+        snapshotStore: { getLatest },
+        freshnessMs: SNAPSHOT_FRESHNESS_MS,
+        failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
+      });
+    }
+
+    async function completedSession(participantId = 'socket-1') {
+      await createSessionWithParticipant(participantId);
+      await store.addResultPlaceId(sessionCode, placeId);
+    }
+
+    it('rejects an invalid payload with VALIDATION_ERROR', async () => {
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+
+      await handleOrderOpen(
+        socket() as any,
+        { sessionCode: 'bad', placeId: '' } as any,
+        callback,
+        orderService()
+      );
+
+      expect(callback.mock.calls[0][0]).toEqual({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
+    });
+
+    it('acks the built OrderState on success', async () => {
+      await completedSession('socket-1');
+      const callback = vi.fn();
+
+      await handleOrderOpen(
+        socket('socket-1') as any,
+        { sessionCode, placeId },
+        callback,
+        orderService()
+      );
+
+      const ack = callback.mock.calls[0][0];
+      expect(ack.success).toBe(true);
+      expect(ack.data.platform).toBe('ubereats');
+      expect(ack.data.menu).toHaveLength(1);
+    });
+
+    it('maps a stale Snapshot to NOT_FOUND with a machine-readable reason', async () => {
+      await completedSession('socket-1');
+      const callback = vi.fn();
+      const getLatest = vi.fn().mockResolvedValue(null); // no snapshot → stale
+
+      await handleOrderOpen(
+        socket('socket-1') as any,
+        { sessionCode, placeId },
+        callback,
+        orderService(getLatest)
+      );
+
+      const ack = callback.mock.calls[0][0];
+      expect(ack.success).toBe(false);
+      expect(ack.error).toEqual({
+        code: 'NOT_FOUND',
+        message: expect.any(String),
+        reason: 'stale',
+      });
+    });
+
+    it('maps a DomainError (non-participant) to its public code', async () => {
+      await completedSession('socket-1');
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+
+      await handleOrderOpen(
+        socket('stranger') as any,
+        { sessionCode, placeId },
+        callback,
+        orderService()
+      );
+
+      expect(callback.mock.calls[0][0].error.code).toBe('NOT_IN_SESSION');
     });
   });
 });
