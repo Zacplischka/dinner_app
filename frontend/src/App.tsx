@@ -18,6 +18,7 @@ const JoinSessionPage = lazy(() => import('./pages/JoinSessionPage'));
 const SessionLobbyPage = lazy(() => import('./pages/SessionLobbyPage'));
 const SelectionPage = lazy(() => import('./pages/SelectionPage'));
 const ResultsPage = lazy(() => import('./pages/ResultsPage'));
+const GroupOrderPage = lazy(() => import('./pages/GroupOrderPage'));
 
 const FriendsPage = lazy(() => import('./pages/FriendsPage'));
 
@@ -61,6 +62,9 @@ function AnimatedRoutes() {
 
         {/* Results screen */}
         <Route path="/session/:sessionCode/results" element={<ResultsPage />} />
+
+        {/* Group Order screen */}
+        <Route path="/session/:sessionCode/order" element={<GroupOrderPage />} />
 
         {/* Friends page */}
         <Route path="/friends" element={<FriendsPage />} />

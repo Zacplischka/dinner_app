@@ -9,6 +9,7 @@ import type {
 import { isComparisonTapSource } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import { subscribeToComparison } from '../services/comparisonStream';
+import { formatPrice } from '../utils/money';
 
 const FAILED_STOREFRONT: StorefrontCapture = { status: 'failed', deals: [], menu: [] };
 // ponytail: UI honesty threshold, deliberately shorter than the backend's 6h
@@ -27,13 +28,6 @@ function fetchedLabel(fetchedAt: string) {
   if (minutes === 0) return 'Fetched just now';
   const base = `Fetched ${minutes} min${minutes === 1 ? '' : 's'} ago`;
   return minutes >= STALE_AFTER_MINUTES ? `${base} — may be out of date` : base;
-}
-
-function formatPrice(priceCents: number) {
-  return new Intl.NumberFormat('en-AU', {
-    style: 'currency',
-    currency: 'AUD',
-  }).format(priceCents / 100);
 }
 
 function OutboundLink({ name, url }: { name: PlatformName; url: string }) {

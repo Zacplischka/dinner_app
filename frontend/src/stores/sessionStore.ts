@@ -31,6 +31,12 @@ interface SessionState {
   overlappingOptions: Restaurant[];
   topPick?: { restaurant: Restaurant; likedBy: number; of: number };
 
+  // The crowned placeId a Group Order was opened for (set when "Order
+  // together" is tapped). Persisted so a hard reload of /order can re-fire
+  // order:open with no other source for the placeId (the route carries only
+  // the session code). Cleared by resetSelections/resetSession.
+  orderPlaceId: string | null;
+
   // Session status
   sessionStatus: 'waiting' | 'selecting' | 'complete' | 'expired';
   isConnected: boolean;
@@ -56,6 +62,9 @@ interface SessionState {
   // Results actions
   setResults: (results: Result) => void;
 
+  // Group Order actions
+  setOrderPlaceId: (placeId: string | null) => void;
+
   // Status actions
   setSessionStatus: (status: 'waiting' | 'selecting' | 'complete' | 'expired') => void;
   setConnectionStatus: (isConnected: boolean) => void;
@@ -78,6 +87,7 @@ const initialState = {
   restaurantNames: {},
   overlappingOptions: [],
   topPick: undefined,
+  orderPlaceId: null,
   sessionStatus: 'waiting' as const,
   isConnected: false,
 };
@@ -151,6 +161,8 @@ export const useSessionStore = create<SessionState>()(
             sessionStatus: 'complete',
           }),
 
+        setOrderPlaceId: (placeId) => set({ orderPlaceId: placeId }),
+
         // Status actions
         setSessionStatus: (status) => set({ sessionStatus: status }),
 
@@ -167,6 +179,7 @@ export const useSessionStore = create<SessionState>()(
             restaurantNames: {},
             overlappingOptions: [],
             topPick: undefined,
+            orderPlaceId: null,
             sessionStatus: 'selecting',
           }),
       }),
