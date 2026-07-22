@@ -24,11 +24,13 @@ vi.mock('../../src/services/apiClient', () => ({
 vi.mock('../../src/services/socketBindings', () => ({
   submitSelection: vi.fn(async () => ({ success: true, data: null })),
   leaveSession: vi.fn(async () => ({ success: true, data: null })),
+  sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
 }));
 
 import SelectionPage from '../../src/pages/SelectionPage';
 import SwipeCard, { swipeVisuals } from '../../src/components/SwipeCard';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { sendLiveSelection } from '../../src/services/socketBindings';
 
 const renderSelectionPage = () =>
   render(
@@ -178,6 +180,7 @@ describe('SelectionPage mobile geometry', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Like' }));
     expect(useSessionStore.getState().selections).toEqual(['place-1']);
+    expect(sendLiveSelection).toHaveBeenCalledWith('AB123', 'place-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(useSessionStore.getState().selections).toEqual([]);
