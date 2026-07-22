@@ -185,6 +185,80 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
   });
 });
 
+test.describe('Live Swipe Room (#183-#187)', () => {
+  test('unanimous like raises the Full House takeover on every phone and Finish here completes the Session', async ({
+    setupSession,
+  }) => {
+    test.setTimeout(120_000);
+    const { host, all } = await setupSession(2); // host + 2 guests = 3
+
+    await host.lobbyPage.startSession();
+
+    await Promise.all(
+      all.map(async (p) => {
+        await p.selectionPage.loadingState
+          .waitFor({ state: 'hidden', timeout: 30_000 })
+          .catch(() => {});
+      })
+    );
+
+    // Everyone likes the first restaurant. Each phone's own like is the last
+    // piece of its Full House, so the takeover must interrupt every deck.
+    for (const p of all) {
+      await p.selectionPage.likeRestaurant();
+    }
+
+    for (const p of all) {
+      const dialog = p.page.getByRole('dialog');
+      await expect(dialog).toBeVisible({ timeout: 10_000 });
+      await expect(dialog.getByText('EVERYONE LIKED THIS')).toBeVisible();
+    }
+
+    await host.page.screenshot({ path: 'test-results/full-house-takeover.png' });
+
+    // A unanimous `Finish here` is the good ending: everyone submits their
+    // one like, the SINTER necessarily contains it, the Full House IS the Match.
+    for (const p of all) {
+      await p.page.getByRole('button', { name: 'Finish here' }).click();
+    }
+
+    await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
+    await expect(host.page.getByText(/It's a Match|Match/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
+  test('a Live Selection is revealed in the deck strip once you have decided that card', async ({
+    setupSession,
+  }) => {
+    test.setTimeout(120_000);
+    const { host, participants, all } = await setupSession(2);
+
+    await host.lobbyPage.startSession();
+
+    await Promise.all(
+      all.map(async (p) => {
+        await p.selectionPage.loadingState
+          .waitFor({ state: 'hidden', timeout: 30_000 })
+          .catch(() => {});
+      })
+    );
+
+    // Guest2 passes the first card (deciding it), then host and guest1 like
+    // it. Two of three liking a card guest2 passed is a reveal, never a Full
+    // House, so only the strip can fire.
+    const [guest1, guest2] = participants;
+    await guest2.selectionPage.passRestaurant();
+    await host.selectionPage.likeRestaurant();
+    await guest1.selectionPage.likeRestaurant();
+
+    // The strip replaces the pill row's right-hand text for 4 seconds.
+    await expect(guest2.page.getByText(/\d of 3 liked/).first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+});
+
 test.describe('Select Again restart (#14, #85)', () => {
   test('Select Again returns every participant to Restaurant Selection', async ({
     setupSession,
