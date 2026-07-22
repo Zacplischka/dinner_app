@@ -17,6 +17,7 @@ import type {
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
 import type { SocketConfig } from './socketService';
+import { resolvePhotoUrls } from './apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useAuthStore } from '../stores/authStore';
 import { toast } from '../hooks/useToast';
@@ -186,10 +187,14 @@ const socketConfig: SocketConfig = {
       console.log('Session results:', event);
       useSessionStore.getState().setResults({
         sessionCode: event.sessionCode,
-        overlappingOptions: event.overlappingOptions,
+        overlappingOptions: resolvePhotoUrls(event.overlappingOptions),
         allSelections: event.allSelections,
         restaurantNames: event.restaurantNames,
         hasOverlap: event.hasOverlap,
+        topPick: event.topPick && {
+          ...event.topPick,
+          restaurant: resolvePhotoUrls([event.topPick.restaurant])[0],
+        },
       });
     },
 

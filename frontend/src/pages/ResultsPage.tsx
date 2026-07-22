@@ -152,6 +152,90 @@ function MatchHero({ photoUrl }: { photoUrl: string }) {
   );
 }
 
+// priceLevel is omitted from the data when unknown; 0 means genuinely free.
+const formatPriceLevel = (level: number): string => {
+  if (level === 0) return 'Free';
+  return '$'.repeat(level);
+};
+
+// The Match card, extracted (#166) so the crowned Restaurant and the
+// collapsed "other matches" render from the same markup — same
+// `data-match-card` attribute, same classes (neon-components.test.tsx#187-202).
+function MatchCard({
+  restaurant,
+  comparePath,
+  ubereatsHref,
+  doordashHref,
+  eyebrow,
+  reason,
+}: {
+  restaurant: Restaurant;
+  comparePath: string;
+  ubereatsHref: string;
+  doordashHref: string;
+  eyebrow?: string;
+  reason?: string;
+}) {
+  return (
+    <div
+      data-match-card
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+    >
+      {restaurant.photoUrl && <MatchHero photoUrl={restaurant.photoUrl} />}
+      {eyebrow && (
+        <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">{eyebrow}</p>
+      )}
+      <p className="text-lg font-semibold text-text">{restaurant.name}</p>
+      {reason && <p className="text-sm text-muted mt-1">{reason}</p>}
+
+      <div className="mt-2 space-y-2">
+        <div className="flex items-center space-x-3 text-sm">
+          {restaurant.rating !== undefined && (
+            <span className="flex items-center text-amber gap-1">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              {restaurant.rating.toFixed(1)}
+            </span>
+          )}
+          {restaurant.priceLevel !== undefined && (
+            <span className="text-muted font-medium">
+              {formatPriceLevel(restaurant.priceLevel)}
+            </span>
+          )}
+          {restaurant.cuisineType && <span className="text-muted">{restaurant.cuisineType}</span>}
+        </div>
+        {restaurant.address && (
+          <p className="text-sm text-muted flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            {restaurant.address}
+          </p>
+        )}
+
+        {/* Delivery Order Buttons - Elegant cards with brand logos */}
+        <DeliveryActions
+          ubereatsHref={ubereatsHref}
+          doordashHref={doordashHref}
+          comparePath={comparePath}
+        />
+      </div>
+    </div>
+  );
+}
+
 // The per-Participant Selection lists, shared by the always-visible
 // "Everyone's Selections" section and the unanimous-vote disclosure (#85).
 function SelectionsList({
@@ -233,12 +317,23 @@ export default function ResultsPage() {
     participants,
     restaurants,
     sessionStatus,
+    topPick,
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
 
   const hasOverlap = overlappingOptions.length > 0;
+
+  // An older backend sends no topPick; crown the best-rated Match rather than branching the UI.
+  const fallbackCrown = [...overlappingOptions].sort(
+    (a, b) => (b.rating ?? -1) - (a.rating ?? -1)
+  )[0];
+  const pick =
+    topPick ??
+    (fallbackCrown
+      ? { restaurant: fallbackCrown, likedBy: participants.length, of: participants.length }
+      : undefined);
 
   // #14: a Restart from any Participant flips the Session back to selecting —
   // every tab still on results follows, not just the one that tapped the button.
@@ -278,6 +373,7 @@ export default function ResultsPage() {
     const restaurantsById = new Map(restaurants.map((r) => [r.placeId, r]));
     selectionCounts.forEach((count, placeId) => {
       if (count !== participants.length - 1) return;
+      if (pick && placeId === pick.restaurant.placeId) return;
       nearMisses.push(
         restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
       );
@@ -298,12 +394,6 @@ export default function ResultsPage() {
     participants.every((participant) =>
       sameSelections(allSelections[participant.displayName] || [], firstSelections)
     );
-
-  // priceLevel is omitted from the data when unknown; 0 means genuinely free.
-  const formatPriceLevel = (level: number): string => {
-    if (level === 0) return 'Free';
-    return '$'.repeat(level);
-  };
 
   const handleRestart = async () => {
     if (!sessionCode) return;
@@ -354,14 +444,30 @@ export default function ResultsPage() {
       .catch(() => toast.error('Could not copy link'));
   };
 
+  // The crown's one-line reason (top-pick.md's copy table).
+  const pickReason = (crowned: NonNullable<typeof pick>): string => {
+    if (crowned.likedBy === crowned.of && overlappingOptions.length === 1) {
+      return 'Everyone swiped yes on this one.';
+    }
+    if (crowned.likedBy === crowned.of && overlappingOptions.length > 1) {
+      return `Everyone swiped yes — best rated of your ${overlappingOptions.length} matches.`;
+    }
+    if (crowned.likedBy > 0 && crowned.likedBy < crowned.of) {
+      return `${crowned.likedBy} of ${crowned.of} swiped yes — the closest you got.`;
+    }
+    return "Nobody swiped yes, so here's the highest rated nearby.";
+  };
+
   return (
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
       <NavigationHeader
-        title={hasOverlap ? 'Perfect Match!' : 'No Match Found'}
+        title={pick ? (hasOverlap ? 'Perfect Match!' : "Tonight's Pick") : 'No Match Found'}
         subtitle={
-          hasOverlap
-            ? 'Everyone agrees on these options'
+          pick
+            ? hasOverlap
+              ? "Tonight's pick is locked in"
+              : "No unanimous Match — here's the closest one"
             : "No restaurants matched everyone's preferences"
         }
         sessionCode={sessionCode}
@@ -389,157 +495,146 @@ export default function ResultsPage() {
       />
 
       <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
-        {/* Overlapping Options */}
-        {hasOverlap ? (
-          <div className="mb-6">
-            {/* Celebration leads; rays sit behind the heading, fade inside the
-                header block, and freeze under reduced motion (see index.css). */}
-            <div className="match-celebration mb-6 text-center">
-              <div className="match-rays" data-match-rays aria-hidden="true" />
-              <h2 className="relative inline-block animate-match-pop rounded-market-md px-5 py-2 text-4xl font-black tracking-[0.14em] text-lime shadow-match">
-                MATCH!
-              </h2>
-              <p className="relative mt-4 text-muted">Everyone found the same spark.</p>
-            </div>
-            {/* The matched Restaurant is the dominant surface — no wrapper card
+        {/* Celebration leads; rays sit behind the heading, fade inside the
+            header block, and freeze under reduced motion (see index.css). */}
+        {hasOverlap && (
+          <div className="match-celebration mb-6 text-center">
+            <div className="match-rays" data-match-rays aria-hidden="true" />
+            <h2 className="relative inline-block animate-match-pop rounded-market-md px-5 py-2 text-4xl font-black tracking-[0.14em] text-lime shadow-match">
+              MATCH!
+            </h2>
+            <p className="relative mt-4 text-muted">Everyone found the same spark.</p>
+          </div>
+        )}
+
+        {pick ? (
+          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+            {/* The crowned Restaurant is the dominant surface — no wrapper card
                 competing with it. Warm glow is reflected light from the celebration. */}
-            <div className="match-warm-glow space-y-4">
-              {overlappingOptions.map((restaurant) => {
-                return (
-                  <div
-                    key={restaurant.placeId}
-                    data-match-card
-                    className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+            <MatchCard
+              restaurant={pick.restaurant}
+              eyebrow="TONIGHT'S PICK"
+              reason={pickReason(pick)}
+              ubereatsHref={
+                hasOverlap
+                  ? generateUberEatsUrl(pick.restaurant.name, pick.restaurant.address)
+                  : nearMissRedirectUrl('ubereats', pick.restaurant.placeId)
+              }
+              doordashHref={
+                hasOverlap
+                  ? generateDoorDashUrl(pick.restaurant.name, pick.restaurant.address)
+                  : nearMissRedirectUrl('doordash', pick.restaurant.placeId)
+              }
+              // ponytail: reusing near_miss for the no-Match crown keeps the #68 kill-gate
+              // vocabulary closed; if the gate needs crowned taps separated, add 'top_pick'
+              // to COMPARISON_TAP_SOURCES (additive).
+              comparePath={`/compare/${encodeURIComponent(pick.restaurant.placeId)}?source=${hasOverlap ? 'match_card' : 'near_miss'}`}
+            />
+
+            {hasOverlap && overlappingOptions.length > 1 && (
+              <details className="card group mb-6 mt-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
+                  Other matches ({overlappingOptions.length - 1})
+                  <svg
+                    className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
                   >
-                    {restaurant.photoUrl && <MatchHero photoUrl={restaurant.photoUrl} />}
-                    <p className="text-lg font-semibold text-text">{restaurant.name}</p>
-
-                    <div className="mt-2 space-y-2">
-                      <div className="flex items-center space-x-3 text-sm">
-                        {restaurant.rating !== undefined && (
-                          <span className="flex items-center text-amber gap-1">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            {restaurant.rating.toFixed(1)}
-                          </span>
-                        )}
-                        {restaurant.priceLevel !== undefined && (
-                          <span className="text-muted font-medium">
-                            {formatPriceLevel(restaurant.priceLevel)}
-                          </span>
-                        )}
-                        {restaurant.cuisineType && (
-                          <span className="text-muted">{restaurant.cuisineType}</span>
-                        )}
-                      </div>
-                      {restaurant.address && (
-                        <p className="text-sm text-muted flex items-center gap-1.5">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                          {restaurant.address}
-                        </p>
-                      )}
-
-                      {/* Delivery Order Buttons - Elegant cards with brand logos */}
-                      <DeliveryActions
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                    />
+                  </svg>
+                </summary>
+                <div className="mt-4 space-y-4">
+                  {overlappingOptions
+                    .filter((restaurant) => restaurant.placeId !== pick.restaurant.placeId)
+                    .map((restaurant) => (
+                      <MatchCard
+                        key={restaurant.placeId}
+                        restaurant={restaurant}
                         ubereatsHref={generateUberEatsUrl(restaurant.name, restaurant.address)}
                         doordashHref={generateDoorDashUrl(restaurant.name, restaurant.address)}
                         comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
                       />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    ))}
+                </div>
+              </details>
+            )}
           </div>
         ) : (
-          <>
-            <div className="card p-8 mb-6 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-muted/10 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-muted"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <p className="text-muted mb-6">No restaurants were selected by all participants</p>
-              <button
-                onClick={handleRestart}
-                disabled={isRestarting}
-                className="btn btn-primary px-6 py-3"
+          <div className="card p-8 mb-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-muted/10 rounded-full flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-muted"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                Try Again
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
             </div>
+            <p className="text-muted mb-6">No restaurants were selected by all participants</p>
+            <button
+              onClick={handleRestart}
+              disabled={isRestarting}
+              className="btn btn-primary px-6 py-3"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
 
-            {/* Near Misses: the all-but-one tier, counts only, never names */}
-            {nearMisses.length > 0 && (
-              <div className="card mb-6">
-                <h2 className="text-xl font-display font-semibold text-text mb-1">So Close</h2>
-                <p className="text-sm text-muted mb-4">
-                  All but one of you liked these — worth a second look?
-                </p>
-                <div className="space-y-3">
-                  {nearMisses.map((restaurant) => (
-                    <div
-                      key={restaurant.placeId}
-                      data-near-miss-card
-                      className="p-4 bg-amber/10 border border-amber/60 rounded-market-md"
-                    >
-                      <p className="text-lg font-semibold text-text">{restaurant.name}</p>
-                      <p className="text-sm font-medium text-amber">
-                        {participants.length - 1} of {participants.length} liked this
-                      </p>
+        {/* Near Misses: the all-but-one tier, counts only, never names.
+            The crowned placeId is already excluded (see nearMisses above). */}
+        {!hasOverlap && nearMisses.length > 0 && (
+          <div className="card mb-6">
+            <h2 className="text-xl font-display font-semibold text-text mb-1">So Close</h2>
+            <p className="text-sm text-muted mb-4">
+              All but one of you liked these — worth a second look?
+            </p>
+            <div className="space-y-3">
+              {nearMisses.map((restaurant) => (
+                <div
+                  key={restaurant.placeId}
+                  data-near-miss-card
+                  className="p-4 bg-amber/10 border border-amber/60 rounded-market-md"
+                >
+                  <p className="text-lg font-semibold text-text">{restaurant.name}</p>
+                  <p className="text-sm font-medium text-amber">
+                    {(pick ? pick.of : participants.length) - 1} of{' '}
+                    {pick ? pick.of : participants.length} liked this
+                  </p>
 
-                      <div className="mt-2 space-y-2">
-                        {restaurant.rating !== undefined && (
-                          <div className="flex items-center space-x-3 text-sm">
-                            <span className="flex items-center text-amber gap-1">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              {restaurant.rating.toFixed(1)}
-                            </span>
-                          </div>
-                        )}
-                        <DeliveryActions
-                          ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
-                          doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}
-                          comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=near_miss`}
-                        />
+                  <div className="mt-2 space-y-2">
+                    {restaurant.rating !== undefined && (
+                      <div className="flex items-center space-x-3 text-sm">
+                        <span className="flex items-center text-amber gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          {restaurant.rating.toFixed(1)}
+                        </span>
                       </div>
-                    </div>
-                  ))}
+                    )}
+                    <DeliveryActions
+                      ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
+                      doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}
+                      comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=near_miss`}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* All Selections — identical per-Participant copies collapse behind
@@ -594,7 +689,7 @@ export default function ResultsPage() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {hasOverlap && (
+          {pick && (
             <button
               onClick={handleRestart}
               disabled={isRestarting}

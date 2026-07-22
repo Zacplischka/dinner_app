@@ -22,4 +22,5 @@ export interface Result {
   allSelections: Record<string, string[]>; // displayName -> placeIds
   restaurantNames?: Record<string, string>; // placeId -> name mapping for display
   hasOverlap: boolean;
+  topPick?: { restaurant: Restaurant; likedBy: number; of: number };
 }

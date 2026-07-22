@@ -29,6 +29,7 @@ interface SessionState {
   liveSelections: Record<string, string[]>; // placeId -> displayNames who live-selected it (remote only)
   restaurantNames: Record<string, string>; // placeId -> name mapping for display
   overlappingOptions: Restaurant[];
+  topPick?: { restaurant: Restaurant; likedBy: number; of: number };
 
   // Session status
   sessionStatus: 'waiting' | 'selecting' | 'complete' | 'expired';
@@ -76,6 +77,7 @@ const initialState = {
   liveSelections: {},
   restaurantNames: {},
   overlappingOptions: [],
+  topPick: undefined,
   sessionStatus: 'waiting' as const,
   isConnected: false,
 };
@@ -145,6 +147,7 @@ export const useSessionStore = create<SessionState>()(
             allSelections: results.allSelections,
             restaurantNames: results.restaurantNames || {},
             overlappingOptions: results.overlappingOptions,
+            topPick: results.topPick,
             sessionStatus: 'complete',
           }),
 
@@ -163,6 +166,7 @@ export const useSessionStore = create<SessionState>()(
             liveSelections: {},
             restaurantNames: {},
             overlappingOptions: [],
+            topPick: undefined,
             sessionStatus: 'selecting',
           }),
       }),

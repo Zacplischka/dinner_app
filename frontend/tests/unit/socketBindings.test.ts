@@ -268,6 +268,38 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.error).toHaveBeenCalledWith('An error occurred');
   });
 
+  it('resolves a relative session:results photoUrl to an absolute URL on both overlappingOptions and topPick (hero rider, #166)', () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+
+    socket.trigger('session:results', {
+      sessionCode: 'AB123',
+      hasOverlap: true,
+      overlappingOptions: [
+        { placeId: 'pizza', name: 'Pizza', photoUrl: '/api/comparison/photo?name=pizza-photo' },
+      ],
+      allSelections: { Alice: ['pizza'] },
+      restaurantNames: { pizza: 'Pizza' },
+      topPick: {
+        restaurant: {
+          placeId: 'pizza',
+          name: 'Pizza',
+          photoUrl: '/api/comparison/photo?name=pizza-photo',
+        },
+        likedBy: 1,
+        of: 1,
+      },
+    });
+
+    const { overlappingOptions, topPick } = useSessionStore.getState();
+    expect(overlappingOptions[0].photoUrl).toBe(
+      'http://localhost:3001/api/comparison/photo?name=pizza-photo'
+    );
+    expect(topPick?.restaurant.photoUrl).toBe(
+      'http://localhost:3001/api/comparison/photo?name=pizza-photo'
+    );
+  });
+
   it('stores session state when joining and resets it when leaving', async () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();

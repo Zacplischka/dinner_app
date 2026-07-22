@@ -118,9 +118,18 @@ describe('ResultsPage', () => {
           Bob: [pizza.placeId, noodle.placeId],
         },
       });
-      const { container } = renderResults();
+      renderResults();
 
-      const [withPhoto, withoutPhoto] = [...container.querySelectorAll('[data-match-card]')];
+      // The rating-sorted fallback crown (#166) picks Noodle House (4.8 > 4.2),
+      // so look each card up by name instead of assuming DOM order. Both names
+      // also appear in the unanimous-selections disclosure, so pick the match card.
+      const findCard = (name: string) =>
+        screen
+          .getAllByText(name)
+          .map((el) => el.closest('[data-match-card]'))
+          .find((el): el is HTMLElement => el !== null)!;
+      const withPhoto = findCard('Pizza Palace');
+      const withoutPhoto = findCard('Noodle House');
       const img = withPhoto.querySelector('img');
       expect(img).toHaveAttribute('src', photoPizza.photoUrl);
       expect(withoutPhoto.querySelector('img')).toBeNull();
@@ -429,6 +438,91 @@ describe('ResultsPage', () => {
       expect(
         share.compareDocumentPosition(startFresh) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
+    });
+  });
+
+  describe('Top Pick (#166)', () => {
+    it('crowns the single Match with "Everyone swiped yes on this one." and no Other matches disclosure', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        topPick: { restaurant: pizza, likedBy: 2, of: 2 },
+      });
+      renderResults();
+
+      expect(screen.getByText("TONIGHT'S PICK")).toBeTruthy();
+      expect(screen.getByText('Everyone swiped yes on this one.')).toBeTruthy();
+      expect(screen.queryByText(/other matches/i)).toBeNull();
+    });
+
+    it('crowns the best-rated of several Matches with "best rated of your N matches." and collapses the rest', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza, noodle],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId, noodle.placeId],
+        },
+        topPick: { restaurant: noodle, likedBy: 2, of: 2 },
+      });
+      const { container } = renderResults();
+
+      expect(screen.getByText('Everyone swiped yes — best rated of your 2 matches.')).toBeTruthy();
+      const disclosure = screen.getByText('Other matches (1)').closest('details')!;
+      expect(disclosure.textContent).toContain('Pizza Palace');
+      expect(disclosure.textContent).not.toContain('Noodle House');
+      expect(container.querySelectorAll('[data-match-card]')).toHaveLength(2);
+    });
+
+    it('crowns the most-selected Restaurant on partial agreement, excludes it from So Close, and sizes the So Close count from pick.of', () => {
+      seedStore({
+        participants: [alice, bob, cara],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId],
+          Cara: [noodle.placeId],
+        },
+        // `of` deliberately differs from participants.length (3) to prove the
+        // So Close count reads pick.of, not the client's participants array (#12).
+        topPick: { restaurant: pizza, likedBy: 2, of: 4 },
+      });
+      const { container } = renderResults();
+
+      expect(screen.getByText('2 of 4 swiped yes — the closest you got.')).toBeTruthy();
+      const nearMissCards = [...container.querySelectorAll('[data-near-miss-card]')];
+      expect(nearMissCards).toHaveLength(1);
+      expect(nearMissCards[0].textContent).toContain('Noodle House');
+      expect(nearMissCards[0].textContent).toContain('3 of 4 liked this');
+      expect(nearMissCards.some((card) => card.textContent?.includes('Pizza Palace'))).toBe(false);
+    });
+
+    it('crowns the highest-rated Restaurant with "Nobody swiped yes" when nobody selected anything', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [],
+        allSelections: { Alice: [], Bob: [] },
+        topPick: { restaurant: taco, likedBy: 0, of: 2 },
+      });
+      renderResults();
+
+      expect(
+        screen.getByText("Nobody swiped yes, so here's the highest rated nearby.")
+      ).toBeTruthy();
+    });
+
+    it('renders today\'s "No Match Found" header and empty state when there is no topPick and no Match', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [],
+        allSelections: { Alice: [pizza.placeId], Bob: [noodle.placeId] },
+      });
+      renderResults();
+
+      expect(screen.getByText('No Match Found')).toBeTruthy();
+      expect(screen.getByText(/no restaurants matched everyone's preferences/i)).toBeTruthy();
+      expect(screen.getByText(/no restaurants were selected by all participants/i)).toBeTruthy();
     });
   });
 });
