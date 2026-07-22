@@ -400,6 +400,33 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       }
     }
     const nearMissCount = [...tally.values()].filter((n) => n === selections.length - 1).length;
+
+    // Top Pick: crown one Restaurant from the Match, else every Restaurant
+    // anyone selected, else the deck's open Restaurants (docs/specs/top-pick.md).
+    const of = selections.length;
+    let pool = results.overlappingOptions;
+    if (!results.hasOverlap) {
+      const deck = (await store.getRestaurants(sessionCode)).restaurants;
+      const selected = deck.filter((r) => (tally.get(r.placeId) ?? 0) > 0);
+      // Nobody selected anything: fall back to the deck so the screen still answers,
+      // but don't crown a venue Places says is shut when an open one exists.
+      const open = deck.filter((r) => r.openNow !== false);
+      pool = selected.length > 0 ? selected : open.length > 0 ? open : deck;
+    }
+    const crowned = [...pool].sort(
+      (a, b) =>
+        (tally.get(b.placeId) ?? 0) - (tally.get(a.placeId) ?? 0) ||
+        (b.rating ?? -1) - (a.rating ?? -1) ||
+        a.name.localeCompare(b.name)
+    )[0];
+    const topPick = crowned
+      ? { restaurant: crowned, likedBy: tally.get(crowned.placeId) ?? 0, of }
+      : undefined;
+    // The Group Order gate is SISMEMBER session:{code}:results — admit the crown there too.
+    if (!results.hasOverlap && topPick) {
+      await store.addResultPlaceId(sessionCode, topPick.restaurant.placeId);
+    }
+
     const matchSize = results.overlappingOptions.length;
     const restartFollowed = await store.wasRestartedAfterComplete(sessionCode);
 
@@ -415,7 +442,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       'Session outcome'
     );
 
-    return results;
+    return { ...results, topPick };
   }
 
   /**
@@ -429,7 +456,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
   ): Promise<{
     submittedCount: number;
     participantCount: number;
-    results?: Awaited<ReturnType<SessionStore['computeAndStoreResults']>>;
+    results?: Awaited<ReturnType<typeof completeSession>>;
   }> {
     if (!(await store.readSession(sessionCode))) {
       throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
@@ -467,7 +494,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
   ): Promise<{
     displayName: string;
     participantCount: number;
-    results?: Awaited<ReturnType<SessionStore['computeAndStoreResults']>>;
+    results?: Awaited<ReturnType<typeof completeSession>>;
   }> {
     const session = await store.readSession(sessionCode);
     if (!session) {
