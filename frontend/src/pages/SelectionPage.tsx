@@ -49,7 +49,9 @@ export default function SelectionPage() {
   const [submittedCount, setSubmittedCount] = useState(0);
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
   const [reveal, setReveal] = useState<{ count: number; total: number; name: string } | null>(null);
+  const [fullHousePlaceId, setFullHousePlaceId] = useState<string | null>(null);
   const announcedRef = useRef<Set<string>>(new Set());
+  const fullHouseShownRef = useRef(false); // once per visit to the deck
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -88,26 +90,65 @@ export default function SelectionPage() {
       .filter((r) => liveSelections[r.placeId]?.length && !announcedRef.current.has(r.placeId));
     if (unlocked.length === 0) return;
 
-    // ponytail: last-one-wins, no queue — the earlier unlocks are stale by the time
-    // they would be shown, so they are marked announced and never surface. Upgrade to
-    // a 4s queue if testers report missed reveals.
-    const latest = unlocked[unlocked.length - 1];
+    const participantNames = participants.map((p) => p.displayName);
+    const withResult = unlocked.map((r) => ({
+      restaurant: r,
+      result: liveReveal({
+        placeId: r.placeId,
+        selectorNames: liveSelections[r.placeId] ?? [],
+        likedByMe: selections.includes(r.placeId),
+        participantNames,
+      }),
+    }));
+
+    // One reveal slot, N unlocks: a Full House wins over a plain reveal; otherwise
+    // last-one-wins (the earlier unlocks are stale by the time they would show). The
+    // rest are marked announced and never surface.
+    // ponytail: no queue — upgrade to a 4s queue if testers report missed reveals.
+    const fullHouses = withResult.filter((x) => x.result.fullHouse);
+    const pool = fullHouses.length ? fullHouses : withResult;
+    const latest = pool[pool.length - 1];
     unlocked.forEach((r) => announcedRef.current.add(r.placeId));
 
-    const participantNames = participants.map((p) => p.displayName);
-    const { count } = liveReveal({
-      placeId: latest.placeId,
-      selectorNames: liveSelections[latest.placeId] ?? [],
-      likedByMe: selections.includes(latest.placeId),
-      participantNames,
-    });
-
     clearTimeout(revealTimerRef.current);
-    setReveal({ count, total: participantNames.length, name: latest.name });
+    setReveal({
+      count: latest.result.count,
+      total: participantNames.length,
+      name: latest.restaurant.name,
+    });
     revealTimerRef.current = setTimeout(() => setReveal(null), 4000);
+
+    if (latest.result.fullHouse && !fullHouseShownRef.current) {
+      fullHouseShownRef.current = true;
+      setFullHousePlaceId(latest.restaurant.placeId);
+    }
 
     return () => clearTimeout(revealTimerRef.current);
   }, [liveSelections, currentIndex, restaurants, participants, selections]);
+
+  // Full House takeover: push a history entry so the hardware back button dismisses
+  // the overlay instead of leaving the deck. Escape and Keep swiping both go through
+  // history.back() → popstate → clear.
+  useEffect(() => {
+    if (!fullHousePlaceId) return;
+    window.history.pushState({ dinderFullHouse: true }, '');
+    // Dismissal chokepoint: Keep swiping, Escape and hardware back all route
+    // through history.back() -> popstate -> here. Clear a failed-submit error so
+    // it can't leak onto the end-of-deck screen.
+    const onPop = () => {
+      setError('');
+      setFullHousePlaceId(null);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [fullHousePlaceId]);
+
+  // Keep swiping, Escape and the hardware back button are all this.
+  const keepSwiping = () => window.history.back();
+  // ponytail: a successful Finish here unmounts the overlay with the pushed entry
+  // still on the stack, so one hardware back from "All Done!" is swallowed (same
+  // URL, nothing re-renders). Ceiling: one dead back-tap. Upgrade: history.back()
+  // in the effect cleanup when the entry was not consumed by popstate.
 
   // Navigate to results when session is complete
   const sessionStatus = useSessionStore((state) => state.sessionStatus);
@@ -178,6 +219,9 @@ export default function SelectionPage() {
 
   // Check if we've gone through all restaurants
   const isDone = currentIndex >= restaurants.length;
+
+  const fullHouseName = restaurants.find((r) => r.placeId === fullHousePlaceId)?.name;
+  const deckInert = fullHousePlaceId !== null;
 
   if (isLoading) {
     return (
@@ -355,7 +399,10 @@ export default function SelectionPage() {
       />
 
       {/* Card Stack */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 py-3">
+      <div
+        className={`flex-1 min-h-0 flex flex-col items-center justify-center px-4 py-3${deckInert ? ' pointer-events-none' : ''}`}
+        aria-hidden={deckInert}
+      >
         <div className="mb-3 flex w-full max-w-sm flex-shrink-0 items-center justify-between rounded-full border border-line bg-raised/90 px-3 py-2">
           <div className="flex shrink-0 -space-x-2" aria-label="Participants choosing">
             {participants.map((participant, index) => {
@@ -431,11 +478,15 @@ export default function SelectionPage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="safe-bottom flex-shrink-0 px-4 pb-4 pt-2">
+      <div
+        className={`safe-bottom flex-shrink-0 px-4 pb-4 pt-2${deckInert ? ' pointer-events-none' : ''}`}
+        aria-hidden={deckInert}
+      >
         <div className="max-w-sm mx-auto flex items-center justify-center gap-8">
           {/* Nope Button */}
           <button
             onClick={handleSwipeLeft}
+            disabled={deckInert}
             className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-coral-soft text-coral-soft flex items-center justify-center shadow-glow-coral hover:bg-coral/10 active:scale-95 transition-all duration-150"
             aria-label="Pass"
           >
@@ -465,7 +516,7 @@ export default function SelectionPage() {
                 // re-deciding it produces no second reveal.
               }
             }}
-            disabled={currentIndex === 0}
+            disabled={currentIndex === 0 || deckInert}
             className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-cyan hover:text-cyan disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             aria-label="Undo"
           >
@@ -487,6 +538,7 @@ export default function SelectionPage() {
           {/* Like Button */}
           <button
             onClick={handleSwipeRight}
+            disabled={deckInert}
             className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-lime text-lime flex items-center justify-center shadow-glow-lime hover:bg-lime/10 active:scale-95 transition-all duration-150"
             aria-label="Like"
           >
@@ -499,6 +551,62 @@ export default function SelectionPage() {
         {/* Hint text */}
         <p className="text-center text-xs text-muted mt-2">Swipe or use buttons to choose</p>
       </div>
+
+      {/* Full House takeover */}
+      {fullHousePlaceId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 backdrop-blur-[10px] p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="full-house-title"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') keepSwiping();
+          }}
+        >
+          <div className="card w-full max-w-sm text-center animate-fade-in">
+            <div className="mb-3 flex justify-center gap-1" aria-hidden="true">
+              {[0, 1, 2].map((i) => (
+                <svg key={i} className="w-8 h-8 text-lime" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+                </svg>
+              ))}
+            </div>
+            <h2 id="full-house-title" className="text-2xl font-display font-black text-lime mb-3">
+              EVERYONE LIKED THIS
+            </h2>
+            <p className="text-3xl font-display font-black text-text mb-3 truncate">
+              {fullHouseName}
+            </p>
+            <p className="text-muted mb-6">Lock it in now, or keep going for more.</p>
+
+            {error && (
+              <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
+                <p className="text-sm text-coral-soft">Could not submit — try again</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              autoFocus
+              className="btn btn-primary w-full min-h-[56px] px-8 py-4 text-xl"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Submitting...
+                </span>
+              ) : (
+                'Finish here'
+              )}
+            </button>
+
+            <button onClick={keepSwiping} className="btn btn-ghost w-full min-h-[48px] mt-3">
+              Keep swiping
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
