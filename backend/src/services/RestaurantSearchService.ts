@@ -1,6 +1,7 @@
 import { logger } from '../logger.js';
 import type { GeocodedArea, Restaurant, Venue } from '@dinder/shared/types';
 import { config } from '../config/index.js';
+import { DomainError } from './DomainError.js';
 
 export interface GooglePlacesSearchParams {
   latitude: number;
@@ -412,7 +413,14 @@ async function fetchNearbyPlaces(
   }
 
   if (!pageData) {
-    throw new Error('Max retries exceeded');
+    // Persistent 429 = the Places searchText quota is exhausted (daily cap or
+    // billing detached), not a transient burst — surface it instead of a
+    // silent generic 500 (2026-07-22 outage).
+    logger.error({ retries }, 'Places searchText rate limit persisted after retries');
+    throw new DomainError(
+      'RATE_LIMITED',
+      'Restaurant search is temporarily unavailable: the app has reached its Google Places search limit. Please try again later.'
+    );
   }
 
   logger.info(
