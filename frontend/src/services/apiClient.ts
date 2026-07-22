@@ -99,7 +99,7 @@ export async function getVenues(
   return { ...result, venues: resolvePhotoUrls(result.venues) };
 }
 
-function resolvePhotoUrls<T extends { photoUrl?: string }>(items: T[]): T[] {
+export function resolvePhotoUrls<T extends { photoUrl?: string }>(items: T[]): T[] {
   return items.map((item) => {
     if (!item.photoUrl) return item;
     let proxyPath = item.photoUrl;
