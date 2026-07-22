@@ -10,6 +10,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 
 import ResultsPage from '../../src/pages/ResultsPage';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { useOrderStore } from '../../src/stores/orderStore';
 
 function participant(id: string, name: string) {
   return {
@@ -62,6 +63,7 @@ describe('ResultsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useSessionStore.getState().resetSession();
+    useOrderStore.getState().clear();
   });
 
   describe('Compare prices link (#71)', () => {
@@ -438,6 +440,69 @@ describe('ResultsPage', () => {
       expect(
         share.compareDocumentPosition(startFresh) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
+    });
+  });
+
+  describe('Order together (#176)', () => {
+    it('renders exactly one Order together button, on the crown, outside Other matches and off Near Miss cards', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza, noodle],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId, noodle.placeId],
+        },
+        topPick: { restaurant: noodle, likedBy: 2, of: 2 },
+      });
+      const { container } = renderResults();
+
+      const buttons = screen.getAllByRole('button', { name: 'Order together' });
+      expect(buttons).toHaveLength(1);
+
+      const crownCard = screen.getAllByText('Noodle House')[0].closest('[data-match-card]')!;
+      expect(crownCard.contains(buttons[0])).toBe(true);
+
+      const otherMatches = screen.getByText('Other matches (1)').closest('details')!;
+      expect(otherMatches.querySelector('button')).toBeNull();
+      expect(otherMatches.textContent).toContain('Pizza Palace');
+
+      expect(container.querySelector('[data-near-miss-card]')).toBeNull();
+    });
+
+    it('shows an Order together button on a zero-overlap crowned Top Pick', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [],
+        allSelections: { Alice: [pizza.placeId], Bob: [noodle.placeId] },
+        topPick: { restaurant: taco, likedBy: 0, of: 2 },
+      });
+      renderResults();
+
+      expect(screen.getByRole('button', { name: 'Order together' })).toBeInTheDocument();
+    });
+
+    it('sets the crowned placeId and navigates to the order route when tapped', () => {
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+      });
+      renderResults();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Order together' }));
+      expect(useSessionStore.getState().orderPlaceId).toBe(pizza.placeId);
+    });
+
+    it('hides Order together for a placeId already marked no_menu', () => {
+      useOrderStore.getState().markNoMenu(pizza.placeId);
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+      });
+      renderResults();
+
+      expect(screen.queryByRole('button', { name: 'Order together' })).toBeNull();
     });
   });
 

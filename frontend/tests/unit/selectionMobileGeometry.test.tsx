@@ -21,15 +21,37 @@ vi.mock('../../src/services/apiClient', () => ({
   getRestaurants: vi.fn(async () => [restaurant, secondRestaurant]),
 }));
 
+const orderState = {
+  sessionCode: 'AB123',
+  placeId: 'place-1',
+  venueName: 'Ramen Ichiban',
+  platform: 'ubereats' as const,
+  pricesAt: '2026-07-22T07:42:00.000Z',
+  lines: [],
+  feeCents: 0,
+  itemsCents: 0,
+  totalCents: 0,
+  shares: [],
+  state: 'building' as const,
+  menu: [
+    { name: 'Margherita', price_cents: 2300, section: 'Pizza', tags: [] },
+    { name: 'Hawaiian', price_cents: 2500, section: 'Pizza', tags: [] },
+    { name: 'Coke (Can)', price_cents: 700, section: 'Drinks', tags: [] },
+  ],
+};
+
 vi.mock('../../src/services/socketBindings', () => ({
   submitSelection: vi.fn(async () => ({ success: true, data: null })),
   leaveSession: vi.fn(async () => ({ success: true, data: null })),
   sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
+  openOrder: vi.fn(async () => ({ success: true, data: orderState })),
 }));
 
 import SelectionPage from '../../src/pages/SelectionPage';
+import GroupOrderPage from '../../src/pages/GroupOrderPage';
 import SwipeCard, { swipeVisuals } from '../../src/components/SwipeCard';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { useOrderStore } from '../../src/stores/orderStore';
 import { sendLiveSelection } from '../../src/services/socketBindings';
 
 const renderSelectionPage = () =>
@@ -195,5 +217,68 @@ describe('SelectionPage mobile geometry', () => {
     expect(progressbar).toHaveAttribute('aria-valuenow', '1');
     expect(progressbar).toHaveAttribute('aria-valuemax', '2');
     expect(screen.getByText('1/2')).toBeInTheDocument();
+  });
+});
+
+describe('GroupOrderPage mobile geometry', () => {
+  const fiftyCharName = (letter: string) => letter.repeat(50);
+
+  beforeEach(() => {
+    useSessionStore.getState().resetSession();
+    useOrderStore.getState().clear();
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      orderPlaceId: 'place-1',
+      participants: [
+        fiftyCharName('a'),
+        fiftyCharName('b'),
+        fiftyCharName('c'),
+        fiftyCharName('d'),
+      ].map((displayName, index) => ({
+        participantId: `p${index}`,
+        displayName,
+        sessionCode: 'AB123',
+        joinedAt: index,
+        hasSubmitted: true,
+        isHost: index === 0,
+      })),
+    });
+  });
+
+  const renderGroupOrderPage = () =>
+    render(
+      <MemoryRouter initialEntries={['/session/AB123/order']}>
+        <Routes>
+          <Route path="/session/:sessionCode/order" element={<GroupOrderPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+  it('pins the whole flow inside the dynamic viewport, scrolling only the menu band', async () => {
+    renderGroupOrderPage();
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+
+    const main = screen.getByRole('main');
+    expect(main).toHaveClass('h-screen-dvh', 'overflow-hidden', 'flex', 'flex-col');
+
+    const menuBand = screen.getByText('In the basket').parentElement as HTMLElement;
+    expect(menuBand).toHaveClass('flex-1', 'min-h-0', 'overflow-y-auto');
+
+    // The menu band is the only element on the page with an overflow class.
+    const overflowElements = [...main.querySelectorAll('*')].filter((el) =>
+      [...el.classList].some((cls) => cls.startsWith('overflow-'))
+    );
+    expect(overflowElements).toEqual([menuBand]);
+  });
+
+  it('does not wrap the roster strip at four 50-character display names', async () => {
+    renderGroupOrderPage();
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+
+    const name = screen.getByText(fiftyCharName('a'));
+    expect(name).toHaveClass('truncate');
+    const roster = name.parentElement!.parentElement as HTMLElement;
+    expect(roster).not.toHaveClass('flex-wrap');
+    expect(roster).toHaveClass('flex', 'min-w-0');
   });
 });

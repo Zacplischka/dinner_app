@@ -14,12 +14,15 @@ import type {
   SessionRestartedEvent,
   SessionExpiredEvent,
   ErrorEvent,
+  OrderStateEvent,
+  OrderOpenResponse,
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
 import type { SocketConfig } from './socketService';
 import { resolvePhotoUrls } from './apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useAuthStore } from '../stores/authStore';
+import { useOrderStore } from '../stores/orderStore';
 import { toast } from '../hooks/useToast';
 
 // Track if we had a previous connection (for showing "Reconnected" toast)
@@ -51,6 +54,15 @@ const socketConfig: SocketConfig = {
             );
             store.resetSession();
             toast.error(`Could not rejoin session: ${ack.error.message}`);
+          }
+          // orderStore is deliberately non-persisted: on a hard reload (ordinary
+          // iOS behaviour after backgrounding) it is empty and cannot guard this
+          // re-fire, so the guard is the route instead. Un-guarded, the order
+          // page's own on-mount order:open loses the race against this
+          // un-awaited rejoin and acks NOT_IN_SESSION.
+          if (ack.success && window.location.pathname.endsWith('/order')) {
+            const { sessionCode, orderPlaceId } = useSessionStore.getState();
+            if (sessionCode && orderPlaceId) void openOrder(sessionCode, orderPlaceId);
           }
         });
       }
@@ -198,6 +210,11 @@ const socketConfig: SocketConfig = {
       });
     },
 
+    // order:state - full Group Order state, emitted after open and every mutation
+    'order:state': (event: OrderStateEvent) => {
+      useOrderStore.getState().setOrder(event.order);
+    },
+
     // session:restarted - Session was restarted by a participant
     'session:restarted': (event: SessionRestartedEvent) => {
       console.log('Session restarted:', event);
@@ -294,6 +311,13 @@ export function sendLiveSelection(sessionCode: string, placeId: string): Promise
  */
 export function restartSession(sessionCode: string): Promise<Ack<null>> {
   return socketService.restartSession(sessionCode);
+}
+
+/**
+ * Open (or rejoin) the Group Order for the crowned Restaurant.
+ */
+export function openOrder(sessionCode: string, placeId: string): Promise<OrderOpenResponse> {
+  return socketService.openOrder(sessionCode, placeId);
 }
 
 /**

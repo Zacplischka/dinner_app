@@ -14,6 +14,9 @@ import type {
   SelectionLivePayload,
   SessionRestartPayload,
   SessionLeavePayload,
+  OrderOpenPayload,
+  OrderOpenResponse,
+  OrderState,
 } from '@dinder/shared/types';
 
 /* v8 ignore next */
@@ -109,6 +112,17 @@ export function submitSelection(sessionCode: string, optionIds: string[]): Promi
 export function sendLiveSelection(sessionCode: string, placeId: string): Promise<Ack<null>> {
   const payload: SelectionLivePayload = { sessionCode, placeId };
   return emitAck<null>('selection:live', payload);
+}
+
+/**
+ * Open (or rejoin) the Group Order for the crowned Restaurant.
+ */
+export function openOrder(sessionCode: string, placeId: string): Promise<OrderOpenResponse> {
+  const payload: OrderOpenPayload = { sessionCode, placeId };
+  // ponytail: emitAck<T> resolves Ack<T>, whose failure arm is the plain ApiError;
+  // OrderUnavailableError adds `reason`, so widen at this one call site. If a second
+  // command ever carries an extended error, make emitAck generic over the whole ack.
+  return emitAck<OrderState>('order:open', payload) as Promise<OrderOpenResponse>;
 }
 
 /**
