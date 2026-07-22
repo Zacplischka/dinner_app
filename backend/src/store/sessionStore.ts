@@ -53,6 +53,8 @@ export interface Participant {
 //                                         crowned Top Pick when there is none ('__empty__' sentinel keeps TTL)
 // session:{code}:restaurant_ids     set:  valid place ids for the session
 // session:{code}:restaurants        hash: placeId -> Restaurant JSON
+// session:{code}:order              hash: the Group Order's fixed metadata + Pinned Menu
+// session:{code}:order:lines        hash: "{index}:{displayName}" -> qty
 // participant:{pid}                 hash: participant metadata
 
 const sessionKey = (code: string) => `session:${code}`;
@@ -62,6 +64,8 @@ const selectionsKey = (code: string, pid: string) => `session:${code}:${pid}:sel
 const resultsKey = (code: string) => `session:${code}:results`;
 const restaurantIdsKey = (code: string) => `session:${code}:restaurant_ids`;
 const restaurantsKey = (code: string) => `session:${code}:restaurants`;
+const orderKey = (code: string) => `session:${code}:order`;
+const orderLinesKey = (code: string) => `session:${code}:order:lines`;
 const participantKey = (pid: string) => `participant:${pid}`;
 
 // Atomically EXPIREAT every session-related key
@@ -130,6 +134,8 @@ export function createSessionStore(redis: Redis) {
       resultsKey(sessionCode),
       restaurantIdsKey(sessionCode),
       restaurantsKey(sessionCode),
+      orderKey(sessionCode),
+      orderLinesKey(sessionCode),
     ];
     participantIds.forEach((pid) => {
       keys.push(participantKey(pid));
@@ -256,6 +262,8 @@ export function createSessionStore(redis: Redis) {
     pipeline.del(resultsKey(sessionCode));
     pipeline.del(restaurantIdsKey(sessionCode));
     pipeline.del(restaurantsKey(sessionCode));
+    pipeline.del(orderKey(sessionCode));
+    pipeline.del(orderLinesKey(sessionCode));
     participantIds.forEach((pid) => {
       pipeline.del(participantKey(pid));
       pipeline.del(selectionsKey(sessionCode, pid));
@@ -532,6 +540,8 @@ export function createSessionStore(redis: Redis) {
       pipeline.hset(participantKey(pid), 'hasSubmitted', '0');
     });
     pipeline.del(resultsKey(sessionCode));
+    pipeline.del(orderKey(sessionCode));
+    pipeline.del(orderLinesKey(sessionCode));
     pipeline.hset(sessionKey(sessionCode), 'state', 'selecting');
     if (wasComplete) {
       // Session-outcome metrics: the next completion is a Restart's outcome
@@ -564,6 +574,30 @@ export function createSessionStore(redis: Redis) {
     return { restaurants, missingCount: placeIds.length - restaurants.length };
   }
 
+  // --- Group Order -------------------------------------------------------
+
+  /** The Group Order's raw hash, or null when none is open. */
+  async function readOrder(sessionCode: string): Promise<Record<string, string> | null> {
+    const data = await redis.hgetall(orderKey(sessionCode));
+    return Object.keys(data).length > 0 ? data : null;
+  }
+
+  /** Field "{index}:{displayName}" -> qty. Empty until order:item ships. */
+  async function readOrderLines(sessionCode: string): Promise<Record<string, string>> {
+    return await redis.hgetall(orderLinesKey(sessionCode));
+  }
+
+  /** Writes the fixed metadata once and slides the session TTL forward. */
+  async function openOrder(sessionCode: string, fields: Record<string, string>): Promise<void> {
+    await redis.hset(orderKey(sessionCode), fields);
+    await touch(sessionCode);
+  }
+
+  /** The placeIds this Session may act on (the Match, plus the crown). */
+  async function isResultPlaceId(sessionCode: string, placeId: string): Promise<boolean> {
+    return (await redis.sismember(resultsKey(sessionCode), placeId)) === 1;
+  }
+
   return {
     sessionExists,
     createSession,
@@ -586,6 +620,10 @@ export function createSessionStore(redis: Redis) {
     resetForRestart,
     wasRestartedAfterComplete,
     getRestaurants,
+    readOrder,
+    readOrderLines,
+    openOrder,
+    isResultPlaceId,
   };
 }
 
