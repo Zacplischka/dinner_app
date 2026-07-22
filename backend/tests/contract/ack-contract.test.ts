@@ -14,6 +14,7 @@ import type {
   SelectionLiveResponse,
   SessionJoinData,
   OrderUnavailableError,
+  OrderBuyResponse,
 } from '@dinder/shared/types';
 
 describe('canonical Socket.IO ack wire contract (shared event map)', () => {
@@ -48,7 +49,9 @@ describe('canonical Socket.IO ack wire contract (shared event map)', () => {
       | SessionRestartResponse
       | SessionLeaveResponse
       | SelectionLiveResponse
+      | OrderBuyResponse
     > = [
+      { success: true, data: null },
       { success: true, data: null },
       { success: true, data: null },
       { success: true, data: null },
@@ -56,6 +59,7 @@ describe('canonical Socket.IO ack wire contract (shared event map)', () => {
     ];
     for (const ack of acks) {
       expect(ack).toEqual({ success: true, data: null });
+      expect(Object.keys(ack).sort()).toEqual(['data', 'success']);
     }
   });
 

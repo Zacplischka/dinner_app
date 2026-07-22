@@ -16,6 +16,7 @@ import type {
   ErrorEvent,
   OrderStateEvent,
   OrderOpenResponse,
+  OrderBuyResponse,
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
 import type { SocketConfig } from './socketService';
@@ -350,6 +351,15 @@ export function addOrderItem(
   delta: 1 | -1
 ): Promise<Ack<null>> {
   return socketService.addOrderItem(sessionCode, index, delta);
+}
+
+/**
+ * "I'll order": claim the Buyer and lock the Group Order. The resulting
+ * order:state broadcast (sender included) is what flips every phone to its
+ * handoff branch — this command carries no local state change of its own.
+ */
+export function claimBuyer(sessionCode: string): Promise<OrderBuyResponse> {
+  return socketService.claimBuyer(sessionCode);
 }
 
 /**

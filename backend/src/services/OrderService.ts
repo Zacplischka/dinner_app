@@ -37,6 +37,7 @@ export interface OrderService {
     index: number,
     delta: 1 | -1
   ): Promise<{ order: OrderState; change?: { by: string; name: string; delta: 1 | -1 } }>;
+  claimBuyer(sessionCode: string, participantId: string): Promise<OrderState>;
 }
 
 export function createOrderService(deps: OrderServiceDeps): OrderService {
@@ -209,5 +210,39 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
       : { order, change: { by: displayName, name: menu[index].name, delta } };
   }
 
-  return { open, addItem };
+  /** Rebuilds the wire state from Redis - the same derivation order:item already broadcasts. */
+  async function readState(sessionCode: string): Promise<OrderState> {
+    const hash = await store.readOrder(sessionCode);
+    if (!hash) {
+      throw new DomainError('VALIDATION_ERROR', 'No group order is open');
+    }
+    return toOrderState(hash, await store.readOrderLines(sessionCode));
+  }
+
+  /**
+   * "I'll order": first tap wins the Buyer and locks the Group Order. A second,
+   * different claimant is rejected - the store's HSETNX is the tie-break
+   * authority, this pre-read is only advisory (fast rejection, friendlier message).
+   */
+  async function claimBuyer(sessionCode: string, participantId: string): Promise<OrderState> {
+    const participant = await store.getParticipant(participantId);
+    if (!participant || participant.sessionCode !== sessionCode) {
+      throw new DomainError('NOT_IN_SESSION', 'You are not in this session');
+    }
+    const order = await store.readOrder(sessionCode);
+    if (!order) {
+      throw new DomainError('VALIDATION_ERROR', 'No group order is open');
+    }
+    if (order.buyer && order.buyer !== participant.displayName) {
+      throw new DomainError('VALIDATION_ERROR', `${order.buyer} is already ordering`);
+    }
+
+    const won = await store.claimBuyer(sessionCode, participant.displayName);
+    if (!won) {
+      throw new DomainError('VALIDATION_ERROR', 'Someone else is already ordering');
+    }
+    return readState(sessionCode);
+  }
+
+  return { open, addItem, claimBuyer };
 }

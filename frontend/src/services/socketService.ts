@@ -18,6 +18,8 @@ import type {
   OrderOpenResponse,
   OrderItemPayload,
   OrderState,
+  OrderBuyPayload,
+  OrderBuyResponse,
 } from '@dinder/shared/types';
 
 /* v8 ignore next */
@@ -137,6 +139,14 @@ export function addOrderItem(
 ): Promise<Ack<null>> {
   const payload: OrderItemPayload = { sessionCode, index, delta };
   return emitAck<null>('order:item', payload);
+}
+
+/**
+ * "I'll order": claim the Buyer and lock the Group Order. First tap wins.
+ */
+export function claimBuyer(sessionCode: string): Promise<OrderBuyResponse> {
+  const payload: OrderBuyPayload = { sessionCode };
+  return emitAck<null>('order:buy', payload);
 }
 
 /**

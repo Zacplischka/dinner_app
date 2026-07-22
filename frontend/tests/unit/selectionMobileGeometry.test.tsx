@@ -343,7 +343,9 @@ describe('GroupOrderPage mobile geometry', () => {
     const totalsBand = screen.getByText('You owe').closest('.safe-bottom') as HTMLElement;
     expect(totalsBand).toBeInTheDocument();
     expect(totalsBand).toHaveClass('safe-bottom', 'shrink-0');
-    // No `I'll order` button anywhere on the page (that is #178).
-    expect(screen.queryByRole('button', { name: /order/i })).toBeNull();
+    // The always-primary `I'll order` button lives inside the pinned band (#178).
+    expect(screen.getByRole('button', { name: "I'll order" }).closest('.safe-bottom')).toBe(
+      totalsBand
+    );
   });
 });

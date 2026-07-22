@@ -13,7 +13,11 @@ import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import { handleSelectionSubmit } from '../../src/websocket/submitHandler.js';
 import { handleLiveSelection } from '../../src/websocket/liveSelectionHandler.js';
-import { handleOrderOpen, handleOrderItem } from '../../src/websocket/orderHandler.js';
+import {
+  handleOrderOpen,
+  handleOrderItem,
+  handleOrderBuy,
+} from '../../src/websocket/orderHandler.js';
 import { createOrderService } from '../../src/services/OrderService.js';
 import {
   SNAPSHOT_FRESHNESS_MS,
@@ -1257,6 +1261,143 @@ describe('websocket handlers', () => {
 
       expect(callback).toHaveBeenCalledWith({ success: true, data: null });
       expect(server.roomEmitter.emit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleOrderBuy', () => {
+    const placeId = orderPlaceId;
+    const menu = [{ name: 'Margherita', price_cents: 1500, tags: [] }];
+
+    async function openOrder() {
+      await createSessionWithParticipant('socket-1');
+      await store.addResultPlaceId(sessionCode, placeId);
+      await store.openOrder(sessionCode, {
+        sessionCode,
+        placeId,
+        venueName: 'Pizza Place',
+        platform: 'ubereats',
+        pricesAt: new Date().toISOString(),
+        menu: JSON.stringify(menu),
+        feeCents: '0',
+        state: 'building',
+      });
+    }
+
+    it('acks data: null, claims the Buyer and broadcasts order:state with no change field', async () => {
+      await openOrder();
+      const callback = vi.fn();
+      const server = io();
+
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode },
+        callback,
+        orderService()
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: null });
+      expect(server.in).toHaveBeenCalledWith(sessionCode);
+      const [event, payload] = server.roomEmitter.emit.mock.calls[0];
+      expect(event).toBe('order:state');
+      expect(payload).toEqual(
+        expect.objectContaining({
+          sessionCode,
+          order: expect.objectContaining({ state: 'locked', buyer: 'Alice' }),
+        })
+      );
+      expect('change' in payload).toBe(false);
+    });
+
+    it('a second, different claimant acks VALIDATION_ERROR and the Buyer is unchanged', async () => {
+      await openOrder();
+      await store.claimDisplayName(sessionCode, 'Bob', 'socket-2', rejoinToken);
+      await store.addParticipant(sessionCode, {
+        participantId: 'socket-2',
+        displayName: 'Bob',
+        rejoinToken,
+      });
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+      const firstCallback = vi.fn();
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        io() as any,
+        { sessionCode },
+        firstCallback,
+        orderService()
+      );
+      expect(firstCallback).toHaveBeenCalledWith({ success: true, data: null });
+
+      const secondCallback = vi.fn();
+      const server = io();
+      await handleOrderBuy(
+        socket('socket-2') as any,
+        server as any,
+        { sessionCode },
+        secondCallback,
+        orderService()
+      );
+
+      expect(secondCallback.mock.calls[0][0].error.code).toBe('VALIDATION_ERROR');
+      expect(server.roomEmitter.emit).not.toHaveBeenCalled();
+      const order = await store.readOrder(sessionCode);
+      expect(order?.buyer).toBe('Alice');
+    });
+
+    it('acks VALIDATION_ERROR and creates no Redis key when no Group Order is open', async () => {
+      await createSessionWithParticipant('socket-1');
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+      const server = io();
+
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode },
+        callback,
+        orderService()
+      );
+
+      expect(callback.mock.calls[0][0].error.code).toBe('VALIDATION_ERROR');
+      expect(server.roomEmitter.emit).not.toHaveBeenCalled();
+      expect(await store.readOrder(sessionCode)).toBeNull();
+    });
+
+    it('acks NOT_IN_SESSION for a socket that is not in the session', async () => {
+      await openOrder();
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+      const server = io();
+
+      await handleOrderBuy(
+        socket('stranger') as any,
+        server as any,
+        { sessionCode },
+        callback,
+        orderService()
+      );
+
+      expect(callback.mock.calls[0][0].error.code).toBe('NOT_IN_SESSION');
+      expect(server.roomEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('rejects an invalid payload with VALIDATION_ERROR', async () => {
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+
+      await handleOrderBuy(
+        socket() as any,
+        io() as any,
+        { sessionCode: 'bad' } as any,
+        callback,
+        orderService()
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
     });
   });
 });

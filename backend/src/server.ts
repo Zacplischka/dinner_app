@@ -183,7 +183,7 @@ const io = new SocketIOServer<
 // Import WebSocket handlers (they run over the store/service built above)
 import { handleSessionJoin } from './websocket/joinHandler.js';
 import { handleSelectionSubmit } from './websocket/submitHandler.js';
-import { handleOrderOpen, handleOrderItem } from './websocket/orderHandler.js';
+import { handleOrderOpen, handleOrderItem, handleOrderBuy } from './websocket/orderHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
 import { handleSessionLeave } from './websocket/leaveHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
@@ -264,6 +264,11 @@ io.on('connection', (socket) => {
   // order:item event handler - add/remove one Order Line, broadcast order:state
   socket.on('order:item', (payload, callback) => {
     void handleOrderItem(socket, io, payload, callback, orderService);
+  });
+
+  // order:buy event handler - "I'll order" claims the Buyer and locks the order
+  socket.on('order:buy', (payload, callback) => {
+    void handleOrderBuy(socket, io, payload, callback, orderService);
   });
 
   // T045: disconnect handler
