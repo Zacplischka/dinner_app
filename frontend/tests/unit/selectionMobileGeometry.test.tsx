@@ -30,6 +30,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 import SelectionPage from '../../src/pages/SelectionPage';
 import SwipeCard, { swipeVisuals } from '../../src/components/SwipeCard';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { sendLiveSelection } from '../../src/services/socketBindings';
 
 const renderSelectionPage = () =>
   render(
@@ -179,6 +180,7 @@ describe('SelectionPage mobile geometry', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Like' }));
     expect(useSessionStore.getState().selections).toEqual(['place-1']);
+    expect(sendLiveSelection).toHaveBeenCalledWith('AB123', 'place-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(useSessionStore.getState().selections).toEqual([]);

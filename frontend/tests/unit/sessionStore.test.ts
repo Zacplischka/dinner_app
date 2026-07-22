@@ -123,9 +123,7 @@ describe('sessionStore', () => {
     it('should clear restaurants on reset', () => {
       const { setRestaurants, resetSession } = useSessionStore.getState();
 
-      setRestaurants([
-        { placeId: 'place1', name: 'Test', rating: 4.0, priceLevel: 2 },
-      ]);
+      setRestaurants([{ placeId: 'place1', name: 'Test', rating: 4.0, priceLevel: 2 }]);
       expect(useSessionStore.getState().restaurants).toHaveLength(1);
 
       resetSession();
@@ -219,6 +217,18 @@ describe('sessionStore', () => {
 
       useSessionStore.getState().removeSelection('place-1');
       expect(useSessionStore.getState().selections).toEqual([]);
+    });
+
+    it('should ignore duplicate recordLiveSelection calls per displayName and clear on resetSelections', () => {
+      useSessionStore.getState().recordLiveSelection('place-1', 'Alice');
+      useSessionStore.getState().recordLiveSelection('place-1', 'Alice');
+      useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
+
+      expect(useSessionStore.getState().liveSelections).toEqual({ 'place-1': ['Alice', 'Bob'] });
+
+      useSessionStore.getState().resetSelections();
+
+      expect(useSessionStore.getState().liveSelections).toEqual({});
     });
 
     it('should set results and reset only selection state', () => {
