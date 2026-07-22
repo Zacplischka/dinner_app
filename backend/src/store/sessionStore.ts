@@ -49,7 +49,8 @@ export interface Participant {
 // session:{code}:participants       set:  participant ids
 // session:{code}:display_names      hash: display name -> [participant id, rejoin token]
 // session:{code}:{pid}:selections   set:  place ids a participant selected
-// session:{code}:results            set:  the Match ('__empty__' sentinel keeps TTL on empty)
+// session:{code}:results            set:  placeIds this Session may act on — the Match, plus the
+//                                         crowned Top Pick when there is none ('__empty__' sentinel keeps TTL)
 // session:{code}:restaurant_ids     set:  valid place ids for the session
 // session:{code}:restaurants        hash: placeId -> Restaurant JSON
 // session:{code}:order              hash: the Group Order's fixed metadata + Pinned Menu

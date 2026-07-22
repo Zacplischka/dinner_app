@@ -26,6 +26,7 @@ interface SessionState {
   // Selection data
   selections: string[]; // Current user's Place IDs
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
+  liveSelections: Record<string, string[]>; // placeId -> displayNames who live-selected it (remote only)
   restaurantNames: Record<string, string>; // placeId -> name mapping for display
   overlappingOptions: Restaurant[];
 
@@ -49,6 +50,7 @@ interface SessionState {
   setSelections: (placeIds: string[]) => void;
   addSelection: (placeId: string) => void;
   removeSelection: (placeId: string) => void;
+  recordLiveSelection: (placeId: string, displayName: string) => void;
 
   // Results actions
   setResults: (results: Result) => void;
@@ -71,6 +73,7 @@ const initialState = {
   restaurants: [],
   selections: [],
   allSelections: {},
+  liveSelections: {},
   restaurantNames: {},
   overlappingOptions: [],
   sessionStatus: 'waiting' as const,
@@ -123,6 +126,19 @@ export const useSessionStore = create<SessionState>()(
             selections: state.selections.filter((id) => id !== placeId),
           })),
 
+        // Keyed by displayName, not participantId: participantId IS socket.id and
+        // is re-minted on every reconnect, so a reloaded Participant replaying
+        // their whole deck would otherwise be counted as several humans.
+        // See ADR 0009.
+        recordLiveSelection: (placeId, displayName) =>
+          set((state) => {
+            const names = state.liveSelections[placeId] ?? [];
+            if (names.includes(displayName)) return state;
+            return {
+              liveSelections: { ...state.liveSelections, [placeId]: [...names, displayName] },
+            };
+          }),
+
         // Results actions
         setResults: (results) =>
           set({
@@ -144,6 +160,7 @@ export const useSessionStore = create<SessionState>()(
           set({
             selections: [],
             allSelections: {},
+            liveSelections: {},
             restaurantNames: {},
             overlappingOptions: [],
             sessionStatus: 'selecting',

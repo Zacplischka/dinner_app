@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
+import { getSession, ApiClientError } from '../services/apiClient';
 
 const cleanSessionCode = (value: string) =>
   value
@@ -20,6 +21,7 @@ export default function JoinSessionPage() {
   const [participantName, setParticipantName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [linkDead, setLinkDead] = useState(false);
   const {
     setSessionCode: storeSessionCode,
     setCurrentUserId,
@@ -28,12 +30,19 @@ export default function JoinSessionPage() {
     resetSelections,
   } = useSessionStore();
 
-  // Pre-fill session code if provided in URL query params
+  // Pre-fill session code if provided in URL query params, then probe it.
   useEffect(() => {
-    const codeParam = searchParams.get('code');
-    if (codeParam) {
-      setSessionCode(cleanSessionCode(codeParam));
-    }
+    const code = cleanSessionCode(searchParams.get('code') ?? '');
+    if (!code) return;
+
+    setSessionCode(code);
+    // ponytail: only a definitive 404 kills the link. Network/5xx/CORS fail open —
+    // the session:join ack stays the authority on whether a Session can be joined.
+    // No cancelled-guard: React 18 no-ops setState after unmount, and a StrictMode
+    // double-mount would just set the same `true` twice.
+    void getSession(code).catch((err: unknown) => {
+      if (err instanceof ApiClientError && err.status === 404) setLinkDead(true);
+    });
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,6 +96,42 @@ export default function JoinSessionPage() {
       setIsLoading(false);
     }
   };
+
+  if (linkDead) {
+    return (
+      <main className="min-h-screen bg-ink">
+        <NavigationHeader
+          title="Join Session"
+          subtitle="Enter the session code shared by your host"
+          showBackButton
+          onBack={() => navigate('/')}
+        />
+        <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
+          <div className="card space-y-4 text-center">
+            <p className="text-4xl" aria-hidden="true">
+              ⏳
+            </p>
+            <h2 className="text-lg font-display font-semibold text-text">This link has expired</h2>
+            <p className="text-sm text-muted">
+              Dinder sessions last 30 minutes. This one is over — or the code was mistyped.
+            </p>
+            <button
+              className="btn btn-primary w-full min-h-[48px]"
+              onClick={() => navigate('/create')}
+            >
+              Start a new session
+            </button>
+            <button
+              className="btn btn-secondary w-full min-h-[48px]"
+              onClick={() => setLinkDead(false)}
+            >
+              Enter a code instead
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-ink">

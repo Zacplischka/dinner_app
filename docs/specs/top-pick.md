@@ -158,7 +158,7 @@ This term deliberately reclaims `pick`, which **Selection** currently lists unde
 | `session:{code}:restaurant_ids` | set of placeIds | the id list `getRestaurants` iterates with SMEMBERS before hydrating each one (`sessionStore.ts:542`) | refreshed by `touch` |
 | `session:{code}:restaurants` | hash placeId → Restaurant JSON | the full Restaurant for the crown and the no-Selections fallback, via the existing `store.getRestaurants` (`sessionStore.ts:539-551`) | refreshed by `touch` |
 
-`session:{code}:results` is untouched — it stays the write-only sentinel set it is today (`sessionStore.ts:488-493`). Persisting the crown would buy nothing: nothing reads that key (`ponytail:` the Top Pick is recomputed on any recompute; there is no re-delivery path for `session:results` at all, so there is nothing to be consistent with).
+`session:{code}:results` is widened, not untouched: `completeSession` SADDs the crowned placeId into the set when there is no Match, so sprint 2's `order:open` `SISMEMBER` (`group-order.md:501-502`) admits it instead of acking `VALIDATION_ERROR`. The `'__empty__'` sentinel stays for the empty-deck case, where there is no crown to SADD. See `group-order.md` § Hard cases for the decision.
 
 ### Contract
 
@@ -345,7 +345,7 @@ Fourteen rows, six of them tests. No file is created and none is deleted.
 - **The gold star / "I really want this" button.** Revisit when the session-outcome log shows groups Restarting straight after a Match — evidence the crown is picking the wrong thing.
 - **A runoff round between tied matches.** Revisit if ties on count *and* rating are common enough that A-Z ordering visibly randomises the answer.
 - **"Nearest" as a tie-break.** `Restaurant` carries no distance field (`shared/types/models.ts:7-16`); only `Venue` does. Revisit if distance is added to the Restaurant search path for another reason.
-- **Persisting the Top Pick or re-delivering `session:results`.** Revisit when someone can actually miss a result and recover — i.e. when a results REST endpoint exists.
+- **Re-delivering `session:results`.** Persisting the crown itself is in scope (see § Data model); re-delivery — someone missing a result and recovering it — is not. Revisit when a results REST endpoint exists.
 - **A `top_pick` comparison tap source.** Revisit if the #68 kill gate needs crowned taps separated from listed ones.
 - **Reconciling the two `participantCount` meanings on the wire.** The broadcast counts are untouched; `of` deliberately derives from `allSelections`, and the Near Miss card now reads the same `of` so the screen is at least self-consistent. Revisit if a third consumer needs the reserved-host-slot count.
 - **`openNow` in the crown comparator.** The deck fallback filters closed venues; a Restaurant people actually selected is still crownable while closed. Revisit if session-outcome logs show groups Restarting off a shut crown.
@@ -392,5 +392,5 @@ Two independent reviews ran against this spec — one checking every factual cla
 
 Two findings were reported as confirmed with no action required and are recorded here so a future reader does not re-derive them:
 
-- `session:{code}:results` is genuinely write-only. `resultsKey` appears only in `sadd` (`sessionStore.ts:490`, `:492`), `del` (`:255`, `:520`) and the `touch` EXPIREAT list (`:129`). There is no read anywhere, which is why persisting the crown buys nothing.
+- **Superseded.** `session:{code}:results` is genuinely write-only. `resultsKey` appears only in `sadd` (`sessionStore.ts:490`, `:492`), `del` (`:255`, `:520`) and the `touch` EXPIREAT list (`:129`). There is no read anywhere, which is why persisting the crown buys nothing. — This was accurate when written; `order:open` (`group-order.md`) gives the key its first reader and reverses the conclusion: persisting the crown is exactly what makes that read admit a no-Match Session.
 - `useSessionStore.restaurants` has no production writer. `setRestaurants` is referenced only by `sessionStore.test.ts`; `SelectionPage.tsx:18` uses an unrelated local `useState` of the same name. The crown must therefore ride the wire. The same fact explains an existing oddity a future reader might otherwise "fix": the Near Miss builder's `restaurantsById` lookup (`ResultsPage.tsx:278`) always misses in production and falls back to `{placeId, name}` with no rating.

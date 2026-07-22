@@ -60,6 +60,19 @@ export interface SessionLeavePayload {
 /** No-data command: success acknowledges `data: null`. */
 export type SessionLeaveResponse = Ack<null>;
 
+/**
+ * A Live Selection: this Participant just swiped yes on placeId, mid-deck.
+ * Fire-and-forget chrome — the Selection is NOT persisted here; the Match is
+ * still computed from `selection:submit`.
+ */
+export interface SelectionLivePayload {
+  sessionCode: string;
+  placeId: string;
+}
+
+/** No-data command: success acknowledges `data: null`. */
+export type SelectionLiveResponse = Ack<null>;
+
 // ============= Server → Client Events =============
 
 export interface WsRestaurant {
@@ -138,6 +151,18 @@ export interface ErrorEvent {
   code: string;
   message: string;
   details?: Record<string, unknown>;
+}
+
+/**
+ * Another Participant made a Live Selection. The UI renders counts only — `displayName`
+ * is never shown; it is the reconnect-stable key the receiver's buffer is indexed by
+ * (see ADR 0009). `participantId` is socket-scoped and carried only for parity with the
+ * other participant:* events.
+ */
+export interface ParticipantSelectedEvent {
+  participantId: string;
+  displayName: string;
+  placeId: string;
 }
 
 // ============= Group Order =============
@@ -233,6 +258,11 @@ export interface ClientToServerEvents {
     callback: (response: SessionLeaveResponse) => void
   ) => void;
 
+  'selection:live': (
+    payload: SelectionLivePayload,
+    callback: (response: SelectionLiveResponse) => void
+  ) => void;
+
   'order:open': (payload: OrderOpenPayload, callback: (r: OrderOpenResponse) => void) => void;
   'order:item': (payload: OrderItemPayload, callback: (r: OrderItemResponse) => void) => void;
   'order:buy': (payload: OrderBuyPayload, callback: (r: OrderBuyResponse) => void) => void;
@@ -246,6 +276,7 @@ export interface ServerToClientEvents {
   'session:expired': (data: SessionExpiredEvent) => void;
   'participant:left': (data: ParticipantLeftEvent) => void;
   'participant:disconnected': (data: ParticipantDisconnectedEvent) => void;
+  'participant:selected': (data: ParticipantSelectedEvent) => void;
   'order:state': (data: OrderStateEvent) => void;
   error: (data: ErrorEvent) => void;
 }

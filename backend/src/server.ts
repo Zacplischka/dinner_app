@@ -187,6 +187,7 @@ import { handleOrderOpen } from './websocket/orderHandler.js';
 import { handleSessionRestart } from './websocket/restartHandler.js';
 import { handleSessionLeave } from './websocket/leaveHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
+import { handleLiveSelection } from './websocket/liveSelectionHandler.js';
 
 // Import auth middleware
 import { verifyToken, type AuthenticatedRequest } from './middleware/auth.js';
@@ -248,6 +249,11 @@ io.on('connection', (socket) => {
   // session:leave event handler - intentional departure
   socket.on('session:leave', (payload, callback) => {
     void handleSessionLeave(socket, io, payload, callback, sessionService);
+  });
+
+  // Live Selection re-broadcast — no persistence (see live-swipe-room.md)
+  socket.on('selection:live', (payload, callback) => {
+    void handleLiveSelection(socket, payload, callback, sessionStore);
   });
 
   // order:open event handler - open the Group Order for the crowned Venue

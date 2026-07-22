@@ -54,13 +54,27 @@ export default function SessionLobbyPage() {
     }
   };
 
-  const handleCopyLink = () => {
-    if (shareableLink) {
-      navigator.clipboard
-        .writeText(shareableLink)
-        .then(() => toast.success('Link copied to clipboard!'))
-        .catch(() => toast.error('Could not copy link'));
+  const handleShareLink = async () => {
+    if (!shareableLink) return;
+
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'Dinder', url: shareableLink });
+        return;
+      } catch (err) {
+        // ponytail: dismissing the sheet is not a failure — no toast, no clipboard write.
+        // Any other rejection (NotAllowedError, insecure context, no handler) falls
+        // through so the Host still ends up with the link somewhere.
+        // navigator.share rejects with a DOMException, which is not `instanceof Error`
+        // in every environment (jsdom included) — match on `.name` alone.
+        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
+      }
     }
+
+    navigator.clipboard
+      .writeText(shareableLink)
+      .then(() => toast.success('Link copied to clipboard!'))
+      .catch(() => toast.error('Could not copy link'));
   };
 
   const handleStartSelecting = async () => {
@@ -146,10 +160,10 @@ export default function SessionLobbyPage() {
 
           {shareableLink && (
             <button
-              onClick={handleCopyLink}
+              onClick={() => void handleShareLink()}
               className="btn btn-secondary mt-4 w-full min-h-[48px] text-sm"
             >
-              Copy shareable link
+              {typeof navigator.share === 'function' ? 'Share invite link' : 'Copy shareable link'}
             </button>
           )}
         </div>
@@ -161,34 +175,43 @@ export default function SessionLobbyPage() {
           </h2>
 
           <div className="space-y-3" data-testid="participants-list">
-            {participants.map((participant, index) => (
-              <div
-                key={participant.participantId}
-                data-testid="participant"
-                className="flex items-center space-x-3 p-3 bg-surface/70 rounded-xl border border-line"
-              >
+            {participants.map((participant, index) => {
+              const isOffline = participant.isOnline === false;
+              return (
                 <div
-                  aria-label={`${participant.displayName}${participant.isHost ? ', host' : ''}, live`}
-                  className={`w-11 h-11 bg-raised border-2 rounded-full flex items-center justify-center text-text font-black ${participantRingClass(index)}`}
+                  key={participant.participantId}
+                  data-testid="participant"
+                  className="flex items-center space-x-3 p-3 bg-surface/70 rounded-xl border border-line"
                 >
-                  {participant.displayName.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-text">
-                    <span data-testid="participant-name">{participant.displayName}</span>
-                    {participant.isHost && (
-                      <span className="ml-2 text-xs text-cyan font-semibold uppercase tracking-wider">
-                        Host
-                      </span>
+                  <div
+                    aria-label={`${participant.displayName}${participant.isHost ? ', host' : ''}, ${isOffline ? 'offline' : 'live'}`}
+                    className={`w-11 h-11 bg-raised border-2 rounded-full flex items-center justify-center text-text font-black ${participantRingClass(index)}`}
+                  >
+                    {participant.displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-text">
+                      <span data-testid="participant-name">{participant.displayName}</span>
+                      {participant.isHost && (
+                        <span className="ml-2 text-xs text-cyan font-semibold uppercase tracking-wider">
+                          Host
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider ${isOffline ? 'text-muted' : 'text-lime'}`}
+                  >
+                    {isOffline ? (
+                      <span className="h-2 w-2 rounded-full bg-muted" />
+                    ) : (
+                      <span className="live-dot" />
                     )}
-                  </p>
+                    {isOffline ? 'Offline' : 'Live'}
+                  </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-lime">
-                  <span className="live-dot" />
-                  Live
-                </span>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Empty slots */}
             {Array.from({ length: 4 - participants.length }).map((_, i) => (
