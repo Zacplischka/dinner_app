@@ -52,13 +52,39 @@ describe('doorDashStorefront', () => {
         'https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/e28a38e2-0eeb-4761-81c8-a630f8f0eb0c-retina-large.jpg',
       deals: [],
     });
-    expect(capture.menu).toHaveLength(60);
+    expect(capture.menu).toHaveLength(48);
     expect(capture.menu).toContainEqual({
       name: 'Margherita',
       price_cents: 2300,
       section: 'Pizza',
       tags: [],
     });
+    expect(capture.menu).toContainEqual({
+      name: 'Coke (Can)',
+      price_cents: 350,
+      section: 'Drinks',
+      tags: [],
+    });
+    expect(capture.menu.filter((item) => item.name === 'Coke (Can)')).toHaveLength(1);
+    expect(capture.menu.filter((item) => item.section === 'Most Ordered')).toEqual([]);
+  });
+
+  it('resolves multi-buy and unparseable prices safely', () => {
+    const withCases = {
+      ...doorDashFixture[0],
+      menu: {
+        items: [
+          { id: 'a', name: 'Free Water', category: 'Drinks', price: '0 for A$7.00' },
+          { id: 'b', name: 'Mystery Item', category: 'Drinks', price: 'ask staff' },
+        ],
+      },
+    };
+
+    const capture = doorDashStorefront.resolve([withCases], venue);
+
+    expect(capture.menu).toEqual([
+      { name: 'Free Water', price_cents: 700, section: 'Drinks', tags: [] },
+    ]);
   });
 
   it('falls back through the cover image variants the actor left null', () => {
