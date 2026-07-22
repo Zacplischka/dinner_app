@@ -1345,6 +1345,39 @@ describe('websocket handlers', () => {
       expect(order?.buyer).toBe('Alice');
     });
 
+    it('the same buyer claiming twice is idempotent - the second call succeeds with the locked state', async () => {
+      await openOrder();
+
+      const firstCallback = vi.fn();
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        io() as any,
+        { sessionCode },
+        firstCallback,
+        orderService()
+      );
+      expect(firstCallback).toHaveBeenCalledWith({ success: true, data: null });
+
+      const secondCallback = vi.fn();
+      const server = io();
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode },
+        secondCallback,
+        orderService()
+      );
+
+      expect(secondCallback).toHaveBeenCalledWith({ success: true, data: null });
+      expect(server.roomEmitter.emit).toHaveBeenCalledWith(
+        'order:state',
+        expect.objectContaining({
+          sessionCode,
+          order: expect.objectContaining({ state: 'locked', buyer: 'Alice' }),
+        })
+      );
+    });
+
     it('acks VALIDATION_ERROR and creates no Redis key when no Group Order is open', async () => {
       await createSessionWithParticipant('socket-1');
       vi.spyOn(logger, 'warn').mockImplementation(() => undefined);

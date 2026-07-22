@@ -210,19 +210,12 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
       : { order, change: { by: displayName, name: menu[index].name, delta } };
   }
 
-  /** Rebuilds the wire state from Redis - the same derivation order:item already broadcasts. */
-  async function readState(sessionCode: string): Promise<OrderState> {
-    const hash = await store.readOrder(sessionCode);
-    if (!hash) {
-      throw new DomainError('VALIDATION_ERROR', 'No group order is open');
-    }
-    return toOrderState(hash, await store.readOrderLines(sessionCode));
-  }
-
   /**
    * "I'll order": first tap wins the Buyer and locks the Group Order. A second,
    * different claimant is rejected - the store's HSETNX is the tie-break
    * authority, this pre-read is only advisory (fast rejection, friendlier message).
+   * A retap by the SAME buyer (no disabled/pending guard on the button) is
+   * idempotent: the lost HSETNX just means the field already held their name.
    */
   async function claimBuyer(sessionCode: string, participantId: string): Promise<OrderState> {
     const participant = await store.getParticipant(participantId);
@@ -238,10 +231,13 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     }
 
     const won = await store.claimBuyer(sessionCode, participant.displayName);
-    if (!won) {
+    if (!won && order.buyer !== participant.displayName) {
       throw new DomainError('VALIDATION_ERROR', 'Someone else is already ordering');
     }
-    return readState(sessionCode);
+    return toOrderState(
+      { ...order, buyer: participant.displayName, state: 'locked' },
+      await store.readOrderLines(sessionCode)
+    );
   }
 
   return { open, addItem, claimBuyer };

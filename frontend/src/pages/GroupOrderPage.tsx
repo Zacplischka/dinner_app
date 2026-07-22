@@ -287,9 +287,14 @@ export default function GroupOrderPage() {
         minute: '2-digit',
       });
       const othersShares = order.shares.filter((s) => s.displayName !== me);
-      const splitText = `${order.venueName} — ${othersShares
-        .map((s) => `${s.displayName} ${formatPrice(s.totalCents)}`)
-        .join(', ')}. ${me} paid ${formatPrice(order.itemsCents)}.`;
+      // Solo buyer (no one else has a Line yet): skip the "— " lead-in rather
+      // than copy a stray "— ." with nothing between the dash and the period.
+      const splitText =
+        othersShares.length === 0
+          ? `${order.venueName}. ${me} paid ${formatPrice(order.itemsCents)}.`
+          : `${order.venueName} — ${othersShares
+              .map((s) => `${s.displayName} ${formatPrice(s.totalCents)}`)
+              .join(', ')}. ${me} paid ${formatPrice(order.itemsCents)}.`;
 
       content = (
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
