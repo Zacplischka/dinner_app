@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants } from '../services/apiClient';
-import { submitSelection, leaveSession } from '../services/socketBindings';
+import { submitSelection, leaveSession, sendLiveSelection } from '../services/socketBindings';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -69,11 +69,16 @@ export default function SelectionPage() {
     const restaurant = restaurants[currentIndex];
     if (restaurant) {
       addSelection(restaurant.placeId);
+      // ponytail: fire-and-forget — nothing branches on the ack, and a failed
+      // Live Selection costs only a missing reveal on someone else's phone.
+      // The Match still comes from selection:submit. Ceiling: silent chrome
+      // loss on a flaky socket; upgrade is a retry queue, not worth it.
+      if (sessionCode) void sendLiveSelection(sessionCode, restaurant.placeId);
     }
     setLastAction('like');
     setTimeout(() => setLastAction(null), 600);
     setCurrentIndex((prev) => prev + 1);
-  }, [currentIndex, restaurants, addSelection]);
+  }, [currentIndex, restaurants, addSelection, sessionCode]);
 
   const handleSubmit = async () => {
     if (!sessionCode) {

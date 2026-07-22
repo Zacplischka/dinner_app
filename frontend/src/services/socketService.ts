@@ -11,6 +11,7 @@ import type {
   SessionJoinPayload,
   SessionJoinData,
   SelectionSubmitPayload,
+  SelectionLivePayload,
   SessionRestartPayload,
   SessionLeavePayload,
 } from '@dinder/shared/types';
@@ -99,6 +100,15 @@ export function joinSession(
 export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
   const payload: SelectionSubmitPayload = { sessionCode, selections: optionIds };
   return emitAck<null>('selection:submit', payload);
+}
+
+/**
+ * Live Selection: fire-and-forget chrome. The Selection is NOT persisted here —
+ * the Match is still computed from `selection:submit`.
+ */
+export function sendLiveSelection(sessionCode: string, placeId: string): Promise<Ack<null>> {
+  const payload: SelectionLivePayload = { sessionCode, placeId };
+  return emitAck<null>('selection:live', payload);
 }
 
 /**

@@ -9,6 +9,7 @@ import type {
   ParticipantLeftEvent,
   ParticipantDisconnectedEvent,
   ParticipantSubmittedEvent,
+  ParticipantSelectedEvent,
   SessionResultsEvent,
   SessionRestartedEvent,
   SessionExpiredEvent,
@@ -157,6 +158,14 @@ const socketConfig: SocketConfig = {
       store.updateParticipants(updatedParticipants);
     },
 
+    // participant:selected - Another Participant made a Live Selection mid-deck.
+    // Ephemeral chrome: never written to Redis, never affects the Match. The
+    // buffer is keyed by displayName (ADR 0009) so a rejoin under a new
+    // socket.id collapses onto the one entry that is already there.
+    'participant:selected': (event: ParticipantSelectedEvent) => {
+      useSessionStore.getState().recordLiveSelection(event.placeId, event.displayName);
+    },
+
     // session:results - All participants submitted, results revealed
     'session:results': (event: SessionResultsEvent) => {
       console.log('Session results:', event);
@@ -251,6 +260,13 @@ export async function joinSession(
  */
 export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
   return socketService.submitSelection(sessionCode, optionIds);
+}
+
+/**
+ * Send a Live Selection (fire-and-forget chrome).
+ */
+export function sendLiveSelection(sessionCode: string, placeId: string): Promise<Ack<null>> {
+  return socketService.sendLiveSelection(sessionCode, placeId);
 }
 
 /**
