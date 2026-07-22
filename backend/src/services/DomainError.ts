@@ -14,6 +14,7 @@ export type DomainErrorCode =
   | 'ALREADY_SUBMITTED'
   | 'INVALID_RESTAURANTS'
   | 'NOT_IN_SESSION'
+  | 'RATE_LIMITED'
   // Friends domain
   | 'not_found'
   | 'already_friends'

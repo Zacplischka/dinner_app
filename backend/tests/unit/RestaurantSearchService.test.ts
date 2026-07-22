@@ -323,6 +323,29 @@ describe('RestaurantSearchService', () => {
       config.googlePlaces.apiKey = originalKey;
     });
 
+    it('throws a RATE_LIMITED DomainError when the 429 persists past all retries', async () => {
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      fetchMock.mockResolvedValue({
+        status: 429,
+        ok: false,
+        headers: { get: () => '0' },
+      });
+
+      await expect(
+        RestaurantSearchService.searchNearbyRestaurants({
+          latitude: -37.8136,
+          longitude: 144.9631,
+          radiusMeters: 8046.72,
+        })
+      ).rejects.toMatchObject({ name: 'DomainError', code: 'RATE_LIMITED' });
+
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(errorSpy).toHaveBeenCalledWith(
+        { retries: 3 },
+        'Places searchText rate limit persisted after retries'
+      );
+    });
+
     it('should call Google Places Text Search API with correct parameters', async () => {
       const mockResponse = {
         places: [

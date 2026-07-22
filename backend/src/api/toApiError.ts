@@ -24,6 +24,8 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   ALREADY_SUBMITTED: { code: 'ALREADY_SUBMITTED', status: 409 },
   INVALID_RESTAURANTS: { code: 'VALIDATION_ERROR', status: 400 },
   NOT_IN_SESSION: { code: 'NOT_IN_SESSION', status: 403 },
+  // Upstream Places quota exhaustion: nothing the client can do, so 503.
+  RATE_LIMITED: { code: 'RATE_LIMITED', status: 503 },
   not_found: { code: 'NOT_FOUND', status: 404 },
   already_friends: { code: 'ALREADY_FRIENDS', status: 409 },
   request_pending: { code: 'REQUEST_PENDING', status: 409 },
