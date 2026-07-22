@@ -31,6 +31,7 @@ import SelectionPage from '../../src/pages/SelectionPage';
 import SwipeCard, { swipeVisuals } from '../../src/components/SwipeCard';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { sendLiveSelection } from '../../src/services/socketBindings';
+import { getRestaurants } from '../../src/services/apiClient';
 
 const renderSelectionPage = () =>
   render(
@@ -195,5 +196,57 @@ describe('SelectionPage mobile geometry', () => {
     expect(progressbar).toHaveAttribute('aria-valuenow', '1');
     expect(progressbar).toHaveAttribute('aria-valuemax', '2');
     expect(screen.getByText('1/2')).toBeInTheDocument();
+  });
+
+  it("keeps the reveal strip on one line at 375px with the deck's longest Restaurant name", async () => {
+    const longName = 'The Extraordinarily Long-Named Restaurant of Neon Night Market Lane';
+    vi.mocked(getRestaurants).mockResolvedValueOnce([
+      { ...restaurant, placeId: 'place-1', name: longName },
+      secondRestaurant,
+    ]);
+    useSessionStore.setState({
+      participants: [
+        {
+          participantId: 'p1',
+          displayName: 'Alice',
+          sessionCode: 'AB123',
+          joinedAt: 1,
+          hasSubmitted: false,
+          isHost: true,
+        },
+        {
+          participantId: 'p2',
+          displayName: 'Bob',
+          sessionCode: 'AB123',
+          joinedAt: 2,
+          hasSubmitted: false,
+          isHost: false,
+        },
+        {
+          participantId: 'p3',
+          displayName: 'Carol',
+          sessionCode: 'AB123',
+          joinedAt: 3,
+          hasSubmitted: false,
+          isHost: false,
+        },
+      ],
+    });
+
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText(longName)).toBeInTheDocument());
+
+    useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
+    useSessionStore.getState().recordLiveSelection('place-1', 'Carol');
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+
+    const stripStatus = await screen.findByTestId('strip-status');
+    expect(stripStatus).toHaveTextContent(longName);
+    expect(stripStatus).toHaveClass('truncate', 'min-w-0');
+
+    expect(screen.getByRole('button', { name: 'Pass' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Like' })).toBeInTheDocument();
+    expect(screen.getByText('Swipe or use buttons to choose')).toBeInTheDocument();
   });
 });
