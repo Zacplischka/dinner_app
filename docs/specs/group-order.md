@@ -833,7 +833,8 @@ substantial edits; the remaining eight rows are one-to-three lines each.
   load-bearing test:
 
   > `it('splits the fee so shares sum exactly to items + fee')` — three Participants, one with no Order
-  > Line, `feeCents: 1000`: the two with lines get 334 and 333… assert
+  > Line, `feeCents: 1000`: the two with lines get 500 each (and with `feeCents: 899`, 450 and 449 —
+  > remainder to the first payer by displayName A-Z)… assert
   > `shares.reduce((n, s) => n + s.totalCents, 0) === itemsCents + feeCents` for fees 0, 1, 899 and 1000,
   > and that the person with no lines has no share.
 

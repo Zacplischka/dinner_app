@@ -134,7 +134,7 @@ The crowned Restaurant is removed from the "So Close" list, so no Restaurant app
 
 Unchanged and deliberately kept: the `MATCH!` celebration block and its rays (`ResultsPage.tsx:397-403`), the `See everyone's Selections` disclosure (#85, `ResultsPage.tsx:547-573`).
 
-One copy correction the crown forces: the Near Miss card hardcodes its denominator from the client's `participants` array (`ResultsPage.tsx:518-519`), while the crown's `of` comes from `Object.keys(allSelections).length` on the wire. On the #12 leave-completion path those populations differ — `computeAndStoreResults` builds `allSelections` from `listParticipants` *after* `removeParticipant`, but the client's `participants` only shrinks when `participant:left` lands — so the two lines can disagree ~100px apart ("2 of 3 swiped yes" above "2 of 4 liked this"). Since the crown already carries an authoritative `of`, the Near Miss card uses `{pick.of - 1} of {pick.of}` when `pick` exists and keeps `participants.length` when it does not. One expression, no new data.
+One copy correction the crown forces: the Near Miss card hardcodes its denominator from the client's `participants` array (`ResultsPage.tsx:516-518`), while the crown's `of` comes from `Object.keys(allSelections).length` on the wire. On the #12 leave-completion path those populations differ — `computeAndStoreResults` builds `allSelections` from `listParticipants` *after* `removeParticipant`, but the client's `participants` only shrinks when `participant:left` lands — so the two lines can disagree ~100px apart ("2 of 3 swiped yes" above "2 of 4 liked this"). Since the crown already carries an authoritative `of`, the Near Miss card uses `{pick.of - 1} of {pick.of}` when `pick` exists and keeps `participants.length` when it does not. One expression, no new data.
 
 ## Domain language
 
@@ -363,7 +363,7 @@ Fourteen rows, six of them tests. No file is created and none is deleted.
 7. `topPick` is present on the `session:results` payload emitted from **both** `handleSelectionSubmit` and `handleSessionLeave` — verified by `backend/tests/unit/websocketHandlers.test.ts`.
 8. A Restaurant with `openNow === false` sorts below every open Restaurant in the swipe deck regardless of rating — verified by `backend/tests/unit/RestaurantSearchService.test.ts` — and is not crowned on the nobody-selected fallback unless the whole deck is shut — verified by `backend/tests/unit/SessionService.test.ts`.
 9. `npm run typecheck` passes after `npm run build --workspace=shared` (the shared `dist/` is gitignored and must be rebuilt before backend/frontend typecheck).
-10. #12: `npm run test:unit --workspace=@dinder/backend` passes, including `completes the session when everyone remaining has submitted` and `should broadcast results when leaving completes the session`; the issue is closed with `gh issue close 12` and a comment naming both tests **by name, not by line number** — the crown work edits both files and moves the anchors. No code and no new test is written for #12.
+10. #12: `npm run test:unit --workspace=@dinder/backend` passes, including `completes the session when everyone remaining has submitted` and `should broadcast results when leaving completes the session`; #12 is already closed — it receives a comment (`gh issue comment 12`, do not close or reopen) naming both tests **by name, not by line number** — the crown work edits both files and moves the anchors. No code and no new test is written for #12.
 
 ## Test plan
 
