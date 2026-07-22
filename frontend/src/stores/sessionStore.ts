@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import type { Restaurant } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
+import { useOrderStore } from './orderStore';
 
 interface Location {
   latitude: number;
@@ -169,9 +170,15 @@ export const useSessionStore = create<SessionState>()(
         setConnectionStatus: (isConnected) => set({ isConnected }),
 
         // Reset actions
-        resetSession: () => set(initialState),
+        resetSession: () => {
+          useOrderStore.getState().clear();
+          set(initialState);
+        },
 
-        resetSelections: () =>
+        resetSelections: () => {
+          // A Restart voids the Match, and the server DELs both order keys in
+          // the same resetForRestart pipeline — never render last venue's basket.
+          useOrderStore.getState().clear();
           set({
             selections: [],
             allSelections: {},
@@ -181,7 +188,8 @@ export const useSessionStore = create<SessionState>()(
             topPick: undefined,
             orderPlaceId: null,
             sessionStatus: 'selecting',
-          }),
+          });
+        },
       }),
       {
         name: 'dinner-session-storage',

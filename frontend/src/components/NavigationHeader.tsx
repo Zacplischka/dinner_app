@@ -23,7 +23,7 @@ export interface NavigationHeaderProps {
   /** Show confirmation modal before navigating back */
   confirmOnBack?: boolean;
   /** Context for confirmation message */
-  confirmContext?: 'lobby' | 'selecting' | 'results';
+  confirmContext?: 'lobby' | 'selecting' | 'results' | 'ordering';
   /** Number of selections (for context-aware confirmation) */
   selectionsCount?: number;
   /** Optional right-side action element */

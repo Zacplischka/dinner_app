@@ -141,6 +141,20 @@ describe('Neon Night Market components', () => {
     );
   });
 
+  it('reads Leave the basket? on the ordering context, not the lobby copy', () => {
+    render(<ConfirmLeaveModal isOpen context="ordering" onClose={vi.fn()} onConfirm={vi.fn()} />);
+
+    expect(screen.getByText('Leave the basket?')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your items stay in the basket and still count — whoever taps I'll order still buys them."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to the Basket' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Leave Session' })).toBeInTheDocument();
+    expect(screen.queryByText('Leave Session?')).not.toBeInTheDocument();
+  });
+
   it('presents the Session Code in a cyan invite box', async () => {
     useSessionStore.setState({
       sessionCode: 'AB123',
