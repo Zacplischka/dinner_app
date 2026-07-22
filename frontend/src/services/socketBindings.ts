@@ -221,9 +221,18 @@ const socketConfig: SocketConfig = {
       });
     },
 
-    // order:state - full Group Order state, emitted after open and every mutation
+    // order:state - full Group Order state, emitted after open and every mutation.
+    // io.in broadcasts to the sender too, so the toast is gated on the change
+    // being a removal by someone other than me; an addition toasts on no phone.
     'order:state': (event: OrderStateEvent) => {
-      useOrderStore.getState().setOrder(event.order);
+      const { setOrder, setChange } = useOrderStore.getState();
+      setOrder(event.order);
+      setChange(event.change);
+      const { participants, currentUserId } = useSessionStore.getState();
+      const me = participants.find((p) => p.participantId === currentUserId)?.displayName;
+      if (event.change && event.change.delta === -1 && event.change.by !== me) {
+        toast.info(`${event.change.by} removed ${event.change.name}`);
+      }
     },
 
     // session:restarted - Session was restarted by a participant
@@ -329,6 +338,18 @@ export function restartSession(sessionCode: string): Promise<Ack<null>> {
  */
 export function openOrder(sessionCode: string, placeId: string): Promise<OrderOpenResponse> {
   return socketService.openOrder(sessionCode, placeId);
+}
+
+/**
+ * Add (delta 1) or remove (delta -1) one Order Line. The resulting order:state
+ * broadcast (sender included) is what updates every basket, this one too.
+ */
+export function addOrderItem(
+  sessionCode: string,
+  index: number,
+  delta: 1 | -1
+): Promise<Ack<null>> {
+  return socketService.addOrderItem(sessionCode, index, delta);
 }
 
 /**

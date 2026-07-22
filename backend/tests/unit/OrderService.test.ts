@@ -104,14 +104,12 @@ describe('OrderService.open', () => {
   it('returns the live state on a second open without a second getLatest', async () => {
     await seedCompletedSession();
     await store.addParticipant(sessionCode, { participantId: 'p2', displayName: 'Bob' });
-    const getLatest = vi
-      .fn()
-      .mockResolvedValue(
-        snapshot({
-          ubereats: storefront('resolved', [item('Margherita', 1500)]),
-          doordash: storefront('not_found'),
-        })
-      );
+    const getLatest = vi.fn().mockResolvedValue(
+      snapshot({
+        ubereats: storefront('resolved', [item('Margherita', 1500)]),
+        doordash: storefront('not_found'),
+      })
+    );
     const service = makeService(getLatest);
 
     const first = await service.open(sessionCode, 'p1', placeId);
@@ -125,14 +123,12 @@ describe('OrderService.open', () => {
     await seedCompletedSession();
     const otherPlace = 'place-other';
     await store.addResultPlaceId(sessionCode, otherPlace);
-    const getLatest = vi
-      .fn()
-      .mockResolvedValue(
-        snapshot({
-          ubereats: storefront('resolved', [item('Margherita', 1500)]),
-          doordash: storefront('not_found'),
-        })
-      );
+    const getLatest = vi.fn().mockResolvedValue(
+      snapshot({
+        ubereats: storefront('resolved', [item('Margherita', 1500)]),
+        doordash: storefront('not_found'),
+      })
+    );
     const service = makeService(getLatest);
 
     await service.open(sessionCode, 'p1', placeId);
@@ -161,14 +157,12 @@ describe('OrderService.open', () => {
   it('throws VALIDATION_ERROR for a placeId never crowned, even with an order open', async () => {
     await seedCompletedSession();
     const service = makeService(
-      vi
-        .fn()
-        .mockResolvedValue(
-          snapshot({
-            ubereats: storefront('resolved', [item('Margherita', 1500)]),
-            doordash: storefront('not_found'),
-          })
-        )
+      vi.fn().mockResolvedValue(
+        snapshot({
+          ubereats: storefront('resolved', [item('Margherita', 1500)]),
+          doordash: storefront('not_found'),
+        })
+      )
     );
     await service.open(sessionCode, 'p1', placeId); // an order is now open
 
@@ -181,17 +175,15 @@ describe('OrderService.open', () => {
     await seedCompletedSession();
     const old = new Date(Date.now() - SNAPSHOT_FRESHNESS_MS - 1000).toISOString();
     const service = makeService(
-      vi
-        .fn()
-        .mockResolvedValue(
-          snapshot(
-            {
-              ubereats: storefront('resolved', [item('X', 1)]),
-              doordash: storefront('resolved', [item('X', 1)]),
-            },
-            old
-          )
+      vi.fn().mockResolvedValue(
+        snapshot(
+          {
+            ubereats: storefront('resolved', [item('X', 1)]),
+            doordash: storefront('resolved', [item('X', 1)]),
+          },
+          old
         )
+      )
     );
     const result = await service.open(sessionCode, 'p1', placeId);
     expect(result).toMatchObject({ reason: 'stale' });
@@ -203,14 +195,12 @@ describe('OrderService.open', () => {
   it('reports stale (not no_menu) for a failed Storefront', async () => {
     await seedCompletedSession();
     const service = makeService(
-      vi
-        .fn()
-        .mockResolvedValue(
-          snapshot({
-            ubereats: storefront('failed'),
-            doordash: storefront('resolved', [item('X', 1)]),
-          })
-        )
+      vi.fn().mockResolvedValue(
+        snapshot({
+          ubereats: storefront('failed'),
+          doordash: storefront('resolved', [item('X', 1)]),
+        })
+      )
     );
     const result = await service.open(sessionCode, 'p1', placeId);
     expect(result).toMatchObject({ reason: 'stale' });
@@ -244,16 +234,119 @@ describe('OrderService.open', () => {
     // Mirrors #165's crown SADD: the crown, not a Match, is in session:results.
     await seedCompletedSession('crown-top-pick');
     const service = makeService(
-      vi
-        .fn()
-        .mockResolvedValue(
-          snapshot({
-            ubereats: storefront('resolved', [item('Margherita', 1500)]),
-            doordash: storefront('not_found'),
-          })
-        )
+      vi.fn().mockResolvedValue(
+        snapshot({
+          ubereats: storefront('resolved', [item('Margherita', 1500)]),
+          doordash: storefront('not_found'),
+        })
+      )
     );
     const result = await service.open(sessionCode, 'p1', 'crown-top-pick');
     expect('reason' in result).toBe(false);
+  });
+});
+
+describe('OrderService.addItem', () => {
+  const menu = [item('Margherita', 1500), item('Pepperoni', 1800), item('Coke', 400)];
+
+  // Seed an open order with a chosen fee, plus three Participants (Carol adds
+  // nothing) so the share sum can be checked against items + fee directly.
+  async function seedOpenOrder(feeCents: number) {
+    await store.createSession(sessionCode, { hostId: 'pA', hostName: 'Alice' });
+    for (const [participantId, displayName] of [
+      ['pA', 'Alice'],
+      ['pB', 'Bob'],
+      ['pC', 'Carol'],
+    ]) {
+      await store.addParticipant(sessionCode, { participantId, displayName });
+    }
+    await store.openOrder(sessionCode, {
+      sessionCode,
+      placeId,
+      venueName: 'Pizza Place',
+      platform: 'ubereats',
+      pricesAt: new Date().toISOString(),
+      menu: JSON.stringify(menu),
+      feeCents: String(feeCents),
+      state: 'building',
+    });
+    return makeService(vi.fn());
+  }
+
+  it.each([0, 1, 899, 1000])(
+    'splits the %i-cent fee so shares sum exactly to items + fee',
+    async (feeCents) => {
+      const service = await seedOpenOrder(feeCents);
+      await service.addItem(sessionCode, 'pA', 0, 1); // Alice: Margherita 1500
+      const { order } = await service.addItem(sessionCode, 'pB', 1, 1); // Bob: Pepperoni 1800
+
+      const shareSum = order.shares.reduce((n, s) => n + s.totalCents, 0);
+      expect(shareSum).toBe(order.itemsCents + feeCents);
+      expect(order.itemsCents).toBe(1500 + 1800);
+      // Carol has no line → no share entry.
+      expect(order.shares.map((s) => s.displayName)).toEqual(['Alice', 'Bob']);
+    }
+  );
+
+  it('resolves name and price from the pinned menu, never the payload', async () => {
+    const service = await seedOpenOrder(0);
+    const { order, change } = await service.addItem(sessionCode, 'pA', 1, 1);
+    expect(order.lines).toEqual([
+      { index: 1, name: 'Pepperoni', priceCents: 1800, qty: 1, by: 'Alice' },
+    ]);
+    expect(change).toEqual({ by: 'Alice', name: 'Pepperoni', delta: 1 });
+  });
+
+  it('sums two adds of the same index by one person into qty 2', async () => {
+    const service = await seedOpenOrder(0);
+    await service.addItem(sessionCode, 'pA', 0, 1);
+    const { order } = await service.addItem(sessionCode, 'pA', 0, 1);
+    expect(order.lines).toEqual([
+      { index: 0, name: 'Margherita', priceCents: 1500, qty: 2, by: 'Alice' },
+    ]);
+  });
+
+  it('produces no change when a decrement hits an absent line', async () => {
+    const service = await seedOpenOrder(0);
+    const result = await service.addItem(sessionCode, 'pA', 0, -1);
+    expect(result.change).toBeUndefined();
+    expect(result.order.lines).toEqual([]);
+  });
+
+  it('produces a change (real removal) when a line is taken to zero', async () => {
+    const service = await seedOpenOrder(0);
+    await service.addItem(sessionCode, 'pA', 0, 1);
+    const result = await service.addItem(sessionCode, 'pA', 0, -1);
+    expect(result.change).toEqual({ by: 'Alice', name: 'Margherita', delta: -1 });
+    expect(result.order.lines).toEqual([]);
+  });
+
+  it('rejects an out-of-bounds index with VALIDATION_ERROR', async () => {
+    const service = await seedOpenOrder(0);
+    await expect(service.addItem(sessionCode, 'pA', 3, 1)).rejects.toMatchObject({
+      code: 'VALIDATION_ERROR',
+    });
+  });
+
+  it('rejects a locked order with VALIDATION_ERROR', async () => {
+    const service = await seedOpenOrder(0);
+    await store.openOrder(sessionCode, { state: 'locked' });
+    await expect(service.addItem(sessionCode, 'pA', 0, 1)).rejects.toMatchObject({
+      code: 'VALIDATION_ERROR',
+    });
+  });
+
+  it('rejects a non-participant with NOT_IN_SESSION', async () => {
+    const service = await seedOpenOrder(0);
+    await expect(service.addItem(sessionCode, 'stranger', 0, 1)).rejects.toMatchObject({
+      code: 'NOT_IN_SESSION',
+    });
+  });
+
+  it('throws SESSION_NOT_FOUND when no order is open', async () => {
+    const service = makeService(vi.fn());
+    await expect(service.addItem(sessionCode, 'pA', 0, 1)).rejects.toMatchObject({
+      code: 'SESSION_NOT_FOUND',
+    });
   });
 });

@@ -362,6 +362,43 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.error).toHaveBeenCalledWith('An error occurred');
   });
 
+  it('order:state toasts a removal by someone else — not my own removal, not an addition', () => {
+    const socket = setupSocket();
+    useSessionStore.setState({
+      participants: [participant],
+      currentUserId: participant.participantId,
+    });
+    socketBindings.initializeSocket();
+
+    const order = { lines: [], shares: [], itemsCents: 0 } as never;
+
+    // Someone else removes an item → toast.
+    socket.trigger('order:state', {
+      sessionCode: 'AB123',
+      order,
+      change: { by: 'Bob', name: 'Margherita', delta: -1 },
+    });
+    expect(socketMocks.toast.info).toHaveBeenCalledWith('Bob removed Margherita');
+    socketMocks.toast.info.mockClear();
+
+    // My own removal (participant is Alice) → no toast.
+    socket.trigger('order:state', {
+      sessionCode: 'AB123',
+      order,
+      change: { by: 'Alice', name: 'Margherita', delta: -1 },
+    });
+    // Any addition → no toast.
+    socket.trigger('order:state', {
+      sessionCode: 'AB123',
+      order,
+      change: { by: 'Bob', name: 'Margherita', delta: 1 },
+    });
+    expect(socketMocks.toast.info).not.toHaveBeenCalled();
+
+    // The store keeps order and change for the page's ring flash.
+    expect(useOrderStore.getState().change).toEqual({ by: 'Bob', name: 'Margherita', delta: 1 });
+  });
+
   it('resolves a relative session:results photoUrl to an absolute URL on both overlappingOptions and topPick (hero rider, #166)', () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();

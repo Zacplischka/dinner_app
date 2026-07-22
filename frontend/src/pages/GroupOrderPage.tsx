@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { MenuItemCapture } from '@dinder/shared/types';
-import { openOrder } from '../services/socketBindings';
+import { openOrder, addOrderItem } from '../services/socketBindings';
 import { subscribeToComparison } from '../services/comparisonStream';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
@@ -63,6 +63,18 @@ function FailureScreen({
   );
 }
 
+// The line under the basket, naming who still hasn't added anything. Pure and
+// exported for its test. (The spec's copy jumps to "and 2 others" — pluralised
+// here so three missing reads "and 1 other", not "and 1 others".)
+export function progressLine(participantNames: string[], lineOwners: string[]): string {
+  const missing = participantNames.filter((n) => !lineOwners.includes(n));
+  if (missing.length === 0) return "Everyone's added something";
+  if (missing.length === 1) return `${missing[0]} hasn't added anything yet`;
+  if (missing.length === 2) return `${missing[0]} and ${missing[1]} haven't added anything yet`;
+  const rest = missing.length - 2;
+  return `${missing[0]}, ${missing[1]} and ${rest} other${rest === 1 ? '' : 's'} haven't added anything yet`;
+}
+
 // Sections in first-appearance order off the Pinned Menu — a section with
 // zero items cannot exist by construction, so no filter or hardcoded count.
 function groupBySection(menu: MenuItemCapture[]): Map<string, MenuItemCapture[]> {
@@ -79,8 +91,10 @@ function groupBySection(menu: MenuItemCapture[]): Map<string, MenuItemCapture[]>
 export default function GroupOrderPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { participants, sessionStatus, topPick, overlappingOptions } = useSessionStore();
-  const { order, menu } = useOrderStore();
+  const { participants, sessionStatus, topPick, overlappingOptions, currentUserId } =
+    useSessionStore();
+  const { order, menu, change } = useOrderStore();
+  const me = participants.find((p) => p.participantId === currentUserId)?.displayName;
   const [failure, setFailure] = useState<FailureKind | null>(null);
   const retriedRef = useRef(false);
 
@@ -221,6 +235,24 @@ export default function GroupOrderPage() {
       minute: '2-digit',
     });
 
+    // A departed Participant's lines survive with no roster tile (§ Hard cases),
+    // so findIndex returns -1 — fall back to a neutral ring, never `-1 % 4`.
+    const ringFor = (by: string) => {
+      const index = participants.findIndex((p) => p.displayName === by);
+      return index === -1 ? 'border-line opacity-60' : participantRingClass(index);
+    };
+    const youOwe = order.shares.find((s) => s.displayName === me)?.totalCents ?? 0;
+    const progress = progressLine(
+      participants.map((p) => p.displayName),
+      order.lines.map((l) => l.by)
+    );
+    const changedLine =
+      change && order.lines.find((l) => l.by === change.by && l.name === change.name);
+    const announcement =
+      change && change.delta === 1 && changedLine
+        ? `${changedLine.qty} × ${change.name} added by ${change.by}. Items now ${formatPrice(order.itemsCents)}.`
+        : '';
+
     content = (
       <>
         {/* FIXED — roster + venue line */}
@@ -259,9 +291,54 @@ export default function GroupOrderPage() {
         {/* SCROLLS — the only overflow on the page */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
           <h2 className="text-lg font-display font-semibold text-text">In the basket</h2>
-          <p className="mt-1 text-sm text-muted">
-            Nothing in the basket yet — tap a menu item to add it.
+
+          {/* Live region holds ONLY the sr-only sentence, kept out of the
+              visible list so a new row isn't announced twice (its own text
+              plus this). */}
+          <p role="status" aria-live="polite" className="sr-only">
+            {announcement}
           </p>
+
+          {/* Keyed on index:by so React remounts only genuinely new rows and
+              animate-slide-up fires for exactly the row that arrived. */}
+          <ul className="mt-2 space-y-1">
+            {order.lines.length === 0 ? (
+              <p className="text-sm text-muted">
+                Nothing in the basket yet — tap a menu item to add it.
+              </p>
+            ) : (
+              order.lines.map((line) => {
+                const flash =
+                  change?.delta === 1 && line.by === change.by && line.name === change.name;
+                return (
+                  <li
+                    key={`${line.index}:${line.by}`}
+                    className={`flex items-center justify-between gap-3 rounded-lg border-2 bg-surface/60 px-3 py-2 animate-slide-up ${ringFor(line.by)} ${flash ? 'animate-pulse-glow' : ''}`}
+                  >
+                    <span className="min-w-0 truncate text-sm text-text/90">
+                      {line.qty} × {line.name}
+                      <span className="text-muted"> · {line.by}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="text-sm text-muted">
+                        {formatPrice(line.priceCents * line.qty)}
+                      </span>
+                      {line.by === me && (
+                        <button
+                          type="button"
+                          className="flex min-h-[44px] min-w-[44px] items-center justify-center text-lg text-muted"
+                          aria-label={`Remove one ${line.name}`}
+                          onClick={() => void addOrderItem(sessionCode!, line.index, -1)}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  </li>
+                );
+              })
+            )}
+          </ul>
 
           <p className="mt-6 text-xs text-muted">
             Base items only — add sizes and extras at checkout.
@@ -273,22 +350,41 @@ export default function GroupOrderPage() {
                   {section} ({items.length})
                 </summary>
                 <ul className="mt-2 space-y-1">
-                  {items.map((item, index) => (
-                    // ponytail: rows are plain non-interactive rows until
-                    // order:item exists — a button that does nothing is a bug
-                    // on screen. The live-basket issue swaps them for 44px
-                    // <button>s with aria-label "Add {name}, {price}".
-                    <li
-                      key={`${item.name}-${index}`}
-                      className="flex justify-between gap-4 text-sm text-text/90"
-                    >
-                      <span>{item.name}</span>
-                      <span className="text-muted">{formatPrice(item.price_cents)}</span>
-                    </li>
-                  ))}
+                  {items.map((item) => {
+                    // Flat index into the whole Pinned Menu — sections are a
+                    // render-time grouping; the wire identity is the flat index.
+                    const flatIndex = menu.indexOf(item);
+                    return (
+                      <li key={`${item.name}-${flatIndex}`}>
+                        <button
+                          type="button"
+                          className="flex min-h-[44px] w-full items-center justify-between gap-4 text-left text-sm text-text/90"
+                          aria-label={`Add ${item.name}, ${formatPrice(item.price_cents)}`}
+                          onClick={() => void addOrderItem(sessionCode!, flatIndex, 1)}
+                        >
+                          <span>{item.name}</span>
+                          <span className="text-muted">{formatPrice(item.price_cents)}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </details>
             ))}
+          </div>
+        </div>
+
+        {/* PINNED totals — the band #176 deferred, so it clears the home
+            indicator with safe-bottom. No `I'll order` button (that is #178). */}
+        <div className="safe-bottom shrink-0 border-t border-line/30 px-4 pb-3 pt-2">
+          <p className="text-sm text-muted">{progress}</p>
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-sm text-muted">
+              Items <span className="font-semibold text-text">{formatPrice(order.itemsCents)}</span>
+            </span>
+            <span className="text-sm text-muted">
+              You owe <span className="font-semibold text-cyan">{formatPrice(youOwe)}</span>
+            </span>
           </div>
         </div>
       </>

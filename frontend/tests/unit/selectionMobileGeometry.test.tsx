@@ -335,4 +335,15 @@ describe('GroupOrderPage mobile geometry', () => {
     expect(roster).not.toHaveClass('flex-wrap');
     expect(roster).toHaveClass('flex', 'min-w-0');
   });
+
+  it('pins the totals band with safe-bottom to clear the iPhone home indicator', async () => {
+    renderGroupOrderPage();
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+
+    const totalsBand = screen.getByText('You owe').closest('.safe-bottom') as HTMLElement;
+    expect(totalsBand).toBeInTheDocument();
+    expect(totalsBand).toHaveClass('safe-bottom', 'shrink-0');
+    // No `I'll order` button anywhere on the page (that is #178).
+    expect(screen.queryByRole('button', { name: /order/i })).toBeNull();
+  });
 });
