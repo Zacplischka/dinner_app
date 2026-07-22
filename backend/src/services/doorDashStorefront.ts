@@ -50,7 +50,7 @@ export const doorDashStorefront: StorefrontResolver = {
       if (distanceMeters(venue, { latitude, longitude }) > 100) continue;
       const actorMenu = record(candidate.menu);
       if (!Array.isArray(actorMenu.items)) throw new Error('DoorDash returned an invalid menu');
-      const menu: MenuItemCapture[] = [];
+      const menuById = new Map<string, MenuItemCapture>();
       for (const itemValue of actorMenu.items) {
         if (!isRecord(itemValue)) continue;
         const item = itemValue;
@@ -58,12 +58,23 @@ export const doorDashStorefront: StorefrontResolver = {
         const price = doorDashPriceCents(item.price);
         if (!itemName || price === undefined) continue;
         const section = string(item.category);
-        menu.push({
-          name: itemName,
-          price_cents: price,
-          ...(section ? { section } : {}),
-          tags: [],
-        });
+        // ponytail: fall back to name+price when the actor omits an id, rather than dropping a
+        // priced row the way the Uber Eats block does.
+        const id = string(item.id) ?? `${itemName} ${price}`;
+
+        const existing = menuById.get(id);
+        if (!existing) {
+          menuById.set(id, {
+            name: itemName,
+            price_cents: price,
+            ...(section ? { section } : {}),
+            tags: [],
+          });
+          continue;
+        }
+        if (existing.section === 'Most Ordered' && section && section !== 'Most Ordered') {
+          existing.section = section;
+        }
       }
 
       // The actor leaves some cover variants null per store; take the first present.
@@ -71,7 +82,13 @@ export const doorDashStorefront: StorefrontResolver = {
         httpsUrl(candidate.coverImageUrl) ??
         httpsUrl(candidate.businessHeaderImageUrl) ??
         httpsUrl(candidate.coverSquareImageUrl);
-      return { status: 'resolved', storeUrl, ...(imageUrl ? { imageUrl } : {}), deals: [], menu };
+      return {
+        status: 'resolved',
+        storeUrl,
+        ...(imageUrl ? { imageUrl } : {}),
+        deals: [],
+        menu: [...menuById.values()],
+      };
     }
 
     return emptyCapture('not_found');
@@ -95,9 +112,12 @@ function doorDashInput(input: Record<string, unknown>): Record<string, unknown> 
 
 function doorDashPriceCents(value: unknown): number | undefined {
   if (typeof value !== 'string') return undefined;
-  const match = /^(?:\d+\s+for\s+)?A\$(\d+)\.(\d{2})$/.exec(value.trim());
+  const match = /^(?:(\d+)\s+for\s+)?A\$(\d+)\.(\d{2})$/.exec(value.trim());
   if (!match) return undefined;
-  const cents = Number(match[1]) * 100 + Number(match[2]);
+  // ponytail: a multi-buy row ("2 for A$7.00") becomes a rounded-up unit price. Ceiling: this
+  // under-states a single-unit purchase by the bundle discount. Upgrade path is a real per-unit
+  // price, which the actor does not expose. Dropping the row instead loses the drinks entirely.
+  const cents = Math.ceil((Number(match[2]) * 100 + Number(match[3])) / (Number(match[1]) || 1));
   return Number.isSafeInteger(cents) ? cents : undefined;
 }
 
