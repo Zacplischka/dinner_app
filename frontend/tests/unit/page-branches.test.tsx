@@ -43,6 +43,7 @@ import SessionLobbyPage from '../../src/pages/SessionLobbyPage';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { useToastStore } from '../../src/hooks/useToast';
 
 const participant = {
   participantId: 'participant-1',
@@ -205,6 +206,58 @@ describe('page branch coverage', () => {
     fireEvent.click(await screen.findByText('Leave Session'));
     await waitFor(() => expect(serviceMocks.leaveSession).toHaveBeenCalledWith('AB123'));
     expect(await screen.findByText('Dinder')).toBeInTheDocument();
+  });
+
+  it('shares the invite link through the native sheet', async () => {
+    const shareMock = vi.fn();
+    Object.defineProperty(navigator, 'share', { value: shareMock, configurable: true });
+
+    try {
+      // navigator.share resolving: shares the link, never touches the clipboard.
+      shareMock.mockResolvedValueOnce(undefined);
+      const resolved = renderApp('/session/AB123');
+      fireEvent.click(await screen.findByText('Share invite link'));
+      await waitFor(() => expect(shareMock).toHaveBeenCalledTimes(1));
+      expect(shareMock).toHaveBeenCalledWith({
+        title: 'Dinder',
+        url: 'http://localhost:3000/join?code=AB123',
+      });
+      expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+      resolved.unmount();
+
+      // navigator.share rejecting AbortError: dismissing the sheet is not a failure.
+      shareMock.mockRejectedValueOnce(new DOMException('', 'AbortError'));
+      const aborted = renderApp('/session/AB123');
+      fireEvent.click(await screen.findByText('Share invite link'));
+      await waitFor(() => expect(shareMock).toHaveBeenCalledTimes(2));
+      expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+      expect(useToastStore.getState().toasts).toHaveLength(0);
+      aborted.unmount();
+
+      // navigator.share rejecting for any other reason falls through to the clipboard.
+      useToastStore.setState({ toasts: [] });
+      shareMock.mockRejectedValueOnce(new Error('NotAllowedError'));
+      // ponytail: the global afterEach's vi.restoreAllMocks() drops the
+      // .mockResolvedValue set on navigator.clipboard.writeText in setup.ts
+      // after the first test in this file runs — re-arm it here.
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+      const fellThrough = renderApp('/session/AB123');
+      fireEvent.click(await screen.findByText('Share invite link'));
+      await waitFor(() => expect(shareMock).toHaveBeenCalledTimes(3));
+      await waitFor(() =>
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+          'http://localhost:3000/join?code=AB123'
+        )
+      );
+      await waitFor(() =>
+        expect(useToastStore.getState().toasts).toContainEqual(
+          expect.objectContaining({ message: 'Link copied to clipboard!' })
+        )
+      );
+      fellThrough.unmount();
+    } finally {
+      delete (navigator as any).share;
+    }
   });
 
   it('starts selection through the shared session event and follows its state', async () => {
