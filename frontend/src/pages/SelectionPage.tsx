@@ -1,7 +1,7 @@
 // Selection page - Tinder-style swipeable restaurant selection
 // Swipe right to like, swipe left to pass
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants } from '../services/apiClient';
 import { submitSelection, leaveSession, sendLiveSelection } from '../services/socketBindings';
@@ -11,10 +11,35 @@ import NavigationHeader from '../components/NavigationHeader';
 import type { Restaurant } from '@dinder/shared/types';
 import { participantRingClass } from '../utils/participantStyles';
 
+interface LiveRevealInput {
+  placeId: string;
+  selectorNames: string[];
+  likedByMe: boolean;
+  participantNames: string[];
+}
+
+// Anti-over-count: only names still in the Session count, then clamp. The filter
+// is exact (it is what makes `participant:left` read `2 of 2`); the Math.min is
+// belt-and-braces. The strip may never render {n} of {m} with n > m.
+export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveRevealInput): {
+  count: number;
+  fullHouse: boolean;
+} {
+  const count = Math.min(
+    selectorNames.filter((n) => participantNames.includes(n)).length + (likedByMe ? 1 : 0),
+    participantNames.length
+  );
+  return {
+    count,
+    fullHouse: count === participantNames.length && participantNames.length >= 2,
+  };
+}
+
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, removeSelection, participants } = useSessionStore();
+  const { selections, addSelection, removeSelection, participants, liveSelections } =
+    useSessionStore();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,6 +48,9 @@ export default function SelectionPage() {
   const [error, setError] = useState('');
   const [submittedCount, setSubmittedCount] = useState(0);
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
+  const [reveal, setReveal] = useState<{ count: number; total: number; name: string } | null>(null);
+  const announcedRef = useRef<Set<string>>(new Set());
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const loadRestaurants = async () => {
@@ -50,6 +78,34 @@ export default function SelectionPage() {
     const count = participants.filter((p) => p.hasSubmitted).length;
     setSubmittedCount(count);
   }, [participants]);
+
+  // A Live Selection is revealed only for Restaurants strictly BEHIND the cursor —
+  // never the one being decided (anti-conformity, spec kill-risk (b)), and never a
+  // card ahead (which is also how a buffered event survives until you reach it).
+  useEffect(() => {
+    const unlocked = restaurants
+      .slice(0, currentIndex)
+      .filter((r) => liveSelections[r.placeId]?.length && !announcedRef.current.has(r.placeId));
+    if (unlocked.length === 0) return;
+
+    // ponytail: last-one-wins, no queue — the earlier unlocks are stale by the time
+    // they would be shown, so they are marked announced and never surface. Upgrade to
+    // a 4s queue if testers report missed reveals.
+    const latest = unlocked[unlocked.length - 1];
+    unlocked.forEach((r) => announcedRef.current.add(r.placeId));
+
+    const participantNames = participants.map((p) => p.displayName);
+    const { count } = liveReveal({
+      placeId: latest.placeId,
+      selectorNames: liveSelections[latest.placeId] ?? [],
+      likedByMe: selections.includes(latest.placeId),
+      participantNames,
+    });
+
+    clearTimeout(revealTimerRef.current);
+    setReveal({ count, total: participantNames.length, name: latest.name });
+    revealTimerRef.current = setTimeout(() => setReveal(null), 4000);
+  }, [liveSelections, currentIndex, restaurants, participants, selections]);
 
   // Navigate to results when session is complete
   const sessionStatus = useSessionStore((state) => state.sessionStatus);
@@ -299,7 +355,7 @@ export default function SelectionPage() {
       {/* Card Stack */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 py-3">
         <div className="mb-3 flex w-full max-w-sm flex-shrink-0 items-center justify-between rounded-full border border-line bg-raised/90 px-3 py-2">
-          <div className="flex -space-x-2" aria-label="Participants choosing">
+          <div className="flex shrink-0 -space-x-2" aria-label="Participants choosing">
             {participants.map((participant, index) => {
               const isOffline = participant.isOnline === false;
               return (
@@ -313,8 +369,15 @@ export default function SelectionPage() {
               );
             })}
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-cyan">
-            {participants.length} together
+          <p
+            data-testid="strip-status"
+            role="status"
+            aria-live="polite"
+            className="ml-2 min-w-0 truncate text-xs font-bold uppercase tracking-[0.12em] text-cyan"
+          >
+            {reveal
+              ? `${reveal.count} of ${reveal.total} liked ${reveal.name}`
+              : `${participants.length} together`}
           </p>
         </div>
         <div
@@ -394,6 +457,10 @@ export default function SelectionPage() {
                   removeSelection(previous.placeId);
                 }
                 setCurrentIndex((prev) => prev - 1);
+                setReveal(null); // Undo puts a revealed Restaurant back at/ahead of the cursor — a
+                // visible count while you re-decide is the exact herding setup the
+                // gate exists to prevent. The announced ref is never un-marked, so
+                // re-deciding it produces no second reveal.
               }
             }}
             disabled={currentIndex === 0}
