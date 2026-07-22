@@ -30,6 +30,14 @@ _Avoid_: option, card, place (except in external-API contexts)
 A single Restaurant a Participant swiped yes on.
 _Avoid_: like, vote, pick
 
+**Live Selection**:
+A Selection broadcast to the other Participants at the moment it is made, and shown to each of them only once they have swiped that Restaurant themselves. Ephemeral chrome: it is never written to Redis and never affects the Match. Receivers hold it client-side, keyed by the sender's display name, so it survives the sender's reconnect.
+_Avoid_: vote, live vote, real-time like
+
+**Full House**:
+A Restaurant every current Participant has made a Live Selection on, seen mid-deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it.
+_Avoid_: early match, instant match, mid-deck match
+
 **Submission**:
 A Participant's declaration that they are done selecting. A Submission may contain zero Selections — having submitted is a fact about the Participant, not about how many Selections they made.
 _Avoid_: inferring "submitted" from a non-empty Selection set
