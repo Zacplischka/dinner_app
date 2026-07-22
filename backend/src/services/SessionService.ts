@@ -312,6 +312,15 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       );
     }
 
+    // A rejoin re-keys the Participant by socket.id: removeParticipant DELs their
+    // Selections set (sessionStore.ts:326) and addParticipant rewrites
+    // hasSubmitted '0' (:310). Copy an already-recorded Submission out first — and
+    // note that inside Socket.IO's 2-minute recovery window (server.ts:170) the
+    // socket id is unchanged, so prior's Selections key IS the new one.
+    const carriedSelections = prior?.hasSubmitted
+      ? await store.readSelections(sessionCode, prior.participantId)
+      : null;
+
     if (prior) {
       await store.removeParticipant(sessionCode, prior.participantId);
     }
@@ -349,6 +358,17 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     // Sole participantCount writer: set size plus the reserved host slot
     const participantCount = setSize + reservedHostSlot;
     await store.setParticipantCount(sessionCode, participantCount);
+
+    if (carriedSelections) {
+      // Replays the Submission onto the new connection: SADDs the place ids and
+      // sets hasSubmitted '1'. Empty array is correct and still marks them
+      // submitted (a Submission is a fact about the Participant, not its size).
+      // ponytail: not atomic with addParticipant — a submit landing inside this
+      // two-round-trip window counts the rejoiner as pending and won't complete
+      // the Session. Upgrade path if it ever bites: fold the restore into
+      // addParticipant behind a hasSubmitted flag, or a Lua script.
+      await store.recordSubmission(sessionCode, participantId, carriedSelections);
+    }
 
     const participants = await store.listParticipants(sessionCode);
 
