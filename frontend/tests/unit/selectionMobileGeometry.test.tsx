@@ -236,8 +236,9 @@ describe('SelectionPage mobile geometry', () => {
     renderSelectionPage();
     await waitFor(() => expect(screen.getByText(longName)).toBeInTheDocument());
 
+    // A 2-of-3 reveal, not a Full House: this asserts the strip geometry, and a
+    // Full House would raise the #187 takeover over the deck instead.
     useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
-    useSessionStore.getState().recordLiveSelection('place-1', 'Carol');
     fireEvent.click(screen.getByRole('button', { name: 'Like' }));
 
     const stripStatus = await screen.findByTestId('strip-status');

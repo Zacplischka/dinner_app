@@ -3,9 +3,9 @@
 // and the pace-sync buffer (a Live Selection that arrives early is held, not
 // dropped, until you swipe past it).
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const restaurant = {
   placeId: 'place-1',
@@ -37,6 +37,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 }));
 
 import SelectionPage, { liveReveal } from '../../src/pages/SelectionPage';
+import { submitSelection } from '../../src/services/socketBindings';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
 const participant = (id: string, displayName: string) => ({
@@ -220,5 +221,130 @@ describe('Live Swipe Room reveal strip', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-3, nothing new recorded
     expect(strip()).not.toHaveTextContent('Ramen Ichiban');
+  });
+});
+
+// Issue #187 — the Full House takeover: a full-screen overlay raised when the
+// reveal effect's liveReveal() returns fullHouse: true, offering Finish here or
+// Keep swiping.
+describe('Full House takeover', () => {
+  beforeEach(() => {
+    vi.mocked(submitSelection).mockClear();
+  });
+
+  // Like place-1 (so it is behind the cursor and likedByMe), then land the other
+  // two Live Selections for it → a Full House for a card behind the cursor.
+  const raiseFullHouse = async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-1', 'Carol');
+    });
+    return screen.findByRole('dialog');
+  };
+
+  it('renders the overlay with the copy, dialog semantics and focus on Finish here', async () => {
+    const dialog = await raiseFullHouse();
+
+    expect(within(dialog).getByText('EVERYONE LIKED THIS')).toBeInTheDocument();
+    expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
+    expect(within(dialog).getByText('Lock it in now, or keep going for more.')).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog.getAttribute('aria-labelledby')).toBe('full-house-title');
+    expect(document.getElementById('full-house-title')).toHaveTextContent('EVERYONE LIKED THIS');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Finish here' }));
+  });
+
+  it('makes the deck inert: action buttons disabled and the deck container aria-hidden', async () => {
+    await raiseFullHouse();
+
+    expect(screen.getByRole('button', { name: 'Pass', hidden: true })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Undo', hidden: true })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Like', hidden: true })).toBeDisabled();
+    expect(screen.getByTestId('card-stack').parentElement).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('Keep swiping dismisses and no second overlay fires for the rest of the deck', async () => {
+    await raiseFullHouse();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // A second Restaurant reaches a Full House — the once-per-deck ref suppresses it.
+    fireEvent.click(screen.getByRole('button', { name: 'Like' })); // like place-2, advance
+    await waitFor(() => expect(screen.getByText('Pho Bar')).toBeInTheDocument());
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-2', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-2', 'Carol');
+    });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('Escape dismisses exactly as Keep swiping does', async () => {
+    const dialog = await raiseFullHouse();
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('Finish here submits the current selections once and lands on All Done!', async () => {
+    await raiseFullHouse();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish here' }));
+
+    await waitFor(() => expect(screen.getByText('All Done!')).toBeInTheDocument());
+    expect(submitSelection).toHaveBeenCalledTimes(1);
+    expect(submitSelection).toHaveBeenCalledWith('AB123', ['place-1']);
+  });
+
+  it('keeps the overlay up on an ack failure and re-enables the primary, sending only once', async () => {
+    let resolveAck: (ack: {
+      success: false;
+      error: { code: 'INTERNAL_ERROR'; message: string };
+    }) => void = () => {};
+    vi.mocked(submitSelection).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAck = resolve;
+        })
+    );
+
+    await raiseFullHouse();
+    fireEvent.click(screen.getByRole('button', { name: 'Finish here' }));
+
+    // In flight: primary shows the spinner and a second tap sends nothing.
+    await waitFor(() => expect(screen.getByText('Submitting...')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Submitting/ }));
+
+    resolveAck({ success: false, error: { code: 'INTERNAL_ERROR', message: 'boom' } });
+
+    await waitFor(() =>
+      expect(screen.getByText('Could not submit — try again')).toBeInTheDocument()
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Finish here' })).toBeEnabled();
+    expect(submitSelection).toHaveBeenCalledTimes(1);
+  });
+
+  it('never raises the overlay for a solo Session across the whole deck', async () => {
+    seedParticipants('Alice');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    // Like every card; a solo Session can never reach fullHouse (length >= 2 gate).
+    for (const name of ['Ramen Ichiban', 'Taco Turno', 'Pho Bar', 'Curry Corner']) {
+      await waitFor(() => expect(screen.getByText(name)).toBeInTheDocument());
+      act(() => {
+        useSessionStore.getState().recordLiveSelection('place-1', 'Ghost');
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    }
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
