@@ -401,7 +401,7 @@ The multi-device criteria (1, 1a, 3, 4, 5b, 7, 8) are **not** a "run it once bef
 
 ## Issue breakdown
 
-Six issues, **4.5 days** (was four issues / 3.5d — the reveal row was carrying six files and two suites, and the glossary, ADR and device pass had no home at all). This table supersedes README § Sprint 4.
+Six issues, **4.5 days** (was four issues / 3.5d — the reveal row was carrying six files and two suites, and the glossary, ADR and device pass had no home at all). README § Sprint 4 now carries the authoritative version of this table (4.75d, seven rows): the same work, with the ADR 0009 + glossary half of the contract row split into its own 0.25d row.
 
 | issue | days | depends on | contents |
 |---|---|---|---|
@@ -439,9 +439,6 @@ Two independent reviews, 22 findings. **21 accepted and fixed above. 1 rejected.
 - **#6, 375px geometry gate** — already satisfied (Acceptance 11), now with the mock fix that keeps that suite runnable.
 - **#1 (`__empty__` sentinel vs a group-orderable Top Pick) and #2 (`Order together` on collapsed cards)** — not this spec: no Live Selection is written to Redis, this feature never reads `session:{code}:results`, and it renders nothing on `ResultsPage`.
 
-### Deltas owed by `docs/specs/README.md` (not edited here — different owner)
+### Deltas owed by `docs/specs/README.md` — all delivered
 
-1. § Sprint 4 heading: **3.5d → 4.5d**, and replace the four-row issue table with § Issue breakdown above (six rows).
-2. § Sprint 4 demo, lines 64-65: `2 of 2 liked Pho Bar` is unreachable — two devices liking the same card is a Full House, which raises the overlay, not the strip. Use `1 of 2 liked Pho Bar` (B passes) or make it a three-phone demo.
-3. § Critical path: "Sprint 4 is fully independent of sprints 2-3" is true of `ResultsPage` only. Live Swipe Room shares `frontend/src/stores/sessionStore.ts`, `frontend/src/types.ts` and `frontend/src/services/socketBindings.ts` with the Top Pick crown (`top-pick.md:288-291`), and both edit `resetSelections`. Replace "fully independent" with "independent of sprints 2-3, but shares `sessionStore.ts` / `types.ts` / `socketBindings.ts` with the Top Pick crown — land the crown first or expect a three-file merge."
-4. § Out of scope: "Ending the Session on a Full House" is no longer a cut (see § 3); only a server-side early-completion path is.
+All four deltas this section used to list (Sprint 4 heading and table, the unreachable `2 of 2` demo line, the "fully independent" critical-path claim, and the Full House out-of-scope wording) have been applied to `docs/specs/README.md` by the sprint-1 resync. README § Sprint 4 is the authority; nothing is owed.
