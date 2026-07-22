@@ -331,6 +331,30 @@ describe('Full House takeover', () => {
     expect(submitSelection).toHaveBeenCalledTimes(1);
   });
 
+  it('clears a failed submit error when the takeover is dismissed, so it never leaks to the end-of-deck screen', async () => {
+    vi.mocked(submitSelection).mockResolvedValueOnce({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: 'boom' },
+    });
+
+    await raiseFullHouse();
+    fireEvent.click(screen.getByRole('button', { name: 'Finish here' }));
+    await waitFor(() =>
+      expect(screen.getByText('Could not submit — try again')).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByText('Could not submit — try again')).not.toBeInTheDocument();
+
+    // Swipe to the end of the deck: the stale error must not surface on "You've seen them all!".
+    fireEvent.click(screen.getByRole('button', { name: 'Like' })); // place-2
+    fireEvent.click(screen.getByRole('button', { name: 'Like' })); // place-3
+    fireEvent.click(screen.getByRole('button', { name: 'Like' })); // place-4 → end
+    await waitFor(() => expect(screen.getByText("You've seen them all!")).toBeInTheDocument());
+    expect(screen.queryByText('boom')).not.toBeInTheDocument();
+  });
+
   it('never raises the overlay for a solo Session across the whole deck', async () => {
     seedParticipants('Alice');
     renderSelectionPage();

@@ -132,7 +132,13 @@ export default function SelectionPage() {
   useEffect(() => {
     if (!fullHousePlaceId) return;
     window.history.pushState({ dinderFullHouse: true }, '');
-    const onPop = () => setFullHousePlaceId(null);
+    // Dismissal chokepoint: Keep swiping, Escape and hardware back all route
+    // through history.back() -> popstate -> here. Clear a failed-submit error so
+    // it can't leak onto the end-of-deck screen.
+    const onPop = () => {
+      setError('');
+      setFullHousePlaceId(null);
+    };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, [fullHousePlaceId]);
