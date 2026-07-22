@@ -445,6 +445,46 @@ describe('RestaurantSearchService', () => {
       expect(result[2].rating).toBe(3.5);
     });
 
+    it('should sink closed restaurants below open ones regardless of rating', async () => {
+      const mockResponse = {
+        places: [
+          {
+            id: '1',
+            displayName: { text: 'Closed Highly Rated' },
+            rating: 4.9,
+            priceLevel: 'PRICE_LEVEL_MODERATE',
+            primaryType: 'italian_restaurant',
+            currentOpeningHours: { openNow: false },
+          },
+          {
+            id: '2',
+            displayName: { text: 'Open Lower Rated' },
+            rating: 3.1,
+            priceLevel: 'PRICE_LEVEL_MODERATE',
+            primaryType: 'italian_restaurant',
+            currentOpeningHours: { openNow: true },
+          },
+        ],
+      };
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+        headers: {
+          get: () => null,
+        },
+      });
+
+      const result = await RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+      });
+
+      expect(result[0].name).toBe('Open Lower Rated');
+      expect(result[1].name).toBe('Closed Highly Rated');
+    });
+
     it('should handle API errors gracefully', async () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
       fetchMock.mockResolvedValueOnce({
