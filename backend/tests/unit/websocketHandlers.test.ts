@@ -12,6 +12,7 @@ import { handleSessionLeave } from '../../src/websocket/leaveHandler.js';
 import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import { handleSelectionSubmit } from '../../src/websocket/submitHandler.js';
+import { handleLiveSelection } from '../../src/websocket/liveSelectionHandler.js';
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
@@ -830,6 +831,93 @@ describe('websocket handlers', () => {
         hasOverlap: false,
       });
       expect(logSpy).toHaveBeenCalledWith({ sessionCode, hasOverlap: false }, 'Session complete');
+    });
+  });
+
+  describe('handleLiveSelection', () => {
+    it("should re-broadcast a joined participant's Live Selection and write nothing", async () => {
+      await createSessionWithParticipant('socket-1');
+      const testSocket = socket('socket-1');
+      const callback = vi.fn();
+
+      await handleLiveSelection(
+        testSocket as any,
+        { sessionCode, placeId: 'place-1' },
+        callback,
+        store
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: null });
+      expect(testSocket.to).toHaveBeenCalledWith(sessionCode);
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:selected', {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        placeId: 'place-1',
+      });
+      // The no-persistence promise: a successful selection:live writes nothing.
+      await expect(redis.smembers(`session:${sessionCode}:socket-1:selections`)).resolves.toEqual(
+        []
+      );
+    });
+
+    it('should reject a socket with no participant record', async () => {
+      const testSocket = socket('stranger');
+      const callback = vi.fn();
+
+      await handleLiveSelection(
+        testSocket as any,
+        { sessionCode, placeId: 'place-1' },
+        callback,
+        store
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'NOT_IN_SESSION', message: expect.any(String) },
+      });
+      expect(testSocket.roomEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('should reject a joined participant sending a different sessionCode', async () => {
+      await createSessionWithParticipant('socket-1');
+      const testSocket = socket('socket-1');
+      const callback = vi.fn();
+
+      await handleLiveSelection(
+        testSocket as any,
+        { sessionCode: 'ZZZ99', placeId: 'place-1' },
+        callback,
+        store
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'NOT_IN_SESSION', message: expect.any(String) },
+      });
+      expect(testSocket.roomEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('should reject a malformed payload without emitting', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const testSocket = socket('socket-1');
+      const callback = vi.fn();
+
+      await handleLiveSelection(
+        testSocket as any,
+        { sessionCode: 'nope', placeId: 'place-1' },
+        callback,
+        store
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
+      expect(testSocket.roomEmitter.emit).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        { socketId: 'socket-1', reason: expect.any(String) },
+        'Rejected selection:live'
+      );
     });
   });
 

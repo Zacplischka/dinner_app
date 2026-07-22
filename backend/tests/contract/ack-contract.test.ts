@@ -10,6 +10,7 @@ import type {
   SelectionSubmitResponse,
   SessionRestartResponse,
   SessionLeaveResponse,
+  SelectionLiveResponse,
   SessionJoinData,
 } from '@dinder/shared/types';
 
@@ -40,7 +41,13 @@ describe('canonical Socket.IO ack wire contract (shared event map)', () => {
   });
 
   it('no-data commands acknowledge data: null', () => {
-    const acks: Array<SelectionSubmitResponse | SessionRestartResponse | SessionLeaveResponse> = [
+    const acks: Array<
+      | SelectionSubmitResponse
+      | SessionRestartResponse
+      | SessionLeaveResponse
+      | SelectionLiveResponse
+    > = [
+      { success: true, data: null },
       { success: true, data: null },
       { success: true, data: null },
       { success: true, data: null },
