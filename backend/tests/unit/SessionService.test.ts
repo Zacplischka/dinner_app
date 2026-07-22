@@ -297,6 +297,60 @@ describe('SessionService', () => {
       await expect(store.getParticipant('socket-old')).resolves.toBeNull();
     });
 
+    it('should preserve an already-recorded Submission across a token-matched rejoin with a new socket id', async () => {
+      searchNearbyRestaurants.mockResolvedValue([
+        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
+      ]);
+      const session = await SessionService.createSession(
+        'Alice',
+        { latitude: 37.7749, longitude: -122.4194 },
+        5
+      );
+
+      const firstJoin = await SessionService.joinSession(
+        session.sessionCode,
+        'socket-alice',
+        'Alice'
+      );
+      await SessionService.joinSession(session.sessionCode, 'p-bob', 'Bob');
+
+      const submitResult = await SessionService.submitSelections(
+        session.sessionCode,
+        'socket-alice',
+        ['place1']
+      );
+      expect(submitResult).toMatchObject({ submittedCount: 1, participantCount: 2 });
+      expect(submitResult.results).toBeUndefined();
+
+      // Past the 2-minute recovery window: a brand-new socket id.
+      const rejoin = await SessionService.joinSession(
+        session.sessionCode,
+        'socket-alice-2',
+        'Alice',
+        firstJoin.rejoinToken
+      );
+      expect(rejoin.isRejoin).toBe(true);
+
+      await expect(store.getParticipant('socket-alice-2')).resolves.toMatchObject({
+        hasSubmitted: true,
+      });
+      await expect(
+        redis.smembers(`session:${session.sessionCode}:socket-alice-2:selections`)
+      ).resolves.toEqual(['place1']);
+
+      // The rejoiner's carried Submission must still count towards completion.
+      const bobSubmit = await SessionService.submitSelections(session.sessionCode, 'p-bob', [
+        'place1',
+      ]);
+      expect(bobSubmit.submittedCount).toBe(2);
+      expect(bobSubmit.results?.overlappingOptions).toEqual(
+        expect.arrayContaining([expect.objectContaining({ placeId: 'place1' })])
+      );
+      await expect(store.readSession(session.sessionCode)).resolves.toMatchObject({
+        state: 'complete',
+      });
+    });
+
     it('should reject a brand-new participant after the session starts', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');

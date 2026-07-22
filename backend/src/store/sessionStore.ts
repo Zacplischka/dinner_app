@@ -423,6 +423,14 @@ export function createSessionStore(redis: Redis) {
     };
   }
 
+  /**
+   * A Participant's Selections. Only the rejoin path needs this: it must copy the
+   * set out before removeParticipant DELs it (see SessionService.joinSession).
+   */
+  async function readSelections(sessionCode: string, participantId: string): Promise<string[]> {
+    return await redis.smembers(selectionsKey(sessionCode, participantId));
+  }
+
   // --- Match -------------------------------------------------------------
 
   /**
@@ -566,6 +574,7 @@ export function createSessionStore(redis: Redis) {
     countParticipants,
     setParticipantCount,
     recordSubmission,
+    readSelections,
     computeAndStoreResults,
     resetForRestart,
     wasRestartedAfterComplete,
