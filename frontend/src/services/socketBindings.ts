@@ -133,7 +133,7 @@ const socketConfig: SocketConfig = {
 
     // ponytail: client-only presence, no server truth. Two holes: (i) a Participant who
     // dropped before you joined shows as Live to you; (ii) your OWN reconnect resets every
-    // badge to Live, because connect (:44-54) re-joins and joinSession (:237-244) replaces
+    // badge to Live, because connect (:44-54) re-joins and joinSession (:252-259) replaces
     // the list from SessionJoinData.participants, which is { participantId, displayName,
     // isHost } only. Badges are honest again from the next participant:disconnected.
     // Upgrade that fixes both at once: hset an offline flag on participant:{pid} in
