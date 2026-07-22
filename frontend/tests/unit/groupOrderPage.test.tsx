@@ -7,10 +7,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const openOrderMock = vi.fn();
 const addOrderItemMock = vi.fn(async () => ({ success: true, data: null }));
 const claimBuyerMock = vi.fn(async () => ({ success: true, data: null }));
+const leaveSessionMock = vi.fn(async () => ({ success: true, data: null }));
 vi.mock('../../src/services/socketBindings', () => ({
   openOrder: (...args: unknown[]) => openOrderMock(...args),
   addOrderItem: (...args: unknown[]) => addOrderItemMock(...args),
   claimBuyer: (...args: unknown[]) => claimBuyerMock(...args),
+  leaveSession: (...args: unknown[]) => leaveSessionMock(...args),
 }));
 
 const subscribeToComparisonMock = vi.fn();
@@ -105,6 +107,27 @@ describe('GroupOrderPage', () => {
     expect(
       screen.getByText('Nothing in the basket yet — tap a menu item to add it.')
     ).toBeInTheDocument();
+  });
+
+  it('confirms with the ordering copy on header back, then leaves the session on confirm (#180)', async () => {
+    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(screen.getByText('Leave the basket?')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your items stay in the basket and still count — whoever taps I'll order still buys them."
+      )
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Session' }));
+
+    expect(await screen.findByText('HOME SCREEN')).toBeInTheDocument();
+    expect(leaveSessionMock).toHaveBeenCalledWith('AB123');
   });
 
   it('renders no cheaper badge when cheaperPercent is absent', async () => {

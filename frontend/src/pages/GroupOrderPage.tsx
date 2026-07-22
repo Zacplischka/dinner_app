@@ -221,6 +221,10 @@ export default function GroupOrderPage() {
       navigate('/');
     } catch (err) {
       console.error('Failed to leave session:', err);
+      // leaveSession only calls resetSession() after its ack resolves; a
+      // synchronous socket.emit throw skips that, which would leave orderStore
+      // dirty. Every sibling leaveSession caller resets defensively here too.
+      useSessionStore.getState().resetSession();
       navigate('/');
     }
   };
