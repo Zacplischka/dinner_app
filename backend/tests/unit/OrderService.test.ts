@@ -306,6 +306,21 @@ describe('OrderService.addItem', () => {
     ]);
   });
 
+  it('produces no change when a decrement hits an absent line', async () => {
+    const service = await seedOpenOrder(0);
+    const result = await service.addItem(sessionCode, 'pA', 0, -1);
+    expect(result.change).toBeUndefined();
+    expect(result.order.lines).toEqual([]);
+  });
+
+  it('produces a change (real removal) when a line is taken to zero', async () => {
+    const service = await seedOpenOrder(0);
+    await service.addItem(sessionCode, 'pA', 0, 1);
+    const result = await service.addItem(sessionCode, 'pA', 0, -1);
+    expect(result.change).toEqual({ by: 'Alice', name: 'Margherita', delta: -1 });
+    expect(result.order.lines).toEqual([]);
+  });
+
   it('rejects an out-of-bounds index with VALIDATION_ERROR', async () => {
     const service = await seedOpenOrder(0);
     await expect(service.addItem(sessionCode, 'pA', 3, 1)).rejects.toMatchObject({

@@ -119,11 +119,13 @@ export async function handleOrderItem(
     }
 
     // Ack before broadcast, and broadcast to the whole room INCLUDING the sender
-    // (io.in, not socket.to) so no client holds a local optimistic copy.
+    // (io.in, not socket.to) so no client holds a local optimistic copy. A
+    // no-op decrement (absent line) produces no change → nothing to broadcast.
     callback({ success: true, data: null });
-    io.in(sessionCode).emit('order:state', { sessionCode, order, change });
-
-    logger.info({ socketId: socket.id, sessionCode, index, delta }, 'Order Line changed');
+    if (change) {
+      io.in(sessionCode).emit('order:state', { sessionCode, order, change });
+      logger.info({ socketId: socket.id, sessionCode, index, delta }, 'Order Line changed');
+    }
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in order:item handler');
     callback({ success: false, error: toApiError(error).body });

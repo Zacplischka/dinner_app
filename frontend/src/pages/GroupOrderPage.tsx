@@ -292,10 +292,16 @@ export default function GroupOrderPage() {
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
           <h2 className="text-lg font-display font-semibold text-text">In the basket</h2>
 
+          {/* Live region holds ONLY the sr-only sentence, kept out of the
+              visible list so a new row isn't announced twice (its own text
+              plus this). */}
+          <p role="status" aria-live="polite" className="sr-only">
+            {announcement}
+          </p>
+
           {/* Keyed on index:by so React remounts only genuinely new rows and
               animate-slide-up fires for exactly the row that arrived. */}
-          <ul role="status" aria-live="polite" className="mt-2 space-y-1">
-            {announcement && <p className="sr-only">{announcement}</p>}
+          <ul className="mt-2 space-y-1">
             {order.lines.length === 0 ? (
               <p className="text-sm text-muted">
                 Nothing in the basket yet — tap a menu item to add it.

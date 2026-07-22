@@ -36,7 +36,7 @@ export interface OrderService {
     participantId: string,
     index: number,
     delta: 1 | -1
-  ): Promise<{ order: OrderState; change: { by: string; name: string; delta: 1 | -1 } }>;
+  ): Promise<{ order: OrderState; change?: { by: string; name: string; delta: 1 | -1 } }>;
 }
 
 export function createOrderService(deps: OrderServiceDeps): OrderService {
@@ -182,7 +182,7 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     participantId: string,
     index: number,
     delta: 1 | -1
-  ): Promise<{ order: OrderState; change: { by: string; name: string; delta: 1 | -1 } }> {
+  ): Promise<{ order: OrderState; change?: { by: string; name: string; delta: 1 | -1 } }> {
     const hash = await store.readOrder(sessionCode);
     if (!hash) {
       throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
@@ -200,9 +200,13 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     }
 
     const displayName = participant.displayName;
-    await store.addLine(sessionCode, index, displayName, delta);
+    // qty < 0 means a decrement hit an absent line — nothing changed, so no
+    // `change` (the handler then skips the broadcast; state is identical).
+    const qty = await store.addLine(sessionCode, index, displayName, delta);
     const order = toOrderState(hash, await store.readOrderLines(sessionCode));
-    return { order, change: { by: displayName, name: menu[index].name, delta } };
+    return qty < 0
+      ? { order }
+      : { order, change: { by: displayName, name: menu[index].name, delta } };
   }
 
   return { open, addItem };

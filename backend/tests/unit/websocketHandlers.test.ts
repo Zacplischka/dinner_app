@@ -83,6 +83,38 @@ describe('websocket handlers', () => {
     });
   }
 
+  // Shared by the order:* handlers. getLatest defaults to a resolved pizza
+  // Snapshot for the open path; the item path seeds the order directly and
+  // never calls it.
+  const orderPlaceId = 'place-crown';
+
+  function orderSnapshot(): Snapshot {
+    return {
+      id: 'snap-1',
+      placeId: orderPlaceId,
+      venueName: 'Pizza Place',
+      fetchedAt: new Date().toISOString(),
+      payload: {
+        ubereats: {
+          status: 'resolved',
+          deals: [],
+          storeUrl: 'https://store',
+          menu: [{ name: 'Margherita', price_cents: 1500, tags: [] }],
+        },
+        doordash: { status: 'not_found', deals: [], menu: [] },
+      },
+    };
+  }
+
+  function orderService(getLatest = vi.fn().mockResolvedValue(orderSnapshot())) {
+    return createOrderService({
+      store,
+      snapshotStore: { getLatest },
+      freshnessMs: SNAPSHOT_FRESHNESS_MS,
+      failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
+    });
+  }
+
   describe('handleSessionJoin', () => {
     it('should reject invalid payloads', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
@@ -1053,34 +1085,7 @@ describe('websocket handlers', () => {
   });
 
   describe('handleOrderOpen', () => {
-    const placeId = 'place-crown';
-
-    function orderSnapshot(): Snapshot {
-      return {
-        id: 'snap-1',
-        placeId,
-        venueName: 'Pizza Place',
-        fetchedAt: new Date().toISOString(),
-        payload: {
-          ubereats: {
-            status: 'resolved',
-            deals: [],
-            storeUrl: 'https://store',
-            menu: [{ name: 'Margherita', price_cents: 1500, tags: [] }],
-          },
-          doordash: { status: 'not_found', deals: [], menu: [] },
-        },
-      };
-    }
-
-    function orderService(getLatest = vi.fn().mockResolvedValue(orderSnapshot())) {
-      return createOrderService({
-        store,
-        snapshotStore: { getLatest },
-        freshnessMs: SNAPSHOT_FRESHNESS_MS,
-        failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
-      });
-    }
+    const placeId = orderPlaceId;
 
     async function completedSession(participantId = 'socket-1') {
       await createSessionWithParticipant(participantId);
@@ -1159,17 +1164,8 @@ describe('websocket handlers', () => {
   });
 
   describe('handleOrderItem', () => {
-    const placeId = 'place-crown';
+    const placeId = orderPlaceId;
     const menu = [{ name: 'Margherita', price_cents: 1500, tags: [] }];
-
-    function orderService() {
-      return createOrderService({
-        store,
-        snapshotStore: { getLatest: vi.fn() },
-        freshnessMs: SNAPSHOT_FRESHNESS_MS,
-        failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
-      });
-    }
 
     async function openOrder(state: 'building' | 'locked' = 'building') {
       await createSessionWithParticipant('socket-1');
@@ -1243,6 +1239,23 @@ describe('websocket handlers', () => {
       );
 
       expect(callback.mock.calls[0][0].error.code).toBe('VALIDATION_ERROR');
+      expect(server.roomEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('acks success but broadcasts nothing when decrementing an absent line', async () => {
+      await openOrder();
+      const callback = vi.fn();
+      const server = io();
+
+      await handleOrderItem(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode, index: 0, delta: -1 },
+        callback,
+        orderService()
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: null });
       expect(server.roomEmitter.emit).not.toHaveBeenCalled();
     });
   });
