@@ -6,9 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const openOrderMock = vi.fn();
 const addOrderItemMock = vi.fn(async () => ({ success: true, data: null }));
+const claimBuyerMock = vi.fn(async () => ({ success: true, data: null }));
 vi.mock('../../src/services/socketBindings', () => ({
   openOrder: (...args: unknown[]) => openOrderMock(...args),
   addOrderItem: (...args: unknown[]) => addOrderItemMock(...args),
+  claimBuyer: (...args: unknown[]) => claimBuyerMock(...args),
 }));
 
 const subscribeToComparisonMock = vi.fn();
@@ -19,6 +21,7 @@ vi.mock('../../src/services/comparisonStream', () => ({
 import GroupOrderPage, { progressLine } from '../../src/pages/GroupOrderPage';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { useOrderStore } from '../../src/stores/orderStore';
+import { useToastStore } from '../../src/hooks/useToast';
 
 const restaurant = { placeId: 'place-1', name: '11 Inch Pizza', address: '5 Cecil St, Fitzroy' };
 
@@ -79,6 +82,11 @@ function renderPage() {
 describe('GroupOrderPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // ponytail: the global afterEach's vi.restoreAllMocks() drops the
+    // .mockResolvedValue set on navigator.clipboard.writeText in setup.ts
+    // after the previous test runs — re-arm it here (see page-branches.test.tsx).
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    useToastStore.setState({ toasts: [] });
     seedStore();
   });
 
@@ -361,6 +369,108 @@ describe('GroupOrderPage', () => {
 
     // Menu rows are real Add buttons with the price in the label.
     expect(screen.getByRole('button', { name: 'Add Coke (Can), $7.00' })).toBeInTheDocument();
+  });
+
+  it("shows the always-primary I'll order button while building, and reports a failed claim", async () => {
+    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+    claimBuyerMock.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Bob is already ordering' },
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+    const button = screen.getByRole('button', { name: "I'll order" });
+    fireEvent.click(button);
+
+    expect(claimBuyerMock).toHaveBeenCalledWith('AB123');
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toContainEqual(
+        expect.objectContaining({ type: 'error', message: 'Bob is already ordering' })
+      )
+    );
+  });
+
+  const lockedBuyerOrder = {
+    ...basketOrder,
+    state: 'locked' as const,
+    buyer: 'Alice',
+    storeUrl: 'https://www.ubereats.com/store/11-inch-pizza/abc123',
+  };
+
+  it('renders the Buyer branch: checklist, items subtotal, split and Open Uber Eats', async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p1',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({ success: true, data: lockedBuyerOrder });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    expect(screen.getByText("You're ordering from 11 Inch Pizza on Uber Eats")).toBeInTheDocument();
+    expect(screen.getByText('2 × Margherita')).toBeInTheDocument();
+    expect(screen.getByText('1 × Hawaiian')).toBeInTheDocument();
+    expect(screen.getByText('$71.00')).toBeInTheDocument();
+    expect(screen.getByText('What everyone owes you')).toBeInTheDocument();
+    expect(screen.getByText('Bob $25.00')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the split' }));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      '11 Inch Pizza — Bob $25.00. Alice paid $71.00.'
+    );
+
+    const openLink = screen.getByRole('link', { name: 'Open Uber Eats' });
+    expect(openLink).toHaveAttribute('href', lockedBuyerOrder.storeUrl);
+    expect(openLink).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // No delivery clause while feeCents is 0.
+    expect(screen.queryByText(/delivery/)).toBeNull();
+  });
+
+  it('falls back to DeliveryActions when the Buyer order has no storeUrl', async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p1',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({
+      success: true,
+      data: { ...lockedBuyerOrder, storeUrl: undefined },
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: 'Open Uber Eats' })).toBeNull();
+    expect(screen.getByRole('link', { name: /uber eats/i })).toBeInTheDocument();
+  });
+
+  it('renders the everyone-else branch: buyer line, my share, and Copy my share', async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p2',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({ success: true, data: lockedBuyerOrder });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    expect(screen.getByText('Alice is ordering from 11 Inch Pizza.')).toBeInTheDocument();
+    expect(screen.getByText('You owe $25.00 — 1 × Hawaiian.')).toBeInTheDocument();
+    expect(screen.queryByText('What everyone owes you')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy my share' }));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('You owe $25.00 — 1 × Hawaiian.');
+  });
+
+  it('no adds are reachable once the order is locked - the basket/menu is not rendered', async () => {
+    openOrderMock.mockResolvedValue({ success: true, data: lockedBuyerOrder });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /^Add /i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Remove one/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: "I'll order" })).toBeNull();
   });
 
   it('progressLine names who is missing and pluralises the overflow', () => {

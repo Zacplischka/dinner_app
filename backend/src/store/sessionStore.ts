@@ -620,6 +620,24 @@ export function createSessionStore(redis: Redis) {
     return (await redis.sismember(resultsKey(sessionCode), placeId)) === 1;
   }
 
+  /**
+   * First tap wins. HSETNX decides the Buyer; the HSET is unconditional because
+   * the order ends 'locked' whichever tap won, so a loser re-setting it is a
+   * no-op. Returns false when someone else already claimed it.
+   * ponytail: MULTI, not Lua — two commands, one round trip, no lock. Lua only
+   * if a future Buyer-transfer flow needs a compare-and-swap.
+   */
+  async function claimBuyer(sessionCode: string, displayName: string): Promise<boolean> {
+    const key = orderKey(sessionCode);
+    const res = await redis
+      .multi()
+      .hsetnx(key, 'buyer', displayName)
+      .hset(key, 'state', 'locked')
+      .exec();
+    await touch(sessionCode);
+    return res?.[0]?.[1] === 1;
+  }
+
   return {
     sessionExists,
     createSession,
@@ -647,6 +665,7 @@ export function createSessionStore(redis: Redis) {
     openOrder,
     addLine,
     isResultPlaceId,
+    claimBuyer,
   };
 }
 

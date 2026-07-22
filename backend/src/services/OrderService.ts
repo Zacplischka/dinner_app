@@ -37,6 +37,7 @@ export interface OrderService {
     index: number,
     delta: 1 | -1
   ): Promise<{ order: OrderState; change?: { by: string; name: string; delta: 1 | -1 } }>;
+  claimBuyer(sessionCode: string, participantId: string): Promise<OrderState>;
 }
 
 export function createOrderService(deps: OrderServiceDeps): OrderService {
@@ -209,5 +210,35 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
       : { order, change: { by: displayName, name: menu[index].name, delta } };
   }
 
-  return { open, addItem };
+  /**
+   * "I'll order": first tap wins the Buyer and locks the Group Order. A second,
+   * different claimant is rejected - the store's HSETNX is the tie-break
+   * authority, this pre-read is only advisory (fast rejection, friendlier message).
+   * A retap by the SAME buyer (no disabled/pending guard on the button) is
+   * idempotent: the lost HSETNX just means the field already held their name.
+   */
+  async function claimBuyer(sessionCode: string, participantId: string): Promise<OrderState> {
+    const participant = await store.getParticipant(participantId);
+    if (!participant || participant.sessionCode !== sessionCode) {
+      throw new DomainError('NOT_IN_SESSION', 'You are not in this session');
+    }
+    const order = await store.readOrder(sessionCode);
+    if (!order) {
+      throw new DomainError('VALIDATION_ERROR', 'No group order is open');
+    }
+    if (order.buyer && order.buyer !== participant.displayName) {
+      throw new DomainError('VALIDATION_ERROR', `${order.buyer} is already ordering`);
+    }
+
+    const won = await store.claimBuyer(sessionCode, participant.displayName);
+    if (!won && order.buyer !== participant.displayName) {
+      throw new DomainError('VALIDATION_ERROR', 'Someone else is already ordering');
+    }
+    return toOrderState(
+      { ...order, buyer: participant.displayName, state: 'locked' },
+      await store.readOrderLines(sessionCode)
+    );
+  }
+
+  return { open, addItem, claimBuyer };
 }

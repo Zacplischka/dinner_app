@@ -17,6 +17,9 @@ import {
   type OrderOpenResponse,
   type OrderItemPayload,
   type OrderItemResponse,
+  type OrderBuyPayload,
+  type OrderBuyResponse,
+  type OrderState,
 } from '@dinder/shared/types';
 
 const orderOpenPayloadSchema = z.object({
@@ -28,6 +31,12 @@ const orderItemPayloadSchema = z.object({
   sessionCode: z.string().regex(SESSION_CODE_PATTERN),
   index: z.number().int().min(0),
   delta: z.union([z.literal(1), z.literal(-1)]),
+});
+
+const orderBuyPayloadSchema = z.object({
+  sessionCode: z.string().regex(SESSION_CODE_PATTERN),
+  // ponytail: no feeCents key — #179 ("Split the Buyer's delivery fee live
+  // from a dollars input") owns it and adds it here. z.object strips it meanwhile.
 });
 
 export async function handleOrderOpen(
@@ -128,6 +137,56 @@ export async function handleOrderItem(
     }
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in order:item handler');
+    callback({ success: false, error: toApiError(error).body });
+  }
+}
+
+export async function handleOrderBuy(
+  socket: Socket<ClientToServerEvents, ServerToClientEvents>,
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
+  payload: OrderBuyPayload,
+  callback: (response: OrderBuyResponse) => void,
+  service: OrderService
+): Promise<void> {
+  try {
+    const validation = orderBuyPayloadSchema.safeParse(payload);
+    if (!validation.success) {
+      const reason = validation.error.errors[0].message;
+      logger.warn(
+        {
+          socketId: socket.id,
+          sessionCode: (payload as Partial<OrderBuyPayload>).sessionCode,
+          reason,
+        },
+        'Rejected order:buy'
+      );
+      return callback({ success: false, error: { code: 'VALIDATION_ERROR', message: reason } });
+    }
+
+    const { sessionCode } = validation.data;
+
+    let order: OrderState;
+    try {
+      order = await service.claimBuyer(sessionCode, socket.id);
+    } catch (error) {
+      if (!(error instanceof DomainError)) {
+        throw error;
+      }
+      logger.warn({ socketId: socket.id, sessionCode, reason: error.code }, 'Rejected order:buy');
+      return callback({ success: false, error: toApiError(error).body });
+    }
+
+    // Ack before broadcast, and broadcast to the whole room INCLUDING the
+    // sender (io.in, not socket.to) — no `change` field, the lock is not an
+    // item mutation.
+    callback({ success: true, data: null });
+    io.in(sessionCode).emit('order:state', { sessionCode, order });
+    logger.info(
+      { socketId: socket.id, sessionCode, buyer: order.buyer },
+      'Buyer claimed group order'
+    );
+  } catch (error) {
+    logger.error({ err: error, socketId: socket.id }, 'Error in order:buy handler');
     callback({ success: false, error: toApiError(error).body });
   }
 }
