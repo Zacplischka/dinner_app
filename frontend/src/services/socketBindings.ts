@@ -357,9 +357,13 @@ export function addOrderItem(
  * "I'll order": claim the Buyer and lock the Group Order. The resulting
  * order:state broadcast (sender included) is what flips every phone to its
  * handoff branch — this command carries no local state change of its own.
+ *
+ * The same event also carries the Buyer's debounced delivery-fee edits
+ * (#179) — `feeCents` present with an existing lock is a fee update, not a
+ * re-claim; the server tells the two apart.
  */
-export function claimBuyer(sessionCode: string): Promise<OrderBuyResponse> {
-  return socketService.claimBuyer(sessionCode);
+export function claimBuyer(sessionCode: string, feeCents?: number): Promise<OrderBuyResponse> {
+  return socketService.claimBuyer(sessionCode, feeCents);
 }
 
 /**

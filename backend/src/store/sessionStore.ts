@@ -638,6 +638,12 @@ export function createSessionStore(redis: Redis) {
     return res?.[0]?.[1] === 1;
   }
 
+  /** Writes the Buyer's chosen delivery fee onto the order hash. */
+  async function setFee(sessionCode: string, feeCents: number): Promise<void> {
+    await redis.hset(orderKey(sessionCode), 'feeCents', String(feeCents));
+    await touch(sessionCode);
+  }
+
   return {
     sessionExists,
     createSession,
@@ -666,6 +672,7 @@ export function createSessionStore(redis: Redis) {
     addLine,
     isResultPlaceId,
     claimBuyer,
+    setFee,
   };
 }
 

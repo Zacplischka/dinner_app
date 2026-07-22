@@ -37,7 +37,7 @@ export interface OrderService {
     index: number,
     delta: 1 | -1
   ): Promise<{ order: OrderState; change?: { by: string; name: string; delta: 1 | -1 } }>;
-  claimBuyer(sessionCode: string, participantId: string): Promise<OrderState>;
+  claimBuyer(sessionCode: string, participantId: string, feeCents?: number): Promise<OrderState>;
 }
 
 export function createOrderService(deps: OrderServiceDeps): OrderService {
@@ -216,8 +216,16 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
    * authority, this pre-read is only advisory (fast rejection, friendlier message).
    * A retap by the SAME buyer (no disabled/pending guard on the button) is
    * idempotent: the lost HSETNX just means the field already held their name.
+   *
+   * `feeCents`, when present, is the Buyer's checkout delivery fee (#179) — it
+   * is set only against the pre-existing buyer (undefined counts as "not
+   * them"), so the field can never reach the wire before a Buyer is locked in.
    */
-  async function claimBuyer(sessionCode: string, participantId: string): Promise<OrderState> {
+  async function claimBuyer(
+    sessionCode: string,
+    participantId: string,
+    feeCents?: number
+  ): Promise<OrderState> {
     const participant = await store.getParticipant(participantId);
     if (!participant || participant.sessionCode !== sessionCode) {
       throw new DomainError('NOT_IN_SESSION', 'You are not in this session');
@@ -229,13 +237,24 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     if (order.buyer && order.buyer !== participant.displayName) {
       throw new DomainError('VALIDATION_ERROR', `${order.buyer} is already ordering`);
     }
+    if (feeCents !== undefined && order.buyer !== participant.displayName) {
+      throw new DomainError('VALIDATION_ERROR', 'Only the Buyer can set the delivery fee');
+    }
 
     const won = await store.claimBuyer(sessionCode, participant.displayName);
     if (!won && order.buyer !== participant.displayName) {
       throw new DomainError('VALIDATION_ERROR', 'Someone else is already ordering');
     }
+    if (feeCents !== undefined) {
+      await store.setFee(sessionCode, feeCents);
+    }
     return toOrderState(
-      { ...order, buyer: participant.displayName, state: 'locked' },
+      {
+        ...order,
+        buyer: participant.displayName,
+        state: 'locked',
+        ...(feeCents !== undefined ? { feeCents: String(feeCents) } : {}),
+      },
       await store.readOrderLines(sessionCode)
     );
   }

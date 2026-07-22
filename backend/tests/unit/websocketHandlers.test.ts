@@ -1432,5 +1432,83 @@ describe('websocket handlers', () => {
         error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
       });
     });
+
+    // Issue #179 — the Buyer's debounced delivery-fee input rides the same
+    // order:buy event with a feeCents key.
+    it("persists the Buyer's feeCents and broadcasts the updated order", async () => {
+      await openOrder();
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        io() as any,
+        { sessionCode },
+        vi.fn(),
+        orderService()
+      );
+
+      const callback = vi.fn();
+      const server = io();
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode, feeCents: 899 },
+        callback,
+        orderService()
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: null });
+      const [, payload] = server.roomEmitter.emit.mock.calls[0];
+      expect(payload.order.feeCents).toBe(899);
+    });
+
+    it('rejects feeCents from a Participant who is not the Buyer with VALIDATION_ERROR', async () => {
+      await openOrder();
+      await store.claimDisplayName(sessionCode, 'Bob', 'socket-2', rejoinToken);
+      await store.addParticipant(sessionCode, {
+        participantId: 'socket-2',
+        displayName: 'Bob',
+        rejoinToken,
+      });
+      await handleOrderBuy(
+        socket('socket-1') as any,
+        io() as any,
+        { sessionCode },
+        vi.fn(),
+        orderService()
+      );
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+      const callback = vi.fn();
+      const server = io();
+      await handleOrderBuy(
+        socket('socket-2') as any,
+        server as any,
+        { sessionCode, feeCents: 500 },
+        callback,
+        orderService()
+      );
+
+      expect(callback.mock.calls[0][0].error.code).toBe('VALIDATION_ERROR');
+      expect(server.roomEmitter.emit).not.toHaveBeenCalled();
+      const order = await store.readOrder(sessionCode);
+      expect(order?.feeCents).toBe('0');
+    });
+
+    it('rejects feeCents outside 0-100000 at the zod boundary', async () => {
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+
+      await handleOrderBuy(
+        socket() as any,
+        io() as any,
+        { sessionCode, feeCents: 100001 } as any,
+        callback,
+        orderService()
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
+      });
+    });
   });
 });

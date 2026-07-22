@@ -350,3 +350,54 @@ describe('OrderService.addItem', () => {
     });
   });
 });
+
+// Issue #179 — claimBuyer's optional feeCents: Buyer-only, persisted onto the
+// same order hash the fee-split derivation already reads.
+describe('OrderService.claimBuyer fee', () => {
+  const menu = [item('Margherita', 1500), item('Pepperoni', 1800)];
+
+  async function seedLockedOrder() {
+    await store.createSession(sessionCode, { hostId: 'pA', hostName: 'Alice' });
+    for (const [participantId, displayName] of [
+      ['pA', 'Alice'],
+      ['pB', 'Bob'],
+    ]) {
+      await store.addParticipant(sessionCode, { participantId, displayName });
+    }
+    await store.openOrder(sessionCode, {
+      sessionCode,
+      placeId,
+      venueName: 'Pizza Place',
+      platform: 'ubereats',
+      pricesAt: new Date().toISOString(),
+      menu: JSON.stringify(menu),
+      feeCents: '0',
+      state: 'building',
+    });
+    const service = makeService(vi.fn());
+    await service.addItem(sessionCode, 'pA', 0, 1);
+    await service.addItem(sessionCode, 'pB', 1, 1);
+    await service.claimBuyer(sessionCode, 'pA'); // Alice claims, no fee yet
+    return service;
+  }
+
+  it("persists the Buyer's feeCents and reflects it on the returned order", async () => {
+    const service = await seedLockedOrder();
+    const order = await service.claimBuyer(sessionCode, 'pA', 899);
+    expect(order.feeCents).toBe(899);
+    expect(order.shares.reduce((n, s) => n + s.totalCents, 0)).toBe(order.itemsCents + 899);
+
+    const hash = await store.readOrder(sessionCode);
+    expect(hash?.feeCents).toBe('899');
+  });
+
+  it('rejects a fee from a non-Buyer with VALIDATION_ERROR and leaves the order unchanged', async () => {
+    const service = await seedLockedOrder();
+    await expect(service.claimBuyer(sessionCode, 'pB', 1000)).rejects.toMatchObject({
+      code: 'VALIDATION_ERROR',
+    });
+
+    const hash = await store.readOrder(sessionCode);
+    expect(hash?.feeCents).toBe('0');
+  });
+});
