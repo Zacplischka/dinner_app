@@ -50,7 +50,10 @@ export default function SelectionPage() {
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
   const [reveal, setReveal] = useState<{ count: number; total: number; name: string } | null>(null);
   const [fullHousePlaceId, setFullHousePlaceId] = useState<string | null>(null);
-  const announcedRef = useRef<Set<string>>(new Set());
+  // Count-keyed, not boolean: stores the buffer length last announced per placeId so
+  // a card re-reveals when its like count GROWS (the room is audible: "1 of 3" then
+  // "2 of 3" then the takeover). An unchanged count never re-fires.
+  const announcedRef = useRef<Map<string, number>>(new Map());
   const fullHouseShownRef = useRef(false); // once per visit to the deck
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -87,7 +90,9 @@ export default function SelectionPage() {
   useEffect(() => {
     const unlocked = restaurants
       .slice(0, currentIndex)
-      .filter((r) => liveSelections[r.placeId]?.length && !announcedRef.current.has(r.placeId));
+      .filter(
+        (r) => (liveSelections[r.placeId]?.length ?? 0) > (announcedRef.current.get(r.placeId) ?? 0)
+      );
     if (unlocked.length === 0) return;
 
     const participantNames = participants.map((p) => p.displayName);
@@ -108,7 +113,9 @@ export default function SelectionPage() {
     const fullHouses = withResult.filter((x) => x.result.fullHouse);
     const pool = fullHouses.length ? fullHouses : withResult;
     const latest = pool[pool.length - 1];
-    unlocked.forEach((r) => announcedRef.current.add(r.placeId));
+    unlocked.forEach((r) =>
+      announcedRef.current.set(r.placeId, liveSelections[r.placeId]?.length ?? 0)
+    );
 
     clearTimeout(revealTimerRef.current);
     setReveal({

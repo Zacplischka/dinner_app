@@ -222,6 +222,20 @@ describe('Live Swipe Room reveal strip', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-3, nothing new recorded
     expect(strip()).not.toHaveTextContent('Ramen Ichiban');
   });
+
+  it('re-reveals a card at a higher count when another Live Selection for it arrives (staggered likes)', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-1
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Bob'));
+    await waitFor(() => expect(strip()).toHaveTextContent('1 of 3 liked Ramen Ichiban'));
+
+    // A second, later selection for the SAME card must re-reveal at the grown count.
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Carol'));
+    await waitFor(() => expect(strip()).toHaveTextContent('2 of 3 liked Ramen Ichiban'));
+  });
 });
 
 // Issue #187 — the Full House takeover: a full-screen overlay raised when the
@@ -370,5 +384,25 @@ describe('Full House takeover', () => {
     }
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('fires the takeover when the completing Live Selection lands after an earlier partial reveal (staggered)', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Like' })); // like place-1 (likedByMe), advance
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+
+    // Partial reveal first — no takeover yet.
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Bob'));
+    await waitFor(() => expect(strip()).toHaveTextContent('2 of 3 liked Ramen Ichiban'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // The completing selection arrives seconds later → the overlay must fire.
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Carol'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('EVERYONE LIKED THIS')).toBeInTheDocument();
+    expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
   });
 });
