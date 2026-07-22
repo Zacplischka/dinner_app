@@ -14,6 +14,10 @@ _Avoid_: room, game, lobby
 The short shareable code participants use to join a Session.
 _Avoid_: session id, PIN
 
+**Invite Link**:
+The URL that carries a Session Code to a phone that has not joined yet — `/join?code=<code>`, minted by the backend as `shareableLink` and shared by hand. Anyone holding it can join while the Session lives; it grants nothing once the Session expires. Not a Session Invite — that term is reserved for one Profile inviting a Friend through the social graph.
+_Avoid_: share link, magic link, deep link — and never "Session Invite", which is the Friend-graph term
+
 **Participant**:
 A person inside a Session, including the Host.
 _Avoid_: user, player, member
