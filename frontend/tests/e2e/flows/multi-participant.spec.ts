@@ -68,10 +68,14 @@ test.describe('Multi-Participant Session Flow', () => {
       })
     );
 
-    // All participants make selections (like first 3, pass rest)
+    // All participants make selections. Likes are DISJOINT (participant i
+    // likes cards 3i..3i+2) — a shared like between two participants is a
+    // Full House since #187, and the takeover would interrupt this flow.
     await Promise.all(
-      all.map(async (p) => {
-        // Like first 3 restaurants
+      all.map(async (p, idx) => {
+        for (let i = 0; i < idx * 3; i++) {
+          await p.selectionPage.passRestaurant();
+        }
         for (let i = 0; i < 3; i++) {
           if (await p.selectionPage.likeButton.isVisible()) {
             await p.selectionPage.likeRestaurant();
@@ -107,17 +111,19 @@ test.describe('Multi-Participant Session Flow', () => {
       })
     );
 
-    // All like first 2 restaurants, pass rest
-    for (const p of all) {
-      if (await p.selectionPage.likeButton.isVisible()) {
-        await p.selectionPage.likeRestaurant();
-        await p.selectionPage.likeRestaurant();
-      }
-      await p.selectionPage.passAllRemaining();
-      if (await p.selectionPage.submitButton.isVisible()) {
-        await p.selectionPage.submitSelections();
-      }
+    // Host likes the first restaurant and finishes the deck the long way.
+    // The guest then likes the same card, which since #187 is a Full House —
+    // the takeover interrupts their deck and `Finish here` submits for them.
+    await host.selectionPage.likeRestaurant();
+    await host.selectionPage.passAllRemaining();
+    if (await host.selectionPage.submitButton.isVisible()) {
+      await host.selectionPage.submitSelections();
     }
+
+    const guest = participants[0];
+    await guest.selectionPage.likeRestaurant();
+    await expect(guest.page.getByRole('dialog')).toBeVisible({ timeout: 10_000 });
+    await guest.page.getByRole('button', { name: 'Finish here' }).click();
 
     // Wait for results
     await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
@@ -275,15 +281,19 @@ test.describe('Select Again restart (#14, #85)', () => {
       })
     );
 
-    // Everyone selects the first restaurant so the session produces a Match
-    for (const p of all) {
-      if (await p.selectionPage.likeButton.isVisible()) {
-        await p.selectionPage.likeRestaurant();
-      }
-      await p.selectionPage.passAllRemaining();
-      if (await p.selectionPage.submitButton.isVisible()) {
-        await p.selectionPage.submitSelections();
-      }
+    // Everyone selects the first restaurant so the session produces a Match.
+    // The last liker completes a Full House (#187), so their deck is
+    // interrupted by the takeover — `Finish here` is their submit.
+    const [firstP, ...rest] = all;
+    await firstP.selectionPage.likeRestaurant();
+    await firstP.selectionPage.passAllRemaining();
+    if (await firstP.selectionPage.submitButton.isVisible()) {
+      await firstP.selectionPage.submitSelections();
+    }
+    for (const p of rest) {
+      await p.selectionPage.likeRestaurant();
+      await expect(p.page.getByRole('dialog')).toBeVisible({ timeout: 10_000 });
+      await p.page.getByRole('button', { name: 'Finish here' }).click();
     }
 
     await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
