@@ -105,6 +105,8 @@ export default function SelectionPage() {
     clearTimeout(revealTimerRef.current);
     setReveal({ count, total: participantNames.length, name: latest.name });
     revealTimerRef.current = setTimeout(() => setReveal(null), 4000);
+
+    return () => clearTimeout(revealTimerRef.current);
   }, [liveSelections, currentIndex, restaurants, participants, selections]);
 
   // Navigate to results when session is complete
