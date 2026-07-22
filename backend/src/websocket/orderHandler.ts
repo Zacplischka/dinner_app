@@ -35,8 +35,7 @@ const orderItemPayloadSchema = z.object({
 
 const orderBuyPayloadSchema = z.object({
   sessionCode: z.string().regex(SESSION_CODE_PATTERN),
-  // ponytail: no feeCents key — #179 ("Split the Buyer's delivery fee live
-  // from a dollars input") owns it and adds it here. z.object strips it meanwhile.
+  feeCents: z.number().int().min(0).max(100000).optional(),
 });
 
 export async function handleOrderOpen(
@@ -163,11 +162,11 @@ export async function handleOrderBuy(
       return callback({ success: false, error: { code: 'VALIDATION_ERROR', message: reason } });
     }
 
-    const { sessionCode } = validation.data;
+    const { sessionCode, feeCents } = validation.data;
 
     let order: OrderState;
     try {
-      order = await service.claimBuyer(sessionCode, socket.id);
+      order = await service.claimBuyer(sessionCode, socket.id, feeCents);
     } catch (error) {
       if (!(error instanceof DomainError)) {
         throw error;

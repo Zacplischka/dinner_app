@@ -16,7 +16,7 @@ import {
   generateDoorDashUrl,
 } from '../components/DeliveryActions';
 import { participantRingClass } from '../utils/participantStyles';
-import { formatPrice } from '../utils/money';
+import { formatPrice, parseDollarsToCents } from '../utils/money';
 import { toast } from '../hooks/useToast';
 
 const PLATFORM_LABEL = { ubereats: 'Uber Eats', doordash: 'DoorDash' } as const;
@@ -118,6 +118,12 @@ export default function GroupOrderPage() {
   const [failure, setFailure] = useState<FailureKind | null>(null);
   const retriedRef = useRef(false);
 
+  // The Buyer's delivery-fee input (#179): debounced 400ms, emitted only for
+  // a value parseDollarsToCents accepts. useRef timer pattern per ComparePage.tsx:42.
+  const feeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [feeText, setFeeText] = useState('');
+  useEffect(() => () => clearTimeout(feeTimer.current), []);
+
   // Same effect ResultsPage.tsx runs: a Restart flips the Session back to
   // selecting for every tab, including this one.
   useEffect(() => {
@@ -215,6 +221,14 @@ export default function GroupOrderPage() {
     if (!ack.success) toast.error(ack.error.message);
   };
 
+  const handleFeeChange = (raw: string) => {
+    setFeeText(raw);
+    const feeCents = parseDollarsToCents(raw);
+    if (feeCents === null || !sessionCode) return; // rejected before emitting
+    clearTimeout(feeTimer.current);
+    feeTimer.current = setTimeout(() => void claimBuyer(sessionCode, feeCents), 400);
+  };
+
   let content: React.ReactNode;
 
   if (sessionStatus === 'expired') {
@@ -287,14 +301,15 @@ export default function GroupOrderPage() {
         minute: '2-digit',
       });
       const othersShares = order.shares.filter((s) => s.displayName !== me);
+      const feeClause = order.feeCents !== 0 ? ` + ${formatPrice(order.feeCents)} delivery` : '';
       // Solo buyer (no one else has a Line yet): skip the "— " lead-in rather
       // than copy a stray "— ." with nothing between the dash and the period.
       const splitText =
         othersShares.length === 0
-          ? `${order.venueName}. ${me} paid ${formatPrice(order.itemsCents)}.`
+          ? `${order.venueName}. ${me} paid ${formatPrice(order.itemsCents)}${feeClause}.`
           : `${order.venueName} — ${othersShares
               .map((s) => `${s.displayName} ${formatPrice(s.totalCents)}`)
-              .join(', ')}. ${me} paid ${formatPrice(order.itemsCents)}.`;
+              .join(', ')}. ${me} paid ${formatPrice(order.itemsCents)}${feeClause}.`;
 
       content = (
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
@@ -326,6 +341,17 @@ export default function GroupOrderPage() {
             <span className="font-semibold text-text">{formatPrice(order.itemsCents)}</span>
           </div>
           <p className="mt-1 text-xs text-muted">Prices as at {time}. Check them at checkout.</p>
+
+          <label htmlFor="order-fee" className="mt-4 block text-sm font-semibold text-text">
+            Delivery + fees from the checkout screen
+          </label>
+          <input
+            id="order-fee"
+            inputMode="decimal"
+            className="mt-1 w-full rounded-lg border-2 border-line/30 bg-surface/60 px-3 py-2 text-sm text-text"
+            value={feeText}
+            onChange={(e) => handleFeeChange(e.target.value)}
+          />
 
           <h3 className="mt-6 text-sm font-semibold text-text">What everyone owes you</h3>
           <p className="mt-1 text-sm text-text/90">
@@ -361,8 +387,10 @@ export default function GroupOrderPage() {
     } else {
       const myLines = order.lines.filter((l) => l.by === me);
       const myShare = order.shares.find((s) => s.displayName === me);
+      const myFeeClause =
+        myShare && myShare.feeCents !== 0 ? `, + ${formatPrice(myShare.feeCents)} delivery` : '';
       const oweText = myShare
-        ? `You owe ${formatPrice(myShare.totalCents)} — ${myLines.map((l) => `${l.qty} × ${l.name}`).join(', ')}.`
+        ? `You owe ${formatPrice(myShare.totalCents)} — ${myLines.map((l) => `${l.qty} × ${l.name}`).join(', ')}${myFeeClause}.`
         : null;
 
       content = (

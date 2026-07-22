@@ -143,9 +143,12 @@ export function addOrderItem(
 
 /**
  * "I'll order": claim the Buyer and lock the Group Order. First tap wins.
+ * `feeCents`, when present, is the Buyer's debounced delivery-fee edit riding
+ * the same event (#179).
  */
-export function claimBuyer(sessionCode: string): Promise<OrderBuyResponse> {
-  const payload: OrderBuyPayload = { sessionCode };
+export function claimBuyer(sessionCode: string, feeCents?: number): Promise<OrderBuyResponse> {
+  const payload: OrderBuyPayload =
+    feeCents === undefined ? { sessionCode } : { sessionCode, feeCents };
   return emitAck<null>('order:buy', payload);
 }
 

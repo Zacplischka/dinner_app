@@ -423,9 +423,55 @@ describe('GroupOrderPage', () => {
     const openLink = screen.getByRole('link', { name: 'Open Uber Eats' });
     expect(openLink).toHaveAttribute('href', lockedBuyerOrder.storeUrl);
     expect(openLink).toHaveAttribute('rel', 'noopener noreferrer');
+  });
 
-    // No delivery clause while feeCents is 0.
-    expect(screen.queryByText(/delivery/)).toBeNull();
+  it("shows the Buyer's fee input and debounces one order:buy per 400ms idle", async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p1',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({ success: true, data: lockedBuyerOrder });
+    vi.useFakeTimers();
+    renderPage();
+
+    await vi.waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    const input = screen.getByLabelText('Delivery + fees from the checkout screen');
+    expect(input).toHaveAttribute('inputMode', 'decimal');
+
+    fireEvent.change(input, { target: { value: '8.99' } });
+    act(() => vi.advanceTimersByTime(399));
+    expect(claimBuyerMock).not.toHaveBeenCalledWith('AB123', 899);
+    act(() => vi.advanceTimersByTime(1));
+    expect(claimBuyerMock).toHaveBeenCalledWith('AB123', 899);
+    expect(claimBuyerMock).toHaveBeenCalledTimes(1);
+
+    // A rejected value never emits.
+    claimBuyerMock.mockClear();
+    fireEvent.change(input, { target: { value: 'abc' } });
+    act(() => vi.advanceTimersByTime(400));
+    expect(claimBuyerMock).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it('adds the delivery clause to Copy the split once feeCents is non-zero', async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p1',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({
+      success: true,
+      data: { ...lockedBuyerOrder, feeCents: 899, totalCents: lockedBuyerOrder.itemsCents + 899 },
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the split' }));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      '11 Inch Pizza — Bob $25.00. Alice paid $71.00 + $8.99 delivery.'
+    );
   });
 
   it('falls back to DeliveryActions when the Buyer order has no storeUrl', async () => {
@@ -461,6 +507,32 @@ describe('GroupOrderPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy my share' }));
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('You owe $25.00 — 1 × Hawaiian.');
+  });
+
+  it("adds the delivery clause to Copy my share once my slice's feeCents is non-zero", async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p2',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({
+      success: true,
+      data: {
+        ...lockedBuyerOrder,
+        feeCents: 225,
+        shares: [
+          lockedBuyerOrder.shares[0],
+          { displayName: 'Bob', itemsCents: 2500, feeCents: 225, totalCents: 2725 },
+        ],
+      },
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Copy my share' }));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'You owe $27.25 — 1 × Hawaiian, + $2.25 delivery.'
+    );
   });
 
   it('no adds are reachable once the order is locked - the basket/menu is not rendered', async () => {
