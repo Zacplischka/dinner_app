@@ -510,6 +510,11 @@ export function createSessionStore(redis: Redis) {
     };
   }
 
+  /** Admits a Top Pick crowned on the empty-Match path into the results set. */
+  async function addResultPlaceId(sessionCode: string, placeId: string): Promise<void> {
+    await redis.sadd(resultsKey(sessionCode), placeId);
+  }
+
   // --- Restart -----------------------------------------------------------
 
   /**
@@ -576,6 +581,7 @@ export function createSessionStore(redis: Redis) {
     recordSubmission,
     readSelections,
     computeAndStoreResults,
+    addResultPlaceId,
     resetForRestart,
     wasRestartedAfterComplete,
     getRestaurants,

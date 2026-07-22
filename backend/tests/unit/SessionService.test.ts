@@ -716,6 +716,200 @@ describe('SessionService', () => {
     });
   });
 
+  describe('Top Pick', () => {
+    async function createSessionWithDeck(
+      restaurants: Array<{
+        placeId: string;
+        name: string;
+        rating?: number;
+        openNow?: boolean;
+      }>
+    ): Promise<string> {
+      searchNearbyRestaurants.mockResolvedValue(restaurants);
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        { latitude: 37.7749, longitude: -122.4194 },
+        5
+      );
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      return sessionCode;
+    }
+
+    async function createThreeParticipantSessionWithDeck(
+      restaurants: Array<{
+        placeId: string;
+        name: string;
+        rating?: number;
+        openNow?: boolean;
+      }>
+    ): Promise<string> {
+      const sessionCode = await createSessionWithDeck(restaurants);
+      await SessionService.joinSession(sessionCode, 'p-cara', 'Cara');
+      return sessionCode;
+    }
+
+    it('crowns the highest-rated Match member when the Match is non-empty', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
+        { placeId: 'r2', name: 'Pizza Place', rating: 4.8 },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['r1', 'r2']);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['r1', 'r2']);
+
+      expect(results?.hasOverlap).toBe(true);
+      expect(results?.topPick).toMatchObject({
+        restaurant: expect.objectContaining({ placeId: 'r2' }),
+        likedBy: 2,
+        of: 2,
+      });
+    });
+
+    it('crowns the most-selected Restaurant when the Match is empty', async () => {
+      const sessionCode = await createThreeParticipantSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
+        { placeId: 'r2', name: 'Pizza Place', rating: 4.2 },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['r1']);
+      await SessionService.submitSelections(sessionCode, 'p-bob', ['r1']);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-cara', ['r2']);
+
+      expect(results?.hasOverlap).toBe(false);
+      expect(results?.topPick).toMatchObject({
+        restaurant: expect.objectContaining({ placeId: 'r1' }),
+        likedBy: 2,
+        of: 3,
+      });
+    });
+
+    it('breaks a count tie by rating', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
+        { placeId: 'r2', name: 'Pizza Place', rating: 4.8 },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['r1']);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['r2']);
+
+      expect(results?.topPick).toMatchObject({
+        restaurant: expect.objectContaining({ placeId: 'r2' }),
+        likedBy: 1,
+        of: 2,
+      });
+    });
+
+    it('breaks a count-and-rating tie by name A-Z', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Zebra Diner', rating: 4.5 },
+        { placeId: 'r2', name: 'Ant Bistro', rating: 4.5 },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['r1']);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['r2']);
+
+      expect(results?.topPick).toMatchObject({
+        restaurant: expect.objectContaining({ placeId: 'r2' }),
+      });
+    });
+
+    it('falls back to the highest-rated deck Restaurant when every Submission is empty', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
+        { placeId: 'r2', name: 'Pizza Place', rating: 4.8 },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      expect(results?.topPick).toMatchObject({
+        restaurant: expect.objectContaining({ placeId: 'r2' }),
+        likedBy: 0,
+        of: 2,
+      });
+    });
+
+    it('skips a closed deck Restaurant on the empty-submission fallback even when it is highest rated', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5, openNow: true },
+        { placeId: 'r2', name: 'Pizza Place', rating: 4.8, openNow: false },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      expect(results?.topPick).toMatchObject({
+        restaurant: expect.objectContaining({ placeId: 'r1' }),
+      });
+    });
+
+    it('crowns the highest-rated Restaurant regardless of hours when every deck Restaurant is closed', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5, openNow: false },
+        { placeId: 'r2', name: 'Pizza Place', rating: 4.8, openNow: false },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      expect(results?.topPick).toMatchObject({
+        restaurant: expect.objectContaining({ placeId: 'r2' }),
+      });
+    });
+
+    it('returns undefined when the deck is empty', async () => {
+      const sessionCode = await createTwoParticipantSessionNoDeck();
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      expect(results?.topPick).toBeUndefined();
+    });
+
+    async function createTwoParticipantSessionNoDeck(): Promise<string> {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      return sessionCode;
+    }
+
+    it('does not call store.getRestaurants when the Match is non-empty', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
+      ]);
+      const getRestaurantsSpy = vi.spyOn(store, 'getRestaurants');
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['r1']);
+      await SessionService.submitSelections(sessionCode, 'p-bob', ['r1']);
+
+      expect(getRestaurantsSpy).not.toHaveBeenCalled();
+    });
+
+    it('calls store.getRestaurants at most once when the Match is empty', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
+      ]);
+      const getRestaurantsSpy = vi.spyOn(store, 'getRestaurants');
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      expect(getRestaurantsSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves both the sentinel and the crowned placeId in session:results on a zero-overlap completion', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
+        { placeId: 'r2', name: 'Pizza Place', rating: 4.2 },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['r1']);
+      await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      const members = await redis.smembers(`session:${sessionCode}:results`);
+      expect(members.sort()).toEqual(['__empty__', 'r1'].sort());
+    });
+
+    it('leaves only the sentinel in session:results when the deck is empty', async () => {
+      const sessionCode = await createTwoParticipantSessionNoDeck();
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      const members = await redis.smembers(`session:${sessionCode}:results`);
+      expect(members).toEqual(['__empty__']);
+    });
+  });
+
   describe('restartSession', () => {
     it('rejects restarts from missing sessions', async () => {
       await expect(SessionService.restartSession('NOPE9', 'p-alice')).rejects.toMatchObject({

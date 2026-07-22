@@ -68,6 +68,8 @@ export interface WsRestaurant {
   priceLevel?: number;
   cuisineType?: string;
   address?: string;
+  /** Already sent at runtime by every producer; declared so the crown can render a hero. */
+  photoUrl?: string;
 }
 
 export interface ParticipantJoinedEvent {
@@ -84,12 +86,23 @@ export interface ParticipantSubmittedEvent {
   participantCount: number;
 }
 
+/** The single Restaurant a completed Session crowns, and why it won. */
+export interface TopPick {
+  restaurant: WsRestaurant;
+  /** Participants who selected it. 0 when nobody selected anything. */
+  likedBy: number;
+  /** Participants counted in the tally (Object.keys(allSelections).length). */
+  of: number;
+}
+
 export interface SessionResultsEvent {
   sessionCode: string;
   overlappingOptions: WsRestaurant[];
   allSelections: Record<string, string[]>; // displayName -> placeIds
   restaurantNames: Record<string, string>; // placeId -> restaurant name (for displaying all selections)
   hasOverlap: boolean;
+  /** Additive (ADR 0007): absent from an older backend; a Session with zero Restaurants has none. */
+  topPick?: TopPick;
 }
 
 export interface SessionRestartedEvent {

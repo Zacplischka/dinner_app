@@ -416,6 +416,7 @@ describe('websocket handlers', () => {
         expect.objectContaining({
           sessionCode,
           hasOverlap: false,
+          topPick: undefined,
         })
       );
       await expect(redis.hget(`session:${sessionCode}`, 'state')).resolves.toBe('complete');
@@ -828,6 +829,7 @@ describe('websocket handlers', () => {
         allSelections: {},
         restaurantNames: {},
         hasOverlap: false,
+        topPick: undefined,
       });
       expect(logSpy).toHaveBeenCalledWith({ sessionCode, hasOverlap: false }, 'Session complete');
     });

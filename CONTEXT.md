@@ -32,7 +32,7 @@ _Avoid_: option, card, place (except in external-API contexts)
 
 **Selection**:
 A single Restaurant a Participant swiped yes on.
-_Avoid_: like, vote, pick
+_Avoid_: like, vote, pick (except in **Top Pick**)
 
 **Live Selection**:
 A Selection broadcast to the other Participants at the moment it is made, and shown to each of them only once they have swiped that Restaurant themselves. Ephemeral chrome: it is never written to Redis and never affects the Match. Receivers hold it client-side, keyed by the sender's display name, so it survives the sender's reconnect.
@@ -49,6 +49,10 @@ _Avoid_: inferring "submitted" from a non-empty Selection set
 **Match**:
 The set of Restaurants every current Participant selected, computed once all current Participants have a Submission — including when the last unsubmitted Participant leaves. May be empty.
 _Avoid_: results, overlap, winners
+
+**Top Pick**:
+The single Restaurant a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then highest rating, then name A-Z — from the Match when the Match is non-empty, from every Restaurant anyone selected when it is empty, and from the Session's open Restaurants when nobody selected anything. Every completed Session with at least one Restaurant has exactly one Top Pick; a Session whose Restaurant deck is empty has none.
+_Avoid_: winner, best match, recommendation, top result, the answer
 
 **Near Miss**:
 A Restaurant selected by every current Participant except one. Surfaced only when the Match is empty and the Session has three or more Participants, always as a count ("2 of 3 liked this"), never with names. A Session with two Participants has no Near Misses — one person's Selections are not a near-Match.
