@@ -191,8 +191,9 @@ Do not relitigate. Each names the one thing that would justify reopening it.
 - **Free-text menu entry** — cut. The menu is the real Apify Storefront capture or there is no basket.
   Revisit only if the `no_menu` rate makes Group Order dead for most venues — a "kill the feature"
   conversation, not an "add a text box" one.
-- **Any payment rail, split settlement or "mark as paid"** — cut. ADR 0003 forbids Dinder holding a
-  credential; the terminal step is a human tapping `Open Uber Eats`.
+- **Any payment rail, split settlement or "mark as paid"** — cut. ADR 0009, written by "Land the Group
+  Order contract, keyspace and `order:open`" (#175), forbids Dinder holding a credential; the terminal
+  step is a human tapping `Open Uber Eats`. Reopening the decision means amending ADR 0009.
 - **`order:done`, the `d:{displayName}` namespace, the `done[]` field and the `I'm done / Still picking`
   button** — cut in revision. Four commands became three; the roster shows live subtotals off `shares` and
   progress derives from `lines[].by`. Revisit only if testers cannot tell when everyone has finished picking.

@@ -28,7 +28,7 @@
 
 ## Features
 
-- **No account needed** — enter a name, get a 6-character session code, share it. The core flow is fully anonymous.
+- **No account needed** — enter a name, get a 5-character session code, share it. The core flow is fully anonymous.
 - **Real-time presence** — participants appear in the lobby as they join, via Socket.IO rooms keyed by session code.
 - **Swipe selection** — like or pass on real nearby restaurants fetched from the Google Places API, with ratings, price level, and cuisine.
 - **Set-intersection consensus** — each participant's likes live in a Redis set; the group's matches are computed with a single [`SINTER`](backend/src/store/sessionStore.ts) when the last person submits.
