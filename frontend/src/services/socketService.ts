@@ -147,8 +147,9 @@ export function addOrderItem(
  * the same event (#179).
  */
 export function claimBuyer(sessionCode: string, feeCents?: number): Promise<OrderBuyResponse> {
-  const payload: OrderBuyPayload =
-    feeCents === undefined ? { sessionCode } : { sessionCode, feeCents };
+  // Socket.IO's serializer drops undefined-valued keys, so an absent feeCents
+  // arrives at the server as if the key were never sent - no ternary needed.
+  const payload: OrderBuyPayload = { sessionCode, feeCents };
   return emitAck<null>('order:buy', payload);
 }
 

@@ -221,12 +221,21 @@ export default function GroupOrderPage() {
     if (!ack.success) toast.error(ack.error.message);
   };
 
+  // Fee-specific cap: must match order:buy's zod max (backend/src/websocket/orderHandler.ts).
+  // parseDollarsToCents itself stays general (1,234.56 is a valid dollar amount for its own
+  // named test table) - a delivery fee is bounded here, where the fee is actually validated.
+  const MAX_FEE_CENTS = 100000;
+
   const handleFeeChange = (raw: string) => {
     setFeeText(raw);
     const feeCents = parseDollarsToCents(raw);
-    if (feeCents === null || !sessionCode) return; // rejected before emitting
+    if (feeCents === null || feeCents > MAX_FEE_CENTS || !sessionCode) return; // rejected before emitting
     clearTimeout(feeTimer.current);
-    feeTimer.current = setTimeout(() => void claimBuyer(sessionCode, feeCents), 400);
+    feeTimer.current = setTimeout(() => {
+      void claimBuyer(sessionCode, feeCents).then((ack) => {
+        if (!ack.success) toast.error(ack.error.message);
+      });
+    }, 400);
   };
 
   let content: React.ReactNode;

@@ -455,6 +455,64 @@ describe('GroupOrderPage', () => {
     vi.useRealTimers();
   });
 
+  it('rejects a client-parseable fee that exceeds the server-enforced cap (100000 cents)', async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p1',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({ success: true, data: lockedBuyerOrder });
+    vi.useFakeTimers();
+    renderPage();
+
+    await vi.waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    const input = screen.getByLabelText('Delivery + fees from the checkout screen');
+
+    // parseDollarsToCents happily parses 1,234.56 (its own named table pins
+    // that), but $1,234.56 is over order:buy's 100000-cent zod max - must not emit.
+    fireEvent.change(input, { target: { value: '1,234.56' } });
+    act(() => vi.advanceTimersByTime(400));
+    expect(claimBuyerMock).not.toHaveBeenCalled();
+
+    // A fee right at the server cap still emits.
+    fireEvent.change(input, { target: { value: '1000' } });
+    act(() => vi.advanceTimersByTime(400));
+    expect(claimBuyerMock).toHaveBeenCalledWith('AB123', 100000);
+
+    vi.useRealTimers();
+  });
+
+  it('toasts the ack error when the debounced fee update is rejected', async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p1',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({ success: true, data: lockedBuyerOrder });
+    claimBuyerMock.mockResolvedValueOnce({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Only the Buyer can set the delivery fee' },
+    });
+    vi.useFakeTimers();
+    renderPage();
+
+    await vi.waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    const input = screen.getByLabelText('Delivery + fees from the checkout screen');
+    fireEvent.change(input, { target: { value: '8.99' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+
+    expect(useToastStore.getState().toasts).toContainEqual(
+      expect.objectContaining({
+        type: 'error',
+        message: 'Only the Buyer can set the delivery fee',
+      })
+    );
+
+    vi.useRealTimers();
+  });
+
   it('adds the delivery clause to Copy the split once feeCents is non-zero', async () => {
     seedStore({
       participants: twoParticipants,
