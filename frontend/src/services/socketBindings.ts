@@ -62,7 +62,18 @@ const socketConfig: SocketConfig = {
           // un-awaited rejoin and acks NOT_IN_SESSION.
           if (ack.success && window.location.pathname.endsWith('/order')) {
             const { sessionCode, orderPlaceId } = useSessionStore.getState();
-            if (sessionCode && orderPlaceId) void openOrder(sessionCode, orderPlaceId);
+            if (sessionCode && orderPlaceId) {
+              // The backend acks order:open directly — it does not also
+              // broadcast order:state — so a successful re-open must feed
+              // orderStore here itself, exactly like GroupOrderPage's own
+              // on-mount open. Otherwise a re-open that wins the race after
+              // the page already rendered a failure screen never clears it.
+              void openOrder(sessionCode, orderPlaceId).then((openAck) => {
+                if (openAck.success) {
+                  useOrderStore.getState().setOrder(openAck.data, openAck.data.menu);
+                }
+              });
+            }
           }
         });
       }

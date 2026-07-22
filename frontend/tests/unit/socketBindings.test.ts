@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { useOrderStore } from '../../src/stores/orderStore';
 
 type Handler = (...args: any[]) => void;
 
@@ -85,10 +86,12 @@ describe('socketBindings', () => {
     useSessionStore.getState().resetSession();
     useSessionStore.setState({ participants: [participant], sessionCode: 'OLD11' });
     useAuthStore.setState({ session: { access_token: 'token' } as any });
+    useOrderStore.getState().clear();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    window.history.pushState({}, '', '/');
   });
 
   it('connects with the auth token and mirrors connection state into the session store', () => {
@@ -166,6 +169,97 @@ describe('socketBindings', () => {
 
     socket.trigger('connect');
     expect(emitSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-fires order:open on reconnect when on the order route, and feeds a successful ack into orderStore', async () => {
+    const socket = setupSocket();
+    const emitSpy = vi.spyOn(socket, 'emit');
+    window.history.pushState({}, '', '/session/AB123/order');
+    localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: participant.participantId,
+      participants: [participant],
+      orderPlaceId: 'place-1',
+      isConnected: false,
+    });
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        participantCount: 1,
+        rejoinToken: 'next-rejoin-token',
+        participants: [{ participantId: socket.id, displayName: 'Alice', isHost: true }],
+      },
+    });
+    const orderState = {
+      sessionCode: 'AB123',
+      placeId: 'place-1',
+      venueName: '11 Inch Pizza',
+      platform: 'ubereats',
+      pricesAt: '2026-07-22T07:42:00.000Z',
+      lines: [],
+      feeCents: 0,
+      itemsCents: 0,
+      totalCents: 0,
+      shares: [],
+      state: 'building',
+      menu: [{ name: 'Margherita', price_cents: 2300, tags: [] }],
+    };
+    socket.acks.set('order:open', { success: true, data: orderState });
+
+    socketBindings.initializeSocket();
+    socket.trigger('connect');
+
+    await vi.waitFor(() =>
+      expect(emitSpy).toHaveBeenCalledWith(
+        'order:open',
+        { sessionCode: 'AB123', placeId: 'place-1' },
+        expect.any(Function)
+      )
+    );
+    // The backend acks order:open directly (no order:state broadcast for it),
+    // so a successful re-open must feed orderStore itself — otherwise a
+    // failure screen the page already rendered while losing the race never
+    // clears.
+    await vi.waitFor(() => expect(useOrderStore.getState().order).toEqual(orderState));
+    expect(useOrderStore.getState().menu).toEqual(orderState.menu);
+  });
+
+  it('leaves orderStore untouched when the reconnect re-fire of order:open fails', async () => {
+    const socket = setupSocket();
+    window.history.pushState({}, '', '/session/AB123/order');
+    localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: participant.participantId,
+      participants: [participant],
+      orderPlaceId: 'place-1',
+      isConnected: false,
+    });
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        participantCount: 1,
+        rejoinToken: 'next-rejoin-token',
+        participants: [{ participantId: socket.id, displayName: 'Alice', isHost: true }],
+      },
+    });
+    socket.acks.set('order:open', {
+      success: false,
+      error: { code: 'NOT_IN_SESSION', message: 'gone' },
+    });
+
+    socketBindings.initializeSocket();
+    socket.trigger('connect');
+
+    await vi.waitFor(() => expect(useSessionStore.getState().currentUserId).toBe(socket.id));
+    expect(useOrderStore.getState().order).toBeNull();
   });
 
   it('does not toast on an intentional disconnect', () => {
