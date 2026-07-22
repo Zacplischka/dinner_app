@@ -16,6 +16,7 @@ import type {
   SessionLeavePayload,
   OrderOpenPayload,
   OrderOpenResponse,
+  OrderItemPayload,
   OrderState,
 } from '@dinder/shared/types';
 
@@ -123,6 +124,19 @@ export function openOrder(sessionCode: string, placeId: string): Promise<OrderOp
   // OrderUnavailableError adds `reason`, so widen at this one call site. If a second
   // command ever carries an extended error, make emitAck generic over the whole ack.
   return emitAck<OrderState>('order:open', payload) as Promise<OrderOpenResponse>;
+}
+
+/**
+ * Add (delta 1) or remove (delta -1) one Order Line. The server resolves the
+ * name, price and who from the caller — the payload carries only what to change.
+ */
+export function addOrderItem(
+  sessionCode: string,
+  index: number,
+  delta: 1 | -1
+): Promise<Ack<null>> {
+  const payload: OrderItemPayload = { sessionCode, index, delta };
+  return emitAck<null>('order:item', payload);
 }
 
 /**

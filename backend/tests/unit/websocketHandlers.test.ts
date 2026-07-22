@@ -13,7 +13,7 @@ import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import { handleSelectionSubmit } from '../../src/websocket/submitHandler.js';
 import { handleLiveSelection } from '../../src/websocket/liveSelectionHandler.js';
-import { handleOrderOpen } from '../../src/websocket/orderHandler.js';
+import { handleOrderOpen, handleOrderItem } from '../../src/websocket/orderHandler.js';
 import { createOrderService } from '../../src/services/OrderService.js';
 import {
   SNAPSHOT_FRESHNESS_MS,
@@ -1155,6 +1155,95 @@ describe('websocket handlers', () => {
       );
 
       expect(callback.mock.calls[0][0].error.code).toBe('NOT_IN_SESSION');
+    });
+  });
+
+  describe('handleOrderItem', () => {
+    const placeId = 'place-crown';
+    const menu = [{ name: 'Margherita', price_cents: 1500, tags: [] }];
+
+    function orderService() {
+      return createOrderService({
+        store,
+        snapshotStore: { getLatest: vi.fn() },
+        freshnessMs: SNAPSHOT_FRESHNESS_MS,
+        failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
+      });
+    }
+
+    async function openOrder(state: 'building' | 'locked' = 'building') {
+      await createSessionWithParticipant('socket-1');
+      await store.addResultPlaceId(sessionCode, placeId);
+      await store.openOrder(sessionCode, {
+        sessionCode,
+        placeId,
+        venueName: 'Pizza Place',
+        platform: 'ubereats',
+        pricesAt: new Date().toISOString(),
+        menu: JSON.stringify(menu),
+        feeCents: '0',
+        state,
+      });
+    }
+
+    it('acks data: null and broadcasts order:state to the room (sender included)', async () => {
+      await openOrder();
+      const callback = vi.fn();
+      const server = io();
+
+      await handleOrderItem(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode, index: 0, delta: 1 },
+        callback,
+        orderService()
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: null });
+      expect(server.in).toHaveBeenCalledWith(sessionCode);
+      expect(server.roomEmitter.emit).toHaveBeenCalledWith(
+        'order:state',
+        expect.objectContaining({
+          sessionCode,
+          change: { by: 'Alice', name: 'Margherita', delta: 1 },
+        })
+      );
+    });
+
+    it('acks VALIDATION_ERROR and broadcasts nothing when the order is locked', async () => {
+      await openOrder('locked');
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+      const server = io();
+
+      await handleOrderItem(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode, index: 0, delta: 1 },
+        callback,
+        orderService()
+      );
+
+      expect(callback.mock.calls[0][0].error.code).toBe('VALIDATION_ERROR');
+      expect(server.roomEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('acks VALIDATION_ERROR when the index is out of the menu bounds', async () => {
+      await openOrder();
+      vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const callback = vi.fn();
+      const server = io();
+
+      await handleOrderItem(
+        socket('socket-1') as any,
+        server as any,
+        { sessionCode, index: 5, delta: 1 },
+        callback,
+        orderService()
+      );
+
+      expect(callback.mock.calls[0][0].error.code).toBe('VALIDATION_ERROR');
+      expect(server.roomEmitter.emit).not.toHaveBeenCalled();
     });
   });
 });

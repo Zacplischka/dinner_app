@@ -593,6 +593,26 @@ export function createSessionStore(redis: Redis) {
     await touch(sessionCode);
   }
 
+  /**
+   * Adds or removes one of `displayName`'s Order Lines. Deletes the field at
+   * zero — HINCRBY -1 on a missing field lands at -1 and is immediately HDEL'd,
+   * the correct no-op. The field is "{index}:{displayName}"; readOrderLines'
+   * first-colon parse keeps a displayName containing ':' unambiguous.
+   */
+  async function addLine(
+    sessionCode: string,
+    index: number,
+    displayName: string,
+    delta: 1 | -1
+  ): Promise<void> {
+    const field = `${index}:${displayName}`;
+    const qty = await redis.hincrby(orderLinesKey(sessionCode), field, delta);
+    if (qty <= 0) {
+      await redis.hdel(orderLinesKey(sessionCode), field);
+    }
+    await touch(sessionCode);
+  }
+
   /** The placeIds this Session may act on (the Match, plus the crown). */
   async function isResultPlaceId(sessionCode: string, placeId: string): Promise<boolean> {
     return (await redis.sismember(resultsKey(sessionCode), placeId)) === 1;
@@ -623,6 +643,7 @@ export function createSessionStore(redis: Redis) {
     readOrder,
     readOrderLines,
     openOrder,
+    addLine,
     isResultPlaceId,
   };
 }

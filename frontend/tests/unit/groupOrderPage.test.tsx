@@ -5,8 +5,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const openOrderMock = vi.fn();
+const addOrderItemMock = vi.fn(async () => ({ success: true, data: null }));
 vi.mock('../../src/services/socketBindings', () => ({
   openOrder: (...args: unknown[]) => openOrderMock(...args),
+  addOrderItem: (...args: unknown[]) => addOrderItemMock(...args),
 }));
 
 const subscribeToComparisonMock = vi.fn();
@@ -14,7 +16,7 @@ vi.mock('../../src/services/comparisonStream', () => ({
   subscribeToComparison: (...args: unknown[]) => subscribeToComparisonMock(...args),
 }));
 
-import GroupOrderPage from '../../src/pages/GroupOrderPage';
+import GroupOrderPage, { progressLine } from '../../src/pages/GroupOrderPage';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { useOrderStore } from '../../src/stores/orderStore';
 
@@ -302,5 +304,73 @@ describe('GroupOrderPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
     expect(screen.getByText('HOME SCREEN')).toBeInTheDocument();
+  });
+
+  const twoParticipants = [
+    {
+      participantId: 'p1',
+      displayName: 'Alice',
+      sessionCode: 'AB123',
+      joinedAt: 1,
+      hasSubmitted: true,
+      isHost: true,
+    },
+    {
+      participantId: 'p2',
+      displayName: 'Bob',
+      sessionCode: 'AB123',
+      joinedAt: 2,
+      hasSubmitted: true,
+      isHost: false,
+    },
+  ];
+
+  const basketOrder = {
+    ...warmOrder,
+    lines: [
+      { index: 0, name: 'Margherita', priceCents: 2300, qty: 2, by: 'Alice' },
+      { index: 1, name: 'Hawaiian', priceCents: 2500, qty: 1, by: 'Bob' },
+    ],
+    itemsCents: 2300 * 2 + 2500,
+    shares: [
+      { displayName: 'Alice', itemsCents: 4600, feeCents: 0, totalCents: 4600 },
+      { displayName: 'Bob', itemsCents: 2500, feeCents: 0, totalCents: 2500 },
+    ],
+  };
+
+  it('renders basket rows in each adder ring colour, × only on the signed-in rows', async () => {
+    seedStore({
+      participants: twoParticipants,
+      currentUserId: 'p1',
+      overlappingOptions: [restaurant],
+    });
+    openOrderMock.mockResolvedValue({ success: true, data: basketOrder });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+
+    // Alice is me (index 0 → coral), Bob is index 1 → violet.
+    const aliceRow = screen.getByLabelText('Remove one Margherita').closest('li')!;
+    expect(aliceRow.className).toContain('border-coral');
+    const bobRow = screen.getByText(/· Bob/).closest('li')!;
+    expect(bobRow.className).toContain('border-violet');
+
+    // × renders only on my own rows.
+    expect(screen.getByLabelText('Remove one Margherita')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Remove one Hawaiian')).toBeNull();
+
+    // Menu rows are real Add buttons with the price in the label.
+    expect(screen.getByRole('button', { name: 'Add Coke (Can), $7.00' })).toBeInTheDocument();
+  });
+
+  it('progressLine names who is missing and pluralises the overflow', () => {
+    expect(progressLine(['Alice'], ['Alice'])).toBe("Everyone's added something");
+    expect(progressLine(['Alice', 'Bob'], ['Alice'])).toBe("Bob hasn't added anything yet");
+    expect(progressLine(['Alice', 'Bob', 'Cara'], ['Alice'])).toBe(
+      "Bob and Cara haven't added anything yet"
+    );
+    expect(progressLine(['Alice', 'Bob', 'Cara', 'Dan'], ['Alice'])).toBe(
+      "Bob, Cara and 1 other haven't added anything yet"
+    );
   });
 });

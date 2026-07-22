@@ -336,6 +336,31 @@ describe('SessionStore', () => {
       expect(await redis.exists(`session:${sessionCode}:order`)).toBe(0);
       expect(await redis.exists(`session:${sessionCode}:order:lines`)).toBe(0);
     });
+
+    it('addLine accumulates a qty and deletes the field once it reaches zero', async () => {
+      await createTestSession();
+      await store.addLine(sessionCode, 0, 'Alice', 1);
+      await store.addLine(sessionCode, 0, 'Alice', 1);
+      expect(await store.readOrderLines(sessionCode)).toEqual({ '0:Alice': '2' });
+
+      await store.addLine(sessionCode, 0, 'Alice', -1);
+      await store.addLine(sessionCode, 0, 'Alice', -1);
+      expect(await redis.hexists(`session:${sessionCode}:order:lines`, '0:Alice')).toBe(0);
+
+      // -1 against a field that never existed leaves nothing behind.
+      await store.addLine(sessionCode, 1, 'Bob', -1);
+      expect(await redis.hexists(`session:${sessionCode}:order:lines`, '1:Bob')).toBe(0);
+    });
+
+    it('round-trips a displayName containing a colon via the first-colon parse', async () => {
+      await createTestSession();
+      await store.addLine(sessionCode, 2, 'Al:ice', 1);
+      const hash = await store.readOrderLines(sessionCode);
+      const [field] = Object.keys(hash);
+      const colon = field.indexOf(':');
+      expect(Number(field.slice(0, colon))).toBe(2);
+      expect(field.slice(colon + 1)).toBe('Al:ice');
+    });
   });
 
   describe('restaurants', () => {

@@ -31,6 +31,12 @@ export interface OrderService {
     participantId: string,
     placeId: string
   ): Promise<OrderState | OrderUnavailable>;
+  addItem(
+    sessionCode: string,
+    participantId: string,
+    index: number,
+    delta: 1 | -1
+  ): Promise<{ order: OrderState; change: { by: string; name: string; delta: 1 | -1 } }>;
 }
 
 export function createOrderService(deps: OrderServiceDeps): OrderService {
@@ -60,14 +66,17 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     const itemsCents = orderLines.reduce((sum, line) => sum + line.priceCents * line.qty, 0);
     const feeCents = parseInt(hash.feeCents, 10);
 
-    // ponytail: shares carry each person's items subtotal with feeCents 0 — nothing can set a fee yet.
-    // The even split with the ascending-displayName cent remainder lands with the fee-input issue.
-    const shares: OrderShare[] = [...itemsByName.entries()].map(([displayName, personItems]) => ({
-      displayName,
-      itemsCents: personItems,
-      feeCents: 0,
-      totalCents: personItems,
-    }));
+    // Even split of the Buyer's fee across everyone with a Line, remainder one
+    // cent at a time in ascending displayName order → shares always sum to
+    // items + fee (§ Hard cases). feeCents is 0 until #179 can set it.
+    const names = [...itemsByName.keys()].sort();
+    const base = names.length ? Math.floor(feeCents / names.length) : 0;
+    const remainder = names.length ? feeCents - base * names.length : 0;
+    const shares: OrderShare[] = names.map((displayName, i) => {
+      const personItems = itemsByName.get(displayName) ?? 0;
+      const fee = base + (i < remainder ? 1 : 0);
+      return { displayName, itemsCents: personItems, feeCents: fee, totalCents: personItems + fee };
+    });
 
     const state: OrderState = {
       sessionCode: hash.sessionCode ?? '',
@@ -163,5 +172,38 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     return toOrderState(fields, {});
   }
 
-  return { open };
+  /**
+   * Adds or removes one Order Line and returns the rebuilt state plus what
+   * changed. `displayName` and the item name/price are server-resolved — the
+   * client dictates neither who it acts as nor what a line costs.
+   */
+  async function addItem(
+    sessionCode: string,
+    participantId: string,
+    index: number,
+    delta: 1 | -1
+  ): Promise<{ order: OrderState; change: { by: string; name: string; delta: 1 | -1 } }> {
+    const hash = await store.readOrder(sessionCode);
+    if (!hash) {
+      throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
+    }
+    if (hash.state === 'locked') {
+      throw new DomainError('VALIDATION_ERROR', 'This order is locked');
+    }
+    const participant = await store.getParticipant(participantId);
+    if (!participant || participant.sessionCode !== sessionCode) {
+      throw new DomainError('NOT_IN_SESSION', 'You are not in this session');
+    }
+    const menu = JSON.parse(hash.menu) as MenuItemCapture[];
+    if (!Number.isInteger(index) || index < 0 || index >= menu.length) {
+      throw new DomainError('VALIDATION_ERROR', 'That item is not on the menu');
+    }
+
+    const displayName = participant.displayName;
+    await store.addLine(sessionCode, index, displayName, delta);
+    const order = toOrderState(hash, await store.readOrderLines(sessionCode));
+    return { order, change: { by: displayName, name: menu[index].name, delta } };
+  }
+
+  return { open, addItem };
 }
