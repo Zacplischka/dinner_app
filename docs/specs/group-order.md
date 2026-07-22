@@ -815,9 +815,11 @@ substantial edits; the remaining eight rows are one-to-three lines each.
 - `backend/tests/unit/SessionService.test.ts` — a zero-overlap `completeSession` SADDs the crowned placeId
   into `session:{code}:results` alongside `'__empty__'`, and an empty deck leaves only the sentinel. This is
   the test that keeps the two headline features connected.
-- `backend/tests/integration/results-no-overlap.test.ts:52-56` — the `smembers(...) === ['__empty__']`
-  assertion widens to "contains `'__empty__'` and the crowned placeId". Named because it is the one existing
-  green test the Top Pick decision breaks.
+- `backend/tests/integration/results-no-overlap.test.ts` stays green and stays correct as written — it calls
+  `store.computeAndStoreResults` directly (`:43`, `:49`) and never constructs `SessionService`, so the crown
+  SADD in `completeSession` never runs and its `smembers(...) === ['__empty__']` assertion holds. It is the
+  proof that the store op alone writes only the sentinel; the crown case is covered by the
+  `SessionService.test.ts` bullet directly above.
 - `frontend/tests/unit/resultsPage.test.tsx` — **exactly one** `Order together` renders, it is on the crowned
   card, and it is outside the `Other matches (N)` `<details>`; Near Miss cards have none.
 - `frontend/tests/unit/selectionMobileGeometry.test.tsx` — extended (or mirrored) for `GroupOrderPage`: the
