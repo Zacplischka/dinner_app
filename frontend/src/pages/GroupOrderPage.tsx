@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { MenuItemCapture, OrderLine } from '@dinder/shared/types';
-import { openOrder, addOrderItem, claimBuyer } from '../services/socketBindings';
+import { openOrder, addOrderItem, claimBuyer, leaveSession } from '../services/socketBindings';
 import { subscribeToComparison } from '../services/comparisonStream';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
@@ -208,6 +208,26 @@ export default function GroupOrderPage() {
   );
 
   const handleBack = () => navigate(`/session/${sessionCode}/results`);
+
+  // Header back button: this page means leaving the Session, not returning
+  // to results (the failure-screen "Back to results" button above keeps that
+  // behaviour via handleBack). leaveSession already calls resetSession(),
+  // which now clears orderStore too.
+  const handleHeaderBack = async () => {
+    if (!sessionCode) return;
+
+    try {
+      await leaveSession(sessionCode);
+      navigate('/');
+    } catch (err) {
+      console.error('Failed to leave session:', err);
+      // leaveSession only calls resetSession() after its ack resolves; a
+      // synchronous socket.emit throw skips that, which would leave orderStore
+      // dirty. Every sibling leaveSession caller resets defensively here too.
+      useSessionStore.getState().resetSession();
+      navigate('/');
+    }
+  };
 
   const handleClaimBuyer = async () => {
     if (!sessionCode) return;
@@ -567,7 +587,9 @@ export default function GroupOrderPage() {
         title="Group order"
         sessionCode={sessionCode}
         showBackButton
-        onBack={handleBack}
+        onBack={handleHeaderBack}
+        confirmOnBack
+        confirmContext="ordering"
         compact
       />
       {content}

@@ -3,6 +3,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { useOrderStore } from '../../src/stores/orderStore';
 
 const STORAGE_KEY = 'dinner-session-storage';
 
@@ -248,6 +249,46 @@ describe('sessionStore', () => {
 
       expect(useSessionStore.getState().selections).toEqual([]);
       expect(useSessionStore.getState().sessionStatus).toBe('selecting');
+    });
+
+    // Issue #180 — a Restart or a leave must never let a re-mounted
+    // /order page render the previous venue's basket. The server DELs both
+    // order keys in the same pipeline; this is the client-side half.
+    const seedOrder = () =>
+      useOrderStore.getState().setOrder({
+        sessionCode: 'AB123',
+        placeId: 'place-1',
+        venueName: '11 Inch Pizza',
+        platform: 'ubereats',
+        pricesAt: '2026-07-22T07:42:00.000Z',
+        lines: [],
+        feeCents: 0,
+        itemsCents: 500,
+        totalCents: 500,
+        shares: [],
+        state: 'building',
+      });
+
+    it('clears the order store on resetSelections', () => {
+      seedOrder();
+      expect(useOrderStore.getState().order).not.toBeNull();
+
+      useSessionStore.getState().resetSelections();
+
+      expect(useOrderStore.getState().order).toBeNull();
+      expect(useOrderStore.getState().menu).toEqual([]);
+      expect(useOrderStore.getState().noMenuPlaceIds).toEqual([]);
+    });
+
+    it('clears the order store on resetSession', () => {
+      seedOrder();
+      expect(useOrderStore.getState().order).not.toBeNull();
+
+      useSessionStore.getState().resetSession();
+
+      expect(useOrderStore.getState().order).toBeNull();
+      expect(useOrderStore.getState().menu).toEqual([]);
+      expect(useOrderStore.getState().noMenuPlaceIds).toEqual([]);
     });
   });
 });

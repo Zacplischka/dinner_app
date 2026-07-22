@@ -8,7 +8,7 @@ interface ConfirmLeaveModalProps {
   onConfirm: () => void;
   isLoading?: boolean;
   /** Context determines the warning message shown */
-  context?: 'lobby' | 'selecting' | 'results';
+  context?: 'lobby' | 'selecting' | 'results' | 'ordering';
   /** Number of selections made (for selecting context) */
   selectionsCount?: number;
 }
@@ -30,6 +30,8 @@ export default function ConfirmLeaveModal({
         return 'Leave Session?';
       case 'selecting':
         return 'Leave Session?';
+      case 'ordering':
+        return 'Leave the basket?';
       case 'lobby':
       default:
         return 'Leave Session?';
@@ -45,6 +47,8 @@ export default function ConfirmLeaveModal({
           return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the results.`;
         }
         return "You'll leave without submitting any preferences.";
+      case 'ordering':
+        return "Your items stay in the basket and still count — whoever taps I'll order still buys them.";
       case 'lobby':
       default:
         return "You'll leave the session and others won't see you in the lobby anymore.";
@@ -57,6 +61,8 @@ export default function ConfirmLeaveModal({
         return 'Stay Here';
       case 'selecting':
         return 'Keep Swiping';
+      case 'ordering':
+        return 'Back to the Basket';
       case 'lobby':
       default:
         return 'Stay in Session';
@@ -105,9 +111,7 @@ export default function ConfirmLeaveModal({
               >
                 {getTitle()}
               </h2>
-              <p className="text-muted">
-                {getMessage()}
-              </p>
+              <p className="text-muted">{getMessage()}</p>
             </div>
             <button
               type="button"
