@@ -295,15 +295,18 @@ export default function SelectionPage() {
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 py-3">
         <div className="mb-3 flex w-full max-w-sm flex-shrink-0 items-center justify-between rounded-full border border-line bg-raised/90 px-3 py-2">
           <div className="flex -space-x-2" aria-label="Participants choosing">
-            {participants.map((participant, index) => (
-              <div
-                key={participant.participantId}
-                aria-label={`${participant.displayName} is choosing`}
-                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-surface text-xs font-black text-text ${participantRingClass(index)}`}
-              >
-                {participant.displayName.charAt(0).toUpperCase()}
-              </div>
-            ))}
+            {participants.map((participant, index) => {
+              const isOffline = participant.isOnline === false;
+              return (
+                <div
+                  key={participant.participantId}
+                  aria-label={`${participant.displayName} is ${isOffline ? 'offline' : 'choosing'}`}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-surface text-xs font-black text-text ${participantRingClass(index)}${isOffline ? ' opacity-40' : ''}`}
+                >
+                  {participant.displayName.charAt(0).toUpperCase()}
+                </div>
+              );
+            })}
           </div>
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-cyan">
             {participants.length} together

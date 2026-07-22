@@ -65,6 +65,15 @@ describe('Neon Night Market components', () => {
           hasSubmitted: false,
           isHost: false,
         },
+        {
+          participantId: 'p3',
+          displayName: 'Cy',
+          sessionCode: 'AB123',
+          joinedAt: 3,
+          hasSubmitted: false,
+          isHost: false,
+          isOnline: false,
+        },
       ],
     });
 
@@ -77,8 +86,9 @@ describe('Neon Night Market components', () => {
     );
 
     await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
-    expect(screen.getByText('2 together')).toHaveClass('text-cyan');
+    expect(screen.getByText('3 together')).toHaveClass('text-cyan');
     expect(screen.getByLabelText('Alice is choosing')).toHaveClass('border-coral');
+    expect(screen.getByLabelText('Cy is offline')).toHaveClass('opacity-40');
     expect(screen.getByText('Japanese ramen')).toHaveClass('text-coral-soft');
     expect(screen.getByText('Open now')).toHaveClass('text-lime');
     expect(screen.getByLabelText('Rating 4.6')).toHaveClass('text-amber');
@@ -143,6 +153,15 @@ describe('Neon Night Market components', () => {
           hasSubmitted: false,
           isHost: true,
         },
+        {
+          participantId: 'p2',
+          displayName: 'Bo',
+          sessionCode: 'AB123',
+          joinedAt: 2,
+          hasSubmitted: false,
+          isHost: false,
+          isOnline: false,
+        },
       ],
     });
 
@@ -159,6 +178,8 @@ describe('Neon Night Market components', () => {
       screen.getAllByText('AB123').some((element) => element.classList.contains('shadow-glow-cyan'))
     ).toBe(true);
     expect(screen.getByLabelText('Alice, host, live')).toHaveClass('border-coral');
+    expect(screen.getByLabelText('Bo, offline')).toBeInTheDocument();
+    expect(screen.getByText('Offline')).toHaveClass('text-muted');
     expect(screen.getAllByText('Waiting for participant...')[0].previousElementSibling).toHaveClass(
       'border-amber'
     );
