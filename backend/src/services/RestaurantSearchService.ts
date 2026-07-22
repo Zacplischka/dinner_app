@@ -447,8 +447,11 @@ export async function searchNearbyRestaurants(
     'RestaurantSearch after deduplication'
   );
 
-  // Sort by rating descending
-  const restaurants = uniqueRestaurants.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  // Sort by open state first (closed sinks to the bottom), then rating descending
+  const restaurants = uniqueRestaurants.sort(
+    (a, b) =>
+      Number(a.openNow === false) - Number(b.openNow === false) || (b.rating || 0) - (a.rating || 0)
+  );
 
   return restaurants;
 }
