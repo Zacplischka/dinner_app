@@ -54,13 +54,27 @@ export default function SessionLobbyPage() {
     }
   };
 
-  const handleCopyLink = () => {
-    if (shareableLink) {
-      navigator.clipboard
-        .writeText(shareableLink)
-        .then(() => toast.success('Link copied to clipboard!'))
-        .catch(() => toast.error('Could not copy link'));
+  const handleShareLink = async () => {
+    if (!shareableLink) return;
+
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'Dinder', url: shareableLink });
+        return;
+      } catch (err) {
+        // ponytail: dismissing the sheet is not a failure — no toast, no clipboard write.
+        // Any other rejection (NotAllowedError, insecure context, no handler) falls
+        // through so the Host still ends up with the link somewhere.
+        // navigator.share rejects with a DOMException, which is not `instanceof Error`
+        // in every environment (jsdom included) — match on `.name` alone.
+        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
+      }
     }
+
+    navigator.clipboard
+      .writeText(shareableLink)
+      .then(() => toast.success('Link copied to clipboard!'))
+      .catch(() => toast.error('Could not copy link'));
   };
 
   const handleStartSelecting = async () => {
@@ -146,10 +160,10 @@ export default function SessionLobbyPage() {
 
           {shareableLink && (
             <button
-              onClick={handleCopyLink}
+              onClick={() => void handleShareLink()}
               className="btn btn-secondary mt-4 w-full min-h-[48px] text-sm"
             >
-              Copy shareable link
+              {typeof navigator.share === 'function' ? 'Share invite link' : 'Copy shareable link'}
             </button>
           )}
         </div>
