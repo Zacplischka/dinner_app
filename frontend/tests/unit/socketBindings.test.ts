@@ -221,9 +221,25 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.warning).toHaveBeenCalledWith('Alice lost connection', {
       duration: 3000,
     });
+    expect(
+      useSessionStore.getState().participants.find((p) => p.displayName === 'Alice')?.isOnline
+    ).toBe(false);
+
+    // A subsequent rejoin for the same displayName flips presence back and does not duplicate
+    socket.trigger('participant:joined', {
+      participantId: 'participant-9',
+      displayName: 'Alice',
+      isRejoin: true,
+    });
+    expect(
+      useSessionStore.getState().participants.filter((p) => p.displayName === 'Alice')
+    ).toHaveLength(1);
+    expect(
+      useSessionStore.getState().participants.find((p) => p.displayName === 'Alice')?.isOnline
+    ).toBe(true);
 
     // Submission flips hasSubmitted
-    socket.trigger('participant:submitted', { participantId: 'participant-1' });
+    socket.trigger('participant:submitted', { participantId: 'participant-9' });
     expect(useSessionStore.getState().participants[0].hasSubmitted).toBe(true);
   });
 

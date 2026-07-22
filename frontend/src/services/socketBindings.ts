@@ -92,6 +92,7 @@ const socketConfig: SocketConfig = {
         updatedParticipants[existingIndex] = {
           ...updatedParticipants[existingIndex],
           participantId: event.participantId,
+          isOnline: true,
         };
         store.updateParticipants(updatedParticipants);
         console.log('Updated existing participant socket ID:', event.displayName);
@@ -130,6 +131,14 @@ const socketConfig: SocketConfig = {
       toast.info(`${displayName} left the session`);
     },
 
+    // ponytail: client-only presence, no server truth. Two holes: (i) a Participant who
+    // dropped before you joined shows as Live to you; (ii) your OWN reconnect resets every
+    // badge to Live, because connect (:44-54) re-joins and joinSession (:237-244) replaces
+    // the list from SessionJoinData.participants, which is { participantId, displayName,
+    // isHost } only. Badges are honest again from the next participant:disconnected.
+    // Upgrade that fixes both at once: hset an offline flag on participant:{pid} in
+    // disconnectHandler and widen SessionJoinData.participants with isOnline?: boolean
+    // (additive, ADR 0007).
     // participant:disconnected - A participant lost connection (network issue, browser close, etc.)
     // This is INFORMATIONAL only - the participant is NOT removed from the session (FR-025).
     // They can reconnect and will be re-registered with a new socket.id.
@@ -144,6 +153,12 @@ const socketConfig: SocketConfig = {
       // Do NOT remove the participant - they may reconnect (FR-025)
       // Just show an informational toast
       toast.warning(`${displayName} lost connection`, { duration: 3000 });
+
+      store.updateParticipants(
+        store.participants.map((p) =>
+          p.participantId === event.participantId ? { ...p, isOnline: false } : p
+        )
+      );
     },
 
     // participant:submitted - A participant submitted their selections

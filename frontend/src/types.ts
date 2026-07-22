@@ -12,6 +12,8 @@ export interface Participant {
   joinedAt: number;
   hasSubmitted: boolean;
   isHost: boolean;
+  /** Client-only presence. undefined = online; only ever set false by participant:disconnected. */
+  isOnline?: boolean;
 }
 
 export interface Result {
