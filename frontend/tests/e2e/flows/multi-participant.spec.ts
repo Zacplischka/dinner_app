@@ -127,8 +127,8 @@ test.describe('Multi-Participant Session Flow', () => {
   });
 });
 
-test.describe('Near Miss fallback (#72)', () => {
-  test('empty match with three participants shows Near Miss cards on every screen', async ({
+test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () => {
+  test('empty match with three participants crowns the closest pick on every screen', async ({
     setupSession,
   }) => {
     test.setTimeout(120_000); // three full decks of swiping
@@ -146,7 +146,7 @@ test.describe('Near Miss fallback (#72)', () => {
 
     // Host and Guest1 like only the first restaurant; Guest2 passes it and
     // likes the second. No restaurant is liked by all three (empty Match),
-    // and the first is liked by two of three (a Near Miss).
+    // and the first is liked by two of three (the crowned Top Pick).
     const [guest1, guest2] = participants;
     const finishDeck = async (p: (typeof all)[number]) => {
       await p.selectionPage.passAllRemaining();
@@ -172,12 +172,15 @@ test.describe('Near Miss fallback (#72)', () => {
 
     await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
 
-    // The Near Miss card appears on every participant's screen in real time.
+    // The crowned Top Pick appears on every participant's screen in real time
+    // (the crown supersedes the bare Near Miss card on an empty Match).
     for (const p of all) {
-      await expect(p.page.locator('[data-near-miss-card]').first()).toBeVisible({
+      await expect(p.page.getByText("TONIGHT'S PICK").first()).toBeVisible({
         timeout: 10_000,
       });
-      await expect(p.page.getByText('2 of 3 liked this').first()).toBeVisible();
+      await expect(
+        p.page.getByText('2 of 3 swiped yes — the closest you got.').first()
+      ).toBeVisible();
     }
   });
 });
