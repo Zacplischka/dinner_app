@@ -24,17 +24,17 @@ type SupabaseAuthUser = {
   app_metadata?: Record<string, unknown> | null;
 };
 
-type TokenVerificationFailure = 'expired' | 'invalid';
-
-type TokenVerificationResult =
-  | { user: AuthenticatedUser; failure?: never; message?: never }
-  | { user: null; failure: TokenVerificationFailure; message: string };
+// Two arms: a user, or the reason there isn't one. Callers that care whether the
+// reason was expiry read it off `message` themselves.
+type TokenVerification = { user: AuthenticatedUser } | { user: null; message: string };
 
 function isSupabaseAuthConfigured(): boolean {
   return Boolean(config.supabase.url && config.supabase.serviceRoleKey);
 }
 
-function getErrorMessage(error: unknown): string {
+// Supabase hands back plain `{ message }` objects as often as real Errors, and a
+// transport failure can reject with anything at all.
+function errorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -49,44 +49,25 @@ function getErrorMessage(error: unknown): string {
   return 'Unknown error';
 }
 
-function getFailureReason(message: string): TokenVerificationFailure {
-  return message.toLowerCase().includes('expired') ? 'expired' : 'invalid';
-}
-
-function mapSupabaseUser(user: SupabaseAuthUser): AuthenticatedUser {
-  const appMetadataRole = user.app_metadata?.role;
-  const role = user.role || (typeof appMetadataRole === 'string' ? appMetadataRole : undefined);
-
-  return {
-    id: user.id,
-    email: user.email || undefined,
-    role,
-  };
-}
-
-async function verifyTokenInternal(token: string): Promise<TokenVerificationResult> {
+async function verifyTokenInternal(token: string): Promise<TokenVerification> {
   try {
     const { data, error } = await supabase.auth.getUser(token);
 
-    if (error || !data.user) {
-      const message = error ? getErrorMessage(error) : 'No user returned for token';
-      return {
-        user: null,
-        failure: getFailureReason(message),
-        message,
-      };
-    }
+    if (error) return { user: null, message: errorMessage(error) };
+    if (!data.user) return { user: null, message: 'No user returned for token' };
+
+    const authUser = data.user as SupabaseAuthUser;
+    const appMetadataRole = authUser.app_metadata?.role;
 
     return {
-      user: mapSupabaseUser(data.user as SupabaseAuthUser),
+      user: {
+        id: authUser.id,
+        email: authUser.email || undefined,
+        role: authUser.role || (typeof appMetadataRole === 'string' ? appMetadataRole : undefined),
+      },
     };
   } catch (error) {
-    const message = getErrorMessage(error);
-    return {
-      user: null,
-      failure: getFailureReason(message),
-      message,
-    };
+    return { user: null, message: errorMessage(error) };
   }
 }
 
@@ -127,7 +108,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
       return;
     }
 
-    if (result.failure === 'expired') {
+    if (result.message.toLowerCase().includes('expired')) {
       logger.warn({ detail: result.message }, 'Expired JWT token');
       res.status(401).json({
         code: 'TOKEN_EXPIRED',
