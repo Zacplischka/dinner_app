@@ -20,7 +20,6 @@
     "typecheck": "npm run build --workspace=shared && npx tsc --noEmit -p backend && npx tsc --noEmit -p frontend",
     "test:e2e:live": "npm run test:e2e:live --workspace=frontend --",
     "compare:smoke": "npm run compare:smoke --workspace=backend --",
-    "check:cloudflare-staging": "node scripts/check-cloudflare-staging.mjs",
     "check:production-edge": "node --test scripts/check-production-edge.test.mjs",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
@@ -38,7 +37,6 @@
   "license": "MIT",
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.4",
-    "fallow": "^3.3.0",
-    "wait-on": "^9.0.10"
+    "fallow": "^3.3.0"
   }
 }
