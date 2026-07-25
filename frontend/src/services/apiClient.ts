@@ -99,52 +99,36 @@ export async function getVenues(
   return { ...result, venues: resolvePhotoUrls(result.venues) };
 }
 
+/**
+ * Point relative photo paths at the API origin. The backend emits
+ * `/api/comparison/photo?...` and nothing else, but in production the API is a
+ * different origin from the app, so an unprefixed path would 404 against the
+ * frontend host. Anything already absolute is left alone rather than mangled.
+ */
 export function resolvePhotoUrls<T extends { photoUrl?: string }>(items: T[]): T[] {
-  return items.map((item) => {
-    if (!item.photoUrl) return item;
-    let proxyPath = item.photoUrl;
-
-    if (!proxyPath.startsWith('/api/comparison/photo?')) {
-      try {
-        const legacyUrl = new URL(proxyPath);
-        if (legacyUrl.hostname !== 'places.googleapis.com') return item;
-        const match = /^\/v1\/(places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+)\/media$/.exec(
-          legacyUrl.pathname
-        );
-        if (!match) {
-          const clean = { ...item };
-          delete clean.photoUrl;
-          return clean;
-        }
-        proxyPath = `/api/comparison/photo?name=${encodeURIComponent(match[1])}`;
-      } catch {
-        const clean = { ...item };
-        delete clean.photoUrl;
-        return clean;
-      }
-    }
-
-    const locationOrigin = globalThis.location?.origin || 'http://localhost';
-    const apiOrigin = new URL(API_BASE_URL, locationOrigin).origin;
-    return { ...item, photoUrl: `${apiOrigin}${proxyPath}` };
-  });
+  const locationOrigin = globalThis.location?.origin || 'http://localhost';
+  const apiOrigin = new URL(API_BASE_URL, locationOrigin).origin;
+  return items.map((item) =>
+    item.photoUrl?.startsWith('/') ? { ...item, photoUrl: `${apiOrigin}${item.photoUrl}` } : item
+  );
 }
 
 // ============================================================================
 // FRIENDS / PROFILE ENDPOINTS (authenticated)
 // ============================================================================
 
-function getAuthHeaders(): HeadersInit {
+/**
+ * request(), plus the bearer token. Separate from request() rather than folded
+ * into it because the Session and geocode endpoints are deliberately anonymous
+ * and must not carry the user's token.
+ */
+function authedRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const session = useAuthStore.getState().session;
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
-
-  return headers;
+  return request<T>(path, { ...init, headers: { ...headers, ...init?.headers } });
 }
 
 /**
@@ -194,18 +178,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
  * Get the current user's profile (created on first sight server-side)
  */
 export async function getCurrentProfile(): Promise<GetProfileResponse> {
-  return request<GetProfileResponse>('/users/me', {
-    headers: getAuthHeaders(),
-  });
+  return authedRequest<GetProfileResponse>('/users/me');
 }
 
 /**
  * Search users by exact email match
  */
 export async function searchUsers(email: string): Promise<UserProfile[]> {
-  const data = await request<SearchUsersResponse>(
-    `/users/search?email=${encodeURIComponent(email)}`,
-    { headers: getAuthHeaders() }
+  const data = await authedRequest<SearchUsersResponse>(
+    `/users/search?email=${encodeURIComponent(email)}`
   );
   return data.users;
 }
@@ -214,9 +195,7 @@ export async function searchUsers(email: string): Promise<UserProfile[]> {
  * List the current user's accepted friends
  */
 export async function getFriends(): Promise<Friend[]> {
-  const data = await request<FriendsListResponse>('/friends', {
-    headers: getAuthHeaders(),
-  });
+  const data = await authedRequest<FriendsListResponse>('/friends');
   return data.friends;
 }
 
@@ -224,9 +203,7 @@ export async function getFriends(): Promise<Friend[]> {
  * List pending friend requests the current user received
  */
 export async function getFriendRequests(): Promise<FriendRequest[]> {
-  const data = await request<FriendRequestsResponse>('/friends/requests', {
-    headers: getAuthHeaders(),
-  });
+  const data = await authedRequest<FriendRequestsResponse>('/friends/requests');
   return data.requests;
 }
 
@@ -234,9 +211,7 @@ export async function getFriendRequests(): Promise<FriendRequest[]> {
  * List pending session invites for the current user
  */
 export async function getSessionInvites(): Promise<SessionInvite[]> {
-  const data = await request<SessionInvitesResponse>('/invites', {
-    headers: getAuthHeaders(),
-  });
+  const data = await authedRequest<SessionInvitesResponse>('/invites');
   return data.invites;
 }
 
@@ -245,9 +220,8 @@ export async function getSessionInvites(): Promise<SessionInvite[]> {
  */
 export async function sendFriendRequest(email: string): Promise<void> {
   const body: SendFriendRequestPayload = { email };
-  await request<void>('/friends/request', {
+  await authedRequest<void>('/friends/request', {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(body),
   });
 }
@@ -256,9 +230,8 @@ export async function sendFriendRequest(email: string): Promise<void> {
  * Accept a friend request
  */
 export async function acceptFriendRequest(requestId: string): Promise<void> {
-  await request<void>(`/friends/${requestId}/accept`, {
+  await authedRequest<void>(`/friends/${requestId}/accept`, {
     method: 'POST',
-    headers: getAuthHeaders(),
   });
 }
 
@@ -266,9 +239,8 @@ export async function acceptFriendRequest(requestId: string): Promise<void> {
  * Decline a friend request
  */
 export async function declineFriendRequest(requestId: string): Promise<void> {
-  await request<void>(`/friends/${requestId}/decline`, {
+  await authedRequest<void>(`/friends/${requestId}/decline`, {
     method: 'POST',
-    headers: getAuthHeaders(),
   });
 }
 
@@ -276,9 +248,8 @@ export async function declineFriendRequest(requestId: string): Promise<void> {
  * Remove a friend (unfriend)
  */
 export async function removeFriend(friendId: string): Promise<void> {
-  await request<void>(`/friends/${friendId}`, {
+  await authedRequest<void>(`/friends/${friendId}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
   });
 }
 
@@ -290,9 +261,8 @@ export async function inviteFriendsToSession(
   friendIds: string[]
 ): Promise<void> {
   const body: SendSessionInviteRequest = { friendIds };
-  await request<unknown>(`/sessions/${sessionCode}/invite`, {
+  await authedRequest<unknown>(`/sessions/${sessionCode}/invite`, {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(body),
   });
 }
@@ -301,9 +271,8 @@ export async function inviteFriendsToSession(
  * Accept a session invite; returns the session code to join
  */
 export async function acceptSessionInvite(inviteId: string): Promise<string> {
-  const data = await request<AcceptSessionInviteResponse>(`/invites/${inviteId}/accept`, {
+  const data = await authedRequest<AcceptSessionInviteResponse>(`/invites/${inviteId}/accept`, {
     method: 'POST',
-    headers: getAuthHeaders(),
   });
   return data.sessionCode;
 }
@@ -312,8 +281,7 @@ export async function acceptSessionInvite(inviteId: string): Promise<string> {
  * Decline a session invite
  */
 export async function declineSessionInvite(inviteId: string): Promise<void> {
-  await request<unknown>(`/invites/${inviteId}/decline`, {
+  await authedRequest<unknown>(`/invites/${inviteId}/decline`, {
     method: 'POST',
-    headers: getAuthHeaders(),
   });
 }

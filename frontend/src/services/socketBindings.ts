@@ -15,8 +15,6 @@ import type {
   SessionExpiredEvent,
   ErrorEvent,
   OrderStateEvent,
-  OrderOpenResponse,
-  OrderBuyResponse,
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
 import type { SocketConfig } from './socketService';
@@ -69,7 +67,7 @@ const socketConfig: SocketConfig = {
               // orderStore here itself, exactly like GroupOrderPage's own
               // on-mount open. Otherwise a re-open that wins the race after
               // the page already rendered a failure screen never clears it.
-              void openOrder(sessionCode, orderPlaceId).then((openAck) => {
+              void socketService.openOrder(sessionCode, orderPlaceId).then((openAck) => {
                 if (openAck.success) {
                   useOrderStore.getState().setOrder(openAck.data, openAck.data.menu);
                 }
@@ -314,57 +312,25 @@ export async function joinSession(
 }
 
 /**
- * Submit selections
- */
-export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
-  return socketService.submitSelection(sessionCode, optionIds);
-}
-
-/**
- * Send a Live Selection (fire-and-forget chrome).
- */
-export function sendLiveSelection(sessionCode: string, placeId: string): Promise<Ack<null>> {
-  return socketService.sendLiveSelection(sessionCode, placeId);
-}
-
-/**
- * Restart session
- */
-export function restartSession(sessionCode: string): Promise<Ack<null>> {
-  return socketService.restartSession(sessionCode);
-}
-
-/**
- * Open (or rejoin) the Group Order for the crowned Restaurant.
- */
-export function openOrder(sessionCode: string, placeId: string): Promise<OrderOpenResponse> {
-  return socketService.openOrder(sessionCode, placeId);
-}
-
-/**
- * Add (delta 1) or remove (delta -1) one Order Line. The resulting order:state
- * broadcast (sender included) is what updates every basket, this one too.
- */
-export function addOrderItem(
-  sessionCode: string,
-  index: number,
-  delta: 1 | -1
-): Promise<Ack<null>> {
-  return socketService.addOrderItem(sessionCode, index, delta);
-}
-
-/**
- * "I'll order": claim the Buyer and lock the Group Order. The resulting
- * order:state broadcast (sender included) is what flips every phone to its
- * handoff branch — this command carries no local state change of its own.
+ * Commands that touch no store and raise no toast. They are re-exported rather
+ * than wrapped so pages still see one import surface, but the seam does not
+ * pretend to add behaviour it doesn't have.
  *
- * The same event also carries the Buyer's debounced delivery-fee edits
- * (#179) — `feeCents` present with an existing lock is a fee update, not a
- * re-claim; the server tells the two apart.
+ * What makes them store-free: each one's effect reaches the UI as a server
+ * broadcast, not a local write. addOrderItem and claimBuyer are the clearest
+ * case — the order:state broadcast includes the sender, so it is what updates
+ * every basket, this phone's too. claimBuyer doubles as the Buyer's debounced
+ * delivery-fee edit (#179): `feeCents` present with an existing lock is a fee
+ * update, not a re-claim, and the server tells the two apart.
  */
-export function claimBuyer(sessionCode: string, feeCents?: number): Promise<OrderBuyResponse> {
-  return socketService.claimBuyer(sessionCode, feeCents);
-}
+export {
+  submitSelection,
+  sendLiveSelection,
+  restartSession,
+  openOrder,
+  addOrderItem,
+  claimBuyer,
+} from './socketService';
 
 /**
  * Leave session intentionally and clear local session state. The store is reset

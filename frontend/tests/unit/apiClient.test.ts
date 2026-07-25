@@ -254,8 +254,7 @@ describe('apiClient', () => {
           priceLevel: 2,
           cuisineType: 'Italian',
           address: '123 Main St',
-          photoUrl:
-            'https://places.googleapis.com/v1/places/place1/photos/one/media?key=old-secret&maxHeightPx=400',
+          photoUrl: '/api/comparison/photo?name=places%2Fplace1%2Fphotos%2Fone',
         },
         {
           placeId: 'ChIJplace2',
