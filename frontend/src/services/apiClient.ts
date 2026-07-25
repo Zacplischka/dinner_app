@@ -100,10 +100,15 @@ export async function getVenues(
 }
 
 /**
- * Point relative photo paths at the API origin. The backend emits
- * `/api/comparison/photo?...` and nothing else, but in production the API is a
+ * Point relative photo paths at the API origin: in production the API is a
  * different origin from the app, so an unprefixed path would 404 against the
- * frontend host. Anything already absolute is left alone rather than mangled.
+ * frontend host.
+ *
+ * ponytail: assumes the backend only ever emits `/api/comparison/photo?...`.
+ * Ceiling: a future producer of some other relative path gets prefixed too.
+ * Anything already absolute is left alone rather than mangled, so the blast
+ * radius is a wrong origin, not a corrupted URL. Upgrade path is to match the
+ * proxy prefix explicitly if a second relative photo source ever appears.
  */
 export function resolvePhotoUrls<T extends { photoUrl?: string }>(items: T[]): T[] {
   const locationOrigin = globalThis.location?.origin || 'http://localhost';

@@ -274,7 +274,7 @@ Frontend unit only (`vitest`). No backend, contract or integration suite changes
 - `navigator.share` rejecting a non-`AbortError` → `navigator.clipboard.writeText` was called and `useToastStore.getState().toasts` contains `{ message: 'Link copied to clipboard!' }`.
 - The existing lobby case at `:194-208` stays byte-identical and green — jsdom has no `navigator.share`, so it already covers the fallback label and path.
 
-**Not automated:** the static meta tags. They contain no logic, no test in the repo parses `index.html`, and `frontend/scripts/benchmark-pages*.mjs` does not read it. `ponytail:` acceptance criteria 1–4 are the check — add a grep-based node assertion only if someone deletes the tags in a refactor.
+**Not automated:** the static meta tags. They contain no logic and no test in the repo parses `index.html`. `ponytail:` acceptance criteria 1–4 are the check — add a grep-based node assertion only if someone deletes the tags in a refactor.
 
 ## Review notes
 
