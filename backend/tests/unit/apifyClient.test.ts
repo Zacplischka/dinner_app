@@ -1,20 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createApifyClient } from '../../src/services/apifyClient.js';
+import { runApifyActor } from '../../src/services/apifyClient.js';
 
-describe('createApifyClient', () => {
+describe('runApifyActor', () => {
   it('runs an actor synchronously with the server-side token and spend guards', async () => {
     const actorOutput = [{ title: '11 Inch Pizza' }];
     const fetchImpl = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => actorOutput,
     });
-    const client = createApifyClient({ token: 'apify-token', fetchImpl });
 
     await expect(
-      client.runActor('borderline/uber-eats-scraper-ppr', {
-        query: '11 Inch Pizza',
-        maxRows: 5,
-      })
+      runApifyActor(
+        'apify-token',
+        'borderline/uber-eats-scraper-ppr',
+        { query: '11 Inch Pizza', maxRows: 5 },
+        fetchImpl
+      )
     ).resolves.toEqual(actorOutput);
 
     expect(fetchImpl).toHaveBeenCalledWith(
@@ -35,9 +36,8 @@ describe('createApifyClient', () => {
       ok: true,
       json: async () => ({ error: { message: 'Actor run timed out' } }),
     });
-    const client = createApifyClient({ token: 'apify-token', fetchImpl });
 
-    await expect(client.runActor('actor/name', {})).rejects.toThrow(
+    await expect(runApifyActor('apify-token', 'actor/name', {}, fetchImpl)).rejects.toThrow(
       'Apify actor returned a non-array response'
     );
   });

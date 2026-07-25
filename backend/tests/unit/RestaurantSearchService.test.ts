@@ -70,21 +70,17 @@ describe('RestaurantSearchService', () => {
         photos: [{ name: 'places/place-photo/photos/one', widthPx: 800, heightPx: 600 }],
       };
 
-      const result = RestaurantSearchService.transformGooglePlaceToRestaurant(
-        googlePlace,
-        'api-key'
-      );
+      const result = RestaurantSearchService.transformGooglePlaceToRestaurant(googlePlace);
 
       expect(result.photoUrl).toBe(
         '/api/comparison/photo?name=places%2Fplace-photo%2Fphotos%2Fone'
       );
-      expect(result.photoUrl).not.toContain('api-key');
     });
   });
 
   describe('getPhotoUrl', () => {
     it('builds a keyless API photo URL', () => {
-      expect(RestaurantSearchService.getPhotoUrl('places/abc/photos/def', 'key-123')).toBe(
+      expect(RestaurantSearchService.getPhotoUrl('places/abc/photos/def')).toBe(
         '/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef'
       );
     });

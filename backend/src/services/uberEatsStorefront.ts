@@ -79,7 +79,7 @@ export const uberEatsStorefront: StorefrontResolver = {
               )
             : [];
           const promo = string(item.promo);
-          const tags = unique([...actorTags, ...(promo ? [promo] : [])]);
+          const tags = [...new Set([...actorTags, ...(promo ? [promo] : [])])];
           if (promo && !deals.includes(promo)) deals.push(promo);
 
           const existing = menuById.get(id);
@@ -93,7 +93,7 @@ export const uberEatsStorefront: StorefrontResolver = {
             continue;
           }
 
-          existing.tags = unique([...existing.tags, ...tags]);
+          existing.tags = [...new Set([...existing.tags, ...tags])];
           if (promotionalSection(existing.section) && !promotionalSection(sectionName)) {
             existing.section = sectionName;
           }
@@ -123,10 +123,6 @@ function normalizeUberEatsUrl(value: string): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-function unique(values: string[]): string[] {
-  return [...new Set(values)];
 }
 
 function promotionalSection(section?: string): boolean {

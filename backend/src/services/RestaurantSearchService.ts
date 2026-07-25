@@ -2,6 +2,9 @@ import { logger } from '../logger.js';
 import type { GeocodedArea, Restaurant, Venue } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { DomainError } from './DomainError.js';
+import { distanceMeters } from './storefrontResolution.js';
+
+const METERS_PER_MILE = 1609.344;
 
 export interface GooglePlacesSearchParams {
   latitude: number;
@@ -151,7 +154,9 @@ export function mapPriceLevel(priceLevel: string): number | undefined {
   return mapping[priceLevel];
 }
 
-export function getPhotoUrl(photoName: string, _apiKey: string): string {
+// The client never sees a Google media URL: it gets a proxy path, and the
+// backend spends the API key on its behalf in fetchPlacePhoto.
+export function getPhotoUrl(photoName: string): string {
   return `/api/comparison/photo?name=${encodeURIComponent(photoName)}`;
 }
 
@@ -239,12 +244,8 @@ export function isRestaurantType(primaryType?: string): boolean {
   return FOOD_PLACE_TYPES.has(primaryType) || primaryType.endsWith('_restaurant');
 }
 
-export function transformGooglePlaceToRestaurant(
-  place: GooglePlaceResult,
-  apiKey?: string
-): Restaurant {
-  const photoUrl =
-    place.photos?.[0]?.name && apiKey ? getPhotoUrl(place.photos[0].name, apiKey) : undefined;
+export function transformGooglePlaceToRestaurant(place: GooglePlaceResult): Restaurant {
+  const photoName = place.photos?.[0]?.name;
 
   return {
     placeId: place.id,
@@ -253,7 +254,7 @@ export function transformGooglePlaceToRestaurant(
     priceLevel: place.priceLevel ? mapPriceLevel(place.priceLevel) : undefined,
     cuisineType: place.primaryTypeDisplayName?.text,
     address: place.formattedAddress,
-    photoUrl,
+    photoUrl: photoName ? getPhotoUrl(photoName) : undefined,
     openNow: place.currentOpeningHours?.openNow,
   };
 }
@@ -380,9 +381,7 @@ async function fetchTextSearchPage(
   };
 }
 
-async function fetchNearbyPlaces(
-  params: GooglePlacesSearchParams
-): Promise<{ places: GooglePlaceResult[]; apiKey: string }> {
+async function fetchNearbyPlaces(params: GooglePlacesSearchParams): Promise<GooglePlaceResult[]> {
   const { latitude, longitude, radiusMeters } = params;
 
   const apiKey = config.googlePlaces.apiKey;
@@ -429,13 +428,13 @@ async function fetchNearbyPlaces(
   );
   logger.info({ placeCount: pageData.places.length }, 'RestaurantSearch API returned places');
 
-  return { places: pageData.places, apiKey };
+  return pageData.places;
 }
 
 export async function searchNearbyRestaurants(
   params: GooglePlacesSearchParams
 ): Promise<Restaurant[]> {
-  const { places: allPlaces, apiKey } = await fetchNearbyPlaces(params);
+  const allPlaces = await fetchNearbyPlaces(params);
 
   // Filter to only include actual restaurants (by primaryType)
   const restaurantPlaces = allPlaces.filter((place: GooglePlaceResult) =>
@@ -444,9 +443,7 @@ export async function searchNearbyRestaurants(
   logger.info({ restaurantCount: restaurantPlaces.length }, 'RestaurantSearch after type filter');
 
   // Transform Google Places results to Restaurant objects
-  const transformedRestaurants = restaurantPlaces.map((place: GooglePlaceResult) =>
-    transformGooglePlaceToRestaurant(place, apiKey)
-  );
+  const transformedRestaurants = restaurantPlaces.map(transformGooglePlaceToRestaurant);
 
   // Deduplicate chain restaurants (keeps highest-rated instance)
   const uniqueRestaurants = deduplicateRestaurants(transformedRestaurants);
@@ -465,9 +462,9 @@ export async function searchNearbyRestaurants(
 }
 
 export async function searchNearbyVenues(params: GooglePlacesSearchParams): Promise<Venue[]> {
-  const { places, apiKey } = await fetchNearbyPlaces(params);
+  const places = await fetchNearbyPlaces(params);
   const origin = { latitude: params.latitude, longitude: params.longitude };
-  const maxDistanceMiles = params.radiusMeters / 1609.344;
+  const maxDistanceMiles = params.radiusMeters / METERS_PER_MILE;
 
   return places
     .filter((place) => isRestaurantType(place.primaryType) && place.location)
@@ -477,23 +474,10 @@ export async function searchNearbyVenues(params: GooglePlacesSearchParams): Prom
       rating: place.rating,
       cuisineType: place.primaryTypeDisplayName?.text,
       address: place.formattedAddress,
-      photoUrl: place.photos?.[0]?.name ? getPhotoUrl(place.photos[0].name, apiKey) : undefined,
-      distanceMiles: distanceMiles(origin, place.location!),
+      photoUrl: place.photos?.[0]?.name ? getPhotoUrl(place.photos[0].name) : undefined,
+      distanceMiles: distanceMeters(origin, place.location!) / METERS_PER_MILE,
     }))
     .filter((venue) => venue.distanceMiles <= maxDistanceMiles)
     .sort((a, b) => a.distanceMiles - b.distanceMiles)
     .slice(0, params.maxResults ?? 50);
-}
-
-function distanceMiles(
-  a: { latitude: number; longitude: number },
-  b: { latitude: number; longitude: number }
-): number {
-  const radians = (degrees: number) => (degrees * Math.PI) / 180;
-  const dLat = radians(b.latitude - a.latitude);
-  const dLng = radians(b.longitude - a.longitude);
-  const lat1 = radians(a.latitude);
-  const lat2 = radians(b.latitude);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 3958.8 * 2 * Math.asin(Math.sqrt(h));
 }

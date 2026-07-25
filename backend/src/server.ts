@@ -20,7 +20,7 @@ import { createSessionService } from './services/SessionService.js';
 import { createFriendsService } from './services/FriendsService.js';
 import { createComparisonService } from './services/ComparisonService.js';
 import { createOrderService } from './services/OrderService.js';
-import { createApifyClient } from './services/apifyClient.js';
+import { runApifyActor } from './services/apifyClient.js';
 import * as friendsStore from './store/friendsStore.js';
 import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
@@ -56,9 +56,8 @@ const sessionService = createSessionService({
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
 });
 const friendsService = createFriendsService({ store: friendsStore });
-const apifyClient = createApifyClient({ token: config.apify.token || '' });
 const comparisonService = createComparisonService({
-  runActor: (...args) => apifyClient.runActor(...args),
+  runActor: (actorId, input) => runApifyActor(config.apify.token || '', actorId, input),
   uberEatsActorId: config.apify.uberEatsActorId,
   doorDashActorId: config.apify.doorDashActorId,
   fetchPlaceDetails: (...args) => RestaurantSearchService.fetchPlaceDetails(...args),
@@ -305,29 +304,19 @@ async function startServer() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  void (async () => {
-    logger.info('SIGTERM received, shutting down gracefully');
-    httpServer.close(() => {
-      logger.info('HTTP server closed');
-    });
-    await disconnectSessionExpiryNotifier();
-    await redis.quit();
-    process.exit(0);
-  })();
-});
-
-process.on('SIGINT', () => {
-  void (async () => {
-    logger.info('SIGINT received, shutting down gracefully');
-    httpServer.close(() => {
-      logger.info('HTTP server closed');
-    });
-    await disconnectSessionExpiryNotifier();
-    await redis.quit();
-    process.exit(0);
-  })();
-});
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    void (async () => {
+      logger.info(`${signal} received, shutting down gracefully`);
+      httpServer.close(() => {
+        logger.info('HTTP server closed');
+      });
+      await disconnectSessionExpiryNotifier();
+      await redis.quit();
+      process.exit(0);
+    })();
+  });
+}
 
 // Only start server if run directly (not imported for tests)
 if (import.meta.url === `file://${process.argv[1]}`) {

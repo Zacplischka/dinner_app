@@ -1,5 +1,4 @@
 import type {
-  Comparison,
   ComparisonStreamEvent,
   Snapshot,
   SnapshotPayload,
@@ -117,7 +116,7 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
         venueName: venue.name,
         payload,
       });
-      emit(flight, { type: 'comparison', comparison: toComparison(snapshot) });
+      emit(flight, { type: 'comparison', comparison: deriveComparison(snapshot) });
     } catch {
       emit(flight, {
         type: 'error',
@@ -195,11 +194,7 @@ function emitSnapshot(
     platform: 'doordash',
     storefront: snapshot.payload.doordash,
   });
-  emit(flight, { type: 'comparison', comparison: toComparison(snapshot) });
-}
-
-function toComparison(snapshot: Snapshot): Comparison {
-  return deriveComparison(snapshot);
+  emit(flight, { type: 'comparison', comparison: deriveComparison(snapshot) });
 }
 
 export function isFresh(
