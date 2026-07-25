@@ -4,7 +4,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
-import { toApiError } from './toApiError.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import {
@@ -41,71 +40,57 @@ export function createSessionsRouter(sessionService: SessionService) {
   router.post(
     '/',
     asyncHandler(async (req, res) => {
-      let createContext: {
-        hasLocation: boolean;
-        searchRadiusMiles: number | null;
-      } = {
-        hasLocation: false,
-        searchRadiusMiles: null,
-      };
+      // Validate request body
+      const validation = createSessionRequestSchema.safeParse(req.body);
 
-      try {
-        // Validate request body
-        const validation = createSessionRequestSchema.safeParse(req.body);
-
-        if (!validation.success) {
-          req.log.warn(
-            {
-              reason: 'validation_error',
-              fields: validationFields(validation.error),
-            },
-            'Rejected REST session create'
-          );
-
-          return res.status(400).json({
-            code: 'VALIDATION_ERROR',
-            message: 'hostName is required and must be 1-50 characters',
-          });
-        }
-
-        const { hostName, location, searchRadiusMiles }: CreateSessionRequest = validation.data;
-
-        // Default searchRadiusMiles to 5 if location is provided but radius is not
-        const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;
-        createContext = {
-          hasLocation: Boolean(location),
-          searchRadiusMiles: radius ?? null,
-        };
-
-        // Create session
-        const session = await sessionService.createSession(hostName, location, radius);
-
-        req.log.info(
+      if (!validation.success) {
+        req.log.warn(
           {
-            sessionCode: session.sessionCode,
-            ...createContext,
-            restaurantCount: session.restaurantCount ?? 0,
+            reason: 'validation_error',
+            fields: validationFields(validation.error),
           },
-          'Created REST session'
+          'Rejected REST session create'
         );
 
-        return res.status(201).json(session satisfies CreateSessionResponse);
-      } catch (error) {
-        if (error instanceof DomainError && error.code === 'NO_RESTAURANTS_FOUND') {
-          req.log.warn(
-            {
-              reason: 'no_restaurants_found',
-              ...createContext,
-            },
-            'Rejected REST session create'
-          );
-        } else {
-          req.log.error({ err: error }, 'Error creating session');
-        }
-
-        const { status, body } = toApiError(error);
-        return res.status(status).json(body);
+        throw new DomainError(
+          'VALIDATION_ERROR',
+          'hostName is required and must be 1-50 characters'
+        );
       }
+
+      const { hostName, location, searchRadiusMiles }: CreateSessionRequest = validation.data;
+
+      // Default searchRadiusMiles to 5 if location is provided but radius is not
+      const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;
+      const createContext = {
+        hasLocation: Boolean(location),
+        searchRadiusMiles: radius ?? null,
+      };
+
+      // The expected empty-area outcome is logged with the search context that
+      // explains it; every other failure is the global handler's to log.
+      const session = await sessionService
+        .createSession(hostName, location, radius)
+        .catch((error: unknown) => {
+          if (error instanceof DomainError && error.code === 'NO_RESTAURANTS_FOUND') {
+            req.log.warn(
+              { reason: 'no_restaurants_found', ...createContext },
+              'Rejected REST session create'
+            );
+          }
+          throw error;
+        });
+
+      req.log.info(
+        {
+          sessionCode: session.sessionCode,
+          ...createContext,
+          restaurantCount: session.restaurantCount ?? 0,
+        },
+        'Created REST session'
+      );
+
+      return res.status(201).json(session satisfies CreateSessionResponse);
     })
   );
 
@@ -118,6 +103,9 @@ export function createSessionsRouter(sessionService: SessionService) {
     asyncHandler(async (req, res) => {
       const { sessionCode } = req.params;
 
+      const notFound = () =>
+        new DomainError('SESSION_NOT_FOUND', `Session ${sessionCode} not found or has expired`);
+
       // Validate session code format
       if (!SESSION_CODE_PATTERN.test(sessionCode)) {
         req.log.warn(
@@ -128,10 +116,7 @@ export function createSessionsRouter(sessionService: SessionService) {
           'Rejected REST session get'
         );
 
-        return res.status(404).json({
-          code: 'SESSION_NOT_FOUND',
-          message: `Session ${sessionCode} not found or has expired`,
-        });
+        throw notFound();
       }
 
       // Get session
@@ -146,10 +131,7 @@ export function createSessionsRouter(sessionService: SessionService) {
           'Rejected REST session get'
         );
 
-        return res.status(404).json({
-          code: 'SESSION_NOT_FOUND',
-          message: `Session ${sessionCode} not found or has expired`,
-        });
+        throw notFound();
       }
 
       req.log.info(

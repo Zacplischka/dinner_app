@@ -20,6 +20,7 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   DISPLAY_NAME_TAKEN: { code: 'DISPLAY_NAME_TAKEN', status: 409 },
   SESSION_ALREADY_STARTED: { code: 'SESSION_ALREADY_STARTED', status: 409 },
   NO_RESTAURANTS_FOUND: { code: 'NO_RESTAURANTS_FOUND', status: 404 },
+  NO_RESTAURANTS: { code: 'NO_RESTAURANTS', status: 404 },
   VALIDATION_ERROR: { code: 'VALIDATION_ERROR', status: 400 },
   ALREADY_SUBMITTED: { code: 'ALREADY_SUBMITTED', status: 409 },
   INVALID_RESTAURANTS: { code: 'VALIDATION_ERROR', status: 400 },

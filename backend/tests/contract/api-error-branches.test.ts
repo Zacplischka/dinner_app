@@ -24,7 +24,7 @@ describe('REST API internal error branches', () => {
       code: 'INTERNAL_ERROR',
       message: 'An unexpected error occurred. Please try again later.',
     });
-    expect(logs.withMsg('Error creating session')[0]).toMatchObject({
+    expect(logs.withMsg('Unhandled request error')[0]).toMatchObject({
       err: { message: error.message },
     });
   });

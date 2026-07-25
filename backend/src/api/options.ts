@@ -3,12 +3,9 @@
 
 import { Router } from 'express';
 import { asyncHandler } from './asyncHandler.js';
+import { DomainError } from '../services/DomainError.js';
 import type { SessionStore } from '../store/sessionStore.js';
-import {
-  SESSION_CODE_PATTERN,
-  type ApiError,
-  type LoadRestaurantsResponse,
-} from '@dinder/shared/types';
+import { SESSION_CODE_PATTERN, type LoadRestaurantsResponse } from '@dinder/shared/types';
 
 export function createOptionsRouter(store: SessionStore) {
   const router = Router();
@@ -31,10 +28,7 @@ export function createOptionsRouter(store: SessionStore) {
           'Rejected REST options get'
         );
 
-        return res.status(404).json({
-          code: 'SESSION_NOT_FOUND',
-          message: 'Session not found',
-        } satisfies ApiError);
+        throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
       }
 
       // Check if session exists
@@ -47,10 +41,7 @@ export function createOptionsRouter(store: SessionStore) {
           'Rejected REST options get'
         );
 
-        return res.status(404).json({
-          code: 'SESSION_NOT_FOUND',
-          message: 'Session not found',
-        } satisfies ApiError);
+        throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
       }
 
       const { restaurants, missingCount } = await store.getRestaurants(sessionCode);
@@ -68,10 +59,7 @@ export function createOptionsRouter(store: SessionStore) {
           'Rejected REST options get'
         );
 
-        return res.status(404).json({
-          code: 'NO_RESTAURANTS',
-          message: 'No restaurants found for this session',
-        } satisfies ApiError);
+        throw new DomainError('NO_RESTAURANTS', 'No restaurants found for this session');
       }
 
       req.log.info(
