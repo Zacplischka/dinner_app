@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { getSession } from '../services/apiClient';
-import { leaveSession, restartSession } from '../services/socketBindings';
+import { restartSession } from '../services/socketBindings';
+import { useLeaveSession } from '../hooks/useLeaveSession';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
@@ -92,21 +93,7 @@ export default function SessionLobbyPage() {
     }
   };
 
-  const handleLeaveSession = async () => {
-    if (!sessionCode) {
-      navigate('/');
-      return;
-    }
-
-    try {
-      await leaveSession(sessionCode);
-      navigate('/');
-    } catch (err) {
-      console.error('Failed to leave session:', err);
-      useSessionStore.getState().resetSession();
-      navigate('/');
-    }
-  };
+  const handleLeaveSession = useLeaveSession(sessionCode);
 
   if (isLoading) {
     return (

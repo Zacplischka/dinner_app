@@ -4,7 +4,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants } from '../services/apiClient';
-import { submitSelection, leaveSession, sendLiveSelection } from '../services/socketBindings';
+import { submitSelection, sendLiveSelection } from '../services/socketBindings';
+import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -210,19 +211,7 @@ export default function SelectionPage() {
     }
   };
 
-  const handleLeaveSession = async () => {
-    if (!sessionCode) return;
-
-    try {
-      await leaveSession(sessionCode);
-      navigate('/');
-    } catch (err) {
-      console.error('Failed to leave session:', err);
-      // Still navigate home even if backend call fails
-      useSessionStore.getState().resetSession();
-      navigate('/');
-    }
-  };
+  const handleLeaveSession = useLeaveSession(sessionCode);
 
   // Check if we've gone through all restaurants
   const isDone = currentIndex >= restaurants.length;

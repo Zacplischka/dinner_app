@@ -4,7 +4,8 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Restaurant } from '@dinder/shared/types';
 import type { Participant } from '../types';
-import { restartSession, leaveSession } from '../services/socketBindings';
+import { restartSession } from '../services/socketBindings';
+import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
@@ -331,19 +332,7 @@ export default function ResultsPage() {
     navigate('/');
   };
 
-  const handleLeaveSession = async () => {
-    if (!sessionCode) return;
-
-    try {
-      await leaveSession(sessionCode);
-      useSessionStore.getState().resetSession();
-      navigate('/');
-    } catch (err) {
-      console.error('Failed to leave session:', err);
-      useSessionStore.getState().resetSession();
-      navigate('/');
-    }
-  };
+  const handleLeaveSession = useLeaveSession(sessionCode);
 
   const handleShareResults = () => {
     const url = window.location.href;

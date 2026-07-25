@@ -469,7 +469,7 @@ describe('ComparePage', () => {
     await waitFor(() => expect(getVenues).toHaveBeenCalledTimes(1));
 
     act(() => {
-      useComparisonStore.getState().setLocation({ latitude: -37.9, longitude: 145.1 });
+      useComparisonStore.setState({ location: { latitude: -37.9, longitude: 145.1 } });
     });
     await waitFor(() => expect(getVenues).toHaveBeenCalledTimes(2));
 

@@ -23,15 +23,8 @@ interface ComparisonState {
   sortBy: VenueSort;
   selectedCuisine?: string;
   searchQuery: string;
-  setLocation: (location?: ComparisonLocation) => void;
-  setSuburb: (suburb?: string) => void;
-  setRadiusKm: (radiusKm: number) => void;
-  setVenues: (venues: Venue[]) => void;
-  setScrollY: (scrollY: number) => void;
-  setVisibleCount: (visibleCount: number) => void;
-  setSortBy: (sortBy: VenueSort) => void;
-  setSelectedCuisine: (selectedCuisine?: string) => void;
-  setSearchQuery: (searchQuery: string) => void;
+  // Single-field writes go through useComparisonStore.setState — zustand already
+  // exposes it, so ten one-line setters would only restate the field list.
   reset: () => void;
 }
 
@@ -51,15 +44,6 @@ export const useComparisonStore = create<ComparisonState>()(
   persist(
     (set) => ({
       ...initialState,
-      setLocation: (location) => set({ location }),
-      setSuburb: (suburb) => set({ suburb }),
-      setRadiusKm: (radiusKm) => set({ radiusKm }),
-      setVenues: (venues) => set({ venues }),
-      setScrollY: (scrollY) => set({ scrollY }),
-      setVisibleCount: (visibleCount) => set({ visibleCount }),
-      setSortBy: (sortBy) => set({ sortBy }),
-      setSelectedCuisine: (selectedCuisine) => set({ selectedCuisine }),
-      setSearchQuery: (searchQuery) => set({ searchQuery }),
       reset: () => set(initialState),
     }),
     {

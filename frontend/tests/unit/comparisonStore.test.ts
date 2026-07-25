@@ -11,11 +11,13 @@ describe('comparisonStore', () => {
     const location = { latitude: -37.81, longitude: 144.96 };
     const venues = [{ placeId: 'place-1', name: '11 Inch Pizza', distanceMiles: 0.2 }];
 
-    useComparisonStore.getState().setLocation(location);
-    useComparisonStore.getState().setRadiusKm(8);
-    useComparisonStore.getState().setSuburb('Melbourne');
-    useComparisonStore.getState().setVenues(venues);
-    useComparisonStore.getState().setScrollY(240);
+    useComparisonStore.setState({
+      location,
+      radiusKm: 8,
+      suburb: 'Melbourne',
+      venues,
+      scrollY: 240,
+    });
 
     expect(useComparisonStore.getState()).toMatchObject({
       location,
@@ -38,8 +40,7 @@ describe('comparisonStore', () => {
       },
     ];
 
-    useComparisonStore.getState().setVenues(venues);
-    useComparisonStore.getState().setSelectedCuisine('Pizza restaurant');
+    useComparisonStore.setState({ venues, selectedCuisine: 'Pizza restaurant' });
 
     expect(useComparisonStore.getState()).toMatchObject({
       venues,
@@ -48,8 +49,10 @@ describe('comparisonStore', () => {
   });
 
   it('keeps the Venue search query beside the active Cuisine while the app is open', () => {
-    useComparisonStore.getState().setSelectedCuisine('Pizza Restaurant');
-    useComparisonStore.getState().setSearchQuery('late night');
+    useComparisonStore.setState({
+      selectedCuisine: 'Pizza Restaurant',
+      searchQuery: 'late night',
+    });
 
     expect(useComparisonStore.getState()).toMatchObject({
       selectedCuisine: 'Pizza Restaurant',

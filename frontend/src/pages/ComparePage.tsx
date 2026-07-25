@@ -14,6 +14,9 @@ import {
 import { resolveArea } from '../services/resolveArea';
 import { useComparisonStore, VENUE_PAGE_SIZE } from '../stores/comparisonStore';
 
+// Stable module-level reference, so effects never need it as a dependency.
+const setComparison = useComparisonStore.setState;
+
 function cuisineLabel(cuisine: string) {
   return cuisine.replace(/\s+restaurant$/i, '');
 }
@@ -80,15 +83,6 @@ export default function ComparePage() {
     sortBy,
     selectedCuisine,
     searchQuery,
-    setLocation,
-    setSuburb,
-    setRadiusKm,
-    setVenues,
-    setScrollY,
-    setVisibleCount,
-    setSortBy,
-    setSelectedCuisine,
-    setSearchQuery,
   } = useComparisonStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -141,10 +135,12 @@ export default function ComparePage() {
     getVenues(location, radiusMiles)
       .then((result) => {
         if (activeRequestKey.current === requestKey) {
-          setVenues(result.venues);
-          setVisibleCount(VENUE_PAGE_SIZE);
-          // Keep a manually entered area name when reverse geocoding finds nothing.
-          if (result.suburb) setSuburb(result.suburb);
+          setComparison({
+            venues: result.venues,
+            visibleCount: VENUE_PAGE_SIZE,
+            // Keep a manually entered area name when reverse geocoding finds nothing.
+            ...(result.suburb ? { suburb: result.suburb } : {}),
+          });
         }
       })
       .catch((cause: unknown) => {
@@ -158,12 +154,12 @@ export default function ComparePage() {
           setLoading(false);
         }
       });
-  }, [location, radiusKm, retryNonce, setSuburb, setVenues, setVisibleCount, venues.length]);
+  }, [location, radiusKm, retryNonce, venues.length]);
 
   useEffect(() => {
     if (venues.length > 0) window.scrollTo(0, scrollY);
-    return () => setScrollY(window.scrollY);
-  }, [scrollY, setScrollY, venues.length]);
+    return () => setComparison({ scrollY: window.scrollY });
+  }, [scrollY, venues.length]);
 
   const requestLocation = () => {
     setError('');
@@ -175,9 +171,11 @@ export default function ComparePage() {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        setVenues([]);
-        setSuburb(undefined);
-        setLocation({ latitude: coords.latitude, longitude: coords.longitude });
+        setComparison({
+          venues: [],
+          suburb: undefined,
+          location: { latitude: coords.latitude, longitude: coords.longitude },
+        });
         setIsLocating(false);
       },
       (geoError) => {
@@ -201,9 +199,11 @@ export default function ComparePage() {
     setIsResolvingArea(true);
     try {
       const resolved = await resolveArea(manualQuery);
-      setVenues([]);
-      setSuburb(resolved.area);
-      setLocation({ latitude: resolved.latitude, longitude: resolved.longitude });
+      setComparison({
+        venues: [],
+        suburb: resolved.area,
+        location: { latitude: resolved.latitude, longitude: resolved.longitude },
+      });
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : 'We couldn’t look up that area.');
     } finally {
@@ -212,9 +212,7 @@ export default function ComparePage() {
   };
 
   const changeArea = () => {
-    setVenues([]);
-    setSuburb(undefined);
-    setLocation(undefined);
+    setComparison({ venues: [], suburb: undefined, location: undefined });
     setError('');
   };
 
@@ -252,7 +250,7 @@ export default function ComparePage() {
               min={MIN_RADIUS_KM}
               max={MAX_RADIUS_KM}
               value={radiusKm}
-              onChange={(event) => setRadiusKm(Number(event.target.value))}
+              onChange={(event) => setComparison({ radiusKm: Number(event.target.value) })}
               className="mt-2 w-full accent-coral"
             />
 
@@ -345,7 +343,7 @@ export default function ComparePage() {
                 aria-label="Search Venues"
                 placeholder="Search Venues"
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => setComparison({ searchQuery: event.target.value })}
                 className="input min-h-[48px] w-full"
               />
             )}
@@ -360,7 +358,7 @@ export default function ComparePage() {
                   <button
                     type="button"
                     aria-pressed={!selectedCuisine}
-                    onClick={() => setSelectedCuisine(undefined)}
+                    onClick={() => setComparison({ selectedCuisine: undefined })}
                     className={sortChipClass(!selectedCuisine)}
                   >
                     🍽️ All
@@ -371,7 +369,9 @@ export default function ComparePage() {
                       type="button"
                       aria-pressed={selectedCuisine === cuisine}
                       onClick={() =>
-                        setSelectedCuisine(selectedCuisine === cuisine ? undefined : cuisine)
+                        setComparison({
+                          selectedCuisine: selectedCuisine === cuisine ? undefined : cuisine,
+                        })
                       }
                       className={sortChipClass(selectedCuisine === cuisine)}
                     >
@@ -388,7 +388,7 @@ export default function ComparePage() {
                   <button
                     type="button"
                     aria-pressed={sortBy === 'nearest'}
-                    onClick={() => setSortBy('nearest')}
+                    onClick={() => setComparison({ sortBy: 'nearest' })}
                     className={sortChipClass(sortBy === 'nearest')}
                   >
                     Nearest
@@ -397,7 +397,7 @@ export default function ComparePage() {
                     <button
                       type="button"
                       aria-pressed={sortBy === 'rating'}
-                      onClick={() => setSortBy('rating')}
+                      onClick={() => setComparison({ sortBy: 'rating' })}
                       className={sortChipClass(sortBy === 'rating')}
                     >
                       Top rated
@@ -419,8 +419,7 @@ export default function ComparePage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedCuisine(undefined);
-                    setSearchQuery('');
+                    setComparison({ selectedCuisine: undefined, searchQuery: '' });
                   }}
                   className="btn btn-secondary mt-4 min-h-[44px]"
                 >
@@ -464,7 +463,7 @@ export default function ComparePage() {
             {sortedVenues.length > visibleCount && (
               <button
                 type="button"
-                onClick={() => setVisibleCount(visibleCount + VENUE_PAGE_SIZE)}
+                onClick={() => setComparison({ visibleCount: visibleCount + VENUE_PAGE_SIZE })}
                 className="btn btn-secondary min-h-[48px] w-full"
               >
                 Show {Math.min(VENUE_PAGE_SIZE, sortedVenues.length - visibleCount)} more Venues
