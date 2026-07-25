@@ -13,6 +13,28 @@ export function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: 
   }
 }
 
+/**
+ * Count this IP's request against a fixed window. Returns false once the window
+ * is full — the caller owns the status, message, and Retry-After it answers with.
+ */
+export function admitRequest(
+  requests: Map<string, RequestWindow>,
+  ip: string,
+  limit: number,
+  windowMs: number
+): boolean {
+  const now = Date.now();
+  pruneExpiredRequests(requests, now);
+  const window = requests.get(ip);
+  if (!window) {
+    requests.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (window.count >= limit) return false;
+  window.count++;
+  return true;
+}
+
 export function retryAfterSeconds(
   requests: Map<string, RequestWindow>,
   ip: string,

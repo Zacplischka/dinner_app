@@ -3,12 +3,7 @@ import type { Redis } from 'ioredis';
 import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
 import type { VenueDetails } from '../services/RestaurantSearchService.js';
 import { asyncHandler } from './asyncHandler.js';
-import {
-  pruneExpiredRequests,
-  requestIp,
-  retryAfterSeconds,
-  type RequestWindow,
-} from './rateWindow.js';
+import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
 
 // Counting redirect for results-screen delivery buttons (#72): makes "the
 // group acted on a card" server-countable, then 302s to the Platform's
@@ -28,19 +23,6 @@ interface RedirectRouterDeps {
 export function createRedirectRouter({ fetchPlaceDetails, targetCache }: RedirectRouterDeps) {
   const router = Router();
   const redirectRequests = new Map<string, RequestWindow>();
-
-  const beginUncachedRedirect = (ip: string) => {
-    const now = Date.now();
-    pruneExpiredRequests(redirectRequests, now);
-    const requestCount = redirectRequests.get(ip);
-    if (!requestCount) {
-      redirectRequests.set(ip, { count: 1, resetAt: now + REDIRECT_WINDOW_MS });
-      return true;
-    }
-    if (requestCount.count >= REDIRECT_LIMIT) return false;
-    requestCount.count++;
-    return true;
-  };
 
   router.get(
     '/',
@@ -66,7 +48,7 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
       let target = await targetCache?.get(cacheKey).catch(() => null);
       if (!target) {
         const ip = requestIp(req);
-        if (!beginUncachedRedirect(ip)) {
+        if (!admitRequest(redirectRequests, ip, REDIRECT_LIMIT, REDIRECT_WINDOW_MS)) {
           res.setHeader('Retry-After', retryAfterSeconds(redirectRequests, ip, REDIRECT_WINDOW_MS));
           return res.status(429).json({
             code: 'RATE_LIMITED',

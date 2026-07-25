@@ -10,12 +10,7 @@ import {
 import type { GooglePlacesSearchParams } from '../services/RestaurantSearchService.js';
 import type { ComparisonService } from '../services/ComparisonService.js';
 import { asyncHandler } from './asyncHandler.js';
-import {
-  pruneExpiredRequests,
-  requestIp,
-  retryAfterSeconds,
-  type RequestWindow,
-} from './rateWindow.js';
+import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
 
 interface ComparisonRouterDeps {
   searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<Venue[]>;
@@ -29,6 +24,11 @@ const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
 // Cold Comparisons launch paid Apify actor runs; this caps per-visitor spend (#70).
 const COLD_COMPARE_LIMIT = 5;
 const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
+// Photo and venue lookups are Google-billed on a cache miss.
+const PHOTO_LIMIT = 60;
+const PHOTO_WINDOW_MS = 60_000;
+const VENUE_LIMIT = 30;
+const VENUE_WINDOW_MS = 60_000;
 
 export function createComparisonRouter({
   searchNearbyVenues,
@@ -64,20 +64,13 @@ export function createComparisonRouter({
           return res.redirect(302, cachedPhotoUrl);
         }
 
-        const now = Date.now();
         const ip = requestIp(req);
-        pruneExpiredRequests(photoRequests, now);
-        const requestCount = photoRequests.get(ip);
-        if (!requestCount) {
-          photoRequests.set(ip, { count: 1, resetAt: now + 60_000 });
-        } else if (requestCount.count >= 60) {
-          res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
+        if (!admitRequest(photoRequests, ip, PHOTO_LIMIT, PHOTO_WINDOW_MS)) {
+          res.setHeader('Retry-After', retryAfterSeconds(photoRequests, ip, PHOTO_WINDOW_MS));
           return res.status(429).json({
             code: 'RATE_LIMITED',
             message: 'Too many photo requests. Please try again shortly.',
           } satisfies ApiError);
-        } else {
-          requestCount.count++;
         }
 
         const photoUrl = await fetchPlacePhoto(photoName);
@@ -88,19 +81,6 @@ export function createComparisonRouter({
       })
     );
   }
-
-  const beginColdCompare = (ip: string) => {
-    const now = Date.now();
-    pruneExpiredRequests(coldCompareRequests, now);
-    const requestCount = coldCompareRequests.get(ip);
-    if (!requestCount) {
-      coldCompareRequests.set(ip, { count: 1, resetAt: now + COLD_COMPARE_WINDOW_MS });
-      return true;
-    }
-    if (requestCount.count >= COLD_COMPARE_LIMIT) return false;
-    requestCount.count++;
-    return true;
-  };
 
   if (comparisonService) {
     router.get('/:placeId/stream', (req, res) => {
@@ -150,7 +130,10 @@ export function createComparisonRouter({
           res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
           if (type === 'comparison' || type === 'error') res.end();
         },
-        { beginColdCompare: () => beginColdCompare(ip) }
+        {
+          beginColdCompare: () =>
+            admitRequest(coldCompareRequests, ip, COLD_COMPARE_LIMIT, COLD_COMPARE_WINDOW_MS),
+        }
       );
       return undefined;
     });
@@ -167,20 +150,13 @@ export function createComparisonRouter({
         } satisfies ApiError);
       }
 
-      const now = Date.now();
       const ip = requestIp(req);
-      pruneExpiredRequests(venueRequests, now);
-      const requestCount = venueRequests.get(ip);
-      if (!requestCount) {
-        venueRequests.set(ip, { count: 1, resetAt: now + 60_000 });
-      } else if (requestCount.count >= 30) {
-        res.setHeader('Retry-After', Math.ceil((requestCount.resetAt - now) / 1000));
+      if (!admitRequest(venueRequests, ip, VENUE_LIMIT, VENUE_WINDOW_MS)) {
+        res.setHeader('Retry-After', retryAfterSeconds(venueRequests, ip, VENUE_WINDOW_MS));
         return res.status(429).json({
           code: 'RATE_LIMITED',
           message: 'Too many venue searches. Please try again shortly.',
         } satisfies ApiError);
-      } else {
-        requestCount.count++;
       }
 
       const [venues, suburb] = await Promise.all([

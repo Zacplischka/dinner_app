@@ -5,7 +5,7 @@ import { Router } from 'express';
 import type { ApiError, GeocodedArea } from '@dinder/shared/types';
 import { asyncHandler } from './asyncHandler.js';
 import {
-  pruneExpiredRequests,
+  admitRequest,
   queryNumber,
   requestIp,
   retryAfterSeconds,
@@ -52,20 +52,13 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
         } satisfies ApiError);
       }
 
-      const now = Date.now();
       const ip = requestIp(req);
-      pruneExpiredRequests(geocodeRequests, now);
-      const window = geocodeRequests.get(ip);
-      if (!window) {
-        geocodeRequests.set(ip, { count: 1, resetAt: now + GEOCODE_WINDOW_MS });
-      } else if (window.count >= GEOCODE_LIMIT) {
+      if (!admitRequest(geocodeRequests, ip, GEOCODE_LIMIT, GEOCODE_WINDOW_MS)) {
         res.setHeader('Retry-After', retryAfterSeconds(geocodeRequests, ip, GEOCODE_WINDOW_MS));
         return res.status(429).json({
           code: 'RATE_LIMITED',
           message: 'Too many location lookups. Please try again shortly.',
         } satisfies ApiError);
-      } else {
-        window.count++;
       }
 
       if (hasCoords) {
