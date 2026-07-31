@@ -1,0 +1,17 @@
+{
+  "why": "The chosen recipe source (Spoonacular, per dinner_app#226) is US-English. Coles is an AU retailer. Every ingredient name arriving from the deck will be US-worded. This pass asks Coles search the US word directly and records what comes back.",
+  "pairs": [
+    {"us": "cilantro", "au": "coriander"},
+    {"us": "ground beef", "au": "beef mince"},
+    {"us": "bell pepper", "au": "capsicum"},
+    {"us": "scallions", "au": "spring onions"},
+    {"us": "heavy cream", "au": "thickened cream"},
+    {"us": "all purpose flour", "au": "plain flour"},
+    {"us": "cornstarch", "au": "cornflour"},
+    {"us": "shrimp", "au": "prawns"},
+    {"us": "eggplant", "au": "eggplant"},
+    {"us": "arugula", "au": "rocket"},
+    {"us": "napa cabbage", "au": "wombok"},
+    {"us": "zucchini", "au": "zucchini"}
+  ]
+}

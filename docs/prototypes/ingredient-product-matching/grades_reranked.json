@@ -1,0 +1,18 @@
+{
+  "_note": "Overrides for the 15 ingredients whose pick the re-ranker changed. Everything else keeps its grade from grades.json.",
+  "beef mince": ["exact", "Woolworths Heart Smart Extra Lean Beef Mince 500g - fixed"],
+  "beef brisket": ["exact", "Woolworths Beef Brisket 1.5-2.5kg - fixed"],
+  "panko breadcrumbs": ["exact", "Obento Japanese panko 200g - lateral swap, still right"],
+  "desiree potatoes": ["plausible", "2kg washed potato bag; variety still lost but pack now sane"],
+  "lemon": ["wrong", "Mr Kipling Lemon Slice cakes - different wrong answer, still wrong"],
+  "tomatoes": ["exact", "truss tomatoes, each - lateral swap"],
+  "potato": ["exact", "Potato White Washed each x2 - fixed"],
+  "chicken stock": ["exact", "Nuttelex Chicken Stock 1L - keyword rule kept 'chicken'"],
+  "sour cream": ["exact", "Woolworths Sour Cream 300mL - fixed by g==mL"],
+  "avocado": ["exact", "Hass Avocado each - fixed"],
+  "pita bread": ["plausible", "Greek pita wraps rather than pockets - mild regression, now priceable"],
+  "parmesan cheese": ["plausible", "Grana Padano 200g $11.90 replaced grated Parmigiano 100g $4.80 - regression"],
+  "naan bread": ["exact", "Mission Naan Bread 4 pack - fixed, and the count now works"],
+  "lime": ["exact", "Lime Fresh each - fixed"],
+  "sourdough bread": ["exact", "Helga's sourdough loaf - lateral swap"]
+}
