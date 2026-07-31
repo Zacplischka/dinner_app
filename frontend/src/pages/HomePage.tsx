@@ -1,12 +1,18 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import UserMenu from '../components/UserMenu';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
+// PROTOTYPE (issue #230) — remove with EntryForkPrototype.tsx.
+import EntryForkPrototype, { PrototypeSwitcher } from './EntryForkPrototype';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const variant = params.get('variant');
+  // Variant B keeps today's Home and puts the fork *after* it; A and C replace Home outright.
+  const showRealHome = !variant || (variant === 'B' && !params.get('screen'));
   const { isAuthenticated, isLoading } = useAuthStore();
   const { friendRequests, sessionInvites, fetchFriendRequests, fetchSessionInvites } =
     useFriendsStore();
@@ -19,6 +25,15 @@ export default function HomePage() {
   }, [isAuthenticated, fetchFriendRequests, fetchSessionInvites]);
 
   const notificationCount = friendRequests.length + sessionInvites.length;
+
+  if (!showRealHome) {
+    return (
+      <>
+        <EntryForkPrototype />
+        <PrototypeSwitcher current={variant ?? 'A'} />
+      </>
+    );
+  }
 
   return (
     <main className="market-backdrop min-h-screen px-4 pb-16">
@@ -98,10 +113,11 @@ export default function HomePage() {
 
           <div className="grid gap-3 sm:flex">
             <button
-              onClick={() => navigate('/create')}
+              onClick={() => navigate(variant === 'B' ? '/?variant=B&screen=fork' : '/create')}
               className="btn btn-primary min-h-[58px] px-6 text-base"
             >
-              <span aria-hidden="true">＋</span> Create Session
+              <span aria-hidden="true">＋</span>{' '}
+              {variant === 'B' ? 'Start deciding' : 'Create Session'}
             </button>
             <button
               onClick={() => navigate('/join')}
@@ -156,6 +172,7 @@ export default function HomePage() {
           </article>
         </div>
       </section>
+      {variant && <PrototypeSwitcher current={variant} />}
     </main>
   );
 }
