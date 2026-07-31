@@ -1,0 +1,28 @@
+<meta name="isAdaptive" content="true">
+<meta name="title" content="Garlic Head each | Woolworths">
+<meta name="description" content="Garlic Head is your versatile choice for adding flavour to meals. It's an aromatic ingredient, making it simple to enhance any dish. Shop now at Woolworths.">
+<meta name="url" content="https://www.woolworths.com.au/shop/productdetails/713429/woolworths-garlic-head">
+<meta property="og:title" content="Garlic Head each | Woolworths">
+<meta property="og:description" content="Garlic Head is your versatile choice for adding flavour to meals. It's an aromatic ingredient, making it simple to enhance any dish. Shop now at Woolworths.">
+<meta property="og:type" content="product">
+<meta property="og:url" content="https://www.woolworths.com.au/shop/productdetails/713429/woolworths-garlic-head">
+<meta property="og:image" content="https://cdn0.woolworths.media/content/wowproductimages/small/713429.jpg">
+<meta property="og:site_name" content="Woolworths">
+<meta name="twitter:title" content="Garlic Head each | Woolworths">
+<meta name="twitter:description" content="Garlic Head is your versatile choice for adding flavour to meals. It's an aromatic ingredient, making it simple to enhance any dish. Shop now at Woolworths.">
+<meta name="twitter:image" content="https://cdn0.woolworths.media/content/wowproductimages/small/713429.jpg">
+<meta name="twitter:site" content="@woolworths">
+<meta name="twitter:creator" content="@woolworths">
+<meta name="twitter:card" content="summary_large_image">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="rgb(18,84,48)">
+<meta property="fb:app_id" content="402900946438096">
+<meta name="trader_backendVersion" content>
+<meta name="trader_frontendVersion" content>
+<meta name="frontendVersion" content="20260728.1">
+<meta name="frontendLocation" content="Sydney">
+<meta name="msvalidate.01" content="C7A59379F3DEBD686360E05A6903D476">
+<meta name="next-head-count" content="3">
+<meta property="cq:pagemodel_root_url" content="/content/woolworths-foodhub/en.model.json">
+<meta property="cq:pagemodel_router" content="disabled">

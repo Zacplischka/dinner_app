@@ -1,0 +1,23 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.woolworths",
+    "sha256_cert_fingerprints":
+    [
+      "41:0F:9A:43:72:FC:C0:76:BD:90:AC:C4:A0:6F:96:D5:24:CC:1E:69:2E:79:18:1F:05:0C:78:21:8C:39:27:D5",
+      "0F:F9:94:E3:53:41:06:D9:36:E1:EC:D4:BF:D2:03:13:85:9D:3F:4A:22:6A:C6:31:2D:4B:22:4D:F8:FB:83:8C"
+    ]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.woolworths.debug",
+    "sha256_cert_fingerprints":
+    [
+      "AF:35:FE:62:F8:11:02:16:8D:B4:7F:15:91:A3:9B:43:0E:9C:B0:93:F7:57:AC:99:B2:FC:19:2E:C1:A8:E3:96"
+    ]
+  }
+}]

@@ -1,0 +1,162 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "7G2EZGEQH4.com.woolworths.supers",
+        "components": [
+          {
+            "#": "postSuccessLogin",
+            "exclude": true,
+            "comment": "Prevents app opening on login redirects ending with #postSuccessLogin"
+          },
+          {
+            "/": "/",
+            "comment": "Frontpage"
+          },
+          {
+            "/": "/shop/productdetails/*"
+          },
+          {
+            "/": "/shop/recipes/inspiration",
+            "exclude": true,
+            "comment": "Excludes /shop/recipes/inspiration"
+          },
+          {
+            "/": "/shop/recipes/inspiration/*",
+            "exclude": true,
+            "comment": "Excludes /shop/recipes/inspiration/"
+          },
+          {
+            "/": "/shop/recipes"
+          },
+          {
+            "/": "/shop/recipes/*"
+          },
+          {
+            "/": "/shop/catalogue"
+          },
+          {
+            "/": "/shop/discover/everyday-market"
+          },
+          {
+            "/": "/shop/discover/christmas"
+          },
+          {
+            "/": "/shop/discover/shopping-online"
+          },
+          {
+            "/": "/shop/browse/specials/half-price"
+          },
+          {
+            "/": "/shop/browse/specials/buy-more-save-more"
+          },
+          {
+            "/": "/shop/browse/specials/prices-dropped"
+          },
+          {
+            "/": "/shop/browse/specials/everyday-low-price"
+          },
+          {
+            "/": "/shop/browse/specials/member-price"
+          },
+          {
+            "/": "/shop/guides",
+            "exclude": true
+          },
+          {
+            "/": "/shop/guides/*"
+          },
+          {
+            "/": "/shop/videos",
+            "exclude": true
+          },
+          {
+            "/": "/shop/videos/*"
+          },
+          {
+            "/": "/shop/articles",
+            "exclude": true
+          },
+          {
+            "/": "/shop/articles/*"
+          },
+          {
+            "/": "/shop/myaccount/myorders/*"
+          },
+          {
+            "/": "/shop/myaccount/yourgroceries/*"
+          },
+          {
+            "/": "/shop/brands/*"
+          },
+          {
+            "/": "/shop/signup"
+          },
+          {
+            "/": "/shop/ideas",
+            "exclude": true
+          },
+          {
+            "/": "/shop/ideas/*"
+          },
+          {
+            "/": "/shop/services",
+            "exclude": true
+          },
+          {
+            "/": "/shop/services/*"
+          },
+          {
+            "/": "/shop/help",
+            "exclude": true
+          },
+          {
+            "/": "/shop/help/*"
+          },
+          {
+            "/": "/shop/about",
+            "exclude": true
+          },
+          {
+            "/": "/shop/about/*"
+          },
+          {
+            "/": "/shop/everyday",
+            "exclude": true
+          },
+          {
+            "/": "/shop/everyday/*"
+          },
+          {
+            "/": "/shop/events",
+            "exclude": true
+          },
+          {
+            "/": "/shop/events/*"
+          },
+          {
+            "/": "/shop/browse",
+            "exclude": true
+          },
+          {
+            "/": "/shop/browse/*"
+          },
+          {
+            "/": "/shop/search/products"
+          },
+          {
+            "/": "/shop/explore",
+            "exclude": true
+          },
+          {
+            "/": "/shop/explore/*"
+          }
+        ],
+        "paths": [
+          "/"
+        ]
+      }
+    ]
+  }
+}
