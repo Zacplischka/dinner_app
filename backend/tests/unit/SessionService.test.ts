@@ -1020,12 +1020,15 @@ describe('SessionService', () => {
         5
       );
 
-      expect(searchNearbyRestaurants).toHaveBeenCalledWith({
+      // closeTo's second argument is a digit count, not a tolerance — assert
+      // the documented 1-metre allowance explicitly.
+      const searchArgs = searchNearbyRestaurants.mock.calls[0][0];
+      expect(searchArgs).toMatchObject({
         latitude: 37.7749,
         longitude: -122.4194,
-        radiusMeters: expect.closeTo(8046.7, 1), // 5 miles in meters (allow 1 meter tolerance)
         maxResults: 20,
       });
+      expect(Math.abs(searchArgs.radiusMeters - 8046.7)).toBeLessThanOrEqual(1); // 5 miles in meters, ±1 m
 
       expect(result.restaurantCount).toBe(2);
       expect(logSpy).toHaveBeenCalledWith(
@@ -1124,12 +1127,15 @@ describe('SessionService', () => {
 
       await SessionService.createSession('Alice', { latitude: 37.7749, longitude: -122.4194 }, 10);
 
-      expect(searchNearbyRestaurants).toHaveBeenCalledWith({
+      // closeTo's second argument is a digit count, not a tolerance — assert
+      // the documented 1-metre allowance explicitly.
+      const searchArgs = searchNearbyRestaurants.mock.calls[0][0];
+      expect(searchArgs).toMatchObject({
         latitude: 37.7749,
         longitude: -122.4194,
-        radiusMeters: expect.closeTo(16093.4, 1), // 10 miles in meters (allow 1 meter tolerance)
         maxResults: 20,
       });
+      expect(Math.abs(searchArgs.radiusMeters - 16093.4)).toBeLessThanOrEqual(1); // 10 miles in meters, ±1 m
     });
   });
 
