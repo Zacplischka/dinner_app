@@ -25,6 +25,7 @@ describe('SessionService', () => {
   let searchNearbyRestaurants: ReturnType<typeof vi.fn>;
   let dealRecipeDeck: ReturnType<typeof vi.fn>;
   let redealRecipeDeck: ReturnType<typeof vi.fn>;
+  let mintShoppingList: ReturnType<typeof vi.fn>;
   let SessionService: ReturnType<typeof createSessionService>;
 
   beforeEach(async () => {
@@ -35,11 +36,13 @@ describe('SessionService', () => {
     searchNearbyRestaurants = vi.fn();
     dealRecipeDeck = vi.fn();
     redealRecipeDeck = vi.fn();
+    mintShoppingList = vi.fn(async () => undefined);
     SessionService = createSessionService({
       store,
       searchNearbyRestaurants,
       dealRecipeDeck,
       redealRecipeDeck,
+      mintShoppingList,
     });
 
     vi.spyOn(logger, 'info').mockImplementation(() => undefined);
@@ -1176,6 +1179,42 @@ describe('SessionService', () => {
           of: 2,
         });
       });
+
+      // The Cook ending (#262): the crown is where the Shopping List is minted.
+      it('mints the Shopping List for the crowned Recipe', async () => {
+        mintShoppingList.mockResolvedValue('list-1');
+        const sessionCode = await createSessionWithRecipeDeck([
+          { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', ['rec1']);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['rec1']);
+
+        expect(mintShoppingList).toHaveBeenCalledWith(sessionCode, 'rec1');
+        expect(results?.shoppingListId).toBe('list-1');
+      });
+
+      it('never costs the group their Match when the mint cannot start', async () => {
+        mintShoppingList.mockRejectedValue(new Error('Redis unavailable'));
+        const sessionCode = await createSessionWithRecipeDeck([
+          { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', ['rec1']);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['rec1']);
+
+        expect(results?.topPick?.restaurant.placeId).toBe('rec1');
+        expect(results?.shoppingListId).toBeUndefined();
+      });
+    });
+
+    it('mints nothing for a crowned Restaurant', async () => {
+      const sessionCode = await createSessionWithDeck([
+        { placeId: 'r1', name: 'Pizza Place', rating: 4.5 },
+      ]);
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['r1']);
+      const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['r1']);
+
+      expect(results?.topPick?.restaurant.placeId).toBe('r1');
+      expect(mintShoppingList).not.toHaveBeenCalled();
     });
   });
 

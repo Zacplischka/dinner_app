@@ -115,8 +115,12 @@ describe('createSpoonacularClient', () => {
           name: 'Pasta with Garlic',
           photoUrl: 'https://img.spoonacular.com/716429.jpg',
           aggregateLikes: 209,
-          // servings, sourceUrl and credit are deliberately not pooled — #262
-          // and #265 add them when they read them.
+          // Pooled for the mint (#262): servings is the scale's denominator,
+          // and the credit is snapshotted with the steps because the list
+          // outlives the pool it was read from.
+          servings: 2,
+          sourceName: 'Full Belly Sisters',
+          sourceUrl: 'https://example.test/pasta',
           ingredients: [{ name: 'garlic', amount: 2, unit: 'cloves', original: '2 cloves garlic' }],
           steps: ['Boil the pasta.', 'Fry garlic.'],
         },

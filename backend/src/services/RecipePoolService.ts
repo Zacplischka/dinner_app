@@ -78,6 +78,12 @@ export interface RecipePoolService {
    * and recipe supply is not, which is the whole reason for the divergence.
    */
   redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]>;
+  /**
+   * The whole pooled Recipe behind a dealt card — ingredients, steps, servings,
+   * credit — which is what the Shopping List is minted from (#262). Null once
+   * the pool has aged out; the mint degrades rather than paying a lookup.
+   */
+  readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null>;
 }
 
 /** Fisher-Yates over a copy — the caller's pool is never reordered. */
@@ -179,6 +185,11 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
       const fresh = pool.filter((recipe) => !wiped.has(recipe.placeId));
       const repeats = pool.filter((recipe) => wiped.has(recipe.placeId));
       return [...shuffle(fresh), ...shuffle(repeats)].slice(0, deckSize).map(toDeckEntry);
+    },
+
+    async readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null> {
+      const pool = await readPool(poolKey);
+      return pool?.find((recipe) => recipe.placeId === placeId) ?? null;
     },
   };
 }

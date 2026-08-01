@@ -116,6 +116,13 @@ export interface SessionResultsEvent {
   hasOverlap: boolean;
   /** Additive (ADR 0007): absent from an older backend; a Session with zero Restaurants has none. */
   topPick?: TopPick;
+  /**
+   * The Shopping List a completed Cook Session minted from its Top Pick (#262),
+   * as the id of its own URL. Absent outside the Cook Branch, and absent when
+   * the crowned Recipe's ingredients could no longer be read. Minting continues
+   * in the background — the list URL answers as soon as the mint lands.
+   */
+  shoppingListId?: string;
 }
 
 export interface SessionRestartedEvent {

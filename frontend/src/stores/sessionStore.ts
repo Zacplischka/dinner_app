@@ -33,6 +33,8 @@ interface SessionState {
   restaurantNames: Record<string, string>; // placeId -> name mapping for display
   overlappingOptions: DeckEntry[];
   topPick?: { restaurant: DeckEntry; likedBy: number; of: number };
+  /** The Shopping List the Cook ending minted, as the id of its own URL (#262). */
+  shoppingListId?: string;
 
   // The crowned placeId a Group Order was opened for (set when "Order
   // together" is tapped). Persisted so a hard reload of /order can re-fire
@@ -92,6 +94,7 @@ const initialState = {
   restaurantNames: {},
   overlappingOptions: [],
   topPick: undefined,
+  shoppingListId: undefined,
   orderPlaceId: null,
   sessionStatus: 'waiting' as const,
   isConnected: false,
@@ -165,6 +168,7 @@ export const useSessionStore = create<SessionState>()(
             restaurantNames: results.restaurantNames || {},
             overlappingOptions: results.overlappingOptions,
             topPick: results.topPick,
+            shoppingListId: results.shoppingListId,
             sessionStatus: 'complete',
           }),
 
@@ -192,6 +196,7 @@ export const useSessionStore = create<SessionState>()(
             restaurantNames: {},
             overlappingOptions: [],
             topPick: undefined,
+            shoppingListId: undefined,
             orderPlaceId: null,
             sessionStatus: 'selecting',
           });

@@ -30,16 +30,23 @@ export interface PooledIngredient {
 
 /**
  * A Recipe as the shared per-Craving pool holds it: the Deck Entry the wire
- * carries (title, image, aggregate likes) plus the ingredients and steps that
- * ride along for the Shopping List the Top Pick later mints (#262). Only the
- * DeckEntry half is ever dealt onto the wire.
+ * carries (title, image, aggregate likes) plus everything the Shopping List
+ * the Top Pick later mints needs (#262). Only the DeckEntry half is ever dealt
+ * onto the wire.
  *
- * Nothing else off the source's response is pooled: servings, source URL and
- * credit are #262's and #265's to add when they read them.
+ * `servings` is what the amounts below are stated for, and so the denominator
+ * of the scale to the Headcount. `sourceName`/`sourceUrl` are snapshotted into
+ * the list at mint alongside the steps, for the same reason the steps are:
+ * cooking happens days after the pool has aged out, and the credit line is the
+ * license obligation attached to showing the method (#247).
  */
 export interface PooledRecipe extends Recipe {
   ingredients: PooledIngredient[];
   steps: string[];
+  /** Absent when the source didn't say; the mint then scales by nothing. */
+  servings?: number;
+  sourceName?: string;
+  sourceUrl?: string;
 }
 
 export interface SpoonacularClient {
@@ -59,6 +66,9 @@ interface RecipeSearchResult {
   title?: unknown;
   image?: unknown;
   aggregateLikes?: unknown;
+  servings?: unknown;
+  sourceName?: unknown;
+  sourceUrl?: unknown;
   extendedIngredients?: Array<{
     name?: unknown;
     amount?: unknown;
@@ -82,6 +92,9 @@ function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
     name,
     photoUrl: text(result.image),
     aggregateLikes: number(result.aggregateLikes),
+    servings: number(result.servings),
+    sourceName: text(result.sourceName),
+    sourceUrl: text(result.sourceUrl),
     ingredients: (result.extendedIngredients ?? []).flatMap((ingredient) => {
       const ingredientName = text(ingredient.name);
       return ingredientName === undefined

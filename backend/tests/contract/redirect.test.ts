@@ -113,6 +113,61 @@ describe('GET /api/redirect', () => {
     expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
   });
 
+  // The Shopping List's Retailer links ride the same seam (#228, #238): the tap
+  // is counted server-side, then 302s to Woolworths' own web page.
+  describe('Retailer links', () => {
+    it('302-redirects a Stockcode to the Woolworths product page', async () => {
+      const response = await request(buildApp()).get(
+        '/api/redirect?retailer=woolworths&stockcode=12345'
+      );
+
+      expect(response.status).toBe(302);
+      expect(response.headers.location).toBe(
+        'https://www.woolworths.com.au/shop/productdetails/12345'
+      );
+    });
+
+    it('302-redirects an Unmatched line to a Woolworths search', async () => {
+      const response = await request(buildApp()).get(
+        '/api/redirect?retailer=woolworths&q=coriander%20leaves'
+      );
+
+      expect(response.status).toBe(302);
+      expect(response.headers.location).toBe(
+        'https://www.woolworths.com.au/shop/search/products?searchTerm=coriander%20leaves'
+      );
+    });
+
+    it('emits one countable log line and pays for no Places lookup', async () => {
+      const app = buildApp();
+      const logs = captureLogs();
+
+      await request(app).get('/api/redirect?retailer=woolworths&stockcode=12345');
+
+      expect(logs.withMsg('Retailer redirect')[0]).toMatchObject({
+        retailer: 'woolworths',
+        stockcode: '12345',
+      });
+      expect(fetchPlaceDetails).not.toHaveBeenCalled();
+    });
+
+    it('rejects unknown Retailers and a target it cannot name with 400', async () => {
+      const app = buildApp();
+      const badRequests = [
+        '/api/redirect?retailer=coles&stockcode=12345',
+        '/api/redirect?retailer=woolworths',
+        '/api/redirect?retailer=woolworths&stockcode=abc',
+        '/api/redirect?retailer=woolworths&q=',
+      ];
+
+      for (const url of badRequests) {
+        const response = await request(app).get(url);
+        expect(response.status, url).toBe(400);
+        expect(response.body.code).toBe('VALIDATION_ERROR');
+      }
+    });
+  });
+
   it('rejects unknown platforms, unknown sources, and missing parameters with 400', async () => {
     const app = buildApp();
     const badRequests = [

@@ -22,6 +22,7 @@ import type {
   SessionInvitesResponse,
   SessionLocation,
   SessionResponse,
+  ShoppingListResponse,
   UserProfile,
   VenueSearchRequest,
   VenueSearchResponse,
@@ -104,6 +105,25 @@ export async function getSession(sessionCode: string): Promise<SessionResponse> 
 export async function getRestaurants(sessionCode: string): Promise<DeckEntry[]> {
   const data = await request<LoadRestaurantsResponse>(`/options/${sessionCode}`);
   return resolvePhotoUrls(data.restaurants);
+}
+
+/**
+ * Read a Shopping List. Anonymous by design: the URL is the whole capability,
+ * so this must never carry a token or a session (#229).
+ */
+export async function getShoppingList(listId: string): Promise<ShoppingListResponse> {
+  return request<ShoppingListResponse>(`/lists/${encodeURIComponent(listId)}`);
+}
+
+/**
+ * Every outbound Retailer link goes through the backend's counting redirect
+ * (#228) — a product page by Stockcode, or a search for an Unmatched line.
+ * Same shape as the delivery redirect the Match card already uses.
+ */
+export function retailerRedirectUrl(target: { stockcode: number } | { q: string }): string {
+  const query =
+    'stockcode' in target ? `stockcode=${target.stockcode}` : `q=${encodeURIComponent(target.q)}`;
+  return `${API_BASE_URL}/redirect?retailer=woolworths&${query}`;
 }
 
 export async function getVenues(
