@@ -40,6 +40,30 @@ function MatchHero({ photoUrl }: { photoUrl: string }) {
   );
 }
 
+// The Cook ending (#259): the crowned Recipe, outright. Title and image are
+// all a Recipe carries, and there is no second chooser — no other-matches list,
+// no delivery links, nothing to compare. The Shopping List is the next slice.
+function RecipeCrown({
+  recipe,
+  reason,
+}: {
+  recipe: { name: string; photoUrl?: string };
+  reason: string;
+}) {
+  return (
+    <div
+      data-match-card
+      data-recipe-crown
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+    >
+      {recipe.photoUrl && <MatchHero photoUrl={recipe.photoUrl} />}
+      <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">TONIGHT&rsquo;S COOK</p>
+      <p className="text-lg font-semibold text-text">{recipe.name}</p>
+      <p className="text-sm text-muted mt-1">{reason}</p>
+    </div>
+  );
+}
+
 // priceLevel is omitted from the data when unknown; 0 means genuinely free.
 const formatPriceLevel = (level: number): string => {
   if (level === 0) return 'Free';
@@ -233,16 +257,27 @@ export default function ResultsPage() {
   const [error, setError] = useState('');
   const toast = useToast();
 
-  // This is the restaurant ending, and a Recipe is filtered away here rather
-  // than rendered — see isRestaurant before routing a Cook Session at it.
+  // Everything below the crown — other matches, Near Misses, delivery links —
+  // is restaurant chrome, so Recipes are filtered out of it. The crown itself
+  // renders either kind: a Cook Session ends at the crowned Recipe (#259).
   const overlappingOptions = matchedEntries.filter(isRestaurant);
   const restaurants = deckEntries.filter(isRestaurant);
   const topPick =
     crownedEntry && isRestaurant(crownedEntry.restaurant)
       ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
       : undefined;
+  const crownedRecipe =
+    crownedEntry && !isRestaurant(crownedEntry.restaurant)
+      ? { ...crownedEntry, recipe: crownedEntry.restaurant }
+      : undefined;
 
-  const hasOverlap = overlappingOptions.length > 0;
+  // A Deck never mixes kinds, so either signal answers "is this a Cook
+  // Session?" — the crown covers a Participant whose local Deck is empty.
+  const isCookDeck = Boolean(crownedRecipe) || deckEntries.some((entry) => !isRestaurant(entry));
+
+  // Kind-agnostic: for a restaurant Deck this is exactly overlappingOptions,
+  // and for a Recipe Deck it is the Match the celebration should fire on.
+  const hasOverlap = matchedEntries.length > 0;
 
   // An older backend sends no topPick; crown the best-rated Match rather than branching the UI.
   const fallbackCrown = [...overlappingOptions].sort(
@@ -365,6 +400,21 @@ export default function ResultsPage() {
     return "Nobody swiped yes, so here's the highest rated nearby.";
   };
 
+  // The same rungs in the Recipe's own words: aggregate likes stands in for a
+  // rating, and there is nothing "nearby" about a dish you cook.
+  const recipeReason = (crowned: NonNullable<typeof crownedRecipe>): string => {
+    if (crowned.likedBy === crowned.of && matchedEntries.length === 1) {
+      return 'Everyone swiped yes on this one.';
+    }
+    if (crowned.likedBy === crowned.of && matchedEntries.length > 1) {
+      return `Everyone swiped yes — the most popular of your ${matchedEntries.length} matches.`;
+    }
+    if (crowned.likedBy > 0 && crowned.likedBy < crowned.of) {
+      return `${crowned.likedBy} of ${crowned.of} swiped yes — the closest you got.`;
+    }
+    return "Nobody swiped yes, so here's the most popular one.";
+  };
+
   return (
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
@@ -414,7 +464,11 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {pick ? (
+        {crownedRecipe ? (
+          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+            <RecipeCrown recipe={crownedRecipe.recipe} reason={recipeReason(crownedRecipe)} />
+          </div>
+        ) : pick ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
             {/* The crowned Restaurant is the dominant surface — no wrapper card
                 competing with it. Warm glow is reflected light from the celebration. */}
@@ -503,7 +557,7 @@ export default function ResultsPage() {
 
         {/* Near Misses: the all-but-one tier, counts only, never names.
             The crowned placeId is already excluded (see nearMisses above). */}
-        {!hasOverlap && nearMisses.length > 0 && (
+        {!hasOverlap && !isCookDeck && nearMisses.length > 0 && (
           <div className="card mb-6">
             <h2 className="text-xl font-display font-semibold text-text mb-1">So Close</h2>
             <p className="text-sm text-muted mb-4">

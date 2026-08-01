@@ -3,6 +3,7 @@
 // Spoonacular call must flow through — the #261 daily-points guard wraps it.
 // api.spoonacular.com sits behind Cloudflare, which 403s non-browser user
 // agents (#244), so the browser UA is pinned like the Woolworths client's.
+import type { Craving, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { number } from './storefrontResolution.js';
 
@@ -18,11 +19,93 @@ export interface IngredientInfo {
   consistency: 'liquid' | 'solid' | null;
 }
 
+/** One ingredient of a pooled Recipe, as the source states it. */
+export interface PooledIngredient {
+  name: string;
+  amount: number;
+  unit: string;
+  /** The recipe's own wording — an Unmatched line falls back to it (#262). */
+  original: string;
+}
+
+/**
+ * A Recipe as the shared per-Craving pool holds it: the Deck Entry the wire
+ * carries (title, image, aggregate likes) plus the ingredients and steps that
+ * ride along for the Shopping List the Top Pick later mints (#262). Only the
+ * DeckEntry half is ever dealt onto the wire.
+ */
+export interface PooledRecipe extends Recipe {
+  servings?: number;
+  sourceUrl?: string;
+  /** Source credit, shown at the end of the method (#265). */
+  credit?: string;
+  ingredients: PooledIngredient[];
+  steps: string[];
+}
+
 export interface SpoonacularClient {
   /** Grams for one `sourceUnit` of the ingredient; null when Convert answers
    * without a number. Transport failures throw — the ladder falls through. */
   gramsPerUnit(ingredientName: string, sourceUnit: string): Promise<number | null>;
   ingredientInfo(ingredientName: string): Promise<IngredientInfo>;
+  /** One page of the Craving's recipe pool. Transport failures throw. */
+  searchRecipes(
+    craving: Craving,
+    page: { number: number; offset: number }
+  ): Promise<PooledRecipe[]>;
+}
+
+interface RecipeSearchResult {
+  id?: unknown;
+  title?: unknown;
+  image?: unknown;
+  aggregateLikes?: unknown;
+  servings?: unknown;
+  sourceUrl?: unknown;
+  sourceName?: unknown;
+  extendedIngredients?: Array<{
+    name?: unknown;
+    amount?: unknown;
+    unit?: unknown;
+    original?: unknown;
+  }>;
+  analyzedInstructions?: Array<{ steps?: Array<{ step?: unknown }> }>;
+}
+
+const text = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim() !== '' ? value : undefined;
+
+function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
+  const id = number(result.id);
+  const name = text(result.title);
+  if (id === undefined || name === undefined) return null;
+
+  return {
+    kind: 'recipe',
+    placeId: String(id),
+    name,
+    photoUrl: text(result.image),
+    aggregateLikes: number(result.aggregateLikes),
+    servings: number(result.servings),
+    sourceUrl: text(result.sourceUrl),
+    credit: text(result.sourceName),
+    ingredients: (result.extendedIngredients ?? []).flatMap((ingredient) => {
+      const ingredientName = text(ingredient.name);
+      return ingredientName === undefined
+        ? []
+        : [
+            {
+              name: ingredientName,
+              amount: number(ingredient.amount) ?? 0,
+              unit: text(ingredient.unit) ?? '',
+              original: text(ingredient.original) ?? ingredientName,
+            },
+          ];
+    }),
+    steps: (result.analyzedInstructions ?? []).flatMap((instruction) =>
+      (instruction.steps ?? []).flatMap((step) => text(step.step) ?? [])
+    ),
+  };
 }
 
 export function createSpoonacularClient(
@@ -47,6 +130,22 @@ export function createSpoonacularClient(
         targetUnit: 'grams',
       })) as { targetAmount?: unknown };
       return number(body.targetAmount) ?? null;
+    },
+
+    async searchRecipes(craving, page) {
+      const body = (await get('/recipes/complexSearch', {
+        type: craving.mealType,
+        // Spoonacular ORs a comma-separated cuisine list and ANDs the diets:
+        // "italian or thai, and vegetarian" is exactly the chips' meaning.
+        ...(craving.cuisines.length > 0 && { cuisine: craving.cuisines.join(',') }),
+        ...(craving.diets.length > 0 && { diet: craving.diets.join(',') }),
+        instructionsRequired: 'true',
+        addRecipeInformation: 'true',
+        fillIngredients: 'true',
+        number: String(page.number),
+        offset: String(page.offset),
+      })) as { results?: RecipeSearchResult[] };
+      return (body.results ?? []).flatMap((result) => toPooledRecipe(result) ?? []);
     },
 
     async ingredientInfo(ingredientName) {

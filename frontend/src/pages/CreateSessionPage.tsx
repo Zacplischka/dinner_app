@@ -140,7 +140,7 @@ export default function CreateSessionPage() {
 
     try {
       const [response, { waitForConnection, joinSession }] = await Promise.all([
-        createSession(hostName.trim(), location, searchRadiusMiles, branch),
+        createSession(hostName.trim(), { location, searchRadiusMiles, branch }),
         import('../services/socketBindings'),
       ]);
 

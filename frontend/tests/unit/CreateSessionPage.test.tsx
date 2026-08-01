@@ -104,16 +104,15 @@ describe('CreateSessionPage location flows', () => {
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
     });
-    expect(serviceMocks.createSession).toHaveBeenCalledWith(
-      'Alice',
-      {
+    expect(serviceMocks.createSession).toHaveBeenCalledWith('Alice', {
+      location: {
         latitude: richmond.latitude,
         longitude: richmond.longitude,
         address: richmond.area,
       },
-      5, // 8 km converted to miles for the backend contract
-      undefined // no branch in the URL → today's contract, untouched (ADR 0007)
-    );
+      searchRadiusMiles: 5, // 8 km converted to miles for the backend contract
+      branch: undefined, // no branch in the URL → today's contract, untouched (ADR 0007)
+    });
   });
 
   it('forwards the fork-chosen branch to session create (#255)', async () => {
@@ -135,12 +134,11 @@ describe('CreateSessionPage location flows', () => {
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
     });
-    expect(serviceMocks.createSession).toHaveBeenCalledWith(
-      'Alice',
-      expect.any(Object),
-      5,
-      'takeaway'
-    );
+    expect(serviceMocks.createSession).toHaveBeenCalledWith('Alice', {
+      location: expect.any(Object),
+      searchRadiusMiles: 5,
+      branch: 'takeaway',
+    });
   });
 
   it('drops a junk branch from the URL rather than sending it (#255)', async () => {
@@ -162,12 +160,11 @@ describe('CreateSessionPage location flows', () => {
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
     });
-    expect(serviceMocks.createSession).toHaveBeenCalledWith(
-      'Alice',
-      expect.any(Object),
-      5,
-      undefined
-    );
+    expect(serviceMocks.createSession).toHaveBeenCalledWith('Alice', {
+      location: expect.any(Object),
+      searchRadiusMiles: 5,
+      branch: undefined,
+    });
   });
 
   it('recovers from a denied permission by switching to manual entry with inputs intact', async () => {

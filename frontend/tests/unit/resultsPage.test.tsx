@@ -590,4 +590,97 @@ describe('ResultsPage', () => {
       expect(screen.getByText(/no restaurants were selected by all participants/i)).toBeTruthy();
     });
   });
+
+  // The Cook ending (#259): the crowned Recipe, and none of the delivery
+  // chrome a Restaurant crown carries.
+  describe('the crowned Recipe', () => {
+    const rendang = {
+      kind: 'recipe' as const,
+      placeId: 'rec-rendang',
+      name: 'Beef Rendang',
+      photoUrl: 'https://img.test/rendang.jpg',
+      aggregateLikes: 640,
+    };
+    const aglio = {
+      kind: 'recipe' as const,
+      placeId: 'rec-aglio',
+      name: 'Aglio e Olio',
+      aggregateLikes: 120,
+    };
+
+    function seedCook(overrides: Parameters<typeof seedStore>[0] = {}) {
+      seedStore({
+        restaurants: [rendang, aglio],
+        restaurantNames: { [rendang.placeId]: rendang.name, [aglio.placeId]: aglio.name },
+        participants: [alice, bob],
+        overlappingOptions: [rendang],
+        allSelections: { Alice: [rendang.placeId], Bob: [rendang.placeId] },
+        topPick: { restaurant: rendang, likedBy: 2, of: 2 },
+        ...overrides,
+      });
+    }
+
+    it('crowns the Recipe with its title and image', () => {
+      seedCook();
+      const { container } = renderResults();
+
+      const crown = container.querySelector('[data-recipe-crown]')!;
+      expect(crown).not.toBeNull();
+      expect(crown.textContent).toContain('Beef Rendang');
+      expect(crown.textContent).toContain('Everyone swiped yes on this one.');
+      expect(crown.querySelector('img')).toHaveAttribute('src', rendang.photoUrl);
+    });
+
+    it('celebrates a Recipe Match the same as a Restaurant one', () => {
+      seedCook();
+      renderResults();
+
+      expect(screen.getByText('MATCH!')).toBeInTheDocument();
+    });
+
+    it('offers no delivery, compare or order actions on a dish you cook', () => {
+      seedCook();
+      const { container } = renderResults();
+
+      expect(screen.queryByRole('button', { name: 'Order together' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /uber eats|doordash/i })).not.toBeInTheDocument();
+      expect(container.querySelector('a[href*="/compare/"]')).toBeNull();
+    });
+
+    it('crowns outright — no other-matches list for a group to re-choose from', () => {
+      seedCook({
+        overlappingOptions: [rendang, aglio],
+        allSelections: {
+          Alice: [rendang.placeId, aglio.placeId],
+          Bob: [rendang.placeId, aglio.placeId],
+        },
+      });
+      const { container } = renderResults();
+
+      expect(screen.queryByText(/other matches/i)).not.toBeInTheDocument();
+      // The runner-up appears only in the per-Participant transparency lists,
+      // never as a second thing to choose from.
+      expect(container.querySelector('[data-recipe-crown]')!.textContent).not.toContain(
+        'Aglio e Olio'
+      );
+      expect(container.querySelectorAll('[data-match-card]')).toHaveLength(1);
+    });
+
+    it('shows no Near Miss tier for a Cook Session', () => {
+      seedCook({
+        participants: [alice, bob, cara],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [rendang.placeId],
+          Bob: [rendang.placeId],
+          Cara: [aglio.placeId],
+        },
+        topPick: { restaurant: rendang, likedBy: 2, of: 3 },
+      });
+      const { container } = renderResults();
+
+      expect(screen.getByText('2 of 3 swiped yes — the closest you got.')).toBeInTheDocument();
+      expect(container.querySelector('[data-near-miss-card]')).toBeNull();
+    });
+  });
 });

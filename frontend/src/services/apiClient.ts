@@ -5,6 +5,7 @@ import type {
   AcceptSessionInviteResponse,
   Branch,
   DeckEntry,
+  Craving,
   CreateSessionRequest,
   CreateSessionResponse,
   Friend,
@@ -31,26 +32,40 @@ import { useAuthStore } from '../stores/authStore';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 /**
- * Create a new session with optional location
+ * Create a new session. Everything past the host's name is setup the chosen
+ * Branch decides: a location and radius for Eat Out and Takeaway, a Craving and
+ * Headcount for Cook. Absent fields are simply left off the wire (ADR 0007).
  */
 export async function createSession(
   hostName: string,
-  location?: SessionLocation,
-  searchRadiusMiles?: number,
-  branch?: Branch
+  setup: {
+    location?: SessionLocation;
+    searchRadiusMiles?: number;
+    branch?: Branch;
+    craving?: Craving;
+    headcount?: number;
+  } = {}
 ): Promise<CreateSessionResponse> {
   const body: CreateSessionRequest = { hostName };
 
-  if (location) {
-    body.location = location;
+  if (setup.location) {
+    body.location = setup.location;
   }
 
-  if (searchRadiusMiles !== undefined) {
-    body.searchRadiusMiles = searchRadiusMiles;
+  if (setup.searchRadiusMiles !== undefined) {
+    body.searchRadiusMiles = setup.searchRadiusMiles;
   }
 
-  if (branch) {
-    body.branch = branch;
+  if (setup.branch) {
+    body.branch = setup.branch;
+  }
+
+  if (setup.craving) {
+    body.craving = setup.craving;
+  }
+
+  if (setup.headcount !== undefined) {
+    body.headcount = setup.headcount;
   }
 
   return request<CreateSessionResponse>('/sessions', {

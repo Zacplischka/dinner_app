@@ -67,7 +67,7 @@ The set of Restaurants or Recipes every current Participant selected, computed o
 _Avoid_: results, overlap, winners
 
 **Top Pick**:
-The single Restaurant or Recipe a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then highest rating, then name A-Z — from the Match when the Match is non-empty, from everything anyone selected when it is empty, and from the Session's open Deck when nobody selected anything. Every completed Session with a non-empty Deck has exactly one Top Pick; a Session whose Deck is empty has none.
+The single Restaurant or Recipe a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then the Deck Entry kind's own middle rung — a Restaurant's rating, a Recipe's aggregate likes — then name A-Z, from the Match when the Match is non-empty, from everything anyone selected when it is empty, and from the Session's open Deck when nobody selected anything. Only the middle rung differs by kind; the rule is otherwise one rule. Every completed Session with a non-empty Deck has exactly one Top Pick; a Session whose Deck is empty has none.
 _Avoid_: winner, best match, recommendation, top result, the answer
 
 **Near Miss**:

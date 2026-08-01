@@ -23,6 +23,7 @@ describe('SessionService', () => {
   let redis: Redis;
   let store: ReturnType<typeof createSessionStore>;
   let searchNearbyRestaurants: ReturnType<typeof vi.fn>;
+  let dealRecipeDeck: ReturnType<typeof vi.fn>;
   let SessionService: ReturnType<typeof createSessionService>;
 
   beforeEach(async () => {
@@ -31,7 +32,8 @@ describe('SessionService', () => {
     await redis.flushall();
     store = createSessionStore(redis);
     searchNearbyRestaurants = vi.fn();
-    SessionService = createSessionService({ store, searchNearbyRestaurants });
+    dealRecipeDeck = vi.fn();
+    SessionService = createSessionService({ store, searchNearbyRestaurants, dealRecipeDeck });
 
     vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
@@ -41,6 +43,61 @@ describe('SessionService', () => {
   afterEach(() => {
     config.frontendUrl = originalFrontendUrl;
     vi.restoreAllMocks();
+  });
+
+  describe('createSession in the Cook Branch', () => {
+    const craving = {
+      mealType: 'main course' as const,
+      cuisines: ['italian' as const],
+      diets: ['vegetarian' as const],
+    };
+    const deck: Recipe[] = [
+      { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
+      { kind: 'recipe', placeId: 'rec2', name: 'Caponata', aggregateLikes: 40 },
+    ];
+
+    it('deals the Deck from the Craving pool, not from a restaurant search', async () => {
+      dealRecipeDeck.mockResolvedValue(deck);
+
+      const session = await SessionService.createSession('Alice', undefined, undefined, 'cook', {
+        craving,
+        headcount: 4,
+      });
+
+      expect(dealRecipeDeck).toHaveBeenCalledWith(craving);
+      expect(searchNearbyRestaurants).not.toHaveBeenCalled();
+      expect(session.restaurantCount).toBe(2);
+      expect((await store.getDeck(session.sessionCode)).entries).toEqual(
+        expect.arrayContaining(deck)
+      );
+    });
+
+    it('stores the Headcount on the Session, untouched by the deal', async () => {
+      dealRecipeDeck.mockResolvedValue(deck);
+
+      const session = await SessionService.createSession('Alice', undefined, undefined, 'cook', {
+        craving,
+        headcount: 6,
+      });
+
+      expect(session.headcount).toBe(6);
+      const stored = await store.readSession(session.sessionCode);
+      expect(stored?.headcount).toBe(6);
+      expect(stored?.branch).toBe('cook');
+      // Nothing about the pool this Deck came from is derived from Headcount.
+      expect(stored?.cravingKey).not.toContain('6');
+    });
+
+    it('refuses a Craving that pools no Recipes rather than opening an unswipeable Deck', async () => {
+      dealRecipeDeck.mockResolvedValue([]);
+
+      await expect(
+        SessionService.createSession('Alice', undefined, undefined, 'cook', {
+          craving,
+          headcount: 2,
+        })
+      ).rejects.toMatchObject({ code: 'NO_RESTAURANTS_FOUND' });
+    });
   });
 
   describe('createSession code generation', () => {
@@ -407,7 +464,11 @@ describe('SessionService', () => {
           return participants;
         },
       };
-      const racyService = createSessionService({ store: racyStore, searchNearbyRestaurants });
+      const racyService = createSessionService({
+        store: racyStore,
+        searchNearbyRestaurants,
+        dealRecipeDeck,
+      });
       const session = await racyService.createSession('Alice');
 
       const outcomes = await Promise.allSettled([
@@ -435,7 +496,11 @@ describe('SessionService', () => {
           return MAX_PARTICIPANTS + 1;
         },
       };
-      const racyService = createSessionService({ store: racyStore, searchNearbyRestaurants });
+      const racyService = createSessionService({
+        store: racyStore,
+        searchNearbyRestaurants,
+        dealRecipeDeck,
+      });
       const session = await racyService.createSession('Alice');
 
       await expect(

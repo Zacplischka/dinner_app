@@ -4,7 +4,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import HomePage from '../../src/pages/HomePage';
-import CookComingSoonPage from '../../src/pages/CookComingSoonPage';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
 
@@ -21,7 +20,7 @@ function renderFork(initialEntry = '/') {
         <Route path="/create" element={<CreateStub />} />
         <Route path="/join" element={<div>Join route</div>} />
         <Route path="/compare" element={<div>Compare route</div>} />
-        <Route path="/cook" element={<CookComingSoonPage />} />
+        <Route path="/cook" element={<div>Cook setup route</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -53,10 +52,10 @@ describe('HomePage entry fork', () => {
     expect(screen.getByText('Create branch: takeaway')).toBeInTheDocument();
   });
 
-  it('routes the Cook card to the not-yet-available screen', () => {
+  it('routes the Cook card into Cook setup (#259)', () => {
     renderFork();
     fireEvent.click(screen.getByRole('button', { name: /cooking/i }));
-    expect(screen.getByText(/isn.t ready yet/i)).toBeInTheDocument();
+    expect(screen.getByText('Cook setup route')).toBeInTheDocument();
   });
 
   it('keeps Join with a code reachable from the text row', () => {

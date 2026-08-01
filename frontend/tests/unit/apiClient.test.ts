@@ -28,11 +28,10 @@ describe('apiClient', () => {
       });
       global.fetch = mockFetch;
 
-      await apiClient.createSession(
-        'Alice',
-        { latitude: 37.7749, longitude: -122.4194, address: 'SF' },
-        5
-      );
+      await apiClient.createSession('Alice', {
+        location: { latitude: 37.7749, longitude: -122.4194, address: 'SF' },
+        searchRadiusMiles: 5,
+      });
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/sessions'),
@@ -67,7 +66,10 @@ describe('apiClient', () => {
       });
       global.fetch = mockFetch;
 
-      await apiClient.createSession('Alice', { latitude: 37.7749, longitude: -122.4194 }, 5);
+      await apiClient.createSession('Alice', {
+        location: { latitude: 37.7749, longitude: -122.4194 },
+        searchRadiusMiles: 5,
+      });
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/sessions'),
