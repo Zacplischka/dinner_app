@@ -281,6 +281,7 @@ export function createSessionService({
     isRejoin: boolean;
     rejoinToken: string;
     participants: { participantId: string; displayName: string; isHost: boolean }[];
+    branch?: Branch;
   }> {
     // Check session exists
     const session = await store.readSession(sessionCode);
@@ -446,6 +447,7 @@ export function createSessionService({
         displayName: p.displayName,
         isHost: p.isHost,
       })),
+      branch: session.branch,
     };
   }
 

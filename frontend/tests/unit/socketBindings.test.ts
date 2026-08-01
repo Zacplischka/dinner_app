@@ -492,6 +492,21 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().sessionCode).toBe('CN456'); // unchanged
   });
 
+  // #258: the Branch decides what the results screen offers, and every
+  // Participant — host and joiner alike — reaches it through this ack.
+  it('stores the Session Branch from the join ack', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    socket.acks.set('session:join', {
+      success: true,
+      data: { participants: [participant], rejoinToken: 'rejoin-token', branch: 'eatout' },
+    });
+
+    await socketBindings.joinSession('AB123', 'Alice');
+
+    expect(useSessionStore.getState().branch).toBe('eatout');
+  });
+
   it('resets selections when joining a different session than the stored one', async () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();

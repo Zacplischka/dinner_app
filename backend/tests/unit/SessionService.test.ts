@@ -409,6 +409,25 @@ describe('SessionService', () => {
       });
     });
 
+    // #258: the Branch decides what a Participant's results screen offers, and
+    // the join ack is the one place every Participant — host and joiner — passes
+    // through, so it carries it.
+    it('should carry the Session Branch on the join ack', async () => {
+      const session = await SessionService.createSession('Alice', undefined, undefined, 'eatout');
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-1', 'Alice');
+
+      expect(result.branch).toBe('eatout');
+    });
+
+    it('should omit the Branch for a Session created before the entry fork', async () => {
+      const session = await SessionService.createSession('Alice');
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-1', 'Alice');
+
+      expect(result.branch).toBeUndefined();
+    });
+
     it('should reject a brand-new participant after the session starts', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');

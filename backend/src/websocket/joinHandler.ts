@@ -78,6 +78,7 @@ export async function handleSessionJoin(
       participantCount: result.participantCount,
       rejoinToken: result.rejoinToken,
       participants: result.participants,
+      branch: result.branch,
     };
     callback({ success: true, data });
 

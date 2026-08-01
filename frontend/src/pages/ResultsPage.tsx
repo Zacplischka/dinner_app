@@ -81,6 +81,7 @@ function MatchCard({
   eyebrow,
   reason,
   isCrown = false,
+  showContinuation,
 }: {
   restaurant: Restaurant;
   comparePath: string;
@@ -89,11 +90,13 @@ function MatchCard({
   eyebrow?: string;
   reason?: string;
   isCrown?: boolean;
+  showContinuation: boolean;
 }) {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const noMenuPlaceIds = useOrderStore((state) => state.noMenuPlaceIds);
-  const canOrderTogether = isCrown && !noMenuPlaceIds.includes(restaurant.placeId);
+  const canOrderTogether =
+    isCrown && showContinuation && !noMenuPlaceIds.includes(restaurant.placeId);
 
   return (
     <div
@@ -160,11 +163,13 @@ function MatchCard({
         )}
 
         {/* Delivery Order Buttons - Elegant cards with brand logos */}
-        <DeliveryActions
-          ubereatsHref={ubereatsHref}
-          doordashHref={doordashHref}
-          comparePath={comparePath}
-        />
+        {showContinuation && (
+          <DeliveryActions
+            ubereatsHref={ubereatsHref}
+            doordashHref={doordashHref}
+            comparePath={comparePath}
+          />
+        )}
       </div>
     </div>
   );
@@ -252,6 +257,7 @@ export default function ResultsPage() {
     restaurants: deckEntries,
     sessionStatus,
     topPick: crownedEntry,
+    branch,
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
@@ -274,6 +280,12 @@ export default function ResultsPage() {
   // A Deck never mixes kinds, so either signal answers "is this a Cook
   // Session?" — the crown covers a Participant whose local Deck is empty.
   const isCookDeck = Boolean(crownedRecipe) || deckEntries.some((entry) => !isRestaurant(entry));
+
+  // Where the night ends (#258). Eat Out stops at the Top Pick — the decision is
+  // the destination, not an upsell into Comparison or a Group Order — and a dish
+  // you cook has nothing to order either. Takeaway keeps the continuation, and so
+  // does a Session created before the entry fork (no Branch).
+  const showContinuation = branch !== 'eatout' && !isCookDeck;
 
   // Kind-agnostic: for a restaurant Deck this is exactly overlappingOptions,
   // and for a Recipe Deck it is the Match the celebration should fire on.
@@ -472,7 +484,10 @@ export default function ResultsPage() {
 
         {crownedRecipe ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
-            <RecipeCrown recipe={crownedRecipe.recipe} reason={crownReason(crownedRecipe, recipeWords)} />
+            <RecipeCrown
+              recipe={crownedRecipe.recipe}
+              reason={crownReason(crownedRecipe, recipeWords)}
+            />
           </div>
         ) : pick ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
@@ -483,6 +498,7 @@ export default function ResultsPage() {
               eyebrow="TONIGHT'S PICK"
               reason={crownReason(pick, restaurantWords)}
               isCrown
+              showContinuation={showContinuation}
               ubereatsHref={
                 hasOverlap
                   ? generateUberEatsUrl(pick.restaurant.name, pick.restaurant.address)
@@ -524,6 +540,7 @@ export default function ResultsPage() {
                       <MatchCard
                         key={restaurant.placeId}
                         restaurant={restaurant}
+                        showContinuation={showContinuation}
                         ubereatsHref={generateUberEatsUrl(restaurant.name, restaurant.address)}
                         doordashHref={generateDoorDashUrl(restaurant.name, restaurant.address)}
                         comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
@@ -592,8 +609,9 @@ export default function ResultsPage() {
                         </span>
                       </div>
                     )}
-                    {/* Nothing to order or compare about a dish you cook. */}
-                    {!isCookDeck && (
+                    {/* Nothing to order or compare about a dish you cook, and an
+                        Eat Out night ends at the Top Pick. */}
+                    {showContinuation && (
                       <DeliveryActions
                         ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
                         doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}

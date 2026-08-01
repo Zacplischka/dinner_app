@@ -703,4 +703,73 @@ describe('ResultsPage', () => {
       expect(nearMissCards[0].querySelector('a')).toBeNull();
     });
   });
+
+  // The Eat Out ending (#258): the decision is the destination. Takeaway — and
+  // a Session created before the entry fork — keeps today's continuation.
+  describe('the Eat Out ending', () => {
+    function seedBranch(
+      branch: 'eatout' | 'takeaway' | undefined,
+      overrides: Parameters<typeof seedStore>[0] = {}
+    ) {
+      seedStore({
+        branch,
+        participants: [alice, bob],
+        overlappingOptions: [pizza, noodle],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId, noodle.placeId],
+        },
+        topPick: { restaurant: noodle, likedBy: 2, of: 2 },
+        ...overrides,
+      });
+    }
+
+    it('crowns the Top Pick and offers no Comparison, Group Order or delivery continuation', () => {
+      seedBranch('eatout');
+      const { container } = renderResults();
+
+      const crown = container.querySelector('[data-match-card]')!;
+      expect(crown.textContent).toContain('Noodle House');
+      expect(crown.textContent).toContain('best rated of your 2 matches.');
+
+      expect(screen.queryByRole('button', { name: 'Order together' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /uber eats|doordash/i })).not.toBeInTheDocument();
+      expect(container.querySelector('a[href*="/compare/"]')).toBeNull();
+    });
+
+    it('drops the continuation from Near Miss cards too', () => {
+      seedBranch('eatout', {
+        participants: [alice, bob, cara],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [pizza.placeId, noodle.placeId],
+          Bob: [pizza.placeId, noodle.placeId],
+          Cara: [taco.placeId],
+        },
+        topPick: { restaurant: pizza, likedBy: 2, of: 3 },
+      });
+      const { container } = renderResults();
+
+      const nearMissCards = container.querySelectorAll('[data-near-miss-card]');
+      expect(nearMissCards).toHaveLength(1);
+      expect(nearMissCards[0].querySelector('a')).toBeNull();
+    });
+
+    it('keeps the Takeaway continuation exactly as it ships today', () => {
+      seedBranch('takeaway');
+      renderResults();
+
+      expect(screen.getByRole('button', { name: 'Order together' })).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name: /compare prices/i }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('link', { name: /uber eats/i }).length).toBeGreaterThan(0);
+    });
+
+    it('keeps today’s behavior for a Session created with no Branch', () => {
+      seedBranch(undefined);
+      renderResults();
+
+      expect(screen.getByRole('button', { name: 'Order together' })).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name: /compare prices/i }).length).toBeGreaterThan(0);
+    });
+  });
 });

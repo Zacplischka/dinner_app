@@ -4,7 +4,7 @@
 // Note: Socket type imports are added in backend/frontend packages where socket.io is installed
 
 import type { ApiError } from './api-errors.js';
-import type { DeckEntry } from './models.js';
+import type { Branch, DeckEntry } from './models.js';
 import type { MenuItemCapture } from './comparison.js';
 
 // ============= Canonical acknowledgement contract (ADR 0006 / #114) =============
@@ -34,6 +34,12 @@ export interface SessionJoinData {
     displayName: string;
     isHost: boolean;
   }>;
+  /**
+   * The Session's Branch, so a Participant's screens know the kind of night
+   * without asking. Additive (ADR 0007): absent on a Session created before the
+   * entry fork, which keeps the pre-fork behaviour.
+   */
+  branch?: Branch;
 }
 
 /** session:join acknowledges the canonical success data or a public error. */
