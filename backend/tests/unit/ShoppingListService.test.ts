@@ -278,6 +278,25 @@ describe('ShoppingListService.mint', () => {
     });
   });
 
+  it('derives the search term from the ingredient, not a slice of raw recipe text', async () => {
+    // #285's live-list failures: "4.5 cups of water" minting q=of water,
+    // "0.5 cloves 6 garlic" minting q=6 garlic.
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        ingredients: [
+          { name: 'of water', amount: 4.5, unit: 'cups', original: '4.5 cups of water' },
+        ],
+      },
+      outcome: { status: 'no_product' },
+      resolution: { state: 'unmatched' },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'water' });
+  });
+
   it('flags Staples and never spends a Retailer lookup on one', async () => {
     const { service, matchProduct } = build();
 
@@ -738,6 +757,26 @@ describe('ShoppingListService swaps', () => {
     expect(list?.lines[0].runnersUp?.map((product) => product.stockcode)).toEqual([
       12345, 222, 333,
     ]);
+  });
+
+  it('demotes onto the same search term the mint path would have derived', async () => {
+    // One derivation for both paths (#285): a demoted "6 garlic" line falls
+    // back to q=garlic, exactly as it would have minted Unmatched.
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        ingredients: [
+          { name: '6 garlic', amount: 0.5, unit: 'cloves', original: '0.5 cloves 6 garlic' },
+        ],
+      },
+      outcome: { status: 'matched', match: tin, runnersUp },
+    });
+    const listId = (await service.mint('AB123', '11'))!;
+    await service.readList(listId);
+
+    const list = await service.swapLine(listId, '0', null);
+
+    expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'garlic' });
   });
 
   it('keeps the Claim on a line that gets swapped', async () => {

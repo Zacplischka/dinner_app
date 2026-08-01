@@ -103,6 +103,28 @@ describe('matchProducts', () => {
     expect(result?.match.stockcode).toBe(2);
   });
 
+  it('fills the runner-up slots with available candidates only', () => {
+    // #285: the picker refuses to swap onto an unavailable product, so an
+    // unavailable runner-up is a slot the Shopper opens onto nothing.
+    const result = matchProducts(
+      [
+        product({ stockcode: 1, name: 'Coriander Bunch' }),
+        product({ stockcode: 2, name: 'Coriander Punnet', available: false }),
+        product({ stockcode: 3, name: 'Coriander Dried' }),
+        product({ stockcode: 4, name: 'Coriander Paste' }),
+        product({ stockcode: 5, name: 'Coriander Seeds', available: false }),
+        product({ stockcode: 6, name: 'Coriander Frozen' }),
+        product({ stockcode: 7, name: 'Coriander Seedling' }),
+      ],
+      'coriander'
+    );
+
+    expect(result?.match.stockcode).toBe(1);
+    // Four slots, none wasted: the unavailable 2 and 5 are skipped and the
+    // deeper 6 and 7 fill in.
+    expect(result?.runnersUp.map((candidate) => candidate.stockcode)).toEqual([3, 4, 6, 7]);
+  });
+
   it('strips the cached-record-only fields from the wire candidates', () => {
     const result = matchProducts(
       [

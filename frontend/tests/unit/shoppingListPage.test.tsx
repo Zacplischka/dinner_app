@@ -432,7 +432,7 @@ describe('ShoppingListPage swap picker', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('still offers "none of these" when there are no runners-up to offer', async () => {
+  it('still offers "none of these" when there are no runners-up to offer, and says why', async () => {
     serviceMocks.getShoppingList.mockResolvedValue({
       ...list,
       lines: lines.map((line) => (line.id === '0' ? { ...line, runnersUp: [] } : line)),
@@ -441,6 +441,34 @@ describe('ShoppingListPage swap picker', () => {
     const line = await picking();
 
     expect(within(line).getByRole('button', { name: /none of these/i })).toBeInTheDocument();
+    // Not an empty list (#285): the picker explains itself before its one button.
+    expect(within(line).getByText(/no other product to offer/i)).toBeInTheDocument();
+  });
+
+  it('offers no way back on a demoted line with nothing to pick', async () => {
+    // An Unmatched line whose picker holds nothing has no way back (#285) —
+    // its search link is already the whole offer, so no button dangles.
+    serviceMocks.getShoppingList.mockResolvedValue({
+      ...list,
+      lines: lines.map((line) =>
+        line.id === '0'
+          ? {
+              id: '0',
+              text: line.text,
+              staple: false,
+              state: 'unmatched' as const,
+              searchTerm: 'tomatoes',
+              runnersUp: [],
+            }
+          : line
+      ),
+    });
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+
+    expect(
+      within(lineFor('250 g canned tomatoes')).queryByRole('button', { name: /pick a product/i })
+    ).not.toBeInTheDocument();
   });
 
   it('shows the runner-up products the list already carries', async () => {

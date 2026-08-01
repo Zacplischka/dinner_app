@@ -162,8 +162,10 @@ function Line({
               picker costs Woolworths nothing. Offered on every matched line,
               empty runners-up included — "none of these" is always an answer,
               and on a line already demoted by it, the same picker is the way
-              back, which is why it does not ask "wrong product?" there. */}
-          {line.runnersUp && (
+              back, which is why it does not ask "wrong product?" there. The
+              one exception is a demoted line with nothing to pick (#285): no
+              way back exists, and its search link is already the whole offer. */}
+          {line.runnersUp && !(line.state === 'unmatched' && line.runnersUp.length === 0) && (
             <button
               type="button"
               onClick={() => setPicking(!picking)}
@@ -205,6 +207,15 @@ function Line({
 
       {picking && line.runnersUp && (
         <ul className="mt-2 rounded-xl border border-line/50 bg-ink/40 p-2">
+          {/* An empty picker says why it is empty (#285) — worded for every
+              way it gets that way (one result found, or the rest unavailable
+              at the store): nothing else is offerable, so the only cure left
+              is demoting to its Woolworths search. */}
+          {line.runnersUp.length === 0 && (
+            <li className="px-3 py-2 text-sm text-muted">
+              The search behind this line has no other product to offer.
+            </li>
+          )}
           {line.runnersUp.map((product) => (
             <li key={product.stockcode}>
               <button
