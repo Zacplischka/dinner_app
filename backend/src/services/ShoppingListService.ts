@@ -268,6 +268,10 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
           { sessionCode, listId: session.shoppingListId },
           'Shopping List claim abandoned mid-mint, minting again'
         );
+        // Deliberately unguarded, unlike the cleanup on a failed mint: if the
+        // claim will not come back, minting on anyway would only lose the race
+        // to HSETNX and hand back the same dead id. Better to fail this
+        // completion — the caller degrades to no list — and retry from clean.
         await deps.releaseShoppingListId(sessionCode, session.shoppingListId);
       }
 
@@ -291,11 +295,9 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
 
       const listId = await deps.claimShoppingListId(sessionCode, candidate);
       // Two completions landing together: whoever lost the claim reads the
-      // winner's list, and takes back the mark it will never mint under.
-      if (listId !== candidate) {
-        await deps.redis.del(listKey(candidate)).catch(() => undefined);
-        return listId;
-      }
+      // winner's list. The mark it will never mint under is left to expire —
+      // that id reached no caller, so nothing can ever ask for it.
+      if (listId !== candidate) return listId;
 
       void build(listId, session.headcount, recipe).catch(async (error: unknown) => {
         // A mint that fails leaves no key, so the URL 404s and says so —
