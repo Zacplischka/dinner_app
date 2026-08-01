@@ -42,14 +42,18 @@ function MatchHero({ photoUrl }: { photoUrl: string }) {
 
 // The Cook ending (#259): the crowned Recipe, outright. Title and image are
 // all a Recipe carries, and there is no second chooser — no other-matches list,
-// no delivery links, nothing to compare. The Shopping List is the next slice.
+// no delivery links, nothing to compare. What follows is the Shopping List
+// (#262), which lives on its own URL and outlives this Session.
 function RecipeCrown({
   recipe,
   reason,
+  shoppingListId,
 }: {
   recipe: { name: string; photoUrl?: string };
   reason: string;
+  shoppingListId?: string;
 }) {
+  const navigate = useNavigate();
   return (
     <div
       data-match-card
@@ -60,6 +64,22 @@ function RecipeCrown({
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">TONIGHT&rsquo;S COOK</p>
       <p className="text-lg font-semibold text-text">{recipe.name}</p>
       <p className="text-sm text-muted mt-1">{reason}</p>
+
+      {/* Absent when nothing could be minted — the night still ends at the
+          crown rather than at a button that leads nowhere. */}
+      {shoppingListId && (
+        <div className="mt-3">
+          <button
+            className="btn btn-primary w-full min-h-[48px]"
+            onClick={() => navigate(`/list/${shoppingListId}`)}
+          >
+            Shopping list
+          </button>
+          <p className="mt-1 text-xs text-muted">
+            Priced at Woolworths, scaled for everyone eating
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -258,6 +278,7 @@ export default function ResultsPage() {
     sessionStatus,
     topPick: crownedEntry,
     branch,
+    shoppingListId,
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
@@ -487,6 +508,7 @@ export default function ResultsPage() {
             <RecipeCrown
               recipe={crownedRecipe.recipe}
               reason={crownReason(crownedRecipe, recipeWords)}
+              shoppingListId={shoppingListId}
             />
           </div>
         ) : pick ? (

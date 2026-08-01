@@ -42,6 +42,12 @@ interface SessionServiceDeps {
    * it was handed rather than failing, which is what lets Restart never fail.
    */
   redealRecipeDeck: (poolKey: string, current: DeckEntry[]) => Promise<DeckEntry[]>;
+  /**
+   * Mints the Shopping List a completed Cook Session's crowned Recipe calls
+   * for (#262), returning its id — or undefined when there is nothing to mint.
+   * Returns before the list is priced: the Match must not wait on Woolworths.
+   */
+  mintShoppingList: (sessionCode: string, placeId: string) => Promise<string | undefined>;
 }
 
 /** What Cook setup captured: the Craving to deal from, and who's eating. */
@@ -67,6 +73,7 @@ export function createSessionService({
   searchNearbyRestaurants,
   dealRecipeDeck,
   redealRecipeDeck,
+  mintShoppingList,
 }: SessionServiceDeps) {
   /**
    * Create a new session with the given host
@@ -523,6 +530,20 @@ export function createSessionService({
       await store.addResultPlaceId(sessionCode, topPick.restaurant.placeId);
     }
 
+    // The Cook ending (#262): a crowned Recipe mints its Shopping List, and
+    // from here the list is on its own — its own URL, its own 7-day clock, no
+    // Participant check. A mint that cannot happen must never cost the group
+    // their Match, so it degrades to no list rather than throwing.
+    const shoppingListId =
+      topPick?.restaurant.kind === 'recipe'
+        ? await mintShoppingList(sessionCode, topPick.restaurant.placeId).catch(
+            (error: unknown) => {
+              logger.error({ err: error, sessionCode }, 'Shopping List mint could not start');
+              return undefined;
+            }
+          )
+        : undefined;
+
     const matchSize = results.overlappingOptions.length;
     const restartFollowed = await store.wasRestartedAfterComplete(sessionCode);
 
@@ -538,7 +559,7 @@ export function createSessionService({
       'Session outcome'
     );
 
-    return { ...results, topPick };
+    return { ...results, topPick, shoppingListId };
   }
 
   /**

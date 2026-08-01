@@ -22,6 +22,7 @@ const GroupOrderPage = lazy(() => import('./pages/GroupOrderPage'));
 
 const FriendsPage = lazy(() => import('./pages/FriendsPage'));
 const CookSetupPage = lazy(() => import('./pages/CookSetupPage'));
+const ShoppingListPage = lazy(() => import('./pages/ShoppingListPage'));
 
 // Loading fallback component - matches dark theme
 function LoadingFallback() {
@@ -69,6 +70,11 @@ function AnimatedRoutes() {
 
         {/* Group Order screen */}
         <Route path="/session/:sessionCode/order" element={<GroupOrderPage />} />
+
+        {/* The Shopping List: its own URL, outliving the Session that minted
+            it. Deliberately not nested under /session — holding the link is
+            the whole capability, and no Session need still exist. */}
+        <Route path="/list/:listId" element={<ShoppingListPage />} />
 
         {/* Friends page */}
         <Route path="/friends" element={<FriendsPage />} />

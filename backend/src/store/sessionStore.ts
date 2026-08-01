@@ -35,6 +35,13 @@ export interface Session {
    */
   headcount?: number;
   cravingKey?: string;
+  /**
+   * The Shopping List this Session minted from its Top Pick (#262). Written
+   * once, by whichever completion got there first — the Session's record that
+   * minting has happened, not a handle on anything it owns: the list lives on
+   * its own keys, its own URL, and its own 7-day clock.
+   */
+  shoppingListId?: string;
   location?: {
     latitude: number;
     longitude: number;
@@ -263,6 +270,7 @@ export function createSessionStore(redis: Redis) {
       branch: data.branch as Branch | undefined,
       headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,
       cravingKey: data.cravingKey,
+      shoppingListId: data.shoppingListId,
     };
 
     if (data.locationLat && data.locationLng) {
@@ -560,6 +568,29 @@ export function createSessionStore(redis: Redis) {
     await redis.sadd(resultsKey(sessionCode), placeId);
   }
 
+  // --- Shopping List -----------------------------------------------------
+
+  /**
+   * Mint-once: HSETNX decides which completion mints, and the winner's id is
+   * returned to every caller. A second completion therefore re-reads the first
+   * list rather than re-pricing it — the whole point of "minted once" (#239).
+   */
+  async function claimShoppingListId(sessionCode: string, listId: string): Promise<string> {
+    const won = await redis.hsetnx(sessionKey(sessionCode), 'shoppingListId', listId);
+    if (won === 1) return listId;
+    return (await redis.hget(sessionKey(sessionCode), 'shoppingListId')) ?? listId;
+  }
+
+  /**
+   * Undoes a claim whose mint never landed, so the Session is not stuck
+   * answering with a URL that will never resolve. Guarded on the id still
+   * being ours: a claim already replaced is not this failure's to release.
+   */
+  async function releaseShoppingListId(sessionCode: string, listId: string): Promise<void> {
+    const current = await redis.hget(sessionKey(sessionCode), 'shoppingListId');
+    if (current === listId) await redis.hdel(sessionKey(sessionCode), 'shoppingListId');
+  }
+
   // --- Restart -----------------------------------------------------------
 
   /**
@@ -578,6 +609,12 @@ export function createSessionStore(redis: Redis) {
     pipeline.del(resultsKey(sessionCode));
     pipeline.del(orderKey(sessionCode));
     pipeline.del(orderLinesKey(sessionCode));
+    // A Restart voids the crown, so it voids the Session's claim to have
+    // minted for it: deciding again may crown a different Recipe, and the
+    // list already minted must not be served as that one's. The minted list
+    // is untouched — it has its own URL and its own clock, and anyone holding
+    // the link keeps it.
+    pipeline.hdel(sessionKey(sessionCode), 'shoppingListId');
     pipeline.hset(sessionKey(sessionCode), 'state', 'selecting');
     if (wasComplete) {
       // Session-outcome metrics: the next completion is a Restart's outcome
@@ -715,6 +752,8 @@ export function createSessionStore(redis: Redis) {
     readSelections,
     computeAndStoreResults,
     addResultPlaceId,
+    claimShoppingListId,
+    releaseShoppingListId,
     resetForRestart,
     wasRestartedAfterComplete,
     replaceDeck,

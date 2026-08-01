@@ -23,15 +23,14 @@ export function getTestRedis(): Redis {
  * Use a test-specific key prefix to avoid conflicts
  */
 export async function cleanupTestData(redis: Redis): Promise<void> {
-  const keys = await redis.keys('session:*');
-  const participantKeys = await redis.keys('participant:*');
-
-  if (keys.length > 0) {
-    await redis.del(...keys);
-  }
-
-  if (participantKeys.length > 0) {
-    await redis.del(...participantKeys);
+  // Shopping Lists are swept here too: any test that completes a Cook Session
+  // mints one, and unlike a Session it carries a 7-day TTL — left behind, they
+  // accumulate across runs in the shared dev Redis (#262).
+  for (const pattern of ['session:*', 'participant:*', 'shoppinglist:*']) {
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
   }
 }
 
@@ -45,7 +44,7 @@ export async function waitForRedis(redis: Redis, maxAttempts = 10): Promise<void
       return;
     } catch (error) {
       if (i === maxAttempts - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 }

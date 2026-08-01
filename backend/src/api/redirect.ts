@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import type { Redis } from 'ioredis';
-import { COMPARISON_TAP_SOURCE_SET } from '@dinder/shared/types';
+import {
+  COMPARISON_TAP_SOURCE_SET,
+  woolworthsProductUrl,
+  woolworthsSearchUrl,
+} from '@dinder/shared/types';
 import type { VenueDetails } from '../services/RestaurantSearchService.js';
 import { asyncHandler } from './asyncHandler.js';
 import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
@@ -9,6 +13,12 @@ import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from '
 // group acted on a card" server-countable, then 302s to the Platform's
 // public search deep link. Exactly three parameters; no cookies.
 const PLATFORMS = new Set(['ubereats', 'doordash']);
+// The same seam, for the Shopping List's Retailer links (#228, #238): every
+// product deep link and every Unmatched search link is minted here so the
+// affiliate seam stays open with server-side counting — nothing monetized.
+// A Retailer target is computed, never looked up, so it needs no cache and no
+// spend guard: it is not the Platform arm's paid Places call.
+const RETAILERS = new Set(['woolworths']);
 // Each uncached redirect is a paid Places details lookup; cache the target and
 // cap uncached lookups per IP so anonymous taps cannot run up spend.
 const TARGET_CACHE_SECONDS = 24 * 60 * 60;
@@ -20,6 +30,22 @@ interface RedirectRouterDeps {
   targetCache?: Pick<Redis, 'get' | 'set'>;
 }
 
+/**
+ * A product page for a Stockcode, a search for a term, or null for neither.
+ * A Stockcode wins when both are somehow given: it names one product, where a
+ * term only describes one. No caller sends both, and either target is pinned
+ * to the Woolworths domain, so the precedence is a tidiness rule, not a guard.
+ */
+function retailerTarget(stockcode: unknown, q: unknown): string | null {
+  if (typeof stockcode === 'string' && /^\d{1,12}$/.test(stockcode)) {
+    return woolworthsProductUrl(Number(stockcode));
+  }
+  if (typeof q === 'string' && q.trim() !== '') {
+    return woolworthsSearchUrl(q.trim());
+  }
+  return null;
+}
+
 export function createRedirectRouter({ fetchPlaceDetails, targetCache }: RedirectRouterDeps) {
   const router = Router();
   const redirectRequests = new Map<string, RequestWindow>();
@@ -27,6 +53,22 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
   router.get(
     '/',
     asyncHandler(async (req, res) => {
+      const { retailer, stockcode, q } = req.query;
+      if (retailer !== undefined) {
+        const target =
+          typeof retailer === 'string' && RETAILERS.has(retailer)
+            ? retailerTarget(stockcode, q)
+            : null;
+        if (!target) {
+          return res.status(400).json({
+            code: 'VALIDATION_ERROR',
+            message: 'retailer (woolworths) and one of stockcode or q are required',
+          });
+        }
+        req.log?.info({ retailer, stockcode, q }, 'Retailer redirect');
+        return res.redirect(302, target);
+      }
+
       const { platform, placeId, source } = req.query;
       if (
         typeof platform !== 'string' ||

@@ -631,6 +631,30 @@ describe('ResultsPage', () => {
       expect(crown.querySelector('img')).toHaveAttribute('src', rendang.photoUrl);
     });
 
+    // What follows a Cook Match is the Shopping List (#262), on its own URL.
+    it('routes the crown to the Shopping List the Session minted', async () => {
+      seedCook({ shoppingListId: 'list-abc' });
+      render(
+        <MemoryRouter initialEntries={['/session/AB123/results']}>
+          <Routes>
+            <Route path="/session/:sessionCode/results" element={<ResultsPage />} />
+            <Route path="/list/:listId" element={<div>Shopping list route</div>} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Shopping list' }));
+
+      expect(await screen.findByText('Shopping list route')).toBeInTheDocument();
+    });
+
+    it('offers no dead button when nothing could be minted', () => {
+      seedCook();
+      renderResults();
+
+      expect(screen.queryByRole('button', { name: 'Shopping list' })).not.toBeInTheDocument();
+    });
+
     it('celebrates a Recipe Match the same as a Restaurant one', () => {
       seedCook();
       renderResults();

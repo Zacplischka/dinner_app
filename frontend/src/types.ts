@@ -36,4 +36,6 @@ export interface Result {
   restaurantNames?: Record<string, string>; // placeId -> name mapping for display
   hasOverlap: boolean;
   topPick?: { restaurant: DeckEntry; likedBy: number; of: number };
+  /** The Shopping List a completed Cook Session minted (#262); absent elsewhere. */
+  shoppingListId?: string;
 }

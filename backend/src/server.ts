@@ -15,10 +15,15 @@ import { createFriendsRouter } from './api/friends.js';
 import { createComparisonRouter } from './api/comparison.js';
 import { createRedirectRouter } from './api/redirect.js';
 import { createGeocodeRouter } from './api/geocode.js';
+import { createListsRouter } from './api/lists.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createRecipePoolService } from './services/RecipePoolService.js';
 import { createSpoonacularClient } from './services/spoonacularClient.js';
+import { createProductMatchService } from './services/ProductMatchService.js';
+import { createQuantityLadder } from './services/quantityLadder.js';
+import { createShoppingListService } from './services/ShoppingListService.js';
+import { createWoolworthsClient } from './services/woolworthsClient.js';
 import { createFriendsService } from './services/FriendsService.js';
 import { createComparisonService } from './services/ComparisonService.js';
 import { createOrderService } from './services/OrderService.js';
@@ -53,16 +58,32 @@ const allowedOrigins = [
 // Composition root: the only place production stores and services are
 // constructed. Everything else receives them by injection.
 const sessionStore = createSessionStore(redis);
-const recipePoolService = createRecipePoolService({
+// Late-bound fetch throughout: the boundary tests fake it, and the clients are
+// built once.
+const spoonacularClient = createSpoonacularClient((...args) => fetch(...args));
+const recipePoolService = createRecipePoolService({ redis, client: spoonacularClient });
+const productMatchService = createProductMatchService({
   redis,
-  // Late-bound fetch: the boundary tests fake it, and the client is built once.
-  client: createSpoonacularClient((...args) => fetch(...args)),
+  client: createWoolworthsClient((...args) => fetch(...args)),
+});
+const quantityLadder = createQuantityLadder({ redis, client: spoonacularClient });
+const shoppingListService = createShoppingListService({
+  redis,
+  readSession: (sessionCode) => sessionStore.readSession(sessionCode),
+  claimShoppingListId: (sessionCode, listId) =>
+    sessionStore.claimShoppingListId(sessionCode, listId),
+  releaseShoppingListId: (sessionCode, listId) =>
+    sessionStore.releaseShoppingListId(sessionCode, listId),
+  readRecipe: (poolKey, placeId) => recipePoolService.readRecipe(poolKey, placeId),
+  matchProduct: (term) => productMatchService.matchProduct(term),
+  resolveLine: (ingredient, outcome) => quantityLadder.resolveLine(ingredient, outcome),
 });
 const sessionService = createSessionService({
   store: sessionStore,
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
   dealRecipeDeck: (craving) => recipePoolService.dealDeck(craving),
   redealRecipeDeck: (poolKey, current) => recipePoolService.redeal(poolKey, current),
+  mintShoppingList: (sessionCode, placeId) => shoppingListService.mint(sessionCode, placeId),
 });
 const friendsService = createFriendsService({ store: friendsStore });
 const comparisonService = createComparisonService({
@@ -151,6 +172,8 @@ app.use(
     targetCache: redis,
   })
 );
+// The Shopping List: its own resource, on its own URL, outliving the Session.
+app.use('/api/lists', createListsRouter(shoppingListService));
 app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes
 
 // Health check endpoint
@@ -334,4 +357,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 // Instances exported for contract/integration tests, which must exercise
 // (and spy on) the same objects the routes and handlers close over.
-export { app, io, httpServer, sessionStore, sessionService };
+export { app, io, httpServer, sessionStore, sessionService, shoppingListService };
