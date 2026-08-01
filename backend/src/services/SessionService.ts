@@ -1,5 +1,4 @@
 // Session service - Business logic for session lifecycle
-// Based on: specs/001-dinner-decider-enables/plan.md
 //
 // createSessionService(deps) builds the service over an injected store and
 // restaurant-search fn (tests pass fakes); server.ts constructs the
@@ -19,7 +18,7 @@ import {
   type DeckEntry,
 } from '@dinder/shared/types';
 
-/** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
+/** Maximum participants per session, including the reserved host slot — the cap the join path enforces. */
 export const MAX_PARTICIPANTS = 4;
 
 /**
@@ -57,7 +56,8 @@ export interface CookSetup {
 }
 
 /**
- * Generate a unique uppercase alphanumeric session code.
+ * Generate a random uppercase alphanumeric session code. Uniqueness is NOT
+ * guaranteed here — createSession's collision-retry loop owns that.
  */
 export function generateSessionCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -173,7 +173,8 @@ export function createSessionService({
         latitude: location.latitude,
         longitude: location.longitude,
         radiusMeters,
-        maxResults: 20, // Google Places API (New) max is 20
+        maxResults: 20, // a local post-search cap — RestaurantSearchService
+        // slices its merged results to this; nothing is sent to the Places API
       });
 
       // Throw error if no restaurants found
@@ -378,7 +379,7 @@ export function createSessionService({
     const reservedHostSlot = Number(!(hostPresent || isHost));
 
     if (!prior) {
-      // Check participant limit (FR-004, FR-005)
+      // Check participant limit
       if (existing.length + reservedHostSlot >= MAX_PARTICIPANTS) {
         logger.warn(
           {
@@ -441,11 +442,11 @@ export function createSessionService({
       }
     }
 
-    // A rejoin re-keys the Participant by socket.id: removeParticipant DELs their
-    // Selections set (sessionStore.ts:326) and addParticipant rewrites
-    // hasSubmitted '0' (:310). Copy an already-recorded Submission out first — and
-    // note that inside Socket.IO's 2-minute recovery window (server.ts:170) the
-    // socket id is unchanged, so prior's Selections key IS the new one.
+    // A rejoin re-keys the Participant by socket.id: the store's removeParticipant
+    // DELs their Selections set and its addParticipant rewrites hasSubmitted '0'.
+    // Copy an already-recorded Submission out first — and note that inside
+    // Socket.IO's 2-minute recovery window (server.ts connectionStateRecovery)
+    // the socket id is unchanged, so prior's Selections key IS the new one.
     const carriedSelections = prior?.hasSubmitted
       ? await store.readSelections(sessionCode, prior.participantId)
       : null;
@@ -744,7 +745,7 @@ export function createSessionService({
 
   /**
    * Wipe Selections, Submissions, and the Match so the same Participants can
-   * decide again (FR-012).
+   * decide again.
    *
    * A Cook Session also deals again (#246, #260): Recipe supply is a shared pool
    * with nothing geographic about it, so "show me different ones" is honest

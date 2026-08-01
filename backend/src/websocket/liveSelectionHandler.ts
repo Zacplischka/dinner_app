@@ -39,7 +39,7 @@ export async function handleLiveSelection(
     const { sessionCode, placeId } = validation.data;
 
     // One HGETALL both proves membership and yields displayName — the same
-    // check leaveSession makes (SessionService.ts:477-479). No second read.
+    // check SessionService.leaveSession makes. No second read.
     const participant = await store.getParticipant(socket.id);
     if (!participant || participant.sessionCode !== sessionCode) {
       return callback({

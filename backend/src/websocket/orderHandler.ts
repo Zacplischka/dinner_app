@@ -1,7 +1,7 @@
-// WebSocket handler for order:open — pure transport over OrderService.open.
-// order:open is a read/upsert, not a mutation: it acks and broadcasts nothing
-// (OrderStateEvent.change is optional, so an open-broadcast can be added later
-// with zero contract change — ADR 0007).
+// WebSocket handlers for the Group Order — pure transport over OrderService
+// (order:open, order:item, order:buy). order:open is a read/upsert, not a
+// mutation: it acks and broadcasts nothing (OrderStateEvent.change is optional,
+// so an open-broadcast can be added later with zero contract change — ADR 0007).
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
@@ -37,6 +37,16 @@ const orderBuyPayloadSchema = z.object({
   sessionCode: z.string().regex(SESSION_CODE_PATTERN),
   feeCents: z.number().int().min(0).max(100000).optional(),
 });
+
+// The ~4 KB Pinned Menu rides only the order:open ack — the one place the
+// frontend reads it. Every order:state broadcast strips it here, at the point
+// of emission, so a few taps around the table don't re-download the frozen
+// menu to every phone.
+function withoutMenu(order: OrderState): OrderState {
+  const rest = { ...order };
+  delete rest.menu;
+  return rest;
+}
 
 export async function handleOrderOpen(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
@@ -131,7 +141,7 @@ export async function handleOrderItem(
     // no-op decrement (absent line) produces no change → nothing to broadcast.
     callback({ success: true, data: null });
     if (change) {
-      io.in(sessionCode).emit('order:state', { sessionCode, order, change });
+      io.in(sessionCode).emit('order:state', { sessionCode, order: withoutMenu(order), change });
       logger.info({ socketId: socket.id, sessionCode, index, delta }, 'Order Line changed');
     }
   } catch (error) {
@@ -179,7 +189,7 @@ export async function handleOrderBuy(
     // sender (io.in, not socket.to) — no `change` field, the lock is not an
     // item mutation.
     callback({ success: true, data: null });
-    io.in(sessionCode).emit('order:state', { sessionCode, order });
+    io.in(sessionCode).emit('order:state', { sessionCode, order: withoutMenu(order) });
     logger.info(
       { socketId: socket.id, sessionCode, buyer: order.buyer },
       'Buyer claimed group order'

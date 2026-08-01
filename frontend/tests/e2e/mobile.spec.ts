@@ -5,9 +5,8 @@ import { test, expect } from './fixtures';
  *
  * Tests targeting mobile viewport and touch interactions:
  * - Proper layout on 390x844 (iPhone 12 Pro)
- * - Touch gestures
+ * - Tap targets and taps
  * - Virtual keyboard handling
- * - Safe area insets
  * - Responsive typography
  */
 
@@ -29,9 +28,7 @@ test.describe('Mobile Layout - Home Page', () => {
     await expect(homePage.joinLink).toBeVisible();
   });
 
-  test('buttons are properly sized for touch (min 44x44)', async ({
-    homePage,
-  }) => {
+  test('buttons are properly sized for touch (min 44x44)', async ({ homePage }) => {
     await homePage.goto();
 
     const createButtonBox = await homePage.eatOutCard.boundingBox();
@@ -42,7 +39,7 @@ test.describe('Mobile Layout - Home Page', () => {
     expect(joinButtonBox?.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('text is readable on mobile (min 16px)', async ({ page, homePage }) => {
+  test('text is readable on mobile (min 14px)', async ({ page, homePage }) => {
     await homePage.goto();
 
     // Check that body text is at least 14px (browsers zoom small text)
@@ -137,9 +134,7 @@ test.describe('Mobile Touch Interactions', () => {
     await createPage.nameInput.tap();
 
     // Should be focused
-    const isFocused = await createPage.nameInput.evaluate(
-      (el) => document.activeElement === el
-    );
+    const isFocused = await createPage.nameInput.evaluate((el) => document.activeElement === el);
     expect(isFocused).toBe(true);
   });
 });

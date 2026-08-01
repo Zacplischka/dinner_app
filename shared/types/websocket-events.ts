@@ -1,5 +1,4 @@
 // Shared TypeScript types for WebSocket events
-// Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 // Note: Socket type imports are added in backend/frontend packages where socket.io is installed
 
@@ -58,7 +57,7 @@ export type SessionJoinResponse = Ack<SessionJoinData>;
 
 export interface SelectionSubmitPayload {
   sessionCode: string;
-  selections: string[]; // optionId values
+  selections: string[]; // placeIds — the Deck Entry identity, both kinds
 }
 
 /** No-data command: success acknowledges `data: null`. */
@@ -161,7 +160,7 @@ export interface ParticipantLeftEvent {
 
 /**
  * Event emitted when a participant disconnects (network issue, browser close, etc.)
- * This is INFORMATIONAL only - the participant is NOT removed from the session (FR-025).
+ * This is INFORMATIONAL only - the participant is NOT removed from the session.
  * They can reconnect and will be re-registered with a new socket.id.
  */
 export interface ParticipantDisconnectedEvent {

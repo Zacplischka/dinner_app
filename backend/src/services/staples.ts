@@ -1,7 +1,7 @@
 // The Staples (#229, #234): a small hardcoded set of ingredients assumed
 // already at home. A Staple is still an Ingredient Line — visible, claimable —
-// but rendered unticked and excluded from the list total, every Tally, and the
-// coverage count. Ships as data, exactly as the spec calls for; no lookup, no
+// but rendered muted in its own pantry section and excluded from the list
+// total, every Tally, and the coverage count. Ships as data, exactly as the spec calls for; no lookup, no
 // per-user pantry, nothing to configure.
 //
 // Entries are deliberately spelled out rather than left as bare head words

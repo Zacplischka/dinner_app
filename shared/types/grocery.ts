@@ -96,7 +96,7 @@ interface ShoppingListLineFields {
   id: string;
   /** The Ingredient Line's recipe text and amount, scaled to the Headcount. */
   text: string;
-  /** A Staple: rendered unticked, counted by nothing (list total, Tally, coverage). */
+  /** A Staple: rendered muted in its own pantry section, claimable like any line, counted by nothing (list total, Tally, coverage). */
   staple: boolean;
   /**
    * The Shopper holding this line — a self-declared display name, nothing the

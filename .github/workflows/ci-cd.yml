@@ -61,6 +61,11 @@ jobs:
       - name: Run delivery-infrastructure checks
         run: npm run check:production-edge
 
+      # Offline validator: no source comment may cite a repository path that
+      # does not exist (#295). Does not touch the network.
+      - name: Check comment path references
+        run: npm run check:comment-paths
+
   contract-tests:
     name: Contract Tests
     runs-on: ubuntu-latest

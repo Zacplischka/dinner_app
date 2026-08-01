@@ -1,6 +1,5 @@
 // WebSocket handler for session:restart event - pure transport over
 // SessionService.restartSession (payload validation, ack/broadcasts).
-// Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
@@ -70,7 +69,7 @@ export async function handleSessionRestart(
     // Send acknowledgment. No-data command → canonical data is null.
     callback({ success: true, data: null });
 
-    // Broadcast to ALL participants (including sender - FR-013). The lobby's
+    // Broadcast to ALL participants (including sender). The lobby's
     // start rides the same event; only the message says which it was (#289).
     io.in(sessionCode).emit('session:restarted', {
       sessionCode,

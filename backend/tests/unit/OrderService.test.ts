@@ -1,6 +1,7 @@
-// OrderService.open unit tests — real SessionStore over ioredis-mock, a fake
-// snapshotStore with a getLatest spy. Covers the open contract: recovery path,
-// validation, the stale/no_menu split, platform derivation and the raw Pinned Menu.
+// OrderService unit tests — real SessionStore over ioredis-mock, a fake
+// snapshotStore with a getLatest spy. Covers open (recovery path, validation,
+// the stale/no_menu split, platform derivation, the raw Pinned Menu), addItem,
+// and the claimBuyer fee path.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import RedisMock from 'ioredis-mock';

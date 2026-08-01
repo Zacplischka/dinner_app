@@ -1,5 +1,4 @@
 // React Router configuration and main App component
-// Based on: specs/001-dinner-decider-enables/tasks.md T050
 
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
@@ -12,7 +11,6 @@ const HomePage = lazy(() => import('./pages/HomePage'));
 const ComparePage = lazy(() => import('./pages/ComparePage'));
 const ComparisonViewPage = lazy(() => import('./pages/ComparisonViewPage'));
 
-// Demo decider flow uses the existing routes, but with dummy data/services
 const CreateSessionPage = lazy(() => import('./pages/CreateSessionPage'));
 const JoinSessionPage = lazy(() => import('./pages/JoinSessionPage'));
 const SessionLobbyPage = lazy(() => import('./pages/SessionLobbyPage'));
@@ -85,7 +83,7 @@ function AnimatedRoutes() {
         {/* Friends page */}
         <Route path="/friends" element={<FriendsPage />} />
 
-        {/* 404 - Redirect to home */}
+        {/* 404 - render Home in place; the unknown URL stays in the bar */}
         <Route path="*" element={<HomePage />} />
       </Routes>
     </div>

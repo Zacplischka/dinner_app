@@ -192,7 +192,7 @@ describe('page branch coverage', () => {
     expect(useFriendsStore.getState().fetchSessionInvites).toHaveBeenCalledTimes(2);
   });
 
-  it('covers lobby route without a session code and non-demo leave success', async () => {
+  it('covers lobby route without a session code and leave success', async () => {
     const noCode = renderApp('/lobby');
     await waitFor(() => expect(screen.queryByText('Loading session...')).not.toBeInTheDocument());
     fireEvent.click(screen.getByLabelText('Back'));

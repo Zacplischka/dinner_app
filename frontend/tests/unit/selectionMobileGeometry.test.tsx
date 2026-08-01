@@ -1,4 +1,4 @@
-// Issue #82 — keep Restaurant Selection fully visible on mobile, with
+// Issue #82 — keep the Selection Deck fully visible on mobile, with
 // progressive coral/lime drag feedback that respects reduced motion.
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';

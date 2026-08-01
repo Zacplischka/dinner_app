@@ -1,6 +1,5 @@
 // WebSocket handler for session:join event - pure transport over
 // SessionService.joinSession (payload validation, room join, ack/broadcast).
-// Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import { logger } from '../logger.js';
 import type { Socket } from 'socket.io';
@@ -111,7 +110,7 @@ export async function handleSessionJoin(
     };
     callback({ success: true, data });
 
-    // Broadcast to OTHER participants in room (FR-022)
+    // Broadcast to OTHER participants in room (the joiner got the ack)
     socket.to(sessionCode).emit('participant:joined', {
       participantId: socket.id,
       displayName,

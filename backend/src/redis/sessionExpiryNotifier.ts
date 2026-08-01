@@ -5,6 +5,7 @@ import { logger } from '../logger.js';
 import Redis from 'ioredis';
 import type { Server } from 'socket.io';
 import { sessionCodeFromExpiredKey } from '../store/sessionStore.js';
+import { KEY_PREFIX } from './client.js';
 import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
@@ -63,6 +64,11 @@ function handleSessionExpired(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   key: string
 ): void {
+  // Keyspace notifications carry the raw key name — the client's keyPrefix
+  // (test namespacing) is not stripped by ioredis, so strip it here.
+  if (KEY_PREFIX && key.startsWith(KEY_PREFIX)) {
+    key = key.slice(KEY_PREFIX.length);
+  }
   // The store owns the key format; sub-keys (e.g. ...:results) return null
   const sessionCode = sessionCodeFromExpiredKey(key);
 

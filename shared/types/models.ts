@@ -1,5 +1,4 @@
 // Shared TypeScript types for data models
-// Based on: specs/001-dinner-decider-enables/data-model.md
 
 export const SESSION_CODE_LENGTH = 5;
 export const SESSION_CODE_PATTERN = /^[A-Z0-9]{5}$/;

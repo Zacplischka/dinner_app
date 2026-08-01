@@ -1,5 +1,5 @@
-// Lifted verbatim from ComparisonViewPage.tsx — the Group Order menu is the
-// third render site for the same cents -> AUD-string format.
+// The one cents -> AUD-string format, shared by every price render site
+// (Comparison View, Group Order, Results, Shopping List).
 export function formatPrice(priceCents: number) {
   return new Intl.NumberFormat('en-AU', {
     style: 'currency',

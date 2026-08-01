@@ -4,7 +4,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
-import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
+import { getTestRedis, cleanupTestData, waitForRedis, testKeys } from '../helpers/testSetup.js';
 import { recipeHits, spoonacularFetchFake } from '../helpers/spoonacularFetchFake.js';
 
 const craving = {
@@ -32,7 +32,7 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
   beforeEach(async () => {
     // Pools are shared by design and outlive a Session, so a warm one from an
     // earlier test would answer for this one. Start every test cold.
-    const pooled = await redis.keys('recipes:*');
+    const pooled = await testKeys(redis, 'recipes:*');
     if (pooled.length > 0) await redis.del(...pooled);
   });
 
@@ -151,7 +151,7 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
 
     expect(response.body).toMatchObject({ code: 'NO_RECIPES_FOUND' });
     expect(response.body.message).toMatch(/no recipes/i);
-    await expect(redis.keys('session:*')).resolves.toEqual([]);
+    await expect(testKeys(redis, 'session:*')).resolves.toEqual([]);
   });
 
   it('serves the clean miss from cache — fiddling with chips is one lookup', async () => {
@@ -181,7 +181,7 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
     // the Craving, so the two outcomes never share a code or a message.
     expect(response.body.code).toBe('RECIPE_SOURCE_UNAVAILABLE');
     expect(response.body.message).toMatch(/try again/i);
-    await expect(redis.keys('recipes:pool:*')).resolves.toEqual([]);
+    await expect(testKeys(redis, 'recipes:pool:*')).resolves.toEqual([]);
   });
 
   it('deals the whole thin pool with no floor and no warning', async () => {

@@ -5,7 +5,7 @@
 // service over real Redis.
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import type Redis from 'ioredis';
-import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
+import { getTestRedis, cleanupTestData, waitForRedis, testKeys } from '../helpers/testSetup.js';
 import { sessionService, sessionStore as store } from '../../src/server.js';
 import {
   recipeHits,
@@ -36,7 +36,7 @@ describe('Integration Test: a Cook Session end to end', () => {
   });
 
   beforeEach(async () => {
-    const pooled = await redis.keys('recipes:*');
+    const pooled = await testKeys(redis, 'recipes:*');
     if (pooled.length > 0) await redis.del(...pooled);
     vi.spyOn(globalThis, 'fetch').mockImplementation(
       spoonacularFetchFake({ recipes: hits }).fetchImpl
@@ -46,7 +46,7 @@ describe('Integration Test: a Cook Session end to end', () => {
   afterEach(async () => {
     vi.restoreAllMocks();
     await cleanupTestData(redis);
-    const pooled = await redis.keys('recipes:*');
+    const pooled = await testKeys(redis, 'recipes:*');
     if (pooled.length > 0) await redis.del(...pooled);
   });
 

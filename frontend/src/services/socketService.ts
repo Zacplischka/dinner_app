@@ -22,7 +22,6 @@ import type {
   OrderBuyResponse,
 } from '@dinder/shared/types';
 
-/* v8 ignore next */
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 // Reserved socket.io lifecycle events, alongside the app's server events

@@ -5,8 +5,9 @@
 //
 // Boundary rule (#106): snake_case database rows never cross the store. Read
 // functions map rows to camelCase shared values (UserProfile and the shapes
-// below) before returning; only the not-yet-migrated mutation/invite queries
-// still return raw columns, and #107/#108 own those.
+// below) before returning; a few mutation/invite queries still return raw
+// single columns (e.g. acceptSessionInvite's session_code) — the leftover
+// edge of that migration, whose original tickets (#107/#108) are closed.
 
 import { logger } from '../logger.js';
 import { supabase, type Database } from '../services/supabase.js';
@@ -25,7 +26,8 @@ const profileSelect = 'id, display_name, avatar_url, email';
 type ProfileRow = Pick<Tables['profiles']['Row'], 'id' | 'display_name' | 'avatar_url' | 'email'>;
 
 // The single row→wire mapping for profiles. Missing fields fall back the same
-// way the old service-side mapper did (partial rows only occur in tests).
+// way the old service-side mapper did — display_name, email and avatar_url are
+// nullable columns, so partial rows are real in production, not just in tests.
 function toUserProfile(row: ProfileRow): UserProfile {
   return {
     id: row.id || '',
@@ -121,10 +123,7 @@ export async function searchProfilesByEmail(
 
 /** Returns null when the query fails; callers decide whether that's fatal. */
 export async function listProfilesByIds(ids: string[]): Promise<UserProfile[] | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(profileSelect)
-    .in('id', ids);
+  const { data, error } = await supabase.from('profiles').select(profileSelect).in('id', ids);
 
   if (error) {
     logger.error({ err: error }, 'Error fetching profiles');
@@ -193,7 +192,7 @@ export async function findFriendshipBetween(userId: string, otherUserId: string)
     .select('id, status')
     .or(
       `and(user_id.eq.${userId},friend_id.eq.${otherUserId}),` +
-      `and(user_id.eq.${otherUserId},friend_id.eq.${userId})`
+        `and(user_id.eq.${otherUserId},friend_id.eq.${userId})`
     )
     .maybeSingle();
 
@@ -247,7 +246,10 @@ export async function acceptFriendRequest(requestId: string): Promise<void> {
   }
 }
 
-export async function deletePendingRequestForRecipient(requestId: string, userId: string): Promise<void> {
+export async function deletePendingRequestForRecipient(
+  requestId: string,
+  userId: string
+): Promise<void> {
   const { error } = await supabase
     .from('friendships')
     .delete()
@@ -267,7 +269,7 @@ export async function deleteFriendshipBetween(userId: string, friendId: string):
     .delete()
     .or(
       `and(user_id.eq.${userId},friend_id.eq.${friendId}),` +
-      `and(user_id.eq.${friendId},friend_id.eq.${userId})`
+        `and(user_id.eq.${friendId},friend_id.eq.${userId})`
     );
 
   if (error) {
@@ -300,12 +302,10 @@ type SessionInviteInsert = Tables['session_invites']['Insert'];
 
 export async function createSessionInvites(invites: SessionInviteInsert[]): Promise<void> {
   // Upsert to handle duplicate invites gracefully
-  const { error } = await supabase
-    .from('session_invites')
-    .upsert(invites, {
-      onConflict: 'session_code,inviter_id,invitee_id',
-      ignoreDuplicates: true,
-    });
+  const { error } = await supabase.from('session_invites').upsert(invites, {
+    onConflict: 'session_code,inviter_id,invitee_id',
+    ignoreDuplicates: true,
+  });
 
   if (error) {
     // If upsert fails, try inserting individually (ignoring duplicates)

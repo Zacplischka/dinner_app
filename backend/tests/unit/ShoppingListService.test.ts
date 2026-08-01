@@ -54,8 +54,9 @@ const recipe: PooledRecipe = {
 /** A store the service can write to and the test can read back. */
 function fakeRedis() {
   const keys = new Map<string, { value: string; ttlMs: number }>();
-  // The Claims hashes, beside the list strings exactly as in Redis. `diesAt`
-  // is what PEXPIREAT was last told, which is the whole of the TTL story here.
+  // The Claims and Swaps hashes, beside the list strings exactly as in Redis.
+  // `diesAt` is what PEXPIREAT was last told, which is the whole of the TTL
+  // story here.
   const hashes = new Map<string, Map<string, string>>();
   const diesAt = new Map<string, number>();
   const hash = (key: string) => hashes.get(key) ?? hashes.set(key, new Map()).get(key)!;

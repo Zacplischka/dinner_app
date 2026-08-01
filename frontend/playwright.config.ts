@@ -65,7 +65,7 @@ export default defineConfig({
     // Navigation timeout
     navigationTimeout: 15_000,
 
-    // Accessibility: wait for no network activity
+    // Slow motion locally so a watched run is followable; CI runs full speed
     ...(CI ? {} : { launchOptions: { slowMo: 50 } }),
   },
 
@@ -76,7 +76,7 @@ export default defineConfig({
       use: {
         ...devices['iPhone 12 Pro'],
         browserName: 'chromium',
-        // Override viewport for exact FR-014 requirements
+        // Pin the exact iPhone 12 Pro viewport the mobile-first UI targets
         viewport: { width: 390, height: 844 },
       },
     },

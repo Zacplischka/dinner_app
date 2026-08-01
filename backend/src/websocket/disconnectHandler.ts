@@ -1,17 +1,13 @@
 // WebSocket disconnect handler
-// Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import type { SessionStore } from '../store/sessionStore.js';
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from '@dinder/shared/types';
+import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
 /**
  * Handle socket disconnect
- * Note: Per FR-025, participant is NOT removed from session
+ * Note: the participant is NOT removed from the session — they may reconnect.
  * Session stays in waiting state until reconnect or expire
  */
 export async function handleDisconnect(
@@ -28,20 +24,23 @@ export async function handleDisconnect(
 
     if (!participant) {
       // Participant not found or not in any session
-      logger.warn({
-        socketId: socket.id,
-        reason,
-      }, 'Disconnected socket had no participant record');
+      logger.warn(
+        {
+          socketId: socket.id,
+          reason,
+        },
+        'Disconnected socket had no participant record'
+      );
       return;
     }
 
     const { sessionCode, displayName } = participant;
 
-    // Get current participant count (unchanged, per FR-025)
+    // Get current participant count (unchanged — a disconnect removes nobody)
     const participantCount = await store.countParticipants(sessionCode);
 
     // Broadcast participant:disconnected to remaining participants
-    // This is INFORMATIONAL only - participant remains in session per FR-025
+    // This is INFORMATIONAL only - the participant remains in the session
     // Different from participant:left which is for intentional departures
     socket.to(sessionCode).emit('participant:disconnected', {
       participantId: socket.id,
@@ -49,11 +48,14 @@ export async function handleDisconnect(
       participantCount, // Count unchanged - participant still in session
     });
 
-    logger.info({ socketId: socket.id, sessionCode }, 'Participant disconnected, session preserved');
+    logger.info(
+      { socketId: socket.id, sessionCode },
+      'Participant disconnected, session preserved'
+    );
 
-    // Note: We do NOT call ParticipantModel.removeParticipant
+    // Note: We do NOT call the store's removeParticipant
     // The participant remains in the session and can reconnect
-    // The session will expire after 30 minutes of inactivity (FR-019)
+    // The session will expire after 30 minutes of inactivity
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in disconnect handler');
   }

@@ -162,14 +162,14 @@ const socketConfig: SocketConfig = {
 
     // ponytail: client-only presence, no server truth. Two holes: (i) a Participant who
     // dropped before you joined shows as Live to you; (ii) your OWN reconnect resets every
-    // badge to Live, because connect (:44-54) re-joins and joinSession (:252-259) replaces
+    // badge to Live, because the connect handler re-joins and joinSession replaces
     // the list from SessionJoinData.participants, which is { participantId, displayName,
     // isHost } only. Badges are honest again from the next participant:disconnected.
     // Upgrade that fixes both at once: hset an offline flag on participant:{pid} in
     // disconnectHandler and widen SessionJoinData.participants with isOnline?: boolean
     // (additive, ADR 0007).
     // participant:disconnected - A participant lost connection (network issue, browser close, etc.)
-    // This is INFORMATIONAL only - the participant is NOT removed from the session (FR-025).
+    // This is INFORMATIONAL only - the participant is NOT removed from the session.
     // They can reconnect and will be re-registered with a new socket.id.
     'participant:disconnected': (event: ParticipantDisconnectedEvent) => {
       console.log('Participant disconnected:', event);
@@ -179,7 +179,7 @@ const socketConfig: SocketConfig = {
       const participant = store.participants.find((p) => p.participantId === event.participantId);
       const displayName = participant?.displayName || event.displayName;
 
-      // Do NOT remove the participant - they may reconnect (FR-025)
+      // Do NOT remove the participant - they may reconnect
       // Just show an informational toast
       toast.warning(`${displayName} lost connection`, { duration: 3000 });
 
@@ -225,7 +225,9 @@ const socketConfig: SocketConfig = {
       });
     },
 
-    // order:state - full Group Order state, emitted after open and every mutation.
+    // order:state - Group Order state sans Pinned Menu, broadcast on every
+    // Order Line change and the Buyer claim (order:open acks directly and
+    // broadcasts nothing).
     // io.in broadcasts to the sender too, so the toast is gated on the change
     // being a removal by someone other than me; an addition toasts on no phone.
     'order:state': (event: OrderStateEvent) => {

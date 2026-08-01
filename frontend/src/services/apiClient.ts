@@ -33,7 +33,6 @@ import type {
 } from '@dinder/shared/types';
 import { useAuthStore } from '../stores/authStore';
 
-/* v8 ignore next */
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 /**
@@ -232,9 +231,10 @@ function authedRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
 /**
  * The one typed error thrown for any failed API response. `code` is a stable
- * public `ApiErrorCode` once the backend emits canonical errors (#104); during
- * migration it may be a legacy `error` value verbatim (e.g. `validation_error`),
- * or `UNKNOWN` when the failure body carries no code at all.
+ * public `ApiErrorCode`: the backend emits canonical { code, message } bodies
+ * everywhere (#104, shipped). The legacy `error`-field branch below is dead
+ * defence, not a live compatibility path; `UNKNOWN` covers a failure body
+ * carrying no code at all.
  */
 export class ApiClientError extends Error {
   constructor(
@@ -249,8 +249,9 @@ export class ApiClientError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    // Canonical bodies are { code, message }; legacy bodies have only a
-    // lowercase `error` (and sometimes message); some failures have no body.
+    // Canonical bodies are { code, message } — the backend emits them
+    // everywhere since #104, so the lowercase `error` branch is dead defence;
+    // some failures have no body at all.
     const body = (await response.json().catch(() => ({}))) as {
       code?: string;
       error?: string;

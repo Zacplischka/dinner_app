@@ -23,100 +23,118 @@ const GENERIC = 'An unexpected error occurred. Please try again later.';
 describe('canonical error transport', () => {
   // Every private DomainErrorCode → its public { code, status }. `message` is
   // asserted only where the transport overrides the domain message.
-  const cases: Array<{
-    domain: DomainErrorCode;
-    domainMessage: string;
-    status: number;
-    code: string;
-    message?: string;
-  }> = [
-    {
-      domain: 'SESSION_NOT_FOUND',
+  //
+  // Keyed by DomainErrorCode — the same compiler-enforced-record pattern as the
+  // mapper under test (toApiError.MAPPING). The mapper's exhaustive Record is
+  // what let a plain-array version of this table fall five codes behind
+  // silently: the table is the thing that can rot, not the mapping.
+  const cases: Record<
+    DomainErrorCode,
+    { domainMessage: string; status: number; code: string; message?: string }
+  > = {
+    SESSION_NOT_FOUND: {
       domainMessage: 'Session AB123 not found',
       status: 404,
       code: 'SESSION_NOT_FOUND',
     },
-    { domain: 'SESSION_FULL', domainMessage: 'Session is full', status: 409, code: 'SESSION_FULL' },
-    {
-      domain: 'DISPLAY_NAME_TAKEN',
+    SESSION_FULL: { domainMessage: 'Session is full', status: 409, code: 'SESSION_FULL' },
+    DISPLAY_NAME_TAKEN: {
       domainMessage: 'Display name taken',
       status: 409,
       code: 'DISPLAY_NAME_TAKEN',
     },
-    {
-      domain: 'SESSION_ALREADY_STARTED',
+    SESSION_ALREADY_STARTED: {
       domainMessage: 'Session already started',
       status: 409,
       code: 'SESSION_ALREADY_STARTED',
     },
-    {
-      domain: 'NO_RESTAURANTS_FOUND',
+    NO_RESTAURANTS_FOUND: {
       domainMessage: 'No restaurants',
       status: 404,
       code: 'NO_RESTAURANTS_FOUND',
     },
-    {
-      domain: 'VALIDATION_ERROR',
+    NO_RECIPES_FOUND: {
+      domainMessage: 'No recipes matched that Craving',
+      status: 404,
+      code: 'NO_RECIPES_FOUND',
+    },
+    RECIPE_SOURCE_UNAVAILABLE: {
+      domainMessage: 'Could not reach the recipe source. Please try again.',
+      status: 503,
+      code: 'RECIPE_SOURCE_UNAVAILABLE',
+    },
+    NO_RESTAURANTS: {
+      domainMessage: 'This session has no restaurants',
+      status: 404,
+      code: 'NO_RESTAURANTS',
+    },
+    VALIDATION_ERROR: {
       domainMessage: 'Bad field',
       status: 400,
       code: 'VALIDATION_ERROR',
     },
-    {
-      domain: 'ALREADY_SUBMITTED',
+    ALREADY_SUBMITTED: {
       domainMessage: 'Already submitted',
       status: 409,
       code: 'ALREADY_SUBMITTED',
     },
-    {
-      domain: 'INVALID_RESTAURANTS',
+    INVALID_RESTAURANTS: {
       domainMessage: 'Bad restaurants',
       status: 400,
       code: 'VALIDATION_ERROR',
     },
-    {
-      domain: 'NOT_IN_SESSION',
+    NOT_IN_SESSION: {
       domainMessage: 'Not a participant',
       status: 403,
       code: 'NOT_IN_SESSION',
     },
-    {
-      domain: 'not_found',
+    // Expired and never-existed answer identically — the public code is the
+    // plain NOT_FOUND, so the wire reveals nothing about which it was.
+    SHOPPING_LIST_NOT_FOUND: {
+      domainMessage: 'Shopping list not found',
+      status: 404,
+      code: 'NOT_FOUND',
+    },
+    RATE_LIMITED: {
+      domainMessage: 'Places quota exhausted',
+      status: 503,
+      code: 'RATE_LIMITED',
+    },
+    not_found: {
       domainMessage: 'Friend request not found',
       status: 404,
       code: 'NOT_FOUND',
     },
-    {
-      domain: 'already_friends',
+    already_friends: {
       domainMessage: 'Already friends',
       status: 409,
       code: 'ALREADY_FRIENDS',
     },
-    { domain: 'request_pending', domainMessage: 'Pending', status: 409, code: 'REQUEST_PENDING' },
+    request_pending: { domainMessage: 'Pending', status: 409, code: 'REQUEST_PENDING' },
     // blocked hides behind the missing-user path: status AND message must match.
-    {
-      domain: 'blocked',
+    blocked: {
       domainMessage: 'Unable to send friend request',
       status: 404,
       code: 'NOT_FOUND',
       message: 'User not found with that email',
     },
     // database_error must never leak its internal message.
-    {
-      domain: 'database_error',
+    database_error: {
       domainMessage: 'Failed to fetch friend profiles',
       status: 500,
       code: 'INTERNAL_ERROR',
       message: GENERIC,
     },
-    {
-      domain: 'validation_error',
+    validation_error: {
       domainMessage: 'No valid ids',
       status: 400,
       code: 'VALIDATION_ERROR',
     },
-  ];
+  };
 
-  it.each(cases)(
+  it.each(
+    (Object.keys(cases) as DomainErrorCode[]).map((domain) => ({ domain, ...cases[domain] }))
+  )(
     'maps DomainError($domain) → $code $status as exactly { code, message }',
     async ({ domain, domainMessage, status, code, message }) => {
       // 500s log the real error; silence it so the suite output stays clean.

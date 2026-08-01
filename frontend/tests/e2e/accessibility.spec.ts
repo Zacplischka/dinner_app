@@ -7,9 +7,10 @@ import { checkAccessibility } from './utils/test-helpers';
  * Verify the app meets basic accessibility standards:
  * - All interactive elements have accessible names
  * - Form inputs have labels
- * - Images have alt text
- * - Focus is properly managed
- * - Color contrast is adequate
+ * - Errors surface as visible text
+ * - Keyboard navigation reaches the main actions; focus is visible
+ * - Heading structure and a main landmark exist
+ * (Color contrast is covered by neon-theme.spec.ts.)
  */
 
 test.describe('Accessibility - Home Page', () => {
@@ -88,18 +89,14 @@ test.describe('Accessibility - Join Session Page', () => {
   test('error messages are accessible', async ({ joinPage, page }) => {
     await joinPage.goto();
 
-    // Try to submit without filling in fields
+    // A well-formed code that names no Session — the join must fail visibly.
     await joinPage.enterSessionCode('AAAAA');
     await joinPage.enterName('Test');
-
-    // Click join - should show error
     await joinPage.joinButton.click();
 
-    // Wait for error (session doesn't exist)
-    await page.waitForTimeout(2_000);
-
-    // Any error messages should be in an accessible container
-    // This test validates the error handling UI exists
+    // The failure must surface as visible text a screen reader reaches, not a
+    // silent no-op. toBeVisible auto-waits, so no blind timeout.
+    await expect(page.getByText('Session not found or has expired')).toBeVisible();
   });
 });
 
@@ -144,11 +141,10 @@ test.describe('Accessibility - Keyboard Navigation', () => {
     await expect(page).toHaveURL(/\/create/);
   });
 
-  test('Escape key closes modals', async ({ page }) => {
-    // This would test modal closing behavior
-    // e.g., in leave session confirmation
-    test.skip(); // No modals on initial pages
-  });
+  // Escape-closes-modal is covered at the component seam in
+  // liveSwipeRoom.test.tsx ('Escape dismisses exactly as Keep swiping does');
+  // no modal exists on the pages this suite visits, so a spec here could only
+  // ever be skipped.
 });
 
 test.describe('Accessibility - Screen Reader Support', () => {
@@ -167,9 +163,9 @@ test.describe('Accessibility - Screen Reader Support', () => {
   test('main landmark is present', async ({ page, homePage }) => {
     await homePage.goto();
 
-    // Page should have main content area
-    const main = page.getByRole('main').or(page.locator('main'));
-    // If no explicit main, that's okay - this is informational
+    // Exactly one <main> landmark holds the page content (getByRole is strict:
+    // zero or two mains both fail).
+    await expect(page.getByRole('main')).toBeVisible();
   });
 
   test('buttons have descriptive text', async ({ homePage }) => {
