@@ -5,7 +5,7 @@
 // GeocodedArea value (Phase 1A — no response DTO when the whole body is a
 // stable shared value), and its request carries no body to validate.
 
-import type { Card } from './models.js';
+import type { DeckEntry } from './models.js';
 
 export interface SessionLocation {
   latitude: number;
@@ -38,8 +38,8 @@ export interface CreateSessionResponse extends SessionResponse {
 }
 
 // GET /api/options/:sessionCode — the Session's Deck. The field keeps its name
-// while Restaurant is the only shipped card kind (ADR 0007).
+// while Restaurant is the only shipped Deck Entry kind (ADR 0007).
 export interface LoadRestaurantsResponse {
   sessionCode: string;
-  restaurants: Card[];
+  restaurants: DeckEntry[];
 }

@@ -204,12 +204,12 @@ export default function GroupOrderPage() {
   // without the crowned Restaurant in the store (e.g. a direct navigation) —
   // a narrow, untested edge case.
   const orderPlaceId = useSessionStore((state) => state.orderPlaceId);
-  const crownedCard =
+  const crownedEntry =
     topPick?.restaurant.placeId === orderPlaceId
       ? topPick.restaurant
       : overlappingOptions.find((c) => c.placeId === orderPlaceId);
   // A Group Order only ever opens on a Restaurant; see isRestaurant.
-  const crownedRestaurant = crownedCard && isRestaurant(crownedCard) ? crownedCard : undefined;
+  const crownedRestaurant = crownedEntry && isRestaurant(crownedEntry) ? crownedEntry : undefined;
   const deliveryPills = (
     <DeliveryActions
       ubereatsHref={generateUberEatsUrl(crownedRestaurant?.name ?? '', crownedRestaurant?.address)}

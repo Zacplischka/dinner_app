@@ -6,9 +6,9 @@ export const SESSION_CODE_PATTERN = /^[A-Z0-9]{5}$/;
 
 export interface Restaurant {
   /**
-   * Card kind. Optional and absent from every producer that predates the Cook
-   * Branch, which is what makes the union additive (ADR 0007): no `kind` reads
-   * as a Restaurant.
+   * Which kind of Deck Entry this is. Optional and absent from every producer
+   * that predates the Cook Branch, which is what makes the union additive
+   * (ADR 0007): no `kind` reads as a Restaurant.
    */
   kind?: 'restaurant';
   placeId: string;
@@ -36,13 +36,13 @@ export interface Recipe {
 }
 
 /**
- * One card of a Deck — the Restaurant or Recipe a Participant swipes on. The
- * whole Selection path (deal, swipe, Live Selection, Match, Top Pick) keys on
- * `placeId`, which is a Google place id for a Restaurant and the recipe source's
- * id for a Recipe; it keeps its original name because every wire shape, Redis
- * key, and store field already speaks it (ADR 0007).
+ * One entry of a Deck — the Restaurant or Recipe a Participant swipes on (see
+ * CONTEXT.md). The whole Selection path (deal, swipe, Live Selection, Match,
+ * Top Pick) keys on `placeId`, which is a Google place id for a Restaurant and
+ * the recipe source's id for a Recipe; it keeps its original name because every
+ * wire shape, Redis key, and store field already speaks it (ADR 0007).
  */
-export type Card = Restaurant | Recipe;
+export type DeckEntry = Restaurant | Recipe;
 
 export interface Venue {
   placeId: string;

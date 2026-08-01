@@ -914,12 +914,12 @@ describe('SessionService', () => {
     // into the store because no producer deals them yet — the point is that the
     // crowning mechanics need no fork, only a per-kind middle rung.
     describe('Recipe Deck', () => {
-      async function createSessionWithRecipeDeck(cards: Recipe[]): Promise<string> {
+      async function createSessionWithRecipeDeck(entries: Recipe[]): Promise<string> {
         const sessionCode = 'COOK1';
         await store.createSession(sessionCode, {
           hostId: 'p-alice',
           hostName: 'Alice',
-          cards,
+          entries,
         });
         await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
         await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');

@@ -221,13 +221,13 @@ export default function ResultsPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const {
-    overlappingOptions: matchedCards,
+    overlappingOptions: matchedEntries,
     allSelections,
     restaurantNames,
     participants,
-    restaurants: deckCards,
+    restaurants: deckEntries,
     sessionStatus,
-    topPick: crownedCard,
+    topPick: crownedEntry,
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
@@ -235,11 +235,11 @@ export default function ResultsPage() {
 
   // This is the restaurant ending, and a Recipe is filtered away here rather
   // than rendered — see isRestaurant before routing a Cook Session at it.
-  const overlappingOptions = matchedCards.filter(isRestaurant);
-  const restaurants = deckCards.filter(isRestaurant);
+  const overlappingOptions = matchedEntries.filter(isRestaurant);
+  const restaurants = deckEntries.filter(isRestaurant);
   const topPick =
-    crownedCard && isRestaurant(crownedCard.restaurant)
-      ? { ...crownedCard, restaurant: crownedCard.restaurant }
+    crownedEntry && isRestaurant(crownedEntry.restaurant)
+      ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
       : undefined;
 
   const hasOverlap = overlappingOptions.length > 0;

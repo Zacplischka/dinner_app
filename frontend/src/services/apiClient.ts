@@ -3,7 +3,7 @@
 
 import type {
   AcceptSessionInviteResponse,
-  Card,
+  DeckEntry,
   CreateSessionRequest,
   CreateSessionResponse,
   Friend,
@@ -80,7 +80,7 @@ export async function getSession(sessionCode: string): Promise<SessionResponse> 
 /**
  * Get restaurants for a session
  */
-export async function getRestaurants(sessionCode: string): Promise<Card[]> {
+export async function getRestaurants(sessionCode: string): Promise<DeckEntry[]> {
   const data = await request<LoadRestaurantsResponse>(`/options/${sessionCode}`);
   return resolvePhotoUrls(data.restaurants);
 }

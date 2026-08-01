@@ -42,6 +42,10 @@ _Avoid_: option, card, place (except in external-API contexts)
 A cookable dish fetched for a Cook-branch Session that Participants swipe on, carrying title, image, ingredients, and instructions. The swiped card, the crowned Top Pick, and the thing you cook are all the same Recipe — there is no separate "Meal".
 _Avoid_: meal (except in "meal type", a Craving criterion), dish, card
 
+**Deck Entry**:
+One entry of a Deck — the Restaurant or Recipe a Participant swipes on, and the unit the whole Selection path moves: dealt, swiped, live-selected, matched, crowned. Restaurant and Recipe are its only kinds; a Session's Branch decides which kind its Deck holds, and a Deck never mixes them. The name exists so code that must handle either kind has an honest word for it.
+_Avoid_: card — the swipe UI draws an entry as a card, which is the rendering and not the thing — option, item
+
 **Selection**:
 A single Restaurant or Recipe a Participant swiped yes on.
 _Avoid_: like, vote, pick (except in **Top Pick**)

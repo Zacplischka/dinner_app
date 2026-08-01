@@ -4,7 +4,7 @@
 // Note: Socket type imports are added in backend/frontend packages where socket.io is installed
 
 import type { ApiError } from './api-errors.js';
-import type { Card } from './models.js';
+import type { DeckEntry } from './models.js';
 import type { MenuItemCapture } from './comparison.js';
 
 // ============= Canonical acknowledgement contract (ADR 0006 / #114) =============
@@ -95,7 +95,7 @@ export interface ParticipantSubmittedEvent {
  * The field keeps the name it shipped under (ADR 0007).
  */
 export interface TopPick {
-  restaurant: Card;
+  restaurant: DeckEntry;
   /** Participants who selected it. 0 when nobody selected anything. */
   likedBy: number;
   /** Participants counted in the tally (Object.keys(allSelections).length). */
@@ -104,9 +104,9 @@ export interface TopPick {
 
 export interface SessionResultsEvent {
   sessionCode: string;
-  overlappingOptions: Card[];
+  overlappingOptions: DeckEntry[];
   allSelections: Record<string, string[]>; // displayName -> placeIds
-  restaurantNames: Record<string, string>; // placeId -> card name (for displaying all selections)
+  restaurantNames: Record<string, string>; // placeId -> entry name (for displaying all selections)
   hasOverlap: boolean;
   /** Additive (ADR 0007): absent from an older backend; a Session with zero Restaurants has none. */
   topPick?: TopPick;

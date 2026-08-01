@@ -8,7 +8,7 @@
 
 import type { Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
-import { SESSION_CODE_LENGTH, type Card } from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type DeckEntry } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
 
@@ -52,7 +52,7 @@ export interface Participant {
 // session:{code}:results            set:  placeIds this Session may act on — the Match, plus the
 //                                         crowned Top Pick when there is none ('__empty__' sentinel keeps TTL)
 // session:{code}:restaurant_ids     set:  valid place ids for the session's Deck
-// session:{code}:restaurants        hash: placeId -> Card JSON (the Deck; keys keep
+// session:{code}:restaurants        hash: placeId -> DeckEntry JSON (the Deck; keys keep
 //                                         their restaurant-era names, ADR 0007 is
 //                                         about the wire and these never leave here)
 // session:{code}:order              hash: the Group Order's fixed metadata + Pinned Menu
@@ -164,7 +164,7 @@ export function createSessionStore(redis: Redis) {
       location?: { latitude: number; longitude: number; address?: string };
       searchRadiusMiles?: number;
       /** The Deck this Session deals: Restaurants or Recipes. */
-      cards?: Card[];
+      entries?: DeckEntry[];
     }
   ): Promise<{ session: Session; expireAt: number }> {
     const now = Math.floor(Date.now() / 1000);
@@ -201,13 +201,13 @@ export function createSessionStore(redis: Redis) {
     const pipeline = redis.pipeline();
     pipeline.hset(sessionKey(sessionCode), sessionData);
 
-    if (opts.cards && opts.cards.length > 0) {
-      pipeline.sadd(restaurantIdsKey(sessionCode), ...opts.cards.map((c) => c.placeId));
-      const cardData: Record<string, string> = {};
-      opts.cards.forEach((c) => {
-        cardData[c.placeId] = JSON.stringify(c);
+    if (opts.entries && opts.entries.length > 0) {
+      pipeline.sadd(restaurantIdsKey(sessionCode), ...opts.entries.map((e) => e.placeId));
+      const entryData: Record<string, string> = {};
+      opts.entries.forEach((e) => {
+        entryData[e.placeId] = JSON.stringify(e);
       });
-      pipeline.hset(restaurantsKey(sessionCode), cardData);
+      pipeline.hset(restaurantsKey(sessionCode), entryData);
     }
 
     await pipeline.exec();
@@ -446,11 +446,11 @@ export function createSessionStore(redis: Redis) {
   // --- Match -------------------------------------------------------------
 
   /**
-   * Computes the Match (the Deck cards every Participant selected) via SINTER,
+   * Computes the Match (the Deck Entries every Participant selected) via SINTER,
    * stores it, and returns it with per-participant selections for transparency.
    */
   async function computeAndStoreResults(sessionCode: string): Promise<{
-    overlappingOptions: Card[];
+    overlappingOptions: DeckEntry[];
     allSelections: Record<string, string[]>;
     restaurantNames: Record<string, string>;
     hasOverlap: boolean;
@@ -474,16 +474,16 @@ export function createSessionStore(redis: Redis) {
         ? await redis.smembers(selectionKeys[0])
         : await redis.sinter(...selectionKeys);
 
-    const readCard = async (placeId: string): Promise<Card | null> => {
+    const readEntry = async (placeId: string): Promise<DeckEntry | null> => {
       const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
-      return raw ? (JSON.parse(raw) as Card) : null;
+      return raw ? (JSON.parse(raw) as DeckEntry) : null;
     };
 
-    const overlappingOptions: Card[] = [];
+    const overlappingOptions: DeckEntry[] = [];
     for (const placeId of overlappingPlaceIds) {
-      const card = await readCard(placeId);
-      if (card) {
-        overlappingOptions.push(card);
+      const entry = await readEntry(placeId);
+      if (entry) {
+        overlappingOptions.push(entry);
       }
     }
 
@@ -499,9 +499,9 @@ export function createSessionStore(redis: Redis) {
     const restaurantNames: Record<string, string> = {};
     const allPlaceIds = new Set(Object.values(allSelections).flat());
     for (const placeId of allPlaceIds) {
-      const card = await readCard(placeId);
-      if (card) {
-        restaurantNames[placeId] = card.name;
+      const entry = await readEntry(placeId);
+      if (entry) {
+        restaurantNames[placeId] = entry.name;
       }
     }
 
@@ -562,17 +562,19 @@ export function createSessionStore(redis: Redis) {
 
   // --- Deck --------------------------------------------------------------
 
-  /** missingCount = place ids whose card data is absent (data loss signal). */
-  async function getDeck(sessionCode: string): Promise<{ cards: Card[]; missingCount: number }> {
+  /** missingCount = place ids whose entry data is absent (data loss signal). */
+  async function getDeck(
+    sessionCode: string
+  ): Promise<{ entries: DeckEntry[]; missingCount: number }> {
     const placeIds = await redis.smembers(restaurantIdsKey(sessionCode));
-    const cards: Card[] = [];
+    const entries: DeckEntry[] = [];
     for (const placeId of placeIds) {
       const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
       if (raw) {
-        cards.push(JSON.parse(raw) as Card);
+        entries.push(JSON.parse(raw) as DeckEntry);
       }
     }
-    return { cards, missingCount: placeIds.length - cards.length };
+    return { entries, missingCount: placeIds.length - entries.length };
   }
 
   // --- Group Order -------------------------------------------------------

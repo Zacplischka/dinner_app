@@ -3,10 +3,10 @@
 // wire contracts and are not shared with the backend, whose Redis persistence
 // shapes live in backend/src/store/sessionStore.ts.
 
-import type { Card, Restaurant } from '@dinder/shared/types';
+import type { DeckEntry, Restaurant } from '@dinder/shared/types';
 
 /**
- * Narrows a Deck card to the Restaurant arm.
+ * Narrows a Deck Entry to the Restaurant arm.
  *
  * ponytail: the screens after the Match are the restaurant ending — Compare,
  * the delivery links, the Group Order — so they narrow here instead of branching
@@ -16,7 +16,7 @@ import type { Card, Restaurant } from '@dinder/shared/types';
  * reuse them; if it ever does reuse ResultsPage, this narrowing is what to
  * remove, and MatchCard is what has to learn a second card kind.
  */
-export const isRestaurant = (card: Card): card is Restaurant => card.kind !== 'recipe';
+export const isRestaurant = (entry: DeckEntry): entry is Restaurant => entry.kind !== 'recipe';
 
 export interface Participant {
   participantId: string;
@@ -31,9 +31,9 @@ export interface Participant {
 
 export interface Result {
   sessionCode: string;
-  overlappingOptions: Card[];
+  overlappingOptions: DeckEntry[];
   allSelections: Record<string, string[]>; // displayName -> placeIds
   restaurantNames?: Record<string, string>; // placeId -> name mapping for display
   hasOverlap: boolean;
-  topPick?: { restaurant: Card; likedBy: number; of: number };
+  topPick?: { restaurant: DeckEntry; likedBy: number; of: number };
 }
