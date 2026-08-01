@@ -19,6 +19,7 @@ const secondRestaurant = { ...restaurant, placeId: 'place-2', name: 'Taco Turno'
 
 vi.mock('../../src/services/apiClient', () => ({
   getRestaurants: vi.fn(async () => [restaurant, secondRestaurant]),
+  getSession: vi.fn(async () => ({ shareableLink: 'http://localhost:3000/join?code=AB123' })),
 }));
 
 const orderState = {

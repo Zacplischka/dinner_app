@@ -308,8 +308,21 @@ export function createSessionService({
     isHost: boolean;
     isRejoin: boolean;
     rejoinToken: string;
-    participants: { participantId: string; displayName: string; isHost: boolean }[];
+    participants: {
+      participantId: string;
+      displayName: string;
+      isHost: boolean;
+      hasSubmitted: boolean;
+    }[];
     branch?: Branch;
+    state: string;
+    /** The Session this join pulled the Participant out of, if any (#284). */
+    leftSession?: {
+      sessionCode: string;
+      displayName: string;
+      participantCount: number;
+      results?: Awaited<ReturnType<typeof completeSession>>;
+    };
   }> {
     // Check session exists
     const session = await store.readSession(sessionCode);
@@ -332,12 +345,20 @@ export function createSessionService({
       (participant) => rejoinToken !== undefined && participant.rejoinToken === rejoinToken
     );
 
-    if (!prior && session.state !== 'waiting') {
+    // The Invite Link's rule (CONTEXT.md): anyone holding it can join while the
+    // Session lives — 'waiting' and 'selecting' alike (#284). Only the terminal
+    // states refuse, named explicitly, each with its own words: the message
+    // reaches the client verbatim, and "already started" would be a lie for the
+    // only states still refused.
+    if (!prior && (session.state === 'complete' || session.state === 'expired')) {
       logger.warn(
-        { sessionCode, participantId, reason: 'session_already_started' },
+        { sessionCode, participantId, reason: 'session_over', state: session.state },
         'Rejected session join'
       );
-      throw new DomainError('SESSION_ALREADY_STARTED', 'This session has already started');
+      throw new DomainError(
+        'SESSION_ALREADY_STARTED',
+        session.state === 'complete' ? 'This session has finished' : 'This session has expired'
+      );
     }
 
     let isHost: boolean;
@@ -391,6 +412,33 @@ export function createSessionService({
         'DISPLAY_NAME_TAKEN',
         'That display name is already in use in this session'
       );
+    }
+
+    // The flip side of #283's phantom rooms: a Participant carries at most one
+    // Session in Redis too. Joining a new one leaves the old one for real —
+    // otherwise the old Session's completion (submittedCount === participantCount)
+    // waits forever on someone who will never submit. Ordered after the name
+    // claim so the common refusals (full, name taken, finished) cost the
+    // Participant nothing; only the post-add cap race can still strand them.
+    const elsewhere = await store.getParticipant(participantId);
+    let leftSession:
+      | {
+          sessionCode: string;
+          displayName: string;
+          participantCount: number;
+          results?: Awaited<ReturnType<typeof completeSession>>;
+        }
+      | undefined;
+    if (elsewhere && elsewhere.sessionCode !== sessionCode) {
+      try {
+        leftSession = {
+          sessionCode: elsewhere.sessionCode,
+          ...(await leaveSession(elsewhere.sessionCode, participantId)),
+        };
+      } catch (error) {
+        // The old Session being gone already is not this join's problem.
+        if (!(error instanceof DomainError)) throw error;
+      }
     }
 
     // A rejoin re-keys the Participant by socket.id: removeParticipant DELs their
@@ -474,8 +522,13 @@ export function createSessionService({
         participantId: p.participantId,
         displayName: p.displayName,
         isHost: p.isHost,
+        // A late joiner must see who has already submitted, or "x of y have
+        // swiped" starts at zero in a room where it isn't (#284).
+        hasSubmitted: p.hasSubmitted,
       })),
       branch: session.branch,
+      state: session.state,
+      leftSession,
     };
   }
 

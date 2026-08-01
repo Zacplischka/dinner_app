@@ -28,6 +28,7 @@ vi.mock('../../src/services/apiClient', () => ({
     thirdRestaurant,
     fourthRestaurant,
   ]),
+  getSession: vi.fn(async () => ({ shareableLink: 'http://localhost:3000/join?code=AB123' })),
 }));
 
 vi.mock('../../src/services/socketBindings', () => ({
@@ -238,6 +239,28 @@ describe('Live Swipe Room reveal strip', () => {
   });
 });
 
+// Issue #284 — the Deck's invite affordance: the header's right-hand action
+// slot shares the minted Invite Link, with no "Leave Session?" detour.
+describe('Deck invite affordance', () => {
+  it('copies the minted Invite Link from the deck header without leaving the deck', async () => {
+    // vi.restoreAllMocks() drops setup.ts's mockResolvedValue — re-arm it.
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    seedParticipants('Alice', 'Bob');
+    renderSelectionPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite to session' }));
+
+    await waitFor(() =>
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        'http://localhost:3000/join?code=AB123'
+      )
+    );
+    // No confirm-leave modal, and the deck is still interactive.
+    expect(screen.queryByText('Leave Session?')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Like' })).toBeEnabled();
+  });
+});
+
 // Issue #187 — the Full House takeover: a full-screen overlay raised when the
 // reveal effect's liveReveal() returns fullHouse: true, offering Finish here or
 // Keep swiping.
@@ -383,6 +406,50 @@ describe('Full House takeover', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Like' }));
     }
 
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  // #284: a mid-Deck join re-arms the one-shot takeover — a larger unanimity is
+  // a new fact — but an already-celebrated Deck Entry never re-fires, and the
+  // earlier Full House is never retracted.
+  it('re-arms after the Participant list grows and fires for a new unanimity across the larger group', async () => {
+    await raiseFullHouse();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // Dana joins mid-Deck.
+    act(() => {
+      useSessionStore.getState().addParticipant(participant('p4', 'Dana'));
+    });
+
+    // A second Restaurant goes unanimous across all four.
+    fireEvent.click(screen.getByRole('button', { name: 'Like' })); // like place-2, advance
+    await waitFor(() => expect(screen.getByText('Pho Bar')).toBeInTheDocument());
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-2', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-2', 'Carol');
+      useSessionStore.getState().recordLiveSelection('place-2', 'Dana');
+    });
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Taco Turno')).toBeInTheDocument();
+  });
+
+  it('never re-fires for the same Deck Entry even when the larger group is unanimous on it', async () => {
+    await raiseFullHouse(); // place-1, celebrated for the trio
+    fireEvent.click(screen.getByRole('button', { name: 'Keep swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    act(() => {
+      useSessionStore.getState().addParticipant(participant('p4', 'Dana'));
+    });
+
+    // Dana's like makes place-1 unanimous across four — already celebrated, stays down.
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-1', 'Dana');
+    });
+
+    expect(strip()).toHaveTextContent('4 of 4 liked Ramen Ichiban');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

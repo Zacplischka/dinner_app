@@ -3,9 +3,10 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getRestaurants } from '../services/apiClient';
+import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
+import { useToast } from '../hooks/useToast';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -51,12 +52,25 @@ export default function SelectionPage() {
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
   const [reveal, setReveal] = useState<{ count: number; total: number; name: string } | null>(null);
   const [fullHousePlaceId, setFullHousePlaceId] = useState<string | null>(null);
+  const [shareableLink, setShareableLink] = useState('');
+  const toast = useToast();
   // Count-keyed, not boolean: stores the buffer length last announced per placeId so
   // a card re-reveals when its like count GROWS (the room is audible: "1 of 3" then
   // "2 of 3" then the takeover). An unchanged count never re-fires.
   const announcedRef = useRef<Map<string, number>>(new Map());
-  const fullHouseShownRef = useRef(false); // once per visit to the deck
+  // The takeover is one-shot per roster: armed on entry, disarmed by firing,
+  // re-armed when the Participant list grows (#284) — a larger unanimity is a
+  // new fact. The shown set keeps an already-celebrated Deck Entry from ever
+  // re-firing; the earlier Full House is never retracted either.
+  const fullHouseArmedRef = useRef(true);
+  const fullHouseShownRef = useRef<Set<string>>(new Set());
+  const rosterSizeRef = useRef(0);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (participants.length > rosterSizeRef.current) fullHouseArmedRef.current = true;
+    rosterSizeRef.current = participants.length;
+  }, [participants.length]);
 
   useEffect(() => {
     const loadDeck = async () => {
@@ -77,6 +91,15 @@ export default function SelectionPage() {
     };
 
     void loadDeck();
+
+    // The Deck's invite affordance (#284): a Session admits joiners while it
+    // lives, so the canonical minted Invite Link belongs here too. Losing it
+    // costs only the header button — the code badge still shows.
+    if (sessionCode) {
+      void getSession(sessionCode)
+        .then((session) => setShareableLink(session.shareableLink))
+        .catch(() => {});
+    }
   }, [sessionCode]);
 
   // Listen for participant submissions
@@ -126,8 +149,13 @@ export default function SelectionPage() {
     });
     revealTimerRef.current = setTimeout(() => setReveal(null), 4000);
 
-    if (latest.result.fullHouse && !fullHouseShownRef.current) {
-      fullHouseShownRef.current = true;
+    if (
+      latest.result.fullHouse &&
+      fullHouseArmedRef.current &&
+      !fullHouseShownRef.current.has(latest.restaurant.placeId)
+    ) {
+      fullHouseArmedRef.current = false;
+      fullHouseShownRef.current.add(latest.restaurant.placeId);
       setFullHousePlaceId(latest.restaurant.placeId);
     }
 
@@ -213,6 +241,53 @@ export default function SelectionPage() {
 
   const handleLeaveSession = useLeaveSession(sessionCode);
 
+  // Same share-or-copy fallback as the lobby's invite button.
+  const handleShareInvite = async () => {
+    if (!shareableLink) return;
+
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'Dinder', url: shareableLink });
+        return;
+      } catch (err) {
+        // Dismissing the sheet is not a failure; anything else falls through
+        // to the clipboard. DOMException matching by name (jsdom-safe).
+        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
+      }
+    }
+
+    navigator.clipboard
+      .writeText(shareableLink)
+      .then(() => toast.success('Invite link copied!'))
+      .catch(() => toast.error('Could not copy link'));
+  };
+
+  // Reachable invite mid-Deck (#284): the header's right-hand action slot, so
+  // no route back to the lobby and no "Leave Session?" detour.
+  const inviteAction = shareableLink ? (
+    <button
+      onClick={() => void handleShareInvite()}
+      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-cyan hover:text-cyan/80 transition-colors"
+      aria-label="Invite to session"
+      title="Invite to session"
+    >
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 12.632a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+        />
+      </svg>
+    </button>
+  ) : null;
+
   // Check if we've gone through the whole Deck
   const isDone = currentIndex >= entries.length;
 
@@ -243,6 +318,7 @@ export default function SelectionPage() {
           selectionsCount={selections.length}
           showConnectionStatus
           compact
+          rightAction={inviteAction}
         />
 
         <div className="flex items-center justify-center px-4 py-8">
@@ -298,6 +374,7 @@ export default function SelectionPage() {
           selectionsCount={selections.length}
           showConnectionStatus
           compact
+          rightAction={inviteAction}
         />
 
         <div className="flex flex-col items-center justify-center px-4 py-8">
@@ -381,15 +458,18 @@ export default function SelectionPage() {
           total: entries.length,
         }}
         rightAction={
-          <div
-            className="flex items-center gap-1.5 text-lime"
-            role="status"
-            aria-label={`${selections.length} liked`}
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-            </svg>
-            <span className="font-semibold">{selections.length}</span>
+          <div className="flex items-center gap-1">
+            {inviteAction}
+            <div
+              className="flex items-center gap-1.5 text-lime"
+              role="status"
+              aria-label={`${selections.length} liked`}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+              </svg>
+              <span className="font-semibold">{selections.length}</span>
+            </div>
           </div>
         }
       />

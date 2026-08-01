@@ -549,15 +549,192 @@ describe('SessionService', () => {
       expect(result.branch).toBeUndefined();
     });
 
-    it('should reject a brand-new participant after the session starts', async () => {
+    // #284: the Invite Link's rule — anyone holding it can join while the
+    // Session lives. Only the terminal states refuse.
+    it('should admit a brand-new participant while the session is selecting', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
       await store.updateState(session.sessionCode, 'selecting');
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+
+      expect(result).toMatchObject({ participantCount: 2, isRejoin: false, state: 'selecting' });
+      await expect(store.getParticipant('socket-bob')).resolves.toMatchObject({
+        displayName: 'Bob',
+      });
+    });
+
+    it('should keep a late joiner from completing until they submit, without touching prior Submissions', async () => {
+      searchNearbyRestaurants.mockResolvedValue([
+        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
+      ]);
+      const session = await SessionService.createSession(
+        'Alice',
+        { latitude: 37.7749, longitude: -122.4194 },
+        5
+      );
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await store.updateState(session.sessionCode, 'selecting');
+      const first = await SessionService.submitSelections(session.sessionCode, 'socket-alice', [
+        'place1',
+      ]);
+      expect(first).toMatchObject({ submittedCount: 1, participantCount: 2 });
+
+      // Cara arrives mid-Deck: the denominator grows, nothing already recorded moves.
+      await SessionService.joinSession(session.sessionCode, 'socket-cara', 'Cara');
+      await expect(store.getParticipant('socket-alice')).resolves.toMatchObject({
+        hasSubmitted: true, // joining resets nothing
+      });
+
+      // Bob was the last holdout before the join — his Submission no longer completes.
+      const second = await SessionService.submitSelections(session.sessionCode, 'socket-bob', [
+        'place1',
+      ]);
+      expect(second).toMatchObject({ submittedCount: 2, participantCount: 3 });
+      expect(second.results).toBeUndefined();
+
+      const third = await SessionService.submitSelections(session.sessionCode, 'socket-cara', [
+        'place1',
+      ]);
+      expect(third).toMatchObject({ submittedCount: 3, participantCount: 3 });
+      expect(third.results?.allSelections).toMatchObject({
+        Alice: ['place1'],
+        Bob: ['place1'],
+        Cara: ['place1'],
+      });
+    });
+
+    it('should tell a joiner who already submitted from the ack participants', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await store.updateState(session.sessionCode, 'selecting');
+      await SessionService.submitSelections(session.sessionCode, 'socket-alice', []);
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-cara', 'Cara');
+
+      expect(result.participants).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ displayName: 'Alice', hasSubmitted: true }),
+          expect.objectContaining({ displayName: 'Bob', hasSubmitted: false }),
+          expect.objectContaining({ displayName: 'Cara', hasSubmitted: false }),
+        ])
+      );
+    });
+
+    it('should refuse a complete session saying it has finished, not started', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await store.updateState(session.sessionCode, 'complete');
+
+      await expect(
+        SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob')
+      ).rejects.toMatchObject({
+        code: 'SESSION_ALREADY_STARTED',
+        message: 'This session has finished',
+      });
+      await expect(store.getParticipant('socket-bob')).resolves.toBeNull();
+    });
+
+    it('should refuse an expired session', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await store.updateState(session.sessionCode, 'expired');
 
       await expect(
         SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob')
       ).rejects.toMatchObject({ code: 'SESSION_ALREADY_STARTED' });
       await expect(store.getParticipant('socket-bob')).resolves.toBeNull();
+    });
+
+    it('should still admit a rejoin with a valid token in a complete session, carrying the Submission', async () => {
+      searchNearbyRestaurants.mockResolvedValue([
+        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
+      ]);
+      const session = await SessionService.createSession(
+        'Alice',
+        { latitude: 37.7749, longitude: -122.4194 },
+        5
+      );
+      const joined = await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await SessionService.submitSelections(session.sessionCode, 'socket-alice', ['place1']);
+      await SessionService.submitSelections(session.sessionCode, 'socket-bob', ['place1']);
+      await expect(store.readSession(session.sessionCode)).resolves.toMatchObject({
+        state: 'complete',
+      });
+
+      const rejoin = await SessionService.joinSession(
+        session.sessionCode,
+        'socket-alice-2',
+        'Alice',
+        joined.rejoinToken
+      );
+
+      expect(rejoin).toMatchObject({ isRejoin: true, state: 'complete' });
+      await expect(store.getParticipant('socket-alice-2')).resolves.toMatchObject({
+        hasSubmitted: true,
+      });
+    });
+
+    // #283's flip side: joining a new Session leaves the old one for real, or
+    // the old Session's completion waits forever on someone who left.
+    it('should remove a participant from their old session when they join another', async () => {
+      const first = await SessionService.createSession('Alice');
+      await SessionService.joinSession(first.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(first.sessionCode, 'socket-bob', 'Bob');
+      const second = await SessionService.createSession('Cara');
+
+      const result = await SessionService.joinSession(second.sessionCode, 'socket-bob', 'Bob');
+
+      expect(result.leftSession).toMatchObject({
+        sessionCode: first.sessionCode,
+        displayName: 'Bob',
+        participantCount: 1,
+      });
+      expect(result.leftSession?.results).toBeUndefined();
+      await expect(store.isParticipant(first.sessionCode, 'socket-bob')).resolves.toBe(false);
+      await expect(store.readSession(first.sessionCode)).resolves.toMatchObject({
+        participantCount: 1,
+      });
+    });
+
+    it('should complete the old session when its last holdout joins another', async () => {
+      searchNearbyRestaurants.mockResolvedValue([
+        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
+      ]);
+      const first = await SessionService.createSession(
+        'Alice',
+        { latitude: 37.7749, longitude: -122.4194 },
+        5
+      );
+      await SessionService.joinSession(first.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(first.sessionCode, 'socket-bob', 'Bob');
+      await store.updateState(first.sessionCode, 'selecting');
+      await SessionService.submitSelections(first.sessionCode, 'socket-alice', ['place1']);
+      const second = await SessionService.createSession('Cara');
+
+      const result = await SessionService.joinSession(second.sessionCode, 'socket-bob', 'Bob');
+
+      expect(result.leftSession?.results?.allSelections).toEqual({ Alice: ['place1'] });
+      await expect(store.readSession(first.sessionCode)).resolves.toMatchObject({
+        state: 'complete',
+      });
+    });
+
+    it('should not report a left session when rejoining the same session', async () => {
+      const session = await SessionService.createSession('Alice');
+      const joined = await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+
+      const rejoin = await SessionService.joinSession(
+        session.sessionCode,
+        'socket-alice-2',
+        'Alice',
+        joined.rejoinToken
+      );
+
+      expect(rejoin.leftSession).toBeUndefined();
     });
 
     it('should log successful joins with the updated participant count', async () => {

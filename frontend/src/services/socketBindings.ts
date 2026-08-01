@@ -299,7 +299,9 @@ export async function joinSession(
   // Check if joining a different session - reset selections from previous session
   if (store.sessionCode !== sessionCode) {
     store.resetSelections();
-    store.setSessionStatus('waiting');
+    // A join admitted mid-Deck (#284) must land on the Deck, not the lobby;
+    // an older backend without state on the ack only ever admitted 'waiting'.
+    store.setSessionStatus(ack.data.state === 'selecting' ? 'selecting' : 'waiting');
   }
 
   // Update store with session data
@@ -310,7 +312,8 @@ export async function joinSession(
       ...p,
       sessionCode,
       joinedAt: Date.now(),
-      hasSubmitted: false,
+      // The server says who already submitted (#284); absent on older backends.
+      hasSubmitted: p.hasSubmitted ?? false,
     }))
   );
 

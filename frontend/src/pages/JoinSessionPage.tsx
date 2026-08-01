@@ -77,7 +77,9 @@ export default function JoinSessionPage() {
       if (ack.success) {
         setCurrentUserId(ack.data.participantId);
         setConnectionStatus(true);
-        navigate(`/session/${code}`);
+        // A Session already selecting admits late joiners (#284) — straight to
+        // the Deck; the lobby is only for a Session that hasn't started.
+        navigate(ack.data.state === 'selecting' ? `/session/${code}/select` : `/session/${code}`);
       } else {
         // Handle specific error cases by canonical code, falling back to message text.
         const errorMessage = ack.error.message;

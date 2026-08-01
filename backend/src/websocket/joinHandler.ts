@@ -88,6 +88,7 @@ export async function handleSessionJoin(
       rejoinToken: result.rejoinToken,
       participants: result.participants,
       branch: result.branch,
+      state: result.state,
     };
     callback({ success: true, data });
 
@@ -99,6 +100,23 @@ export async function handleSessionJoin(
       participantCount: result.participantCount,
       isRejoin: result.isRejoin,
     });
+
+    // Joining pulled them out of another Session (#284): tell that room they
+    // left, and deliver the Match when their departure completed it.
+    if (result.leftSession) {
+      const left = result.leftSession;
+      socket.to(left.sessionCode).emit('participant:left', {
+        participantId: socket.id,
+        displayName: left.displayName,
+        participantCount: left.participantCount,
+      });
+      if (left.results) {
+        socket.to(left.sessionCode).emit('session:results', {
+          sessionCode: left.sessionCode,
+          ...left.results,
+        });
+      }
+    }
 
     logger.info(
       {

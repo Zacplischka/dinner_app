@@ -25,6 +25,7 @@ const aglio: Recipe = {
 
 vi.mock('../../src/services/apiClient', () => ({
   getRestaurants: vi.fn(async () => [rendang, aglio]),
+  getSession: vi.fn(async () => ({ shareableLink: 'http://localhost:3000/join?code=AB123' })),
 }));
 
 vi.mock('../../src/services/socketBindings', () => ({

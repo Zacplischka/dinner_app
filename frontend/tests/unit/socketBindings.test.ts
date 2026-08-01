@@ -549,6 +549,34 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().sessionStatus).toBe('waiting');
   });
 
+  // #284: a join admitted mid-Deck carries the Session's state and who has
+  // already submitted, so the joiner lands on the Deck with honest counts.
+  it('adopts a selecting state and hasSubmitted flags from a late-join ack', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participants: [
+          { participantId: 'p1', displayName: 'Alice', isHost: true, hasSubmitted: true },
+          { participantId: 'p2', displayName: 'Bob', isHost: false },
+        ],
+        rejoinToken: 'rejoin-token',
+        state: 'selecting',
+      },
+    });
+
+    await socketBindings.joinSession('NEW99', 'Bob');
+
+    expect(useSessionStore.getState().sessionStatus).toBe('selecting');
+    expect(
+      useSessionStore.getState().participants.map((p) => [p.displayName, p.hasSubmitted])
+    ).toEqual([
+      ['Alice', true],
+      ['Bob', false],
+    ]);
+  });
+
   it('clears connection status when disconnecting', () => {
     setupSocket();
     socketBindings.initializeSocket();
