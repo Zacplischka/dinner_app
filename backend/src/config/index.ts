@@ -17,6 +17,15 @@ export const config = {
     url: process.env.SUPABASE_URL || '',
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
+  woolworths: {
+    // The store production's egress is served (1101 Mayfield NSW, ADR 0010);
+    // the cache self-heals onto whatever store responses actually name.
+    defaultStoreId: parseInt(process.env.WOOLWORTHS_STORE_ID || '1101', 10),
+    // Price-cache windows (spec story 44): success min(cap, Wednesday 6 am
+    // AEST rollover); a failure retries after ~1 h.
+    successTtlCapMs: parseInt(process.env.WOOLWORTHS_PRICE_TTL_MS || `${24 * 3_600_000}`, 10),
+    failureTtlMs: parseInt(process.env.WOOLWORTHS_PRICE_FAILURE_TTL_MS || `${3_600_000}`, 10),
+  },
 };
 
 /** Canonical join link for a session, built on the configured frontend URL. */
