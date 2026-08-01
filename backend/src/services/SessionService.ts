@@ -11,10 +11,19 @@ import { shareableLink } from '../config/index.js';
 import { getExpiresAtISO, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
-import { SESSION_CODE_LENGTH, type Restaurant } from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type Card, type Restaurant } from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
 export const MAX_PARTICIPANTS = 4;
+
+/**
+ * The Top Pick's middle rung, per card kind: a Restaurant's rating, a Recipe's
+ * Spoonacular aggregate likes. A card the source knows nothing about sinks to
+ * the bottom of its own rung, as an unrated Restaurant always has.
+ */
+function middleRung(card: Card): number {
+  return (card.kind === 'recipe' ? card.aggregateLikes : card.rating) ?? -1;
+}
 
 interface SessionServiceDeps {
   store: SessionStore;
@@ -126,7 +135,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       hostName,
       location,
       searchRadiusMiles,
-      restaurants,
+      cards: restaurants,
     });
 
     logger.info(
@@ -421,22 +430,23 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     }
     const nearMissCount = [...tally.values()].filter((n) => n === selections.length - 1).length;
 
-    // Top Pick: crown one Restaurant from the Match, else every Restaurant
-    // anyone selected, else the deck's open Restaurants (docs/specs/top-pick.md).
+    // Top Pick: crown one card from the Match, else every card anyone selected,
+    // else the deck's open cards (docs/specs/top-pick.md).
     const of = selections.length;
     let pool = results.overlappingOptions;
     if (!results.hasOverlap) {
-      const deck = (await store.getRestaurants(sessionCode)).restaurants;
-      const selected = deck.filter((r) => (tally.get(r.placeId) ?? 0) > 0);
+      const deck = (await store.getDeck(sessionCode)).cards;
+      const selected = deck.filter((c) => (tally.get(c.placeId) ?? 0) > 0);
       // Nobody selected anything: fall back to the deck so the screen still answers,
-      // but don't crown a venue Places says is shut when an open one exists.
-      const open = deck.filter((r) => r.openNow !== false);
+      // but don't crown a venue Places says is shut when an open one exists. Only a
+      // Restaurant can be shut — a Recipe is always in the open pool.
+      const open = deck.filter((c) => c.kind === 'recipe' || c.openNow !== false);
       pool = selected.length > 0 ? selected : open.length > 0 ? open : deck;
     }
     const crowned = [...pool].sort(
       (a, b) =>
         (tally.get(b.placeId) ?? 0) - (tally.get(a.placeId) ?? 0) ||
-        (b.rating ?? -1) - (a.rating ?? -1) ||
+        middleRung(b) - middleRung(a) ||
         a.name.localeCompare(b.name)
     )[0];
     const topPick = crowned

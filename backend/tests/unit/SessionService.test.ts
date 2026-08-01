@@ -14,6 +14,7 @@ import {
   MAX_PARTICIPANTS,
 } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
+import type { Recipe } from '@dinder/shared/types';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST1';
@@ -866,26 +867,26 @@ describe('SessionService', () => {
       return sessionCode;
     }
 
-    it('does not call store.getRestaurants when the Match is non-empty', async () => {
+    it('does not call store.getDeck when the Match is non-empty', async () => {
       const sessionCode = await createSessionWithDeck([
         { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
       ]);
-      const getRestaurantsSpy = vi.spyOn(store, 'getRestaurants');
+      const getDeckSpy = vi.spyOn(store, 'getDeck');
       await SessionService.submitSelections(sessionCode, 'p-alice', ['r1']);
       await SessionService.submitSelections(sessionCode, 'p-bob', ['r1']);
 
-      expect(getRestaurantsSpy).not.toHaveBeenCalled();
+      expect(getDeckSpy).not.toHaveBeenCalled();
     });
 
-    it('calls store.getRestaurants at most once when the Match is empty', async () => {
+    it('calls store.getDeck at most once when the Match is empty', async () => {
       const sessionCode = await createSessionWithDeck([
         { placeId: 'r1', name: 'Ramen House', rating: 4.5 },
       ]);
-      const getRestaurantsSpy = vi.spyOn(store, 'getRestaurants');
+      const getDeckSpy = vi.spyOn(store, 'getDeck');
       await SessionService.submitSelections(sessionCode, 'p-alice', []);
       await SessionService.submitSelections(sessionCode, 'p-bob', []);
 
-      expect(getRestaurantsSpy).toHaveBeenCalledTimes(1);
+      expect(getDeckSpy).toHaveBeenCalledTimes(1);
     });
 
     it('leaves both the sentinel and the crowned placeId in session:results on a zero-overlap completion', async () => {
@@ -907,6 +908,70 @@ describe('SessionService', () => {
 
       const members = await redis.smembers(`session:${sessionCode}:results`);
       expect(members).toEqual(['__empty__']);
+    });
+
+    // The Deck deals Restaurants or Recipes (#254). Recipes are seeded straight
+    // into the store because no producer deals them yet — the point is that the
+    // crowning mechanics need no fork, only a per-kind middle rung.
+    describe('Recipe Deck', () => {
+      async function createSessionWithRecipeDeck(cards: Recipe[]): Promise<string> {
+        const sessionCode = 'COOK1';
+        await store.createSession(sessionCode, {
+          hostId: 'p-alice',
+          hostName: 'Alice',
+          cards,
+        });
+        await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+        await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+        return sessionCode;
+      }
+
+      it('breaks a count tie by aggregate likes', async () => {
+        const sessionCode = await createSessionWithRecipeDeck([
+          { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
+          { kind: 'recipe', placeId: 'rec2', name: 'Beef Rendang', aggregateLikes: 640 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', ['rec1']);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['rec2']);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'rec2' }),
+          likedBy: 1,
+          of: 2,
+        });
+      });
+
+      it('breaks a count-and-likes tie by name A-Z', async () => {
+        const sessionCode = await createSessionWithRecipeDeck([
+          { kind: 'recipe', placeId: 'rec1', name: 'Zucchini Slice', aggregateLikes: 90 },
+          { kind: 'recipe', placeId: 'rec2', name: 'Anzac Biscuits', aggregateLikes: 90 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', ['rec1']);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['rec2']);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'rec2' }),
+        });
+      });
+
+      // The empty-Submission fallback reaches the Deck through the open-now sink,
+      // which a Recipe passes because it has no hours to be shut. That much the
+      // compiler owns; what this asserts is that the fallback still crowns on the
+      // Recipe's own rung once it gets there.
+      it('crowns the most-liked Recipe when every Submission is empty', async () => {
+        const sessionCode = await createSessionWithRecipeDeck([
+          { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
+          { kind: 'recipe', placeId: 'rec2', name: 'Beef Rendang', aggregateLikes: 640 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', []);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'rec2' }),
+          likedBy: 0,
+          of: 2,
+        });
+      });
     });
   });
 

@@ -23,7 +23,7 @@ describe('Integration Test: Results with No Overlap (FR-016)', () => {
     await store.createSession(sessionCode, {
       hostId: 'alice',
       hostName: 'Alice',
-      restaurants,
+      cards: restaurants,
     });
     await store.addParticipant(sessionCode, {
       participantId: 'alice',

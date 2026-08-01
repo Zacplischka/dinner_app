@@ -3,7 +3,7 @@
 
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Restaurant } from '@dinder/shared/types';
-import type { Participant } from '../types';
+import { isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
@@ -221,17 +221,26 @@ export default function ResultsPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const {
-    overlappingOptions,
+    overlappingOptions: matchedCards,
     allSelections,
     restaurantNames,
     participants,
-    restaurants,
+    restaurants: deckCards,
     sessionStatus,
-    topPick,
+    topPick: crownedCard,
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
+
+  // This is the restaurant ending, and a Recipe is filtered away here rather
+  // than rendered — see isRestaurant before routing a Cook Session at it.
+  const overlappingOptions = matchedCards.filter(isRestaurant);
+  const restaurants = deckCards.filter(isRestaurant);
+  const topPick =
+    crownedCard && isRestaurant(crownedCard.restaurant)
+      ? { ...crownedCard, restaurant: crownedCard.restaurant }
+      : undefined;
 
   const hasOverlap = overlappingOptions.length > 0;
 

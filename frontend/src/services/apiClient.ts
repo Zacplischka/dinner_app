@@ -3,6 +3,7 @@
 
 import type {
   AcceptSessionInviteResponse,
+  Card,
   CreateSessionRequest,
   CreateSessionResponse,
   Friend,
@@ -12,7 +13,6 @@ import type {
   GeocodedArea,
   GetProfileResponse,
   LoadRestaurantsResponse,
-  Restaurant,
   SearchUsersResponse,
   SendFriendRequestPayload,
   SendSessionInviteRequest,
@@ -80,7 +80,7 @@ export async function getSession(sessionCode: string): Promise<SessionResponse> 
 /**
  * Get restaurants for a session
  */
-export async function getRestaurants(sessionCode: string): Promise<Restaurant[]> {
+export async function getRestaurants(sessionCode: string): Promise<Card[]> {
   const data = await request<LoadRestaurantsResponse>(`/options/${sessionCode}`);
   return resolvePhotoUrls(data.restaurants);
 }

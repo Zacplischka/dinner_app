@@ -24,7 +24,7 @@ describe('Integration Test: Results with Overlap (FR-009, FR-010, FR-011)', () =
     await store.createSession(sessionCode, {
       hostId: 'alice',
       hostName: 'Alice',
-      restaurants,
+      cards: restaurants,
     });
     await store.addParticipant(sessionCode, {
       participantId: 'alice',

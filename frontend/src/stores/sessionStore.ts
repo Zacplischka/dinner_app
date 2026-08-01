@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { Restaurant } from '@dinder/shared/types';
+import type { Card } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
 import { useOrderStore } from './orderStore';
 
@@ -22,15 +22,15 @@ interface SessionState {
   // Location data
   location?: Location;
   searchRadiusMiles?: number;
-  restaurants: Restaurant[];
+  restaurants: Card[];
 
   // Selection data
   selections: string[]; // Current user's Place IDs
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
   liveSelections: Record<string, string[]>; // placeId -> displayNames who live-selected it (remote only)
   restaurantNames: Record<string, string>; // placeId -> name mapping for display
-  overlappingOptions: Restaurant[];
-  topPick?: { restaurant: Restaurant; likedBy: number; of: number };
+  overlappingOptions: Card[];
+  topPick?: { restaurant: Card; likedBy: number; of: number };
 
   // The crowned placeId a Group Order was opened for (set when "Order
   // together" is tapped). Persisted so a hard reload of /order can re-fire
@@ -52,7 +52,7 @@ interface SessionState {
   // Location actions
   setLocation: (location: Location) => void;
   setSearchRadiusMiles: (miles: number) => void;
-  setRestaurants: (restaurants: Restaurant[]) => void;
+  setRestaurants: (restaurants: Card[]) => void;
 
   // Selection actions
   setSelections: (placeIds: string[]) => void;

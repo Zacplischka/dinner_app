@@ -178,7 +178,7 @@ describe('component and hook branch coverage', () => {
     const right = vi.fn();
     const { rerender } = render(
       <SwipeCard
-        restaurant={restaurant as any}
+        card={restaurant as any}
         onSwipeLeft={left}
         onSwipeRight={right}
         isTop={false}
@@ -192,7 +192,7 @@ describe('component and hook branch coverage', () => {
 
     rerender(
       <SwipeCard
-        restaurant={restaurant as any}
+        card={restaurant as any}
         onSwipeLeft={left}
         onSwipeRight={right}
         isTop
@@ -211,7 +211,7 @@ describe('component and hook branch coverage', () => {
 
     rerender(
       <SwipeCard
-        restaurant={restaurant as any}
+        card={restaurant as any}
         onSwipeLeft={left}
         onSwipeRight={right}
         isTop
@@ -231,7 +231,7 @@ describe('component and hook branch coverage', () => {
     vi.useFakeTimers();
     render(
       <SwipeCard
-        restaurant={restaurant as any}
+        card={restaurant as any}
         onSwipeLeft={vi.fn()}
         onSwipeRight={vi.fn()}
         isTop
@@ -253,7 +253,7 @@ describe('component and hook branch coverage', () => {
     vi.useFakeTimers();
     render(
       <SwipeCard
-        restaurant={restaurant as any}
+        card={restaurant as any}
         onSwipeLeft={vi.fn()}
         onSwipeRight={vi.fn()}
         isTop
@@ -277,7 +277,7 @@ describe('component and hook branch coverage', () => {
     vi.useFakeTimers();
     render(
       <SwipeCard
-        restaurant={restaurant as any}
+        card={restaurant as any}
         onSwipeLeft={vi.fn()}
         onSwipeRight={vi.fn()}
         isTop
@@ -298,7 +298,7 @@ describe('component and hook branch coverage', () => {
   it('springs a sub-threshold release back to centre', () => {
     render(
       <SwipeCard
-        restaurant={restaurant as any}
+        card={restaurant as any}
         onSwipeLeft={vi.fn()}
         onSwipeRight={vi.fn()}
         isTop
@@ -319,7 +319,7 @@ describe('component and hook branch coverage', () => {
   it('replaces a failed Restaurant photo with its initial placeholder', () => {
     render(
       <SwipeCard
-        restaurant={{ ...restaurant, photoUrl: 'https://example.com/broken.jpg' } as any}
+        card={{ ...restaurant, photoUrl: 'https://example.com/broken.jpg' } as any}
         onSwipeLeft={vi.fn()}
         onSwipeRight={vi.fn()}
         isTop

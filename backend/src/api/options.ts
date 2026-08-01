@@ -44,7 +44,7 @@ export function createOptionsRouter(store: SessionStore) {
         throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
       }
 
-      const { restaurants, missingCount } = await store.getRestaurants(sessionCode);
+      const { cards: restaurants, missingCount } = await store.getDeck(sessionCode);
 
       if (restaurants.length === 0) {
         req.log.warn(

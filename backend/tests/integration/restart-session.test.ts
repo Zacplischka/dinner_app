@@ -24,7 +24,7 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
     await store.createSession(sessionCode, {
       hostId: 'alice',
       hostName: 'Alice',
-      restaurants,
+      cards: restaurants,
     });
     await store.addParticipant(sessionCode, {
       participantId: 'alice',

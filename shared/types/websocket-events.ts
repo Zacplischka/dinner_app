@@ -4,6 +4,7 @@
 // Note: Socket type imports are added in backend/frontend packages where socket.io is installed
 
 import type { ApiError } from './api-errors.js';
+import type { Card } from './models.js';
 import type { MenuItemCapture } from './comparison.js';
 
 // ============= Canonical acknowledgement contract (ADR 0006 / #114) =============
@@ -75,17 +76,6 @@ export type SelectionLiveResponse = Ack<null>;
 
 // ============= Server → Client Events =============
 
-export interface WsRestaurant {
-  placeId: string;
-  name: string;
-  rating?: number;
-  priceLevel?: number;
-  cuisineType?: string;
-  address?: string;
-  /** Already sent at runtime by every producer; declared so the crown can render a hero. */
-  photoUrl?: string;
-}
-
 export interface ParticipantJoinedEvent {
   participantId: string;
   displayName: string;
@@ -100,9 +90,12 @@ export interface ParticipantSubmittedEvent {
   participantCount: number;
 }
 
-/** The single Restaurant a completed Session crowns, and why it won. */
+/**
+ * The single Restaurant or Recipe a completed Session crowns, and why it won.
+ * The field keeps the name it shipped under (ADR 0007).
+ */
 export interface TopPick {
-  restaurant: WsRestaurant;
+  restaurant: Card;
   /** Participants who selected it. 0 when nobody selected anything. */
   likedBy: number;
   /** Participants counted in the tally (Object.keys(allSelections).length). */
@@ -111,9 +104,9 @@ export interface TopPick {
 
 export interface SessionResultsEvent {
   sessionCode: string;
-  overlappingOptions: WsRestaurant[];
+  overlappingOptions: Card[];
   allSelections: Record<string, string[]>; // displayName -> placeIds
-  restaurantNames: Record<string, string>; // placeId -> restaurant name (for displaying all selections)
+  restaurantNames: Record<string, string>; // placeId -> card name (for displaying all selections)
   hasOverlap: boolean;
   /** Additive (ADR 0007): absent from an older backend; a Session with zero Restaurants has none. */
   topPick?: TopPick;

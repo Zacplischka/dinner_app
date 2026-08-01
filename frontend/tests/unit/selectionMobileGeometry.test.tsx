@@ -67,7 +67,7 @@ const renderSelectionPage = () =>
 const renderCard = (overrides: Partial<typeof restaurant> = {}) =>
   render(
     <SwipeCard
-      restaurant={{ ...restaurant, ...overrides } as never}
+      card={{ ...restaurant, ...overrides } as never}
       onSwipeLeft={vi.fn()}
       onSwipeRight={vi.fn()}
       isTop
