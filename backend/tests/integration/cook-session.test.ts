@@ -7,7 +7,11 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import type Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 import { sessionService, sessionStore as store } from '../../src/server.js';
-import { spoonacularFetchFake, type RecipeSearchHit } from '../helpers/spoonacularFetchFake.js';
+import {
+  recipeHits,
+  spoonacularFetchFake,
+  type RecipeSearchHit,
+} from '../helpers/spoonacularFetchFake.js';
 
 const craving = {
   mealType: 'main course' as const,
@@ -110,5 +114,62 @@ describe('Integration Test: a Cook Session end to end', () => {
     const session = await store.readSession(sessionCode);
     expect(session?.headcount).toBe(6);
     expect(session?.participantCount).toBe(2);
+  });
+
+  // Restart means "show me different ones" in the Cook Branch (#246, #260) —
+  // and it never means "no", however thin or cold the pool behind it is.
+  describe('Restart', () => {
+    /** A Cook Session decided once from a pool of `count`, ready to Restart. */
+    async function decided(count: number) {
+      vi.restoreAllMocks();
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        spoonacularFetchFake({ recipes: recipeHits(count) }).fetchImpl
+      );
+      const sessionCode = await cookSession('Alice', 2);
+      await sessionService.joinSession(sessionCode, 'alice', 'Alice');
+      const wiped = (await store.getDeck(sessionCode)).entries.map((e) => e.placeId);
+      await sessionService.submitSelections(sessionCode, 'alice', [wiped[0]]);
+      return { sessionCode, wiped };
+    }
+
+    it('deals a Deck that avoids the just-wiped one when the pool can afford it', async () => {
+      const { sessionCode, wiped } = await decided(60);
+
+      await sessionService.restartSession(sessionCode, 'alice');
+
+      const dealt = (await store.getDeck(sessionCode)).entries;
+      expect(dealt).toHaveLength(15);
+      expect(dealt.filter((entry) => wiped.includes(entry.placeId))).toEqual([]);
+    });
+
+    it('tops up with repeats rather than dealing short from a thin pool', async () => {
+      const { sessionCode } = await decided(20);
+
+      await sessionService.restartSession(sessionCode, 'alice');
+
+      expect((await store.getDeck(sessionCode)).entries).toHaveLength(15);
+    });
+
+    it('reshuffles the wiped Deck on a cold pool instead of failing', async () => {
+      const { sessionCode, wiped } = await decided(60);
+      const cravingKey = (await store.readSession(sessionCode))?.cravingKey;
+      await redis.del(cravingKey!);
+
+      await expect(sessionService.restartSession(sessionCode, 'alice')).resolves.toBeUndefined();
+
+      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual(
+        [...wiped].sort()
+      );
+    });
+
+    it('wipes Selections along with the deal, so the Deck is swipeable again', async () => {
+      const { sessionCode } = await decided(60);
+
+      await sessionService.restartSession(sessionCode, 'alice');
+
+      expect((await store.readSession(sessionCode))?.state).toBe('selecting');
+      expect((await store.getParticipant('alice'))?.hasSubmitted).toBe(false);
+      expect(await store.readSelections(sessionCode, 'alice')).toEqual([]);
+    });
   });
 });

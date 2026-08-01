@@ -36,6 +36,12 @@ interface SessionServiceDeps {
   searchNearbyRestaurants: typeof RestaurantSearchService.searchNearbyRestaurants;
   /** The Cook Branch's Deck supply: a random cut of the shared Craving pool. */
   dealRecipeDeck: (craving: Craving) => Promise<DeckEntry[]>;
+  /**
+   * A Cook Restart's Deck: another cut of the same pool, avoiding the just-wiped
+   * deal where it can. Best-effort by contract — it degrades to reshuffling what
+   * it was handed rather than failing, which is what lets Restart never fail.
+   */
+  redealRecipeDeck: (poolKey: string, current: DeckEntry[]) => Promise<DeckEntry[]>;
 }
 
 /** What Cook setup captured: the Craving to deal from, and who's eating. */
@@ -60,6 +66,7 @@ export function createSessionService({
   store,
   searchNearbyRestaurants,
   dealRecipeDeck,
+  redealRecipeDeck,
 }: SessionServiceDeps) {
   /**
    * Create a new session with the given host
@@ -125,12 +132,26 @@ export function createSessionService({
     // Craving pool; every other Branch searches nearby Restaurants as before.
     let deckEntries: DeckEntry[] = [];
     if (cook) {
-      deckEntries = await dealRecipeDeck(cook.craving);
+      // The two ways a deal can come back without Recipes are different facts
+      // and get different words (#250): the source answering "none" is about
+      // the Craving, the source not answering is not.
+      //
+      // Every rejection is read as the second, which holds because dealDeck's
+      // one documented failure is the transport (RecipePoolService). A deal
+      // that ever learns to reject for a reason of its own must say so with a
+      // DomainError and be let through here, or it will be mislabelled.
+      deckEntries = await dealRecipeDeck(cook.craving).catch((error: unknown) => {
+        logger.error({ err: error, sessionCode }, 'Recipe source failed dealing a Deck');
+        throw new DomainError(
+          'RECIPE_SOURCE_UNAVAILABLE',
+          "Couldn't load recipes just now. Try again in a moment."
+        );
+      });
 
       if (deckEntries.length === 0) {
-        // The zero-Recipe Craving. #260 turns this into the inline refusal at
-        // setup with the chips still editable; until then it refuses like an
-        // empty restaurant search does, rather than opening an unswipeable Deck.
+        // The zero-Recipe Craving: the Cook Branch's one refusal, and it lands
+        // at setup with the chips still editable, never on a Session (#260).
+        // Nothing is auto-relaxed — the Host relaxes their own chips.
         logger.warn({ sessionCode, craving: cook.craving }, 'No recipes found for Craving');
         throw new DomainError(
           'NO_RECIPES_FOUND',
@@ -609,14 +630,31 @@ export function createSessionService({
   /**
    * Wipe Selections, Submissions, and the Match so the same Participants can
    * decide again (FR-012).
+   *
+   * A Cook Session also deals again (#246, #260): Recipe supply is a shared pool
+   * with nothing geographic about it, so "show me different ones" is honest
+   * here — and only here. A Restaurant Session keeps its Deck, as it always has.
    */
   async function restartSession(sessionCode: string, participantId: string): Promise<void> {
-    if (!(await store.readSession(sessionCode))) {
+    const session = await store.readSession(sessionCode);
+    if (!session) {
       throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
     }
 
     if (!(await store.isParticipant(sessionCode, participantId))) {
       throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
+    }
+
+    // cravingKey is what a Cook Session's Deck was dealt from, and the only
+    // handle a Restart needs — the redeal reads the pool that key names and
+    // never goes to the source, so a Restart costs no lookup and cannot fail.
+    //
+    // 'waiting' is excluded because the lobby's "start selecting" is this same
+    // command: there the Deck is the one setup just dealt and nobody has seen
+    // it, so a redeal would throw away the Host's deal for a disjoint one.
+    if (session.cravingKey && session.state !== 'waiting') {
+      const { entries } = await store.getDeck(sessionCode);
+      await store.replaceDeck(sessionCode, await redealRecipeDeck(session.cravingKey, entries));
     }
 
     await store.resetForRestart(sessionCode);

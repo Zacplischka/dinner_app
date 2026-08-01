@@ -14,8 +14,8 @@ const craving = {
 };
 
 /** Points the app's late-bound fetch at the Spoonacular fake. */
-function fakeSpoonacular(hits = recipeHits(60)) {
-  const { fetchImpl, requests } = spoonacularFetchFake({ recipes: hits });
+function fakeSpoonacular(hits = recipeHits(60), failWith?: number) {
+  const { fetchImpl, requests } = spoonacularFetchFake({ recipes: hits, failWith });
   vi.spyOn(globalThis, 'fetch').mockImplementation(fetchImpl);
   return {
     recipeSearches: () => requests.filter((r) => r.url.pathname === '/recipes/complexSearch'),
@@ -137,6 +137,66 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
     expect(params.get('cuisine')).toBe('italian,thai');
     expect(params.get('diet')).toBe('vegetarian');
     expect(params.get('instructionsRequired')).toBe('true');
+  });
+
+  // Zero is the only refusal the Cook Branch has, and it lives at setup (#260):
+  // the Host relaxes their own chips, the app never relaxes them for anyone.
+  it('refuses a Craving that matches nothing, and creates no Session', async () => {
+    fakeSpoonacular(recipeHits(0));
+
+    const response = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(404);
+
+    expect(response.body).toMatchObject({ code: 'NO_RECIPES_FOUND' });
+    expect(response.body.message).toMatch(/no recipes/i);
+    await expect(redis.keys('session:*')).resolves.toEqual([]);
+  });
+
+  it('serves the clean miss from cache — fiddling with chips is one lookup', async () => {
+    const spoonacular = fakeSpoonacular(recipeHits(0));
+
+    await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(404);
+    await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(404);
+
+    expect(spoonacular.recipeSearches()).toHaveLength(1);
+  });
+
+  it('shows a source failure as a failure, and remembers nothing of it', async () => {
+    fakeSpoonacular(recipeHits(60), 503);
+
+    const response = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(503);
+
+    // "Remove a filter" is the wrong instruction when nothing was wrong with
+    // the Craving, so the two outcomes never share a code or a message.
+    expect(response.body.code).toBe('RECIPE_SOURCE_UNAVAILABLE');
+    expect(response.body.message).toMatch(/try again/i);
+    await expect(redis.keys('recipes:pool:*')).resolves.toEqual([]);
+  });
+
+  it('deals the whole thin pool with no floor and no warning', async () => {
+    fakeSpoonacular(recipeHits(7));
+
+    const { body: session } = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(201);
+
+    expect(session.restaurantCount).toBe(7);
+    const { body: options } = await request(app)
+      .get(`/api/options/${session.sessionCode}`)
+      .expect(200);
+    expect(options.restaurants).toHaveLength(7);
   });
 
   it('rejects a Cook Session with no setup', async () => {

@@ -14,6 +14,11 @@ export const API_ERROR_CODES = [
   // code because Restaurant and Recipe are distinct words (CONTEXT.md), and
   // additive because no client branches on it yet (ADR 0007).
   'NO_RECIPES_FOUND',
+  // The recipe source was asked and did not answer. Distinct from the clean
+  // miss above so the setup screen can say "try again" instead of "remove a
+  // filter" — the second is the wrong instruction when nothing was wrong with
+  // the Craving (#250).
+  'RECIPE_SOURCE_UNAVAILABLE',
   'VALIDATION_ERROR',
   'ALREADY_SUBMITTED',
   'NOT_IN_SESSION',

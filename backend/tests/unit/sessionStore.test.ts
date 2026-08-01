@@ -370,6 +370,46 @@ describe('SessionStore', () => {
       expect(entries.map((e) => e.placeId).sort()).toEqual(['place1', 'place2', 'place3']);
       expect(missingCount).toBe(0);
     });
+
+    it('replaceDeck leaves nothing of the old Deck behind', async () => {
+      await createTestSession();
+
+      await store.replaceDeck(sessionCode, [
+        { kind: 'recipe', placeId: 'rec9', name: 'Aglio e Olio', aggregateLikes: 12 },
+      ]);
+
+      const { entries, missingCount } = await store.getDeck(sessionCode);
+      expect(entries).toEqual([
+        { kind: 'recipe', placeId: 'rec9', name: 'Aglio e Olio', aggregateLikes: 12 },
+      ]);
+      // A stale id left in the id set would read as lost Deck data, not a swap.
+      expect(missingCount).toBe(0);
+    });
+
+    it('replaceDeck refuses an empty deal rather than emptying the Deck', async () => {
+      await createTestSession();
+
+      await store.replaceDeck(sessionCode, []);
+
+      expect((await store.getDeck(sessionCode)).entries).toHaveLength(3);
+    });
+
+    it('replaceDeck slides the session TTL onto the new Deck', async () => {
+      await createTestSession();
+
+      await store.replaceDeck(sessionCode, [
+        { kind: 'recipe', placeId: 'rec9', name: 'Aglio e Olio', aggregateLikes: 12 },
+      ]);
+
+      for (const key of [
+        `session:${sessionCode}:restaurant_ids`,
+        `session:${sessionCode}:restaurants`,
+      ]) {
+        const ttl = await redis.ttl(key);
+        expect(ttl).toBeGreaterThan(0);
+        expect(ttl).toBeLessThanOrEqual(SESSION_TTL_SECONDS);
+      }
+    });
   });
 
   describe('deleteSession', () => {

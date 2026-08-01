@@ -21,6 +21,9 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   SESSION_ALREADY_STARTED: { code: 'SESSION_ALREADY_STARTED', status: 409 },
   NO_RESTAURANTS_FOUND: { code: 'NO_RESTAURANTS_FOUND', status: 404 },
   NO_RECIPES_FOUND: { code: 'NO_RECIPES_FOUND', status: 404 },
+  // Upstream recipe source down or out of quota: nothing the Craving can fix,
+  // so 503 alongside the Places counterpart below.
+  RECIPE_SOURCE_UNAVAILABLE: { code: 'RECIPE_SOURCE_UNAVAILABLE', status: 503 },
   NO_RESTAURANTS: { code: 'NO_RESTAURANTS', status: 404 },
   VALIDATION_ERROR: { code: 'VALIDATION_ERROR', status: 400 },
   ALREADY_SUBMITTED: { code: 'ALREADY_SUBMITTED', status: 409 },
