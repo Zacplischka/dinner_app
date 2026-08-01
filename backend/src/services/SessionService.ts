@@ -750,7 +750,10 @@ export function createSessionService({
    * with nothing geographic about it, so "show me different ones" is honest
    * here — and only here. A Restaurant Session keeps its Deck, as it always has.
    */
-  async function restartSession(sessionCode: string, participantId: string): Promise<void> {
+  async function restartSession(
+    sessionCode: string,
+    participantId: string
+  ): Promise<{ restarted: boolean }> {
     const session = await store.readSession(sessionCode);
     if (!session) {
       throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
@@ -760,20 +763,29 @@ export function createSessionService({
       throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
     }
 
+    // The lobby's "Start Selecting" is this same command from 'waiting' — the
+    // first start, not a Restart. The distinction is surfaced so "Session
+    // restarted" in a log is always a real mid-flight Restart (#289).
+    const restarted = session.state !== 'waiting';
+
     // cravingKey is what a Cook Session's Deck was dealt from, and the only
     // handle a Restart needs — the redeal reads the pool that key names and
     // never goes to the source, so a Restart costs no lookup and cannot fail.
     //
-    // 'waiting' is excluded because the lobby's "start selecting" is this same
-    // command: there the Deck is the one setup just dealt and nobody has seen
-    // it, so a redeal would throw away the Host's deal for a disjoint one.
-    if (session.cravingKey && session.state !== 'waiting') {
+    // 'waiting' is excluded because there the Deck is the one setup just
+    // dealt and nobody has seen it, so a redeal would throw away the Host's
+    // deal for a disjoint one.
+    if (session.cravingKey && restarted) {
       const { entries } = await store.getDeck(sessionCode);
       await store.replaceDeck(sessionCode, await redealRecipeDeck(session.cravingKey, entries));
     }
 
     await store.resetForRestart(sessionCode);
-    logger.info({ sessionCode, participantId }, 'Session restarted');
+    logger.info(
+      { sessionCode, participantId },
+      restarted ? 'Session restarted' : 'Session selection started'
+    );
+    return { restarted };
   }
 
   return { createSession, getSession, joinSession, submitSelections, leaveSession, restartSession };

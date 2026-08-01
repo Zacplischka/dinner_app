@@ -155,7 +155,9 @@ describe('Integration Test: a Cook Session end to end', () => {
       const cravingKey = (await store.readSession(sessionCode))?.cravingKey;
       await redis.del(cravingKey!);
 
-      await expect(sessionService.restartSession(sessionCode, 'alice')).resolves.toBeUndefined();
+      await expect(sessionService.restartSession(sessionCode, 'alice')).resolves.toEqual({
+        restarted: true,
+      });
 
       expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual(
         [...wiped].sort()

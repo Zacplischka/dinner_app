@@ -239,9 +239,11 @@ const socketConfig: SocketConfig = {
       }
     },
 
-    // session:restarted - Session was restarted by a participant
+    // session:restarted - a Restart, or the lobby's start riding the same
+    // event; the server's message says which (#289), so log that, not a
+    // hardcoded "Session restarted" that makes real Restarts unspottable.
     'session:restarted': (event: SessionRestartedEvent) => {
-      console.log('Session restarted:', event);
+      console.log(event.message, event);
       useSessionStore.getState().resetSelections();
       // resetSelections() also flips sessionStatus, but the lobby's
       // auto-navigate keys off this transition — keep it explicit here.
