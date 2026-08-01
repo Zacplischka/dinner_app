@@ -299,6 +299,7 @@ export async function joinSession(
 
   // Update store with session data
   store.setSessionCode(sessionCode);
+  store.setBranch(ack.data.branch);
   store.updateParticipants(
     ack.data.participants.map((p) => ({
       ...p,

@@ -104,6 +104,22 @@ describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
     bob.socket.close();
   });
 
+  // #258: the results screen branches on this, and the join ack is the one call
+  // every Participant — host and joiner alike — makes.
+  it('should carry the Session Branch on the join ack', async () => {
+    const branched = await request(socketUrl)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'eatout' })
+      .expect(201);
+    testSessionCode = branched.body.sessionCode;
+
+    const alice = await joinSession('Alice');
+
+    expect(alice.response).toMatchObject({ success: true, data: { branch: 'eatout' } });
+
+    alice.socket.close();
+  });
+
   it('should reject 5th participant with SESSION_FULL error (FR-005)', async () => {
     const participants = [];
     for (const name of ['Alice', 'Bob', 'Charlie', 'Dana']) {

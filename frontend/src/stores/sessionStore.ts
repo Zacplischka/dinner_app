@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { DeckEntry } from '@dinder/shared/types';
+import type { Branch, DeckEntry } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
 import { useOrderStore } from './orderStore';
 
@@ -18,6 +18,8 @@ interface SessionState {
   sessionCode: string | null;
   participants: Participant[];
   currentUserId: string | null;
+  /** The Session's Branch, from the join ack. Undefined before the entry fork. */
+  branch?: Branch;
 
   // Location data
   location?: Location;
@@ -44,6 +46,7 @@ interface SessionState {
 
   // Actions
   setSessionCode: (code: string) => void;
+  setBranch: (branch?: Branch) => void;
   setCurrentUserId: (userId: string) => void;
   addParticipant: (participant: Participant) => void;
   removeParticipant: (participantId: string) => void;
@@ -79,6 +82,7 @@ const initialState = {
   sessionCode: null,
   participants: [],
   currentUserId: null,
+  branch: undefined,
   location: undefined,
   searchRadiusMiles: undefined,
   restaurants: [],
@@ -101,6 +105,8 @@ export const useSessionStore = create<SessionState>()(
 
         // Session actions
         setSessionCode: (code) => set({ sessionCode: code }),
+
+        setBranch: (branch) => set({ branch }),
 
         setCurrentUserId: (userId) => set({ currentUserId: userId }),
 
