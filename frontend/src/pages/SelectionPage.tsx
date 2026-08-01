@@ -39,8 +39,12 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, removeSelection, participants, liveSelections } =
+  const { selections, addSelection, removeSelection, participants, liveSelections, branch } =
     useSessionStore();
+  // The deck is shared with the restaurant branches, but its copy must not be:
+  // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
+  const isCook = branch === 'cook';
+  const deckNoun = isCook ? 'recipe' : 'restaurant';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -224,7 +228,7 @@ export default function SelectionPage() {
       <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
           <div className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-muted font-display text-lg">Finding restaurants...</p>
+          <p className="mt-4 text-muted font-display text-lg">Finding {deckNoun}s...</p>
         </div>
       </div>
     );
@@ -324,7 +328,8 @@ export default function SelectionPage() {
               </h2>
               <p className="text-muted mb-6">
                 You liked <span className="text-lime font-semibold">{selections.length}</span>{' '}
-                restaurant{selections.length !== 1 ? 's' : ''}
+                {deckNoun}
+                {selections.length !== 1 ? 's' : ''}
               </p>
 
               {error && (
@@ -350,7 +355,7 @@ export default function SelectionPage() {
 
               {selections.length === 0 && (
                 <p className="mt-4 text-sm text-muted/70">
-                  You didn&apos;t like any restaurants, but you can still submit!
+                  You didn&apos;t like any {deckNoun}s, but you can still submit!
                 </p>
               )}
             </div>
@@ -367,7 +372,7 @@ export default function SelectionPage() {
     <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
-        title="Choose Restaurants"
+        title={isCook ? 'Choose Recipes' : 'Choose Restaurants'}
         sessionCode={sessionCode}
         showBackButton
         onBack={handleLeaveSession}
