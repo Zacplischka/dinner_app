@@ -18,6 +18,11 @@ export const config = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   spoonacular: {
+    // Attribution follows the tier (#288): on paid tiers the obligation is to
+    // credit the ORIGINATING recipe site — name + backlink, which is what the
+    // cook view's credit line does. A backlink to Spoonacular itself is a
+    // Free-tier-only condition; downgrade this key to Free and that
+    // obligation returns, and nothing else in the code would catch it.
     apiKey: process.env.SPOONACULAR_API_KEY,
     // The recipe supply (#232): a shared per-Craving pool dealt as per-Session
     // Decks. The TTL is config precisely so it can be cut to the compliant 1 h
