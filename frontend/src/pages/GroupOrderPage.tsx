@@ -1,6 +1,4 @@
-// Group Order — opening (issue 2b, docs/specs/group-order.md §2/§3).
-// This issue only opens the basket and renders it read-only: no order:item,
-// no totals, no `I'll order`. Those land with #177/#178.
+// Group Order — the pinned basket: open, add Lines, claim the Buyer, hand off.
 
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';

@@ -504,7 +504,7 @@ export function createSessionService({
     const nearMissCount = [...tally.values()].filter((n) => n === selections.length - 1).length;
 
     // Top Pick: crown one entry from the Match, else every entry anyone selected,
-    // else the Deck's open entries (docs/specs/top-pick.md).
+    // else the Deck's open entries.
     const of = selections.length;
     let pool = results.overlappingOptions;
     if (!results.hasOverlap) {

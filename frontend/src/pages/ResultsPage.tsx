@@ -426,7 +426,7 @@ export default function ResultsPage() {
       .catch(() => toast.error('Could not copy link'));
   };
 
-  // The crown's one-line reason (top-pick.md's copy table). One cascade for
+  // The crown's one-line reason. One cascade for
   // both kinds — only the two rungs that name the middle tiebreak differ, and
   // there is nothing "nearby" about a dish you cook.
   const crownReason = (

@@ -282,7 +282,7 @@ io.on('connection', (socket) => {
     void handleSessionLeave(socket, io, payload, callback, sessionService);
   });
 
-  // Live Selection re-broadcast — no persistence (see live-swipe-room.md)
+  // Live Selection re-broadcast — no persistence
   socket.on('selection:live', (payload, callback) => {
     void handleLiveSelection(socket, payload, callback, sessionStore);
   });

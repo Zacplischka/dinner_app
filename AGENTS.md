@@ -24,7 +24,7 @@ Issues are tracked in GitHub Issues (Zacplischka/dinner_app) via the `gh` CLI; e
 
 ### Triage labels
 
-Default label vocabulary — each triage role uses its canonical name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+`needs-triage`, `ready-for-agent`, `blocked`, `wontfix` — plus `wayfinder:map` / `wayfinder:<type>` on wayfinding issues. Skills that name a triage role use these strings verbatim.
 
 ### Domain docs
 
