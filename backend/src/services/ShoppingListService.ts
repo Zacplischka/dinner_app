@@ -198,6 +198,31 @@ const toProduct = (candidate: ProductCandidate): ShoppingListProduct => ({
 });
 
 /**
+ * The candidates a line may actually be swapped onto. Woolworths' availability
+ * flag only *penalises* a product in the ranking (#245), so one the store does
+ * not have can sit in a stored top-5 — and offering it would price the line
+ * against something that is not on the shelf. Offered and accepted read the
+ * same list, so a picker gone stale cannot swap onto one either.
+ */
+const pickable = (match: LineMatch | undefined): ProductCandidate[] =>
+  (match?.candidates ?? []).filter((candidate) => candidate.available);
+
+/**
+ * A swap blob this code did not write — a foreign shape, a half-written value —
+ * must not take the whole list down on every read for the rest of its 7 days.
+ * The line falls back to the record's own state, which is the same refusal
+ * `readStored` makes for a record it does not recognise.
+ */
+function readSwap(listId: string, lineId: string, raw: string): ShoppingListLineState | undefined {
+  try {
+    return JSON.parse(raw) as ShoppingListLineState;
+  } catch (error) {
+    logger.warn({ err: error, listId, lineId }, 'Unreadable swap on Ingredient Line');
+    return undefined;
+  }
+}
+
+/**
  * The ladder's verdict as the state the line renders in. Shared by mint and by
  * a swap, so a corrected line reads exactly like one that matched this way the
  * first time — the whole point of the picker is that the cure leaves no trace.
@@ -280,9 +305,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     return {
       ...list,
       lines: list.lines.map((line) => {
-        const swapped = swaps[line.id]
-          ? (JSON.parse(swaps[line.id]) as ShoppingListLineState)
-          : undefined;
+        const swapped = swaps[line.id] ? readSwap(list.listId, line.id, swaps[line.id]) : undefined;
         // The swap replaces what the line's state says and nothing else: the
         // id, the recipe text, the Staple flag and the Claim all stay put.
         const { id, text, staple } = line;
@@ -292,7 +315,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
         // Present-but-empty on a search that found a single product, because
         // the field is what says this line *has* a picker, and even an empty
         // one still offers "none of these" (#264).
-        const runnersUp = (match?.candidates ?? [])
+        const runnersUp = pickable(match)
           .filter(
             (candidate) =>
               !('product' in current) || candidate.stockcode !== current.product.stockcode
@@ -530,9 +553,11 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
         // "None of these": Unmatched, out of the tally and every Tally with it.
         state = { state: 'unmatched', searchTerm };
       } else {
-        const candidate = match.candidates.find((entry) => entry.stockcode === stockcode);
-        // Only the five this line's own search fetched — a Stockcode from
-        // anywhere else would be a Retailer lookup wearing a swap's clothes.
+        // Only the ones this line's own search fetched and the store actually
+        // has — a Stockcode from anywhere else would be a Retailer lookup
+        // wearing a swap's clothes, and an unavailable one prices a line
+        // against nothing on the shelf.
+        const candidate = pickable(match).find((entry) => entry.stockcode === stockcode);
         if (!candidate) return null;
         const resolution = await deps.resolveLine(match.ingredient, {
           status: 'matched',

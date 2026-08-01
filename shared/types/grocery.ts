@@ -108,8 +108,8 @@ interface ShoppingListLineFields {
   /**
    * The swap picker's other four (#264): the runner-up candidates the Product
    * Matcher already fetched at mint, minus whichever one this line currently
-   * names. No Retailer call ever mints these — they are the top-5 the one
-   * search paid for, written down.
+   * names and minus any the store does not have. No Retailer call ever mints
+   * these — they are the top-5 the one search paid for, written down.
    *
    * Present, empty included, on exactly the lines that have a picker; absent on
    * a line that never had a Match to have runners-up for — a Staple, a clean

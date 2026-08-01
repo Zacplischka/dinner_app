@@ -645,6 +645,44 @@ describe('ShoppingListService swaps', () => {
     });
   });
 
+  it('never offers, or accepts, a product the store does not have', async () => {
+    // Availability only penalises a product in the ranking (#245), so one the
+    // store is out of can ride into the stored top-5 — and a price against an
+    // empty shelf is worse than no picker at all.
+    const soldOut = {
+      stockcode: 444,
+      name: 'Annalisa Peeled Tomatoes',
+      packageSize: '400g',
+      available: false,
+    };
+    const { service } = build({
+      outcome: { status: 'matched', match: tin, runnersUp: [...runnersUp, soldOut] },
+    });
+    const listId = (await service.mint('AB123', '11'))!;
+
+    const list = await service.readList(listId);
+
+    expect(list?.lines[0].runnersUp?.map((product) => product.stockcode)).toEqual([222, 333]);
+    // The picker is the only door: naming it around the picker names nothing.
+    expect(await service.swapLine(listId, '0', 444)).toBeNull();
+  });
+
+  it('reads past a swap it cannot parse rather than losing the whole list', async () => {
+    const { service, redis, listId } = await minted();
+    // A blob this code did not write — a foreign shape, a half-written value.
+    // It must not 500 every read of the list for the rest of its seven days.
+    redis.hashes.set(`shoppinglist:${listId}:swaps`, new Map([['0', 'not json at all']]));
+
+    const list = await service.readList(listId);
+
+    expect(list?.lines[0]).toMatchObject({
+      state: 'priced',
+      priceCents: 280,
+      product: { stockcode: 12345 },
+    });
+    expect(list?.lines[0].runnersUp?.map((product) => product.stockcode)).toEqual([222, 333]);
+  });
+
   it('offers no picker on a line that never had a Match', async () => {
     const { service, listId } = await minted();
 
