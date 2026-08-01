@@ -4,6 +4,7 @@
 // api.spoonacular.com sits behind Cloudflare, which 403s non-browser user
 // agents (#244), so the browser UA is pinned like the Woolworths client's.
 import { config } from '../config/index.js';
+import { number } from './storefrontResolution.js';
 
 const BASE = 'https://api.spoonacular.com';
 const PINNED_UA =
@@ -45,7 +46,7 @@ export function createSpoonacularClient(
         sourceUnit,
         targetUnit: 'grams',
       })) as { targetAmount?: unknown };
-      return typeof body.targetAmount === 'number' ? body.targetAmount : null;
+      return number(body.targetAmount) ?? null;
     },
 
     async ingredientInfo(ingredientName) {

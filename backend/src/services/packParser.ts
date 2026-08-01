@@ -16,7 +16,8 @@ const MULTI_PACK = /^(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\s*x\s*(\d+)\s*pack$/i; // "25
 const N_PACK = /^(\d+)\s*(?:pack|pk)$/i;
 const EACH = /^1?\s*(each|1ea|ea|bunch|punnet|head|bag|loaf)$/i;
 const VARIABLE = /^(per|approx)/i;
-const RANGE = /^\d+(?:\.\d+)?\s*(?:kg|g|ml|l)\s*[-–]\s*\d+(?:\.\d+)?\s*(?:kg|g|ml|l)$/i; // "750g - 2.2kg"
+// "750g - 2.2kg", "1.5-2.5kg" — the first unit is optional, the second is not.
+const RANGE = /^\d+(?:\.\d+)?\s*(?:kg|g|ml|l)?\s*[-–]\s*\d+(?:\.\d+)?\s*(?:kg|g|ml|l)$/i;
 
 const TO_BASE: Record<string, number> = { kg: 1000, g: 1, l: 1000, ml: 1 };
 const FAMILY: Record<string, 'mass' | 'volume'> = {

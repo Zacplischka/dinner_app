@@ -27,8 +27,9 @@ export interface IngredientAmount {
 const MASS_G: Record<string, number> = { g: 1, kg: 1000 };
 // AU volumetric: tbsp is 20 mL, not the US 15.
 const VOL_ML: Record<string, number> = { ml: 1, l: 1000, tbsp: 20, tsp: 5 };
-// Recipe units that compare directly against an each/N-pack product.
-const COUNT_UNITS = new Set(['', 'packet', 'head', 'loaf', 'punnet']);
+// Recipe units that compare directly against an each/N-pack product ("1
+// bunch" against a bunch-sold product divides like any other count).
+const COUNT_UNITS = new Set(['', 'packet', 'head', 'loaf', 'punnet', 'bunch']);
 
 // Rung 4: the static vague-unit table, in grams. Per #244 it owns
 // bunch/handful/sprig for fresh herbs *unconditionally*, shadowing
@@ -130,7 +131,6 @@ export function createQuantityLadder(deps: QuantityLadderDeps): QuantityLadder {
       // The clove override outranks the bare-count rule, or 3 cloves buys 3 bulbs.
       if (/garlic clove/i.test(name)) packs = ceilPacks(amount / CLOVES_PER_HEAD, pack.units);
       else if (COUNT_UNITS.has(unit)) packs = ceilPacks(amount, pack.units);
-      else if (unit === 'bunch') packs = ceilPacks(amount, pack.units);
       else if (unit in VAGUE_GRAMS)
         packs = 1; // a handful/sprigs need: one bunch covers it
       else return unpriced(`${unit || 'count'} vs count pack, no bridge`);

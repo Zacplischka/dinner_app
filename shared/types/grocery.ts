@@ -53,7 +53,11 @@ export interface NeededAmount {
 export type QuantityResolution =
   | { state: 'priced'; needs: NeededAmount; packs: number; priceCents: number }
   | { state: 'estimated'; needs: NeededAmount; priceCents: number }
-  | { state: 'unpriced_matched'; reason: string }
+  | {
+      state: 'unpriced_matched';
+      /** Diagnostic prose for logs only — never branch on it, never show it. */
+      reason: string;
+    }
   | { state: 'unmatched' };
 
 export function woolworthsProductUrl(stockcode: number): string {

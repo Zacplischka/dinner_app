@@ -35,9 +35,11 @@ describe('parsePack', () => {
     expect(parsePack('approx. 170g')).toEqual({ kind: 'variable' });
   });
 
-  it('names range packs', () => {
+  it('names range packs — the three #245 corpus shapes plus the unitless-first spelling', () => {
     expect(parsePack('750g - 2.2kg')).toEqual({ kind: 'range' });
+    expect(parsePack('1.5kg - 2.5kg')).toEqual({ kind: 'range' });
     expect(parsePack('1.8kg - 2.2kg')).toEqual({ kind: 'range' });
+    expect(parsePack('1.5-2.5kg')).toEqual({ kind: 'range' });
   });
 
   it('rejects anything outside the whitelist', () => {
