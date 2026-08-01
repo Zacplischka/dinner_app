@@ -21,7 +21,7 @@ import type { Session } from '../store/sessionStore.js';
 import type { IngredientAmount } from './quantityLadder.js';
 import type { PooledIngredient, PooledRecipe } from './spoonacularClient.js';
 import { isStaple } from './staples.js';
-import { deriveSearchTerm } from './usToAuTerms.js';
+import { deriveSearchTerm, sanitiseIngredientName } from './usToAuTerms.js';
 
 /**
  * Seven days from mint, and nothing extends it — not a read, not a Claim, not
@@ -265,6 +265,48 @@ export function lineText(amount: number, unit: string, name: string): string {
   return unit ? `${shown} ${unit} ${name}` : `${shown} ${name}`;
 }
 
+/**
+ * Units that state a portion of the dish, not an amount of anything buyable
+ * ("2 servings scallions"). No cleaning turns that into a shoppable amount,
+ * so the line degrades to the recipe's own wording.
+ */
+const JUNK_UNITS = new Set(['serving', 'servings']);
+
+/** A PooledIngredient as the mint will state it; degraded renders `original`. */
+type MintIngredient = PooledIngredient & { degraded: boolean };
+
+/**
+ * The sanitising pass at mint (#286). Names are cleaned of the quantity
+ * phrases the source embeds in them, and one ingredient is one claimable
+ * line: a duplicate merges into the first with the amounts combined, so two
+ * Shoppers can never claim what is actually one ingredient and coverage never
+ * counts it twice. A line that cannot be cleaned — a fragment left by a unit
+ * eaten mid-word, a portion unit — is flagged to degrade to the recipe's own
+ * wording rather than silently changing what is to be bought.
+ */
+function mintIngredients(ingredients: PooledIngredient[]): MintIngredient[] {
+  const merged = new Map<string, MintIngredient>();
+  for (const ingredient of ingredients) {
+    const cleaned = JUNK_UNITS.has(ingredient.unit.toLowerCase())
+      ? null
+      : sanitiseIngredientName(ingredient.name);
+    const entry: MintIngredient =
+      cleaned === null
+        ? { ...ingredient, degraded: true }
+        : { ...ingredient, name: cleaned, degraded: false };
+    // ponytail: the same name in two different units stays two lines —
+    // combining them needs the unit conversion the ladder owns, not string
+    // arithmetic. A degraded pair merges only on identical source wording.
+    const key = entry.degraded
+      ? `degraded ${entry.original}`
+      : `${entry.name.toLowerCase()} ${entry.unit.toLowerCase()}`;
+    const existing = merged.get(key);
+    if (existing) existing.amount += entry.amount;
+    else merged.set(key, entry);
+  }
+  return [...merged.values()];
+}
+
 export function createShoppingListService(deps: ShoppingListServiceDeps): ShoppingListService {
   const newListId = deps.newListId ?? randomUUID;
   const ttlMs = deps.ttlMs ?? SHOPPING_LIST_TTL_MS;
@@ -339,13 +381,17 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
 
   async function buildLine(
     index: number,
-    ingredient: PooledIngredient,
+    ingredient: MintIngredient,
     factor: number
   ): Promise<{ line: ShoppingListLine; match?: LineMatch }> {
     const scaled = ingredient.amount * factor;
     const fields = {
       id: String(index),
-      text: lineText(scaled, ingredient.unit, ingredient.name),
+      // A line the sanitiser could not clean shows the recipe's own wording,
+      // whole — never a mangled hybrid of two quantity phrases (#286).
+      text: ingredient.degraded
+        ? ingredient.original
+        : lineText(scaled, ingredient.unit, ingredient.name),
       staple: isStaple(ingredient.name),
     };
     // The Retailer search is what an Unmatched line offers instead of a product,
@@ -393,7 +439,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     // costs the clarity of a plain loop.
     const lines: ShoppingListLine[] = [];
     const matches: Record<string, LineMatch> = {};
-    for (const [index, ingredient] of recipe.ingredients.entries()) {
+    for (const [index, ingredient] of mintIngredients(recipe.ingredients).entries()) {
       const built = await buildLine(index, ingredient, factor);
       lines.push(built.line);
       if (built.match) matches[built.line.id] = built.match;

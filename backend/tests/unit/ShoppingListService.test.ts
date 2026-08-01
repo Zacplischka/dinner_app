@@ -297,6 +297,99 @@ describe('ShoppingListService.mint', () => {
     expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'water' });
   });
 
+  it('merges an ingredient stated twice into one claimable line, amounts combined', async () => {
+    // The production duplicate (#286): 1.5 cups jjapsahl twice, as two
+    // separately claimable lines — two Shoppers buying what is one ingredient.
+    const { service, matchProduct } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          { name: 'jjapsahl', amount: 1.5, unit: 'cups', original: '1.5 cups jjapsahl' },
+          { name: 'jjapsahl', amount: 1.5, unit: 'cups', original: '1.5 cups jjapsahl' },
+        ],
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines).toHaveLength(1);
+    expect(list?.lines[0]).toMatchObject({ id: '0', text: '3 cups jjapsahl' });
+    expect(matchProduct).toHaveBeenCalledTimes(1);
+  });
+
+  it('strips an embedded quantity phrase so the line renders one coherent amount', async () => {
+    // The production hybrids (#286): "0.5 lb 5 pieces chicken breasts" and
+    // "0.5 cloves 6 garlic" — the source's own count phrase inside the name.
+    const { service, matchProduct } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          {
+            name: '5 pieces chicken breasts',
+            amount: 0.5,
+            unit: 'lb',
+            original: '5 chicken breasts, about 1.5 lbs',
+          },
+          { name: '6 garlic', amount: 0.5, unit: 'cloves', original: '6 cloves garlic, minced' },
+        ],
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines[0].text).toBe('0.5 lb chicken breasts');
+    expect(list?.lines[1].text).toBe('0.5 cloves garlic');
+    // The cleaned name is also what the Matcher is asked for — the polluted
+    // one finds a frozen snack instead of the fillet (#287).
+    expect(matchProduct).toHaveBeenCalledWith('chicken breasts');
+    expect(matchProduct).toHaveBeenCalledWith('garlic');
+  });
+
+  it('degrades a line it cannot clean to the recipe own wording, never a hybrid', async () => {
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          // "oz" eaten out of mid-word mozzarella: uncleanable name.
+          {
+            name: 'm zarella cheese',
+            amount: 0.4,
+            unit: 'oz',
+            original: '4 ounces mozzarella cheese, shredded',
+          },
+          // A portion unit says nothing buyable: "2 servings scallions".
+          { name: 'scallions', amount: 2, unit: 'servings', original: '2 scallions, sliced' },
+        ],
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines[0].text).toBe('4 ounces mozzarella cheese, shredded');
+    expect(list?.lines[1].text).toBe('2 scallions, sliced');
+  });
+
+  it('merges duplicate degraded lines on their shared source wording', async () => {
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          { name: 'm zarella cheese', amount: 0.4, unit: 'oz', original: '4 oz mozzarella' },
+          { name: 'm zarella cheese', amount: 0.4, unit: 'oz', original: '4 oz mozzarella' },
+        ],
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines).toHaveLength(1);
+    expect(list?.lines[0].text).toBe('4 oz mozzarella');
+  });
+
   it('flags Staples and never spends a Retailer lookup on one', async () => {
     const { service, matchProduct } = build();
 
