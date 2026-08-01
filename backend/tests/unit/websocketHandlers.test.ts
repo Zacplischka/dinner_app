@@ -7,6 +7,7 @@ import type { Redis } from 'ioredis';
 // in-memory Redis so this suite needs no real Redis.
 import { createSessionStore } from '../../src/store/sessionStore.js';
 import { createSessionService } from '../../src/services/SessionService.js';
+import { DomainError } from '../../src/services/DomainError.js';
 import { handleSessionJoin } from '../../src/websocket/joinHandler.js';
 import { handleSessionLeave } from '../../src/websocket/leaveHandler.js';
 import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
@@ -192,7 +193,10 @@ describe('websocket handlers', () => {
           displayName: 'Alice',
           participantCount: 1,
           rejoinToken: expect.any(String),
-          participants: [{ participantId: 'socket-1', displayName: 'Alice', isHost: true }],
+          participants: [
+            { participantId: 'socket-1', displayName: 'Alice', isHost: true, hasSubmitted: false },
+          ],
+          state: 'waiting',
         },
       });
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:joined', {
@@ -302,7 +306,9 @@ describe('websocket handlers', () => {
       await expect(store.getParticipant('impostor-socket')).resolves.toBeNull();
     });
 
-    it('should reject a brand-new participant after the session starts', async () => {
+    // #284: the Invite Link admits joiners while the Session lives — only the
+    // terminal states refuse, and 'complete' says finished, not started.
+    it('should admit a brand-new participant while the session is selecting', async () => {
       await createSessionWithParticipant();
       await store.updateState(sessionCode, 'selecting');
       const callback = vi.fn();
@@ -315,10 +321,138 @@ describe('websocket handlers', () => {
       );
 
       expect(callback).toHaveBeenCalledWith({
+        success: true,
+        data: expect.objectContaining({ participantId: 'late-socket', state: 'selecting' }),
+      });
+      await expect(store.getParticipant('late-socket')).resolves.toMatchObject({
+        displayName: 'Bob',
+      });
+    });
+
+    it('should refuse a complete session saying it has finished', async () => {
+      await createSessionWithParticipant();
+      await store.updateState(sessionCode, 'complete');
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        socket('late-socket') as any,
+        { sessionCode, displayName: 'Bob' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({
         success: false,
-        error: { code: 'SESSION_ALREADY_STARTED', message: expect.any(String) },
+        error: { code: 'SESSION_ALREADY_STARTED', message: 'This session has finished' },
       });
       await expect(store.getParticipant('late-socket')).resolves.toBeNull();
+    });
+
+    // #284, the flip side of #283: joining a new Session leaves the old one in
+    // Redis too, and the old room hears about it.
+    it('should broadcast participant:left to the old session when a socket joins a new one', async () => {
+      await createSessionWithParticipant('socket-1');
+      await store.createSession('NEW42', { hostId: 'host2', hostName: 'Ava' });
+      const testSocket = socket('socket-1', [sessionCode]);
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode: 'NEW42', displayName: 'Alice' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: expect.anything() });
+      await expect(store.isParticipant(sessionCode, 'socket-1')).resolves.toBe(false);
+      expect(testSocket.to).toHaveBeenCalledWith(sessionCode);
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:left', {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        participantCount: 1,
+      });
+
+      // NEW42 lives outside this suite's per-test key sweep.
+      const leftovers = await redis.keys('session:NEW42*');
+      if (leftovers.length > 0) await redis.del(...leftovers);
+    });
+
+    // #284 review: the departure commits before the post-add re-checks can
+    // refuse the join — the old room must hear it even when the join fails.
+    it('should still broadcast the departure to the old room when the join is refused post-add', async () => {
+      const testSocket = socket('socket-1', ['OLD42']);
+      const callback = vi.fn();
+      const failingService = {
+        joinSession: vi.fn().mockRejectedValue(
+          Object.assign(
+            new DomainError('SESSION_FULL', 'Session is full (maximum 4 participants)'),
+            {
+              leftSession: {
+                sessionCode: 'OLD42',
+                displayName: 'Alice',
+                participantCount: 1,
+                results: {
+                  hasOverlap: false,
+                  overlappingOptions: [],
+                  allSelections: { Bob: [] },
+                  restaurantNames: {},
+                },
+              },
+            }
+          )
+        ),
+      };
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode, displayName: 'Alice' },
+        callback,
+        failingService as any
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_FULL', message: expect.any(String) },
+      });
+      expect(testSocket.to).toHaveBeenCalledWith('OLD42');
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:left', {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        participantCount: 1,
+      });
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
+        'session:results',
+        expect.objectContaining({ sessionCode: 'OLD42', allSelections: { Bob: [] } })
+      );
+      // The refused join itself changed no rooms.
+      expect(testSocket.join).not.toHaveBeenCalled();
+    });
+
+    it('should deliver the Match to the old room when the departure completes it', async () => {
+      await createSessionWithParticipant('socket-1');
+      await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' });
+      await store.recordSubmission(sessionCode, 'socket-2', []);
+      await store.createSession('NEW42', { hostId: 'host2', hostName: 'Ava' });
+      const testSocket = socket('socket-1', [sessionCode]);
+      const callback = vi.fn();
+
+      // Alice, the last holdout, moves on — Bob's Session completes without her.
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode: 'NEW42', displayName: 'Alice' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: expect.anything() });
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
+        'session:results',
+        expect.objectContaining({ sessionCode, allSelections: { Bob: [] } })
+      );
+      await expect(store.readSession(sessionCode)).resolves.toMatchObject({ state: 'complete' });
+
+      const leftovers = await redis.keys('session:NEW42*');
+      if (leftovers.length > 0) await redis.del(...leftovers);
     });
 
     it('should reject full sessions before adding and log the rejection', async () => {
@@ -1040,7 +1174,10 @@ describe('websocket handlers', () => {
           displayName: 'Alice',
           participantCount: 1,
           rejoinToken: expect.any(String),
-          participants: [{ participantId: 'socket-1', displayName: 'Alice', isHost: true }],
+          participants: [
+            { participantId: 'socket-1', displayName: 'Alice', isHost: true, hasSubmitted: false },
+          ],
+          state: 'waiting',
         },
       });
       // The removed legacy flattened fields are absent.

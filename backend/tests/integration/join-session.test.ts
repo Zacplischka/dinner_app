@@ -154,6 +154,28 @@ describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
     bee.socket.close();
   });
 
+  // #284: the Invite Link admits joiners while the Session lives. The lobby's
+  // Start Selecting is the restart command, so drive the real transition.
+  it('should admit a late joiner after the host starts selecting, telling them the state', async () => {
+    const alice = await joinSession('Alice');
+    await new Promise<void>((resolve, reject) => {
+      alice.socket.emit('session:restart', { sessionCode: testSessionCode }, (response: any) =>
+        response.success ? resolve() : reject(new Error(response.error?.message))
+      );
+    });
+
+    const bob = await joinSession('Bob');
+
+    expect(bob.response).toMatchObject({
+      success: true,
+      data: { displayName: 'Bob', participantCount: 2, state: 'selecting' },
+    });
+    await expect(redis.scard(`session:${testSessionCode}:participants`)).resolves.toBe(2);
+
+    alice.socket.close();
+    bob.socket.close();
+  });
+
   it('should reject 5th participant with SESSION_FULL error (FR-005)', async () => {
     const participants = [];
     for (const name of ['Alice', 'Bob', 'Charlie', 'Dana']) {

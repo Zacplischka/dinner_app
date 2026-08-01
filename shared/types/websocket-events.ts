@@ -33,6 +33,11 @@ export interface SessionJoinData {
     participantId: string;
     displayName: string;
     isHost: boolean;
+    /**
+     * Whether this Participant has already submitted, so a late joiner's
+     * "x of y have swiped" starts honest (#284). Additive (ADR 0007).
+     */
+    hasSubmitted?: boolean;
   }>;
   /**
    * The Session's Branch, so a Participant's screens know the kind of night
@@ -40,6 +45,12 @@ export interface SessionJoinData {
    * entry fork, which keeps the pre-fork behaviour.
    */
   branch?: Branch;
+  /**
+   * The Session's current state, so a joiner admitted mid-Deck (#284) lands on
+   * the Deck instead of the lobby. Additive (ADR 0007): absent from an older
+   * backend, which only ever admitted 'waiting'.
+   */
+  state?: string;
 }
 
 /** session:join acknowledges the canonical success data or a public error. */

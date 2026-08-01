@@ -302,6 +302,16 @@ export async function joinSession(
     store.setSessionStatus('waiting');
   }
 
+  // Adopt the ack's state OUTSIDE the different-session guard: the /join page
+  // pre-stores this very sessionCode before the ack lands, so a guard-bound
+  // adoption would never run for the one path #284 exists for — leaving a late
+  // joiner's status pinned at 'waiting' and the lobby's auto-forward dead.
+  // An ack without state (older backend, ADR 0007) touches nothing.
+  const { state } = ack.data;
+  if (state === 'waiting' || state === 'selecting' || state === 'complete' || state === 'expired') {
+    store.setSessionStatus(state);
+  }
+
   // Update store with session data
   store.setSessionCode(sessionCode);
   store.setBranch(ack.data.branch);
@@ -310,7 +320,8 @@ export async function joinSession(
       ...p,
       sessionCode,
       joinedAt: Date.now(),
-      hasSubmitted: false,
+      // The server says who already submitted (#284); absent on older backends.
+      hasSubmitted: p.hasSubmitted ?? false,
     }))
   );
 

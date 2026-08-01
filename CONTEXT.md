@@ -55,7 +55,7 @@ A Selection broadcast to the other Participants at the moment it is made, and sh
 _Avoid_: vote, live vote, real-time like
 
 **Full House**:
-A Restaurant or Recipe every current Participant has made a Live Selection on, seen mid-Deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it.
+A Restaurant or Recipe every current Participant has made a Live Selection on, seen mid-Deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it. When the Participant list grows mid-Deck, a Full House can fire again for the larger group — but never twice for the same Deck Entry, and an already-shown one is never retracted.
 _Avoid_: early match, instant match, mid-deck match
 
 **Submission**:

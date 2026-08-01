@@ -7,10 +7,17 @@ const serviceMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
 }));
 
+const socketMocks = vi.hoisted(() => ({
+  waitForConnection: vi.fn(async () => undefined),
+  joinSession: vi.fn(),
+}));
+
 vi.mock('../../src/services/apiClient', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/services/apiClient')>()),
   getSession: serviceMocks.getSession,
 }));
+
+vi.mock('../../src/services/socketBindings', () => socketMocks);
 
 import { ApiClientError } from '../../src/services/apiClient';
 import JoinSessionPage from '../../src/pages/JoinSessionPage';
@@ -21,6 +28,8 @@ function renderPage(initialEntry: string) {
       <Routes>
         <Route path="/join" element={<JoinSessionPage />} />
         <Route path="/create" element={<div>Create route</div>} />
+        <Route path="/session/:sessionCode" element={<div>Lobby route</div>} />
+        <Route path="/session/:sessionCode/select" element={<div>Deck route</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -73,5 +82,55 @@ describe('JoinSessionPage expired-link probe', () => {
     renderPage('/join');
 
     expect(serviceMocks.getSession).not.toHaveBeenCalled();
+  });
+});
+
+// #284: a Session already selecting admits late joiners — the ack's state
+// decides whether they land in the lobby or straight on the Deck.
+describe('JoinSessionPage late-join landing', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const fillAndSubmit = () => {
+    fireEvent.change(screen.getByLabelText('Session Code'), { target: { value: 'AB123' } });
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Bob' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Join Session' }));
+  };
+
+  it('lands a joiner on the Deck when the ack says the session is selecting', async () => {
+    socketMocks.joinSession.mockResolvedValue({
+      success: true,
+      data: { participantId: 'p-bob', state: 'selecting' },
+    });
+    renderPage('/join');
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('Deck route')).toBeTruthy();
+  });
+
+  it('lands a joiner in the lobby when the session has not started', async () => {
+    socketMocks.joinSession.mockResolvedValue({
+      success: true,
+      data: { participantId: 'p-bob', state: 'waiting' },
+    });
+    renderPage('/join');
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('Lobby route')).toBeTruthy();
+  });
+
+  it('surfaces the finished-session refusal verbatim', async () => {
+    socketMocks.joinSession.mockResolvedValue({
+      success: false,
+      error: { code: 'SESSION_ALREADY_STARTED', message: 'This session has finished' },
+    });
+    renderPage('/join');
+
+    fillAndSubmit();
+
+    expect(await screen.findByText('This session has finished')).toBeTruthy();
   });
 });
