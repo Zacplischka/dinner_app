@@ -1,11 +1,12 @@
-// Tinder-style swipeable restaurant card component
+// Tinder-style swipeable card rendering one Deck Entry - a Restaurant or a Recipe.
 // Supports touch swipe gestures and button interactions
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { Restaurant } from '@dinder/shared/types';
+import type { DeckEntry } from '@dinder/shared/types';
+import { isRestaurant } from '../types';
 
 interface SwipeCardProps {
-  restaurant: Restaurant;
+  entry: DeckEntry;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   isTop: boolean;
@@ -28,7 +29,7 @@ export function swipeVisuals(deltaX: number, reducedMotion: boolean) {
 }
 
 export default function SwipeCard({
-  restaurant,
+  entry,
   onSwipeLeft,
   onSwipeRight,
   isTop,
@@ -187,9 +188,12 @@ export default function SwipeCard({
   };
 
   // Fallback placeholder image when no photo is available
-  const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect fill='%2307111f' width='400' height='500'/%3E%3Ctext x='200' y='250' text-anchor='middle' fill='%23ff6b7e' font-family='system-ui,sans-serif' font-size='48'%3E${encodeURIComponent(restaurant.name.charAt(0))}%3C/text%3E%3C/svg%3E`;
+  const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect fill='%2307111f' width='400' height='500'/%3E%3Ctext x='200' y='250' text-anchor='middle' fill='%23ff6b7e' font-family='system-ui,sans-serif' font-size='48'%3E${encodeURIComponent(entry.name.charAt(0))}%3C/text%3E%3C/svg%3E`;
 
-  const priceDisplay = '$'.repeat(restaurant.priceLevel || 0);
+  // Title and image are all a Recipe carries; rating, price, hours and address
+  // exist only on a Restaurant.
+  const restaurant = isRestaurant(entry) ? entry : undefined;
+  const priceDisplay = '$'.repeat(restaurant?.priceLevel || 0);
 
   return (
     <div
@@ -206,11 +210,11 @@ export default function SwipeCard({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {/* Restaurant Photo */}
+      {/* DeckEntry Photo */}
       <div className="relative h-[62%] flex-shrink-0">
         <img
-          src={restaurant.photoUrl || placeholderImage}
-          alt={restaurant.name}
+          src={entry.photoUrl || placeholderImage}
+          alt={entry.name}
           className="w-full h-full object-cover"
           draggable={false}
           onError={(event) => {
@@ -261,16 +265,16 @@ export default function SwipeCard({
         </>
       )}
 
-      {/* Restaurant Info */}
+      {/* DeckEntry Info */}
       <div className="relative flex-1 min-h-0 overflow-hidden p-5 text-text">
-        <h2 className="font-display text-2xl font-black mb-1 line-clamp-2">{restaurant.name}</h2>
+        <h2 className="font-display text-2xl font-black mb-1 line-clamp-2">{entry.name}</h2>
 
-        {restaurant.cuisineType && (
+        {restaurant?.cuisineType && (
           <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
         )}
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-text/80">
-          {restaurant.rating && (
+          {restaurant?.rating && (
             <div
               aria-label={`Rating ${restaurant.rating.toFixed(1)}`}
               className="flex items-center gap-1.5 text-amber"
@@ -283,17 +287,17 @@ export default function SwipeCard({
           )}
 
           {priceDisplay && (
-            <span aria-label={`Price level ${restaurant.priceLevel} of 4`}>{priceDisplay}</span>
+            <span aria-label={`Price level ${restaurant?.priceLevel} of 4`}>{priceDisplay}</span>
           )}
 
-          {restaurant.openNow !== undefined && (
+          {restaurant?.openNow !== undefined && (
             <span className={restaurant.openNow ? 'font-bold text-lime' : 'font-medium text-muted'}>
               {restaurant.openNow ? 'Open now' : 'Closed now'}
             </span>
           )}
         </div>
 
-        {restaurant.address && (
+        {restaurant?.address && (
           <p className="mt-3 text-sm text-muted flex items-center gap-1.5">
             <svg
               className="w-4 h-4 flex-shrink-0"

@@ -37,7 +37,7 @@ async function createTestSession(withRestaurants = true) {
   return await store.createSession(sessionCode, {
     hostId: 'host-1',
     hostName: 'Alice',
-    restaurants: withRestaurants ? restaurants : undefined,
+    entries: withRestaurants ? restaurants : undefined,
   });
 }
 
@@ -363,11 +363,11 @@ describe('SessionStore', () => {
     });
   });
 
-  describe('restaurants', () => {
-    it('round-trips the session restaurant list', async () => {
+  describe('deck', () => {
+    it('round-trips the session Deck', async () => {
       await createTestSession();
-      const { restaurants: list, missingCount } = await store.getRestaurants(sessionCode);
-      expect(list.map((r) => r.placeId).sort()).toEqual(['place1', 'place2', 'place3']);
+      const { entries, missingCount } = await store.getDeck(sessionCode);
+      expect(entries.map((e) => e.placeId).sort()).toEqual(['place1', 'place2', 'place3']);
       expect(missingCount).toBe(0);
     });
   });
@@ -396,7 +396,7 @@ describe('SessionStore', () => {
         hostName: 'Alice',
         location: { latitude: 1, longitude: 2, address: 'Somewhere' },
         searchRadiusMiles: 3,
-        restaurants,
+        entries: restaurants,
       });
       expect(session.state).toBe('waiting');
 
@@ -423,7 +423,7 @@ describe('SessionStore', () => {
       });
       expect(typeof participant?.joinedAt).toBe('number');
 
-      const { restaurants: storedRestaurants } = await store.getRestaurants(sessionCode);
+      const { entries: storedRestaurants } = await store.getDeck(sessionCode);
       expect(storedRestaurants.map((r) => r.placeId).sort()).toEqual([
         'place1',
         'place2',

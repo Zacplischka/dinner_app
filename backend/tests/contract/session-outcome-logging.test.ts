@@ -35,7 +35,7 @@ describe('Contract Test: session-outcome metrics log line', () => {
     await store.createSession(sessionCode, {
       hostId: participantIds[0],
       hostName: participantIds[0],
-      restaurants,
+      entries: restaurants,
     });
     for (const [i, pid] of participantIds.entries()) {
       await store.addParticipant(sessionCode, {

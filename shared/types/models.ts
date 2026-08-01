@@ -13,6 +13,12 @@ export const BRANCHES = ['eatout', 'takeaway', 'cook'] as const;
 export type Branch = (typeof BRANCHES)[number];
 
 export interface Restaurant {
+  /**
+   * Which kind of Deck Entry this is. Optional and absent from every producer
+   * that predates the Cook Branch, which is what makes the union additive
+   * (ADR 0007): no `kind` reads as a Restaurant.
+   */
+  kind?: 'restaurant';
   placeId: string;
   name: string;
   rating?: number;
@@ -22,6 +28,29 @@ export interface Restaurant {
   photoUrl?: string;
   openNow?: boolean;
 }
+
+/** A cookable dish a Cook-branch Session deals. Restaurant's counterpart. */
+export interface Recipe {
+  kind: 'recipe';
+  placeId: string;
+  /** The recipe title. */
+  name: string;
+  photoUrl?: string;
+  /**
+   * Spoonacular aggregate likes. The Top Pick's middle rung for a Recipe,
+   * standing in for a Restaurant's rating.
+   */
+  aggregateLikes?: number;
+}
+
+/**
+ * One entry of a Deck — the Restaurant or Recipe a Participant swipes on (see
+ * CONTEXT.md). The whole Selection path (deal, swipe, Live Selection, Match,
+ * Top Pick) keys on `placeId`, which is a Google place id for a Restaurant and
+ * the recipe source's id for a Recipe; it keeps its original name because every
+ * wire shape, Redis key, and store field already speaks it (ADR 0007).
+ */
+export type DeckEntry = Restaurant | Recipe;
 
 export interface Venue {
   placeId: string;

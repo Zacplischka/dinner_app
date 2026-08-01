@@ -10,6 +10,7 @@ import { useLeaveSession } from '../hooks/useLeaveSession';
 import { subscribeToComparison } from '../services/comparisonStream';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
+import { isRestaurant } from '../types';
 import NavigationHeader from '../components/NavigationHeader';
 import {
   DeliveryActions,
@@ -203,10 +204,12 @@ export default function GroupOrderPage() {
   // without the crowned Restaurant in the store (e.g. a direct navigation) —
   // a narrow, untested edge case.
   const orderPlaceId = useSessionStore((state) => state.orderPlaceId);
-  const crownedRestaurant =
+  const crownedEntry =
     topPick?.restaurant.placeId === orderPlaceId
       ? topPick.restaurant
-      : overlappingOptions.find((r) => r.placeId === orderPlaceId);
+      : overlappingOptions.find((c) => c.placeId === orderPlaceId);
+  // A Group Order only ever opens on a Restaurant; see isRestaurant.
+  const crownedRestaurant = crownedEntry && isRestaurant(crownedEntry) ? crownedEntry : undefined;
   const deliveryPills = (
     <DeliveryActions
       ubereatsHref={generateUberEatsUrl(crownedRestaurant?.name ?? '', crownedRestaurant?.address)}

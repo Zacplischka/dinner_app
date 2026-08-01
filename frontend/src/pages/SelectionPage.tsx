@@ -9,7 +9,7 @@ import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
-import type { Restaurant } from '@dinder/shared/types';
+import type { DeckEntry } from '@dinder/shared/types';
 import { participantRingClass } from '../utils/participantStyles';
 
 interface LiveRevealInput {
@@ -41,7 +41,7 @@ export default function SelectionPage() {
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const { selections, addSelection, removeSelection, participants, liveSelections } =
     useSessionStore();
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [entries, setEntries] = useState<DeckEntry[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +59,7 @@ export default function SelectionPage() {
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    const loadRestaurants = async () => {
+    const loadDeck = async () => {
       if (!sessionCode) {
         setError('Session code not found');
         setIsLoading(false);
@@ -68,7 +68,7 @@ export default function SelectionPage() {
 
       try {
         const data = await getRestaurants(sessionCode);
-        setRestaurants(data);
+        setEntries(data);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Failed to load restaurants');
       } finally {
@@ -76,7 +76,7 @@ export default function SelectionPage() {
       }
     };
 
-    void loadRestaurants();
+    void loadDeck();
   }, [sessionCode]);
 
   // Listen for participant submissions
@@ -89,7 +89,7 @@ export default function SelectionPage() {
   // never the one being decided (anti-conformity, spec kill-risk (b)), and never a
   // card ahead (which is also how a buffered event survives until you reach it).
   useEffect(() => {
-    const unlocked = restaurants
+    const unlocked = entries
       .slice(0, currentIndex)
       .filter(
         (r) => (liveSelections[r.placeId]?.length ?? 0) > (announcedRef.current.get(r.placeId) ?? 0)
@@ -132,7 +132,7 @@ export default function SelectionPage() {
     }
 
     return () => clearTimeout(revealTimerRef.current);
-  }, [liveSelections, currentIndex, restaurants, participants, selections]);
+  }, [liveSelections, currentIndex, entries, participants, selections]);
 
   // Full House takeover: push a history entry so the hardware back button dismisses
   // the overlay instead of leaving the deck. Escape and Keep swiping both go through
@@ -173,19 +173,19 @@ export default function SelectionPage() {
   }, []);
 
   const handleSwipeRight = useCallback(() => {
-    const restaurant = restaurants[currentIndex];
-    if (restaurant) {
-      addSelection(restaurant.placeId);
+    const entry = entries[currentIndex];
+    if (entry) {
+      addSelection(entry.placeId);
       // ponytail: fire-and-forget — nothing branches on the ack, and a failed
       // Live Selection costs only a missing reveal on someone else's phone.
       // The Match still comes from selection:submit. Ceiling: silent chrome
       // loss on a flaky socket; upgrade is a retry queue, not worth it.
-      if (sessionCode) void sendLiveSelection(sessionCode, restaurant.placeId);
+      if (sessionCode) void sendLiveSelection(sessionCode, entry.placeId);
     }
     setLastAction('like');
     setTimeout(() => setLastAction(null), 600);
     setCurrentIndex((prev) => prev + 1);
-  }, [currentIndex, restaurants, addSelection, sessionCode]);
+  }, [currentIndex, entries, addSelection, sessionCode]);
 
   const handleSubmit = async () => {
     if (!sessionCode) {
@@ -213,10 +213,10 @@ export default function SelectionPage() {
 
   const handleLeaveSession = useLeaveSession(sessionCode);
 
-  // Check if we've gone through all restaurants
-  const isDone = currentIndex >= restaurants.length;
+  // Check if we've gone through the whole Deck
+  const isDone = currentIndex >= entries.length;
 
-  const fullHouseName = restaurants.find((r) => r.placeId === fullHousePlaceId)?.name;
+  const fullHouseName = entries.find((e) => e.placeId === fullHousePlaceId)?.name;
   const deckInert = fullHousePlaceId !== null;
 
   if (isLoading) {
@@ -360,8 +360,8 @@ export default function SelectionPage() {
     );
   }
 
-  // Get the visible cards (current + next 2 for stack effect)
-  const visibleRestaurants = restaurants.slice(currentIndex, currentIndex + 3);
+  // Get the visible entries (current + next 2 for stack effect)
+  const visibleEntries = entries.slice(currentIndex, currentIndex + 3);
 
   return (
     <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
@@ -378,7 +378,7 @@ export default function SelectionPage() {
         compact
         progress={{
           current: currentIndex + 1,
-          total: restaurants.length,
+          total: entries.length,
         }}
         rightAction={
           <div
@@ -394,7 +394,7 @@ export default function SelectionPage() {
         }
       />
 
-      {/* Card Stack */}
+      {/* DeckEntry Stack */}
       <div
         className={`flex-1 min-h-0 flex flex-col items-center justify-center px-4 py-3${deckInert ? ' pointer-events-none' : ''}`}
         aria-hidden={deckInert}
@@ -429,10 +429,10 @@ export default function SelectionPage() {
           data-testid="card-stack"
           className="relative w-full max-w-sm flex-1 min-h-0 max-h-[30rem]"
         >
-          {visibleRestaurants.map((restaurant, index) => (
+          {visibleEntries.map((entry, index) => (
             <SwipeCard
-              key={restaurant.placeId}
-              restaurant={restaurant}
+              key={entry.placeId}
+              entry={entry}
               onSwipeLeft={handleSwipeLeft}
               onSwipeRight={handleSwipeRight}
               isTop={index === 0}
@@ -501,7 +501,7 @@ export default function SelectionPage() {
           <button
             onClick={() => {
               if (currentIndex > 0) {
-                const previous = restaurants[currentIndex - 1];
+                const previous = entries[currentIndex - 1];
                 if (previous) {
                   removeSelection(previous.placeId);
                 }
