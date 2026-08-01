@@ -1,5 +1,5 @@
 // WebSocket handler for selection:live - a fire-and-forget re-broadcast of a
-// mid-deck Live Selection. Pure transport: no persistence (see live-swipe-room.md).
+// mid-deck Live Selection. Pure transport: no persistence.
 // removeParticipant DELs session:{code}:{pid}:selections and joinSession calls
 // removeParticipant on every rejoin (SessionService.ts), so any mid-deck write
 // here would be silently destroyed by a reconnect.

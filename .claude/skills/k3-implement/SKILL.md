@@ -5,7 +5,7 @@ description: Orchestrate the Kimi Code CLI (K3) in a Herdr pane to implement a r
 
 # K3 Implement
 
-Kimi implements one issue at a time in its own Herdr pane — typecheck, unit tests, local commit — and stops there; the watcher alerts you, and you then run `/codex-verify` on the issue spec and `/pr-review-loop` before feeding it the next issue. Kimi never pushes, opens PRs, watches CI, or does browser verification/review — everything past the commit is yours and saves its tokens.
+Kimi implements one issue at a time in its own Herdr pane — typecheck, unit tests, local commit — and stops there; the watcher alerts you, and you then run `/codex-verify` on the issue spec and take the branch through PR + review before feeding it the next issue. Kimi never pushes, opens PRs, watches CI, or does browser verification/review — everything past the commit is yours and saves its tokens.
 
 ## Preconditions
 
@@ -33,7 +33,7 @@ Kimi implements one issue at a time in its own Herdr pane — typecheck, unit te
    - **Stalled mid-turn** (transcript ends mid-action, context counter frozen, todos incomplete): nudge with `herdr pane run <id> "continue"`, wait 3s, then `herdr pane send-keys <id> ctrl+s` — messages queue behind zombie turns and ctrl+s ("steer immediately") forces delivery. Re-arm the watcher.
    - **Blocked on a prompt** → answer it (send-text the option digit, then send-keys enter).
 5. **Verify**: check the branch diff, then run `/codex-verify` with the issue as the spec (Codex drives the browser). Any FAIL → send Kimi the concrete finding and go back to step 3.
-6. **Review/ship**: run `/pr-review-loop` for the branch.
+6. **Review/ship**: push the branch, open the PR, wait for CI, review the diff yourself (or run `/code-review`), fix findings, merge (`docs/branching.md`).
 7. Mark the task completed, next issue → step 1.
 
 ## Failure modes seen in practice
