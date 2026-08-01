@@ -134,17 +134,25 @@ describe('CookViewPage', () => {
 
   it('closes the method with a credit line linking the source Recipe', async () => {
     renderPage();
+    // The credit names the ORIGINATING site, hyperlinked — a licence
+    // obligation of the recipe supply (#288), not a style choice. Spoonacular
+    // itself is owed nothing on the paid tier.
     const credit = await screen.findByRole('link', { name: /Serious Eats/ });
     expect(credit).toHaveAttribute('href', 'https://example.com/rendang');
+    expect(screen.getByText(steps[2])).toBeInTheDocument();
+    expect(screen.getByText(/Method from/)).toBeInTheDocument();
   });
 
   it('degrades a method-less Recipe to the source link alone', async () => {
     serviceMocks.getShoppingList.mockResolvedValue({ ...list, steps: [] });
     renderPage();
 
+    // The credit line replaces the method, and still carries the source link.
     const credit = await screen.findByRole('link', { name: /Serious Eats/ });
     expect(credit).toHaveAttribute('href', 'https://example.com/rendang');
     expect(screen.queryAllByRole('button', { pressed: false })).toHaveLength(0);
+    expect(screen.getByText(/The full method is at/)).toBeInTheDocument();
+    expect(screen.queryByText(/Method from/)).not.toBeInTheDocument();
   });
 
   it('credits a source that left no link without pretending it is one', async () => {

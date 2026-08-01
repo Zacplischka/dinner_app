@@ -207,7 +207,7 @@ Whoever holds and works a Shopping List, identified only by a self-declared disp
 _Avoid_: participant, buyer, claimer, user
 
 **Cook View**:
-The Shopping List read at the stove: the crowned Recipe's instructions, snapshotted into the list at mint and rendered whole on one screen, each step dimmable by tapping it. Lives on the Shopping List's own URL and inherits everything about it — the same lifetime, the same capability, the same Shopper — so it works after the Session, the pool, and the source's own memory of the Recipe are all gone. Closed by one source credit, which is also what stands in for a Recipe whose instructions were never snapshotted.
+The Shopping List read at the stove: the crowned Recipe's instructions, snapshotted into the list at mint and rendered whole on one screen, each step dimmable by tapping it. Lives on the Shopping List's own URL and inherits everything about it — the same lifetime, the same capability, the same Shopper — so it works after the Session, the pool, and the source's own memory of the Recipe are all gone. Closed by one source credit naming the originating recipe site with a backlink — a licence obligation of the recipe supply, not a style choice — which is also what stands in for a Recipe whose instructions were never snapshotted.
 _Avoid_: cooking mode, recipe page, method screen
 
 **Tally**:
