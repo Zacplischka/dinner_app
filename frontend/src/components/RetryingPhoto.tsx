@@ -50,6 +50,10 @@ function PhotoAttempt({ url, alt = '', ...imgProps }: RetryingPhotoProps) {
         }
       }}
       {...imgProps}
+      // The retry node must fetch eagerly: `loading="lazy"` waits for the img
+      // to near the viewport, and a display:none box never does — reveal needs
+      // onLoad, a lazy load needs layout, and the retry deadlocks.
+      loading={phase === 'retrying' ? 'eager' : imgProps.loading}
     />
   );
 }

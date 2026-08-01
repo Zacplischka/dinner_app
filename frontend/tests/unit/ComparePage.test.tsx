@@ -159,6 +159,9 @@ describe('ComparePage', () => {
     const retry = venueCard.querySelector('img') as HTMLImageElement;
     expect(retry).toHaveAttribute('src', 'https://example.com/broken.jpg');
     expect(retry.hidden).toBe(true);
+    // Hidden + lazy would never fetch (no layout box, no intersection), so the
+    // retry node must drop the caller's `loading="lazy"` for eager.
+    expect(retry).toHaveAttribute('loading', 'eager');
 
     fireEvent.load(retry);
     expect(retry.hidden).toBe(false);
