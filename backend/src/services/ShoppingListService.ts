@@ -21,7 +21,7 @@ import type { Session } from '../store/sessionStore.js';
 import type { IngredientAmount } from './quantityLadder.js';
 import type { PooledIngredient, PooledRecipe } from './spoonacularClient.js';
 import { isStaple } from './staples.js';
-import { translateTerm } from './usToAuTerms.js';
+import { deriveSearchTerm } from './usToAuTerms.js';
 
 /**
  * Seven days from mint, and nothing extends it — not a read, not a Claim, not
@@ -349,8 +349,9 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       staple: isStaple(ingredient.name),
     };
     // The Retailer search is what an Unmatched line offers instead of a product,
-    // so it asks in the local dialect the Matcher would have used (#241).
-    const searchTerm = translateTerm(ingredient.name);
+    // so it is exactly the term the Matcher searched (#285) — measurement junk
+    // dropped, in the local dialect (#241).
+    const searchTerm = deriveSearchTerm(ingredient.name);
     const unmatched = { line: { ...fields, state: 'unmatched', searchTerm } as ShoppingListLine };
 
     // A Staple is assumed already at home and counted by nothing, so it never
@@ -546,8 +547,9 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       if (!match) return null;
 
       // The Retailer search a demoted line falls back to is the same one it
-      // would have had if the Matcher had found nothing in the first place.
-      const searchTerm = translateTerm(match.ingredient.name);
+      // would have had if the Matcher had found nothing in the first place —
+      // one derivation for mint and demotion both (#285).
+      const searchTerm = deriveSearchTerm(match.ingredient.name);
       let state: ShoppingListLineState;
       if (stockcode === null) {
         // "None of these": Unmatched, out of the tally and every Tally with it.

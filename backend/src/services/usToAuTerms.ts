@@ -90,3 +90,70 @@ export function translateTerm(term: string): string {
     .trim();
   return US_TO_AU_TERMS[normalized] ?? term;
 }
+
+// Measurement words carry no product identity. Spoonacular's parsed `name` can
+// be a slice of the raw recipe text — "4.5 cups of water" arrives as "of
+// water", "0.5 cloves 6 garlic" as "6 garlic" — and searching Woolworths for
+// that slice finds nothing (#285).
+const MEASUREMENT_WORDS = new Set([
+  'cup',
+  'cups',
+  'tsp',
+  'teaspoon',
+  'teaspoons',
+  'tbsp',
+  'tablespoon',
+  'tablespoons',
+  'g',
+  'gram',
+  'grams',
+  'kg',
+  'kilogram',
+  'kilograms',
+  'ml',
+  'millilitre',
+  'millilitres',
+  'milliliter',
+  'milliliters',
+  'l',
+  'litre',
+  'litres',
+  'liter',
+  'liters',
+  'oz',
+  'ounce',
+  'ounces',
+  'lb',
+  'lbs',
+  'pound',
+  'pounds',
+  'pinch',
+  'pinches',
+  'dash',
+  'dashes',
+  'handful',
+  'handfuls',
+]);
+const NUMBER = /^[\d.⁄/]+$/; // "6", "4.5", "1/2"
+const NUMBER_WITH_UNIT = /^\d+(?:\.\d+)?(?:g|kg|ml|l|oz|lb|lbs)$/; // "400g"
+
+/**
+ * The one search-term derivation (#285): the term the Matcher searches, the
+ * term an Unmatched line's search link carries at mint, and the term a
+ * demotion falls back to are all this — numbers and measurement words dropped,
+ * a leading "of" with them ("of water" → "water", never "cream of tartar" →
+ * "cream tartar"), then the US→AU translation. A name that was nothing but
+ * measurement passes through untouched rather than searching for "".
+ */
+export function deriveSearchTerm(name: string): string {
+  const words = name
+    .toLowerCase()
+    .replace(/[\s-]+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(
+      (word) => !NUMBER.test(word) && !NUMBER_WITH_UNIT.test(word) && !MEASUREMENT_WORDS.has(word)
+    );
+  while (words[0] === 'of') words.shift();
+  return translateTerm(words.join(' ') || name);
+}

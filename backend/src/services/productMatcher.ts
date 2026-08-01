@@ -110,8 +110,17 @@ export function matchProducts(products: WoolworthsProduct[], term: string): Prod
   return {
     match: toCandidate(ranked[0].product),
     // Four, because the picker is a top-5 and the match is the first of them
-    // (#264). Anything further down was never going to be the right product,
-    // and carrying it would only fatten every Shopping List that stores it.
-    runnersUp: ranked.slice(1, 5).map(({ product }) => toCandidate(product)),
+    // (#264) — carrying more would only fatten every Shopping List that
+    // stores them. Available candidates only: the picker refuses to swap onto
+    // a product the store does not have, so an unavailable runner-up is a
+    // wasted slot — a line whose picker opens onto nothing but "None of
+    // these" (#285). The match itself may still be unavailable (only score-
+    // penalised): surfacing the honest-but-out-of-stock winner is what lets
+    // "none of these" demote it, per #245's Thai basil case.
+    runnersUp: ranked
+      .slice(1)
+      .filter(({ product }) => product.available)
+      .slice(0, 4)
+      .map(({ product }) => toCandidate(product)),
   };
 }

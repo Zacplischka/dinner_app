@@ -3,12 +3,14 @@ import { createWoolworthsClient } from '../../src/services/woolworthsClient.js';
 import { coriander, woolworthsFetchFake } from '../helpers/woolworthsFetchFake.js';
 
 describe('createWoolworthsClient', () => {
-  it('parses the answer into top-5 products with cents prices and taxonomy signal', async () => {
+  it('parses every fetched result with cents prices and taxonomy signal', async () => {
     const { fetchImpl } = woolworthsFetchFake({ coriander });
     const { storeId, products } = await createWoolworthsClient(fetchImpl).search('coriander');
 
     expect(storeId).toBe(1101);
-    expect(products).toHaveLength(5); // sixth result trimmed
+    // All of them (#285): the Matcher's blocklist eats candidates before
+    // ranking, so trimming here is how a swap picker ends up empty.
+    expect(products).toHaveLength(6);
     expect(products[0]).toEqual({
       stockcode: 144329,
       name: 'Coriander Bunch',

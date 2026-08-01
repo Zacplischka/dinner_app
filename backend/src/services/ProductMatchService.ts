@@ -7,7 +7,7 @@ import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import { matchProducts, type WoolworthsProduct } from './productMatcher.js';
 import { woolworthsQueue, type Enqueue } from './politenessQueue.js';
-import { translateTerm } from './usToAuTerms.js';
+import { deriveSearchTerm } from './usToAuTerms.js';
 import type { WoolworthsClient } from './woolworthsClient.js';
 
 // Keyed (FulfilmentStoreId, term) with the store id read off each response:
@@ -137,7 +137,7 @@ export function createProductMatchService(deps: ProductMatchServiceDeps): Produc
 
   return {
     async matchProduct(term: string): Promise<ProductMatchOutcome> {
-      const searchTerm = translateTerm(term);
+      const searchTerm = deriveSearchTerm(term);
       const storeId = await currentStoreId();
       const key = priceKey(storeId, searchTerm);
       let answer = await readCache(key);

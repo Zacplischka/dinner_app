@@ -15,7 +15,13 @@ const IDENTITY_HEADERS = {
   From: 'zacplischka@gmail.com',
   'X-Requested-With': 'Dinder/1.0 (+https://github.com/Zacplischka/dinner_app)',
 };
-const TOP_N = 5;
+// Every result the one PageSize-10 request already paid for. The Matcher's
+// picker is a top-5, but its sapcat guard and blocklist eat candidates before
+// ranking — parsing only 5 raw results is how a matched line ends up with an
+// empty swap picker (#285). Deliberately wider than ADR 0010's "top-5 trimmed
+// candidates" cache line: same request count, the cached record roughly
+// doubles to ~2-4 KB per term.
+const TOP_N = 10;
 
 export interface WoolworthsSearchResult {
   /** The FulfilmentStoreId read off the response; null when absent. */
