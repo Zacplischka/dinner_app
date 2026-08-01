@@ -1,4 +1,4 @@
-// Zustand store for the Group Order (issue 2b). Mirrors authStore.ts — no
+// Zustand store for the Group Order. Mirrors authStore.ts — no
 // `persist`: the ~4 KB Pinned Menu must never land in localStorage.
 
 import { create } from 'zustand';
