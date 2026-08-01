@@ -56,10 +56,11 @@ describe('websocket handlers', () => {
     }
   }
 
-  function socket(id = 'socket-1') {
+  function socket(id = 'socket-1', rooms: string[] = []) {
     const roomEmitter = { emit: vi.fn() };
     return {
       id,
+      rooms: new Set([id, ...rooms]),
       emit: vi.fn(),
       join: vi.fn(),
       leave: vi.fn(),
@@ -197,6 +198,7 @@ describe('websocket handlers', () => {
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:joined', {
         participantId: 'socket-1',
         displayName: 'Alice',
+        sessionCode,
         participantCount: 1,
         isRejoin: false,
       });
@@ -204,6 +206,47 @@ describe('websocket handlers', () => {
         { socketId: 'socket-1', sessionCode, isRejoin: false, participantCount: 1 },
         'Participant joined session'
       );
+    });
+
+    // #283: a socket carries at most one Session. A stale room membership left
+    // by an earlier Session turns its broadcasts into phantom Participants on
+    // this client, which inflates the roster and suppresses the Full House.
+    it('should leave any previous Session room when joining a new one', async () => {
+      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      const testSocket = socket('socket-1', ['OLD42']);
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode, displayName: 'Alice' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: expect.anything() });
+      expect(testSocket.leave).toHaveBeenCalledWith('OLD42');
+      expect(testSocket.leave).not.toHaveBeenCalledWith('socket-1');
+      expect(testSocket.leave).not.toHaveBeenCalledWith(sessionCode);
+      expect(testSocket.join).toHaveBeenCalledWith(sessionCode);
+    });
+
+    it('should not leave rooms when the join is rejected', async () => {
+      const testSocket = socket('socket-1', ['OLD42']);
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode, displayName: 'Alice' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: expect.objectContaining({ code: 'SESSION_NOT_FOUND' }),
+      });
+      expect(testSocket.leave).not.toHaveBeenCalled();
+      expect(testSocket.join).not.toHaveBeenCalled();
     });
 
     it('should replace an existing participant when they rejoin with the same display name', async () => {
@@ -228,6 +271,7 @@ describe('websocket handlers', () => {
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:joined', {
         participantId: 'new-socket',
         displayName: 'Alice',
+        sessionCode,
         participantCount: 1,
         isRejoin: true,
       });

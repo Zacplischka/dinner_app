@@ -106,6 +106,11 @@ const socketConfig: SocketConfig = {
       console.log('Participant joined:', event);
       const store = useSessionStore.getState();
 
+      // #283: drop events for a Session this client is no longer in — a stale
+      // delivery must never grow the roster. An event without a sessionCode
+      // (older backend, ADR 0007) passes through.
+      if (event.sessionCode && event.sessionCode !== store.sessionCode) return;
+
       const existingIndex = event.isRejoin
         ? store.participants.findIndex((p) => p.displayName === event.displayName)
         : -1;

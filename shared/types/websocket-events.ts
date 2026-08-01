@@ -85,6 +85,12 @@ export type SelectionLiveResponse = Ack<null>;
 export interface ParticipantJoinedEvent {
   participantId: string;
   displayName: string;
+  /**
+   * The Session this join belongs to. Additive (ADR 0007): absent from an
+   * older backend. Clients drop the event when it names a Session they are
+   * no longer in — a stale delivery must never grow the roster (#283).
+   */
+  sessionCode?: string;
   participantCount: number;
   /** Server-decided: this join replaced an existing participant's connection. */
   isRejoin: boolean;

@@ -67,6 +67,15 @@ export async function handleSessionJoin(
 
     const result = await service.joinSession(sessionCode, socket.id, displayName, rejoinToken);
 
+    // A socket carries at most one Session: leave any other Session's room,
+    // or its broadcasts keep reaching this client as phantom Participants
+    // (#283). socket.rooms always holds the socket's own id room — keep it.
+    for (const room of [...socket.rooms]) {
+      if (room !== socket.id && room !== sessionCode) {
+        await socket.leave(room);
+      }
+    }
+
     // Join Socket.IO room
     await socket.join(sessionCode);
 
@@ -86,6 +95,7 @@ export async function handleSessionJoin(
     socket.to(sessionCode).emit('participant:joined', {
       participantId: socket.id,
       displayName,
+      sessionCode,
       participantCount: result.participantCount,
       isRejoin: result.isRejoin,
     });

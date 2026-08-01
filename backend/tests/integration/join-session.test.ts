@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import { io as ioClient, type Socket as ClientSocket } from 'socket.io-client';
 import request from 'supertest';
 import Redis from 'ioredis';
@@ -118,6 +118,40 @@ describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
     expect(alice.response).toMatchObject({ success: true, data: { branch: 'eatout' } });
 
     alice.socket.close();
+  });
+
+  // #283: the phantom Participant. A socket that moves to a new Session must
+  // leave the old Session's room, or the old room's participant:joined keeps
+  // reaching it — inflating that client's roster and suppressing the Match.
+  it('should stop old-session broadcasts reaching a client who joined another session (#283)', async () => {
+    const alice = await joinSession('Alice');
+
+    // Alice's browser moves to a second Session on the same socket
+    const second = await request(socketUrl)
+      .post('/api/sessions')
+      .send({ hostName: 'Ava' })
+      .expect(201);
+    await new Promise<void>((resolve, reject) => {
+      alice.socket.emit(
+        'session:join',
+        { sessionCode: second.body.sessionCode, displayName: 'Ava' },
+        (response: any) =>
+          response.success ? resolve() : reject(new Error(response.error?.message))
+      );
+    });
+
+    const phantom = vi.fn();
+    alice.socket.on('participant:joined', phantom);
+
+    // Bee joins the ORIGINAL session — the broadcast must not reach Alice
+    const bee = await joinSession('Bee');
+    expect(bee.response.success).toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(phantom).not.toHaveBeenCalled();
+
+    alice.socket.close();
+    bee.socket.close();
   });
 
   it('should reject 5th participant with SESSION_FULL error (FR-005)', async () => {
