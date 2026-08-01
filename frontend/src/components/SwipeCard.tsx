@@ -4,6 +4,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
 import { isRestaurant } from '../types';
+import RetryingPhoto from './RetryingPhoto';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -187,9 +188,6 @@ export default function SwipeCard({
     };
   };
 
-  // Fallback placeholder image when no photo is available
-  const placeholderImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'%3E%3Crect fill='%2307111f' width='400' height='500'/%3E%3Ctext x='200' y='250' text-anchor='middle' fill='%23ff6b7e' font-family='system-ui,sans-serif' font-size='48'%3E${encodeURIComponent(entry.name.charAt(0))}%3C/text%3E%3C/svg%3E`;
-
   // Title and image are all a Recipe carries; rating, price, hours and address
   // exist only on a Restaurant.
   const restaurant = isRestaurant(entry) ? entry : undefined;
@@ -210,17 +208,39 @@ export default function SwipeCard({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {/* DeckEntry Photo */}
-      <div className="relative h-[62%] flex-shrink-0">
-        <img
-          src={entry.photoUrl || placeholderImage}
-          alt={entry.name}
-          className="w-full h-full object-cover"
-          draggable={false}
-          onError={(event) => {
-            event.currentTarget.src = placeholderImage;
-          }}
-        />
+      {/* DeckEntry Photo: letter tile behind, RetryingPhoto layered on top
+          (#290, same arrangement as the Compare page). The container fixes the
+          region's height, so the swipe-stack geometry #75 protects holds in
+          every state — loading, retrying, or given up — and a transient photo
+          error heals when the one retry lands. */}
+      <div data-photo-region className="relative h-[62%] flex-shrink-0 bg-surface">
+        {/* Same drawing as the old data-URI placeholder, inline so it can sit
+            behind the photo; `slice` matches the old img's object-cover. */}
+        <svg
+          aria-hidden
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 400 500"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <text
+            x="200"
+            y="250"
+            textAnchor="middle"
+            fill="#ff6b7e"
+            fontFamily="system-ui,sans-serif"
+            fontSize="48"
+          >
+            {entry.name.charAt(0)}
+          </text>
+        </svg>
+        {entry.photoUrl && (
+          <RetryingPhoto
+            url={entry.photoUrl}
+            alt={entry.name}
+            className="absolute inset-0 w-full h-full object-cover"
+            draggable={false}
+          />
+        )}
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
       </div>

@@ -9,6 +9,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 
 import GoogleSignInButton from '../../src/components/GoogleSignInButton';
 import NavigationHeader from '../../src/components/NavigationHeader';
+import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import SwipeCard from '../../src/components/SwipeCard';
 import Toast from '../../src/components/Toast/Toast';
 import AddFriendModal from '../../src/components/friends/AddFriendModal';
@@ -316,8 +317,9 @@ describe('component and hook branch coverage', () => {
     expect(card.style.transform).not.toContain('translateX(50px)');
   });
 
-  it('replaces a failed Restaurant photo with its initial placeholder', () => {
-    render(
+  it('falls back to the letter tile on photo error and heals when the retry loads (#290)', () => {
+    vi.useFakeTimers();
+    const { container } = render(
       <SwipeCard
         entry={{ ...restaurant, photoUrl: 'https://example.com/broken.jpg' } as any}
         onSwipeLeft={vi.fn()}
@@ -326,12 +328,81 @@ describe('component and hook branch coverage', () => {
         stackPosition={0}
       />
     );
-    const image = screen.getByRole('img', { name: 'Branch Bistro' });
+    const region = container.querySelector('[data-photo-region]') as HTMLElement;
+    expect(region.className).toContain('h-[62%]');
 
-    fireEvent.error(image);
+    fireEvent.error(screen.getByRole('img', { name: 'Branch Bistro' }));
 
-    expect(image.getAttribute('src')).toContain('data:image/svg+xml');
-    expect(image.getAttribute('src')).toContain('%3EB%3C');
+    // Broken img leaves the DOM at once; the letter tile behind carries the
+    // region, which keeps its fixed height.
+    expect(screen.queryByRole('img', { name: 'Branch Bistro' })).not.toBeInTheDocument();
+    expect(screen.getByText('B')).toBeInTheDocument();
+    expect(region.className).toContain('h-[62%]');
+
+    act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+    const retry = region.querySelector('img') as HTMLImageElement;
+    expect(retry).toHaveAttribute('src', 'https://example.com/broken.jpg');
+    expect(retry.hidden).toBe(true);
+
+    fireEvent.load(retry);
+    expect(retry.hidden).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('keeps the letter tile for the life of the card after two photo failures', () => {
+    vi.useFakeTimers();
+    const { container } = render(
+      <SwipeCard
+        entry={{ ...restaurant, photoUrl: 'https://example.com/broken.jpg' } as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    const region = container.querySelector('[data-photo-region]') as HTMLElement;
+
+    fireEvent.error(screen.getByRole('img', { name: 'Branch Bistro' }));
+    act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+    fireEvent.error(region.querySelector('img') as HTMLImageElement);
+
+    expect(region.querySelector('img')).toBeNull();
+    expect(screen.getByText('B')).toBeInTheDocument();
+    expect(region.className).toContain('h-[62%]');
+    vi.useRealTimers();
+  });
+
+  it('leaves no retry timer behind when the card unmounts mid-wait', () => {
+    vi.useFakeTimers();
+    const { unmount } = render(
+      <SwipeCard
+        entry={{ ...restaurant, photoUrl: 'https://example.com/broken.jpg' } as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    fireEvent.error(screen.getByRole('img', { name: 'Branch Bistro' }));
+    expect(vi.getTimerCount()).toBe(1);
+
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it('shows the letter tile with no img at all when the entry has no photoUrl', () => {
+    const { container } = render(
+      <SwipeCard
+        entry={restaurant as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByText('B')).toBeInTheDocument();
   });
 
   it('covers friend modal, list, invite card, and toast singleton branches', async () => {

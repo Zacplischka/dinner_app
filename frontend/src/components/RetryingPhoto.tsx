@@ -1,5 +1,6 @@
-// The one photo <img> for all three photo surfaces (#90): the Match card hero,
-// the Comparison view Storefront hero, and the Compare page venue photo.
+// The one photo <img> for all photo surfaces (#90): the Match card hero, the
+// Comparison view Storefront hero, the Compare page venue photo, and the Deck
+// SwipeCard photo (#290).
 //
 // A failed load is usually a transient photo-proxy 429/500, so: hide the image
 // immediately (a broken slot is never visible — #75's "real photo or no hero"
