@@ -46,8 +46,18 @@ export function spoonacularFetchFake(spec: {
   gramsPerUnit?: Record<string, number>;
   recipes?: RecipeSearchHit[];
   failWith?: number;
+  /**
+   * The cumulative `X-API-Quota-Used` every response carries — what the #261
+   * points guard counts. A function is re-read per request, so a test can
+   * watch the points climb the way a real day does.
+   */
+  quotaUsed?: number | (() => number);
 }) {
   const requests: Array<{ url: URL; headers: Record<string, string> }> = [];
+  const quotaHeaders = (): Record<string, string> => {
+    const used = typeof spec.quotaUsed === 'function' ? spec.quotaUsed() : spec.quotaUsed;
+    return used === undefined ? {} : { 'X-API-Quota-Used': String(used) };
+  };
   const byId = new Map(
     Object.values(spec.ingredients ?? {}).map((entry) => [entry.id, entry.consistency ?? null])
   );
@@ -55,29 +65,32 @@ export function spoonacularFetchFake(spec: {
   const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(String(input));
     requests.push({ url, headers: { ...((init?.headers ?? {}) as Record<string, string>) } });
-    if (spec.failWith !== undefined) return new Response('blocked', { status: spec.failWith });
+    const headers = quotaHeaders();
+    if (spec.failWith !== undefined) {
+      return new Response('blocked', { status: spec.failWith, headers });
+    }
 
     if (url.pathname === '/recipes/complexSearch') {
       const offset = Number(url.searchParams.get('offset') ?? 0);
       const number = Number(url.searchParams.get('number') ?? 10);
       const all = spec.recipes ?? [];
-      return Response.json({
-        results: all.slice(offset, offset + number),
-        totalResults: all.length,
-      });
+      return Response.json(
+        { results: all.slice(offset, offset + number), totalResults: all.length },
+        { headers }
+      );
     }
     if (url.pathname === '/recipes/convert') {
       const key = `${url.searchParams.get('ingredientName')}:${url.searchParams.get('sourceUnit')}`;
       const grams = spec.gramsPerUnit?.[key];
-      return Response.json(grams === undefined ? {} : { targetAmount: grams });
+      return Response.json(grams === undefined ? {} : { targetAmount: grams }, { headers });
     }
     if (url.pathname === '/food/ingredients/search') {
       const entry = spec.ingredients?.[url.searchParams.get('query') ?? ''];
-      return Response.json({ results: entry ? [{ id: entry.id }] : [] });
+      return Response.json({ results: entry ? [{ id: entry.id }] : [] }, { headers });
     }
     const idMatch = /^\/food\/ingredients\/(\d+)\/information$/.exec(url.pathname);
     if (idMatch) {
-      return Response.json({ consistency: byId.get(Number(idMatch[1])) ?? undefined });
+      return Response.json({ consistency: byId.get(Number(idMatch[1])) ?? undefined }, { headers });
     }
     throw new Error(`no fake for ${url.pathname}`);
   }) as typeof fetch;

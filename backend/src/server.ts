@@ -19,7 +19,7 @@ import { createListsRouter } from './api/lists.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createRecipePoolService } from './services/RecipePoolService.js';
-import { createSpoonacularClient } from './services/spoonacularClient.js';
+import { createSpoonacularClient, guardDailyPoints } from './services/spoonacularClient.js';
 import { createProductMatchService } from './services/ProductMatchService.js';
 import { createQuantityLadder } from './services/quantityLadder.js';
 import { createShoppingListService } from './services/ShoppingListService.js';
@@ -60,7 +60,11 @@ const allowedOrigins = [
 const sessionStore = createSessionStore(redis);
 // Late-bound fetch throughout: the boundary tests fake it, and the clients are
 // built once.
-const spoonacularClient = createSpoonacularClient((...args) => fetch(...args));
+// One shared Spoonacular client, and one daily-points guard around the fetch
+// it is built on — pool searches and Convert calls both count against it (#261).
+const spoonacularClient = createSpoonacularClient(
+  guardDailyPoints(redis, (...args) => fetch(...args))
+);
 const recipePoolService = createRecipePoolService({ redis, client: spoonacularClient });
 const productMatchService = createProductMatchService({
   redis,
