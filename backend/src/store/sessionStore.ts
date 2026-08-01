@@ -574,6 +574,10 @@ export function createSessionStore(redis: Redis) {
    * Mint-once: HSETNX decides which completion mints, and the winner's id is
    * returned to every caller. A second completion therefore re-reads the first
    * list rather than re-pricing it — the whole point of "minted once" (#239).
+   *
+   * The claim is a pointer, and only as live as what it points at: a mint the
+   * process never finished leaves nothing under that id, and the next
+   * completion releases the claim rather than answering with it (#274).
    */
   async function claimShoppingListId(sessionCode: string, listId: string): Promise<string> {
     const won = await redis.hsetnx(sessionKey(sessionCode), 'shoppingListId', listId);

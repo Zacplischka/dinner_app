@@ -29,10 +29,36 @@ import { translateTerm } from './usToAuTerms.js';
  */
 export const SHOPPING_LIST_TTL_MS = 7 * 24 * 3_600_000;
 
+/**
+ * How long an id may stand claimed but unwritten (#274). Long enough for the
+ * slowest plausible mint behind the 500 ms politeness floor, short enough that
+ * a mint the process never finished — a deploy restart, an OOM — stops being
+ * the Session's answer.
+ * ponytail: one fixed span, not a heartbeat the minter keeps refreshing.
+ * Ceiling: a mint slower than this loses its marker while still running, so a
+ * reader gives up early and a second completion may re-price. Upgrade path:
+ * re-set the marker from build()'s loop if real mints ever approach it.
+ */
+const MINTING_TTL_MS = 120_000;
+
+/** How often a waiting reader asks Redis whether the mint has landed. */
+const DEFAULT_POLL_MS = 250;
+
 // --- Keyspace ----------------------------------------------------------
 // shoppinglist:{listId}  string: StoredList, JSON, PX 7 days
+//                        — or MINTING while it is being priced, PX 2 minutes
 
 const listKey = (listId: string) => `shoppinglist:${listId}`;
+
+/**
+ * Written under the list's own key for as long as it is being priced, so the
+ * id has an answer from the moment it is handed out. It does two jobs at once,
+ * and they are the same job: a reader on any instance polls it instead of a
+ * promise only the minting process holds, and the next completion reads it to
+ * tell a live claim from one whose mint died. The finished list overwrites it;
+ * a mint that never lands lets it expire, and the claim expires with it.
+ */
+const MINTING = 'minting';
 
 /**
  * ADR 0001 leaves runtime versioning out "until session data begins surviving
@@ -53,6 +79,7 @@ interface StoredList {
 interface RedisLike {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
+  del(key: string): Promise<unknown>;
 }
 
 interface ShoppingListServiceDeps {
@@ -73,6 +100,8 @@ interface ShoppingListServiceDeps {
   newListId?: () => string;
   ttlMs?: number;
   now?: () => number;
+  /** How long a waiting reader sleeps between looks at the marker. */
+  pollMs?: number;
 }
 
 export interface ShoppingListService {
@@ -84,7 +113,10 @@ export interface ShoppingListService {
    * and the Match must not wait on it. `readList` waits instead.
    */
   mint(sessionCode: string, placeId: string): Promise<string | undefined>;
-  /** The minted list, or null. Waits out an in-flight mint of the same list. */
+  /**
+   * The minted list, or null. Waits out an in-flight mint of the same list —
+   * wherever it is running, and only for as long as it could still be running.
+   */
   readList(listId: string): Promise<ShoppingList | null>;
 }
 
@@ -109,20 +141,13 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
   const newListId = deps.newListId ?? randomUUID;
   const ttlMs = deps.ttlMs ?? SHOPPING_LIST_TTL_MS;
   const now = deps.now ?? Date.now;
-  // Mints in flight, so a Shopper who opens the URL while it is still being
-  // priced waits for the answer instead of seeing a 404 that is about to be
-  // wrong. Redis stays the source of truth — this only holds the wait.
-  // ponytail: in-memory, so the wait assumes the single Railway backend
-  // instance (as ComparisonService's settle map does). Ceiling: on a second
-  // instance, a reader landing away from the minting one is told the list
-  // does not exist for the few seconds the mint takes, then it does. Upgrade
-  // path if the app ever scales out: a short-lived Redis "minting" marker the
-  // reader polls instead of a local promise.
-  const building = new Map<string, Promise<unknown>>();
+  const pollMs = deps.pollMs ?? DEFAULT_POLL_MS;
 
-  async function fromRedis(listId: string): Promise<ShoppingList | null> {
+  /** The list, the marker saying one is on its way, or nothing at all. */
+  async function readStored(listId: string): Promise<ShoppingList | typeof MINTING | null> {
     const raw = await deps.redis.get(listKey(listId));
     if (!raw) return null;
+    if (raw === MINTING) return MINTING;
     const stored = JSON.parse(raw) as Partial<StoredList>;
     if (stored.version !== STORED_VERSION || !stored.list) {
       logger.warn({ listId, version: stored.version }, 'Shopping List written by another shape');
@@ -232,6 +257,20 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       const session = await deps.readSession(sessionCode);
       if (!session?.cravingKey || session.headcount === undefined) return undefined;
 
+      // A Session that already names a list has its answer, and nothing prices
+      // it twice — unless the mint behind that id never landed. A process that
+      // died mid-price leaves the claim pointing at a list nobody will ever
+      // write, and the marker's expiry is the only thing that says so. Then
+      // the id is dead and the claim goes back, so this completion can mint.
+      if (session.shoppingListId) {
+        if ((await readStored(session.shoppingListId)) !== null) return session.shoppingListId;
+        logger.warn(
+          { sessionCode, listId: session.shoppingListId },
+          'Shopping List claim abandoned mid-mint, minting again'
+        );
+        await deps.releaseShoppingListId(sessionCode, session.shoppingListId);
+      }
+
       const recipe = await deps.readRecipe(session.cravingKey, placeId);
       if (!recipe) {
         // ponytail: the shared pool is the only copy of a dealt Recipe's
@@ -243,33 +282,50 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
         return undefined;
       }
 
+      // Marked before the claim, never after. The marker is what says a claim
+      // is alive, so the winner must not be catchable between claiming an id
+      // and marking it — a completion landing in that gap would read the live
+      // claim as abandoned and price the same Top Pick a second time.
       const candidate = newListId();
-      const listId = await deps.claimShoppingListId(sessionCode, candidate);
-      // Someone else's completion already minted for this Session: the list is
-      // frozen, so the answer is that URL — never a second pricing pass.
-      if (listId !== candidate) return listId;
+      await deps.redis.set(listKey(candidate), MINTING, 'PX', MINTING_TTL_MS);
 
-      const minting = build(listId, session.headcount, recipe)
-        .catch(async (error: unknown) => {
-          // A mint that fails leaves no key, so the URL 404s and says so —
-          // better than a half-priced list nobody can tell is half-priced.
-          // Releasing the claim is what stops that id being the Session's
-          // answer forever: without it, every later completion hands back the
-          // same dead URL and no retry is possible.
-          logger.error({ err: error, sessionCode, listId }, 'Shopping List mint failed');
-          await deps.releaseShoppingListId(sessionCode, listId).catch(() => undefined);
-        })
-        .finally(() => building.delete(listId));
-      building.set(listId, minting);
+      const listId = await deps.claimShoppingListId(sessionCode, candidate);
+      // Two completions landing together: whoever lost the claim reads the
+      // winner's list, and takes back the mark it will never mint under.
+      if (listId !== candidate) {
+        await deps.redis.del(listKey(candidate)).catch(() => undefined);
+        return listId;
+      }
+
+      void build(listId, session.headcount, recipe).catch(async (error: unknown) => {
+        // A mint that fails leaves no key, so the URL 404s and says so —
+        // better than a half-priced list nobody can tell is half-priced.
+        // Clearing the marker now rather than waiting out its TTL is what
+        // makes the retry immediate: while it stands, the claim reads as live.
+        logger.error({ err: error, sessionCode, listId }, 'Shopping List mint failed');
+        await deps.redis.del(listKey(listId)).catch(() => undefined);
+        await deps.releaseShoppingListId(sessionCode, listId).catch(() => undefined);
+      });
 
       return listId;
     },
 
     async readList(listId: string): Promise<ShoppingList | null> {
-      const minted = await fromRedis(listId);
-      if (minted) return minted;
-      await building.get(listId);
-      return fromRedis(listId);
+      // Polled, not awaited on a local promise: the mint may be running in
+      // another process entirely, and the marker is all two of them share. The
+      // wait ends when the marker does — overwritten by the finished list, or
+      // expired by Redis — so a reader arriving late waits only what is left
+      // of it. The cap is nothing but a promise that a marker which somehow
+      // never expires cannot pin the connection open forever.
+      const attempts = Math.ceil(MINTING_TTL_MS / pollMs);
+      let stored = await readStored(listId);
+      for (let i = 0; stored === MINTING && i < attempts; i++) {
+        await new Promise((resolve) => setTimeout(resolve, pollMs));
+        stored = await readStored(listId);
+      }
+      // A marker still standing is a mint that died: nothing is coming, and
+      // the URL says so rather than waiting on it.
+      return stored === MINTING ? null : stored;
     },
   };
 }
