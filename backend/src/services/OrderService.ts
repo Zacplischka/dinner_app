@@ -46,7 +46,8 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
   /**
    * Builds the wire state from the stored order hash and its Order Lines. The
    * Pinned Menu (`hash.menu`) resolves each Line's name/price; the raw menu is
-   * attached because every caller here is the order:open ack (a broadcast strips it).
+   * attached for the order:open ack — the socket layer strips it from every
+   * order:state broadcast (orderHandler's withoutMenu).
    */
   function toOrderState(hash: Record<string, string>, lines: Record<string, string>): OrderState {
     const menu = JSON.parse(hash.menu) as MenuItemCapture[];

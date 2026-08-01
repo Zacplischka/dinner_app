@@ -225,7 +225,9 @@ const socketConfig: SocketConfig = {
       });
     },
 
-    // order:state - full Group Order state, emitted after open and every mutation.
+    // order:state - Group Order state sans Pinned Menu, broadcast on every
+    // Order Line change and the Buyer claim (order:open acks directly and
+    // broadcasts nothing).
     // io.in broadcasts to the sender too, so the toast is gated on the change
     // being a removal by someone other than me; an addition toasts on no phone.
     'order:state': (event: OrderStateEvent) => {

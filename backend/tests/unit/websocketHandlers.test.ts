@@ -1392,6 +1392,10 @@ describe('websocket handlers', () => {
           change: { by: 'Alice', name: 'Margherita', delta: 1 },
         })
       );
+      // The ~4 KB Pinned Menu rides ONLY the order:open ack — every broadcast
+      // strips it. objectContaining can't catch an extra field, so assert
+      // absence explicitly.
+      expect('menu' in server.roomEmitter.emit.mock.calls[0][1].order).toBe(false);
     });
 
     it('acks VALIDATION_ERROR and broadcasts nothing when the order is locked', async () => {
@@ -1491,6 +1495,8 @@ describe('websocket handlers', () => {
         })
       );
       expect('change' in payload).toBe(false);
+      // Broadcasts never carry the Pinned Menu (order:open's ack does).
+      expect('menu' in payload.order).toBe(false);
     });
 
     it('a second, different claimant acks VALIDATION_ERROR and the Buyer is unchanged', async () => {

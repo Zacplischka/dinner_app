@@ -38,6 +38,15 @@ const orderBuyPayloadSchema = z.object({
   feeCents: z.number().int().min(0).max(100000).optional(),
 });
 
+// The ~4 KB Pinned Menu rides only the order:open ack — the one place the
+// frontend reads it. Every order:state broadcast strips it here, at the point
+// of emission, so a few taps around the table don't re-download the frozen
+// menu to every phone.
+function withoutMenu(order: OrderState): OrderState {
+  const { menu: _menu, ...rest } = order;
+  return rest;
+}
+
 export async function handleOrderOpen(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   payload: OrderOpenPayload,
@@ -131,7 +140,7 @@ export async function handleOrderItem(
     // no-op decrement (absent line) produces no change → nothing to broadcast.
     callback({ success: true, data: null });
     if (change) {
-      io.in(sessionCode).emit('order:state', { sessionCode, order, change });
+      io.in(sessionCode).emit('order:state', { sessionCode, order: withoutMenu(order), change });
       logger.info({ socketId: socket.id, sessionCode, index, delta }, 'Order Line changed');
     }
   } catch (error) {
@@ -179,7 +188,7 @@ export async function handleOrderBuy(
     // sender (io.in, not socket.to) — no `change` field, the lock is not an
     // item mutation.
     callback({ success: true, data: null });
-    io.in(sessionCode).emit('order:state', { sessionCode, order });
+    io.in(sessionCode).emit('order:state', { sessionCode, order: withoutMenu(order) });
     logger.info(
       { socketId: socket.id, sessionCode, buyer: order.buyer },
       'Buyer claimed group order'
