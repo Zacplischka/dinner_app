@@ -5,6 +5,7 @@
 // agents (#244), so the browser UA is pinned like the Woolworths client's.
 import type { Craving, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
+import { logger } from '../logger.js';
 import { number } from './storefrontResolution.js';
 
 const BASE = 'https://api.spoonacular.com';
@@ -111,6 +112,76 @@ function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
     steps: (result.analyzedInstructions ?? []).flatMap((instruction) =>
       (instruction.steps ?? []).flatMap((step) => text(step.step) ?? [])
     ),
+  };
+}
+
+// --- The daily-points guard (#261) -------------------------------------
+// Redis: spoonacular:points:{YYYY-MM-DD}  string, the points the source has
+//        reported spent on that UTC quota day, as of its last response.
+
+interface RedisLike {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
+}
+
+/** Two days, so a counter outlives its quota day and nothing else. */
+const POINTS_TTL_MS = 48 * 3_600_000;
+
+/**
+ * Spoonacular's quota day is the UTC one, and so is the key that counts it:
+ * at midnight UTC the date changes, a fresh key reads as zero, and that is
+ * the whole rollover — no scheduled reset to get wrong.
+ */
+export const pointsKey = () => `spoonacular:points:${new Date().toISOString().slice(0, 10)}`;
+
+/**
+ * The daily-points guard (#261): the fetch this client is built on, wrapped so
+ * every outbound call — pool search and Convert alike — is checked against the
+ * configured ceiling before it goes out and feeds the counter after it lands.
+ *
+ * At the ceiling it throws without calling, deliberately the same shape as a
+ * transport failure: at setup the Cook Branch reports the source unavailable
+ * and caches nothing (#260), mid-mint the quantity ladder falls through to the
+ * next rung and the list still mints (#257). Sessions on a warm pool never
+ * reach the client at all, so a dark day leaves them untouched.
+ *
+ * ponytail: the counter is Spoonacular's own cumulative header rather than a
+ * local tally, so it is only as fresh as the last response, and the read and
+ * the write around each call are not one atomic step. Two ceilings follow,
+ * both undercounts, both self-correcting on the next response, and both an
+ * order smaller than the gap the configured ceiling leaves under the tier's
+ * 1,500: in-flight calls can overshoot by their own point cost, and
+ * concurrent responses landing out of order can write the lower of the two.
+ * Upgrade path if that gap ever gets tight: make the write an `eval` that
+ * compares against the stored value inside Redis.
+ */
+export function guardDailyPoints(
+  redis: RedisLike,
+  fetchImpl: typeof fetch,
+  ceiling: number = config.spoonacular.dailyPointCeiling
+): typeof fetch {
+  return async (input, init) => {
+    const key = pointsKey();
+    const used = Number(await redis.get(key)) || 0;
+    if (used >= ceiling) {
+      throw new Error(`Spoonacular daily point ceiling reached (${used}/${ceiling})`);
+    }
+    const response = await fetchImpl(input, init);
+    // A response the source didn't count is still one it charged for. Leaving
+    // the counter frozen on a header that stopped arriving is the guard
+    // quietly ceasing to guard — the silent bill it exists to prevent — so an
+    // uncounted response costs the cheapest a call can be, loudly.
+    const reported = Number(response.headers.get('X-API-Quota-Used') ?? NaN);
+    if (Number.isNaN(reported)) {
+      // The path only — the query string carries the API key.
+      logger.warn(
+        { used, path: new URL(String(input)).pathname, status: response.status },
+        'Spoonacular response carried no quota header'
+      );
+    }
+    const counted = Number.isNaN(reported) ? used + 1 : reported;
+    if (counted > used) await redis.set(key, String(counted), 'PX', POINTS_TTL_MS);
+    return response;
   };
 }
 

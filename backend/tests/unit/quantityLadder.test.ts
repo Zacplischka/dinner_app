@@ -8,7 +8,11 @@ import RedisMock from 'ioredis-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductCandidate, ProductMatchOutcome } from '@dinder/shared/types';
 import { createQuantityLadder } from '../../src/services/quantityLadder.js';
-import { createSpoonacularClient } from '../../src/services/spoonacularClient.js';
+import {
+  createSpoonacularClient,
+  guardDailyPoints,
+  pointsKey,
+} from '../../src/services/spoonacularClient.js';
 import { captureLogs } from '../helpers/logCapture.js';
 import { spoonacularFetchFake } from '../helpers/spoonacularFetchFake.js';
 
@@ -292,6 +296,33 @@ describe('createQuantityLadder', () => {
     ).resolves.toEqual({ state: 'unpriced_matched', reason: 'no conversion for "tbsp"' });
     // Failures cache nothing — the next attempt may reach a healed API.
     await expect(redis.keys('spoonacular:*')).resolves.toEqual([]);
+  });
+
+  it('a points guard tripping mid-mint degrades the line, it never fails the mint (#261)', async () => {
+    captureLogs();
+    const redis = new RedisMock();
+    await redis.set(pointsKey(), '1400');
+    const { fetchImpl, requests } = spoonacularFetchFake(SPOON);
+    const rungs = createQuantityLadder({
+      redis,
+      client: createSpoonacularClient(guardDailyPoints(redis, fetchImpl, 1400), 'test-key'),
+    });
+
+    // Rung 1 is arithmetic — a dark source cannot touch it.
+    await expect(
+      rungs.resolveLine(
+        { name: 'spaghetti', amount: 400, unit: 'g' },
+        matched({ packageSize: '500g', priceCents: 280 })
+      )
+    ).resolves.toMatchObject({ state: 'priced' });
+    // A line that needed Convert degrades down the ladder instead of throwing.
+    await expect(
+      rungs.resolveLine(
+        { name: 'tomato paste', amount: 2, unit: 'tbsp' },
+        matched({ packageSize: '130g', priceCents: 240 })
+      )
+    ).resolves.toEqual({ state: 'unpriced_matched', reason: 'no conversion for "tbsp"' });
+    expect(requests).toHaveLength(0);
   });
 
   it('cached conversions stay usable while Convert is down', async () => {

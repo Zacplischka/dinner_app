@@ -1,7 +1,13 @@
 // Spoonacular client unit tests over the fetch fake — the boundary and
 // nothing else.
-import { describe, expect, it } from 'vitest';
-import { createSpoonacularClient } from '../../src/services/spoonacularClient.js';
+import RedisMock from 'ioredis-mock';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createSpoonacularClient,
+  guardDailyPoints,
+  pointsKey,
+} from '../../src/services/spoonacularClient.js';
+import { captureLogs } from '../helpers/logCapture.js';
 import { recipeHits, spoonacularFetchFake } from '../helpers/spoonacularFetchFake.js';
 
 const chicken = { 'chicken breast': { id: 5062, consistency: 'solid' as const } };
@@ -141,5 +147,96 @@ describe('createSpoonacularClient', () => {
       // A Recipe the source knows nothing more about is still cookable-shaped.
       expect(pooled[0]).toMatchObject({ ingredients: [], steps: [] });
     });
+  });
+});
+
+// The daily-points guard (#261). Spoonacular's quota failure is inverted: past
+// the tier's included points it keeps answering and bills silently, so the app
+// is the only thing that can stop.
+describe('guardDailyPoints', () => {
+  const craving = { mealType: 'main course' as const, cuisines: [], diets: [] };
+  const CEILING = 1400;
+  // Under the faked clock below, today's counter key.
+  const key = 'spoonacular:points:2026-08-01';
+
+  const guarded = (redis: InstanceType<typeof RedisMock>, quotaUsed?: number | (() => number)) => {
+    const { fetchImpl, requests } = spoonacularFetchFake({
+      recipes: recipeHits(2),
+      gramsPerUnit: { 'chicken breast:piece': 226 },
+      quotaUsed,
+    });
+    return {
+      requests,
+      client: createSpoonacularClient(guardDailyPoints(redis, fetchImpl, CEILING), 'test-key'),
+    };
+  };
+
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+    // Only Date is faked: ioredis-mock's own expiry runs on real timers.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-01T09:00:00.000Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('counts every response, search and Convert alike', async () => {
+    const redis = new RedisMock();
+    let used = 0;
+    const { client } = guarded(redis, () => (used += 10));
+
+    await client.searchRecipes(craving, { number: 2, offset: 0 });
+    expect(await redis.get(key)).toBe('10');
+
+    await client.gramsPerUnit('chicken breast', 'piece');
+    expect(await redis.get(key)).toBe('20');
+  });
+
+  it('makes no outbound call at or past the ceiling', async () => {
+    const redis = new RedisMock();
+    await redis.set(key, String(CEILING));
+    const { client, requests } = guarded(redis, CEILING);
+
+    await expect(client.searchRecipes(craving, { number: 2, offset: 0 })).rejects.toThrow(
+      /ceiling/
+    );
+    await expect(client.gramsPerUnit('chicken breast', 'piece')).rejects.toThrow(/ceiling/);
+    await expect(client.ingredientInfo('chicken breast')).rejects.toThrow(/ceiling/);
+    expect(requests).toEqual([]);
+  });
+
+  it('starts over when the quota day rolls over at midnight UTC', async () => {
+    const redis = new RedisMock();
+    await redis.set(key, String(CEILING));
+    const { client, requests } = guarded(redis, 12);
+
+    vi.setSystemTime(new Date('2026-08-02T00:00:00.000Z'));
+
+    expect(pointsKey()).toBe('spoonacular:points:2026-08-02');
+    await expect(client.gramsPerUnit('chicken breast', 'piece')).resolves.toBe(226);
+    expect(requests).toHaveLength(1);
+    expect(await redis.get(pointsKey())).toBe('12');
+    // Yesterday's count is left alone — it is a different quota day.
+    expect(await redis.get(key)).toBe(String(CEILING));
+  });
+
+  it('counts a point for a response the source did not count, rather than freezing', async () => {
+    const logs = captureLogs();
+    const redis = new RedisMock();
+    await redis.set(key, '5');
+    const { client } = guarded(redis);
+
+    // A header that stops arriving must not stop the guard: the count still
+    // climbs, so a day of them still reaches the ceiling instead of billing on.
+    await client.gramsPerUnit('chicken breast', 'piece');
+    expect(await redis.get(key)).toBe('6');
+
+    const warned = logs.withMsg('Spoonacular response carried no quota header');
+    expect(warned).toHaveLength(1);
+    expect(warned[0]).toMatchObject({ used: 5, path: '/recipes/convert' });
+    // The path only — the query string carries the API key.
+    expect(JSON.stringify(warned[0])).not.toContain('test-key');
   });
 });

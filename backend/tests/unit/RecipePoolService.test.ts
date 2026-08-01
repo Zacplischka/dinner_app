@@ -4,7 +4,11 @@ import RedisMock from 'ioredis-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Craving } from '@dinder/shared/types';
 import { createRecipePoolService, cravingPoolKey } from '../../src/services/RecipePoolService.js';
-import { createSpoonacularClient } from '../../src/services/spoonacularClient.js';
+import {
+  createSpoonacularClient,
+  guardDailyPoints,
+  pointsKey,
+} from '../../src/services/spoonacularClient.js';
 import { recipeHits, spoonacularFetchFake } from '../helpers/spoonacularFetchFake.js';
 
 const HOUR_MS = 3_600_000;
@@ -22,6 +26,8 @@ function service(
     poolTtlMs?: number;
     emptyPoolTtlMs?: number;
     failWith?: number;
+    /** Set to put the #261 points guard between the client and the fake. */
+    pointCeiling?: number;
   } = {}
 ) {
   const redis = overrides.redis ?? new RedisMock();
@@ -29,9 +35,13 @@ function service(
     recipes: hits,
     failWith: overrides.failWith,
   });
+  const guarded =
+    overrides.pointCeiling === undefined
+      ? fetchImpl
+      : guardDailyPoints(redis, fetchImpl, overrides.pointCeiling);
   const created = createRecipePoolService({
     redis,
-    client: createSpoonacularClient(fetchImpl, 'test-key'),
+    client: createSpoonacularClient(guarded, 'test-key'),
     poolTtlMs: overrides.poolTtlMs ?? 24 * HOUR_MS,
     emptyPoolTtlMs: overrides.emptyPoolTtlMs ?? HOUR_MS,
     poolSize: 60,
@@ -210,6 +220,29 @@ describe('createRecipePoolService', () => {
     await expect(pool.dealDeck(pasta)).rejects.toThrow();
 
     await expect(redis.exists(cravingPoolKey(pasta))).resolves.toBe(0);
+  });
+
+  it('fails the cold deal closed once the points guard has tripped (#261)', async () => {
+    const redis = new RedisMock();
+    await redis.set(pointsKey(), '1400');
+    const { service: pool, searches } = service(recipeHits(60), { redis, pointCeiling: 1400 });
+
+    // Exactly a source failure: it throws, so setup says the source is
+    // unavailable, and — the point of the guard — nothing went out.
+    await expect(pool.dealDeck(pasta)).rejects.toThrow(/ceiling/);
+    expect(searches()).toHaveLength(0);
+    await expect(redis.exists(cravingPoolKey(pasta))).resolves.toBe(0);
+  });
+
+  it('deals a warm pool as usual while the points guard is tripped (#261)', async () => {
+    const redis = new RedisMock();
+    await service(recipeHits(60), { redis }).service.dealDeck(pasta);
+    await redis.set(pointsKey(), '1400');
+
+    const dark = service(recipeHits(60), { redis, pointCeiling: 1400 });
+
+    await expect(dark.service.dealDeck(pasta)).resolves.toHaveLength(15);
+    expect(dark.searches()).toHaveLength(0);
   });
 
   it('deals a different cut to each Session drawing on one pool', async () => {

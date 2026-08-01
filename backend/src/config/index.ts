@@ -30,6 +30,12 @@ export const config = {
     emptyPoolTtlMs: parseInt(process.env.RECIPE_EMPTY_POOL_TTL_MS || `${3_600_000}`, 10),
     poolSize: parseInt(process.env.RECIPE_POOL_SIZE || '60', 10),
     deckSize: parseInt(process.env.RECIPE_DECK_SIZE || '15', 10),
+    // The daily-points ceiling the guard fails closed at (#261). Spoonacular's
+    // Cook tier includes 1,500 points a day and its console has no spend cap:
+    // past that it keeps answering and bills $0.005/pt silently. The default
+    // stops short of the included quota, and the gap absorbs the in-flight
+    // calls whose points only land on the counter once they answer.
+    dailyPointCeiling: parseInt(process.env.SPOONACULAR_DAILY_POINT_CEILING || '1400', 10),
   },
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,
