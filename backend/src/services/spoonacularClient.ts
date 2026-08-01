@@ -69,6 +69,7 @@ interface RecipeSearchResult {
   servings?: unknown;
   sourceName?: unknown;
   sourceUrl?: unknown;
+  spoonacularSourceUrl?: unknown;
   extendedIngredients?: Array<{
     name?: unknown;
     amount?: unknown;
@@ -94,7 +95,11 @@ function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
     aggregateLikes: number(result.aggregateLikes),
     servings: number(result.servings),
     sourceName: text(result.sourceName),
-    sourceUrl: text(result.sourceUrl),
+    // Spoonacular's own page for the Recipe is the fallback, because this URL
+    // is the cook view's degrade path (#265): a Recipe whose steps came through
+    // empty shows the credit line *instead of* the method, so a credit with
+    // nowhere to go is the one dead end that path exists to prevent.
+    sourceUrl: text(result.sourceUrl) ?? text(result.spoonacularSourceUrl),
     ingredients: (result.extendedIngredients ?? []).flatMap((ingredient) => {
       const ingredientName = text(ingredient.name);
       return ingredientName === undefined

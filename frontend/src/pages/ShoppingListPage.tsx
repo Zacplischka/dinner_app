@@ -4,16 +4,11 @@
 // view with #265. Every line renders in exactly one of #234's four states, and
 // every Woolworths link goes through the counting redirect.
 
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import {
-  shoppingListTotal,
-  type NeededAmount,
-  type ShoppingList,
-  type ShoppingListLine,
-} from '@dinder/shared/types';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { shoppingListTotal, type NeededAmount, type ShoppingListLine } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
-import { getShoppingList, retailerRedirectUrl } from '../services/apiClient';
+import { useShoppingList } from '../hooks/useShoppingList';
+import { retailerRedirectUrl } from '../services/apiClient';
 import { formatPrice } from '../utils/money';
 
 /** "needs 250g", "needs 600mL", "needs 3" — the buy decision's own family. */
@@ -99,25 +94,7 @@ function Line({ line }: { line: ShoppingListLine }) {
 export default function ShoppingListPage() {
   const navigate = useNavigate();
   const { listId } = useParams<{ listId: string }>();
-  const [list, setList] = useState<ShoppingList | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!listId) return;
-    let active = true;
-    // One read. The backend holds the request while a fresh list is still
-    // being priced, so there is nothing to poll and nothing to retry.
-    getShoppingList(listId)
-      .then((loaded) => active && setList(loaded))
-      .catch(
-        (err: unknown) =>
-          active &&
-          setError(err instanceof Error ? err.message : 'This shopping list could not be loaded.')
-      );
-    return () => {
-      active = false;
-    };
-  }, [listId]);
+  const { list, error } = useShoppingList(listId);
 
   const lines = list?.lines ?? [];
   const shop = lines.filter((line) => !line.staple);
@@ -131,6 +108,16 @@ export default function ShoppingListPage() {
         subtitle={list ? list.recipeName : 'Everything for tonight'}
         showBackButton
         onBack={() => navigate('/')}
+        rightAction={
+          list ? (
+            <Link
+              to={`/list/${list.listId}/cook`}
+              className="text-sm font-semibold text-cyan hover:underline"
+            >
+              Cook
+            </Link>
+          ) : undefined
+        }
       />
 
       <div className="mx-auto max-w-2xl px-4 py-6 animate-fade-in">

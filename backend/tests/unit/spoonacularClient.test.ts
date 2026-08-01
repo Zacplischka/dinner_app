@@ -127,6 +127,24 @@ describe('createSpoonacularClient', () => {
       ]);
     });
 
+    it("falls back to Spoonacular's own page when the Recipe names no source URL", async () => {
+      // The credit line is the cook view's degrade path (#265) — it must have
+      // somewhere to go even when the original publisher went unnamed.
+      const { fetchImpl } = spoonacularFetchFake({
+        recipes: [
+          {
+            id: 42,
+            title: 'Rendang',
+            spoonacularSourceUrl: 'https://spoonacular.com/rendang-42',
+          },
+        ],
+      });
+      const client = createSpoonacularClient(fetchImpl, 'test-key');
+
+      const [recipe] = await client.searchRecipes(craving, { number: 60, offset: 0 });
+      expect(recipe.sourceUrl).toBe('https://spoonacular.com/rendang-42');
+    });
+
     it('drops a hit with no usable id or title rather than pooling a blank card', async () => {
       const { fetchImpl } = spoonacularFetchFake({
         recipes: [

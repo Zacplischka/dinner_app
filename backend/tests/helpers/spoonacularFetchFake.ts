@@ -6,6 +6,8 @@ export interface RecipeSearchHit {
   aggregateLikes?: number;
   servings?: number;
   sourceUrl?: string;
+  /** Spoonacular's own page for the Recipe — the credit line's last resort. */
+  spoonacularSourceUrl?: string;
   sourceName?: string;
   extendedIngredients?: Array<{
     name?: string;
