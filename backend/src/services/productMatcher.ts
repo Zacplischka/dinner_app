@@ -5,13 +5,15 @@
 import type { ProductCandidate, ProductMatch } from '@dinder/shared/types';
 
 /**
- * A cached Woolworths product: the wire candidate plus the shop-taxonomy
- * strings that stay in the cached record as re-ranker signal only (ADR 0010).
+ * A cached Woolworths product: the wire candidate plus the fields that stay
+ * in the cached record only (ADR 0010) — shop-taxonomy strings as re-ranker
+ * signal, and InstorePrice for the divergence counter, never for the UI.
  */
 export interface WoolworthsProduct extends ProductCandidate {
   /** SAP category, e.g. "VEG / FRESHCUTS". Marketplace listings carry none. */
   sapCategory?: string;
   sapSubCategory?: string;
+  instorePriceCents?: number;
 }
 
 // Shop sections that never hold a cooking ingredient, matched against the SAP
@@ -80,6 +82,7 @@ function toCandidate(product: WoolworthsProduct): ProductCandidate {
   const candidate = { ...product };
   delete candidate.sapCategory;
   delete candidate.sapSubCategory;
+  delete candidate.instorePriceCents;
   return candidate;
 }
 

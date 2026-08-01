@@ -2,7 +2,10 @@
 // and ioredis-mock; only the boundaries are faked.
 import RedisMock from 'ioredis-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createProductMatchService, successTtlMs } from '../../src/services/ProductMatchService.js';
+import {
+  createProductMatchService,
+  successWindowMs,
+} from '../../src/services/ProductMatchService.js';
 import { createPolitenessQueue, type Enqueue } from '../../src/services/politenessQueue.js';
 import { createWoolworthsClient } from '../../src/services/woolworthsClient.js';
 import { captureLogs } from '../helpers/logCapture.js';
@@ -19,8 +22,8 @@ function service(answers: Record<string, unknown | number>, overrides: { enqueue
     client: createWoolworthsClient(fetchImpl),
     enqueue: overrides.enqueue ?? createPolitenessQueue(0),
     defaultStoreId: 1101,
-    successTtlCapMs: DAY_MS,
-    failureTtlMs: HOUR_MS,
+    successWindowCapMs: DAY_MS,
+    failureWindowMs: HOUR_MS,
   });
   const searches = () => requests.filter((request) => request.method === 'POST');
   return { redis, service: created, searches };
@@ -46,6 +49,8 @@ describe('createProductMatchService', () => {
       packageSize: 'Each',
       priceCents: 250,
     });
+    // InstorePrice stays on the cached record — never on the wire candidate.
+    expect(outcome.match).not.toHaveProperty('instorePriceCents');
     // Junk (no sapcat) never surfaces; the other three survive for the picker.
     const stockcodes = outcome.runnersUp.map((candidate) => candidate.stockcode);
     expect(stockcodes).toHaveLength(3);
@@ -130,23 +135,23 @@ describe('createProductMatchService', () => {
   });
 });
 
-describe('successTtlMs', () => {
+describe('successWindowMs', () => {
   const capMs = DAY_MS;
 
   it('caps at the configured window when Wednesday is far away', () => {
     // Thursday 2026-08-06 12:00 AEST (02:00 UTC)
-    expect(successTtlMs(Date.UTC(2026, 7, 6, 2), capMs)).toBe(capMs);
+    expect(successWindowMs(Date.UTC(2026, 7, 6, 2), capMs)).toBe(capMs);
   });
 
   it('shortens to the Wednesday 6 am AEST rollover when it is nearer', () => {
     // Tuesday 2026-08-04 22:00 AEST (12:00 UTC) → rollover in 8 h
-    expect(successTtlMs(Date.UTC(2026, 7, 4, 12), capMs)).toBe(8 * HOUR_MS);
+    expect(successWindowMs(Date.UTC(2026, 7, 4, 12), capMs)).toBe(8 * HOUR_MS);
     // Wednesday 05:00 AEST → one hour left
-    expect(successTtlMs(Date.UTC(2026, 7, 4, 19), capMs)).toBe(HOUR_MS);
+    expect(successWindowMs(Date.UTC(2026, 7, 4, 19), capMs)).toBe(HOUR_MS);
   });
 
   it('rolls to next week once Wednesday 6 am has passed', () => {
     // Wednesday 2026-08-05 07:00 AEST (Tue 21:00 UTC) → capped full window
-    expect(successTtlMs(Date.UTC(2026, 7, 4, 21), capMs)).toBe(capMs);
+    expect(successWindowMs(Date.UTC(2026, 7, 4, 21), capMs)).toBe(capMs);
   });
 });

@@ -5,8 +5,9 @@
  * One Woolworths product as the Matcher promises it. `packageSize` is the raw
  * Woolworths pack string, carried untouched — parsing it is the quantity
  * ladder's job (#257). `priceCents` is the online Price, the promised price:
- * the deep link must never disagree with it. `instorePriceCents` rides along
- * for the divergence counter and is never shown in the UI.
+ * the deep link must never disagree with it. InstorePrice stays on the
+ * backend's cached record only — it is never shown in the UI (ADR 0010), so
+ * it has no seat on the wire shape.
  */
 export interface ProductCandidate {
   /** Woolworths Stockcode — deep-linkable product id. */
@@ -15,7 +16,6 @@ export interface ProductCandidate {
   brand?: string;
   packageSize?: string;
   priceCents?: number;
-  instorePriceCents?: number;
   /** Woolworths unit-price string, e.g. "$1.13 / 100G". */
   cupString?: string;
   available: boolean;

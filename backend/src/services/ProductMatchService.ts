@@ -3,9 +3,10 @@
 // pure ranking. The cache is served first and always; the queue only ever
 // sees cold lookups (ADR 0010).
 import type { ProductMatchOutcome } from '@dinder/shared/types';
+import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import { matchProducts, type WoolworthsProduct } from './productMatcher.js';
-import type { Enqueue } from './politenessQueue.js';
+import { woolworthsQueue, type Enqueue } from './politenessQueue.js';
 import { translateTerm } from './usToAuTerms.js';
 import type { WoolworthsClient } from './woolworthsClient.js';
 
@@ -28,12 +29,13 @@ interface RedisLike {
 interface ProductMatchServiceDeps {
   redis: RedisLike;
   client: WoolworthsClient;
-  enqueue: Enqueue;
+  /** Defaults to the global politeness queue — the one all cold lookups share. */
+  enqueue?: Enqueue;
   /** The store assumed before any response has named one (1101 Mayfield). */
-  defaultStoreId: number;
-  /** Success-window cap; the Wednesday 6 am AEST rollover may shorten it. */
-  successTtlCapMs: number;
-  failureTtlMs: number;
+  defaultStoreId?: number;
+  /** Freshness Window cap; the Wednesday 6 am AEST rollover may shorten it. */
+  successWindowCapMs?: number;
+  failureWindowMs?: number;
   now?: () => number;
 }
 
@@ -42,12 +44,12 @@ export interface ProductMatchService {
 }
 
 /**
- * A successful answer (including a clean zero-result miss) lives
+ * A successful answer (including a clean zero-result miss) stays fresh for
  * `min(cap, time to Wednesday 6 am AEST)` — the weekly specials rollover is
  * the one systematic repricing event. AEST is fixed UTC+10; the rollover
  * anchors to Woolworths' pricing calendar, not local daylight saving.
  */
-export function successTtlMs(nowMs: number, capMs: number): number {
+export function successWindowMs(nowMs: number, capMs: number): number {
   const AEST_OFFSET_MS = 10 * 3_600_000;
   const DAY_MS = 86_400_000;
   const local = nowMs + AEST_OFFSET_MS;
@@ -64,6 +66,10 @@ export function successTtlMs(nowMs: number, capMs: number): number {
 
 export function createProductMatchService(deps: ProductMatchServiceDeps): ProductMatchService {
   const now = deps.now ?? Date.now;
+  const enqueue = deps.enqueue ?? woolworthsQueue;
+  const defaultStoreId = deps.defaultStoreId ?? config.woolworths.defaultStoreId;
+  const successWindowCapMs = deps.successWindowCapMs ?? config.woolworths.successWindowCapMs;
+  const failureWindowMs = deps.failureWindowMs ?? config.woolworths.failureWindowMs;
 
   async function readCache(key: string): Promise<CachedAnswer | null> {
     const raw = await deps.redis.get(key);
@@ -73,7 +79,7 @@ export function createProductMatchService(deps: ProductMatchServiceDeps): Produc
   async function currentStoreId(): Promise<number> {
     const raw = await deps.redis.get(STORE_KEY);
     const storeId = raw === null ? NaN : Number(raw);
-    return Number.isFinite(storeId) ? storeId : deps.defaultStoreId;
+    return Number.isFinite(storeId) ? storeId : defaultStoreId;
   }
 
   async function fetchAndCache(term: string, storeId: number): Promise<CachedAnswer> {
@@ -84,18 +90,13 @@ export function createProductMatchService(deps: ProductMatchServiceDeps): Produc
     } catch (error) {
       logger.warn({ err: error, term }, 'Woolworths search failed');
       const failure: CachedAnswer = { status: 'failure', fetchedAt };
-      await deps.redis.set(
-        priceKey(storeId, term),
-        JSON.stringify(failure),
-        'PX',
-        deps.failureTtlMs
-      );
+      await deps.redis.set(priceKey(storeId, term), JSON.stringify(failure), 'PX', failureWindowMs);
       return failure;
     }
 
     const servedStoreId = answer.storeId ?? storeId;
     if (servedStoreId !== storeId) {
-      // The standing drift check (#245): anything but 1101 reopens the egress decision.
+      // The standing drift check (#249): anything but 1101 reopens the egress decision.
       logger.warn({ storeId, servedStoreId }, 'Woolworths fulfilment store drifted');
       await deps.redis.set(STORE_KEY, String(servedStoreId));
     }
@@ -129,7 +130,7 @@ export function createProductMatchService(deps: ProductMatchServiceDeps): Produc
       priceKey(servedStoreId, term),
       JSON.stringify(success),
       'PX',
-      successTtlMs(now(), deps.successTtlCapMs)
+      successWindowMs(now(), successWindowCapMs)
     );
     return success;
   }
@@ -141,7 +142,7 @@ export function createProductMatchService(deps: ProductMatchServiceDeps): Produc
       const key = priceKey(storeId, searchTerm);
       let answer = await readCache(key);
       if (!answer) {
-        answer = await deps.enqueue(async () => {
+        answer = await enqueue(async () => {
           // Re-check inside the queue: an identical term queued behind us may
           // have already paid for this answer.
           return (await readCache(key)) ?? fetchAndCache(searchTerm, storeId);

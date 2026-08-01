@@ -18,13 +18,13 @@ export const config = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   woolworths: {
-    // The store production's egress is served (1101 Mayfield NSW, ADR 0010);
-    // the cache self-heals onto whatever store responses actually name.
+    // The store Woolworths serves to production's egress (1101 Mayfield NSW,
+    // ADR 0010); the cache self-heals onto whatever store responses name.
     defaultStoreId: parseInt(process.env.WOOLWORTHS_STORE_ID || '1101', 10),
-    // Price-cache windows (spec story 44): success min(cap, Wednesday 6 am
-    // AEST rollover); a failure retries after ~1 h.
-    successTtlCapMs: parseInt(process.env.WOOLWORTHS_PRICE_TTL_MS || `${24 * 3_600_000}`, 10),
-    failureTtlMs: parseInt(process.env.WOOLWORTHS_PRICE_FAILURE_TTL_MS || `${3_600_000}`, 10),
+    // Price-cache Freshness Windows (#253 story 44): success min(cap,
+    // Wednesday 6 am AEST rollover); a failure retries after ~1 h.
+    successWindowCapMs: parseInt(process.env.WOOLWORTHS_PRICE_WINDOW_MS || `${24 * 3_600_000}`, 10),
+    failureWindowMs: parseInt(process.env.WOOLWORTHS_PRICE_FAILURE_WINDOW_MS || `${3_600_000}`, 10),
   },
 };
 

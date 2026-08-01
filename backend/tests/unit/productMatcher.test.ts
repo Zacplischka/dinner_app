@@ -103,12 +103,20 @@ describe('matchProducts', () => {
     expect(result?.match.stockcode).toBe(2);
   });
 
-  it('strips the taxonomy signal fields from the wire candidates', () => {
+  it('strips the cached-record-only fields from the wire candidates', () => {
     const result = matchProducts(
-      [product({ stockcode: 1, name: 'Coriander', sapCategory: 'VEG / FRESHCUTS' })],
+      [
+        product({
+          stockcode: 1,
+          name: 'Coriander',
+          sapCategory: 'VEG / FRESHCUTS',
+          instorePriceCents: 250,
+        }),
+      ],
       'coriander'
     );
     expect(result?.match).not.toHaveProperty('sapCategory');
     expect(result?.match).not.toHaveProperty('sapSubCategory');
+    expect(result?.match).not.toHaveProperty('instorePriceCents');
   });
 });

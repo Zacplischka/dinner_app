@@ -1,6 +1,6 @@
 // Live Woolworths smoke check (optional, never CI-gating): one seed plus a
 // few polite searches through the real queue. Verifies the endpoint answers,
-// the response carries a FulfilmentStoreId (the #245 drift check — anything
+// the response carries a FulfilmentStoreId (the #249 drift check — anything
 // but 1101 reopens the egress decision), and the Matcher lands a real product
 // for a dialect term. Run with: npm run grocery:smoke
 import { woolworthsQueue } from '../src/services/politenessQueue.js';
