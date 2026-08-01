@@ -43,7 +43,8 @@ const orderBuyPayloadSchema = z.object({
 // of emission, so a few taps around the table don't re-download the frozen
 // menu to every phone.
 function withoutMenu(order: OrderState): OrderState {
-  const { menu: _menu, ...rest } = order;
+  const rest = { ...order };
+  delete rest.menu;
   return rest;
 }
 
