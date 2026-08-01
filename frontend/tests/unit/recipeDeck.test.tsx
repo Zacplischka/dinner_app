@@ -1,8 +1,7 @@
 // Issue #254 — the Deck deals Restaurants or Recipes through one set of swipe
-// mechanics. Restaurant is still the only variant any producer deals, so this
-// drives the page with a hand-dealt Recipe Deck: the card renders from what a
-// Recipe actually carries (title, image), and a swipe records a Selection with
-// no fork anywhere in the page.
+// mechanics. This drives the page with a hand-dealt Recipe Deck (no backend in
+// a unit test): the card renders from what a Recipe actually carries (title,
+// image), and a swipe records a Selection with no fork anywhere in the page.
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';

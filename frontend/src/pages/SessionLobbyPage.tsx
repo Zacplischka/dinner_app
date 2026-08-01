@@ -1,5 +1,4 @@
 // Session Lobby page - Waiting room showing participants before selection starts
-// Based on: specs/001-dinner-decider-enables/tasks.md T054
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';

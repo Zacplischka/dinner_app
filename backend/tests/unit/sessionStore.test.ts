@@ -1,6 +1,7 @@
 // SessionStore unit tests - exercised through the store's interface against an
-// injected in-memory Redis (ioredis-mock). No real Redis required; each test
-// gets a fresh client, so no cross-test cleanup is needed.
+// injected in-memory Redis (ioredis-mock). No real Redis required — but
+// ioredis-mock instances share one in-process data store, so beforeEach
+// flushes it rather than relying on a fresh client.
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import RedisMock from 'ioredis-mock';
@@ -285,7 +286,7 @@ describe('SessionStore', () => {
   describe('Group Order keyspace', () => {
     it('slides a live TTL onto both order keys on touch', async () => {
       await createTestSession();
-      // order:lines has no writer yet — hset it directly so touch() has a key to EXPIREAT.
+      // order:lines is hset directly (bypassing its writer, addLine) so touch() has a key to EXPIREAT.
       await store.openOrder(sessionCode, { placeId: 'place1', state: 'building' });
       await redis.hset(`session:${sessionCode}:order:lines`, '0:Alice', '1');
       // A later mutation runs touch(), which must EXPIREAT the directly-hset lines key too.

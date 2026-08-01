@@ -1,4 +1,4 @@
-// OrderService — opens a Group Order for a completed Session (issue 2a).
+// OrderService — opens a Group Order for a completed Session.
 // `open` turns the crowned Venue's cached Snapshot menu into a Pinned Menu
 // living in Redis for the life of the Session. Factory + injected deps, so it
 // opens no connection at import (compositionRoot.test.ts guards that).
@@ -70,7 +70,8 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
 
     // Even split of the Buyer's fee across everyone with a Line, remainder one
     // cent at a time in ascending displayName order → shares always sum to
-    // items + fee (§ Hard cases). feeCents is 0 until #179 can set it.
+    // items + fee. feeCents is 0 until the Buyer sets a delivery fee at claim
+    // (order:buy, #179).
     const names = [...itemsByName.keys()].sort();
     const base = names.length ? Math.floor(feeCents / names.length) : 0;
     const remainder = names.length ? feeCents - base * names.length : 0;

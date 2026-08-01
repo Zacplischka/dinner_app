@@ -215,7 +215,7 @@ What one Shopper will spend on their claimed Ingredient Lines: the sum of their 
 _Avoid_: share, split, bill, owed, total
 
 **Staple**:
-One of a small hardcoded set of ingredients assumed already at home. Still an Ingredient Line — visible and claimable — but rendered unticked and excluded from every count: the list total, every Tally, and the claimed-coverage count.
+One of a small hardcoded set of ingredients assumed already at home. Still an Ingredient Line — claimable exactly like any other — but rendered muted in its own pantry section and excluded from every count: the list total, every Tally, and the claimed-coverage count.
 _Avoid_: pantry item, basics, essentials
 
 **Retailer**:

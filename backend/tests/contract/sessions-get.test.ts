@@ -87,19 +87,17 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     });
   });
 
-  it('should return 404 for expired session', async () => {
-    // This test would require manipulating Redis TTL or waiting
-    // For now, we test with an intentionally invalid code
+  it('should return 404 for an absent session (expiry looks identical)', async () => {
+    // An expired session is simply gone from Redis, so an unknown code
+    // exercises the same path without TTL manipulation.
     const response = await request(app).get('/api/sessions/EXPIR').expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
   });
 
   it('should validate sessionCode format in URL parameter', async () => {
-    // Test with an invalid uppercase alphanumeric session code.
-    const response = await request(app)
-      .get('/api/sessions/abc') // Too short
-      .expect(404);
+    // 'abc' fails the 5-char uppercase format on both counts.
+    const response = await request(app).get('/api/sessions/abc').expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
   });

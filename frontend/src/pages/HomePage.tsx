@@ -1,7 +1,7 @@
 // The entry fork (#255): `/` asks the only question that matters — "Tonight
 // you're…" — with a Branch card per kind of night. Eat Out and Takeaway route
-// into the existing create flow with their Branch; Cook routes to the
-// not-yet-available screen until Cook setup lands. Join-with-code and Compare
+// into the existing create flow with their Branch; Cook routes to the Cook
+// setup screen (#260). Join-with-code and Compare
 // are demoted to a text row. There is no solo/group question: a Session starts
 // as yours and becomes a group when you invite someone.
 

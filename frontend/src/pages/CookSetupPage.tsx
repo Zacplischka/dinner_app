@@ -45,7 +45,7 @@ export default function CookSetupPage() {
     }
 
     // A zero-Recipe Craving comes back here as a message, leaving every chip
-    // exactly as the Host set it (#260 moves the refusal inline at setup).
+    // exactly as the Host set it — the refusal lands inline at setup (#260).
     setError(
       (await createAndJoin(
         hostName.trim(),

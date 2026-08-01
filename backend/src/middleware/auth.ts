@@ -6,7 +6,8 @@ import { Request, Response, NextFunction } from 'express';
 import { config } from '../config/index.js';
 import { supabase } from '../services/supabase.js';
 
-// Extend Express Request to include user info
+// The user attached to a request once authenticated; AuthenticatedRequest
+// below is the Express Request extension that carries it.
 export interface AuthenticatedUser {
   id: string;
   email?: string;

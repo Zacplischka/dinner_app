@@ -1445,8 +1445,9 @@ describe('SessionService', () => {
     });
 
     // The Deck deals Restaurants or Recipes (#254). Recipes are seeded straight
-    // into the store because no producer deals them yet — the point is that the
-    // crowning mechanics need no fork, only a per-kind middle rung.
+    // into the store (this suite fakes the real dealer, dealRecipeDeck) — the
+    // point is that the crowning mechanics need no fork, only a per-kind
+    // middle rung.
     describe('Recipe Deck', () => {
       async function createSessionWithRecipeDeck(entries: Recipe[]): Promise<string> {
         const sessionCode = 'COOK1';

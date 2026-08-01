@@ -1,5 +1,4 @@
 // Join Session page - Join an existing session via code
-// Based on: specs/001-dinner-decider-enables/tasks.md T053
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';

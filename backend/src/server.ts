@@ -1,5 +1,4 @@
 // Express + Socket.IO server initialization
-// Based on: specs/001-dinner-decider-enables/plan.md
 
 import express from 'express';
 import { createServer } from 'http';

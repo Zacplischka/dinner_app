@@ -1,5 +1,4 @@
 // REST API endpoint for dinner options
-// Based on: specs/001-dinner-decider-enables/contracts/openapi.yaml
 
 import { Router } from 'express';
 import { asyncHandler } from './asyncHandler.js';

@@ -1,4 +1,5 @@
-// Selection page - Tinder-style swipeable restaurant selection
+// Selection page - Tinder-style swipeable selection of tonight's Deck, which
+// deals both Deck Entry kinds: Restaurants (Eat Out/Takeaway) and Recipes (Cook).
 // Swipe right to like, swipe left to pass
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -577,7 +578,7 @@ export default function SelectionPage() {
             </svg>
           </button>
 
-          {/* Undo Button (optional future feature) */}
+          {/* Undo Button */}
           <button
             onClick={() => {
               if (currentIndex > 0) {

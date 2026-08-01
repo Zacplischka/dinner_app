@@ -1,5 +1,4 @@
 // REST API endpoints for session management
-// Based on: specs/001-dinner-decider-enables/contracts/openapi.yaml
 
 import { Router } from 'express';
 import { z } from 'zod';

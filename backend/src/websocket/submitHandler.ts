@@ -1,6 +1,5 @@
 // WebSocket handler for selection:submit event - pure transport over
 // SessionService.submitSelections (payload validation, ack/broadcasts).
-// Based on: specs/001-dinner-decider-enables/contracts/websocket-events.md
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
@@ -79,7 +78,8 @@ export async function handleSelectionSubmit(
     // Send acknowledgment. No-data command → canonical data is null.
     callback({ success: true, data: null });
 
-    // Broadcast participant:submitted to ALL participants (count only, not selections - FR-023)
+    // Broadcast participant:submitted to ALL participants — count only, never
+    // the selections themselves, which stay private until everyone submits.
     io.in(sessionCode).emit('participant:submitted', {
       participantId: socket.id,
       submittedCount,

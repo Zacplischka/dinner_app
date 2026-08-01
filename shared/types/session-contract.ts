@@ -46,8 +46,9 @@ export interface CreateSessionResponse extends SessionResponse {
   headcount?: number;
 }
 
-// GET /api/options/:sessionCode — the Session's Deck. The field keeps its name
-// while Restaurant is the only shipped Deck Entry kind (ADR 0007).
+// GET /api/options/:sessionCode — the Session's Deck. The field keeps its
+// legacy `restaurants` name (ADR 0007) though it carries both Deck Entry
+// kinds: Restaurants, and Recipes for a Cook Session.
 export interface LoadRestaurantsResponse {
   sessionCode: string;
   restaurants: DeckEntry[];

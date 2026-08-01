@@ -7,9 +7,10 @@ import { checkAccessibility } from './utils/test-helpers';
  * Verify the app meets basic accessibility standards:
  * - All interactive elements have accessible names
  * - Form inputs have labels
- * - Images have alt text
- * - Focus is properly managed
- * - Color contrast is adequate
+ * - Errors surface as visible text
+ * - Keyboard navigation reaches the main actions; focus is visible
+ * - Heading structure and a main landmark exist
+ * (Color contrast is covered by neon-theme.spec.ts.)
  */
 
 test.describe('Accessibility - Home Page', () => {

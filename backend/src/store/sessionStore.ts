@@ -156,7 +156,11 @@ function queueDeckWrite(
 export function createSessionStore(redis: Redis) {
   /**
    * Refresh TTL on every key belonging to a session and stamp lastActivityAt.
-   * Called internally by every mutating operation - callers cannot forget it.
+   * Called by the flow mutations — create, join, submission, results, restart,
+   * deck replace, and the Group Order writes. NOT by every mutating operation:
+   * updateState, setParticipantCount, removeParticipant, addResultPlaceId,
+   * claimShoppingListId and releaseShoppingListId leave the clock untouched
+   * (whether they should is an open Session-expiry question).
    */
   async function touch(sessionCode: string): Promise<number> {
     const expireAt = calculateExpireAt();
@@ -509,7 +513,7 @@ export function createSessionStore(redis: Redis) {
 
     const selectionKeys = participants.map((p) => selectionsKey(sessionCode, p.participantId));
 
-    // Single participant: their selections are the Match (FR-021)
+    // Single participant: their selections are the Match
     const overlappingPlaceIds =
       selectionKeys.length === 1
         ? await redis.smembers(selectionKeys[0])
@@ -675,7 +679,7 @@ export function createSessionStore(redis: Redis) {
     return Object.keys(data).length > 0 ? data : null;
   }
 
-  /** Field "{index}:{displayName}" -> qty. Empty until order:item ships. */
+  /** Field "{index}:{displayName}" -> qty, written by addLine (order:item). */
   async function readOrderLines(sessionCode: string): Promise<Record<string, string>> {
     return await redis.hgetall(orderLinesKey(sessionCode));
   }

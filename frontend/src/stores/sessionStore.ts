@@ -1,5 +1,4 @@
 // Zustand store for session state management
-// Based on: specs/001-dinner-decider-enables/tasks.md T047
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';

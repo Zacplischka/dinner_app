@@ -1,5 +1,4 @@
 // Create Session page - Host creates a new dinner decision session
-// Based on: specs/001-dinner-decider-enables/tasks.md T052
 // Issue #79: location works without browser geolocation (manual suburb/postcode entry)
 
 import { useState } from 'react';

@@ -99,8 +99,8 @@ function sumQtyByIndex(lines: OrderLine[]): Map<number, number> {
   return totals;
 }
 
-// The clipboard-only pattern at ResultsPage.tsx:349-355, reused verbatim by
-// both handoff branches' copy buttons.
+// The clipboard-only pattern of ResultsPage's handleShareResults, reused
+// verbatim by both handoff branches' copy buttons.
 function copyToClipboard(text: string) {
   navigator.clipboard
     .writeText(text)
@@ -119,7 +119,7 @@ export default function GroupOrderPage() {
   const retriedRef = useRef(false);
 
   // The Buyer's delivery-fee input (#179): debounced 400ms, emitted only for
-  // a value parseDollarsToCents accepts. useRef timer pattern per ComparePage.tsx:42.
+  // a value parseDollarsToCents accepts.
   const feeTimer = useRef<ReturnType<typeof setTimeout>>();
   const [feeText, setFeeText] = useState('');
   useEffect(() => () => clearTimeout(feeTimer.current), []);
@@ -193,7 +193,6 @@ export default function GroupOrderPage() {
       cancelled = true;
       unsubscribe?.();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionCode, navigate]);
 
   // The crowned Restaurant's name/address for the delivery pills on a

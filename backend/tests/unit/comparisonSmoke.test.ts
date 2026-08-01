@@ -8,7 +8,7 @@ import {
   selectSmokeVenue,
 } from '../../src/services/comparisonSmoke.js';
 
-describe('parseComparisonSse', () => {
+describe('comparisonSmoke helpers', () => {
   it('honours an explicit Place ID even when Google reshuffles the browse page', () => {
     expect(
       selectSmokeVenue(

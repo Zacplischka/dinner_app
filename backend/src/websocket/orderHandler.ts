@@ -1,7 +1,7 @@
-// WebSocket handler for order:open — pure transport over OrderService.open.
-// order:open is a read/upsert, not a mutation: it acks and broadcasts nothing
-// (OrderStateEvent.change is optional, so an open-broadcast can be added later
-// with zero contract change — ADR 0007).
+// WebSocket handlers for the Group Order — pure transport over OrderService
+// (order:open, order:item, order:buy). order:open is a read/upsert, not a
+// mutation: it acks and broadcasts nothing (OrderStateEvent.change is optional,
+// so an open-broadcast can be added later with zero contract change — ADR 0007).
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';

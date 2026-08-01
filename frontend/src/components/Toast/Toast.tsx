@@ -1,5 +1,6 @@
 // Toast Component
-// Individual toast notification with auto-dismiss and swipe-to-dismiss
+// Individual toast notification with auto-dismiss and a close button
+// (no swipe/touch handling)
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import type { Toast as ToastType, ToastType as ToastVariant } from '../../hooks/useToast';

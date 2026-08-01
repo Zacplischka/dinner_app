@@ -1,5 +1,4 @@
 // Results page - Show overlapping selections and all participants' choices
-// Based on: specs/001-dinner-decider-enables/tasks.md T056
 
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Restaurant } from '@dinder/shared/types';
