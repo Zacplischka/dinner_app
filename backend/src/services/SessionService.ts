@@ -135,6 +135,11 @@ export function createSessionService({
       // The two ways a deal can come back without Recipes are different facts
       // and get different words (#250): the source answering "none" is about
       // the Craving, the source not answering is not.
+      //
+      // Every rejection is read as the second, which holds because dealDeck's
+      // one documented failure is the transport (RecipePoolService). A deal
+      // that ever learns to reject for a reason of its own must say so with a
+      // DomainError and be let through here, or it will be mislabelled.
       deckEntries = await dealRecipeDeck(cook.craving).catch((error: unknown) => {
         logger.error({ err: error, sessionCode }, 'Recipe source failed dealing a Deck');
         throw new DomainError(
