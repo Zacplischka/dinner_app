@@ -7,8 +7,16 @@ Ephemeral group dinner decision-making: a host opens a short-lived Session, frie
 ### Session flow
 
 **Session**:
-A short-lived shared decision room identified by a Session Code, holding at most four Participants. Expires automatically after inactivity; nothing about it persists afterward.
-_Avoid_: room, game, lobby
+A short-lived shared decision room identified by a Session Code, holding at most four Participants, created into exactly one Branch. Expires automatically after inactivity; nothing about it persists afterward except a Shopping List it minted, which lives on its own clock.
+_Avoid_: room, game, lobby — and never "cook Session" as a term of its own; a Session in the Cook Branch is just a Session
+
+**Branch**:
+The top-level choice a Session is created into — Eat Out, Takeaway, or Cook — picked up front on the entry screen and fixed for the Session's life.
+_Avoid_: mode, flow, journey, path
+
+**Deck**:
+The stack of Restaurants or Recipes a Session deals its Participants to swipe.
+_Avoid_: stack, feed, queue
 
 **Session Code**:
 The short shareable code participants use to join a Session.
@@ -27,19 +35,27 @@ The Participant who created the Session.
 _Avoid_: owner, creator
 
 **Restaurant**:
-A nearby dining option fetched for the Session that Participants swipe on.
+A nearby dining option fetched for an Eat Out or Takeaway Session that Participants swipe on. The Cook Branch's counterpart is a Recipe.
 _Avoid_: option, card, place (except in external-API contexts)
 
+**Recipe**:
+A cookable dish fetched for a Cook-branch Session that Participants swipe on, carrying title, image, ingredients, and instructions. The swiped card, the crowned Top Pick, and the thing you cook are all the same Recipe — there is no separate "Meal".
+_Avoid_: meal (except in "meal type", a Craving criterion), dish, card
+
+**Deck Entry**:
+One entry of a Deck — the Restaurant or Recipe a Participant swipes on, and the unit the whole Selection path moves: dealt, swiped, live-selected, matched, crowned. Restaurant and Recipe are its only kinds; a Session's Branch decides which kind its Deck holds, and a Deck never mixes them. The name exists so code that must handle either kind has an honest word for it.
+_Avoid_: card — the swipe UI draws an entry as a card, which is the rendering and not the thing — option, item
+
 **Selection**:
-A single Restaurant a Participant swiped yes on.
+A single Restaurant or Recipe a Participant swiped yes on.
 _Avoid_: like, vote, pick (except in **Top Pick**)
 
 **Live Selection**:
-A Selection broadcast to the other Participants at the moment it is made, and shown to each of them only once they have swiped that Restaurant themselves. Ephemeral chrome: it is never written to Redis and never affects the Match. Receivers hold it client-side, keyed by the sender's display name, so it survives the sender's reconnect.
+A Selection broadcast to the other Participants at the moment it is made, and shown to each of them only once they have swiped that Restaurant or Recipe themselves. Ephemeral chrome: it is never written to Redis and never affects the Match. Receivers hold it client-side, keyed by the sender's display name, so it survives the sender's reconnect.
 _Avoid_: vote, live vote, real-time like
 
 **Full House**:
-A Restaurant every current Participant has made a Live Selection on, seen mid-deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it.
+A Restaurant or Recipe every current Participant has made a Live Selection on, seen mid-Deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it.
 _Avoid_: early match, instant match, mid-deck match
 
 **Submission**:
@@ -47,15 +63,15 @@ A Participant's declaration that they are done selecting. A Submission may conta
 _Avoid_: inferring "submitted" from a non-empty Selection set
 
 **Match**:
-The set of Restaurants every current Participant selected, computed once all current Participants have a Submission — including when the last unsubmitted Participant leaves. May be empty.
+The set of Restaurants or Recipes every current Participant selected, computed once all current Participants have a Submission — including when the last unsubmitted Participant leaves. May be empty.
 _Avoid_: results, overlap, winners
 
 **Top Pick**:
-The single Restaurant a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then highest rating, then name A-Z — from the Match when the Match is non-empty, from every Restaurant anyone selected when it is empty, and from the Session's open Restaurants when nobody selected anything. Every completed Session with at least one Restaurant has exactly one Top Pick; a Session whose Restaurant deck is empty has none.
+The single Restaurant or Recipe a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then highest rating, then name A-Z — from the Match when the Match is non-empty, from everything anyone selected when it is empty, and from the Session's open Deck when nobody selected anything. Every completed Session with a non-empty Deck has exactly one Top Pick; a Session whose Deck is empty has none.
 _Avoid_: winner, best match, recommendation, top result, the answer
 
 **Near Miss**:
-A Restaurant selected by every current Participant except one. Surfaced only when the Match is empty and the Session has three or more Participants, always as a count ("2 of 3 liked this"), never with names. A Session with two Participants has no Near Misses — one person's Selections are not a near-Match.
+A Restaurant or Recipe selected by every current Participant except one. Surfaced only when the Match is empty and the Session has three or more Participants, always as a count ("2 of 3 liked this"), never with names. A Session with two Participants has no Near Misses — one person's Selections are not a near-Match.
 _Avoid_: almost match, runner-up, partial match
 
 **SessionStore**:
@@ -163,3 +179,49 @@ _Avoid_: host, owner, payer, orderer
 **Share**:
 What one Participant owes: their Order Lines plus their portion of the Buyer's stated delivery-and-fees number, split evenly across Participants with at least one Order Line. Shares always sum exactly to the Group Order total.
 _Avoid_: split, tab, portion, IOU
+
+### Cook
+
+**Craving**:
+The canonical triple a Cook Session's Deck is dealt from — meal type, cuisine set, diet set. Two Sessions with the same Craving draw from the same shared recipe pool. Diet is a preference filter, explicitly not an allergy-safety guarantee. Headcount is not part of a Craving.
+_Avoid_: filters, preferences, criteria, setup
+
+**Headcount**:
+The number of people the Top Pick's ingredients are scaled to. Set at Cook setup; never part of the Craving — it scales servings, it doesn't filter the Deck.
+_Avoid_: serves, servings, party size
+
+**Shopping List**:
+The priced, claimable list minted once from a completed Cook Session's Top Pick, its Ingredient Lines scaled to the Headcount. Lives on its own fixed lifetime that nothing extends, and outlives its Session: the URL is the capability — anyone holding it reads, claims, and unclaims, with no Participant check and no live Session required. Its headline is the list total across in-tally lines.
+_Avoid_: cart, basket (both reserved for the Platform's own), grocery list, ingredient list
+
+**Ingredient Line**:
+One ingredient of the Top Pick, scaled to the Headcount, as it appears on the Shopping List: its recipe text and amount, its Product Match or degraded state, and its Claim. Created by the Recipe, never added by a person — people claim Ingredient Lines, they don't add them, which is what makes it not an Order Line. Always in exactly one of four states — Priced, Estimated, Unpriced-matched, Unmatched — and claimable in all of them.
+_Avoid_: order line, item, list item, row
+
+**Claim**:
+The exclusive attachment of one Ingredient Line to one Shopper. The first tap wins; any Shopper may release any Claim, their own or not; taking over a freed line is its own deliberate act, never a side-effect of tapping a claimed one.
+_Avoid_: assign, reserve, lock, take — and never Buyer, whose single-lock money-authority semantics are the opposite
+
+**Shopper**:
+Whoever holds and works a Shopping List, identified only by a self-declared display name. Every Participant can be one; a Shopper need not be a Participant — the housemate opening a forwarded link after the Session expired is the canonical case.
+_Avoid_: participant, buyer, claimer, user
+
+**Tally**:
+What one Shopper will spend on their claimed Ingredient Lines: the sum of their Priced and Estimated lines, ≈-prefixed whenever an Estimated line is in it, with claimed-but-unpriced lines shown as a count. Not a Share — nobody fronts, nobody owes; a Tally is a preview of your own receipt, not a debt. Distinct from the list total, the Shopping List's headline over all in-tally lines regardless of claimer.
+_Avoid_: share, split, bill, owed, total
+
+**Staple**:
+One of a small hardcoded set of ingredients assumed already at home. Still an Ingredient Line — visible and claimable — but rendered unticked and excluded from every count: the list total, every Tally, and the claimed-coverage count.
+_Avoid_: pantry item, basics, essentials
+
+**Retailer**:
+A grocery chain whose products price Shopping Lists — in v1, exactly Woolworths, and the UI names it. Not a Platform: a Platform is a delivery app whose Storefronts are compared; a Retailer is a grocer whose products are matched. A Retailer has no Storefronts.
+_Avoid_: platform, store, supermarket, source
+
+**Product Match**:
+The pairing of an Ingredient Line with one Retailer product — pack size, pack price, deep link — plus the runner-up candidates behind the swap picker; "none of these" demotes the line to Unmatched. Not a Matched Item, which is a delivery-menu term.
+_Avoid_: SKU, listing, matched item
+
+**Product Matcher**:
+The per-Retailer judge that turns a Retailer's raw search answer into an Ingredient Line's Product Match — or the verdict that no product fulfils it. A clean miss is distinct from the Retailer answering unusably (a failure); exactly one Matcher exists per Retailer. The Storefront Resolver pattern, deliberately not its name or its code.
+_Avoid_: resolver, scraper, fetcher, adapter

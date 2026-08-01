@@ -23,7 +23,7 @@ describe('Integration Test: Single Participant Session (FR-021)', () => {
     await store.createSession(sessionCode, {
       hostId: 'alice',
       hostName: 'Alice',
-      restaurants,
+      entries: restaurants,
     });
     await store.addParticipant(sessionCode, {
       participantId: 'alice',

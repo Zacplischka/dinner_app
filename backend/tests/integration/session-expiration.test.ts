@@ -30,7 +30,7 @@ describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
     await store.createSession(sessionCode, {
       hostId: 'alice',
       hostName: 'Alice',
-      restaurants,
+      entries: restaurants,
     });
     await store.addParticipant(sessionCode, {
       participantId: 'alice',
