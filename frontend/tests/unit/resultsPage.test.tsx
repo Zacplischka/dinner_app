@@ -445,7 +445,7 @@ describe('ResultsPage', () => {
   });
 
   describe('Continuation action hierarchy (#85)', () => {
-    it('orders Select Again (primary), Share Results (secondary), Start Fresh (ghost)', () => {
+    it('orders Select Again (primary), Share Results (secondary), New Session (ghost)', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [pizza],
@@ -458,18 +458,18 @@ describe('ResultsPage', () => {
       const share = screen
         .getAllByRole('button', { name: /share results/i })
         .find((button) => button.className.includes('btn-secondary'))!;
-      const startFresh = screen.getByRole('button', { name: /start fresh/i });
+      const newSession = screen.getByRole('button', { name: /new session/i });
 
       expect(selectAgain.className).toContain('btn-primary');
       expect(share.className).toContain('btn-secondary');
-      expect(startFresh.className).toContain('btn-ghost');
+      expect(newSession.className).toContain('btn-ghost');
 
       // DOM order: primary first, then secondary, then tertiary
       expect(
         selectAgain.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
       expect(
-        share.compareDocumentPosition(startFresh) & Node.DOCUMENT_POSITION_FOLLOWING
+        share.compareDocumentPosition(newSession) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
     });
   });

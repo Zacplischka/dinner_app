@@ -49,8 +49,9 @@ export async function handleSessionRestart(
 
     const { sessionCode } = validation.data;
 
+    let restarted: boolean;
     try {
-      await service.restartSession(sessionCode, socket.id);
+      ({ restarted } = await service.restartSession(sessionCode, socket.id));
     } catch (error) {
       if (!(error instanceof DomainError)) {
         throw error;
@@ -69,10 +70,11 @@ export async function handleSessionRestart(
     // Send acknowledgment. No-data command → canonical data is null.
     callback({ success: true, data: null });
 
-    // Broadcast to ALL participants (including sender - FR-013)
+    // Broadcast to ALL participants (including sender - FR-013). The lobby's
+    // start rides the same event; only the message says which it was (#289).
     io.in(sessionCode).emit('session:restarted', {
       sessionCode,
-      message: 'Session restarted. Make new selections.',
+      message: restarted ? 'Session restarted. Make new selections.' : 'Selection started.',
     });
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in session:restart handler');

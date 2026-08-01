@@ -12,6 +12,7 @@ import NavigationHeader from '../../src/components/NavigationHeader';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import SwipeCard from '../../src/components/SwipeCard';
 import Toast from '../../src/components/Toast/Toast';
+import ToastProvider from '../../src/components/Toast/ToastProvider';
 import AddFriendModal from '../../src/components/friends/AddFriendModal';
 import FriendsList from '../../src/components/friends/FriendsList';
 import SessionInviteCard from '../../src/components/friends/SessionInviteCard';
@@ -171,6 +172,23 @@ describe('component and hook branch coverage', () => {
     });
     expect(dismiss).toHaveBeenCalledWith('toast-1');
     vi.useRealTimers();
+  });
+
+  it('lets bottom-edge taps through everywhere but the toast card itself (#289)', () => {
+    act(() => {
+      singletonToast.info('Live', { duration: 10_000 });
+    });
+    render(<ToastProvider>{null}</ToastProvider>);
+
+    // The card is tappable; the full-width band it sits in is not — that band
+    // spans the viewport's bottom edge and used to swallow chip taps there.
+    const card = screen.getByRole('alert');
+    expect(card.className).toContain('pointer-events-auto');
+    expect(card.parentElement!.className).not.toContain('pointer-events-auto');
+
+    // A dismissed toast stops intercepting at once, not after its 200ms exit.
+    fireEvent.click(screen.getByLabelText('Dismiss notification'));
+    expect(card.className).toContain('pointer-events-none');
   });
 
   it('covers swipe card gesture guard and threshold branches', () => {

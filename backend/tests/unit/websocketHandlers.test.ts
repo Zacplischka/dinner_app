@@ -813,14 +813,17 @@ describe('websocket handlers', () => {
 
       // Canonical: no-data commands ack data: null (bridge → Ack<null>).
       expect(callback).toHaveBeenCalledWith({ success: true, data: null });
+      // From 'waiting' this command is the lobby's start, not a Restart —
+      // it must not masquerade as one in the log or the broadcast (#289).
       expect(testIo.roomEmitter.emit).toHaveBeenCalledWith('session:restarted', {
         sessionCode,
-        message: 'Session restarted. Make new selections.',
+        message: 'Selection started.',
       });
       expect(logSpy).toHaveBeenCalledWith(
         { sessionCode, participantId: 'socket-1' },
-        'Session restarted'
+        'Session selection started'
       );
+      expect(logSpy).not.toHaveBeenCalledWith(expect.anything(), 'Session restarted');
     });
 
     it('should return generic error when restart processing throws', async () => {

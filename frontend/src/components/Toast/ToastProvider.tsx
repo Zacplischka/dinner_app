@@ -24,8 +24,11 @@ export default function ToastProvider({ children }: ToastProviderProps) {
         }}
       >
         <div className="flex flex-col items-center gap-2 px-4">
+          {/* Taps pass through everywhere except the toast card itself —
+              a full-width interactive band here swallowed bottom-edge taps
+              on small phones (#289). */}
           {toasts.map((toast) => (
-            <div key={toast.id} className="pointer-events-auto w-full flex justify-center animate-slide-up">
+            <div key={toast.id} className="w-full flex justify-center animate-slide-up">
               <Toast toast={toast} onDismiss={removeToast} />
             </div>
           ))}
