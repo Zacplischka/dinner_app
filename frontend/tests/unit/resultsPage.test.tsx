@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/services/socketBindings', () => ({
   restartSession: vi.fn(async () => ({ success: true, data: null })),
@@ -9,6 +9,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 }));
 
 import ResultsPage from '../../src/pages/ResultsPage';
+import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { useOrderStore } from '../../src/stores/orderStore';
 
@@ -109,8 +110,20 @@ describe('ResultsPage', () => {
     });
   });
 
-  describe('Match card hero photo (#75)', () => {
-    it('renders a hero img only for winners with a photoUrl and drops it on load error', () => {
+  describe('Match card hero photo (#75, #90)', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    // The rating-sorted fallback crown (#166) picks Noodle House (4.8 > 4.2),
+    // so look each card up by name instead of assuming DOM order. Both names
+    // also appear in the unanimous-selections disclosure, so pick the match card.
+    const findCard = (name: string) =>
+      screen
+        .getAllByText(name)
+        .map((el) => el.closest('[data-match-card]'))
+        .find((el): el is HTMLElement => el !== null)!;
+
+    function renderPhotoCard() {
       const photoPizza = { ...pizza, photoUrl: 'https://places.example/pizza.jpg' };
       seedStore({
         participants: [alice, bob],
@@ -121,22 +134,40 @@ describe('ResultsPage', () => {
         },
       });
       renderResults();
+      return { photoPizza, withPhoto: findCard('Pizza Palace') };
+    }
 
-      // The rating-sorted fallback crown (#166) picks Noodle House (4.8 > 4.2),
-      // so look each card up by name instead of assuming DOM order. Both names
-      // also appear in the unanimous-selections disclosure, so pick the match card.
-      const findCard = (name: string) =>
-        screen
-          .getAllByText(name)
-          .map((el) => el.closest('[data-match-card]'))
-          .find((el): el is HTMLElement => el !== null)!;
-      const withPhoto = findCard('Pizza Palace');
+    it('renders a hero img only for winners with a photoUrl, hides it on error, and restores it when the retry loads', () => {
+      const { photoPizza, withPhoto } = renderPhotoCard();
       const withoutPhoto = findCard('Noodle House');
       const img = withPhoto.querySelector('img');
       expect(img).toHaveAttribute('src', photoPizza.photoUrl);
       expect(withoutPhoto.querySelector('img')).toBeNull();
 
+      // A transient failure hides the hero at once — no broken slot (#75)...
       fireEvent.error(img!);
+      expect(withPhoto.querySelector('img')).toBeNull();
+
+      // ...then one background retry of the same URL, still hidden until it loads.
+      act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+      const retry = withPhoto.querySelector('img') as HTMLImageElement;
+      expect(retry).toHaveAttribute('src', photoPizza.photoUrl);
+      expect(retry.hidden).toBe(true);
+
+      fireEvent.load(retry);
+      expect(retry.hidden).toBe(false);
+    });
+
+    it('gives up on the hero after the retry also fails', () => {
+      const { withPhoto } = renderPhotoCard();
+
+      fireEvent.error(withPhoto.querySelector('img')!);
+      act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+      fireEvent.error(withPhoto.querySelector('img')!);
+      expect(withPhoto.querySelector('img')).toBeNull();
+
+      // No second retry — one attempt is the contract (#90).
+      act(() => vi.advanceTimersByTime(10_000));
       expect(withPhoto.querySelector('img')).toBeNull();
     });
   });

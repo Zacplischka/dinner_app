@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparisonViewPage from '../../src/pages/ComparisonViewPage';
+import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import type { ComparisonStreamHandlers } from '../../src/services/comparisonStream';
 
 const streamMock = vi.hoisted(() => ({ subscribe: vi.fn() }));
@@ -46,6 +47,8 @@ describe('ComparisonViewPage', () => {
       return unsubscribe;
     });
   });
+
+  afterEach(() => vi.useRealTimers());
 
   it('forwards a valid tap source from the URL to the Comparison subscribe', () => {
     renderPage('/compare/place-1?source=match_card').unmount();
@@ -464,10 +467,7 @@ describe('ComparisonViewPage', () => {
     expect(screen.getByText('Fetched 25 mins ago — may be out of date')).toBeInTheDocument();
   });
 
-  it('shows the Storefront hero image, preferring Uber Eats, and recovers from a broken one', () => {
-    renderPage();
-
-    expect(screen.queryByTestId('venue-hero-image')).not.toBeInTheDocument();
+  function emitDoorDashHero() {
     act(() =>
       handlers.onStorefront?.({
         type: 'storefront',
@@ -480,12 +480,42 @@ describe('ComparisonViewPage', () => {
         },
       })
     );
+  }
+
+  it('shows the Storefront hero image, hides a broken one, and restores it when the retry loads (#90)', () => {
+    vi.useFakeTimers();
+    renderPage();
+
+    expect(screen.queryByTestId('venue-hero-image')).not.toBeInTheDocument();
+    emitDoorDashHero();
 
     const hero = screen.getByTestId('venue-hero-image');
     expect(hero).toHaveAttribute('src', 'https://img.cdn4dd.com/cover.jpg');
-    // The DoorDash image 404s and hides itself...
+    // The DoorDash image 404s: no broken slot, the hero leaves the DOM at once...
     fireEvent.error(hero);
-    expect(hero.hidden).toBe(true);
+    expect(screen.queryByTestId('venue-hero-image')).not.toBeInTheDocument();
+
+    // ...one background retry of the same URL, hidden until it loads.
+    act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+    const retry = screen.getByTestId('venue-hero-image');
+    expect(retry).toHaveAttribute('src', 'https://img.cdn4dd.com/cover.jpg');
+    expect(retry.hidden).toBe(true);
+    fireEvent.load(retry);
+    expect(retry.hidden).toBe(false);
+  });
+
+  it('gives up on a hero URL after two errors, but a mid-stream URL swap starts fresh', () => {
+    vi.useFakeTimers();
+    renderPage();
+    emitDoorDashHero();
+
+    fireEvent.error(screen.getByTestId('venue-hero-image'));
+    act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+    fireEvent.error(screen.getByTestId('venue-hero-image'));
+    // Two strikes: that URL stays gone, no further retries.
+    expect(screen.queryByTestId('venue-hero-image')).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.queryByTestId('venue-hero-image')).not.toBeInTheDocument();
 
     act(() =>
       handlers.onStorefront?.({
@@ -500,7 +530,8 @@ describe('ComparisonViewPage', () => {
       })
     );
 
-    // ...and the preferred Uber Eats image replaces it on a fresh, visible node.
+    // The preferred Uber Eats image replaces it on a fresh, visible node —
+    // the dead DoorDash URL's failure state must not carry over.
     const replaced = screen.getByTestId('venue-hero-image');
     expect(replaced).toHaveAttribute('src', 'https://tb-static.uber.com/hero.jpeg');
     expect(replaced.hidden).toBe(false);

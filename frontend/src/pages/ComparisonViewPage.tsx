@@ -8,6 +8,7 @@ import type {
 } from '@dinder/shared/types';
 import { isComparisonTapSource } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
+import RetryingPhoto from '../components/RetryingPhoto';
 import { subscribeToComparison } from '../services/comparisonStream';
 import { formatPrice } from '../utils/money';
 
@@ -260,17 +261,12 @@ export default function ComparisonViewPage() {
       />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {heroImageUrl && (
-          <img
-            // A fresh node per URL: a stale onError `hidden` must not survive a
-            // switch to the other platform's image.
-            key={heroImageUrl}
-            src={heroImageUrl}
-            alt=""
+          // RetryingPhoto (#90) starts fresh per URL, so a stale failure must
+          // not survive a switch to the other platform's image.
+          <RetryingPhoto
+            url={heroImageUrl}
             data-testid="venue-hero-image"
             className="h-40 w-full rounded-2xl border border-line/30 object-cover shadow-card"
-            onError={(event) => {
-              event.currentTarget.hidden = true;
-            }}
           />
         )}
         {error && (

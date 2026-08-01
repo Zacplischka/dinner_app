@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle from '../components/LocationModeToggle';
+import RetryingPhoto from '../components/RetryingPhoto';
 import { getVenues } from '../services/apiClient';
 import {
   KM_PER_MILE,
@@ -32,38 +33,6 @@ function cuisineEmoji(cuisine: string) {
   if (value.includes('burger') || value.includes('american')) return '🍔';
   if (value.includes('cafe') || value.includes('coffee')) return '☕';
   return '🍽️';
-}
-
-const PHOTO_RETRY_DELAY_MS = 2000;
-
-// A failed photo load is usually a transient proxy/rate-limit error, so retry
-// once after a short delay — a fresh node per attempt, so the browser
-// re-requests the URL — before settling for the letter tile behind the image.
-function VenuePhoto({ url }: { url: string }) {
-  const [attempt, setAttempt] = useState(0);
-  const [failed, setFailed] = useState(false);
-  const retryTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => () => clearTimeout(retryTimer.current), []);
-
-  if (failed) return null;
-
-  return (
-    <img
-      key={attempt}
-      src={url}
-      alt=""
-      loading="lazy"
-      className="absolute inset-0 h-full w-full object-cover"
-      onError={() => {
-        if (attempt > 0) {
-          setFailed(true);
-        } else if (retryTimer.current === undefined) {
-          retryTimer.current = setTimeout(() => setAttempt(1), PHOTO_RETRY_DELAY_MS);
-        }
-      }}
-    />
-  );
 }
 
 const sortChipClass = (active: boolean) =>
@@ -441,7 +410,13 @@ export default function ComparePage() {
                 >
                   <span className="relative flex h-20 w-20 flex-none items-center justify-center overflow-hidden rounded-xl bg-ink font-display text-2xl font-black text-coral-soft">
                     <span aria-hidden>{venue.name.charAt(0).toUpperCase()}</span>
-                    {venue.photoUrl && <VenuePhoto url={venue.photoUrl} />}
+                    {venue.photoUrl && (
+                      <RetryingPhoto
+                        url={venue.photoUrl}
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    )}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 break-words font-display text-lg font-semibold">
