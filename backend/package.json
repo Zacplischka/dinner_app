@@ -14,6 +14,7 @@
     "test:integration": "vitest run --workspace vitest.workspace.ts --project integration",
     "test:unit": "vitest run --workspace vitest.workspace.ts --project unit",
     "compare:smoke": "tsx scripts/compare-smoke.ts",
+    "grocery:smoke": "tsx scripts/grocery-smoke.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
   },

@@ -1,0 +1,118 @@
+{
+  "SearchResultsCount": 42,
+  "FulfilmentStoreId": 1101,
+  "Products": [
+    {
+      "Products": [
+        {
+          "Stockcode": 144329,
+          "Name": "Coriander Bunch",
+          "Brand": "Fresh",
+          "PackageSize": "Each",
+          "Price": 2.5,
+          "InstorePrice": 2.5,
+          "CupString": "$2.50 / 1EA",
+          "IsAvailable": true,
+          "AdditionalAttributes": {
+            "piescategorynamesjson": "[\"Fruit & Veg\"]",
+            "sapcategoryname": "VEG / FRESHCUTS",
+            "sapsubcategoryname": "HERBS"
+          }
+        }
+      ]
+    },
+    {
+      "Products": [
+        {
+          "Stockcode": 89664,
+          "Name": "Masterfoods Coriander Leaves Dried Herbs",
+          "Brand": "Masterfoods",
+          "PackageSize": "8g",
+          "Price": 3.8,
+          "InstorePrice": 4,
+          "CupString": "$47.50 / 100G",
+          "IsAvailable": true,
+          "AdditionalAttributes": {
+            "piescategorynamesjson": "[\"Pantry\"]",
+            "sapcategoryname": "COOKING NEEDS",
+            "sapsubcategoryname": "HERBS & SPICES"
+          }
+        }
+      ]
+    },
+    {
+      "Products": [
+        {
+          "Stockcode": 900001,
+          "Name": "Ceramic Herb Chopper",
+          "Brand": "Marketplace Imports",
+          "PackageSize": null,
+          "Price": 19.95,
+          "InstorePrice": null,
+          "CupString": null,
+          "IsAvailable": true,
+          "AdditionalAttributes": {
+            "piescategorynamesjson": "[\"Home & Lifestyle\"]",
+            "sapcategoryname": null,
+            "sapsubcategoryname": null
+          }
+        }
+      ]
+    },
+    {
+      "Products": [
+        {
+          "Stockcode": 173985,
+          "Name": "Coriander Punnet",
+          "Brand": "Fresh",
+          "PackageSize": "Each",
+          "Price": null,
+          "InstorePrice": null,
+          "CupString": null,
+          "IsAvailable": false,
+          "AdditionalAttributes": {
+            "piescategorynamesjson": "[\"Fruit & Veg\"]",
+            "sapcategoryname": "VEG / FRESHCUTS",
+            "sapsubcategoryname": "HERBS"
+          }
+        }
+      ]
+    },
+    {
+      "Products": [
+        {
+          "Stockcode": 210044,
+          "Name": "Gourmet Garden Coriander Paste",
+          "Brand": "Gourmet Garden",
+          "PackageSize": "80g",
+          "Price": 4.6,
+          "InstorePrice": 4.6,
+          "CupString": "$5.75 / 100G",
+          "IsAvailable": true,
+          "AdditionalAttributes": {
+            "piescategorynamesjson": "[\"Fruit & Veg\"]",
+            "sapcategoryname": "VEG / FRESHCUTS",
+            "sapsubcategoryname": "HERBS"
+          }
+        }
+      ]
+    },
+    {
+      "Products": [
+        {
+          "Stockcode": 999999,
+          "Name": "Sixth Result Beyond The Top Five",
+          "Brand": "Overflow",
+          "PackageSize": "1kg",
+          "Price": 1,
+          "InstorePrice": 1,
+          "CupString": null,
+          "IsAvailable": true,
+          "AdditionalAttributes": {
+            "sapcategoryname": "COOKING NEEDS"
+          }
+        }
+      ]
+    }
+  ]
+}
