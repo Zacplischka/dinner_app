@@ -40,22 +40,52 @@ interface GooglePlaceResult {
   currentOpeningHours?: { openNow?: boolean };
 }
 
+// Shared 429 handling for every Google API this service spends the key on
+// (issue #216): retry honouring Retry-After, and when the 429 persists, log at
+// error level naming the API — so the log answers "which quota" without a code
+// read — and return undefined. Each call site then decides only whether to
+// surface (DomainError RATE_LIMITED) or degrade.
+const MAX_RATE_LIMIT_RETRIES = 3;
+
+async function fetchWithRateLimitRetry(
+  apiName: string,
+  doFetch: () => Promise<Response>
+): Promise<Response | undefined> {
+  for (let attempt = 0; attempt < MAX_RATE_LIMIT_RETRIES; attempt++) {
+    const response = await doFetch();
+    if (response.status !== 429) return response;
+    const retryAfter = parseFloat(response.headers.get('Retry-After') || '1');
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+  }
+  logger.error(
+    { retries: MAX_RATE_LIMIT_RETRIES },
+    `${apiName} rate limit persisted after retries`
+  );
+  return undefined;
+}
+
 export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> {
   const apiKey = config.googlePlaces.apiKey;
   if (!apiKey) {
     throw new Error('Google Places API configuration missing');
   }
 
-  const response = await fetch(
-    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
-    {
+  const response = await fetchWithRateLimitRetry('Places details', () =>
+    fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
       headers: {
         'X-Goog-Api-Key': apiKey,
         'X-Goog-FieldMask': 'id,displayName,formattedAddress,location',
       },
-    }
+    })
   );
 
+  if (!response) {
+    // Blocking: Comparison and the delivery redirect dead-end without the Venue.
+    throw new DomainError(
+      'RATE_LIMITED',
+      'Venue lookup is temporarily unavailable: the app has reached its Google Places limit. Please try again later.'
+    );
+  }
   if (!response.ok) {
     throw new Error(`Places API error: ${response.statusText}`);
   }
@@ -83,15 +113,20 @@ export async function reverseGeocodeSuburb(
     throw new Error('Google Places API configuration missing');
   }
 
-  const response = await fetch(
-    `https://geocode.googleapis.com/v4/geocode/location/${latitude},${longitude}?types=locality&regionCode=AU&languageCode=en`,
-    {
-      headers: {
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'results.addressComponents.longText,results.addressComponents.types',
-      },
-    }
+  const response = await fetchWithRateLimitRetry('Geocoding reverse lookup', () =>
+    fetch(
+      `https://geocode.googleapis.com/v4/geocode/location/${latitude},${longitude}?types=locality&regionCode=AU&languageCode=en`,
+      {
+        headers: {
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': 'results.addressComponents.longText,results.addressComponents.types',
+        },
+      }
+    )
   );
+  // Best-effort decoration: the suburb name only labels a location the caller
+  // already has, so a persistent 429 degrades to no label, never an error.
+  if (!response) return undefined;
   if (!response.ok) {
     throw new Error(`Geocoding API error: ${response.statusText}`);
   }
@@ -112,15 +147,24 @@ export async function geocodeArea(query: string): Promise<GeocodedArea | undefin
     throw new Error('Google Places API configuration missing');
   }
 
-  const response = await fetch(
-    `https://geocode.googleapis.com/v4/geocode/address/${encodeURIComponent(query)}?regionCode=AU&languageCode=en`,
-    {
-      headers: {
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'results.location,results.formattedAddress',
-      },
-    }
+  const response = await fetchWithRateLimitRetry('Geocoding address', () =>
+    fetch(
+      `https://geocode.googleapis.com/v4/geocode/address/${encodeURIComponent(query)}?regionCode=AU&languageCode=en`,
+      {
+        headers: {
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': 'results.location,results.formattedAddress',
+        },
+      }
+    )
   );
+  if (!response) {
+    // Blocking: without this the Host cannot resolve an area or create a Session.
+    throw new DomainError(
+      'RATE_LIMITED',
+      'Location lookup is temporarily unavailable: the app has reached its Google Geocoding limit. Please try again later.'
+    );
+  }
   if (!response.ok) {
     throw new Error(`Geocoding API error: ${response.statusText}`);
   }
@@ -167,10 +211,17 @@ export async function fetchPlacePhoto(photoName: string): Promise<string> {
   const apiKey = config.googlePlaces.apiKey;
   if (!apiKey) throw new Error('Google Places API configuration missing');
 
-  const response = await fetch(
-    `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=400&skipHttpRedirect=true`,
-    { headers: { 'X-Goog-Api-Key': apiKey } }
+  const response = await fetchWithRateLimitRetry('Places photo', () =>
+    fetch(
+      `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=400&skipHttpRedirect=true`,
+      {
+        headers: { 'X-Goog-Api-Key': apiKey },
+      }
+    )
   );
+  // Decorative: the card already renders without a photo, so a persistent 429
+  // stays a plain Error (generic 500 on the proxy route) — no new error surface.
+  if (!response) throw new Error('Places photo API error: rate limited');
   if (!response.ok) throw new Error(`Places photo API error: ${response.statusText}`);
 
   const output = (await response.json()) as { photoUri?: unknown };
@@ -349,20 +400,26 @@ async function fetchTextSearchPage(
     pageSize: 20,
   };
 
-  const response = await fetch(textSearchUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': apiKey,
-      'X-Goog-FieldMask': fieldMask,
-    },
-    body: JSON.stringify(requestBody),
-  });
+  const response = await fetchWithRateLimitRetry('Places searchText', () =>
+    fetch(textSearchUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': fieldMask,
+      },
+      body: JSON.stringify(requestBody),
+    })
+  );
 
-  if (response.status === 429) {
-    const retryAfter = parseFloat(response.headers.get('Retry-After') || '1');
-    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
-    throw new Error('RATE_LIMITED');
+  if (!response) {
+    // Persistent 429 = the Places searchText quota is exhausted (daily cap or
+    // billing detached), not a transient burst — surface it instead of a
+    // silent generic 500 (2026-07-22 outage).
+    throw new DomainError(
+      'RATE_LIMITED',
+      'Restaurant search is temporarily unavailable: the app has reached its Google Places search limit. Please try again later.'
+    );
   }
 
   if (!response.ok) {
@@ -393,34 +450,8 @@ async function fetchNearbyPlaces(params: GooglePlacesSearchParams): Promise<Goog
   // Fetch exactly one page and never follow nextPageToken: every extra page
   // is a full-price Enterprise Text Search call, and 20 results is enough for
   // both the Comparison browse and the Session swipe search (issue #97).
-  // The 429 retry below re-issues this same first-page request.
-  const maxRetries = 3;
-  let retries = 0;
-  let pageData: { places: GooglePlaceResult[]; nextPageToken?: string } | null = null;
-
-  while (retries < maxRetries) {
-    try {
-      pageData = await fetchTextSearchPage(apiKey, latitude, longitude, radiusMeters);
-      break;
-    } catch (error) {
-      if (error instanceof Error && error.message === 'RATE_LIMITED') {
-        retries++;
-        continue;
-      }
-      throw error;
-    }
-  }
-
-  if (!pageData) {
-    // Persistent 429 = the Places searchText quota is exhausted (daily cap or
-    // billing detached), not a transient burst — surface it instead of a
-    // silent generic 500 (2026-07-22 outage).
-    logger.error({ retries }, 'Places searchText rate limit persisted after retries');
-    throw new DomainError(
-      'RATE_LIMITED',
-      'Restaurant search is temporarily unavailable: the app has reached its Google Places search limit. Please try again later.'
-    );
-  }
+  // 429s are retried inside fetchWithRateLimitRetry against this same request.
+  const pageData = await fetchTextSearchPage(apiKey, latitude, longitude, radiusMeters);
 
   logger.info(
     { page: 1, fetched: pageData.places.length, total: pageData.places.length },
