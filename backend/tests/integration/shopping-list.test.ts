@@ -9,6 +9,7 @@ import type Redis from 'ioredis';
 import { shoppingListTotal } from '@dinder/shared/types';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 import { app, sessionService, sessionStore as store } from '../../src/server.js';
+import { cravingPoolKey } from '../../src/services/RecipePoolService.js';
 import { spoonacularFetchFake, type RecipeSearchHit } from '../helpers/spoonacularFetchFake.js';
 
 const craving = { mealType: 'main course' as const, cuisines: [], diets: [] };
@@ -77,21 +78,22 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
     await waitForRedis(redis);
   });
 
+  // Exact keys, never wildcards: the test projects share one Redis and run
+  // concurrently, so a `recipes:*` sweep here deletes the pool a Cook-create
+  // contract test just filled and fails it with a 404 that has nothing to do
+  // with this file. Only this Craving's own pool is ours to clear.
+  const poolKey = cravingPoolKey(craving);
+  const ownKeys = [poolKey, poolKey.replace('recipes:pool:', 'recipes:offset:')];
+
   beforeEach(async () => {
-    for (const pattern of ['recipes:*', 'woolworths:*', 'spoonacular:*', 'shoppinglist:*']) {
-      const keys = await redis.keys(pattern);
-      if (keys.length > 0) await redis.del(...keys);
-    }
+    await redis.del(...ownKeys);
     vi.spyOn(globalThis, 'fetch').mockImplementation(fakes());
   });
 
   afterEach(async () => {
     vi.restoreAllMocks();
     await cleanupTestData(redis);
-    for (const pattern of ['recipes:*', 'woolworths:*', 'spoonacular:*', 'shoppinglist:*']) {
-      const keys = await redis.keys(pattern);
-      if (keys.length > 0) await redis.del(...keys);
-    }
+    await redis.del(...ownKeys);
   });
 
   /** A Cook Session decided by one Participant, crowning the only Recipe. */
@@ -186,8 +188,7 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
   it('snapshots the steps and the credit so cooking outlives the recipe pool', async () => {
     const { results } = await decided(4);
     const listId = results!.shoppingListId!;
-    const pooled = await redis.keys('recipes:pool:*');
-    await redis.del(...pooled);
+    await redis.del(poolKey);
 
     const { body } = await readList(listId);
 

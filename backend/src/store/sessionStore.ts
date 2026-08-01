@@ -581,6 +581,16 @@ export function createSessionStore(redis: Redis) {
     return (await redis.hget(sessionKey(sessionCode), 'shoppingListId')) ?? listId;
   }
 
+  /**
+   * Undoes a claim whose mint never landed, so the Session is not stuck
+   * answering with a URL that will never resolve. Guarded on the id still
+   * being ours: a claim already replaced is not this failure's to release.
+   */
+  async function releaseShoppingListId(sessionCode: string, listId: string): Promise<void> {
+    const current = await redis.hget(sessionKey(sessionCode), 'shoppingListId');
+    if (current === listId) await redis.hdel(sessionKey(sessionCode), 'shoppingListId');
+  }
+
   // --- Restart -----------------------------------------------------------
 
   /**
@@ -743,6 +753,7 @@ export function createSessionStore(redis: Redis) {
     computeAndStoreResults,
     addResultPlaceId,
     claimShoppingListId,
+    releaseShoppingListId,
     resetForRestart,
     wasRestartedAfterComplete,
     replaceDeck,

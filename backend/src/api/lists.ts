@@ -24,7 +24,7 @@ export function createListsRouter(service: ShoppingListService) {
         req.log?.warn({ listId, reason: 'list_not_found' }, 'Rejected shopping list read');
         // An expired list and one that never existed answer identically: the
         // link is the capability, so its absence reveals nothing either way.
-        throw new DomainError('not_found', 'This shopping list has expired or does not exist');
+        throw new DomainError('SHOPPING_LIST_NOT_FOUND', 'This shopping list has expired or does not exist');
       }
 
       req.log?.info({ listId, lineCount: list.lines.length }, 'Returned shopping list');

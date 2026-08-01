@@ -64,9 +64,21 @@ function build(
     recipe?: PooledRecipe | null;
     outcome?: ProductMatchOutcome;
     resolution?: QuantityResolution;
+    /** Redis refuses the final write, the one way a mint actually fails. */
+    failWrite?: boolean;
+    failWriteOnce?: boolean;
+    onRelease?: (listId: string) => void;
   } = {}
 ) {
   const redis = fakeRedis();
+  let writesFailed = 0;
+  const writeShouldFail = () =>
+    overrides.failWrite === true || (overrides.failWriteOnce === true && writesFailed++ === 0);
+  const realSet = redis.set;
+  redis.set = vi.fn(async (key: string, value: string, mode: 'PX', ttlMs: number) => {
+    if (writeShouldFail()) throw new Error('Redis unavailable');
+    return realSet(key, value, mode, ttlMs);
+  }) as typeof redis.set;
   const claimed = new Map<string, string>();
   const resolveLine = vi.fn(
     async (): Promise<QuantityResolution> =>
@@ -90,6 +102,10 @@ function build(
       if (existing) return existing;
       claimed.set(sessionCode, listId);
       return listId;
+    },
+    releaseShoppingListId: async (sessionCode, listId) => {
+      if (claimed.get(sessionCode) === listId) claimed.delete(sessionCode);
+      overrides.onRelease?.(listId);
     },
     readRecipe: async () => (overrides.recipe === undefined ? recipe : overrides.recipe),
     matchProduct,
@@ -267,5 +283,60 @@ describe('ShoppingListService.mint', () => {
     const { service } = build();
 
     expect(await service.readList('00000000-0000-4000-8000-999999999999')).toBeNull();
+  });
+
+  it('records the servings it scaled from, so the page can only claim a real scale', async () => {
+    const { service } = build();
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.servings).toBe(2);
+  });
+
+  it('leaves servings off when the source never said', async () => {
+    const { service } = build({ recipe: { ...recipe, servings: undefined } });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.servings).toBeUndefined();
+  });
+
+  // A list outlives deployments (ADR 0001's stated trigger for versioning),
+  // so a record this build cannot read must read as gone, never as a list.
+  it('refuses a stored list written under another shape', async () => {
+    const { service, redis } = build();
+    const listId = (await service.mint('AB123', '11'))!;
+    await service.readList(listId);
+    const stored = JSON.parse(redis.keys.get(`shoppinglist:${listId}`)!.value) as {
+      version: number;
+    };
+    redis.keys.set(`shoppinglist:${listId}`, {
+      value: JSON.stringify({ ...stored, version: stored.version + 1 }),
+      ttlMs: 1,
+    });
+
+    expect(await service.readList(listId)).toBeNull();
+  });
+
+  it('releases the claim when the mint fails, so the URL is not dead forever', async () => {
+    const released: string[] = [];
+    const { service } = build({ failWrite: true, onRelease: (listId) => released.push(listId) });
+
+    const listId = await service.mint('AB123', '11');
+    await service.readList(listId!);
+
+    expect(released).toEqual([listId]);
+  });
+
+  it('mints again after a failed mint rather than re-serving the dead id', async () => {
+    const { service } = build({ failWriteOnce: true });
+
+    const dead = await service.mint('AB123', '11');
+    expect(await service.readList(dead!)).toBeNull();
+
+    const retry = await service.mint('AB123', '11');
+
+    expect(retry).not.toBe(dead);
+    expect(await service.readList(retry!)).toMatchObject({ recipeName: 'Aglio e Olio' });
   });
 });

@@ -23,6 +23,9 @@ export type DomainErrorCode =
   | 'ALREADY_SUBMITTED'
   | 'INVALID_RESTAURANTS'
   | 'NOT_IN_SESSION'
+  // A Shopping List URL that names nothing: expired, or never minted. Its own
+  // code because the list is its own resource on its own clock, not a Session.
+  | 'SHOPPING_LIST_NOT_FOUND'
   | 'RATE_LIMITED'
   // Friends domain
   | 'not_found'

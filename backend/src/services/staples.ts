@@ -42,17 +42,19 @@ const STAPLES = [
   'honey',
 ];
 
-// Where a Staple's head word is also the head word of a real ingredient, the
-// ambiguous sense falls out of the pantry rather than into it. The asymmetry
-// is the point: a wrongly-priced spice costs the tally a couple of dollars, a
-// swallowed capsicum leaves the dish uncookable.
+// The few names where the Staple is the tail and the ingredient still isn't
+// one. The asymmetry is the point: a wrongly-priced spice costs the tally a
+// couple of dollars, a swallowed capsicum leaves the dish uncookable.
 const NOT_STAPLE =
-  /\b(bell|red|green|yellow|orange|capsicum|chilli|chili|sweet) pepper|\bsugar snap|\bwater chestnut/;
+  /\b(bell|red|green|yellow|orange|capsicum|chilli|chili|sweet) pepper$|coconut water$/;
 
 /**
- * Whole-word phrase match on the normalized ingredient name, so "sea salt" is
- * a Staple, "salted peanuts" is not, and "watercress" is not water. Which
- * entry hits is irrelevant — any hit is the same verdict.
+ * A Staple has to be the *tail* of the ingredient name, not merely present in
+ * it: "sea salt" and "extra virgin olive oil" are qualified staples, while
+ * "honey mustard", "sugar snap peas" and "water chestnuts" are other things
+ * that merely begin with one. Leading words narrow a staple; trailing words
+ * make it something else. Which entry hits is irrelevant — any hit is the same
+ * verdict, and the whole-word test keeps "watercress" from being water.
  */
 export function isStaple(ingredientName: string): boolean {
   const normalized = ingredientName
@@ -60,5 +62,5 @@ export function isStaple(ingredientName: string): boolean {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
   if (NOT_STAPLE.test(normalized)) return false;
-  return STAPLES.some((staple) => ` ${normalized} `.includes(` ${staple} `));
+  return STAPLES.some((staple) => normalized === staple || normalized.endsWith(` ${staple}`));
 }

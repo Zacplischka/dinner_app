@@ -73,7 +73,16 @@ export function woolworthsSearchUrl(term: string): string {
 // URL, which is the whole capability: no Participant check, no live Session.
 // Frozen at mint — reopening re-reads, never re-prices (#239).
 
-/** The Retailer product a matched line was priced from. */
+/**
+ * The Retailer product a matched line was priced from: the `ProductCandidate`
+ * above, narrowed to what a frozen list may still say. `priceCents`,
+ * `cupString` and `available` are deliberately dropped — they are facts about
+ * the product *now*, and a list minted last Tuesday must not carry a live
+ * price beside the frozen one its line was actually costed at.
+ *
+ * Not a Product Match (CONTEXT.md): a Product Match includes the runner-up
+ * candidates behind the swap picker, which this slice does not carry.
+ */
 export interface ShoppingListProduct {
   /** Woolworths Stockcode. The deep link is minted through the counting
    * redirect (#228), never linked directly — see woolworthsProductUrl. */
@@ -107,7 +116,13 @@ export type ShoppingListLine = ShoppingListLineFields &
       }
     | { state: 'estimated'; needs: NeededAmount; priceCents: number; product: ShoppingListProduct }
     | { state: 'unpriced_matched'; product: ShoppingListProduct }
-    /** No product: the recipe text plus a Retailer search for this term. */
+    /**
+     * No product: the recipe text plus a Retailer search for this term. Read
+     * it as the rendering #234 specifies, not as a claim about the Retailer's
+     * catalogue — a Staple takes this state without ever having been asked,
+     * because it is outside every count and a lookup for it would price
+     * nothing. `staple` is what tells the two apart.
+     */
     | { state: 'unmatched'; searchTerm: string }
   );
 
@@ -116,6 +131,12 @@ export interface ShoppingList {
   recipeName: string;
   /** Inert (#239): displayed as "Scaled for N". Nothing recomputes from it. */
   headcount: number;
+  /**
+   * What the source stated its amounts for — the denominator the scale used.
+   * Absent when the source never said, in which case the lines are the recipe's
+   * own amounts and the page must not claim to have scaled them to anything.
+   */
+  servings?: number;
   lines: ShoppingListLine[];
   /** Snapshotted at mint (#247) so cooking survives the source forgetting. */
   steps: string[];

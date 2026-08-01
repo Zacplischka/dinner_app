@@ -21,6 +21,18 @@ function formatNeeds(needs: NeededAmount): string {
   return needs.unit === 'each' ? `needs ${needs.amount}` : `needs ${needs.amount}${needs.unit}`;
 }
 
+/** The day the list goes, seven days after it was minted. */
+const LIST_LIFETIME_DAYS = 7;
+function formatExpiry(mintedAt: string): string {
+  const expires = new Date(mintedAt);
+  expires.setDate(expires.getDate() + LIST_LIFETIME_DAYS);
+  return new Intl.DateTimeFormat('en-AU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(expires);
+}
+
 /** The one link shape a Retailer target may take (#228): never a direct URL. */
 function WoolworthsLink({
   children,
@@ -141,8 +153,11 @@ export default function ShoppingListPage() {
                 group need no separate design (#229). The ≈ is inherited the
                 moment an Estimated line enters the sum, and never labelled. */}
             <div className="card mb-6 text-center">
+              {/* Only claim a scale that happened: a source that never said
+                  how many it serves leaves the recipe's own amounts, and
+                  "Scaled for 6" over them would be the list lying. */}
               <p className="text-xs font-semibold tracking-[0.14em] text-lime">
-                SCALED FOR {list.headcount}
+                {list.servings ? `SCALED FOR ${list.headcount}` : 'RECIPE AMOUNTS, AS WRITTEN'}
               </p>
               <p data-list-total className="mt-1 text-4xl font-black text-text">
                 {total.estimated ? '≈ ' : ''}
@@ -178,8 +193,11 @@ export default function ShoppingListPage() {
               </div>
             )}
 
+            {/* The lifetime is the honest part of the bargain (#229): the URL
+                is the whole capability, and nothing extends it — so say the
+                day it goes, not "7 days" from a date the Shopper can't see. */}
             <p className="text-center text-sm text-muted">
-              This list is yours for 7 days from when it was made.
+              This list is yours until {formatExpiry(list.mintedAt)}. Nothing extends it.
             </p>
           </>
         )}

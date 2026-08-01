@@ -72,6 +72,8 @@ const shoppingListService = createShoppingListService({
   readSession: (sessionCode) => sessionStore.readSession(sessionCode),
   claimShoppingListId: (sessionCode, listId) =>
     sessionStore.claimShoppingListId(sessionCode, listId),
+  releaseShoppingListId: (sessionCode, listId) =>
+    sessionStore.releaseShoppingListId(sessionCode, listId),
   readRecipe: (poolKey, placeId) => recipePoolService.readRecipe(poolKey, placeId),
   matchProduct: (term) => productMatchService.matchProduct(term),
   resolveLine: (ingredient, outcome) => quantityLadder.resolveLine(ingredient, outcome),

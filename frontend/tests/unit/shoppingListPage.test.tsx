@@ -61,6 +61,7 @@ const list: ShoppingList = {
   listId: 'list-1',
   recipeName: 'Beef Rendang',
   headcount: 4,
+  servings: 2,
   mintedAt: '2026-08-01T10:00:00.000Z',
   steps: ['Boil the pasta.'],
   lines,
@@ -87,6 +88,22 @@ describe('ShoppingListPage', () => {
   it('says what the list was scaled to', async () => {
     renderPage();
     expect(await screen.findByText('SCALED FOR 4')).toBeInTheDocument();
+  });
+
+  // A source that never said how many it serves leaves the recipe's own
+  // amounts, and the header must not claim a scale that never happened.
+  it('claims no scale when the source never said how many it serves', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue({ ...list, servings: undefined });
+    renderPage();
+
+    expect(await screen.findByText('RECIPE AMOUNTS, AS WRITTEN')).toBeInTheDocument();
+    expect(screen.queryByText(/SCALED FOR/)).not.toBeInTheDocument();
+  });
+
+  it('names the day the list goes, not a vague seven days', async () => {
+    renderPage();
+    // Minted 1 Aug 2026, so it is gone on the 8th.
+    expect(await screen.findByText(/yours until Sat, 8 Aug/i)).toBeInTheDocument();
   });
 
   it('headlines the list total, ≈-prefixed because an Estimated line is in it', async () => {

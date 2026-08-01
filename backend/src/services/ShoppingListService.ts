@@ -30,9 +30,25 @@ import { translateTerm } from './usToAuTerms.js';
 export const SHOPPING_LIST_TTL_MS = 7 * 24 * 3_600_000;
 
 // --- Keyspace ----------------------------------------------------------
-// shoppinglist:{listId}  string: the whole minted list, JSON, PX 7 days
+// shoppinglist:{listId}  string: StoredList, JSON, PX 7 days
 
 const listKey = (listId: string) => `shoppinglist:${listId}`;
+
+/**
+ * ADR 0001 leaves runtime versioning out "until session data begins surviving
+ * deployments" — and this is the data that does. A Session lives 30 minutes
+ * and never sees a deploy; a list lives seven days and will be read by a build
+ * that did not write it. So the stored record carries a version the wire shape
+ * does not, and a list written under a shape this build no longer understands
+ * reads as gone rather than as a plausible-looking wrong list. Bump only for a
+ * change old readers would misread — an additive field (ADR 0007) is not one.
+ */
+const STORED_VERSION = 1;
+
+interface StoredList {
+  version: number;
+  list: ShoppingList;
+}
 
 interface RedisLike {
   get(key: string): Promise<string | null>;
@@ -44,6 +60,8 @@ interface ShoppingListServiceDeps {
   readSession: (sessionCode: string) => Promise<Session | null>;
   /** Mint-once, atomically: returns whichever id actually won the claim. */
   claimShoppingListId: (sessionCode: string, listId: string) => Promise<string>;
+  /** Gives the claim back when the mint it was taken for never landed. */
+  releaseShoppingListId: (sessionCode: string, listId: string) => Promise<void>;
   /** The crowned Recipe, whole — ingredients, steps, servings, credit. */
   readRecipe: (poolKey: string, placeId: string) => Promise<PooledRecipe | null>;
   matchProduct: (term: string) => Promise<ProductMatchOutcome>;
@@ -94,11 +112,23 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
   // Mints in flight, so a Shopper who opens the URL while it is still being
   // priced waits for the answer instead of seeing a 404 that is about to be
   // wrong. Redis stays the source of truth — this only holds the wait.
+  // ponytail: in-memory, so the wait assumes the single Railway backend
+  // instance (as ComparisonService's settle map does). Ceiling: on a second
+  // instance, a reader landing away from the minting one is told the list
+  // does not exist for the few seconds the mint takes, then it does. Upgrade
+  // path if the app ever scales out: a short-lived Redis "minting" marker the
+  // reader polls instead of a local promise.
   const building = new Map<string, Promise<unknown>>();
 
   async function fromRedis(listId: string): Promise<ShoppingList | null> {
     const raw = await deps.redis.get(listKey(listId));
-    return raw ? (JSON.parse(raw) as ShoppingList) : null;
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as Partial<StoredList>;
+    if (stored.version !== STORED_VERSION || !stored.list) {
+      logger.warn({ listId, version: stored.version }, 'Shopping List written by another shape');
+      return null;
+    }
+    return stored.list;
   }
 
   async function buildLine(
@@ -176,6 +206,9 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       listId,
       recipeName: recipe.name,
       headcount,
+      // What the amounts were stated for, so the page can only claim "Scaled
+      // for N" when a scale actually happened.
+      servings: recipe.servings,
       lines,
       // Snapshotted, because cooking happens days after the pool has aged out
       // and the source may have forgotten the recipe entirely (#247).
@@ -184,7 +217,12 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       sourceUrl: recipe.sourceUrl,
       mintedAt: new Date(now()).toISOString(),
     };
-    await deps.redis.set(listKey(listId), JSON.stringify(list), 'PX', ttlMs);
+    await deps.redis.set(
+      listKey(listId),
+      JSON.stringify({ version: STORED_VERSION, list } satisfies StoredList),
+      'PX',
+      ttlMs
+    );
     logger.info({ listId, headcount, lineCount: lines.length }, 'Shopping List minted');
     return list;
   }
@@ -212,10 +250,14 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       if (listId !== candidate) return listId;
 
       const minting = build(listId, session.headcount, recipe)
-        .catch((error: unknown) => {
+        .catch(async (error: unknown) => {
           // A mint that fails leaves no key, so the URL 404s and says so —
           // better than a half-priced list nobody can tell is half-priced.
+          // Releasing the claim is what stops that id being the Session's
+          // answer forever: without it, every later completion hands back the
+          // same dead URL and no retry is possible.
           logger.error({ err: error, sessionCode, listId }, 'Shopping List mint failed');
+          await deps.releaseShoppingListId(sessionCode, listId).catch(() => undefined);
         })
         .finally(() => building.delete(listId));
       building.set(listId, minting);
