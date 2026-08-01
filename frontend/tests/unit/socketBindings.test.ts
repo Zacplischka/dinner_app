@@ -337,6 +337,32 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().participants[0].hasSubmitted).toBe(true);
   });
 
+  // #283: a stale event from a Session this browser already left must not grow
+  // the roster — that phantom Participant suppressed the Full House overlay.
+  it('ignores participant:joined for a Session the client is not in', () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+
+    socket.trigger('participant:joined', {
+      participantId: 'phantom-1',
+      displayName: 'Bee',
+      sessionCode: 'G65WM',
+      isRejoin: false,
+    });
+
+    expect(useSessionStore.getState().participants).toHaveLength(1);
+    expect(socketMocks.toast.info).not.toHaveBeenCalled();
+
+    // The current Session's events (store sessionCode OLD11) still land
+    socket.trigger('participant:joined', {
+      participantId: 'participant-2',
+      displayName: 'Bob',
+      sessionCode: 'OLD11',
+      isRejoin: false,
+    });
+    expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Bob');
+  });
+
   it('handles session lifecycle events and server errors', () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
