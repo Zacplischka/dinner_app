@@ -71,7 +71,7 @@ describe('HomePage entry fork', () => {
     expect(screen.getByText('Compare route')).toBeInTheDocument();
   });
 
-  it('never asks solo-or-group', () => {
+  it('the fork never asks solo-or-group', () => {
     renderFork();
     expect(screen.queryByText(/solo/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/group\?/i)).not.toBeInTheDocument();

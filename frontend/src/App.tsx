@@ -45,9 +45,10 @@ function AnimatedRoutes() {
         {/* Home with auth */}
         <Route path="/" element={<HomePage />} />
 
-        {/* Standalone delivery price comparison */}
+        {/* Cook Branch placeholder until Cook setup lands (#255) */}
         <Route path="/cook" element={<CookComingSoonPage />} />
 
+        {/* Standalone delivery price comparison */}
         <Route path="/compare" element={<ComparePage />} />
         <Route path="/compare/:placeId" element={<ComparisonViewPage />} />
 

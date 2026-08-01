@@ -115,14 +115,14 @@ export default function HomePage() {
         <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           <button
             onClick={() => navigate('/join')}
-            className="text-cyan underline-offset-4 hover:underline"
+            className="inline-flex min-h-[44px] items-center text-cyan underline-offset-4 hover:underline"
           >
             Join with a code
           </button>
           <button
             onClick={() => navigate('/compare')}
             aria-label="Compare delivery prices"
-            className="text-muted underline-offset-4 hover:underline"
+            className="inline-flex min-h-[44px] items-center text-muted underline-offset-4 hover:underline"
           >
             Compare delivery prices
           </button>
