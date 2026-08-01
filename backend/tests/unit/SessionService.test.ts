@@ -623,6 +623,39 @@ describe('SessionService', () => {
       );
     });
 
+    it('should still refuse a fifth participant when the session is selecting', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await SessionService.joinSession(session.sessionCode, 'socket-cara', 'Cara');
+      await SessionService.joinSession(session.sessionCode, 'socket-dan', 'Dan');
+      await store.updateState(session.sessionCode, 'selecting');
+
+      await expect(
+        SessionService.joinSession(session.sessionCode, 'socket-eve', 'Eve')
+      ).rejects.toMatchObject({ code: 'SESSION_FULL' });
+    });
+
+    it('should complete the session for those remaining when a late joiner leaves without submitting', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await store.updateState(session.sessionCode, 'selecting');
+      await SessionService.submitSelections(session.sessionCode, 'socket-alice', []);
+      await SessionService.joinSession(session.sessionCode, 'socket-cara', 'Cara');
+      await SessionService.submitSelections(session.sessionCode, 'socket-bob', []);
+      await expect(store.readSession(session.sessionCode)).resolves.toMatchObject({
+        state: 'selecting', // Cara is the last holdout
+      });
+
+      const left = await SessionService.leaveSession(session.sessionCode, 'socket-cara');
+
+      expect(left.results).toBeDefined();
+      await expect(store.readSession(session.sessionCode)).resolves.toMatchObject({
+        state: 'complete',
+      });
+    });
+
     it('should refuse a complete session saying it has finished, not started', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');

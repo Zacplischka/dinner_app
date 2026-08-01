@@ -376,6 +376,33 @@ describe('websocket handlers', () => {
       if (leftovers.length > 0) await redis.del(...leftovers);
     });
 
+    it('should deliver the Match to the old room when the departure completes it', async () => {
+      await createSessionWithParticipant('socket-1');
+      await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' });
+      await store.recordSubmission(sessionCode, 'socket-2', []);
+      await store.createSession('NEW42', { hostId: 'host2', hostName: 'Ava' });
+      const testSocket = socket('socket-1', [sessionCode]);
+      const callback = vi.fn();
+
+      // Alice, the last holdout, moves on — Bob's Session completes without her.
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode: 'NEW42', displayName: 'Alice' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: expect.anything() });
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
+        'session:results',
+        expect.objectContaining({ sessionCode, allSelections: { Bob: [] } })
+      );
+      await expect(store.readSession(sessionCode)).resolves.toMatchObject({ state: 'complete' });
+
+      const leftovers = await redis.keys('session:NEW42*');
+      if (leftovers.length > 0) await redis.del(...leftovers);
+    });
+
     it('should reject full sessions before adding and log the rejection', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
