@@ -119,6 +119,39 @@ describe('RestaurantSearchService', () => {
         RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')
       ).rejects.toThrow('invalid photo URL');
     });
+
+    it('logs the exhausted API and stays a plain error when the 429 persists', async () => {
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')
+      ).rejects.toThrow('Places photo API error: rate limited');
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(errorSpy).toHaveBeenCalledWith(
+        { retries: 3 },
+        'Places photo rate limit persisted after retries'
+      );
+      errorSpy.mockRestore();
+    });
+
+    it('returns the photo URL when a single 429 is followed by success', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ photoUri: 'https://lh3.googleusercontent.com/photo.jpg' }),
+        });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(RestaurantSearchService.fetchPlacePhoto('places/abc/photos/def')).resolves.toBe(
+        'https://lh3.googleusercontent.com/photo.jpg'
+      );
+    });
   });
 
   describe('fetchPlaceDetails', () => {
@@ -154,6 +187,48 @@ describe('RestaurantSearchService', () => {
           },
         }
       );
+    });
+
+    it('throws a RATE_LIMITED DomainError when the 429 persists past all retries', async () => {
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')
+      ).rejects.toMatchObject({
+        name: 'DomainError',
+        code: 'RATE_LIMITED',
+        message: expect.stringContaining('Venue lookup'),
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(errorSpy).toHaveBeenCalledWith(
+        { retries: 3 },
+        'Places details rate limit persisted after retries'
+      );
+      errorSpy.mockRestore();
+    });
+
+    it('returns the venue when a single 429 is followed by success', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            id: 'ChIJ11InchPizza',
+            displayName: { text: '11 Inch Pizza' },
+            formattedAddress: '7A/353 Little Collins St, Melbourne VIC 3000, Australia',
+            location: { latitude: -37.8156, longitude: 144.9631 },
+          }),
+        });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')
+      ).resolves.toMatchObject({ placeId: 'ChIJ11InchPizza' });
     });
   });
 
@@ -192,6 +267,41 @@ describe('RestaurantSearchService', () => {
               'results.addressComponents.longText,results.addressComponents.types',
           },
         }
+      );
+    });
+
+    it('resolves undefined when the 429 persists, logging the exhausted API', async () => {
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        RestaurantSearchService.reverseGeocodeSuburb(-37.81, 144.96)
+      ).resolves.toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(errorSpy).toHaveBeenCalledWith(
+        { retries: 3 },
+        'Geocoding reverse lookup rate limit persisted after retries'
+      );
+      errorSpy.mockRestore();
+    });
+
+    it('returns the suburb when a single 429 is followed by success', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            results: [{ addressComponents: [{ longText: 'Melbourne', types: ['locality'] }] }],
+          }),
+        });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(RestaurantSearchService.reverseGeocodeSuburb(-37.81, 144.96)).resolves.toBe(
+        'Melbourne'
       );
     });
   });
@@ -255,6 +365,48 @@ describe('RestaurantSearchService', () => {
       await expect(RestaurantSearchService.geocodeArea('Richmond')).rejects.toThrow(
         'Geocoding API error: Bad Gateway'
       );
+    });
+
+    it('throws a RATE_LIMITED DomainError naming location lookup when the 429 persists', async () => {
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(RestaurantSearchService.geocodeArea('Richmond')).rejects.toMatchObject({
+        name: 'DomainError',
+        code: 'RATE_LIMITED',
+        message: expect.stringContaining('Location lookup'),
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(errorSpy).toHaveBeenCalledWith(
+        { retries: 3 },
+        'Geocoding address rate limit persisted after retries'
+      );
+      errorSpy.mockRestore();
+    });
+
+    it('returns the area when a single 429 is followed by success', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            results: [
+              {
+                location: { latitude: -37.8238936, longitude: 144.9982667 },
+                formattedAddress: 'Richmond VIC 3121, Australia',
+              },
+            ],
+          }),
+        });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(RestaurantSearchService.geocodeArea('Richmond 3121')).resolves.toMatchObject({
+        area: 'Richmond VIC 3121, Australia',
+      });
     });
   });
 
