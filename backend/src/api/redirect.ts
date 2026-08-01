@@ -30,7 +30,12 @@ interface RedirectRouterDeps {
   targetCache?: Pick<Redis, 'get' | 'set'>;
 }
 
-/** A product page for a Stockcode, a search for a term, or null for neither. */
+/**
+ * A product page for a Stockcode, a search for a term, or null for neither.
+ * A Stockcode wins when both are somehow given: it names one product, where a
+ * term only describes one. No caller sends both, and either target is pinned
+ * to the Woolworths domain, so the precedence is a tidiness rule, not a guard.
+ */
 function retailerTarget(stockcode: unknown, q: unknown): string | null {
   if (typeof stockcode === 'string' && /^\d{1,12}$/.test(stockcode)) {
     return woolworthsProductUrl(Number(stockcode));

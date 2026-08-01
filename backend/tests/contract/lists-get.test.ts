@@ -74,9 +74,15 @@ describe('GET /api/lists/:listId', () => {
   it('404s a malformed list id without touching the store', async () => {
     const { app, readList } = buildApp();
 
-    const response = await request(app).get('/api/lists/not-a-list-id');
-
-    expect(response.status).toBe(404);
+    for (const id of [
+      'not-a-list-id',
+      '------------------------------------', // 36 chars, names nothing
+      '9f0ac1de7c3a4a1e9a3b2f9f0d1c8e77', // unhyphenated
+      `${LIST_ID}extra`,
+    ]) {
+      const response = await request(app).get(`/api/lists/${id}`);
+      expect(response.status, id).toBe(404);
+    }
     expect(readList).not.toHaveBeenCalled();
   });
 });

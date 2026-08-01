@@ -8,8 +8,13 @@ import { DomainError } from '../services/DomainError.js';
 import type { ShoppingListService } from '../services/ShoppingListService.js';
 import { asyncHandler } from './asyncHandler.js';
 
-/** The id shape mint hands out; anything else cannot name a list. */
-const LIST_ID = /^[0-9a-f-]{36}$/i;
+/**
+ * The id shape mint hands out; anything else cannot name a list. Grouped
+ * rather than a loose 36-character class, which would admit 36 hyphens — the
+ * gate should reject what it says it rejects. Deliberately not v4-specific:
+ * the generator is injectable, and the route has no stake in its version.
+ */
+const LIST_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function createListsRouter(service: ShoppingListService) {
   const router = Router();
@@ -24,7 +29,10 @@ export function createListsRouter(service: ShoppingListService) {
         req.log?.warn({ listId, reason: 'list_not_found' }, 'Rejected shopping list read');
         // An expired list and one that never existed answer identically: the
         // link is the capability, so its absence reveals nothing either way.
-        throw new DomainError('SHOPPING_LIST_NOT_FOUND', 'This shopping list has expired or does not exist');
+        throw new DomainError(
+          'SHOPPING_LIST_NOT_FOUND',
+          'This shopping list has expired or does not exist'
+        );
       }
 
       req.log?.info({ listId, lineCount: list.lines.length }, 'Returned shopping list');
