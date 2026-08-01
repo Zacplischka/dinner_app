@@ -16,8 +16,8 @@ test.describe('Accessibility - Home Page', () => {
   test('all buttons have accessible names', async ({ homePage }) => {
     await homePage.goto();
 
-    await expect(homePage.createSessionButton).toHaveAccessibleName(/Create Session/i);
-    await expect(homePage.joinSessionButton).toHaveAccessibleName(/Join with code/i);
+    await expect(homePage.eatOutCard).toHaveAccessibleName(/Eating out/i);
+    await expect(homePage.joinLink).toHaveAccessibleName(/Join with a code/i);
   });
 
   test('page passes accessibility checks', async ({ page, homePage }) => {
@@ -104,10 +104,7 @@ test.describe('Accessibility - Join Session Page', () => {
 });
 
 test.describe('Accessibility - Keyboard Navigation', () => {
-  test('can navigate entire home page with keyboard', async ({
-    page,
-    homePage,
-  }) => {
+  test('can navigate entire home page with keyboard', async ({ page, homePage }) => {
     await homePage.goto();
 
     // Tab through all interactive elements
@@ -129,8 +126,8 @@ test.describe('Accessibility - Keyboard Navigation', () => {
     }
 
     // Main actions should all be reachable in the tab order.
-    expect(interactiveElements.some((name) => name.includes('Create Session'))).toBe(true);
-    expect(interactiveElements.some((name) => name.includes('Join with code'))).toBe(true);
+    expect(interactiveElements.some((name) => name.includes('Eating out'))).toBe(true);
+    expect(interactiveElements.some((name) => name.includes('Join with a code'))).toBe(true);
     expect(interactiveElements).toContain('Compare delivery prices');
   });
 
@@ -138,7 +135,7 @@ test.describe('Accessibility - Keyboard Navigation', () => {
     await homePage.goto();
 
     // Focus on Create Session button
-    await homePage.createSessionButton.focus();
+    await homePage.eatOutCard.focus();
 
     // Press Enter
     await page.keyboard.press('Enter');
@@ -179,10 +176,10 @@ test.describe('Accessibility - Screen Reader Support', () => {
     await homePage.goto();
 
     // Verify buttons have clear, descriptive text
-    const createText = await homePage.createSessionButton.textContent();
-    const joinText = await homePage.joinSessionButton.textContent();
+    const eatOutText = await homePage.eatOutCard.textContent();
+    const joinText = await homePage.joinLink.textContent();
 
-    expect(createText?.toLowerCase()).toContain('create');
+    expect(eatOutText?.toLowerCase()).toContain('eating out');
     expect(joinText?.toLowerCase()).toContain('join');
   });
 });

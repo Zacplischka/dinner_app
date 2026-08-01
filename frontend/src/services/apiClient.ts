@@ -3,6 +3,7 @@
 
 import type {
   AcceptSessionInviteResponse,
+  Branch,
   DeckEntry,
   CreateSessionRequest,
   CreateSessionResponse,
@@ -35,7 +36,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export async function createSession(
   hostName: string,
   location?: SessionLocation,
-  searchRadiusMiles?: number
+  searchRadiusMiles?: number,
+  branch?: Branch
 ): Promise<CreateSessionResponse> {
   const body: CreateSessionRequest = { hostName };
 
@@ -45,6 +47,10 @@ export async function createSession(
 
   if (searchRadiusMiles !== undefined) {
     body.searchRadiusMiles = searchRadiusMiles;
+  }
+
+  if (branch) {
+    body.branch = branch;
   }
 
   return request<CreateSessionResponse>('/sessions', {

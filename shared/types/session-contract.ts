@@ -5,7 +5,7 @@
 // GeocodedArea value (Phase 1A — no response DTO when the whole body is a
 // stable shared value), and its request carries no body to validate.
 
-import type { DeckEntry } from './models.js';
+import type { Branch, DeckEntry } from './models.js';
 
 export interface SessionLocation {
   latitude: number;
@@ -18,6 +18,7 @@ export interface CreateSessionRequest {
   hostName: string;
   location?: SessionLocation;
   searchRadiusMiles?: number;
+  branch?: Branch;
 }
 
 // GET /api/sessions/:sessionCode
@@ -28,6 +29,7 @@ export interface SessionResponse {
   state: string;
   expiresAt: string;
   shareableLink: string;
+  branch?: Branch;
 }
 
 // POST /api/sessions response — a Session plus the host-supplied setup echoed back.

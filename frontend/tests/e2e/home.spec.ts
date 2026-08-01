@@ -45,8 +45,8 @@ test.describe('Home Page', () => {
 
     // Verify content is visible in mobile viewport
     await expect(homePage.heading).toBeVisible();
-    await expect(homePage.createSessionButton).toBeVisible();
-    await expect(homePage.joinSessionButton).toBeVisible();
+    await expect(homePage.eatOutCard).toBeVisible();
+    await expect(homePage.joinLink).toBeVisible();
   });
 });
 

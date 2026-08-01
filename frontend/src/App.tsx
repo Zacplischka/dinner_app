@@ -21,6 +21,7 @@ const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 const GroupOrderPage = lazy(() => import('./pages/GroupOrderPage'));
 
 const FriendsPage = lazy(() => import('./pages/FriendsPage'));
+const CookComingSoonPage = lazy(() => import('./pages/CookComingSoonPage'));
 
 // Loading fallback component - matches dark theme
 function LoadingFallback() {
@@ -43,6 +44,9 @@ function AnimatedRoutes() {
       <Routes location={location}>
         {/* Home with auth */}
         <Route path="/" element={<HomePage />} />
+
+        {/* Cook Branch placeholder until Cook setup lands (#255) */}
+        <Route path="/cook" element={<CookComingSoonPage />} />
 
         {/* Standalone delivery price comparison */}
         <Route path="/compare" element={<ComparePage />} />

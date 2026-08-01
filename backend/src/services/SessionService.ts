@@ -11,7 +11,12 @@ import { shareableLink } from '../config/index.js';
 import { getExpiresAtISO, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
-import { SESSION_CODE_LENGTH, type DeckEntry, type Restaurant } from '@dinder/shared/types';
+import {
+  SESSION_CODE_LENGTH,
+  type Branch,
+  type DeckEntry,
+  type Restaurant,
+} from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
 export const MAX_PARTICIPANTS = 4;
@@ -54,7 +59,8 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       longitude: number;
       address?: string;
     },
-    searchRadiusMiles?: number
+    searchRadiusMiles?: number,
+    branch?: Branch
   ): Promise<{
     sessionCode: string;
     hostName: string;
@@ -62,6 +68,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     state: string;
     expiresAt: string;
     shareableLink: string;
+    branch?: Branch;
     location?: {
       latitude: number;
       longitude: number;
@@ -135,6 +142,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       hostName,
       location,
       searchRadiusMiles,
+      branch,
       entries: restaurants,
     });
 
@@ -156,6 +164,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       state: session.state,
       expiresAt: getExpiresAtISO(expireAt),
       shareableLink: shareableLink(sessionCode),
+      branch,
       location,
       searchRadiusMiles,
       restaurantCount: restaurants.length,
@@ -172,6 +181,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     state: string;
     expiresAt: string;
     shareableLink: string;
+    branch?: Branch;
   } | null> {
     const session = await store.readSession(sessionCode);
 
@@ -212,6 +222,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       state: session.state,
       expiresAt: getExpiresAtISO(expireAt),
       shareableLink: shareableLink(sessionCode),
+      branch: session.branch,
     };
   }
 

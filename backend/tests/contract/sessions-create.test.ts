@@ -97,6 +97,34 @@ describe('Contract Test: POST /api/sessions', () => {
     expect(response.body.hostName).toBe('A'.repeat(50));
   });
 
+  // Branch on the Session (#255, ADR 0007): carried additively on create.
+  it('echoes the branch back when one is sent', async () => {
+    const response = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'takeaway' })
+      .expect(201);
+
+    expect(response.body.branch).toBe('takeaway');
+  });
+
+  it('omits branch entirely when the client never sends one', async () => {
+    const response = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice' })
+      .expect(201);
+
+    expect(response.body).not.toHaveProperty('branch');
+  });
+
+  it('rejects an unknown branch with 400', async () => {
+    const response = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'delivery' })
+      .expect(400);
+
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+  });
+
   it('should generate unique session codes for concurrent requests', async () => {
     const requests = Array.from({ length: 5 }, () =>
       request(app).post('/api/sessions').send({ hostName: 'TestUser' })

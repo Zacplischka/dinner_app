@@ -29,6 +29,19 @@ describe('Contract Test: GET /api/sessions/:sessionCode', () => {
     vi.restoreAllMocks();
   });
 
+  // The Session carries its Branch for the life of the session (#255).
+  it('returns the branch a session was created with', async () => {
+    const created = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'CookHost', branch: 'eatout' });
+
+    const response = await request(app)
+      .get(`/api/sessions/${created.body.sessionCode}`)
+      .expect(200);
+
+    expect(response.body.branch).toBe('eatout');
+  });
+
   it('should return 200 with valid SessionResponse schema for existing session', async () => {
     const logs = captureLogs();
 

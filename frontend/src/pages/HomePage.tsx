@@ -1,9 +1,40 @@
+// The entry fork (#255): `/` asks the only question that matters — "Tonight
+// you're…" — with a Branch card per kind of night. Eat Out and Takeaway route
+// into the existing create flow with their Branch; Cook routes to the
+// not-yet-available screen until Cook setup lands. Join-with-code and Compare
+// are demoted to a text row. There is no solo/group question: a Session starts
+// as yours and becomes a group when you invite someone.
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import UserMenu from '../components/UserMenu';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
+
+const BRANCH_CARDS = [
+  {
+    title: 'Eating out',
+    description: 'Swipe nearby restaurants until the group agrees.',
+    icon: '🍽️',
+    accent: 'border-coral/40 hover:border-coral shadow-[0_0_18px_rgb(255_56_88_/_0.12)]',
+    to: '/create?branch=eatout',
+  },
+  {
+    title: 'Getting takeaway',
+    description: 'Pick a place together, then compare delivery prices.',
+    icon: '🥡',
+    accent: 'border-cyan/40 hover:border-cyan shadow-[0_0_18px_rgb(53_231_255_/_0.12)]',
+    to: '/create?branch=takeaway',
+  },
+  {
+    title: 'Cooking',
+    description: 'Swipe recipes, then split the shopping list.',
+    icon: '🍳',
+    accent: 'border-lime/40 hover:border-lime shadow-[0_0_18px_rgb(163_230_53_/_0.12)]',
+    to: '/cook',
+  },
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -58,103 +89,53 @@ export default function HomePage() {
         )}
       </header>
 
-      <section className="mx-auto grid w-full max-w-6xl items-center gap-12 py-8 md:min-h-[calc(100vh-5rem)] md:grid-cols-[1.1fr_0.9fr] md:py-14">
-        <div className="animate-fade-in">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-surface/80 px-3 py-2 text-xs font-extrabold uppercase tracking-[0.06em] text-cyan">
-            <span className="live-dot" aria-hidden="true" />
-            Tonight · Melbourne
-          </div>
+      <section className="mx-auto w-full max-w-2xl py-10 md:py-16 animate-fade-in">
+        <h1 className="mb-10 text-[clamp(2.8rem,10vw,5rem)] font-black leading-[0.9] tracking-[-0.06em] text-text">
+          Tonight <span className="neon-outline italic">you&rsquo;re&hellip;</span>
+        </h1>
 
-          <h1 className="mb-6 max-w-3xl text-[clamp(3.5rem,15vw,7.6rem)] font-black leading-[0.84] tracking-[-0.075em] text-text">
-            Find a place <span className="neon-outline block italic">everyone likes.</span>
-          </h1>
+        <div className="grid gap-4">
+          {BRANCH_CARDS.map((card) => (
+            <button
+              key={card.title}
+              onClick={() => navigate(card.to)}
+              className={`flex items-center gap-5 rounded-market-lg border bg-surface/95 p-5 text-left transition-colors ${card.accent}`}
+            >
+              <span className="text-4xl" aria-hidden="true">
+                {card.icon}
+              </span>
+              <span>
+                <span className="block text-2xl font-black text-text">{card.title}</span>
+                <span className="block text-sm text-muted">{card.description}</span>
+              </span>
+            </button>
+          ))}
+        </div>
 
-          <p className="mb-7 max-w-xl text-base leading-relaxed text-text/80 sm:text-lg">
-            Start a dinner session, invite your people, then swipe the same nearby restaurants until
-            the whole group agrees.
-          </p>
+        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <button
+            onClick={() => navigate('/join')}
+            className="inline-flex min-h-[44px] items-center text-cyan underline-offset-4 hover:underline"
+          >
+            Join with a code
+          </button>
+          <button
+            onClick={() => navigate('/compare')}
+            aria-label="Compare delivery prices"
+            className="inline-flex min-h-[44px] items-center text-muted underline-offset-4 hover:underline"
+          >
+            Compare delivery prices
+          </button>
+        </div>
 
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex pl-2" aria-label="Four friends active tonight">
-              {[
-                ['YO', 'border-coral'],
-                ['MA', 'border-violet'],
-                ['JO', 'border-cyan'],
-                ['SA', 'border-lime'],
-              ].map(([initials, border], index) => (
-                <span
-                  key={initials}
-                  className={`grid h-11 w-11 place-items-center rounded-full border-2 ${border} bg-gradient-to-br from-slate-700 to-slate-900 text-xs font-black text-white shadow-card ${index ? '-ml-2' : ''}`}
-                >
-                  {initials}
-                </span>
-              ))}
-            </div>
-            <p className="text-sm text-muted">
-              <strong className="block text-text">4 friends are hungry</strong>
-              Start the hunt together.
+        {!isLoading && !isAuthenticated && (
+          <div className="mt-10 max-w-xs space-y-3">
+            <GoogleSignInButton />
+            <p className="text-xs text-muted">
+              Sign in to save history & invite friends, or continue as a guest.
             </p>
           </div>
-
-          <div className="grid gap-3 sm:flex">
-            <button
-              onClick={() => navigate('/create')}
-              className="btn btn-primary min-h-[58px] px-6 text-base"
-            >
-              <span aria-hidden="true">＋</span> Create Session
-            </button>
-            <button
-              onClick={() => navigate('/join')}
-              className="btn btn-secondary min-h-[58px] px-6 text-base"
-            >
-              <span aria-hidden="true">⌁</span> Join with code
-            </button>
-            <button
-              onClick={() => navigate('/compare')}
-              aria-label="Compare delivery prices"
-              className="btn btn-ghost min-h-[58px] px-6 text-base"
-            >
-              Compare prices
-            </button>
-          </div>
-
-          {!isLoading && !isAuthenticated && (
-            <div className="mt-6 max-w-xs space-y-3">
-              <GoogleSignInButton />
-              <p className="text-xs text-muted">
-                Sign in to save history & invite friends, or continue as a guest.
-              </p>
-            </div>
-          )}
-
-          <div className="mt-6 flex gap-6 text-xs text-muted">
-            <span>Up to 4</span>
-            <span>Private votes</span>
-          </div>
-        </div>
-
-        <div
-          className="relative hidden min-h-[570px] place-items-center md:grid"
-          aria-label="Restaurant recommendation preview"
-        >
-          <div className="absolute inset-8 rotate-2 rounded-[48%_52%_42%_58%] border border-coral-soft/40 bg-gradient-to-br from-coral/20 via-surface to-cyan/10 shadow-glow-coral" />
-          <article className="relative z-10 mt-20 w-[min(88%,390px)] -rotate-2 overflow-hidden rounded-market-lg border border-line bg-surface/95 shadow-card">
-            <img
-              src="/images/ramen-ichiban.jpg"
-              alt="Ramen Ichiban"
-              className="h-64 w-full object-cover"
-            />
-            <div className="p-5">
-              <h2 className="text-2xl font-black text-text">Ramen Ichiban</h2>
-              <p className="mb-3 text-sm font-bold text-coral-soft">Japanese ramen</p>
-              <p className="flex gap-4 text-sm text-text/80">
-                <span className="text-amber">★ 4.6</span>
-                <span>$$</span>
-                <span>Open until 11</span>
-              </p>
-            </div>
-          </article>
-        </div>
+        )}
       </section>
     </main>
   );
