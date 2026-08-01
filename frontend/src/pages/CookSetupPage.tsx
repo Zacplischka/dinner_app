@@ -15,11 +15,9 @@ import {
   type Diet,
   type MealType,
 } from '@dinder/shared/types';
-import { useSessionStore } from '../stores/sessionStore';
-import { useFriendsStore } from '../stores/friendsStore';
 import NavigationHeader from '../components/NavigationHeader';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
-import { createSession } from '../services/apiClient';
+import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 
 /** Toggle membership of a chip set, preserving the rest. */
 function toggle<T>(values: T[], value: T): T[] {
@@ -34,16 +32,8 @@ export default function CookSetupPage() {
   const [diets, setDiets] = useState<Diet[]>([]);
   const [headcount, setHeadcount] = useState(2);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const {
-    setSessionCode,
-    setCurrentUserId,
-    setConnectionStatus,
-    setSessionStatus,
-    resetSelections,
-  } = useSessionStore();
-  const { inviteFriendsToSession } = useFriendsStore();
+  const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,42 +44,15 @@ export default function CookSetupPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const [response, { waitForConnection, joinSession }] = await Promise.all([
-        createSession(hostName.trim(), {
-          branch: 'cook',
-          craving: { mealType, cuisines, diets },
-          headcount,
-        }),
-        import('../services/socketBindings'),
-      ]);
-
-      setSessionCode(response.sessionCode);
-      resetSelections();
-      setSessionStatus('waiting');
-
-      await waitForConnection();
-      const ack = await joinSession(response.sessionCode, hostName.trim());
-
-      if (ack.success) {
-        setCurrentUserId(ack.data.participantId);
-        setConnectionStatus(true);
-
-        if (selectedFriendIds.size > 0) {
-          await inviteFriendsToSession(response.sessionCode, Array.from(selectedFriendIds));
-        }
-
-        navigate(`/session/${response.sessionCode}`);
-      } else {
-        setError(ack.error.message);
-        setIsLoading(false);
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create session');
-      setIsLoading(false);
-    }
+    // A zero-Recipe Craving comes back here as a message, leaving every chip
+    // exactly as the Host set it (#260 moves the refusal inline at setup).
+    setError(
+      (await createAndJoin(
+        hostName.trim(),
+        { branch: 'cook', craving: { mealType, cuisines, diets }, headcount },
+        selectedFriendIds
+      )) ?? ''
+    );
   };
 
   const chipClass = (selected: boolean) =>

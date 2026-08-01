@@ -314,8 +314,15 @@ export default function ResultsPage() {
     restaurantNameMap.set(o.placeId, o.name);
   });
 
+  // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
+  // and the tier's counts read off the same "of" the crown does.
+  const crownPlaceId = pick?.restaurant.placeId ?? crownedRecipe?.recipe.placeId;
+  const crownOf = pick?.of ?? crownedRecipe?.of ?? participants.length;
+
   // Near Misses (#72): the all-but-one tier, reduced client-side from the
-  // Selections already in the results payload. Empty Match, 3+ Participants only.
+  // Selections already in the results payload. Empty Match, 3+ Participants
+  // only. A Recipe can be a Near Miss too (CONTEXT.md) — only the delivery
+  // actions on the card are restaurant chrome.
   const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
   if (!hasOverlap && participants.length >= 3) {
     const selectionCounts = new Map<string, number>();
@@ -327,7 +334,7 @@ export default function ResultsPage() {
     const restaurantsById = new Map(restaurants.map((r) => [r.placeId, r]));
     selectionCounts.forEach((count, placeId) => {
       if (count !== participants.length - 1) return;
-      if (pick && placeId === pick.restaurant.placeId) return;
+      if (placeId === crownPlaceId) return;
       nearMisses.push(
         restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
       );
@@ -386,33 +393,32 @@ export default function ResultsPage() {
       .catch(() => toast.error('Could not copy link'));
   };
 
-  // The crown's one-line reason (top-pick.md's copy table).
-  const pickReason = (crowned: NonNullable<typeof pick>): string => {
-    if (crowned.likedBy === crowned.of && overlappingOptions.length === 1) {
-      return 'Everyone swiped yes on this one.';
-    }
-    if (crowned.likedBy === crowned.of && overlappingOptions.length > 1) {
-      return `Everyone swiped yes — best rated of your ${overlappingOptions.length} matches.`;
-    }
-    if (crowned.likedBy > 0 && crowned.likedBy < crowned.of) {
-      return `${crowned.likedBy} of ${crowned.of} swiped yes — the closest you got.`;
-    }
-    return "Nobody swiped yes, so here's the highest rated nearby.";
-  };
-
-  // The same rungs in the Recipe's own words: aggregate likes stands in for a
-  // rating, and there is nothing "nearby" about a dish you cook.
-  const recipeReason = (crowned: NonNullable<typeof crownedRecipe>): string => {
+  // The crown's one-line reason (top-pick.md's copy table). One cascade for
+  // both kinds — only the two rungs that name the middle tiebreak differ, and
+  // there is nothing "nearby" about a dish you cook.
+  const crownReason = (
+    crowned: { likedBy: number; of: number },
+    words: { bestOfMany: string; noneSelected: string }
+  ): string => {
     if (crowned.likedBy === crowned.of && matchedEntries.length === 1) {
       return 'Everyone swiped yes on this one.';
     }
     if (crowned.likedBy === crowned.of && matchedEntries.length > 1) {
-      return `Everyone swiped yes — the most popular of your ${matchedEntries.length} matches.`;
+      return `Everyone swiped yes — ${words.bestOfMany} of your ${matchedEntries.length} matches.`;
     }
     if (crowned.likedBy > 0 && crowned.likedBy < crowned.of) {
       return `${crowned.likedBy} of ${crowned.of} swiped yes — the closest you got.`;
     }
-    return "Nobody swiped yes, so here's the most popular one.";
+    return words.noneSelected;
+  };
+
+  const restaurantWords = {
+    bestOfMany: 'best rated',
+    noneSelected: "Nobody swiped yes, so here's the highest rated nearby.",
+  };
+  const recipeWords = {
+    bestOfMany: 'the most popular',
+    noneSelected: "Nobody swiped yes, so here's the most popular one.",
   };
 
   return (
@@ -466,7 +472,7 @@ export default function ResultsPage() {
 
         {crownedRecipe ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
-            <RecipeCrown recipe={crownedRecipe.recipe} reason={recipeReason(crownedRecipe)} />
+            <RecipeCrown recipe={crownedRecipe.recipe} reason={crownReason(crownedRecipe, recipeWords)} />
           </div>
         ) : pick ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
@@ -475,7 +481,7 @@ export default function ResultsPage() {
             <MatchCard
               restaurant={pick.restaurant}
               eyebrow="TONIGHT'S PICK"
-              reason={pickReason(pick)}
+              reason={crownReason(pick, restaurantWords)}
               isCrown
               ubereatsHref={
                 hasOverlap
@@ -557,7 +563,7 @@ export default function ResultsPage() {
 
         {/* Near Misses: the all-but-one tier, counts only, never names.
             The crowned placeId is already excluded (see nearMisses above). */}
-        {!hasOverlap && !isCookDeck && nearMisses.length > 0 && (
+        {!hasOverlap && nearMisses.length > 0 && (
           <div className="card mb-6">
             <h2 className="text-xl font-display font-semibold text-text mb-1">So Close</h2>
             <p className="text-sm text-muted mb-4">
@@ -572,8 +578,7 @@ export default function ResultsPage() {
                 >
                   <p className="text-lg font-semibold text-text">{restaurant.name}</p>
                   <p className="text-sm font-medium text-amber">
-                    {(pick ? pick.of : participants.length) - 1} of{' '}
-                    {pick ? pick.of : participants.length} liked this
+                    {crownOf - 1} of {crownOf} liked this
                   </p>
 
                   <div className="mt-2 space-y-2">
@@ -587,11 +592,14 @@ export default function ResultsPage() {
                         </span>
                       </div>
                     )}
-                    <DeliveryActions
-                      ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
-                      doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}
-                      comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=near_miss`}
-                    />
+                    {/* Nothing to order or compare about a dish you cook. */}
+                    {!isCookDeck && (
+                      <DeliveryActions
+                        ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
+                        doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}
+                        comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=near_miss`}
+                      />
+                    )}
                   </div>
                 </div>
               ))}

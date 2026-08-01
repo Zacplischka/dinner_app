@@ -126,6 +126,19 @@ describe('createRecipePoolService', () => {
     expect(ttl).toBeLessThanOrEqual(HOUR_MS);
   });
 
+  it('keeps the offset counter alive longer than the pool it rotates', async () => {
+    // The counter is what makes the next refresh ask for a different page. If
+    // it expires first — as it did when both carried the same TTL — every
+    // refresh silently re-requests offset 0 and the rotation never happens.
+    const { redis, service: pool } = service(recipeHits(60), { poolTtlMs: HOUR_MS });
+
+    await pool.dealDeck(pasta);
+
+    const poolTtl = await redis.pttl(cravingPoolKey(pasta));
+    const counterTtl = await redis.pttl(cravingPoolKey(pasta).replace('pool', 'offset'));
+    expect(counterTtl).toBeGreaterThan(poolTtl);
+  });
+
   it('rotates the source offset per refresh so a re-pooled Craving sees new dishes', async () => {
     const redis = new RedisMock();
     const { service: pool, searches } = service(recipeHits(200), { redis });

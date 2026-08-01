@@ -123,17 +123,17 @@ export function createSessionService({
 
     // Deal the Session's Deck. A Cook Session deals Recipes from the shared
     // Craving pool; every other Branch searches nearby Restaurants as before.
-    let restaurants: DeckEntry[] = [];
+    let deckEntries: DeckEntry[] = [];
     if (cook) {
-      restaurants = await dealRecipeDeck(cook.craving);
+      deckEntries = await dealRecipeDeck(cook.craving);
 
-      if (restaurants.length === 0) {
+      if (deckEntries.length === 0) {
         // The zero-Recipe Craving. #260 turns this into the inline refusal at
         // setup with the chips still editable; until then it refuses like an
         // empty restaurant search does, rather than opening an unswipeable Deck.
         logger.warn({ sessionCode, craving: cook.craving }, 'No recipes found for Craving');
         throw new DomainError(
-          'NO_RESTAURANTS_FOUND',
+          'NO_RECIPES_FOUND',
           'No recipes match those choices. Try removing a filter.'
         );
       }
@@ -141,7 +141,7 @@ export function createSessionService({
       // Convert miles to meters (1 mile = 1609.34 meters)
       const radiusMeters = searchRadiusMiles * 1609.34;
 
-      restaurants = await searchNearbyRestaurants({
+      deckEntries = await searchNearbyRestaurants({
         latitude: location.latitude,
         longitude: location.longitude,
         radiusMeters,
@@ -149,7 +149,7 @@ export function createSessionService({
       });
 
       // Throw error if no restaurants found
-      if (restaurants.length === 0) {
+      if (deckEntries.length === 0) {
         logger.warn(
           {
             sessionCode,
@@ -174,7 +174,7 @@ export function createSessionService({
       branch,
       headcount: cook?.headcount,
       cravingKey: cook && cravingPoolKey(cook.craving),
-      entries: restaurants,
+      entries: deckEntries,
     });
 
     logger.info(
@@ -183,7 +183,7 @@ export function createSessionService({
         hasLocation: Boolean(location),
         searchRadiusMiles,
         participantCount: 1,
-        restaurantCount: restaurants.length,
+        restaurantCount: deckEntries.length,
       },
       'Session created'
     );
@@ -198,7 +198,7 @@ export function createSessionService({
       branch,
       location,
       searchRadiusMiles,
-      restaurantCount: restaurants.length,
+      restaurantCount: deckEntries.length,
       headcount: cook?.headcount,
     };
   }

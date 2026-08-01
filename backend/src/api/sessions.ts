@@ -46,8 +46,11 @@ export function createSessionsRouter(sessionService: SessionService) {
         .optional(),
       headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
     })
-    // A Cook Session has nothing to deal without its setup. Only the Cook
-    // Branch requires it, so every existing client stays valid (ADR 0007).
+    // A Cook Session has nothing to deal without its setup. This narrows what
+    // the endpoint accepts, which ADR 0007 would normally stage over two
+    // deployments — safe here only because no shipped client can send
+    // branch=cook: until this ticket the fork's Cook card routed to a
+    // placeholder screen that never created a Session.
     .superRefine((body, ctx) => {
       if (body.branch !== 'cook') return;
       if (!body.craving) {
@@ -87,8 +90,17 @@ export function createSessionsRouter(sessionService: SessionService) {
         );
       }
 
-      const { hostName, location, searchRadiusMiles, branch, craving, headcount } =
-        validation.data as CreateSessionRequest;
+      // Annotated, not cast: this is what checks the Zod schema still agrees
+      // with the shared contract, so a chip vocabulary drifting out of
+      // shared/types/cook.ts fails the build instead of the request.
+      const {
+        hostName,
+        location,
+        searchRadiusMiles,
+        branch,
+        craving,
+        headcount,
+      }: CreateSessionRequest = validation.data;
 
       // Default searchRadiusMiles to 5 if location is provided but radius is not
       const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;

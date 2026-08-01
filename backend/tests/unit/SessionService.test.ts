@@ -96,7 +96,7 @@ describe('SessionService', () => {
           craving,
           headcount: 2,
         })
-      ).rejects.toMatchObject({ code: 'NO_RESTAURANTS_FOUND' });
+      ).rejects.toMatchObject({ code: 'NO_RECIPES_FOUND' });
     });
   });
 

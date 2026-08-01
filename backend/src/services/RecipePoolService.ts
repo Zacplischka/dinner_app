@@ -41,6 +41,9 @@ const offsetKey = (poolKey: string) => poolKey.replace('recipes:pool:', 'recipes
  */
 const MAX_OFFSET = 900;
 
+/** How much longer the offset counter lives than the pool it rotates. */
+const OFFSET_TTL_MULTIPLE = 4;
+
 interface RedisLike {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
@@ -94,9 +97,12 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   /** Where the next refresh of this Craving starts in the source catalogue. */
   async function nextOffset(key: string): Promise<number> {
     const refreshes = await deps.redis.incr(offsetKey(key));
-    // The counter outlives its pool so a re-pooled Craving moves on rather than
-    // re-dealing the same page; it ages out with a refresh of its own.
-    await deps.redis.pexpire(offsetKey(key), poolTtlMs);
+    // The counter must outlive the pool it rotates, or it dies first and every
+    // refresh re-requests offset 0 — the rotation silently never happens. Its
+    // own TTL is therefore a multiple of the pool's, and is restamped here on
+    // each refresh; a Craving nobody wants for that long forgets its place,
+    // which costs one repeated page.
+    await deps.redis.pexpire(offsetKey(key), poolTtlMs * OFFSET_TTL_MULTIPLE);
     return ((refreshes - 1) * poolSize) % MAX_OFFSET;
   }
 

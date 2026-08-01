@@ -666,13 +666,27 @@ describe('ResultsPage', () => {
       expect(container.querySelectorAll('[data-match-card]')).toHaveLength(1);
     });
 
-    it('shows no Near Miss tier for a Cook Session', () => {
+    // A Recipe can be a Near Miss too (CONTEXT.md) — the tier is kind-agnostic.
+    // Only the delivery actions on the card are restaurant chrome.
+    it('surfaces a Recipe Near Miss as a count, with nothing to order or compare', () => {
+      const laksa = {
+        kind: 'recipe' as const,
+        placeId: 'rec-laksa',
+        name: 'Laksa',
+        aggregateLikes: 300,
+      };
       seedCook({
+        restaurants: [rendang, aglio, laksa],
+        restaurantNames: {
+          [rendang.placeId]: rendang.name,
+          [aglio.placeId]: aglio.name,
+          [laksa.placeId]: laksa.name,
+        },
         participants: [alice, bob, cara],
         overlappingOptions: [],
         allSelections: {
-          Alice: [rendang.placeId],
-          Bob: [rendang.placeId],
+          Alice: [rendang.placeId, laksa.placeId],
+          Bob: [rendang.placeId, laksa.placeId],
           Cara: [aglio.placeId],
         },
         topPick: { restaurant: rendang, likedBy: 2, of: 3 },
@@ -680,7 +694,13 @@ describe('ResultsPage', () => {
       const { container } = renderResults();
 
       expect(screen.getByText('2 of 3 swiped yes — the closest you got.')).toBeInTheDocument();
-      expect(container.querySelector('[data-near-miss-card]')).toBeNull();
+
+      const nearMissCards = container.querySelectorAll('[data-near-miss-card]');
+      expect(nearMissCards).toHaveLength(1);
+      // The crowned Recipe is never also a Near Miss.
+      expect(nearMissCards[0].textContent).toContain('Laksa');
+      expect(nearMissCards[0].textContent).toContain('2 of 3 liked this');
+      expect(nearMissCards[0].querySelector('a')).toBeNull();
     });
   });
 });
