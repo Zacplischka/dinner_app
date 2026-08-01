@@ -72,6 +72,10 @@ export function useCreateAndJoinSession() {
         await inviteFriendsToSession(response.sessionCode, Array.from(friendIds));
       }
 
+      // Reset before navigating too: today navigate() unmounts the setup page
+      // immediately, but a caller that stays mounted (a modal, say) would
+      // otherwise be left with its submit button disabled forever.
+      setIsCreating(false);
       navigate(`/session/${response.sessionCode}`);
       return null;
     } catch (err: unknown) {

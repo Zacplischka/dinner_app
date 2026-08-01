@@ -33,12 +33,11 @@ export interface PooledIngredient {
  * carries (title, image, aggregate likes) plus the ingredients and steps that
  * ride along for the Shopping List the Top Pick later mints (#262). Only the
  * DeckEntry half is ever dealt onto the wire.
+ *
+ * Nothing else off the source's response is pooled: servings, source URL and
+ * credit are #262's and #265's to add when they read them.
  */
 export interface PooledRecipe extends Recipe {
-  servings?: number;
-  sourceUrl?: string;
-  /** Source credit, shown at the end of the method (#265). */
-  credit?: string;
   ingredients: PooledIngredient[];
   steps: string[];
 }
@@ -60,9 +59,6 @@ interface RecipeSearchResult {
   title?: unknown;
   image?: unknown;
   aggregateLikes?: unknown;
-  servings?: unknown;
-  sourceUrl?: unknown;
-  sourceName?: unknown;
   extendedIngredients?: Array<{
     name?: unknown;
     amount?: unknown;
@@ -86,9 +82,6 @@ function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
     name,
     photoUrl: text(result.image),
     aggregateLikes: number(result.aggregateLikes),
-    servings: number(result.servings),
-    sourceUrl: text(result.sourceUrl),
-    credit: text(result.sourceName),
     ingredients: (result.extendedIngredients ?? []).flatMap((ingredient) => {
       const ingredientName = text(ingredient.name);
       return ingredientName === undefined

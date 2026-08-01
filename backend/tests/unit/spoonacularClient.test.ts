@@ -115,9 +115,8 @@ describe('createSpoonacularClient', () => {
           name: 'Pasta with Garlic',
           photoUrl: 'https://img.spoonacular.com/716429.jpg',
           aggregateLikes: 209,
-          servings: 2,
-          sourceUrl: 'https://example.test/pasta',
-          credit: 'Full Belly Sisters',
+          // servings, sourceUrl and credit are deliberately not pooled — #262
+          // and #265 add them when they read them.
           ingredients: [{ name: 'garlic', amount: 2, unit: 'cloves', original: '2 cloves garlic' }],
           steps: ['Boil the pasta.', 'Fry garlic.'],
         },

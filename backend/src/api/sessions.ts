@@ -115,16 +115,19 @@ export function createSessionsRouter(sessionService: SessionService) {
         searchRadiusMiles: radius ?? null,
       };
 
-      // The expected empty-area outcome is logged with the search context that
-      // explains it; every other failure is the global handler's to log.
+      // The expected empty outcomes — an empty area, and its Cook counterpart
+      // an empty Craving — are logged with the request context that explains
+      // them; every other failure is the global handler's to log.
+      const expectedEmpty: Partial<Record<string, string>> = {
+        NO_RESTAURANTS_FOUND: 'no_restaurants_found',
+        NO_RECIPES_FOUND: 'no_recipes_found',
+      };
       const session = await sessionService
         .createSession(hostName, location, radius, branch, cook)
         .catch((error: unknown) => {
-          if (error instanceof DomainError && error.code === 'NO_RESTAURANTS_FOUND') {
-            req.log.warn(
-              { reason: 'no_restaurants_found', ...createContext },
-              'Rejected REST session create'
-            );
+          const reason = error instanceof DomainError ? expectedEmpty[error.code] : undefined;
+          if (reason) {
+            req.log.warn({ reason, ...createContext }, 'Rejected REST session create');
           }
           throw error;
         });

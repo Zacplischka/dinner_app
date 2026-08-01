@@ -117,6 +117,11 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
       let pool = await readPool(key);
 
       if (!pool) {
+        // ponytail: read-then-fill, no lock. Two Sessions starting the same
+        // cold Craving in the same instant both fetch, both burn a lookup and
+        // an offset step, and the later SET wins — nobody sees a failure and
+        // both get a full Deck. Upgrade path if Cook traffic ever makes that
+        // bite: SETNX a short-lived fill marker and have the loser re-read.
         const offset = await nextOffset(key);
         pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
         await deps.redis.set(key, JSON.stringify(pool), 'PX', poolTtlMs);
