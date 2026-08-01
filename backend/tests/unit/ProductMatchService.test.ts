@@ -37,6 +37,18 @@ describe('createProductMatchService', () => {
     vi.restoreAllMocks();
   });
 
+  it('defaults to the global politeness queue and config windows when wiring passes only the boundaries', async () => {
+    const redis = new RedisMock();
+    const { fetchImpl, requests } = woolworthsFetchFake({ coriander });
+    const matcher = createProductMatchService({ redis, client: createWoolworthsClient(fetchImpl) });
+
+    const outcome = await matcher.matchProduct('coriander');
+    expect(outcome.status).toBe('matched');
+    // The default success window cached the answer: the repeat call fetches nothing.
+    await matcher.matchProduct('coriander');
+    expect(requests.filter((request) => request.method === 'POST')).toHaveLength(1);
+  });
+
   it('translates the term before search and returns the Product Match with runner-ups', async () => {
     const { service: matcher, searches } = service({ coriander });
     const outcome = await matcher.matchProduct('cilantro');

@@ -3,14 +3,11 @@
 // the response carries a FulfilmentStoreId (the #249 drift check — anything
 // but 1101 reopens the egress decision), and the Matcher lands a real product
 // for a dialect term. Run with: npm run grocery:smoke
+import assert from 'node:assert';
 import { woolworthsQueue } from '../src/services/politenessQueue.js';
 import { matchProducts } from '../src/services/productMatcher.js';
 import { translateTerm } from '../src/services/usToAuTerms.js';
 import { createWoolworthsClient } from '../src/services/woolworthsClient.js';
-
-function assert(condition: unknown, message: string): asserts condition {
-  if (!condition) throw new Error(message);
-}
 
 async function main() {
   const client = createWoolworthsClient();

@@ -22,7 +22,7 @@ export interface WoolworthsProduct extends ProductCandidate {
 // tuning), and never product names. SNACKS/BISCUITS are in per #245: those
 // sections beat real sour cream at store 1101.
 const BLOCKED_SECTIONS =
-  /snack|biscuit|confection|chocolate|soft drink|cordial|energy drink|pet |pet$|dog|cat food|hair|skin|beauty|kitchen|cleaning|laundry|bathroom|baby care|toiletr|manchester/i;
+  /snack|biscuit|confection|chocolate|soft drink|cordial|energy drink|\bpet\b|dog|cat food|hair|skin|beauty|kitchen|cleaning|laundry|bathroom|baby care|toiletr|manchester/i;
 
 // Descriptor words that carry no product identity ("fresh", "chopped", …).
 const STOP_WORDS = new Set([

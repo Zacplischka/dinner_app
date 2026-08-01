@@ -153,6 +153,13 @@ describe('createQuantityLadder', () => {
         matched({ packageSize: 'bunch', priceCents: 300 })
       )
     ).resolves.toMatchObject({ state: 'priced', packs: 1 });
+    // A bunch need against a bunch-sold product divides like any other count.
+    await expect(
+      rungs.resolveLine(
+        { name: 'coriander', amount: 2, unit: 'bunch' },
+        matched({ packageSize: 'bunch', priceCents: 250 })
+      )
+    ).resolves.toMatchObject({ state: 'priced', packs: 2, priceCents: 500 });
   });
 
   it('rung 3: 1 g = 1 mL only for liquid-consistency ingredients', async () => {
