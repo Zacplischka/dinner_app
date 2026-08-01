@@ -17,6 +17,9 @@ export const config = {
     url: process.env.SUPABASE_URL || '',
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
+  spoonacular: {
+    apiKey: process.env.SPOONACULAR_API_KEY,
+  },
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,
     // ADR 0010); the cache self-heals onto whatever store responses name.

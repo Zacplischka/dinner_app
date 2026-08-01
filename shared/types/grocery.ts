@@ -37,6 +37,25 @@ export type ProductMatchOutcome =
   | { status: 'no_product' }
   | { status: 'failed' };
 
+/** The needed amount, normalized to the family the buy decision was made in. */
+export interface NeededAmount {
+  amount: number;
+  unit: 'g' | 'mL' | 'each';
+}
+
+/**
+ * The quantity ladder's verdict for one Ingredient Line (#257): the four #234
+ * states. Priced and Estimated are in the Tally ("needs 250g · buy 1 × 400g
+ * tin"); the other two are principled degrades — a line is never blocked and
+ * never guessed. Estimated is variable-weight pricing: unit price × needed
+ * mass, rendered "≈ … (est.)".
+ */
+export type QuantityResolution =
+  | { state: 'priced'; needs: NeededAmount; packs: number; priceCents: number }
+  | { state: 'estimated'; needs: NeededAmount; priceCents: number }
+  | { state: 'unpriced_matched'; reason: string }
+  | { state: 'unmatched' };
+
 export function woolworthsProductUrl(stockcode: number): string {
   return `https://www.woolworths.com.au/shop/productdetails/${stockcode}`;
 }
