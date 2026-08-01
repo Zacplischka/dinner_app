@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { deriveSearchTerm, translateTerm, US_TO_AU_TERMS } from '../../src/services/usToAuTerms.js';
+import {
+  deriveSearchTerm,
+  sanitiseIngredientName,
+  translateTerm,
+  US_TO_AU_TERMS,
+} from '../../src/services/usToAuTerms.js';
 
 describe('translateTerm', () => {
   it('translates the #231-measured dialect terms before search', () => {
@@ -66,5 +71,32 @@ describe('deriveSearchTerm', () => {
 
   it('passes a name that was nothing but measurement through unchanged', () => {
     expect(deriveSearchTerm('6')).toBe('6');
+  });
+});
+
+// The display-name cleaning (#286): narrower than the search derivation on
+// purpose — a Shopper reads this text, so it keeps its casing and loses only
+// the leading quantity phrase the source embedded, or refuses entirely.
+describe('sanitiseIngredientName', () => {
+  it('strips the embedded leading quantity phrase, keeping the name as written', () => {
+    expect(sanitiseIngredientName('5 pieces chicken breasts')).toBe('chicken breasts');
+    expect(sanitiseIngredientName('6 garlic')).toBe('garlic');
+    expect(sanitiseIngredientName('2 cups Arborio rice')).toBe('Arborio rice');
+    expect(sanitiseIngredientName('400g spaghetti')).toBe('spaghetti');
+  });
+
+  it('leaves a clean name untouched — a count word alone is product identity', () => {
+    expect(sanitiseIngredientName('garlic cloves')).toBe('garlic cloves');
+    expect(sanitiseIngredientName('jjapsahl')).toBe('jjapsahl');
+    expect(sanitiseIngredientName('vegetable oil')).toBe('vegetable oil');
+  });
+
+  it('refuses what it cannot clean rather than guessing', () => {
+    // "oz" eaten out of the middle of mozzarella leaves a stray fragment.
+    expect(sanitiseIngredientName('m zarella cheese')).toBeNull();
+    // A number it cannot place is not provably a quantity phrase.
+    expect(sanitiseIngredientName('chinese 5 spice')).toBeNull();
+    // A name that was nothing but quantity has no product identity at all.
+    expect(sanitiseIngredientName('6')).toBeNull();
   });
 });

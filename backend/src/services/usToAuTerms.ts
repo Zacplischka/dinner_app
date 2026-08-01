@@ -157,3 +157,45 @@ export function deriveSearchTerm(name: string): string {
   while (words[0] === 'of') words.shift();
   return translateTerm(words.join(' ') || name);
 }
+
+// Count words that ride a numeral as one quantity phrase — "5 pieces", "2
+// slices". Standing alone they can be product identity ("garlic cloves"), so
+// they are only ever dropped directly behind a dropped leading number.
+const COUNT_WORDS = new Set([
+  'piece',
+  'pieces',
+  'slice',
+  'slices',
+  'clove',
+  'cloves',
+  'serving',
+  'servings',
+]);
+
+const isNumeric = (word: string) => NUMBER.test(word) || NUMBER_WITH_UNIT.test(word);
+
+/**
+ * The display-name cleaning (#286), deliberately narrower than
+ * `deriveSearchTerm`: a search term may shed every measurement word and
+ * lowercase what is left, but the name a Shopper reads must keep its casing
+ * and lose nothing that could be product identity. So only the leading
+ * quantity phrase Spoonacular embeds ("5 pieces chicken breasts", "6 garlic"
+ * — #287 found the noise arrives in the source data) is stripped. Null is
+ * "cannot clean" — a number the strip could not place, or the single-letter
+ * fragment a unit eaten mid-word leaves behind ("m zarella") — and the caller
+ * falls back to the recipe's own wording rather than silently changing what
+ * is to be bought.
+ */
+export function sanitiseIngredientName(name: string): string | null {
+  const words = name.trim().split(/\s+/);
+  while (words.length > 0 && isNumeric(words[0])) {
+    words.shift();
+    const next = words[0]?.toLowerCase();
+    if (next !== undefined && (COUNT_WORDS.has(next) || MEASUREMENT_WORDS.has(next))) words.shift();
+  }
+  if (words.length === 0) return null;
+  // ponytail: two tells, grown from the observed specimens exactly as the
+  // vocabulary above grows — a number still inside the name, a stray single
+  // letter. Add tells when production shows a noise shape these miss.
+  return words.some((word) => isNumeric(word) || /^[a-z]$/i.test(word)) ? null : words.join(' ');
+}
