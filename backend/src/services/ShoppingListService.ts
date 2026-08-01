@@ -45,10 +45,21 @@ const MINTING_TTL_MS = 120_000;
 const DEFAULT_POLL_MS = 250;
 
 // --- Keyspace ----------------------------------------------------------
-// shoppinglist:{listId}  string: StoredList, JSON, PX 7 days
-//                        — or MINTING while it is being priced, PX 2 minutes
+// shoppinglist:{listId}         string: StoredList, JSON, PX 7 days
+//                               — or MINTING while it is being priced, PX 2 min
+// shoppinglist:{listId}:claims  hash: lineId -> Shopper display name, PXAT the
+//                               same instant the list itself dies
 
 const listKey = (listId: string) => `shoppinglist:${listId}`;
+
+/**
+ * Claims live beside the list, not inside it (#263). The list is one JSON
+ * string, and "first tap wins" over a field of it would be a read-modify-write
+ * race between two taps; a hash makes the race Redis's own — HSETNX decides it
+ * in one round trip, with no lock and no retry loop. It also keeps the frozen
+ * part frozen: nothing that moves is written back over the prices (#239).
+ */
+const claimsKey = (listId: string) => `shoppinglist:${listId}:claims`;
 
 /**
  * Written under the list's own key for as long as it is being priced, so the
@@ -76,10 +87,20 @@ interface StoredList {
   list: ShoppingList;
 }
 
+/** The chained MULTI builder, narrowed to the two commands a Claim needs. */
+interface ClaimMulti {
+  hsetnx(key: string, field: string, value: string): ClaimMulti;
+  pexpireat(key: string, timestampMs: number): ClaimMulti;
+  exec(): Promise<unknown>;
+}
+
 interface RedisLike {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
   del(key: string): Promise<unknown>;
+  hdel(key: string, field: string): Promise<unknown>;
+  hgetall(key: string): Promise<Record<string, string>>;
+  multi(): ClaimMulti;
 }
 
 interface ShoppingListServiceDeps {
@@ -118,6 +139,19 @@ export interface ShoppingListService {
    * wherever it is running, and only for as long as it could still be running.
    */
   readList(listId: string): Promise<ShoppingList | null>;
+  /**
+   * Claims one Ingredient Line for a Shopper, and answers with the list as it
+   * now stands. The Claim is exclusive and the first tap wins, so the line may
+   * come back holding somebody else's name — that is the answer, not an error.
+   * Null when the list or the line names nothing.
+   */
+  claimLine(listId: string, lineId: string, displayName: string): Promise<ShoppingList | null>;
+  /**
+   * Releases the Claim on one Ingredient Line, whoever holds it, and answers
+   * with the list as it now stands. Null when the list or the line names
+   * nothing. Releasing an unclaimed line is a no-op, not a failure.
+   */
+  releaseLine(listId: string, lineId: string): Promise<ShoppingList | null>;
 }
 
 const toProduct = (candidate: ProductCandidate): ShoppingListProduct => ({
@@ -155,6 +189,35 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     }
     return stored.list;
   }
+
+  /** The finished list only: a mint still in flight has no lines to claim. */
+  async function finishedList(listId: string): Promise<ShoppingList | null> {
+    const stored = await readStored(listId);
+    return stored === MINTING ? null : stored;
+  }
+
+  /**
+   * The stored list wearing whoever holds its lines. Claims are never written
+   * back into the record — the record is the frozen part — so every read
+   * assembles the two, and the assembled shape is what the wire ever sees.
+   */
+  async function withClaims(list: ShoppingList): Promise<ShoppingList> {
+    const claims = await deps.redis.hgetall(claimsKey(list.listId));
+    if (Object.keys(claims).length === 0) return list;
+    return {
+      ...list,
+      lines: list.lines.map((line) =>
+        claims[line.id] ? { ...line, claimedBy: claims[line.id] } : line
+      ),
+    };
+  }
+
+  /**
+   * The instant the list dies, which is the instant its Claims must. Set from
+   * the list's own mint time rather than as a fresh TTL, so claiming — like
+   * reading — extends nothing (#229).
+   */
+  const diesAt = (list: ShoppingList) => Date.parse(list.mintedAt) + ttlMs;
 
   async function buildLine(
     index: number,
@@ -327,7 +390,38 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       }
       // A marker still standing is a mint that died: nothing is coming, and
       // the URL says so rather than waiting on it.
-      return stored === MINTING ? null : stored;
+      if (stored === MINTING || !stored) return null;
+      return withClaims(stored);
+    },
+
+    async claimLine(listId, lineId, displayName) {
+      const list = await finishedList(listId);
+      if (!list?.lines.some((line) => line.id === lineId)) return null;
+
+      // The whole race, decided by Redis in one round trip: HSETNX writes only
+      // into an empty field, so the second tap changes nothing and reads the
+      // first tapper's name back out below. The expiry rides along in the same
+      // MULTI — split across two calls, a process dying between them would
+      // leave the Claims with no clock at all, outliving the list they are on.
+      // ponytail: MULTI, not Lua — two commands, one round trip, as claimBuyer
+      // does for the Group Order's own first-tap-wins.
+      await deps.redis
+        .multi()
+        .hsetnx(claimsKey(listId), lineId, displayName)
+        .pexpireat(claimsKey(listId), diesAt(list))
+        .exec();
+      return withClaims(list);
+    },
+
+    async releaseLine(listId, lineId) {
+      const list = await finishedList(listId);
+      if (!list?.lines.some((line) => line.id === lineId)) return null;
+
+      // Any Shopper may release any Claim (#229), so there is nothing to check
+      // it against — a drop-out's lines have to be rescuable by whoever is
+      // still shopping. Taking the freed line is a separate deliberate tap.
+      await deps.redis.hdel(claimsKey(listId), lineId);
+      return withClaims(list);
     },
   };
 }

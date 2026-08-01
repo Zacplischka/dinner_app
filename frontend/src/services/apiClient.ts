@@ -6,6 +6,8 @@ import type {
   Branch,
   DeckEntry,
   Craving,
+  ClaimLineRequest,
+  ClaimLineResponse,
   CreateSessionRequest,
   CreateSessionResponse,
   Friend,
@@ -113,6 +115,34 @@ export async function getRestaurants(sessionCode: string): Promise<DeckEntry[]> 
  */
 export async function getShoppingList(listId: string): Promise<ShoppingListResponse> {
   return request<ShoppingListResponse>(`/lists/${encodeURIComponent(listId)}`);
+}
+
+const claimPath = (listId: string, lineId: string) =>
+  `/lists/${encodeURIComponent(listId)}/lines/${encodeURIComponent(lineId)}/claim`;
+
+/**
+ * Claim one Ingredient Line, as a self-declared name and nothing else (#263).
+ * Answers with the whole list, which may show the line held by whoever tapped
+ * first — that is the answer, not a failure.
+ */
+export async function claimShoppingListLine(
+  listId: string,
+  lineId: string,
+  displayName: string
+): Promise<ClaimLineResponse> {
+  return request<ClaimLineResponse>(claimPath(listId, lineId), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ displayName } satisfies ClaimLineRequest),
+  });
+}
+
+/** Release the Claim on one line, whoever holds it (#229). */
+export async function releaseShoppingListLine(
+  listId: string,
+  lineId: string
+): Promise<ClaimLineResponse> {
+  return request<ClaimLineResponse>(claimPath(listId, lineId), { method: 'DELETE' });
 }
 
 /**

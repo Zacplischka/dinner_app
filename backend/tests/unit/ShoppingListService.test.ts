@@ -48,14 +48,41 @@ const recipe: PooledRecipe = {
 /** A store the service can write to and the test can read back. */
 function fakeRedis() {
   const keys = new Map<string, { value: string; ttlMs: number }>();
+  // The Claims hashes, beside the list strings exactly as in Redis. `diesAt`
+  // is what PEXPIREAT was last told, which is the whole of the TTL story here.
+  const hashes = new Map<string, Map<string, string>>();
+  const diesAt = new Map<string, number>();
+  const hash = (key: string) => hashes.get(key) ?? hashes.set(key, new Map()).get(key)!;
   return {
     keys,
+    hashes,
+    diesAt,
     get: vi.fn(async (key: string) => keys.get(key)?.value ?? null),
     set: vi.fn(async (key: string, value: string, _mode: 'PX', ttlMs: number) => {
       keys.set(key, { value, ttlMs });
       return 'OK' as const;
     }),
     del: vi.fn(async (key: string) => (keys.delete(key) ? 1 : 0)),
+    hdel: vi.fn(async (key: string, field: string) => (hash(key).delete(field) ? 1 : 0)),
+    hgetall: vi.fn(async (key: string) => Object.fromEntries(hash(key))),
+    // The chained MULTI: queued on the way in, run together on exec, exactly
+    // as Redis does — so a test can never see one of the pair without the other.
+    multi: vi.fn(() => {
+      const queued: Array<() => void> = [];
+      const chain = {
+        // Writes only into an empty field — the whole of first-tap-wins.
+        hsetnx(key: string, field: string, value: string) {
+          queued.push(() => void (hash(key).has(field) || hash(key).set(field, value)));
+          return chain;
+        },
+        pexpireat(key: string, at: number) {
+          queued.push(() => void diesAt.set(key, at));
+          return chain;
+        },
+        exec: async () => queued.forEach((run) => run()),
+      };
+      return chain;
+    }),
   };
 }
 
@@ -436,5 +463,125 @@ describe('ShoppingListService.mint', () => {
     await service.readList(listId!);
 
     expect(await service.mint('AB123', '11')).toBe(listId);
+  });
+});
+
+// Claiming (#263). The exclusivity is Redis's — HSETNX decides the race in one
+// round trip — so what this file owns is what the service builds on top of it:
+// which lines can be claimed, whose name comes back, and the clock the Claims
+// keep.
+describe('ShoppingListService claims', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /** A minted list, ready to be claimed on. */
+  async function minted() {
+    const built = build();
+    const listId = (await built.service.mint('AB123', '11'))!;
+    await built.service.readList(listId);
+    return { ...built, listId };
+  }
+
+  it('attaches the Shopper to the line they claimed, and nothing else', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.claimLine(listId, '0', 'Alice');
+
+    expect(list?.lines[0].claimedBy).toBe('Alice');
+    expect(list?.lines[1].claimedBy).toBeUndefined();
+  });
+
+  it('gives the second tapper the first tapper name, not the line', async () => {
+    const { service, listId } = await minted();
+    await service.claimLine(listId, '0', 'Alice');
+
+    const list = await service.claimLine(listId, '0', 'Bob');
+
+    expect(list?.lines[0].claimedBy).toBe('Alice');
+  });
+
+  it('resolves two simultaneous taps to exactly one Claim', async () => {
+    const { service, listId } = await minted();
+
+    const [first, second] = await Promise.all([
+      service.claimLine(listId, '0', 'Alice'),
+      service.claimLine(listId, '0', 'Bob'),
+    ]);
+
+    expect(first?.lines[0].claimedBy).toBe(second?.lines[0].claimedBy);
+    expect(['Alice', 'Bob']).toContain(first?.lines[0].claimedBy);
+  });
+
+  it('lets any Shopper release any Claim, own or not', async () => {
+    const { service, listId } = await minted();
+    await service.claimLine(listId, '0', 'Alice');
+
+    const list = await service.releaseLine(listId, '0');
+
+    expect(list?.lines[0].claimedBy).toBeUndefined();
+  });
+
+  it('leaves a released line free for whoever deliberately takes it next', async () => {
+    const { service, listId } = await minted();
+    await service.claimLine(listId, '0', 'Alice');
+    await service.releaseLine(listId, '0');
+
+    const list = await service.claimLine(listId, '0', 'Bob');
+
+    expect(list?.lines[0].claimedBy).toBe('Bob');
+  });
+
+  it('claims a Staple like any other line', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.claimLine(listId, '1', 'Alice');
+
+    expect(list?.lines[1]).toMatchObject({ staple: true, claimedBy: 'Alice' });
+  });
+
+  it('carries the Claims into every later read of the list', async () => {
+    const { service, listId } = await minted();
+    await service.claimLine(listId, '0', 'Alice');
+
+    expect((await service.readList(listId))?.lines[0].claimedBy).toBe('Alice');
+  });
+
+  it('dies with the list it is on, and claiming extends nothing', async () => {
+    const { service, redis, listId } = await minted();
+
+    await service.claimLine(listId, '0', 'Alice');
+
+    // Seven days from the mint, not from the tap: a list worked all week is
+    // still gone on the day the mint promised (#229).
+    expect(redis.diesAt.get(`shoppinglist:${listId}:claims`)).toBe(
+      Date.parse('2026-08-01T10:00:00.000Z') + SHOPPING_LIST_TTL_MS
+    );
+  });
+
+  it('names nothing for a list or a line that does not exist', async () => {
+    const { service, listId } = await minted();
+
+    expect(await service.claimLine(listId, '99', 'Alice')).toBeNull();
+    expect(await service.releaseLine(listId, '99')).toBeNull();
+    expect(
+      await service.claimLine('00000000-0000-4000-8000-000000009999', '0', 'Alice')
+    ).toBeNull();
+    expect(await service.releaseLine('00000000-0000-4000-8000-000000009999', '0')).toBeNull();
+  });
+
+  it('will not claim on a list still being priced', async () => {
+    const { service, mintGate } = build({ holdMint: true });
+    const listId = (await service.mint('AB123', '11'))!;
+
+    // The marker stands under the key, but there are no lines yet to claim.
+    expect(await service.claimLine(listId, '0', 'Alice')).toBeNull();
+    mintGate.open();
+  });
+
+  it('takes a release of an unclaimed line as the no-op it is', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.releaseLine(listId, '0');
+
+    expect(list?.lines[0].claimedBy).toBeUndefined();
   });
 });
