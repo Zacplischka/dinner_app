@@ -13,6 +13,7 @@ import type {
   QuantityResolution,
   ShoppingList,
   ShoppingListLine,
+  ShoppingListLineState,
   ShoppingListProduct,
 } from '@dinder/shared/types';
 import { logger } from '../logger.js';
@@ -49,6 +50,8 @@ const DEFAULT_POLL_MS = 250;
 //                               — or MINTING while it is being priced, PX 2 min
 // shoppinglist:{listId}:claims  hash: lineId -> Shopper display name, PXAT the
 //                               same instant the list itself dies
+// shoppinglist:{listId}:swaps   hash: lineId -> ShoppingListLineState, JSON,
+//                               on the same clock as the Claims
 
 const listKey = (listId: string) => `shoppinglist:${listId}`;
 
@@ -60,6 +63,16 @@ const listKey = (listId: string) => `shoppinglist:${listId}`;
  * part frozen: nothing that moves is written back over the prices (#239).
  */
 const claimsKey = (listId: string) => `shoppinglist:${listId}:claims`;
+
+/**
+ * A swap corrects a line's #234 state, and it lives beside the minted record
+ * for the same reason a Claim does (#264): the record is the frozen part, and
+ * rewriting one line inside one JSON string would be a read-modify-write over
+ * everybody else's Claims and swaps. The correction is not a re-price of the
+ * list — every candidate here was fetched by the same search, at mint, so a
+ * swapped line is still costed at the prices the list promised.
+ */
+const swapsKey = (listId: string) => `shoppinglist:${listId}:swaps`;
 
 /**
  * Written under the list's own key for as long as it is being priced, so the
@@ -82,15 +95,31 @@ const MINTING = 'minting';
  */
 const STORED_VERSION = 1;
 
+/**
+ * A line's Product Match as minted — the whole top-5 the one search returned,
+ * not just the product that won — beside the scaled amount the ladder was
+ * given. Together they are everything a swap needs to re-price without asking
+ * Woolworths anything. Kept off the wire deliberately: `cupString` and a
+ * candidate's own price are the ladder's inputs, not things a Shopper reads,
+ * and `runnersUp` is the picker's view of the same five.
+ */
+interface LineMatch {
+  ingredient: IngredientAmount;
+  candidates: ProductCandidate[];
+}
+
 interface StoredList {
   version: number;
   list: ShoppingList;
+  /** By line id, for matched lines only. Absent on a list minted before #264. */
+  matches?: Record<string, LineMatch>;
 }
 
-/** The chained MULTI builder, narrowed to the two commands a Claim needs. */
-interface ClaimMulti {
-  hsetnx(key: string, field: string, value: string): ClaimMulti;
-  pexpireat(key: string, timestampMs: number): ClaimMulti;
+/** The chained MULTI builder, narrowed to the commands a Claim or swap needs. */
+interface ListMulti {
+  hsetnx(key: string, field: string, value: string): ListMulti;
+  hset(key: string, field: string, value: string): ListMulti;
+  pexpireat(key: string, timestampMs: number): ListMulti;
   exec(): Promise<unknown>;
 }
 
@@ -100,7 +129,7 @@ interface RedisLike {
   del(key: string): Promise<unknown>;
   hdel(key: string, field: string): Promise<unknown>;
   hgetall(key: string): Promise<Record<string, string>>;
-  multi(): ClaimMulti;
+  multi(): ListMulti;
 }
 
 interface ShoppingListServiceDeps {
@@ -152,6 +181,14 @@ export interface ShoppingListService {
    * nothing. Releasing an unclaimed line is a no-op, not a failure.
    */
   releaseLine(listId: string, lineId: string): Promise<ShoppingList | null>;
+  /**
+   * Swaps one Ingredient Line onto another of the candidates the Matcher
+   * already fetched, re-prices it through the ladder, and answers with the list
+   * as it now stands — visible to everyone holding the URL. A null Stockcode is
+   * "none of these": the line demotes to Unmatched and drops out of every
+   * count. Null when the list, the line, or the Stockcode names nothing.
+   */
+  swapLine(listId: string, lineId: string, stockcode: number | null): Promise<ShoppingList | null>;
 }
 
 const toProduct = (candidate: ProductCandidate): ShoppingListProduct => ({
@@ -159,6 +196,63 @@ const toProduct = (candidate: ProductCandidate): ShoppingListProduct => ({
   name: candidate.name,
   packageSize: candidate.packageSize,
 });
+
+/**
+ * The candidates a line may actually be swapped onto. Woolworths' availability
+ * flag only *penalises* a product in the ranking (#245), so one the store does
+ * not have can sit in a stored top-5 — and offering it would price the line
+ * against something that is not on the shelf. Offered and accepted read the
+ * same list, so a picker gone stale cannot swap onto one either.
+ */
+const pickable = (match: LineMatch | undefined): ProductCandidate[] =>
+  (match?.candidates ?? []).filter((candidate) => candidate.available);
+
+/**
+ * A swap blob this code did not write — a foreign shape, a half-written value —
+ * must not take the whole list down on every read for the rest of its 7 days.
+ * The line falls back to the record's own state, which is the same refusal
+ * `readStored` makes for a record it does not recognise.
+ */
+function readSwap(listId: string, lineId: string, raw: string): ShoppingListLineState | undefined {
+  try {
+    return JSON.parse(raw) as ShoppingListLineState;
+  } catch (error) {
+    logger.warn({ err: error, listId, lineId }, 'Unreadable swap on Ingredient Line');
+    return undefined;
+  }
+}
+
+/**
+ * The ladder's verdict as the state the line renders in. Shared by mint and by
+ * a swap, so a corrected line reads exactly like one that matched this way the
+ * first time — the whole point of the picker is that the cure leaves no trace.
+ */
+function toLineState(
+  resolution: QuantityResolution,
+  candidate: ProductCandidate,
+  searchTerm: string
+): ShoppingListLineState {
+  if (resolution.state === 'unmatched') return { state: 'unmatched', searchTerm };
+  const product = toProduct(candidate);
+  if (resolution.state === 'priced') {
+    return {
+      state: 'priced',
+      needs: resolution.needs,
+      packs: resolution.packs,
+      priceCents: resolution.priceCents,
+      product,
+    };
+  }
+  if (resolution.state === 'estimated') {
+    return {
+      state: 'estimated',
+      needs: resolution.needs,
+      priceCents: resolution.priceCents,
+      product,
+    };
+  }
+  return { state: 'unpriced_matched', product };
+}
 
 /**
  * The Ingredient Line's recipe text at its scaled amount — "250 g chicken
@@ -177,8 +271,8 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
   const now = deps.now ?? Date.now;
   const pollMs = deps.pollMs ?? DEFAULT_POLL_MS;
 
-  /** The list, the marker saying one is on its way, or nothing at all. */
-  async function readStored(listId: string): Promise<ShoppingList | typeof MINTING | null> {
+  /** The record, the marker saying one is on its way, or nothing at all. */
+  async function readStored(listId: string): Promise<StoredList | typeof MINTING | null> {
     const raw = await deps.redis.get(listKey(listId));
     if (!raw) return null;
     if (raw === MINTING) return MINTING;
@@ -187,28 +281,52 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       logger.warn({ listId, version: stored.version }, 'Shopping List written by another shape');
       return null;
     }
-    return stored.list;
+    return stored as StoredList;
   }
 
-  /** The finished list only: a mint still in flight has no lines to claim. */
-  async function finishedList(listId: string): Promise<ShoppingList | null> {
+  /** The finished record only: a mint still in flight has no lines to work on. */
+  async function finished(listId: string): Promise<StoredList | null> {
     const stored = await readStored(listId);
     return stored === MINTING ? null : stored;
   }
 
   /**
-   * The stored list wearing whoever holds its lines. Claims are never written
+   * The stored list wearing everything that has moved on it since: whoever
+   * holds its lines, and any line a Shopper has corrected. Neither is written
    * back into the record — the record is the frozen part — so every read
-   * assembles the two, and the assembled shape is what the wire ever sees.
+   * assembles the three, and the assembled shape is what the wire ever sees.
    */
-  async function withClaims(list: ShoppingList): Promise<ShoppingList> {
-    const claims = await deps.redis.hgetall(claimsKey(list.listId));
-    if (Object.keys(claims).length === 0) return list;
+  async function assemble(stored: StoredList): Promise<ShoppingList> {
+    const { list } = stored;
+    const [claims, swaps] = await Promise.all([
+      deps.redis.hgetall(claimsKey(list.listId)),
+      deps.redis.hgetall(swapsKey(list.listId)),
+    ]);
     return {
       ...list,
-      lines: list.lines.map((line) =>
-        claims[line.id] ? { ...line, claimedBy: claims[line.id] } : line
-      ),
+      lines: list.lines.map((line) => {
+        const swapped = swaps[line.id] ? readSwap(list.listId, line.id, swaps[line.id]) : undefined;
+        // The swap replaces what the line's state says and nothing else: the
+        // id, the recipe text, the Staple flag and the Claim all stay put.
+        const { id, text, staple } = line;
+        const current: ShoppingListLine = swapped ? { id, text, staple, ...swapped } : line;
+        const match = stored.matches?.[line.id];
+        // The picker offers the other four — never the one already on the line.
+        // Present-but-empty on a search that found a single product, because
+        // the field is what says this line *has* a picker, and even an empty
+        // one still offers "none of these" (#264).
+        const runnersUp = pickable(match)
+          .filter(
+            (candidate) =>
+              !('product' in current) || candidate.stockcode !== current.product.stockcode
+          )
+          .map(toProduct);
+        return {
+          ...current,
+          ...(match ? { runnersUp } : {}),
+          ...(claims[line.id] ? { claimedBy: claims[line.id] } : {}),
+        };
+      }),
     };
   }
 
@@ -223,9 +341,9 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     index: number,
     ingredient: PooledIngredient,
     factor: number
-  ): Promise<ShoppingListLine> {
+  ): Promise<{ line: ShoppingListLine; match?: LineMatch }> {
     const scaled = ingredient.amount * factor;
-    const line = {
+    const fields = {
       id: String(index),
       text: lineText(scaled, ingredient.unit, ingredient.name),
       staple: isStaple(ingredient.name),
@@ -233,43 +351,30 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     // The Retailer search is what an Unmatched line offers instead of a product,
     // so it asks in the local dialect the Matcher would have used (#241).
     const searchTerm = translateTerm(ingredient.name);
+    const unmatched = { line: { ...fields, state: 'unmatched', searchTerm } as ShoppingListLine };
 
     // A Staple is assumed already at home and counted by nothing, so it never
     // costs a Retailer lookup — it renders as its own text, still shoppable.
-    if (line.staple) return { ...line, state: 'unmatched', searchTerm };
+    if (fields.staple) return unmatched;
 
     const outcome = await deps.matchProduct(ingredient.name);
-    const resolution = await deps.resolveLine(
-      // A zero or missing amount is not a quantity, and the ladder is explicit
-      // that null degrades rather than pricing a line nobody can shop.
-      { name: ingredient.name, amount: scaled > 0 ? scaled : null, unit: ingredient.unit },
-      outcome
-    );
-    if (resolution.state === 'unmatched' || outcome.status !== 'matched') {
-      return { ...line, state: 'unmatched', searchTerm };
-    }
+    // A zero or missing amount is not a quantity, and the ladder is explicit
+    // that null degrades rather than pricing a line nobody can shop.
+    const amount: IngredientAmount = {
+      name: ingredient.name,
+      amount: scaled > 0 ? scaled : null,
+      unit: ingredient.unit,
+    };
+    const resolution = await deps.resolveLine(amount, outcome);
+    if (outcome.status !== 'matched') return unmatched;
 
-    const product = toProduct(outcome.match);
-    if (resolution.state === 'priced') {
-      return {
-        ...line,
-        state: 'priced',
-        needs: resolution.needs,
-        packs: resolution.packs,
-        priceCents: resolution.priceCents,
-        product,
-      };
-    }
-    if (resolution.state === 'estimated') {
-      return {
-        ...line,
-        state: 'estimated',
-        needs: resolution.needs,
-        priceCents: resolution.priceCents,
-        product,
-      };
-    }
-    return { ...line, state: 'unpriced_matched', product };
+    return {
+      line: { ...fields, ...toLineState(resolution, outcome.match, searchTerm) },
+      // The whole top-5 the one search paid for, written down beside the line
+      // so the swap picker never costs a second one (#264). The scaled amount
+      // rides along because re-pricing needs the same input the ladder had.
+      match: { ingredient: amount, candidates: [outcome.match, ...outcome.runnersUp] },
+    };
   }
 
   async function build(
@@ -286,8 +391,11 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     // global politeness queue anyway, so firing them together buys no time and
     // costs the clarity of a plain loop.
     const lines: ShoppingListLine[] = [];
+    const matches: Record<string, LineMatch> = {};
     for (const [index, ingredient] of recipe.ingredients.entries()) {
-      lines.push(await buildLine(index, ingredient, factor));
+      const built = await buildLine(index, ingredient, factor);
+      lines.push(built.line);
+      if (built.match) matches[built.line.id] = built.match;
     }
 
     const list: ShoppingList = {
@@ -307,7 +415,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     };
     await deps.redis.set(
       listKey(listId),
-      JSON.stringify({ version: STORED_VERSION, list } satisfies StoredList),
+      JSON.stringify({ version: STORED_VERSION, list, matches } satisfies StoredList),
       'PX',
       ttlMs
     );
@@ -391,12 +499,13 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       // A marker still standing is a mint that died: nothing is coming, and
       // the URL says so rather than waiting on it.
       if (stored === MINTING || !stored) return null;
-      return withClaims(stored);
+      return assemble(stored);
     },
 
     async claimLine(listId, lineId, displayName) {
-      const list = await finishedList(listId);
-      if (!list?.lines.some((line) => line.id === lineId)) return null;
+      const stored = await finished(listId);
+      if (!stored?.list.lines.some((line) => line.id === lineId)) return null;
+      const { list } = stored;
 
       // The whole race, decided by Redis in one round trip: HSETNX writes only
       // into an empty field, so the second tap changes nothing and reads the
@@ -410,18 +519,63 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
         .hsetnx(claimsKey(listId), lineId, displayName)
         .pexpireat(claimsKey(listId), diesAt(list))
         .exec();
-      return withClaims(list);
+      return assemble(stored);
     },
 
     async releaseLine(listId, lineId) {
-      const list = await finishedList(listId);
-      if (!list?.lines.some((line) => line.id === lineId)) return null;
+      const stored = await finished(listId);
+      if (!stored?.list.lines.some((line) => line.id === lineId)) return null;
 
       // Any Shopper may release any Claim (#229), so there is nothing to check
       // it against — a drop-out's lines have to be rescuable by whoever is
       // still shopping. Taking the freed line is a separate deliberate tap.
       await deps.redis.hdel(claimsKey(listId), lineId);
-      return withClaims(list);
+      return assemble(stored);
+    },
+
+    async swapLine(listId, lineId, stockcode) {
+      const stored = await finished(listId);
+      // The line first, and never the record's own key lookup alone: `matches`
+      // comes back from JSON.parse wearing Object.prototype, so a lineId of
+      // "toString" would read as a live entry and blow up on it. A lineId names
+      // a line or it names nothing.
+      if (!stored?.list.lines.some((line) => line.id === lineId)) return null;
+      // No Match behind a line is no picker in front of it: a Staple, a clean
+      // miss, or a list minted before #264 has nothing to swap between.
+      const match = stored.matches?.[lineId];
+      if (!match) return null;
+
+      // The Retailer search a demoted line falls back to is the same one it
+      // would have had if the Matcher had found nothing in the first place.
+      const searchTerm = translateTerm(match.ingredient.name);
+      let state: ShoppingListLineState;
+      if (stockcode === null) {
+        // "None of these": Unmatched, out of the tally and every Tally with it.
+        state = { state: 'unmatched', searchTerm };
+      } else {
+        // Only the ones this line's own search fetched and the store actually
+        // has — a Stockcode from anywhere else would be a Retailer lookup
+        // wearing a swap's clothes, and an unavailable one prices a line
+        // against nothing on the shelf.
+        const candidate = pickable(match).find((entry) => entry.stockcode === stockcode);
+        if (!candidate) return null;
+        const resolution = await deps.resolveLine(match.ingredient, {
+          status: 'matched',
+          match: candidate,
+          runnersUp: [],
+        });
+        state = toLineState(resolution, candidate, searchTerm);
+      }
+
+      // HSET, not HSETNX: a swap is a correction, not a race — the last Shopper
+      // to look at the line is the one who has seen the product. The expiry
+      // rides along for the same reason the Claims' does.
+      await deps.redis
+        .multi()
+        .hset(swapsKey(listId), lineId, JSON.stringify(state))
+        .pexpireat(swapsKey(listId), diesAt(stored.list))
+        .exec();
+      return assemble(stored);
     },
   };
 }

@@ -105,33 +105,50 @@ interface ShoppingListLineFields {
    * Additive (ADR 0007) — a list minted before Claims existed simply has none.
    */
   claimedBy?: string;
+  /**
+   * The swap picker's other four (#264): the runner-up candidates the Product
+   * Matcher already fetched at mint, minus whichever one this line currently
+   * names and minus any the store does not have. No Retailer call ever mints
+   * these — they are the top-5 the one search paid for, written down.
+   *
+   * Present, empty included, on exactly the lines that have a picker; absent on
+   * a line that never had a Match to have runners-up for — a Staple, a clean
+   * miss, a list minted before #264. Empty is not absent: a search that found a
+   * single product still leaves the Shopper "none of these".
+   */
+  runnersUp?: ShoppingListProduct[];
 }
+
+/**
+ * Everything a line's #234 state says, and nothing it says about identity —
+ * the part a swap replaces wholesale, leaving the id, the text and the Claim
+ * exactly where they were.
+ */
+export type ShoppingListLineState =
+  | {
+      state: 'priced';
+      needs: NeededAmount;
+      packs: number;
+      priceCents: number;
+      product: ShoppingListProduct;
+    }
+  | { state: 'estimated'; needs: NeededAmount; priceCents: number; product: ShoppingListProduct }
+  | { state: 'unpriced_matched'; product: ShoppingListProduct }
+  /**
+   * No product: the recipe text plus a Retailer search for this term. Read
+   * it as the rendering #234 specifies, not as a claim about the Retailer's
+   * catalogue — a Staple takes this state without ever having been asked,
+   * because it is outside every count and a lookup for it would price
+   * nothing. `staple` is what tells the two apart.
+   */
+  | { state: 'unmatched'; searchTerm: string };
 
 /**
  * One Ingredient Line on the wire, in exactly one of #234's four states. All
  * four are first-class: a line is never dropped, never blocked, never guessed.
  * Priced and Estimated are in the tally; the other two are principled degrades.
  */
-export type ShoppingListLine = ShoppingListLineFields &
-  (
-    | {
-        state: 'priced';
-        needs: NeededAmount;
-        packs: number;
-        priceCents: number;
-        product: ShoppingListProduct;
-      }
-    | { state: 'estimated'; needs: NeededAmount; priceCents: number; product: ShoppingListProduct }
-    | { state: 'unpriced_matched'; product: ShoppingListProduct }
-    /**
-     * No product: the recipe text plus a Retailer search for this term. Read
-     * it as the rendering #234 specifies, not as a claim about the Retailer's
-     * catalogue — a Staple takes this state without ever having been asked,
-     * because it is outside every count and a lookup for it would price
-     * nothing. `staple` is what tells the two apart.
-     */
-    | { state: 'unmatched'; searchTerm: string }
-  );
+export type ShoppingListLine = ShoppingListLineFields & ShoppingListLineState;
 
 export interface ShoppingList {
   listId: string;
@@ -183,6 +200,20 @@ export const MAX_SHOPPER_NAME = 50;
  * an error: it answers 200 with the winner's name on the line (#229).
  */
 export type ClaimLineResponse = ShoppingList;
+
+/**
+ * POST /api/lists/:listId/lines/:lineId/swap — the whole body (#264). The
+ * Stockcode names one of the line's own `runnersUp`; `null` is "none of
+ * these", which demotes the line to Unmatched. Nothing else is accepted — a
+ * swap picks from what the one search already fetched, so it can never send
+ * the list back to the Retailer.
+ */
+export interface SwapLineRequest {
+  stockcode: number | null;
+}
+
+/** A swap answers with the whole list, at its re-priced state — as Claims do. */
+export type SwapLineResponse = ShoppingList;
 
 export interface ShoppingListTotal {
   cents: number;

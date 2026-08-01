@@ -10,6 +10,8 @@ import type {
   ClaimLineRequest,
   ClaimLineResponse,
   ShoppingListResponse,
+  SwapLineRequest,
+  SwapLineResponse,
 } from '@dinder/shared/types';
 import { DomainError } from '../services/DomainError.js';
 import type { ShoppingListService } from '../services/ShoppingListService.js';
@@ -87,6 +89,27 @@ export function createListsRouter(service: ShoppingListService) {
 
       req.log?.info({ listId, lineId }, 'Released Claim on Ingredient Line');
       return res.status(200).json(list satisfies ClaimLineResponse);
+    })
+  );
+
+  router.post(
+    '/:listId/lines/:lineId/swap',
+    asyncHandler(async (req, res) => {
+      const { listId, lineId } = req.params;
+      // A Stockcode names one of the candidates the line already offered, and
+      // null is "none of these". Nothing else is a swap: a free-form product id
+      // would be a Retailer lookup asking to be let in through this door, and
+      // whether *this* line offered *this* Stockcode is the service's to say.
+      const { stockcode } = (req.body ?? {}) as Partial<SwapLineRequest>;
+      if (stockcode !== null && !(typeof stockcode === 'number' && Number.isInteger(stockcode))) {
+        throw new DomainError('VALIDATION_ERROR', 'A swap needs a Stockcode, or null for none');
+      }
+
+      const list = LIST_ID.test(listId) ? await service.swapLine(listId, lineId, stockcode) : null;
+      if (!list) throw notFound();
+
+      req.log?.info({ listId, lineId, stockcode }, 'Swapped Ingredient Line');
+      return res.status(200).json(list satisfies SwapLineResponse);
     })
   );
 
