@@ -5,12 +5,11 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BRANCHES, type Branch } from '@dinder/shared/types';
-import { useSessionStore } from '../stores/sessionStore';
-import { useFriendsStore } from '../stores/friendsStore';
 import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle from '../components/LocationModeToggle';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
-import { createSession, reverseGeocode } from '../services/apiClient';
+import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
+import { reverseGeocode } from '../services/apiClient';
 import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
 
@@ -30,7 +29,6 @@ export default function CreateSessionPage() {
     ? (branchParam as Branch)
     : undefined;
   const [hostName, setHostName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isResolvingArea, setIsResolvingArea] = useState(false);
   const [error, setError] = useState('');
@@ -39,16 +37,7 @@ export default function CreateSessionPage() {
   const [manualQuery, setManualQuery] = useState('');
   const [searchRadiusKm, setSearchRadiusKm] = useState<number>(8);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
-  const {
-    setSessionCode,
-    setLocation: setStoreLocation,
-    setSearchRadiusMiles: setStoreRadius,
-    setCurrentUserId,
-    setConnectionStatus,
-    setSessionStatus,
-    resetSelections,
-  } = useSessionStore();
-  const { inviteFriendsToSession } = useFriendsStore();
+  const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
 
   const busy = isLoading || isGettingLocation || isResolvingArea;
 
@@ -134,44 +123,15 @@ export default function CreateSessionPage() {
       return;
     }
 
-    setIsLoading(true);
-
     const searchRadiusMiles = toBackendRadiusMiles(searchRadiusKm);
 
-    try {
-      const [response, { waitForConnection, joinSession }] = await Promise.all([
-        createSession(hostName.trim(), location, searchRadiusMiles, branch),
-        import('../services/socketBindings'),
-      ]);
-
-      setSessionCode(response.sessionCode);
-      setStoreLocation(location);
-      setStoreRadius(searchRadiusMiles);
-      resetSelections();
-      setSessionStatus('waiting');
-
-      // Connect WebSocket and wait for connection, then join as host
-      await waitForConnection();
-      const ack = await joinSession(response.sessionCode, hostName.trim());
-
-      if (ack.success) {
-        setCurrentUserId(ack.data.participantId);
-        setConnectionStatus(true);
-
-        // Invite selected friends if any
-        if (selectedFriendIds.size > 0) {
-          await inviteFriendsToSession(response.sessionCode, Array.from(selectedFriendIds));
-        }
-
-        navigate(`/session/${response.sessionCode}`);
-      } else {
-        setError(ack.error.message);
-        setIsLoading(false);
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create session');
-      setIsLoading(false);
-    }
+    setError(
+      (await createAndJoin(
+        hostName.trim(),
+        { location, searchRadiusMiles, branch },
+        selectedFriendIds
+      )) ?? ''
+    );
   };
 
   return (

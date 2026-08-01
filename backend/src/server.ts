@@ -17,6 +17,8 @@ import { createRedirectRouter } from './api/redirect.js';
 import { createGeocodeRouter } from './api/geocode.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
+import { createRecipePoolService } from './services/RecipePoolService.js';
+import { createSpoonacularClient } from './services/spoonacularClient.js';
 import { createFriendsService } from './services/FriendsService.js';
 import { createComparisonService } from './services/ComparisonService.js';
 import { createOrderService } from './services/OrderService.js';
@@ -51,9 +53,15 @@ const allowedOrigins = [
 // Composition root: the only place production stores and services are
 // constructed. Everything else receives them by injection.
 const sessionStore = createSessionStore(redis);
+const recipePoolService = createRecipePoolService({
+  redis,
+  // Late-bound fetch: the boundary tests fake it, and the client is built once.
+  client: createSpoonacularClient((...args) => fetch(...args)),
+});
 const sessionService = createSessionService({
   store: sessionStore,
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
+  dealRecipeDeck: (craving) => recipePoolService.dealDeck(craving),
 });
 const friendsService = createFriendsService({ store: friendsStore });
 const comparisonService = createComparisonService({

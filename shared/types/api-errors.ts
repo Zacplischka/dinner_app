@@ -10,6 +10,10 @@ export const API_ERROR_CODES = [
   'DISPLAY_NAME_TAKEN',
   'SESSION_ALREADY_STARTED',
   'NO_RESTAURANTS_FOUND',
+  // The Cook Branch's counterpart: a Craving that pools no Recipes. Its own
+  // code because Restaurant and Recipe are distinct words (CONTEXT.md), and
+  // additive because no client branches on it yet (ADR 0007).
+  'NO_RECIPES_FOUND',
   'VALIDATION_ERROR',
   'ALREADY_SUBMITTED',
   'NOT_IN_SESSION',

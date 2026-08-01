@@ -40,6 +40,30 @@ function MatchHero({ photoUrl }: { photoUrl: string }) {
   );
 }
 
+// The Cook ending (#259): the crowned Recipe, outright. Title and image are
+// all a Recipe carries, and there is no second chooser — no other-matches list,
+// no delivery links, nothing to compare. The Shopping List is the next slice.
+function RecipeCrown({
+  recipe,
+  reason,
+}: {
+  recipe: { name: string; photoUrl?: string };
+  reason: string;
+}) {
+  return (
+    <div
+      data-match-card
+      data-recipe-crown
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+    >
+      {recipe.photoUrl && <MatchHero photoUrl={recipe.photoUrl} />}
+      <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">TONIGHT&rsquo;S COOK</p>
+      <p className="text-lg font-semibold text-text">{recipe.name}</p>
+      <p className="text-sm text-muted mt-1">{reason}</p>
+    </div>
+  );
+}
+
 // priceLevel is omitted from the data when unknown; 0 means genuinely free.
 const formatPriceLevel = (level: number): string => {
   if (level === 0) return 'Free';
@@ -233,16 +257,27 @@ export default function ResultsPage() {
   const [error, setError] = useState('');
   const toast = useToast();
 
-  // This is the restaurant ending, and a Recipe is filtered away here rather
-  // than rendered — see isRestaurant before routing a Cook Session at it.
+  // Everything below the crown — other matches, Near Misses, delivery links —
+  // is restaurant chrome, so Recipes are filtered out of it. The crown itself
+  // renders either kind: a Cook Session ends at the crowned Recipe (#259).
   const overlappingOptions = matchedEntries.filter(isRestaurant);
   const restaurants = deckEntries.filter(isRestaurant);
   const topPick =
     crownedEntry && isRestaurant(crownedEntry.restaurant)
       ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
       : undefined;
+  const crownedRecipe =
+    crownedEntry && !isRestaurant(crownedEntry.restaurant)
+      ? { ...crownedEntry, recipe: crownedEntry.restaurant }
+      : undefined;
 
-  const hasOverlap = overlappingOptions.length > 0;
+  // A Deck never mixes kinds, so either signal answers "is this a Cook
+  // Session?" — the crown covers a Participant whose local Deck is empty.
+  const isCookDeck = Boolean(crownedRecipe) || deckEntries.some((entry) => !isRestaurant(entry));
+
+  // Kind-agnostic: for a restaurant Deck this is exactly overlappingOptions,
+  // and for a Recipe Deck it is the Match the celebration should fire on.
+  const hasOverlap = matchedEntries.length > 0;
 
   // An older backend sends no topPick; crown the best-rated Match rather than branching the UI.
   const fallbackCrown = [...overlappingOptions].sort(
@@ -279,8 +314,15 @@ export default function ResultsPage() {
     restaurantNameMap.set(o.placeId, o.name);
   });
 
+  // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
+  // and the tier's counts read off the same "of" the crown does.
+  const crownPlaceId = pick?.restaurant.placeId ?? crownedRecipe?.recipe.placeId;
+  const crownOf = pick?.of ?? crownedRecipe?.of ?? participants.length;
+
   // Near Misses (#72): the all-but-one tier, reduced client-side from the
-  // Selections already in the results payload. Empty Match, 3+ Participants only.
+  // Selections already in the results payload. Empty Match, 3+ Participants
+  // only. A Recipe can be a Near Miss too (CONTEXT.md) — only the delivery
+  // actions on the card are restaurant chrome.
   const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
   if (!hasOverlap && participants.length >= 3) {
     const selectionCounts = new Map<string, number>();
@@ -292,7 +334,7 @@ export default function ResultsPage() {
     const restaurantsById = new Map(restaurants.map((r) => [r.placeId, r]));
     selectionCounts.forEach((count, placeId) => {
       if (count !== participants.length - 1) return;
-      if (pick && placeId === pick.restaurant.placeId) return;
+      if (placeId === crownPlaceId) return;
       nearMisses.push(
         restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
       );
@@ -351,18 +393,32 @@ export default function ResultsPage() {
       .catch(() => toast.error('Could not copy link'));
   };
 
-  // The crown's one-line reason (top-pick.md's copy table).
-  const pickReason = (crowned: NonNullable<typeof pick>): string => {
-    if (crowned.likedBy === crowned.of && overlappingOptions.length === 1) {
+  // The crown's one-line reason (top-pick.md's copy table). One cascade for
+  // both kinds — only the two rungs that name the middle tiebreak differ, and
+  // there is nothing "nearby" about a dish you cook.
+  const crownReason = (
+    crowned: { likedBy: number; of: number },
+    words: { bestOfMany: string; noneSelected: string }
+  ): string => {
+    if (crowned.likedBy === crowned.of && matchedEntries.length === 1) {
       return 'Everyone swiped yes on this one.';
     }
-    if (crowned.likedBy === crowned.of && overlappingOptions.length > 1) {
-      return `Everyone swiped yes — best rated of your ${overlappingOptions.length} matches.`;
+    if (crowned.likedBy === crowned.of && matchedEntries.length > 1) {
+      return `Everyone swiped yes — ${words.bestOfMany} of your ${matchedEntries.length} matches.`;
     }
     if (crowned.likedBy > 0 && crowned.likedBy < crowned.of) {
       return `${crowned.likedBy} of ${crowned.of} swiped yes — the closest you got.`;
     }
-    return "Nobody swiped yes, so here's the highest rated nearby.";
+    return words.noneSelected;
+  };
+
+  const restaurantWords = {
+    bestOfMany: 'best rated',
+    noneSelected: "Nobody swiped yes, so here's the highest rated nearby.",
+  };
+  const recipeWords = {
+    bestOfMany: 'the most popular',
+    noneSelected: "Nobody swiped yes, so here's the most popular one.",
   };
 
   return (
@@ -414,14 +470,18 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {pick ? (
+        {crownedRecipe ? (
+          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+            <RecipeCrown recipe={crownedRecipe.recipe} reason={crownReason(crownedRecipe, recipeWords)} />
+          </div>
+        ) : pick ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
             {/* The crowned Restaurant is the dominant surface — no wrapper card
                 competing with it. Warm glow is reflected light from the celebration. */}
             <MatchCard
               restaurant={pick.restaurant}
               eyebrow="TONIGHT'S PICK"
-              reason={pickReason(pick)}
+              reason={crownReason(pick, restaurantWords)}
               isCrown
               ubereatsHref={
                 hasOverlap
@@ -518,8 +578,7 @@ export default function ResultsPage() {
                 >
                   <p className="text-lg font-semibold text-text">{restaurant.name}</p>
                   <p className="text-sm font-medium text-amber">
-                    {(pick ? pick.of : participants.length) - 1} of{' '}
-                    {pick ? pick.of : participants.length} liked this
+                    {crownOf - 1} of {crownOf} liked this
                   </p>
 
                   <div className="mt-2 space-y-2">
@@ -533,11 +592,14 @@ export default function ResultsPage() {
                         </span>
                       </div>
                     )}
-                    <DeliveryActions
-                      ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
-                      doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}
-                      comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=near_miss`}
-                    />
+                    {/* Nothing to order or compare about a dish you cook. */}
+                    {!isCookDeck && (
+                      <DeliveryActions
+                        ubereatsHref={nearMissRedirectUrl('ubereats', restaurant.placeId)}
+                        doordashHref={nearMissRedirectUrl('doordash', restaurant.placeId)}
+                        comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=near_miss`}
+                      />
+                    )}
                   </div>
                 </div>
               ))}

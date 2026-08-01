@@ -19,6 +19,12 @@ export const config = {
   },
   spoonacular: {
     apiKey: process.env.SPOONACULAR_API_KEY,
+    // The recipe supply (#232): a shared per-Craving pool dealt as per-Session
+    // Decks. The TTL is config precisely so it can be cut to the compliant 1 h
+    // with a redeploy if Spoonacular objects to cross-user caching (#237).
+    poolTtlMs: parseInt(process.env.RECIPE_POOL_TTL_MS || `${24 * 3_600_000}`, 10),
+    poolSize: parseInt(process.env.RECIPE_POOL_SIZE || '60', 10),
+    deckSize: parseInt(process.env.RECIPE_DECK_SIZE || '15', 10),
   },
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,

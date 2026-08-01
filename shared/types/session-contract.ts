@@ -5,6 +5,7 @@
 // GeocodedArea value (Phase 1A — no response DTO when the whole body is a
 // stable shared value), and its request carries no body to validate.
 
+import type { Craving } from './cook.js';
 import type { Branch, DeckEntry } from './models.js';
 
 export interface SessionLocation {
@@ -19,6 +20,10 @@ export interface CreateSessionRequest {
   location?: SessionLocation;
   searchRadiusMiles?: number;
   branch?: Branch;
+  /** Cook setup: what the Deck is dealt from. Ignored outside the Cook Branch. */
+  craving?: Craving;
+  /** Cook setup: who's eating. Stored on the Session, never part of the Craving. */
+  headcount?: number;
 }
 
 // GET /api/sessions/:sessionCode
@@ -37,6 +42,8 @@ export interface CreateSessionResponse extends SessionResponse {
   location?: SessionLocation;
   searchRadiusMiles?: number;
   restaurantCount?: number;
+  /** Echoed back so the Host sees the Headcount the Session froze. */
+  headcount?: number;
 }
 
 // GET /api/options/:sessionCode — the Session's Deck. The field keeps its name

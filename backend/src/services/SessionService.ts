@@ -11,11 +11,12 @@ import { shareableLink } from '../config/index.js';
 import { getExpiresAtISO, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
+import { cravingPoolKey } from './RecipePoolService.js';
 import {
   SESSION_CODE_LENGTH,
   type Branch,
+  type Craving,
   type DeckEntry,
-  type Restaurant,
 } from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot (FR-004, FR-005). */
@@ -33,6 +34,14 @@ function middleRung(entry: DeckEntry): number {
 interface SessionServiceDeps {
   store: SessionStore;
   searchNearbyRestaurants: typeof RestaurantSearchService.searchNearbyRestaurants;
+  /** The Cook Branch's Deck supply: a random cut of the shared Craving pool. */
+  dealRecipeDeck: (craving: Craving) => Promise<DeckEntry[]>;
+}
+
+/** What Cook setup captured: the Craving to deal from, and who's eating. */
+export interface CookSetup {
+  craving: Craving;
+  headcount: number;
 }
 
 /**
@@ -47,7 +56,11 @@ export function generateSessionCode(): string {
   return code;
 }
 
-export function createSessionService({ store, searchNearbyRestaurants }: SessionServiceDeps) {
+export function createSessionService({
+  store,
+  searchNearbyRestaurants,
+  dealRecipeDeck,
+}: SessionServiceDeps) {
   /**
    * Create a new session with the given host
    * Returns session data including code and shareable link
@@ -60,7 +73,8 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       address?: string;
     },
     searchRadiusMiles?: number,
-    branch?: Branch
+    branch?: Branch,
+    cook?: CookSetup
   ): Promise<{
     sessionCode: string;
     hostName: string;
@@ -76,6 +90,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
     };
     searchRadiusMiles?: number;
     restaurantCount?: number;
+    headcount?: number;
   }> {
     // Generate unique session code
     let sessionCode = generateSessionCode();
@@ -106,13 +121,27 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       throw new Error('Failed to generate unique session code');
     }
 
-    // Search for nearby restaurants if location is provided
-    let restaurants: Restaurant[] = [];
-    if (location && searchRadiusMiles) {
+    // Deal the Session's Deck. A Cook Session deals Recipes from the shared
+    // Craving pool; every other Branch searches nearby Restaurants as before.
+    let deckEntries: DeckEntry[] = [];
+    if (cook) {
+      deckEntries = await dealRecipeDeck(cook.craving);
+
+      if (deckEntries.length === 0) {
+        // The zero-Recipe Craving. #260 turns this into the inline refusal at
+        // setup with the chips still editable; until then it refuses like an
+        // empty restaurant search does, rather than opening an unswipeable Deck.
+        logger.warn({ sessionCode, craving: cook.craving }, 'No recipes found for Craving');
+        throw new DomainError(
+          'NO_RECIPES_FOUND',
+          'No recipes match those choices. Try removing a filter.'
+        );
+      }
+    } else if (location && searchRadiusMiles) {
       // Convert miles to meters (1 mile = 1609.34 meters)
       const radiusMeters = searchRadiusMiles * 1609.34;
 
-      restaurants = await searchNearbyRestaurants({
+      deckEntries = await searchNearbyRestaurants({
         latitude: location.latitude,
         longitude: location.longitude,
         radiusMeters,
@@ -120,7 +149,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       });
 
       // Throw error if no restaurants found
-      if (restaurants.length === 0) {
+      if (deckEntries.length === 0) {
         logger.warn(
           {
             sessionCode,
@@ -143,7 +172,9 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       location,
       searchRadiusMiles,
       branch,
-      entries: restaurants,
+      headcount: cook?.headcount,
+      cravingKey: cook && cravingPoolKey(cook.craving),
+      entries: deckEntries,
     });
 
     logger.info(
@@ -152,7 +183,7 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
         hasLocation: Boolean(location),
         searchRadiusMiles,
         participantCount: 1,
-        restaurantCount: restaurants.length,
+        restaurantCount: deckEntries.length,
       },
       'Session created'
     );
@@ -167,7 +198,8 @@ export function createSessionService({ store, searchNearbyRestaurants }: Session
       branch,
       location,
       searchRadiusMiles,
-      restaurantCount: restaurants.length,
+      restaurantCount: deckEntries.length,
+      headcount: cook?.headcount,
     };
   }
 

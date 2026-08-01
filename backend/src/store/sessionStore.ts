@@ -28,6 +28,13 @@ export interface Session {
   hostName?: string;
   /** Fixed at creation for the Session's life (#255); absent on pre-fork sessions. */
   branch?: Branch;
+  /**
+   * Cook Branch only (#259). The Headcount the Top Pick's ingredients will be
+   * scaled to — set at setup, never part of the Craving, and untouched by the
+   * deal. `cravingKey` points back at the shared pool this Deck was dealt from.
+   */
+  headcount?: number;
+  cravingKey?: string;
   location?: {
     latitude: number;
     longitude: number;
@@ -164,6 +171,8 @@ export function createSessionStore(redis: Redis) {
       hostId: string;
       hostName?: string;
       branch?: Branch;
+      headcount?: number;
+      cravingKey?: string;
       location?: { latitude: number; longitude: number; address?: string };
       searchRadiusMiles?: number;
       /** The Deck this Session deals: Restaurants or Recipes. */
@@ -181,6 +190,8 @@ export function createSessionStore(redis: Redis) {
       lastActivityAt: now,
       hostName: opts.hostName,
       branch: opts.branch,
+      headcount: opts.headcount,
+      cravingKey: opts.cravingKey,
       location: opts.location,
       searchRadiusMiles: opts.searchRadiusMiles,
     };
@@ -194,6 +205,8 @@ export function createSessionStore(redis: Redis) {
     };
     if (opts.hostName) sessionData.hostName = opts.hostName;
     if (opts.branch) sessionData.branch = opts.branch;
+    if (opts.headcount !== undefined) sessionData.headcount = opts.headcount;
+    if (opts.cravingKey) sessionData.cravingKey = opts.cravingKey;
     if (opts.location) {
       sessionData.locationLat = opts.location.latitude;
       sessionData.locationLng = opts.location.longitude;
@@ -236,6 +249,8 @@ export function createSessionStore(redis: Redis) {
       lastActivityAt: parseInt(data.lastActivityAt, 10),
       hostName: data.hostName,
       branch: data.branch as Branch | undefined,
+      headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,
+      cravingKey: data.cravingKey,
     };
 
     if (data.locationLat && data.locationLng) {

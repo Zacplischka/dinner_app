@@ -10,6 +10,8 @@ export type DomainErrorCode =
   | 'DISPLAY_NAME_TAKEN'
   | 'SESSION_ALREADY_STARTED'
   | 'NO_RESTAURANTS_FOUND'
+  // The Cook Branch's counterpart: a Craving whose pool holds no Recipes.
+  | 'NO_RECIPES_FOUND'
   // A Session that exists but holds no usable restaurants, distinct from a
   // search that found none (NO_RESTAURANTS_FOUND).
   | 'NO_RESTAURANTS'
