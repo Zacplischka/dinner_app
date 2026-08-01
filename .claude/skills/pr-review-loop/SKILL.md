@@ -74,10 +74,24 @@ Recent history uses squash merges:
 gh pr merge <PR> --squash --delete-branch
 ```
 
-A repo ruleset requires an approving review (`reviewDecision:
-REVIEW_REQUIRED`), and the claude[bot] comment does not count — the plain
-merge will fail with "base branch policy prohibits the merge". Only when the
-user has asked for the merge, bypass with `--admin`. Then:
+Merge only when the user has asked for it.
+
+The active ruleset on `main` ("Branch protextion", id 8531480) protects against
+deletion and non-fast-forward pushes and allows merge/squash/rebase, but sets
+`required_approving_review_count: 0` — no approving review is needed, so the
+plain merge above goes through. Read the PR's own state rather than assuming:
+`mergeStateStatus: CLEAN` merges, `BLOCKED` doesn't, and an empty
+`reviewDecision` means "no review required", not "review pending". Check the
+ruleset itself if a merge is refused:
+
+```bash
+gh pr view <PR> --json mergeable,mergeStateStatus,reviewDecision
+gh api repos/Zacplischka/dinner_app/rulesets/8531480 --jq '[.rules[] | {type, parameters}]'
+```
+
+If the ruleset later starts requiring approvals, the claude[bot] review comment
+will not satisfy it (it posts as an issue comment, not a PR review) — `--admin`
+bypasses, again only on the user's say-so. Then:
 
 ```bash
 git checkout main && git pull --ff-only && git branch -D <branch>
