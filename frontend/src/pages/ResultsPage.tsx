@@ -11,6 +11,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
 import { useEffect, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
+import RetryingPhoto from '../components/RetryingPhoto';
 import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
 import {
@@ -24,21 +25,15 @@ import {
 const nearMissRedirectUrl = (platform: 'ubereats' | 'doordash', placeId: string): string =>
   `${API_BASE_URL}/redirect?platform=${platform}&placeId=${encodeURIComponent(placeId)}&source=near_miss`;
 
-// Match card hero (#75): real photo or no hero — a failed load removes the
-// image and restores the text-only layout. Own component so the failure state
-// stays per-card (Rules of Hooks inside the .map()).
-function MatchHero({ photoUrl }: { photoUrl: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return null;
-  return (
-    <img
-      src={photoUrl}
-      alt=""
-      className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
-      onError={() => setFailed(true)}
-    />
-  );
-}
+// Match card hero (#75): real photo or no hero — RetryingPhoto (#90) hides a
+// failed load at once, retries it once, and restores the text-only layout for
+// good if the retry fails too.
+const MatchHero = ({ photoUrl }: { photoUrl: string }) => (
+  <RetryingPhoto
+    url={photoUrl}
+    className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
+  />
+);
 
 // The Cook ending (#259): the crowned Recipe, outright. Title and image are
 // all a Recipe carries, and there is no second chooser — no other-matches list,

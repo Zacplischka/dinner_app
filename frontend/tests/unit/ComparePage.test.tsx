@@ -1,8 +1,9 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparePage from '../../src/pages/ComparePage';
+import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import { geocodeArea, getVenues } from '../../src/services/apiClient';
 import { useComparisonStore } from '../../src/stores/comparisonStore';
 
@@ -44,6 +45,9 @@ describe('ComparePage', () => {
     vi.clearAllMocks();
     useComparisonStore.getState().reset();
   });
+
+  // A test that fails mid-fake-timers must not leak them into the next one.
+  afterEach(() => vi.useRealTimers());
 
   it('uses the guest location to render nearby Venues and navigate to Compare', async () => {
     vi.mocked(getVenues).mockResolvedValue({
@@ -123,7 +127,7 @@ describe('ComparePage', () => {
     expect(screen.getByText('Search radius: 12 km')).toBeInTheDocument();
   });
 
-  it('lazy-loads the thumbnail, retries a failed load once, then falls back to the initial tile', () => {
+  function renderPhotoVenue() {
     vi.useFakeTimers();
     useComparisonStore.setState({
       location: { latitude: -37.81, longitude: 144.96 },
@@ -136,26 +140,53 @@ describe('ComparePage', () => {
         },
       ],
     });
-
     renderPage();
-    const venueCard = screen.getByRole('button', { name: /Bella Pizza/ });
+    return screen.getByRole('button', { name: /Bella Pizza/ });
+  }
+
+  it('lazy-loads the thumbnail, hides a failed load at once, and restores it when the retry loads (#90)', () => {
+    const venueCard = renderPhotoVenue();
     const image = venueCard.querySelector('img') as HTMLImageElement;
     expect(image).toHaveAttribute('loading', 'lazy');
 
-    // A transient failure keeps the photo up while one retry is pending.
+    // A transient failure drops the broken photo immediately — the initial
+    // tile behind it carries the card while one retry is pending.
     fireEvent.error(image);
-    expect(image).toBeVisible();
-
-    act(() => vi.advanceTimersByTime(2000));
-    const retry = venueCard.querySelector('img') as HTMLImageElement;
-    expect(retry).not.toBe(image);
-    expect(retry).toHaveAttribute('src', 'https://example.com/broken.jpg');
-
-    // A second failure gives up and leaves the initial tile.
-    fireEvent.error(retry);
     expect(venueCard.querySelector('img')).toBeNull();
     expect(venueCard).toHaveTextContent('B');
-    vi.useRealTimers();
+
+    act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+    const retry = venueCard.querySelector('img') as HTMLImageElement;
+    expect(retry).toHaveAttribute('src', 'https://example.com/broken.jpg');
+    expect(retry.hidden).toBe(true);
+
+    fireEvent.load(retry);
+    expect(retry.hidden).toBe(false);
+  });
+
+  it('falls back to the initial tile for good when the retry also fails', () => {
+    const venueCard = renderPhotoVenue();
+
+    fireEvent.error(venueCard.querySelector('img')!);
+    act(() => vi.advanceTimersByTime(PHOTO_RETRY_DELAY_MS));
+    fireEvent.error(venueCard.querySelector('img')!);
+
+    expect(venueCard.querySelector('img')).toBeNull();
+    expect(venueCard).toHaveTextContent('B');
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(venueCard.querySelector('img')).toBeNull();
+  });
+
+  it('clears a pending retry timer on unmount', () => {
+    const venueCard = renderPhotoVenue();
+
+    // Delta against the baseline: the render pipeline owns a timer of its own.
+    const baseline = vi.getTimerCount();
+    fireEvent.error(venueCard.querySelector('img')!);
+    expect(vi.getTimerCount()).toBe(baseline + 1);
+
+    cleanup();
+    expect(vi.getTimerCount()).toBe(baseline);
   });
 
   it('derives Cuisine chips from Venues, ranked by frequency with labels and icons', () => {
