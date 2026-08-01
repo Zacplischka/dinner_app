@@ -6,7 +6,7 @@
 // client (tests inject ioredis-mock); server.ts constructs the production
 // instance.
 
-import type { Redis } from 'ioredis';
+import type { ChainableCommander, Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
 import { SESSION_CODE_LENGTH, type Branch, type DeckEntry } from '@dinder/shared/types';
 
@@ -129,6 +129,23 @@ export function sessionCodeFromExpiredKey(key: string): string | null {
   return sessionCode.length === SESSION_CODE_LENGTH ? sessionCode : null;
 }
 
+/**
+ * Queues the two commands that make a Deck — the id set and the entry hash —
+ * onto a pipeline or a MULTI. Both the Session's first Deck and a Cook
+ * Restart's replacement go through here, so the two halves can never drift.
+ */
+function queueDeckWrite(
+  chain: ChainableCommander,
+  sessionCode: string,
+  entries: DeckEntry[]
+): void {
+  chain.sadd(restaurantIdsKey(sessionCode), ...entries.map((e) => e.placeId));
+  chain.hset(
+    restaurantsKey(sessionCode),
+    Object.fromEntries(entries.map((e) => [e.placeId, JSON.stringify(e)]))
+  );
+}
+
 export function createSessionStore(redis: Redis) {
   /**
    * Refresh TTL on every key belonging to a session and stamp lastActivityAt.
@@ -220,12 +237,7 @@ export function createSessionStore(redis: Redis) {
     pipeline.hset(sessionKey(sessionCode), sessionData);
 
     if (opts.entries && opts.entries.length > 0) {
-      pipeline.sadd(restaurantIdsKey(sessionCode), ...opts.entries.map((e) => e.placeId));
-      const entryData: Record<string, string> = {};
-      opts.entries.forEach((e) => {
-        entryData[e.placeId] = JSON.stringify(e);
-      });
-      pipeline.hset(restaurantsKey(sessionCode), entryData);
+      queueDeckWrite(pipeline, sessionCode, opts.entries);
     }
 
     await pipeline.exec();
@@ -583,6 +595,22 @@ export function createSessionStore(redis: Redis) {
 
   // --- Deck --------------------------------------------------------------
 
+  /**
+   * Swaps the Session's Deck for a fresh deal — a Cook Restart (#260). The swap
+   * is one MULTI so no reader ever sees the old ids against the new entries;
+   * choosing the new deal is the caller's, and happens before this. An empty
+   * deal is refused outright, since it would leave the Session unswipeable.
+   */
+  async function replaceDeck(sessionCode: string, entries: DeckEntry[]): Promise<void> {
+    if (entries.length === 0) return;
+
+    const swap = redis.multi().del(restaurantIdsKey(sessionCode)).del(restaurantsKey(sessionCode));
+    queueDeckWrite(swap, sessionCode, entries);
+    await swap.exec();
+
+    await touch(sessionCode);
+  }
+
   /** missingCount = place ids whose entry data is absent (data loss signal). */
   async function getDeck(
     sessionCode: string
@@ -689,6 +717,7 @@ export function createSessionStore(redis: Redis) {
     addResultPlaceId,
     resetForRestart,
     wasRestartedAfterComplete,
+    replaceDeck,
     getDeck,
     readOrder,
     readOrderLines,

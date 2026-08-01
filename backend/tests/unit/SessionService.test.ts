@@ -24,6 +24,7 @@ describe('SessionService', () => {
   let store: ReturnType<typeof createSessionStore>;
   let searchNearbyRestaurants: ReturnType<typeof vi.fn>;
   let dealRecipeDeck: ReturnType<typeof vi.fn>;
+  let redealRecipeDeck: ReturnType<typeof vi.fn>;
   let SessionService: ReturnType<typeof createSessionService>;
 
   beforeEach(async () => {
@@ -33,7 +34,13 @@ describe('SessionService', () => {
     store = createSessionStore(redis);
     searchNearbyRestaurants = vi.fn();
     dealRecipeDeck = vi.fn();
-    SessionService = createSessionService({ store, searchNearbyRestaurants, dealRecipeDeck });
+    redealRecipeDeck = vi.fn();
+    SessionService = createSessionService({
+      store,
+      searchNearbyRestaurants,
+      dealRecipeDeck,
+      redealRecipeDeck,
+    });
 
     vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
@@ -97,6 +104,117 @@ describe('SessionService', () => {
           headcount: 2,
         })
       ).rejects.toMatchObject({ code: 'NO_RECIPES_FOUND' });
+    });
+
+    it('says a source failure is a failure — "remove a filter" would be a lie', async () => {
+      dealRecipeDeck.mockRejectedValue(new Error('Spoonacular 503'));
+
+      await expect(
+        SessionService.createSession('Alice', undefined, undefined, 'cook', {
+          craving,
+          headcount: 2,
+        })
+      ).rejects.toMatchObject({ code: 'RECIPE_SOURCE_UNAVAILABLE' });
+    });
+  });
+
+  describe('restartSession in the Cook Branch', () => {
+    const craving = {
+      mealType: 'main course' as const,
+      cuisines: ['italian' as const],
+      diets: [] as never[],
+    };
+    const dealt: Recipe[] = [
+      { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
+      { kind: 'recipe', placeId: 'rec2', name: 'Caponata', aggregateLikes: 40 },
+    ];
+    const nextDeal: Recipe[] = [
+      { kind: 'recipe', placeId: 'rec7', name: 'Beef Rendang', aggregateLikes: 640 },
+      { kind: 'recipe', placeId: 'rec8', name: 'Dal Tadka', aggregateLikes: 90 },
+    ];
+
+    /** A Cook Session decided once, so Restart has an outcome to wipe. */
+    async function decidedCookSession(): Promise<string> {
+      dealRecipeDeck.mockResolvedValue(dealt);
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'cook',
+        { craving, headcount: 2 }
+      );
+      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
+      await SessionService.submitSelections(sessionCode, 'alice', ['rec1']);
+      return sessionCode;
+    }
+
+    it('deals a fresh Deck from the pool the Session was dealt from', async () => {
+      redealRecipeDeck.mockResolvedValue(nextDeal);
+      const sessionCode = await decidedCookSession();
+
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      const [poolKey, wiped] = redealRecipeDeck.mock.calls[0];
+      expect(poolKey).toBe((await store.readSession(sessionCode))?.cravingKey);
+      expect((wiped as Recipe[]).map((e) => e.placeId).sort()).toEqual(['rec1', 'rec2']);
+      expect((await store.getDeck(sessionCode)).entries).toEqual(expect.arrayContaining(nextDeal));
+    });
+
+    it('keeps the wiped Deck when the redeal hands the same Recipes back', async () => {
+      // A cold pool degrades to a reshuffle, which is still a whole Deck —
+      // Restart must land on something swipeable either way.
+      redealRecipeDeck.mockImplementation(async (_key: string, current: Recipe[]) => current);
+      const sessionCode = await decidedCookSession();
+
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual([
+        'rec1',
+        'rec2',
+      ]);
+    });
+
+    it('keeps the setup deal when the lobby starts selecting — nobody has seen it yet', async () => {
+      // The lobby's "start selecting" is this same command on a 'waiting'
+      // Session. Re-dealing there would throw away the deal setup just made.
+      redealRecipeDeck.mockResolvedValue(nextDeal);
+      dealRecipeDeck.mockResolvedValue(dealt);
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'cook',
+        { craving, headcount: 2 }
+      );
+      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
+
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      expect(redealRecipeDeck).not.toHaveBeenCalled();
+      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual([
+        'rec1',
+        'rec2',
+      ]);
+    });
+
+    it('leaves a Restaurant Session its own Deck — supply there is geography-bound', async () => {
+      searchNearbyRestaurants.mockResolvedValue([
+        { kind: 'restaurant', placeId: 'place1', name: 'Pizza Palace', rating: 4.5 },
+      ]);
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        { latitude: 1, longitude: 2 },
+        5,
+        'takeaway'
+      );
+      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
+      // Decided, so the Restart is the real post-Match one, not the lobby's.
+      await SessionService.submitSelections(sessionCode, 'alice', ['place1']);
+
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      expect(redealRecipeDeck).not.toHaveBeenCalled();
+      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId)).toEqual(['place1']);
     });
   });
 
@@ -487,6 +605,7 @@ describe('SessionService', () => {
         store: racyStore,
         searchNearbyRestaurants,
         dealRecipeDeck,
+        redealRecipeDeck,
       });
       const session = await racyService.createSession('Alice');
 
@@ -519,6 +638,7 @@ describe('SessionService', () => {
         store: racyStore,
         searchNearbyRestaurants,
         dealRecipeDeck,
+        redealRecipeDeck,
       });
       const session = await racyService.createSession('Alice');
 

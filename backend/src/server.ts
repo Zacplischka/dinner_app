@@ -62,6 +62,7 @@ const sessionService = createSessionService({
   store: sessionStore,
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
   dealRecipeDeck: (craving) => recipePoolService.dealDeck(craving),
+  redealRecipeDeck: (poolKey, current) => recipePoolService.redeal(poolKey, current),
 });
 const friendsService = createFriendsService({ store: friendsStore });
 const comparisonService = createComparisonService({

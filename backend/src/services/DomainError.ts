@@ -12,6 +12,10 @@ export type DomainErrorCode =
   | 'NO_RESTAURANTS_FOUND'
   // The Cook Branch's counterpart: a Craving whose pool holds no Recipes.
   | 'NO_RECIPES_FOUND'
+  // The recipe source was asked and did not answer — distinct from the clean
+  // miss above, because "remove a filter" is the wrong instruction when the
+  // source was merely down (#250).
+  | 'RECIPE_SOURCE_UNAVAILABLE'
   // A Session that exists but holds no usable restaurants, distinct from a
   // search that found none (NO_RESTAURANTS_FOUND).
   | 'NO_RESTAURANTS'

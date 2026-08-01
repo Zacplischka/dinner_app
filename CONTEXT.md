@@ -79,7 +79,7 @@ The sole keeper of everything a live Session remembers — Participants, Selecti
 _Avoid_: models, repository, DAO
 
 **Restart**:
-Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again.
+Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again. A Restaurant Deck is kept — restaurant supply is bound to where you are — while a Recipe Deck is dealt again from its Craving's pool, avoiding the just-wiped deal as far as the pool allows. A Restart never fails and never leaves a Session without a Deck.
 _Avoid_: reset, replay
 
 **Leave**:

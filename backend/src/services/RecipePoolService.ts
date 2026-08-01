@@ -6,7 +6,7 @@
 // The pool holds whole Recipes — ingredients and steps aboard — because the
 // Shopping List is minted from the crowned one later (#262). Only the Deck
 // Entry half is ever dealt onto the wire.
-import type { Craving, Recipe } from '@dinder/shared/types';
+import type { Craving, DeckEntry, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
@@ -56,6 +56,8 @@ interface RecipePoolServiceDeps {
   client: SpoonacularClient;
   /** 24 h by default, shortenable to the compliant 1 h with a redeploy (#237). */
   poolTtlMs?: number;
+  /** How long a Craving that matched nothing stays a clean miss (#260). */
+  emptyPoolTtlMs?: number;
   poolSize?: number;
   deckSize?: number;
   /** Injected so tests can deal deterministically. */
@@ -65,6 +67,17 @@ interface RecipePoolServiceDeps {
 export interface RecipePoolService {
   /** A Session's Deck: min(pool, deckSize) Recipes, randomly cut from the pool. */
   dealDeck(craving: Craving): Promise<Recipe[]>;
+  /**
+   * A Restart's Deck (#246, #260): a fresh cut of the pool `current` was dealt
+   * from, fresh Recipes first and topped up with repeats when the pool is thin,
+   * so Restart means "show me different ones" and never means "no". A pool that
+   * has aged out degrades to reshuffling `current` rather than paying a lookup
+   * — Restart is not a moment to go to the network, and never fails.
+   *
+   * Restaurant Restart never comes here: restaurant supply is geography-bound
+   * and recipe supply is not, which is the whole reason for the divergence.
+   */
+  redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]>;
 }
 
 /** Fisher-Yates over a copy — the caller's pool is never reordered. */
@@ -90,6 +103,7 @@ function toDeckEntry(recipe: PooledRecipe): Recipe {
 
 export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePoolService {
   const poolTtlMs = deps.poolTtlMs ?? config.spoonacular.poolTtlMs;
+  const emptyPoolTtlMs = deps.emptyPoolTtlMs ?? config.spoonacular.emptyPoolTtlMs;
   const poolSize = deps.poolSize ?? config.spoonacular.poolSize;
   const deckSize = deps.deckSize ?? config.spoonacular.deckSize;
   const shuffle = deps.shuffle ?? shuffleInPlace;
@@ -114,6 +128,9 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   return {
     async dealDeck(craving: Craving): Promise<Recipe[]> {
       const key = cravingPoolKey(craving);
+      // An empty pool is a cached answer, not a cache miss: `null` means the
+      // Craving has never been looked up (or has aged out), `[]` means the
+      // catalogue was asked and had nothing. Only the first re-fetches.
       let pool = await readPool(key);
 
       if (!pool) {
@@ -122,15 +139,46 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
         // an offset step, and the later SET wins — nobody sees a failure and
         // both get a full Deck. Upgrade path if Cook traffic ever makes that
         // bite: SETNX a short-lived fill marker and have the loser re-read.
-        const offset = await nextOffset(key);
+        let offset = await nextOffset(key);
+        // A throw here writes nothing: a transport failure must never be
+        // remembered as "this Craving has no Recipes" (#260). The clean miss
+        // is cached, and briefly, because it is an answer about the catalogue.
         pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
-        await deps.redis.set(key, JSON.stringify(pool), 'PX', poolTtlMs);
-        logger.info({ poolKey: key, offset, pooledCount: pool.length }, 'Recipe pool filled');
+
+        if (pool.length === 0 && offset > 0) {
+          // Not a clean miss — the rotation has simply paged off the end of a
+          // Craving smaller than the offset it has climbed to. Caching that as
+          // "nothing matches" would refuse a Craving that has Recipes, and #250
+          // is explicit that a wrong empty answer must not kill a Craving.
+          // ponytail: ask from the top rather than track each Craving's size.
+          // Ceiling: one wasted lookup per refresh of a lapped Craving — about
+          // one a day. Upgrade path: pool `totalResults` and cap the offset.
+          offset = 0;
+          pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
+        }
+
+        const ttlMs = pool.length > 0 ? poolTtlMs : emptyPoolTtlMs;
+        await deps.redis.set(key, JSON.stringify(pool), 'PX', ttlMs);
+        logger.info(
+          { poolKey: key, offset, pooledCount: pool.length, ttlMs },
+          'Recipe pool filled'
+        );
       }
 
       // min(pool, deckSize), no floor and no thinness warning: a niche Craving
-      // deals a smaller Deck rather than erroring (#246). Zero is #260's.
+      // deals a smaller Deck rather than erroring. Zero deals nothing, and the
+      // caller turns that into the one refusal there is — inline at setup.
       return shuffle(pool).slice(0, deckSize).map(toDeckEntry);
+    },
+
+    async redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]> {
+      const pool = await readPool(poolKey);
+      if (!pool || pool.length === 0) return shuffle(current);
+
+      const wiped = new Set(current.map((entry) => entry.placeId));
+      const fresh = pool.filter((recipe) => !wiped.has(recipe.placeId));
+      const repeats = pool.filter((recipe) => wiped.has(recipe.placeId));
+      return [...shuffle(fresh), ...shuffle(repeats)].slice(0, deckSize).map(toDeckEntry);
     },
   };
 }
