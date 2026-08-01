@@ -756,6 +756,117 @@ describe('SessionService', () => {
       });
     });
 
+    // #284 review: the closing Submission now sits inside the join's
+    // read-then-add window — a Session that completes mid-join must back the
+    // joiner out, mirroring the capacity re-check.
+    it('should back out a joiner when the session completes while the join is in flight', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await store.updateState(session.sessionCode, 'selecting');
+
+      const racyStore = {
+        ...store,
+        addParticipant: async (code: string, p: Parameters<typeof store.addParticipant>[1]) => {
+          const size = await store.addParticipant(code, p);
+          // The last holdout's Submission lands right after the add.
+          await store.updateState(code, 'complete');
+          return size;
+        },
+      };
+      const racyService = createSessionService({
+        store: racyStore,
+        searchNearbyRestaurants,
+        dealRecipeDeck,
+        redealRecipeDeck,
+        mintShoppingList,
+      });
+
+      await expect(
+        racyService.joinSession(session.sessionCode, 'socket-bob', 'Bob')
+      ).rejects.toMatchObject({
+        code: 'SESSION_ALREADY_STARTED',
+        message: 'This session has finished',
+      });
+      await expect(store.isParticipant(session.sessionCode, 'socket-bob')).resolves.toBe(false);
+    });
+
+    // #284 review: the other half of the same race — a Participant who slipped
+    // in beside the closing Submission must not re-complete the Session and
+    // overwrite the broadcast Match with a narrower one.
+    it('should not recompute the Match when a submit lands on an already-complete session', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await store.updateState(session.sessionCode, 'selecting');
+      await SessionService.submitSelections(session.sessionCode, 'socket-alice', []);
+      // The race resolved against Bob: the session completed without him.
+      await store.updateState(session.sessionCode, 'complete');
+
+      const second = await SessionService.submitSelections(session.sessionCode, 'socket-bob', []);
+
+      expect(second).toMatchObject({ submittedCount: 2, participantCount: 2 });
+      expect(second.results).toBeUndefined();
+      await expect(store.readSession(session.sessionCode)).resolves.toMatchObject({
+        state: 'complete',
+      });
+    });
+
+    // #284 review: a refusal AFTER the old-Session departure committed must
+    // still carry the departure, so the transport can tell the old room.
+    it('should carry the committed old-session departure on a post-add refusal', async () => {
+      searchNearbyRestaurants.mockResolvedValue([
+        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
+      ]);
+      const first = await SessionService.createSession(
+        'Alice',
+        { latitude: 37.7749, longitude: -122.4194 },
+        5
+      );
+      await SessionService.joinSession(first.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(first.sessionCode, 'socket-bob', 'Bob');
+      await store.updateState(first.sessionCode, 'selecting');
+      await SessionService.submitSelections(first.sessionCode, 'socket-alice', ['place1']);
+
+      const second = await SessionService.createSession('Cara');
+      await SessionService.joinSession(second.sessionCode, 'socket-cara', 'Cara');
+
+      const racyStore = {
+        ...store,
+        addParticipant: async (code: string, p: Parameters<typeof store.addParticipant>[1]) => {
+          // Concurrent joins slip in between the pre-check and this add.
+          await store.addParticipant(code, { participantId: 'race-1', displayName: 'R1' });
+          await store.addParticipant(code, { participantId: 'race-2', displayName: 'R2' });
+          await store.addParticipant(code, { participantId: 'race-3', displayName: 'R3' });
+          return store.addParticipant(code, p);
+        },
+      };
+      const racyService = createSessionService({
+        store: racyStore,
+        searchNearbyRestaurants,
+        dealRecipeDeck,
+        redealRecipeDeck,
+        mintShoppingList,
+      });
+
+      // Bob (last holdout of `first`) tries the full second session.
+      const outcome = await racyService
+        .joinSession(second.sessionCode, 'socket-bob', 'Bob')
+        .then(() => {
+          throw new Error('expected SESSION_FULL');
+        })
+        .catch((error: unknown) => error as DomainError & { leftSession?: unknown });
+
+      expect(outcome).toMatchObject({ code: 'SESSION_FULL' });
+      expect(outcome.leftSession).toMatchObject({ sessionCode: first.sessionCode });
+      expect(
+        (outcome.leftSession as { results?: { allSelections: unknown } }).results?.allSelections
+      ).toEqual({ Alice: ['place1'] });
+      // The departure really committed: the old session completed without Bob.
+      await expect(store.readSession(first.sessionCode)).resolves.toMatchObject({
+        state: 'complete',
+      });
+    });
+
     it('should not report a left session when rejoining the same session', async () => {
       const session = await SessionService.createSession('Alice');
       const joined = await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');

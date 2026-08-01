@@ -299,9 +299,17 @@ export async function joinSession(
   // Check if joining a different session - reset selections from previous session
   if (store.sessionCode !== sessionCode) {
     store.resetSelections();
-    // A join admitted mid-Deck (#284) must land on the Deck, not the lobby;
-    // an older backend without state on the ack only ever admitted 'waiting'.
-    store.setSessionStatus(ack.data.state === 'selecting' ? 'selecting' : 'waiting');
+    store.setSessionStatus('waiting');
+  }
+
+  // Adopt the ack's state OUTSIDE the different-session guard: the /join page
+  // pre-stores this very sessionCode before the ack lands, so a guard-bound
+  // adoption would never run for the one path #284 exists for — leaving a late
+  // joiner's status pinned at 'waiting' and the lobby's auto-forward dead.
+  // An ack without state (older backend, ADR 0007) touches nothing.
+  const { state } = ack.data;
+  if (state === 'waiting' || state === 'selecting' || state === 'complete' || state === 'expired') {
+    store.setSessionStatus(state);
   }
 
   // Update store with session data

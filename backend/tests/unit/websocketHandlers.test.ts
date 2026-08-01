@@ -7,6 +7,7 @@ import type { Redis } from 'ioredis';
 // in-memory Redis so this suite needs no real Redis.
 import { createSessionStore } from '../../src/store/sessionStore.js';
 import { createSessionService } from '../../src/services/SessionService.js';
+import { DomainError } from '../../src/services/DomainError.js';
 import { handleSessionJoin } from '../../src/websocket/joinHandler.js';
 import { handleSessionLeave } from '../../src/websocket/leaveHandler.js';
 import { handleDisconnect } from '../../src/websocket/disconnectHandler.js';
@@ -374,6 +375,57 @@ describe('websocket handlers', () => {
       // NEW42 lives outside this suite's per-test key sweep.
       const leftovers = await redis.keys('session:NEW42*');
       if (leftovers.length > 0) await redis.del(...leftovers);
+    });
+
+    // #284 review: the departure commits before the post-add re-checks can
+    // refuse the join — the old room must hear it even when the join fails.
+    it('should still broadcast the departure to the old room when the join is refused post-add', async () => {
+      const testSocket = socket('socket-1', ['OLD42']);
+      const callback = vi.fn();
+      const failingService = {
+        joinSession: vi.fn().mockRejectedValue(
+          Object.assign(
+            new DomainError('SESSION_FULL', 'Session is full (maximum 4 participants)'),
+            {
+              leftSession: {
+                sessionCode: 'OLD42',
+                displayName: 'Alice',
+                participantCount: 1,
+                results: {
+                  hasOverlap: false,
+                  overlappingOptions: [],
+                  allSelections: { Bob: [] },
+                  restaurantNames: {},
+                },
+              },
+            }
+          )
+        ),
+      };
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode, displayName: 'Alice' },
+        callback,
+        failingService as any
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_FULL', message: expect.any(String) },
+      });
+      expect(testSocket.to).toHaveBeenCalledWith('OLD42');
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:left', {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        participantCount: 1,
+      });
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
+        'session:results',
+        expect.objectContaining({ sessionCode: 'OLD42', allSelections: { Bob: [] } })
+      );
+      // The refused join itself changed no rooms.
+      expect(testSocket.join).not.toHaveBeenCalled();
     });
 
     it('should deliver the Match to the old room when the departure completes it', async () => {

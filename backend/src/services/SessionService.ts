@@ -467,6 +467,11 @@ export function createSessionService({
     // inside a rejoin's remove/add window may transiently exceed the cap -
     // an accepted trade-off over kicking out a legitimately-rejoining
     // participant.
+    //
+    // Both post-add refusals below carry the already-committed old-Session
+    // departure on the error: the transport must still tell the old room even
+    // when this join fails, or an old Session completed by the departure sits
+    // on a Match nobody is ever sent (#284 review).
     if (!prior && setSize + reservedHostSlot > MAX_PARTICIPANTS) {
       await store.removeParticipant(sessionCode, participantId);
       logger.warn(
@@ -478,10 +483,37 @@ export function createSessionService({
         },
         'Rejected session join'
       );
-      throw new DomainError(
-        'SESSION_FULL',
-        `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
+      throw Object.assign(
+        new DomainError(
+          'SESSION_FULL',
+          `Session is full (maximum ${MAX_PARTICIPANTS} participants)`
+        ),
+        { leftSession }
       );
+    }
+
+    // Same mirror for the state guard (#284 review): admitting during
+    // 'selecting' put the closing Submission inside the read-then-add window,
+    // so a Session can complete while this join is in flight. Re-read and back
+    // out rather than keep a joiner the completed Match never counted.
+    if (!prior) {
+      const now = await store.readSession(sessionCode);
+      if (!now || now.state === 'complete' || now.state === 'expired') {
+        await store.removeParticipant(sessionCode, participantId);
+        logger.warn(
+          { sessionCode, participantId, reason: 'session_over_after_add', state: now?.state },
+          'Rejected session join'
+        );
+        throw Object.assign(
+          new DomainError(
+            'SESSION_ALREADY_STARTED',
+            !now || now.state === 'expired'
+              ? 'This session has expired'
+              : 'This session has finished'
+          ),
+          { leftSession }
+        );
+      }
     }
 
     // Sole participantCount writer: set size plus the reserved host slot
@@ -538,6 +570,15 @@ export function createSessionService({
    * gates) — counts and the session code only, never names or ids.
    */
   async function completeSession(sessionCode: string) {
+    // Complete once. Late joins (#284) made a second completion reachable — a
+    // joiner slipping in beside the closing Submission would recompute a
+    // narrower Match over the broadcast one and SADD more ids into the results
+    // set (computeAndStoreResults never clears it). Guarded here, the one seam
+    // every caller routes through; the read-then-act window that remains is
+    // the same residual sliver the cap re-check accepts.
+    const current = await store.readSession(sessionCode);
+    if (!current || current.state === 'complete') return undefined;
+
     const results = await store.computeAndStoreResults(sessionCode);
     await store.updateState(sessionCode, 'complete');
     logger.info({ sessionCode, hasOverlap: results.hasOverlap }, 'Session complete');

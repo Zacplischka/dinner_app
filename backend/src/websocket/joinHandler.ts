@@ -38,12 +38,31 @@ const EXPECTED_JOIN_ERRORS = [
   'SESSION_ALREADY_STARTED',
 ];
 
+/** The old-Session departure a join commits, success or not (#284). */
+type LeftSession = NonNullable<Awaited<ReturnType<SessionService['joinSession']>>['leftSession']>;
+
 export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionJoinPayload,
   callback: (response: SessionJoinResponse) => void,
   service: SessionService
 ): Promise<void> {
+  // Joining pulled them out of another Session (#284): tell that room they
+  // left, and deliver the Match when their departure completed it.
+  const emitDeparture = (left: LeftSession) => {
+    socket.to(left.sessionCode).emit('participant:left', {
+      participantId: socket.id,
+      displayName: left.displayName,
+      participantCount: left.participantCount,
+    });
+    if (left.results) {
+      socket.to(left.sessionCode).emit('session:results', {
+        sessionCode: left.sessionCode,
+        ...left.results,
+      });
+    }
+  };
+
   try {
     // Validate payload
     const validation = sessionJoinPayloadSchema.safeParse(payload);
@@ -101,22 +120,7 @@ export async function handleSessionJoin(
       isRejoin: result.isRejoin,
     });
 
-    // Joining pulled them out of another Session (#284): tell that room they
-    // left, and deliver the Match when their departure completed it.
-    if (result.leftSession) {
-      const left = result.leftSession;
-      socket.to(left.sessionCode).emit('participant:left', {
-        participantId: socket.id,
-        displayName: left.displayName,
-        participantCount: left.participantCount,
-      });
-      if (left.results) {
-        socket.to(left.sessionCode).emit('session:results', {
-          sessionCode: left.sessionCode,
-          ...left.results,
-        });
-      }
-    }
+    if (result.leftSession) emitDeparture(result.leftSession);
 
     logger.info(
       {
@@ -128,6 +132,12 @@ export async function handleSessionJoin(
       'Participant joined session'
     );
   } catch (error) {
+    // The post-add re-checks can refuse the join AFTER the old-Session
+    // departure committed to Redis — the old room must still hear it, or a
+    // Session that departure completed sits on a Match nobody is ever sent.
+    const left = (error as { leftSession?: LeftSession }).leftSession;
+    if (left) emitDeparture(left);
+
     if (error instanceof DomainError && EXPECTED_JOIN_ERRORS.includes(error.code)) {
       return callback({ success: false, error: toApiError(error).body });
     }

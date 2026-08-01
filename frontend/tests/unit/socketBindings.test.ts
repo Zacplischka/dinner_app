@@ -551,9 +551,13 @@ describe('socketBindings', () => {
 
   // #284: a join admitted mid-Deck carries the Session's state and who has
   // already submitted, so the joiner lands on the Deck with honest counts.
+  // The store is seeded the way JoinSessionPage really leaves it — the SAME
+  // sessionCode stored, status pinned 'waiting', BEFORE the ack lands — so
+  // this fails if state adoption ever hides behind the different-session guard.
   it('adopts a selecting state and hasSubmitted flags from a late-join ack', async () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
+    useSessionStore.setState({ sessionCode: 'NEW99', sessionStatus: 'waiting' } as any);
     socket.acks.set('session:join', {
       success: true,
       data: {
@@ -575,6 +579,20 @@ describe('socketBindings', () => {
       ['Alice', true],
       ['Bob', false],
     ]);
+  });
+
+  it('leaves sessionStatus untouched when a same-session ack carries no state (older backend)', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.setState({ sessionCode: 'AB123', sessionStatus: 'selecting' } as any);
+    socket.acks.set('session:join', {
+      success: true,
+      data: { participants: [participant], rejoinToken: 'rejoin-token' },
+    });
+
+    await socketBindings.joinSession('AB123', 'Alice');
+
+    expect(useSessionStore.getState().sessionStatus).toBe('selecting');
   });
 
   it('clears connection status when disconnecting', () => {
