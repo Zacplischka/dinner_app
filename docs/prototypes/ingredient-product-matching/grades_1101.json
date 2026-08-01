@@ -1,0 +1,275 @@
+{
+ "beef mince": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "lamb leg": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "beef brisket": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "green curry paste": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "greek yoghurt": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "taco seasoning": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "black bean sauce": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "panko breadcrumbs": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "rice noodles": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "desiree potatoes": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "coconut milk": [
+  "wrong",
+  "carried from #231 - same product at store 1101"
+ ],
+ "capsicum": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "red capsicum": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "japanese curry roux": [
+  "wrong",
+  "carried from #231 - same product at store 1101"
+ ],
+ "beef stock": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "iceberg lettuce": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "broccoli": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "brown onion": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "short grain rice": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "carrot": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "ginger": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "tomatoes": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "spring onions": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "lebanese cucumber": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "rosemary": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "coriander": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "tasty cheese": [
+  "wrong",
+  "carried from #231 - same product at store 1101"
+ ],
+ "hokkien noodles": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "kalamata olives": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "potato": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "bean sprouts": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "celery stalks": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "green beans": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "green peas": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "garlic cloves": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "bamboo shoots": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "basmati rice": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "avocado": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "flat leaf parsley": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "tonkatsu sauce": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "hoisin sauce": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "parmesan cheese": [
+  "plausible",
+  "carried from #231 - same product at store 1101"
+ ],
+ "kaffir lime leaves": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "lime": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "red onion": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "sriracha": [
+  "exact",
+  "carried from #231 - same product at store 1101"
+ ],
+ "spaghetti": [
+  "wrong",
+  "Heinz canned spaghetti in tomato sauce - a different product entirely; real dry pasta (WW 500g $1.00) sat at rank 4"
+ ],
+ "chicken thigh fillets": [
+  "exact",
+  "RSPCA thigh fillets, variable weight 'per 150g' -> estimated by unit price"
+ ],
+ "chicken breast": [
+  "exact",
+  "RSPCA breast fillets, variable weight 'per 350g' -> estimated by unit price"
+ ],
+ "eggs": [
+  "exact",
+  "Sunny Queen 12 XL free range; carton labelled 700g so rung 2 did the count->mass bridge"
+ ],
+ "whole chicken": [
+  "exact",
+  "RSPCA whole chicken; range pack 1.8-2.2kg degrades per #241"
+ ],
+ "tinned tomatoes": [
+  "exact",
+  "WW Diced Italian Tomatoes 400g x2"
+ ],
+ "taco shells": [
+  "none",
+  "#243 trigger false positive: all 5 real taco shells carry a category containing 'Chips', blocklist killed every candidate"
+ ],
+ "lemon": [
+  "exact",
+  "Lemon Loose - store 1101 fixed #231's Mr Kipling lemon-cake regression"
+ ],
+ "pumpkin": [
+  "wrong",
+  "coconut pumpkin soup pouch; fresh cut pumpkin at ranks 4-5"
+ ],
+ "tomato paste": [
+  "exact",
+  "Mutti double concentrate 130g"
+ ],
+ "fish sauce": [
+  "exact",
+  "Ayam fish sauce 210mL"
+ ],
+ "thai basil": [
+  "wrong",
+  "Passage To Asia stir-fry sauce; the real punnet is rank 1 but unavailable/priceless at 1101"
+ ],
+ "passata": [
+  "exact",
+  "La Gina passata 680g"
+ ],
+ "chicken stock": [
+  "exact",
+  "Campbell's Real Stock 250mL"
+ ],
+ "thickened cream": [
+  "exact",
+  "WW own-brand thickened cream 600mL"
+ ],
+ "sour cream": [
+  "wrong",
+  "Sakata sour-cream-&-chives rice crackers; real WW sour cream at rank 5 - store 1101 ranks four snack products above it"
+ ],
+ "feta": [
+  "exact",
+  "Dodoni Greek feta 150g"
+ ],
+ "pita bread": [
+  "plausible",
+  "Nana wholemeal pita 5pk - wholemeal variant"
+ ],
+ "naan bread": [
+  "plausible",
+  "Simson's mini naans - mini format for '4 naan breads'"
+ ],
+ "sourdough bread": [
+  "exact",
+  "WW 35hr sourdough loaf"
+ ],
+ "red wine": [
+  "exact",
+  "Jacob's Creek Shiraz 750mL"
+ ],
+ "jasmine rice": [
+  "exact",
+  "Sunrice jasmine 1kg"
+ ],
+ "_criteria": "same four grades as grades.json; carried = identical product id at store 1101 vs #231's re-ranked pick"
+}

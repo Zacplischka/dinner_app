@@ -179,6 +179,25 @@ carrying.**
 The honest v1 shapes are: price what can be priced and degrade the rest visibly, or buy the
 quantity knowledge. Both are decisions, not findings — see the follow-up tickets.
 
+## The launch gate re-run (#245)
+
+The corpus was re-run for [#245](https://github.com/Zacplischka/dinner_app/issues/245)
+against **store 1101** (search results captured from inside the Railway container) through
+the full [#241](https://github.com/Zacplischka/dinner_app/issues/241) resolution ladder,
+grading every non-staple line into [#234](https://github.com/Zacplischka/dinner_app/issues/234)'s
+four states. **Median recipe in-tally: 89.4% — the ≥ 80% gate passes.** See the #245
+resolution comment for the full report.
+
+| File | What |
+|---|---|
+| `gate.py` | match → re-rank → #241 ladder → #234 states, per line |
+| `woolies_products_1101.json` | top-5 per term as served to Railway's egress (store 1101) |
+| `grades_1101.json` | match grades at 1101 (46 carried from #231, 22 freshly judged) |
+| `gate_lines_1101.json` | per-line resolution: state, rung, packs, price |
+| `spoon_cache.json` | cached Spoonacular convert/consistency answers |
+
+Reproduce offline: `python3 gate.py` (Spoonacular answers come from the cache).
+
 ## Files
 
 | File | What |
