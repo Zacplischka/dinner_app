@@ -41,9 +41,9 @@ const richmond = {
   area: 'Richmond VIC 3121, Australia',
 };
 
-function renderPage() {
+function renderPage(initialEntry = '/create') {
   return render(
-    <MemoryRouter initialEntries={['/create']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/create" element={<CreateSessionPage />} />
         <Route path="/session/:sessionCode" element={<div>Lobby route</div>} />
@@ -111,7 +111,62 @@ describe('CreateSessionPage location flows', () => {
         longitude: richmond.longitude,
         address: richmond.area,
       },
-      5 // 8 km converted to miles for the backend contract
+      5, // 8 km converted to miles for the backend contract
+      undefined // no branch in the URL → today's contract, untouched (ADR 0007)
+    );
+  });
+
+  it('forwards the fork-chosen branch to session create (#255)', async () => {
+    serviceMocks.geocodeArea.mockResolvedValue(richmond);
+    renderPage('/create?branch=takeaway');
+
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
+    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
+      target: { value: 'Richmond' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
+    await waitFor(() => {
+      expect(screen.getByText('Location set')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Lobby route')).toBeTruthy();
+    });
+    expect(serviceMocks.createSession).toHaveBeenCalledWith(
+      'Alice',
+      expect.any(Object),
+      5,
+      'takeaway'
+    );
+  });
+
+  it('drops a junk branch from the URL rather than sending it (#255)', async () => {
+    serviceMocks.geocodeArea.mockResolvedValue(richmond);
+    renderPage('/create?branch=delivery');
+
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
+    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
+      target: { value: 'Richmond' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
+    await waitFor(() => {
+      expect(screen.getByText('Location set')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Lobby route')).toBeTruthy();
+    });
+    expect(serviceMocks.createSession).toHaveBeenCalledWith(
+      'Alice',
+      expect.any(Object),
+      5,
+      undefined
     );
   });
 

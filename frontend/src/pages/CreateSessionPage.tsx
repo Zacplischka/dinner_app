@@ -3,7 +3,8 @@
 // Issue #79: location works without browser geolocation (manual suburb/postcode entry)
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { BRANCHES, type Branch } from '@dinder/shared/types';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import NavigationHeader from '../components/NavigationHeader';
@@ -21,6 +22,13 @@ interface Location {
 
 export default function CreateSessionPage() {
   const navigate = useNavigate();
+  // The Branch picked at the entry fork (#255); junk or absent → today's
+  // branchless contract (ADR 0007).
+  const [searchParams] = useSearchParams();
+  const branchParam = searchParams.get('branch');
+  const branch = (BRANCHES as readonly string[]).includes(branchParam ?? '')
+    ? (branchParam as Branch)
+    : undefined;
   const [hostName, setHostName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -132,7 +140,7 @@ export default function CreateSessionPage() {
 
     try {
       const [response, { waitForConnection, joinSession }] = await Promise.all([
-        createSession(hostName.trim(), location, searchRadiusMiles),
+        createSession(hostName.trim(), location, searchRadiusMiles, branch),
         import('../services/socketBindings'),
       ]);
 

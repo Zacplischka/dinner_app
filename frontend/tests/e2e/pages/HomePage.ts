@@ -2,29 +2,31 @@ import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
- * HomePage - Page object for the landing page
+ * HomePage - Page object for the entry fork (#255)
  *
  * Routes: /
+ * `/` asks "Tonight you're…" with three Branch cards; Join-with-code and
+ * Compare are a demoted text row.
  */
 export class HomePage extends BasePage {
   readonly heading: Locator;
-  readonly tagline: Locator;
-  readonly createSessionButton: Locator;
-  readonly joinSessionButton: Locator;
+  readonly eatOutCard: Locator;
+  readonly takeawayCard: Locator;
+  readonly cookCard: Locator;
+  readonly joinLink: Locator;
+  readonly compareLink: Locator;
   readonly guestModeText: Locator;
-  readonly participantsText: Locator;
-  readonly privateSelectionsText: Locator;
 
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: /Find a place everyone likes/i });
-    this.tagline = page.getByText(/Start a dinner session/i);
-    this.createSessionButton = page.getByRole('button', { name: /Create Session/i });
-    this.joinSessionButton = page.getByRole('button', { name: /Join with code/i });
+    this.heading = page.getByRole('heading', { name: /Tonight you/i });
+    this.eatOutCard = page.getByRole('button', { name: /Eating out/i });
+    this.takeawayCard = page.getByRole('button', { name: /Getting takeaway/i });
+    this.cookCard = page.getByRole('button', { name: /Cooking/i });
+    this.joinLink = page.getByRole('button', { name: /Join with a code/i });
+    this.compareLink = page.getByRole('button', { name: /Compare delivery prices/i });
     this.guestModeText = page.getByText(/Sign in to save history & invite friends/i);
-    this.participantsText = page.getByText(/Up to 4/i);
-    this.privateSelectionsText = page.getByText(/Private votes/i);
   }
 
   async goto(): Promise<void> {
@@ -33,18 +35,18 @@ export class HomePage extends BasePage {
   }
 
   /**
-   * Click Create Session and navigate to create page
+   * Pick the Eat Out Branch card and land on the create flow
    */
   async clickCreateSession(): Promise<void> {
-    await this.createSessionButton.click();
+    await this.eatOutCard.click();
     await this.page.waitForURL(/\/create/);
   }
 
   /**
-   * Click Join Session and navigate to join page
+   * Open Join with a code from the text row
    */
   async clickJoinSession(): Promise<void> {
-    await this.joinSessionButton.click();
+    await this.joinLink.click();
     await this.page.waitForURL(/\/join/);
   }
 
@@ -53,19 +55,21 @@ export class HomePage extends BasePage {
    */
   async verifyPageElements(): Promise<void> {
     await expect(this.heading).toBeVisible();
-    await expect(this.tagline).toBeVisible();
-    await expect(this.createSessionButton).toBeVisible();
-    await expect(this.joinSessionButton).toBeVisible();
+    await expect(this.eatOutCard).toBeVisible();
+    await expect(this.takeawayCard).toBeVisible();
+    await expect(this.cookCard).toBeVisible();
+    await expect(this.joinLink).toBeVisible();
+    await expect(this.compareLink).toBeVisible();
     await expect(this.guestModeText).toBeVisible();
-    await expect(this.participantsText).toBeVisible();
-    await expect(this.privateSelectionsText).toBeVisible();
   }
 
   /**
    * Verify buttons are enabled and clickable
    */
   async verifyButtonsEnabled(): Promise<void> {
-    await expect(this.createSessionButton).toBeEnabled();
-    await expect(this.joinSessionButton).toBeEnabled();
+    await expect(this.eatOutCard).toBeEnabled();
+    await expect(this.takeawayCard).toBeEnabled();
+    await expect(this.cookCard).toBeEnabled();
+    await expect(this.joinLink).toBeEnabled();
   }
 }

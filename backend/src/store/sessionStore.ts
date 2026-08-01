@@ -8,7 +8,7 @@
 
 import type { Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
-import { SESSION_CODE_LENGTH, type Restaurant } from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type Branch, type Restaurant } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
 
@@ -26,6 +26,8 @@ export interface Session {
   createdAt: number;
   lastActivityAt: number;
   hostName?: string;
+  /** Fixed at creation for the Session's life (#255); absent on pre-fork sessions. */
+  branch?: Branch;
   location?: {
     latitude: number;
     longitude: number;
@@ -159,6 +161,7 @@ export function createSessionStore(redis: Redis) {
     opts: {
       hostId: string;
       hostName?: string;
+      branch?: Branch;
       location?: { latitude: number; longitude: number; address?: string };
       searchRadiusMiles?: number;
       restaurants?: Restaurant[];
@@ -174,6 +177,7 @@ export function createSessionStore(redis: Redis) {
       createdAt: now,
       lastActivityAt: now,
       hostName: opts.hostName,
+      branch: opts.branch,
       location: opts.location,
       searchRadiusMiles: opts.searchRadiusMiles,
     };
@@ -186,6 +190,7 @@ export function createSessionStore(redis: Redis) {
       lastActivityAt: session.lastActivityAt,
     };
     if (opts.hostName) sessionData.hostName = opts.hostName;
+    if (opts.branch) sessionData.branch = opts.branch;
     if (opts.location) {
       sessionData.locationLat = opts.location.latitude;
       sessionData.locationLng = opts.location.longitude;
@@ -227,6 +232,7 @@ export function createSessionStore(redis: Redis) {
       createdAt: parseInt(data.createdAt, 10),
       lastActivityAt: parseInt(data.lastActivityAt, 10),
       hostName: data.hostName,
+      branch: data.branch as Branch | undefined,
     };
 
     if (data.locationLat && data.locationLng) {

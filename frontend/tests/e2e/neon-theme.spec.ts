@@ -27,21 +27,23 @@ test('uses the Neon Night Market foundation', async ({ page }) => {
   await expect(body).toHaveCSS('color', 'rgb(248, 250, 252)');
   await expect(body).toHaveCSS('background-color', 'rgb(3, 7, 18)');
 
-  const create = page.getByRole('button', { name: /create session/i });
-  await expect(create).toHaveCSS('background-image', /rgb\(255, 56, 88\)/);
+  // The fork has no primary CTA; the Cook screen carries an enabled btn-primary.
+  await page.goto('/cook');
+  const primary = page.getByRole('button', { name: /back to tonight/i });
+  await expect(primary).toHaveCSS('background-image', /rgb\(255, 56, 88\)/);
 
-  await create.focus();
-  await expect(create).toHaveCSS('outline-color', 'rgb(53, 231, 255)');
-  await expect(create).toHaveCSS('outline-width', '3px');
+  await primary.focus();
+  await expect(primary).toHaveCSS('outline-color', 'rgb(53, 231, 255)');
+  await expect(primary).toHaveCSS('outline-width', '3px');
 });
 
 test('keeps representative Neon text pairs WCAG AA readable', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/cook');
 
   const body = page.locator('body');
-  const create = page.getByRole('button', { name: /create session/i });
+  const primary = page.getByRole('button', { name: /back to tonight/i });
   await expect(body).toHaveCSS('color', 'rgb(248, 250, 252)');
-  await expect(create).toHaveCSS('color', 'rgb(3, 7, 18)');
+  await expect(primary).toHaveCSS('color', 'rgb(3, 7, 18)');
 
   expect(contrastRatio([248, 250, 252], [3, 7, 18])).toBeGreaterThanOrEqual(4.5);
   expect(contrastRatio([3, 7, 18], [255, 56, 88])).toBeGreaterThanOrEqual(4.5);
@@ -67,21 +69,21 @@ test('uses the Neon card and field treatments', async ({ page }) => {
   await expect(submit).toHaveCSS('background-color', 'rgb(12, 23, 39)');
 });
 
-test('renders the Neon home hero at mobile width', async ({ page }) => {
+test('renders the Neon entry fork at mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
   await expect(page.getByRole('link', { name: 'Dinder home' })).toBeVisible();
-  await expect(page.getByText('Tonight · Melbourne')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Find a place everyone likes.' })).toBeVisible();
-  await expect(page.getByText('4 friends are hungry')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Tonight you/i })).toBeVisible();
 
-  const create = page.getByRole('button', { name: /create session/i });
-  const join = page.getByRole('button', { name: /join with code/i });
-  expect((await create.boundingBox())?.height).toBeGreaterThanOrEqual(48);
-  expect((await join.boundingBox())?.height).toBeGreaterThanOrEqual(48);
-  await expect(create).toHaveCSS('background-image', /rgb\(255, 56, 88\)/);
-  await expect(join).toHaveCSS('border-color', 'rgb(53, 231, 255)');
+  const eatOut = page.getByRole('button', { name: /eating out/i });
+  const takeaway = page.getByRole('button', { name: /getting takeaway/i });
+  const cook = page.getByRole('button', { name: /cooking/i });
+  expect((await eatOut.boundingBox())?.height).toBeGreaterThanOrEqual(48);
+  expect((await takeaway.boundingBox())?.height).toBeGreaterThanOrEqual(48);
+  expect((await cook.boundingBox())?.height).toBeGreaterThanOrEqual(48);
+  await expect(page.getByRole('button', { name: /join with a code/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Compare delivery prices' })).toBeVisible();
 });
 
 test('uses the five-character Neon join field', async ({ page }) => {

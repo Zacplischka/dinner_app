@@ -4,6 +4,14 @@
 export const SESSION_CODE_LENGTH = 5;
 export const SESSION_CODE_PATTERN = /^[A-Z0-9]{5}$/;
 
+/**
+ * The kind of night a Session is for, picked at the entry fork and fixed for
+ * the Session's life (#255). Carried additively in the create contract
+ * (ADR 0007): a client that never sends one gets today's behavior.
+ */
+export const BRANCHES = ['eatout', 'takeaway', 'cook'] as const;
+export type Branch = (typeof BRANCHES)[number];
+
 export interface Restaurant {
   placeId: string;
   name: string;

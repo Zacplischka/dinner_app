@@ -25,8 +25,8 @@ test.describe('Mobile Layout - Home Page', () => {
 
     // Verify main elements are visible without scrolling
     await expect(homePage.heading).toBeVisible();
-    await expect(homePage.createSessionButton).toBeVisible();
-    await expect(homePage.joinSessionButton).toBeVisible();
+    await expect(homePage.eatOutCard).toBeVisible();
+    await expect(homePage.joinLink).toBeVisible();
   });
 
   test('buttons are properly sized for touch (min 44x44)', async ({
@@ -34,8 +34,8 @@ test.describe('Mobile Layout - Home Page', () => {
   }) => {
     await homePage.goto();
 
-    const createButtonBox = await homePage.createSessionButton.boundingBox();
-    const joinButtonBox = await homePage.joinSessionButton.boundingBox();
+    const createButtonBox = await homePage.eatOutCard.boundingBox();
+    const joinButtonBox = await homePage.joinLink.boundingBox();
 
     // Minimum touch target size
     expect(createButtonBox?.height).toBeGreaterThanOrEqual(44);
@@ -125,7 +125,7 @@ test.describe('Mobile Touch Interactions', () => {
     await homePage.goto();
 
     // Tap create session button
-    await homePage.createSessionButton.tap();
+    await homePage.eatOutCard.tap();
 
     await expect(page).toHaveURL(/\/create/);
   });
@@ -160,8 +160,8 @@ test.describe('Mobile - Various Device Sizes', () => {
 
       // All key elements visible
       await expect(homePage.heading).toBeVisible();
-      await expect(homePage.createSessionButton).toBeVisible();
-      await expect(homePage.joinSessionButton).toBeVisible();
+      await expect(homePage.eatOutCard).toBeVisible();
+      await expect(homePage.joinLink).toBeVisible();
 
       // No horizontal overflow
       const hasHorizontalScroll = await page.evaluate(() => {
@@ -180,7 +180,7 @@ test.describe('Mobile - Landscape Orientation', () => {
 
     // Should still show key elements
     await expect(homePage.heading).toBeVisible();
-    await expect(homePage.createSessionButton).toBeVisible();
+    await expect(homePage.eatOutCard).toBeVisible();
   });
 });
 

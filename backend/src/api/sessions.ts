@@ -7,6 +7,7 @@ import { asyncHandler } from './asyncHandler.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import {
+  BRANCHES,
   SESSION_CODE_PATTERN,
   type CreateSessionRequest,
   type CreateSessionResponse,
@@ -27,6 +28,7 @@ export function createSessionsRouter(sessionService: SessionService) {
       })
       .optional(),
     searchRadiusMiles: z.number().min(1).max(15).optional(),
+    branch: z.enum(BRANCHES).optional(),
   });
 
   function validationFields(error: z.ZodError): string[] {
@@ -58,7 +60,8 @@ export function createSessionsRouter(sessionService: SessionService) {
         );
       }
 
-      const { hostName, location, searchRadiusMiles }: CreateSessionRequest = validation.data;
+      const { hostName, location, searchRadiusMiles, branch }: CreateSessionRequest =
+        validation.data;
 
       // Default searchRadiusMiles to 5 if location is provided but radius is not
       const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;
@@ -70,7 +73,7 @@ export function createSessionsRouter(sessionService: SessionService) {
       // The expected empty-area outcome is logged with the search context that
       // explains it; every other failure is the global handler's to log.
       const session = await sessionService
-        .createSession(hostName, location, radius)
+        .createSession(hostName, location, radius, branch)
         .catch((error: unknown) => {
           if (error instanceof DomainError && error.code === 'NO_RESTAURANTS_FOUND') {
             req.log.warn(
