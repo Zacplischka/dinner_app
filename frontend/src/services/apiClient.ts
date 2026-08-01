@@ -25,6 +25,8 @@ import type {
   SessionLocation,
   SessionResponse,
   ShoppingListResponse,
+  SwapLineRequest,
+  SwapLineResponse,
   UserProfile,
   VenueSearchRequest,
   VenueSearchResponse,
@@ -143,6 +145,27 @@ export async function releaseShoppingListLine(
   lineId: string
 ): Promise<ClaimLineResponse> {
   return request<ClaimLineResponse>(claimPath(listId, lineId), { method: 'DELETE' });
+}
+
+/**
+ * Swap one Ingredient Line onto one of the candidates it already offers, or
+ * onto nothing at all with a null Stockcode — "none of these" (#264). The
+ * answer is the whole list, re-priced, and it is shared: everyone holding the
+ * URL sees the correction.
+ */
+export async function swapShoppingListLine(
+  listId: string,
+  lineId: string,
+  stockcode: number | null
+): Promise<SwapLineResponse> {
+  return request<SwapLineResponse>(
+    `/lists/${encodeURIComponent(listId)}/lines/${encodeURIComponent(lineId)}/swap`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stockcode } satisfies SwapLineRequest),
+    }
+  );
 }
 
 /**

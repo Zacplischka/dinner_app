@@ -51,6 +51,18 @@ const dicedTomatoes = {
   AdditionalAttributes: { sapcategoryname: 'CANNED FOOD', sapsubcategoryname: 'TOMATOES' },
 };
 
+/** The runner-up behind it: a bigger tin, so a swap moves the price visibly. */
+const wholeTomatoes = {
+  Stockcode: 67890,
+  Name: 'Ardmona Whole Peeled Tomatoes',
+  PackageSize: '800g',
+  Price: 2.5,
+  InstorePrice: 2.5,
+  CupString: '$0.31 / 100G',
+  IsAvailable: true,
+  AdditionalAttributes: { sapcategoryname: 'CANNED FOOD', sapsubcategoryname: 'TOMATOES' },
+};
+
 function fakes() {
   const spoonacular = spoonacularFetchFake({ recipes: hits });
   return (async (input: string | URL | Request, init?: RequestInit) => {
@@ -64,7 +76,9 @@ function fakes() {
       }
       const term = (JSON.parse(String(init?.body)) as { SearchTerm: string }).SearchTerm;
       // "yuzu kosho" is the clean miss: the search returns nothing at all.
-      return Response.json(woolworthsAnswer(term === 'canned tomatoes' ? [dicedTomatoes] : []));
+      return Response.json(
+        woolworthsAnswer(term === 'canned tomatoes' ? [dicedTomatoes, wholeTomatoes] : [])
+      );
     }
     return spoonacular.fetchImpl(input, init);
   }) as typeof fetch;
@@ -83,7 +97,15 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
   // contract test just filled and fails it with a 404 that has nothing to do
   // with this file. Only this Craving's own pool is ours to clear.
   const poolKey = cravingPoolKey(craving);
-  const ownKeys = [poolKey, poolKey.replace('recipes:pool:', 'recipes:offset:')];
+  const ownKeys = [
+    poolKey,
+    poolKey.replace('recipes:pool:', 'recipes:offset:'),
+    // The price cache lives for a day, so an answer this file's fake gave on a
+    // previous run outlives the run — and the shared dev Redis then serves the
+    // old candidate list to the new fixtures. Exact keys, never a wildcard: the
+    // store is the fake's own 1101, and the terms are this Recipe's own.
+    ...['canned tomatoes', 'yuzu kosho'].map((term) => `woolworths:price:1101:${term}`),
+  ];
 
   beforeEach(async () => {
     await redis.del(...ownKeys);
@@ -117,6 +139,10 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
     const response = await request(app).get(`/api/lists/${listId}`);
     return response;
   }
+
+  /** What the claimer will spend: the same arithmetic as the list total. */
+  const tally = (lines: ShoppingListLine[], name: string) =>
+    shoppingListTotal(lines.filter((line) => line.claimedBy === name));
 
   it('yields a Shopping List URL from the completed Session', async () => {
     const { results } = await decided(4);
@@ -262,10 +288,6 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
       return { sessionCode, listId, body };
     }
 
-    /** What the claimer will spend: the same arithmetic as the list total. */
-    const tally = (lines: ShoppingListLine[], name: string) =>
-      shoppingListTotal(lines.filter((line) => line.claimedBy === name));
-
     /** "9 of 12", derived over non-Staple lines and nothing else. */
     const coverage = (lines: ShoppingListLine[]) => {
       const counted = lines.filter((line) => !line.staple);
@@ -386,6 +408,132 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
       expect((await claim(listId, '99', 'Alice')).status).toBe(404);
       expect((await release(listId, '99')).status).toBe(404);
       expect((await claim('9f0ac1de-7c3a-4a1e-9a3b-2f9f0d1c8e77', '0', 'Alice')).status).toBe(404);
+    });
+  });
+
+  // The top-5 swap picker (#264), through the real Matcher, the real ladder and
+  // the real Redis. The whole promise is that a confidently-wrong match is a
+  // two-tap fix that costs no second Woolworths call and moves the money for
+  // everyone holding the URL.
+  describe('swapping a wrongly matched product', () => {
+    const swap = (listId: string, lineId: string, stockcode: number | null) =>
+      request(app).post(`/api/lists/${listId}/lines/${lineId}/swap`).send({ stockcode });
+
+    /** A minted list, read once so the pricing behind the URL has landed. */
+    async function listed(headcount = 4) {
+      const { results } = await decided(headcount);
+      const listId = results!.shoppingListId!;
+      const { body } = await readList(listId);
+      return { listId, body };
+    }
+
+    /** Nothing may reach Woolworths from here on: the candidates are already in. */
+    function forbidRetailer() {
+      vi.restoreAllMocks();
+      vi.spyOn(globalThis, 'fetch').mockImplementation((() => {
+        throw new Error('a swap must not go back to the Retailer');
+      }) as typeof fetch);
+    }
+
+    it('offers the runners-up the one search already fetched', async () => {
+      const { body } = await listed();
+
+      expect(body.lines[0].runnersUp).toEqual([
+        { stockcode: 67890, name: 'Ardmona Whole Peeled Tomatoes', packageSize: '800g' },
+      ]);
+      // A Staple was never looked up, so it has nothing to pick between.
+      expect(body.lines[1].runnersUp).toBeUndefined();
+    });
+
+    it('re-prices the line through the ladder without a second Retailer call', async () => {
+      const { listId } = await listed();
+      forbidRetailer();
+
+      const { status, body } = await swap(listId, '0', 67890);
+
+      expect(status).toBe(200);
+      // 400 g wanted, and the runner-up is one 800 g tin at $2.50.
+      expect(body.lines[0]).toMatchObject({
+        state: 'priced',
+        needs: { amount: 400, unit: 'g' },
+        packs: 1,
+        priceCents: 250,
+        product: { stockcode: 67890, packageSize: '800g' },
+      });
+      expect(shoppingListTotal(body.lines).cents).toBe(250);
+    });
+
+    it('shows the swap to everyone else holding the URL', async () => {
+      const { listId } = await listed();
+      await swap(listId, '0', 67890);
+
+      const { body } = await readList(listId);
+
+      expect(body.lines[0].product.stockcode).toBe(67890);
+      // And the product it was swapped away from is back in the picker.
+      expect(body.lines[0].runnersUp.map((p: { stockcode: number }) => p.stockcode)).toEqual([
+        12345,
+      ]);
+    });
+
+    it('demotes the line and drops it from the total when none of them is right', async () => {
+      const { listId } = await listed();
+
+      const { body } = await swap(listId, '0', null);
+
+      expect(body.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'canned tomatoes' });
+      expect(shoppingListTotal(body.lines)).toEqual({
+        cents: 0,
+        estimated: false,
+        unpricedCount: 2,
+      });
+    });
+
+    it('keeps the Claim, and the Tally, on a line that gets swapped', async () => {
+      const { listId } = await listed();
+      await request(app).post(`/api/lists/${listId}/lines/0/claim`).send({ displayName: 'Alice' });
+
+      const { body } = await swap(listId, '0', 67890);
+
+      expect(body.lines[0]).toMatchObject({
+        claimedBy: 'Alice',
+        product: { stockcode: 67890 },
+      });
+      expect(tally(body.lines, 'Alice').cents).toBe(250);
+    });
+
+    it('keeps the swaps on the list clock, which swapping does not extend', async () => {
+      const { listId } = await listed();
+      await swap(listId, '0', 67890);
+
+      const listTtl = await redis.ttl(`shoppinglist:${listId}`);
+      const swapsTtl = await redis.ttl(`shoppinglist:${listId}:swaps`);
+
+      expect(swapsTtl).toBeGreaterThan(6 * 24 * 3600);
+      expect(Math.abs(swapsTtl - listTtl)).toBeLessThanOrEqual(1);
+    });
+
+    it('lets a demoted line be picked back onto a product, at the minted price', async () => {
+      const { listId } = await listed();
+      await swap(listId, '0', null);
+
+      const { body } = await swap(listId, '0', 12345);
+
+      expect(body.lines[0]).toMatchObject({ state: 'priced', priceCents: 140 });
+      expect(shoppingListTotal(body.lines).cents).toBe(140);
+    });
+
+    it('404s a line, a list, or a Stockcode the picker never offered', async () => {
+      const { listId } = await listed();
+
+      expect((await swap(listId, '99', 67890)).status).toBe(404);
+      // A lineId that is only a property of every object names no line either.
+      expect((await swap(listId, 'toString', 67890)).status).toBe(404);
+      expect((await swap('9f0ac1de-7c3a-4a1e-9a3b-2f9f0d1c8e77', '0', 67890)).status).toBe(404);
+      // Not one of this line's five: swapping is not a way to name any product.
+      expect((await swap(listId, '0', 11111)).status).toBe(404);
+      // And the Staple was never matched, so it has no picker to swap in.
+      expect((await swap(listId, '1', 67890)).status).toBe(404);
     });
   });
 });

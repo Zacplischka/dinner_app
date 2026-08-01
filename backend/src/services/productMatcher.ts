@@ -109,6 +109,9 @@ export function matchProducts(products: WoolworthsProduct[], term: string): Prod
 
   return {
     match: toCandidate(ranked[0].product),
-    runnersUp: ranked.slice(1).map(({ product }) => toCandidate(product)),
+    // Four, because the picker is a top-5 and the match is the first of them
+    // (#264). Anything further down was never going to be the right product,
+    // and carrying it would only fatten every Shopping List that stores it.
+    runnersUp: ranked.slice(1, 5).map(({ product }) => toCandidate(product)),
   };
 }

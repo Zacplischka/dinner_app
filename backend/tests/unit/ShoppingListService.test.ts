@@ -19,6 +19,12 @@ const tin = {
   available: true,
 };
 
+/** The runners-up the one search already paid for — the swap picker's stock. */
+const runnersUp = [
+  { stockcode: 222, name: 'Ardmona Rich & Thick Tomatoes', packageSize: '400g', available: true },
+  { stockcode: 333, name: 'Mutti Polpa', packageSize: '400g', available: true },
+];
+
 const session: Session = {
   sessionCode: 'AB123',
   hostId: 'host',
@@ -75,6 +81,12 @@ function fakeRedis() {
           queued.push(() => void (hash(key).has(field) || hash(key).set(field, value)));
           return chain;
         },
+        // A swap overwrites, unlike a Claim: the last correction is the one on
+        // the list, and there is no race to win.
+        hset(key: string, field: string, value: string) {
+          queued.push(() => void hash(key).set(field, value));
+          return chain;
+        },
         pexpireat(key: string, at: number) {
           queued.push(() => void diesAt.set(key, at));
           return chain;
@@ -120,13 +132,16 @@ function build(
     mintGate.open = resolve;
   });
   const claimed = new Map<string, string>();
+  // Priced by whichever candidate it was handed, so a swap's re-price is
+  // visible as a different number rather than taken on trust.
   const resolveLine = vi.fn(
-    async (): Promise<QuantityResolution> =>
+    async (_ingredient: unknown, outcome: ProductMatchOutcome): Promise<QuantityResolution> =>
       overrides.resolution ?? {
         state: 'priced',
         needs: { amount: 600, unit: 'g' },
         packs: 2,
-        priceCents: 280,
+        priceCents:
+          outcome.status === 'matched' && outcome.match.stockcode !== tin.stockcode ? 500 : 280,
       }
   );
   const matchProduct = vi.fn(async (): Promise<ProductMatchOutcome> => {
@@ -211,6 +226,9 @@ describe('ShoppingListService.mint', () => {
       packs: 2,
       priceCents: 280,
       product: { stockcode: 12345, name: 'Woolworths Diced Tomatoes', packageSize: '400g' },
+      // The search found the one product, so the picker is empty — but it is
+      // there, because "none of these" is still an answer (#264).
+      runnersUp: [],
     });
   });
 
@@ -237,6 +255,7 @@ describe('ShoppingListService.mint', () => {
       staple: false,
       state: 'unpriced_matched',
       product: { stockcode: 12345, name: 'Woolworths Diced Tomatoes', packageSize: '400g' },
+      runnersUp: [],
     });
     // The reason is a log diagnostic, never a wire field to branch or render on.
     expect(JSON.stringify(list)).not.toContain('unparsed pack');
@@ -583,5 +602,174 @@ describe('ShoppingListService claims', () => {
     const list = await service.releaseLine(listId, '0');
 
     expect(list?.lines[0].claimedBy).toBeUndefined();
+  });
+});
+
+// The top-5 swap picker (#264): the cure for a confident-wrong Product Match.
+// The candidates were all fetched by the one search at mint, so a correction
+// costs no Retailer call — it re-prices through the ladder and writes to the
+// shared list, where every viewer of the URL sees it.
+describe('ShoppingListService swaps', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /** A minted list whose priced line has runners-up behind it. */
+  async function minted() {
+    const built = build({ outcome: { status: 'matched', match: tin, runnersUp } });
+    const listId = (await built.service.mint('AB123', '11'))!;
+    await built.service.readList(listId);
+    return { ...built, listId };
+  }
+
+  it('offers every runner-up the one search fetched, minus the one on the line', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.readList(listId);
+
+    expect(list?.lines[0].runnersUp).toEqual([
+      { stockcode: 222, name: 'Ardmona Rich & Thick Tomatoes', packageSize: '400g' },
+      { stockcode: 333, name: 'Mutti Polpa', packageSize: '400g' },
+    ]);
+  });
+
+  it('still offers the demotion when the search found only the one product', async () => {
+    // No runners-up, but the match may still be confidently wrong, and "none of
+    // these" is the answer for it — so the picker is there, empty.
+    const { service } = build();
+    const listId = (await service.mint('AB123', '11'))!;
+
+    const list = await service.readList(listId);
+
+    expect(list?.lines[0].runnersUp).toEqual([]);
+    expect(await service.swapLine(listId, '0', null)).toMatchObject({
+      lines: [expect.objectContaining({ state: 'unmatched' }), expect.anything()],
+    });
+  });
+
+  it('offers no picker on a line that never had a Match', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.readList(listId);
+
+    // The Staple: never looked up, so there is nothing to pick between.
+    expect(list?.lines[1].runnersUp).toBeUndefined();
+  });
+
+  it('re-prices the swapped line through the ladder, without a Retailer call', async () => {
+    const { service, listId, matchProduct, resolveLine } = await minted();
+    matchProduct.mockClear();
+    resolveLine.mockClear();
+
+    const list = await service.swapLine(listId, '0', 222);
+
+    expect(list?.lines[0]).toMatchObject({
+      state: 'priced',
+      priceCents: 500,
+      product: { stockcode: 222, name: 'Ardmona Rich & Thick Tomatoes' },
+    });
+    expect(resolveLine).toHaveBeenCalledWith(
+      { name: 'canned tomatoes', amount: 600, unit: 'g' },
+      { status: 'matched', match: expect.objectContaining({ stockcode: 222 }), runnersUp: [] }
+    );
+    expect(matchProduct).not.toHaveBeenCalled();
+  });
+
+  it('puts the product it swapped away from back in the picker', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.swapLine(listId, '0', 222);
+
+    expect(list?.lines[0].runnersUp?.map((product) => product.stockcode)).toEqual([12345, 333]);
+  });
+
+  it('shows the swap to everyone else holding the URL', async () => {
+    const { service, otherInstance, listId } = await minted();
+    await service.swapLine(listId, '0', 333);
+
+    const list = await otherInstance().readList(listId);
+
+    expect(list?.lines[0]).toMatchObject({ product: { stockcode: 333 }, priceCents: 500 });
+  });
+
+  it('demotes the line to Unmatched when none of them is the right one', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.swapLine(listId, '0', null);
+
+    expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'canned tomatoes' });
+    // Out of the tally, but still shoppable — and still swappable back.
+    expect(list?.lines[0].runnersUp?.map((product) => product.stockcode)).toEqual([
+      12345, 222, 333,
+    ]);
+  });
+
+  it('keeps the Claim on a line that gets swapped', async () => {
+    const { service, listId } = await minted();
+    await service.claimLine(listId, '0', 'Alice');
+
+    const list = await service.swapLine(listId, '0', 222);
+
+    expect(list?.lines[0]).toMatchObject({ claimedBy: 'Alice', product: { stockcode: 222 } });
+  });
+
+  it('keeps the line where it is — same id, same recipe text', async () => {
+    const { service, listId } = await minted();
+
+    const list = await service.swapLine(listId, '0', 222);
+
+    expect(list?.lines[0]).toMatchObject({ id: '0', text: '600 g canned tomatoes', staple: false });
+  });
+
+  it('dies with the list it is on, and swapping extends nothing', async () => {
+    const { service, redis, listId } = await minted();
+
+    await service.swapLine(listId, '0', 222);
+
+    expect(redis.diesAt.get(`shoppinglist:${listId}:swaps`)).toBe(
+      Date.parse('2026-08-01T10:00:00.000Z') + SHOPPING_LIST_TTL_MS
+    );
+  });
+
+  it('takes a swap back to the product it demoted, and prices it as before', async () => {
+    const { service, listId } = await minted();
+    await service.swapLine(listId, '0', null);
+
+    const list = await service.swapLine(listId, '0', 12345);
+
+    // "None of these" is not a one-way door: the same picker is the way back,
+    // and the way back re-prices at what the list promised.
+    expect(list?.lines[0]).toMatchObject({
+      state: 'priced',
+      priceCents: 280,
+      product: { stockcode: 12345 },
+    });
+  });
+
+  // The stored Matches come back from JSON.parse wearing Object.prototype, so
+  // a lineId that names a method of it must still name nothing.
+  it('names nothing for a line id that is only a property of every object', async () => {
+    const { service, listId } = await minted();
+
+    for (const lineId of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+      expect(await service.swapLine(listId, lineId, 222), lineId).toBeNull();
+    }
+  });
+
+  it('names nothing for a list, a line, or a product the picker never offered', async () => {
+    const { service, listId } = await minted();
+
+    expect(await service.swapLine(listId, '99', 222)).toBeNull();
+    expect(await service.swapLine('00000000-0000-4000-8000-000000009999', '0', 222)).toBeNull();
+    // A Stockcode off some other list is not one of this line's candidates.
+    expect(await service.swapLine(listId, '0', 4242)).toBeNull();
+    // And a Staple was never matched, so it has no candidates at all.
+    expect(await service.swapLine(listId, '1', 222)).toBeNull();
+  });
+
+  it('will not swap on a list still being priced', async () => {
+    const { service, mintGate } = build({ holdMint: true });
+    const listId = (await service.mint('AB123', '11'))!;
+
+    expect(await service.swapLine(listId, '0', 222)).toBeNull();
+    mintGate.open();
   });
 });

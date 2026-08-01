@@ -19,6 +19,7 @@ import {
   claimShoppingListLine,
   releaseShoppingListLine,
   retailerRedirectUrl,
+  swapShoppingListLine,
 } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { formatPrice } from '../utils/money';
@@ -96,12 +97,23 @@ function Line({
   shopperName,
   onClaim,
   onRelease,
+  onSwap,
 }: {
   line: ShoppingListLine;
   shopperName: string;
   onClaim: () => void;
   onRelease: () => void;
+  /** A Stockcode from this line's own picker, or null for "none of these". */
+  onSwap: (stockcode: number | null) => void;
 }) {
+  // Closed until asked for: the picker is the cure for a wrong match, not a
+  // question every right one has to answer (#234).
+  const [picking, setPicking] = useState(false);
+  const pick = (stockcode: number | null) => {
+    setPicking(false);
+    onSwap(stockcode);
+  };
+
   return (
     // A claimed line recedes so the unclaimed ones are what the eye lands on —
     // what is left to pick up is the whole question the page answers (#229).
@@ -136,13 +148,32 @@ function Line({
       )}
 
       <div className="mt-1 flex items-center justify-between gap-3">
-        {line.state === 'unmatched' ? (
-          <WoolworthsLink target={{ q: line.searchTerm }}>Search Woolworths</WoolworthsLink>
-        ) : (
-          <WoolworthsLink target={{ stockcode: line.product.stockcode }}>
-            {line.product.name} at Woolworths
-          </WoolworthsLink>
-        )}
+        <span className="flex flex-wrap items-center gap-x-3">
+          {line.state === 'unmatched' ? (
+            <WoolworthsLink target={{ q: line.searchTerm }}>Search Woolworths</WoolworthsLink>
+          ) : (
+            <WoolworthsLink target={{ stockcode: line.product.stockcode }}>
+              {line.product.name} at Woolworths
+            </WoolworthsLink>
+          )}
+
+          {/* The two-tap cure for a confidently-wrong match (#264): these are
+              the runners-up the one search already fetched, so opening the
+              picker costs Woolworths nothing. Offered on every matched line,
+              empty runners-up included — "none of these" is always an answer,
+              and on a line already demoted by it, the same picker is the way
+              back, which is why it does not ask "wrong product?" there. */}
+          {line.runnersUp && (
+            <button
+              type="button"
+              onClick={() => setPicking(!picking)}
+              aria-expanded={picking}
+              className="text-sm text-muted hover:text-text"
+            >
+              {line.state === 'unmatched' ? 'Pick a product' : 'Wrong product?'}
+            </button>
+          )}
+        </span>
 
         {/* Releasing is offered on every Claim, not only your own: a Shopper
             who goes dark leaves no live group to appeal to (#229). Taking the
@@ -171,6 +202,37 @@ function Line({
           </button>
         )}
       </div>
+
+      {picking && line.runnersUp && (
+        <ul className="mt-2 rounded-xl border border-line/50 bg-ink/40 p-2">
+          {line.runnersUp.map((product) => (
+            <li key={product.stockcode}>
+              <button
+                type="button"
+                onClick={() => pick(product.stockcode)}
+                className="w-full rounded-lg px-3 py-2 text-left text-sm text-text hover:bg-line/20"
+              >
+                {product.name}
+                {product.packageSize ? (
+                  <span className="text-muted"> · {product.packageSize}</span>
+                ) : null}
+              </button>
+            </li>
+          ))}
+          {/* No right answer among them: the line degrades to Unmatched — its
+              recipe text and a Woolworths search — rather than blocking the
+              shop with a product nobody wants (#234). */}
+          <li>
+            <button
+              type="button"
+              onClick={() => pick(null)}
+              className="w-full rounded-lg px-3 py-2 text-left text-sm text-muted hover:bg-line/20"
+            >
+              None of these
+            </button>
+          </li>
+        </ul>
+      )}
     </li>
   );
 }
@@ -220,6 +282,9 @@ export default function ShoppingListPage() {
           void applyChange(() => claimShoppingListLine(list.listId, line.id, shopperName))
         }
         onRelease={() => void applyChange(() => releaseShoppingListLine(list.listId, line.id))}
+        onSwap={(stockcode) =>
+          void applyChange(() => swapShoppingListLine(list.listId, line.id, stockcode))
+        }
       />
     );
 

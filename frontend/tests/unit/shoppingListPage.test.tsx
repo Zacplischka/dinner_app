@@ -11,6 +11,7 @@ const serviceMocks = vi.hoisted(() => ({
   getShoppingList: vi.fn(),
   claimShoppingListLine: vi.fn(),
   releaseShoppingListLine: vi.fn(),
+  swapShoppingListLine: vi.fn(),
 }));
 
 vi.mock('../../src/services/apiClient', async () => {
@@ -24,6 +25,9 @@ import ShoppingListPage from '../../src/pages/ShoppingListPage';
 
 const tomatoes = { stockcode: 12345, name: 'Woolworths Diced Tomatoes', packageSize: '400g' };
 const beef = { stockcode: 777, name: 'Beef Chuck Steak', packageSize: 'per 1kg' };
+/** The runners-up behind line 0 — the swap picker's other two (#264). */
+const ardmona = { stockcode: 222, name: 'Ardmona Rich & Thick', packageSize: '400g' };
+const mutti = { stockcode: 333, name: 'Mutti Polpa', packageSize: '400g' };
 
 const lines: ShoppingListLine[] = [
   {
@@ -35,6 +39,7 @@ const lines: ShoppingListLine[] = [
     packs: 1,
     priceCents: 140,
     product: tomatoes,
+    runnersUp: [ardmona, mutti],
   },
   {
     id: '1',
@@ -388,6 +393,148 @@ describe('ShoppingListPage claims', () => {
     await shopping();
 
     await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    expect(await screen.findByText('Network is down')).toBeInTheDocument();
+    expect(screen.getByText('250 g canned tomatoes')).toBeInTheDocument();
+  });
+});
+
+// The top-5 swap picker (#264): the two-tap cure for a confidently-wrong
+// Product Match. Open the picker, pick the right product — no new search, and
+// the correction lands on the shared list where everyone else sees it.
+describe('ShoppingListPage swap picker', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    serviceMocks.getShoppingList.mockResolvedValue(list);
+    serviceMocks.swapShoppingListLine.mockResolvedValue(list);
+  });
+
+  const tap = async (button: HTMLElement) => act(async () => void fireEvent.click(button));
+  const buttonOn = (text: string, name: string | RegExp) =>
+    within(lineFor(text)).getByRole('button', { name });
+
+  /** The picker open on a line, which is the first of the two taps. */
+  async function picking(text = '250 g canned tomatoes') {
+    renderPage();
+    await screen.findByText(text);
+    await tap(buttonOn(text, /wrong product/i));
+    return lineFor(text);
+  }
+
+  it('offers the picker on a matched line, and nothing on a line without one', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+
+    expect(buttonOn('250 g canned tomatoes', /wrong product/i)).toBeInTheDocument();
+    // The Staple was never matched, so there is nothing to pick between.
+    expect(
+      within(lineFor('2 tsp salt')).queryByRole('button', { name: /wrong product/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('still offers "none of these" when there are no runners-up to offer', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue({
+      ...list,
+      lines: lines.map((line) => (line.id === '0' ? { ...line, runnersUp: [] } : line)),
+    });
+
+    const line = await picking();
+
+    expect(within(line).getByRole('button', { name: /none of these/i })).toBeInTheDocument();
+  });
+
+  it('shows the runner-up products the list already carries', async () => {
+    const line = await picking();
+
+    expect(within(line).getByRole('button', { name: /Ardmona Rich & Thick/ })).toBeInTheDocument();
+    expect(within(line).getByRole('button', { name: /Mutti Polpa/ })).toBeInTheDocument();
+  });
+
+  it('corrects the line in a second tap', async () => {
+    const line = await picking();
+
+    await tap(within(line).getByRole('button', { name: /Ardmona Rich & Thick/ }));
+
+    expect(serviceMocks.swapShoppingListLine).toHaveBeenCalledWith('list-1', '0', 222);
+  });
+
+  it('closes the picker once the swap has landed', async () => {
+    const line = await picking();
+
+    await tap(within(line).getByRole('button', { name: /Mutti Polpa/ }));
+
+    expect(within(line).queryByRole('button', { name: /Mutti Polpa/ })).not.toBeInTheDocument();
+  });
+
+  it('offers a demoted line the way back, and does not call it a wrong product', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue({
+      ...list,
+      lines: lines.map((line) =>
+        line.id === '0'
+          ? {
+              id: '0',
+              text: line.text,
+              staple: false,
+              state: 'unmatched',
+              searchTerm: 'tomatoes',
+              runnersUp: [tomatoes, ardmona, mutti],
+            }
+          : line
+      ),
+    });
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+    const line = lineFor('250 g canned tomatoes');
+
+    await tap(within(line).getByRole('button', { name: /pick a product/i }));
+
+    expect(
+      within(line).getByRole('button', { name: /Woolworths Diced Tomatoes/ })
+    ).toBeInTheDocument();
+  });
+
+  it('demotes the line on "none of these"', async () => {
+    const line = await picking();
+
+    await tap(within(line).getByRole('button', { name: /none of these/i }));
+
+    expect(serviceMocks.swapShoppingListLine).toHaveBeenCalledWith('list-1', '0', null);
+  });
+
+  it('installs the re-priced list the swap answers with', async () => {
+    const swapped: ShoppingList = {
+      ...list,
+      lines: lines.map((line) =>
+        line.id === '0'
+          ? {
+              ...line,
+              state: 'priced',
+              packs: 1,
+              priceCents: 250,
+              product: ardmona,
+              runnersUp: [tomatoes, mutti],
+            }
+          : line
+      ) as ShoppingListLine[],
+    };
+    serviceMocks.swapShoppingListLine.mockResolvedValue(swapped);
+    const line = await picking();
+
+    await tap(within(line).getByRole('button', { name: /Ardmona Rich & Thick/ }));
+
+    // The line now names the product that was picked, and the headline has
+    // moved with it: $2.50 + the $7.74 estimate.
+    expect(within(lineFor('250 g canned tomatoes')).getByRole('link')).toHaveTextContent(
+      'Ardmona Rich & Thick at Woolworths'
+    );
+    expect(screen.getByText('≈ $10.24')).toBeInTheDocument();
+  });
+
+  it('keeps the list on screen when a swap does not go through', async () => {
+    serviceMocks.swapShoppingListLine.mockRejectedValue(new Error('Network is down'));
+    const line = await picking();
+
+    await tap(within(line).getByRole('button', { name: /Mutti Polpa/ }));
 
     expect(await screen.findByText('Network is down')).toBeInTheDocument();
     expect(screen.getByText('250 g canned tomatoes')).toBeInTheDocument();
