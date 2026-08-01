@@ -206,6 +206,10 @@ _Avoid_: assign, reserve, lock, take — and never Buyer, whose single-lock mone
 Whoever holds and works a Shopping List, identified only by a self-declared display name. Every Participant can be one; a Shopper need not be a Participant — the housemate opening a forwarded link after the Session expired is the canonical case.
 _Avoid_: participant, buyer, claimer, user
 
+**Cook View**:
+The Shopping List read at the stove: the crowned Recipe's instructions, snapshotted into the list at mint and rendered whole on one screen, each step dimmable by tapping it. Lives on the Shopping List's own URL and inherits everything about it — the same lifetime, the same capability, the same Shopper — so it works after the Session, the pool, and the source's own memory of the Recipe are all gone. Closed by one source credit, which is also what stands in for a Recipe whose instructions were never snapshotted.
+_Avoid_: cooking mode, recipe page, method screen
+
 **Tally**:
 What one Shopper will spend on their claimed Ingredient Lines: the sum of their Priced and Estimated lines, ≈-prefixed whenever an Estimated line is in it, with claimed-but-unpriced lines shown as a count. Not a Share — nobody fronts, nobody owes; a Tally is a preview of your own receipt, not a debt. Distinct from the list total, the Shopping List's headline over all in-tally lines regardless of claimer.
 _Avoid_: share, split, bill, owed, total

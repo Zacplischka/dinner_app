@@ -164,7 +164,11 @@ describe('ShoppingListPage', () => {
     renderPage();
     await screen.findByText('250 g canned tomatoes');
 
-    const hrefs = [...document.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? '');
+    // Every anchor on the page, minus the page's own navigation — the guard is
+    // that nothing anywhere reaches Woolworths except through the redirect.
+    const hrefs = [...document.querySelectorAll('a')]
+      .map((a) => a.getAttribute('href') ?? '')
+      .filter((href) => href !== '/list/list-1/cook');
     expect(hrefs.length).toBe(5);
     for (const href of hrefs) {
       expect(href).toContain('/redirect?retailer=woolworths');
@@ -172,6 +176,14 @@ describe('ShoppingListPage', () => {
     }
     expect(hrefs[0]).toContain('stockcode=12345');
     expect(hrefs[3]).toContain('q=yuzu%20kosho');
+  });
+
+  it('offers the cook view on the same list URL', async () => {
+    renderPage();
+    expect(await screen.findByRole('link', { name: /cook/i })).toHaveAttribute(
+      'href',
+      '/list/list-1/cook'
+    );
   });
 
   it('names Woolworths as the source of the prices', async () => {

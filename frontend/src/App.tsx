@@ -23,6 +23,7 @@ const GroupOrderPage = lazy(() => import('./pages/GroupOrderPage'));
 const FriendsPage = lazy(() => import('./pages/FriendsPage'));
 const CookSetupPage = lazy(() => import('./pages/CookSetupPage'));
 const ShoppingListPage = lazy(() => import('./pages/ShoppingListPage'));
+const CookViewPage = lazy(() => import('./pages/CookViewPage'));
 
 // Loading fallback component - matches dark theme
 function LoadingFallback() {
@@ -75,6 +76,11 @@ function AnimatedRoutes() {
             it. Deliberately not nested under /session — holding the link is
             the whole capability, and no Session need still exist. */}
         <Route path="/list/:listId" element={<ShoppingListPage />} />
+
+        {/* The cook view: the same list, read at the stove. On the list URL on
+            purpose — it inherits the capability and the 7-day clock, and
+            reopening the link is the whole re-cook affordance (#251). */}
+        <Route path="/list/:listId/cook" element={<CookViewPage />} />
 
         {/* Friends page */}
         <Route path="/friends" element={<FriendsPage />} />
