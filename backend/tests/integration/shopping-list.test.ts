@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import type Redis from 'ioredis';
-import { shoppingListTotal } from '@dinder/shared/types';
+import { shoppingListTotal, type ShoppingListLine } from '@dinder/shared/types';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 import { app, sessionService, sessionStore as store } from '../../src/server.js';
 import { cravingPoolKey } from '../../src/services/RecipePoolService.js';
@@ -239,5 +239,153 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
 
     expect(response.status).toBe(404);
     expect(response.body.code).toBe('NOT_FOUND');
+  });
+
+  // Claiming (#263), against the real Redis that decides the race. Every
+  // request below carries a display name at most — no session, no participant
+  // id, no token — because the URL is the whole capability (#229).
+  describe('claiming Ingredient Lines', () => {
+    const claimUrl = (listId: string, lineId: string) =>
+      `/api/lists/${listId}/lines/${lineId}/claim`;
+
+    const claim = (listId: string, lineId: string, displayName: string) =>
+      request(app).post(claimUrl(listId, lineId)).send({ displayName });
+
+    const release = (listId: string, lineId: string) =>
+      request(app).delete(claimUrl(listId, lineId));
+
+    /** A minted list, read once so the pricing behind the URL has landed. */
+    async function listed(headcount = 4) {
+      const { sessionCode, results } = await decided(headcount);
+      const listId = results!.shoppingListId!;
+      const { body } = await readList(listId);
+      return { sessionCode, listId, body };
+    }
+
+    /** What the claimer will spend: the same arithmetic as the list total. */
+    const tally = (lines: ShoppingListLine[], name: string) =>
+      shoppingListTotal(lines.filter((line) => line.claimedBy === name));
+
+    /** "9 of 12", derived over non-Staple lines and nothing else. */
+    const coverage = (lines: ShoppingListLine[]) => {
+      const counted = lines.filter((line) => !line.staple);
+      return { claimed: counted.filter((line) => line.claimedBy).length, of: counted.length };
+    };
+
+    it('gives a line to exactly one of two Shoppers tapping it together', async () => {
+      const { listId } = await listed();
+
+      const [alice, bob] = await Promise.all([
+        claim(listId, '0', 'Alice'),
+        claim(listId, '0', 'Bob'),
+      ]);
+
+      // Both taps get an answer, and both answers name the same winner: the
+      // race resolved in Redis, not in whichever request happened to be read
+      // back last.
+      expect([alice.status, bob.status]).toEqual([200, 200]);
+      const holder = alice.body.lines[0].claimedBy;
+      expect(['Alice', 'Bob']).toContain(holder);
+      expect(bob.body.lines[0].claimedBy).toBe(holder);
+      expect((await readList(listId)).body.lines[0].claimedBy).toBe(holder);
+    });
+
+    it('lets any Shopper release any Claim, and leaves the line free', async () => {
+      const { listId } = await listed();
+      await claim(listId, '0', 'Alice');
+
+      // Bob never claimed this line and is not Alice; he can still free it.
+      const released = await release(listId, '0');
+
+      expect(released.body.lines[0].claimedBy).toBeUndefined();
+      // And taking it over is its own deliberate tap, never a side-effect.
+      expect((await claim(listId, '0', 'Bob')).body.lines[0].claimedBy).toBe('Bob');
+    });
+
+    it('shows every Shopper the same Claims, which is the live channel working', async () => {
+      const { listId } = await listed();
+
+      await claim(listId, '0', 'Alice');
+
+      // A second reader holding nothing but the URL sees Alice's Claim.
+      expect((await readList(listId)).body.lines[0].claimedBy).toBe('Alice');
+    });
+
+    it("tallies only the claimer's own Priced and Estimated lines", async () => {
+      const { listId } = await listed();
+      // Line 0 prices at $1.40; line 1 is the Staple; line 2 is the miss.
+      await claim(listId, '0', 'Alice');
+      await claim(listId, '1', 'Alice');
+      await claim(listId, '2', 'Bob');
+
+      const { body } = await readList(listId);
+
+      // Alice claimed a $1.40 tin and a Staple: the Staple counts toward
+      // nothing, including her own Tally.
+      expect(tally(body.lines, 'Alice')).toEqual({
+        cents: 140,
+        estimated: false,
+        unpricedCount: 0,
+      });
+      // Bob claimed only the line Woolworths had nothing for: no money, one
+      // unpriced item.
+      expect(tally(body.lines, 'Bob')).toEqual({ cents: 0, estimated: false, unpricedCount: 1 });
+      // And the headline is unmoved by any of it.
+      expect(shoppingListTotal(body.lines).cents).toBe(140);
+    });
+
+    it('counts coverage over non-Staple lines only', async () => {
+      const { listId } = await listed();
+
+      expect(coverage((await readList(listId)).body.lines)).toEqual({ claimed: 0, of: 2 });
+      await claim(listId, '0', 'Alice');
+      await claim(listId, '1', 'Alice'); // the Staple: claimable, uncounted
+      expect(coverage((await readList(listId)).body.lines)).toEqual({ claimed: 1, of: 2 });
+      await claim(listId, '2', 'Bob');
+
+      expect(coverage((await readList(listId)).body.lines)).toEqual({ claimed: 2, of: 2 });
+    });
+
+    it('claims a Staple like any other line, counting it toward nothing', async () => {
+      const { listId } = await listed();
+
+      const { body } = await claim(listId, '1', 'Alice');
+
+      expect(body.lines[1]).toMatchObject({ staple: true, claimedBy: 'Alice' });
+      expect(shoppingListTotal(body.lines).cents).toBe(140);
+    });
+
+    it('lets someone who was never a Participant claim after the Session is gone', async () => {
+      const { sessionCode, listId } = await listed();
+      await store.deleteSession(sessionCode);
+
+      // Dana was never in the Session, and there is no Session left to join.
+      const response = await claim(listId, '0', 'Dana');
+
+      expect(await store.readSession(sessionCode)).toBeNull();
+      expect(response.status).toBe(200);
+      expect(response.body.lines[0].claimedBy).toBe('Dana');
+    });
+
+    it('keeps the Claims on the list clock, which claiming does not extend', async () => {
+      const { listId } = await listed();
+      await claim(listId, '0', 'Alice');
+
+      const listTtl = await redis.ttl(`shoppinglist:${listId}`);
+      const claimsTtl = await redis.ttl(`shoppinglist:${listId}:claims`);
+
+      // Same seven days, from the same mint — within the second the two writes
+      // are apart. A Claim can never outlive the list it is on, or extend it.
+      expect(claimsTtl).toBeGreaterThan(6 * 24 * 3600);
+      expect(Math.abs(claimsTtl - listTtl)).toBeLessThanOrEqual(1);
+    });
+
+    it('answers a claim on a line or list that names nothing with the read 404', async () => {
+      const { listId } = await listed();
+
+      expect((await claim(listId, '99', 'Alice')).status).toBe(404);
+      expect((await release(listId, '99')).status).toBe(404);
+      expect((await claim('9f0ac1de-7c3a-4a1e-9a3b-2f9f0d1c8e77', '0', 'Alice')).status).toBe(404);
+    });
   });
 });

@@ -98,6 +98,13 @@ interface ShoppingListLineFields {
   text: string;
   /** A Staple: rendered unticked, counted by nothing (list total, Tally, coverage). */
   staple: boolean;
+  /**
+   * The Shopper holding this line — a self-declared display name, nothing the
+   * server ever verified (CONTEXT.md: Shopper) — or absent when nobody does.
+   * One name, never a set: a Claim is exclusive and the first tap wins (#229).
+   * Additive (ADR 0007) — a list minted before Claims existed simply has none.
+   */
+  claimedBy?: string;
 }
 
 /**
@@ -149,6 +156,33 @@ export interface ShoppingList {
 
 // GET /api/lists/:listId — the whole body is the resource.
 export type ShoppingListResponse = ShoppingList;
+
+/**
+ * POST /api/lists/:listId/lines/:lineId/claim — the whole body (#263). The
+ * Shopper is a self-declared display name and nothing else: the URL is the
+ * capability, so there is no token, no participant id, and no Session to
+ * check the name against.
+ */
+export interface ClaimLineRequest {
+  displayName: string;
+}
+
+/**
+ * The longest a Shopper's name may be — long enough for a real one, short
+ * enough to render beside a line. Shared because both sides enforce it and
+ * they must agree (ADR 0006): the input stops at it, the endpoint rejects
+ * past it.
+ */
+export const MAX_SHOPPER_NAME = 50;
+
+/**
+ * Claiming and releasing both answer with the whole list, at its new state.
+ * A Claim is the only thing on it that moves, and every derived display —
+ * the Tally, coverage, "claimed by <name>" — reads the same lines the GET
+ * does, so one shape serves all three verbs. A tap that lost the race is not
+ * an error: it answers 200 with the winner's name on the line (#229).
+ */
+export type ClaimLineResponse = ShoppingList;
 
 export interface ShoppingListTotal {
   cents: number;

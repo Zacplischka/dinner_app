@@ -1,18 +1,23 @@
-// The Shopping List page (#262): four line states, a headline that is the list
-// total over in-tally lines, Staples out of every count, and every Woolworths
-// link through the counting redirect.
-import { render, screen, waitFor } from '@testing-library/react';
+// The Shopping List page (#262, #263): four line states, a headline that is the
+// list total over in-tally lines, Staples out of every count, every Woolworths
+// link through the counting redirect — and one-tap Claims, a Tally of your own,
+// and a coverage count that everyone on the list watches move.
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ShoppingList, ShoppingListLine } from '@dinder/shared/types';
 
-const serviceMocks = vi.hoisted(() => ({ getShoppingList: vi.fn() }));
+const serviceMocks = vi.hoisted(() => ({
+  getShoppingList: vi.fn(),
+  claimShoppingListLine: vi.fn(),
+  releaseShoppingListLine: vi.fn(),
+}));
 
 vi.mock('../../src/services/apiClient', async () => {
   const actual = await vi.importActual<typeof import('../../src/services/apiClient')>(
     '../../src/services/apiClient'
   );
-  return { ...actual, getShoppingList: serviceMocks.getShoppingList };
+  return { ...actual, ...serviceMocks };
 });
 
 import ShoppingListPage from '../../src/pages/ShoppingListPage';
@@ -208,11 +213,183 @@ describe('ShoppingListPage', () => {
     );
   });
 
-  it('asks for no display name and no Session — the URL is the capability', async () => {
+  it('asks for no Session and no token — the URL is the capability', async () => {
     renderPage();
     await screen.findByText('250 g canned tomatoes');
 
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    // A self-declared name is all a Shopper ever gives, and it is a label on a
+    // Claim, not a login: the read carries nothing but the list id (#229).
     expect(serviceMocks.getShoppingList).toHaveBeenCalledWith('list-1');
+    expect(screen.getByLabelText('Claiming as')).toHaveValue('');
+  });
+});
+
+// Claiming (#263). The backend owns the race; what the page owns is the tap,
+// the name behind it, the Tally that follows, and keeping every viewer current.
+describe('ShoppingListPage claims', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    serviceMocks.getShoppingList.mockResolvedValue(list);
+    serviceMocks.claimShoppingListLine.mockResolvedValue(list);
+    serviceMocks.releaseShoppingListLine.mockResolvedValue(list);
+  });
+
+  // Only the two live-channel tests fake the clock; the rest would rather not
+  // wait out an interval that exists for real phones.
+  afterEach(() => vi.useRealTimers());
+
+  const withClaims = (claims: Record<string, string>): ShoppingList => ({
+    ...list,
+    lines: lines.map((line) => (claims[line.id] ? { ...line, claimedBy: claims[line.id] } : line)),
+  });
+
+  /** Named, on screen, and ready to tap. The name commits on the way out. */
+  async function shopping(as = 'Alice') {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+    const field = screen.getByLabelText('Claiming as');
+    fireEvent.change(field, { target: { value: as } });
+    fireEvent.blur(field);
+  }
+
+  /** A tap, and whatever it set in motion. */
+  const tap = async (button: HTMLElement) => act(async () => void fireEvent.click(button));
+
+  /** The first read landing, under fake timers — nothing to wait on but it. */
+  const settle = () => act(async () => {});
+
+  /** One turn of the live channel. Generous, so the interval can be retuned. */
+  const tick = () => act(async () => void (await vi.advanceTimersByTimeAsync(10_000)));
+
+  const buttonOn = (text: string, name: string) =>
+    within(lineFor(text)).getByRole('button', { name });
+
+  it('claims a line in one tap, under the name the Shopper typed', async () => {
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    expect(serviceMocks.claimShoppingListLine).toHaveBeenCalledWith('list-1', '0', 'Alice');
+  });
+
+  it('will not claim without a name behind the Claim', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+
+    expect(buttonOn('250 g canned tomatoes', 'Claim')).toBeDisabled();
+  });
+
+  it('remembers the Shopper, so a second visit does not ask again', async () => {
+    localStorage.setItem('dinder.shopperName', 'Dana');
+
+    renderPage();
+
+    expect(await screen.findByLabelText('Claiming as')).toHaveValue('Dana');
+  });
+
+  it('shows a line lost to a faster tap as claimed by whoever won it', async () => {
+    // The tap answers 200 with somebody else's name — the truth, not an error.
+    serviceMocks.claimShoppingListLine.mockResolvedValue(withClaims({ '0': 'Bob' }));
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    expect(await screen.findByText('Claimed by Bob')).toBeInTheDocument();
+    expect(buttonOn('250 g canned tomatoes', 'Release')).toBeInTheDocument();
+  });
+
+  it('offers to release a Claim that is not yours', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '0': 'Bob' }));
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Release'));
+
+    expect(serviceMocks.releaseShoppingListLine).toHaveBeenCalledWith('list-1', '0');
+  });
+
+  it('leaves a freed line to be taken by its own deliberate tap', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '0': 'Bob' }));
+    serviceMocks.releaseShoppingListLine.mockResolvedValue(list);
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Release'));
+
+    // Releasing did not hand it to Alice: claiming it is a separate act.
+    expect(buttonOn('250 g canned tomatoes', 'Claim')).toBeInTheDocument();
+    expect(serviceMocks.claimShoppingListLine).not.toHaveBeenCalled();
+  });
+
+  it('tallies only your own Priced and Estimated lines, ≈ and all', async () => {
+    // Alice holds the $1.40 tin, the $7.74 estimate, one unpriced line, and a
+    // Staple; Bob holds the other. The Staple counts toward nothing.
+    serviceMocks.getShoppingList.mockResolvedValue(
+      withClaims({ '0': 'Alice', '1': 'Alice', '2': 'Alice', '3': 'Bob', '4': 'Alice' })
+    );
+    await shopping();
+
+    expect(await screen.findByText('≈ $9.14 + 1 unpriced item')).toBeInTheDocument();
+  });
+
+  it('keeps a Tally off screen until the Shopper actually holds something', async () => {
+    await shopping();
+
+    expect(screen.queryByText('YOUR TALLY')).not.toBeInTheDocument();
+  });
+
+  it('conjures no Tally out of a Staple, which counts toward nothing', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '4': 'Alice' }));
+
+    await shopping();
+
+    // Alice holds the salt and nothing else: a $0.00 Tally is the absurdity
+    // #229 dissolved, so there is no Tally at all.
+    expect(screen.queryByText('YOUR TALLY')).not.toBeInTheDocument();
+  });
+
+  it('counts coverage over non-Staple lines, and says when it is complete', async () => {
+    vi.useFakeTimers();
+    renderPage();
+    await settle();
+
+    // Four non-Staple lines; the Staple is in neither number.
+    expect(screen.getByText('0 of 4 claimed')).toBeInTheDocument();
+    serviceMocks.getShoppingList.mockResolvedValue(
+      withClaims({ '0': 'Alice', '1': 'Alice', '2': 'Bob', '3': 'Bob' })
+    );
+
+    await tick();
+
+    expect(screen.getByText('All covered ✓')).toBeInTheDocument();
+  });
+
+  it('re-reads the list so a Claim made elsewhere shows up here', async () => {
+    vi.useFakeTimers();
+    renderPage();
+    await settle();
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '2': 'Bob' }));
+
+    // Nobody on this phone tapped anything: the live channel is the only way
+    // Bob's Claim can arrive.
+    await tick();
+
+    expect(screen.getByText('Claimed by Bob')).toBeInTheDocument();
+  });
+
+  it('claims a Staple like any other line', async () => {
+    await shopping();
+
+    await tap(buttonOn('2 tsp salt', 'Claim'));
+
+    expect(serviceMocks.claimShoppingListLine).toHaveBeenCalledWith('list-1', '4', 'Alice');
+  });
+
+  it('keeps the list on screen when a tap does not go through', async () => {
+    serviceMocks.claimShoppingListLine.mockRejectedValue(new Error('Network is down'));
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    expect(await screen.findByText('Network is down')).toBeInTheDocument();
+    expect(screen.getByText('250 g canned tomatoes')).toBeInTheDocument();
   });
 });
