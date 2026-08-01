@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { extractComments, extractDocPaths, findDanglingDocPaths } from './check-comment-paths.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +32,27 @@ test('only comment text is scanned, never code', () => {
   const code = "const route = 'specs/live/route.md';\n// but specs/cited/here.md is\n";
   const refs = extractComments(code).flatMap(extractDocPaths);
   assert.deepEqual(refs, ['specs/cited/here.md']);
+});
+
+// Prove the walker actually fails: a fixture tree with one resolving and one
+// dangling citation must report exactly the dangling one. Without this, an
+// inverted existsSync would pass every other test.
+test('a dangling citation in a source tree is reported, a resolving one is not', () => {
+  const root = mkdtempSync(join(tmpdir(), 'comment-paths-'));
+  try {
+    mkdirSync(join(root, 'src'));
+    mkdirSync(join(root, 'docs'));
+    writeFileSync(join(root, 'docs', 'real.md'), 'exists');
+    writeFileSync(
+      join(root, 'src', 'a.ts'),
+      '// per docs/real.md, unlike specs/deleted/plan.md\n'
+    );
+    assert.deepEqual(findDanglingDocPaths(root, ['src']), [
+      { file: join(root, 'src', 'a.ts'), ref: 'specs/deleted/plan.md' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 // The check itself: the sweep (#295) removed every dangling documentation

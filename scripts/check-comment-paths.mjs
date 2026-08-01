@@ -10,7 +10,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const SOURCE_ROOTS = ['backend/src', 'frontend/src', 'shared/types'];
+const SOURCE_ROOTS = ['backend/src', 'frontend/src', 'shared/types'];
 
 /** Every line and block comment segment of a source text. */
 export function extractComments(text) {

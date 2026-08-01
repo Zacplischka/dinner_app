@@ -158,9 +158,9 @@ export function createSessionStore(redis: Redis) {
    * Refresh TTL on every key belonging to a session and stamp lastActivityAt.
    * Called by the flow mutations — create, join, submission, results, restart,
    * deck replace, and the Group Order writes. NOT by every mutating operation:
-   * updateState, setParticipantCount, removeParticipant, addResultPlaceId,
-   * claimShoppingListId and releaseShoppingListId leave the clock untouched
-   * (whether they should is an open Session-expiry question).
+   * updateState, claimDisplayName, setParticipantCount, removeParticipant,
+   * addResultPlaceId, claimShoppingListId and releaseShoppingListId leave the
+   * clock untouched (whether they should is an open Session-expiry question).
    */
   async function touch(sessionCode: string): Promise<number> {
     const expireAt = calculateExpireAt();
