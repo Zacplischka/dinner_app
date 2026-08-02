@@ -30,8 +30,6 @@ export function useShoppingList(
 
   /** The list on screen, readable from inside the ticker. */
   const onScreen = useRef<ShoppingList | null>(null);
-  /** A read of ours is out: a tick that stacks on it buys nothing. */
-  const reading = useRef(false);
   /** Bumped per change, so a read begun before it cannot overwrite its answer. */
   const changes = useRef(0);
 
@@ -44,11 +42,17 @@ export function useShoppingList(
   useEffect(() => {
     if (!listId) return;
     let active = true;
+    // A read of ours is out: a tick that stacks on it buys nothing. Scoped to
+    // this effect run, not a ref — a guard that outlives the mount would eat
+    // the remount's only read under StrictMode's dev double-mount (#303),
+    // while a cancelled mount's in-flight read is already discarded by
+    // `active`, so letting the fresh run read past it is safe.
+    let reading = false;
     onScreen.current = null;
 
     const read = async () => {
-      if (reading.current) return;
-      reading.current = true;
+      if (reading) return;
+      reading = true;
       const at = changes.current;
       try {
         const fresh = await getShoppingList(listId);
@@ -61,7 +65,7 @@ export function useShoppingList(
           setError(err instanceof Error ? err.message : 'This shopping list could not be loaded.');
         }
       } finally {
-        reading.current = false;
+        reading = false;
       }
     };
 

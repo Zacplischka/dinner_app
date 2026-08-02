@@ -1,6 +1,7 @@
 // The cook view (#265): the snapshotted method on the Shopping List's own URL,
 // full method on one screen, tap-to-dim rows, the screen held awake, and one
 // end-of-method credit that doubles as the degrade path when steps are empty.
+import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -81,6 +82,22 @@ describe('CookViewPage', () => {
 
     expect(serviceMocks.getShoppingList).toHaveBeenCalledWith('list-1');
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('renders on first visit under StrictMode — no poll exists to paper over a lost read (#303)', async () => {
+    // Dev double-mount: mount 1's read is cancelled, and a guard that outlives
+    // the mount must not swallow mount 2's read — there is no third.
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/list/list-1/cook']}>
+          <Routes>
+            <Route path="/list/:listId/cook" element={<CookViewPage />} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>
+    );
+
+    expect(await screen.findByText(steps[0])).toBeInTheDocument();
   });
 
   it('renders the whole method on one screen', async () => {
