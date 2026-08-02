@@ -9,6 +9,7 @@
 import type { Craving, DeckEntry, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
+import { OWNED_PREFIX, filterByCraving, readOwnedRecipe } from './ownedRecipeStore.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
 
 // --- Keyspace ----------------------------------------------------------
@@ -31,6 +32,30 @@ export function cravingPoolKey(craving: Craving): string {
 }
 
 const offsetKey = (poolKey: string) => poolKey.replace('recipes:pool:', 'recipes:offset:');
+
+/**
+ * Prototype (#316): the Craving back out of its pool key, so redeal — which
+ * only carries the key — can ask the owned store the same question dealDeck
+ * did. The key was minted from a canonicalized Craving, so the round-trip is
+ * lossless; the casts just re-assert the union types the key lowercased.
+ */
+function cravingFromPoolKey(poolKey: string): Craving {
+  const [mealType, cuisines, diets] = poolKey.replace('recipes:pool:', '').split('|');
+  return {
+    mealType,
+    cuisines: cuisines ? cuisines.split(',') : [],
+    diets: diets ? diets.split(',') : [],
+  } as Craving;
+}
+
+/** Floor of 3 owned in a Deck (#316): min(3, owned) owned + vendor fill, then
+ * topped back up with more owned when the vendor side can't fill the Deck. */
+function unionTakes(ownedCount: number, vendorCount: number, deckSize: number) {
+  const ownedFloor = Math.min(3, ownedCount);
+  const vendorTake = Math.min(vendorCount, deckSize - ownedFloor);
+  const ownedTake = Math.min(ownedCount, deckSize - vendorTake);
+  return { ownedTake, vendorTake };
+}
 
 /**
  * Spoonacular refuses an offset past 900 on the Cook tier. Wrapping keeps a
@@ -134,60 +159,97 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   return {
     async dealDeck(craving: Craving): Promise<Recipe[]> {
       const key = cravingPoolKey(craving);
+      const owned = filterByCraving(craving);
       // An empty pool is a cached answer, not a cache miss: `null` means the
       // Craving has never been looked up (or has aged out), `[]` means the
       // catalogue was asked and had nothing. Only the first re-fetches.
       let pool = await readPool(key);
 
       if (!pool) {
-        // ponytail: read-then-fill, no lock. Two Sessions starting the same
-        // cold Craving in the same instant both fetch, both burn a lookup and
-        // an offset step, and the later SET wins — nobody sees a failure and
-        // both get a full Deck. Upgrade path if Cook traffic ever makes that
-        // bite: SETNX a short-lived fill marker and have the loser re-read.
-        let offset = await nextOffset(key);
-        // A throw here writes nothing: a transport failure must never be
-        // remembered as "this Craving has no Recipes" (#260). The clean miss
-        // is cached, and briefly, because it is an answer about the catalogue.
-        pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
-
-        if (pool.length === 0 && offset > 0) {
-          // Not a clean miss — the rotation has simply paged off the end of a
-          // Craving smaller than the offset it has climbed to. Caching that as
-          // "nothing matches" would refuse a Craving that has Recipes, and #250
-          // is explicit that a wrong empty answer must not kill a Craving.
-          // ponytail: ask from the top rather than track each Craving's size.
-          // Ceiling: one wasted lookup per refresh of a lapped Craving — about
-          // one a day. Upgrade path: pool `totalResults` and cap the offset.
-          offset = 0;
+        try {
+          // ponytail: read-then-fill, no lock. Two Sessions starting the same
+          // cold Craving in the same instant both fetch, both burn a lookup and
+          // an offset step, and the later SET wins — nobody sees a failure and
+          // both get a full Deck. Upgrade path if Cook traffic ever makes that
+          // bite: SETNX a short-lived fill marker and have the loser re-read.
+          let offset = await nextOffset(key);
+          // A throw here writes nothing: a transport failure must never be
+          // remembered as "this Craving has no Recipes" (#260). The clean miss
+          // is cached, and briefly, because it is an answer about the catalogue.
           pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
-        }
 
-        const ttlMs = pool.length > 0 ? poolTtlMs : emptyPoolTtlMs;
-        await deps.redis.set(key, JSON.stringify(pool), 'PX', ttlMs);
-        logger.info(
-          { poolKey: key, offset, pooledCount: pool.length, ttlMs },
-          'Recipe pool filled'
-        );
+          if (pool.length === 0 && offset > 0) {
+            // Not a clean miss — the rotation has simply paged off the end of a
+            // Craving smaller than the offset it has climbed to. Caching that as
+            // "nothing matches" would refuse a Craving that has Recipes, and #250
+            // is explicit that a wrong empty answer must not kill a Craving.
+            // ponytail: ask from the top rather than track each Craving's size.
+            // Ceiling: one wasted lookup per refresh of a lapped Craving — about
+            // one a day. Upgrade path: pool `totalResults` and cap the offset.
+            offset = 0;
+            pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
+          }
+
+          const ttlMs = pool.length > 0 ? poolTtlMs : emptyPoolTtlMs;
+          await deps.redis.set(key, JSON.stringify(pool), 'PX', ttlMs);
+          logger.info(
+            { poolKey: key, offset, pooledCount: pool.length, ttlMs },
+            'Recipe pool filled'
+          );
+        } catch (error) {
+          // #316: the vendor fetch is best-effort once the owned corpus can
+          // carry the deal. Nothing is written to Redis — a transport failure
+          // must never be remembered as an answer about the catalogue.
+          if (owned.length === 0) throw error;
+          logger.warn({ poolKey: key, error }, 'Vendor pool fetch failed; dealing owned only');
+          pool = [];
+        }
       }
 
-      // min(pool, deckSize), no floor and no thinness warning: a niche Craving
-      // deals a smaller Deck rather than erroring. Zero deals nothing, and the
+      // Union deal (#316): floor of owned held, no reserved positions — the
+      // final Deck is shuffled as one. Zero union deals nothing, and the
       // caller turns that into the one refusal there is — inline at setup.
-      return shuffle(pool).slice(0, deckSize).map(toDeckEntry);
+      const { ownedTake, vendorTake } = unionTakes(owned.length, pool.length, deckSize);
+      return shuffle([
+        ...shuffle(owned).slice(0, ownedTake),
+        ...shuffle(pool).slice(0, vendorTake),
+      ]).map(toDeckEntry);
     },
 
     async redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]> {
       const pool = await readPool(poolKey);
-      if (!pool || pool.length === 0) return shuffle(current);
+      const owned = filterByCraving(cravingFromPoolKey(poolKey)).map(toDeckEntry);
+      // A vendor pool that has aged out (or cached empty) degrades to the
+      // vendor half of `current` — Restart is not a moment to go to the
+      // network, and never fails (#246).
+      const vendor: DeckEntry[] =
+        pool && pool.length > 0
+          ? pool.map(toDeckEntry)
+          : current.filter((entry) => !entry.placeId.startsWith(OWNED_PREFIX));
+      if (owned.length === 0 && vendor.length === 0) return shuffle(current);
 
+      // Per source: unseen first, topped up with repeats when the source is
+      // thin — Restart means "show me different ones" and never means "no".
       const wiped = new Set(current.map((entry) => entry.placeId));
-      const fresh = pool.filter((recipe) => !wiped.has(recipe.placeId));
-      const repeats = pool.filter((recipe) => wiped.has(recipe.placeId));
-      return [...shuffle(fresh), ...shuffle(repeats)].slice(0, deckSize).map(toDeckEntry);
+      const unseenFirst = (entries: DeckEntry[]): DeckEntry[] => {
+        const fresh = entries.filter((entry) => !wiped.has(entry.placeId));
+        const repeats = entries.filter((entry) => wiped.has(entry.placeId));
+        return [...shuffle(fresh), ...shuffle(repeats)];
+      };
+      const ownedOrdered = unseenFirst(owned);
+      const vendorOrdered = unseenFirst(vendor);
+      // The same owned floor as the deal (#316), held on every Restart.
+      const { ownedTake, vendorTake } = unionTakes(
+        ownedOrdered.length,
+        vendorOrdered.length,
+        deckSize
+      );
+      return shuffle([...ownedOrdered.slice(0, ownedTake), ...vendorOrdered.slice(0, vendorTake)]);
     },
 
     async readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null> {
+      // Owned Recipes live in memory, not the pool, and never expire (#316).
+      if (placeId.startsWith(OWNED_PREFIX)) return readOwnedRecipe(placeId);
       const pool = await readPool(poolKey);
       return pool?.find((recipe) => recipe.placeId === placeId) ?? null;
     },

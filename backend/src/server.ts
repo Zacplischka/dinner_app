@@ -18,6 +18,7 @@ import { createListsRouter } from './api/lists.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createRecipePoolService } from './services/RecipePoolService.js';
+import { ownedImagesDir } from './services/ownedRecipeStore.js';
 import { createSpoonacularClient, guardDailyPoints } from './services/spoonacularClient.js';
 import { createProductMatchService } from './services/ProductMatchService.js';
 import { createQuantityLadder } from './services/quantityLadder.js';
@@ -147,6 +148,11 @@ app.use(
 );
 
 app.use(express.json());
+
+// Prototype (#316): the owned corpus's dish images, served from the repo's
+// docs/prototypes/corpus-pipeline/images. Absent (e.g. a trimmed deploy) the
+// mount is simply skipped and owned cards render photoless.
+if (ownedImagesDir) app.use('/owned-images', express.static(ownedImagesDir));
 
 // REST API routes
 app.use('/api/sessions', createSessionsRouter(sessionService));
