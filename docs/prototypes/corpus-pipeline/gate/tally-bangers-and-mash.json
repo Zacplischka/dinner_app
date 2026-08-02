@@ -1,0 +1,86 @@
+[
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 13.0,
+  "rung": "spoonacular",
+  "ingredient": "pork sausages",
+  "original": "8 thick pork sausages",
+  "store": 3221,
+  "product": "Woolworths 10 Pork Sausages",
+  "size": "550g",
+  "id": 901650
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "potatoes",
+  "original": "1 kg potatoes",
+  "store": 3221,
+  "product": "Woolworths Washed Potatoes Bag",
+  "size": "2kg",
+  "id": 262783
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 1.26,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "2 brown onions",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 66,
+  "rung": "spoonacular",
+  "ingredient": "beef stock",
+  "original": "500 ml beef stock",
+  "store": 3221,
+  "product": "Urban Forager Organic Beef Stock",
+  "size": "250g",
+  "id": 128081
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "rung1",
+  "ingredient": "worcestershire sauce",
+  "original": "2 tsp (10 ml) worcestershire sauce",
+  "store": 3221,
+  "product": "Woolworths Worcestershire Sauce",
+  "size": "250mL",
+  "id": 230475
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 7.9,
+  "rung": "spoonacular",
+  "ingredient": "milk",
+  "original": "125 ml milk",
+  "store": 3221,
+  "product": "Bellamy's Organic Milk & Vanilla Baby Rice 6+ Months",
+  "size": "125g",
+  "id": 839018
+ }
+]

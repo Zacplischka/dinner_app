@@ -1,0 +1,110 @@
+[
+ {
+  "state": "estimated",
+  "price": 37.2,
+  "rung": "rung1",
+  "why": "800g x $46.50 / 1KG",
+  "ingredient": "scotch fillet steak",
+  "original": "800 g scotch fillet steaks (4 steaks)",
+  "store": 3221,
+  "product": "Woolworths Beef Scotch Fillet Steak Medium",
+  "size": "280g - 800g",
+  "id": 675654
+ },
+ {
+  "state": "priced",
+  "packs": 4,
+  "price": 7.52,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "4 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 small brown onion, finely chopped",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.2,
+  "rung": "rung1",
+  "ingredient": "thickened cream",
+  "original": "300 ml thickened cream",
+  "store": 3221,
+  "product": "Woolworths Thickened Cream",
+  "size": "600mL",
+  "id": 6054098
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5,
+  "rung": "rung1",
+  "ingredient": "cream cheese",
+  "original": "60 g cream cheese, chopped",
+  "store": 3221,
+  "product": "Castello Original Cream Cheese",
+  "size": "200g",
+  "id": 118320
+ },
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 9.9,
+  "rung": "rung1",
+  "ingredient": "baby spinach",
+  "original": "280 g baby spinach",
+  "store": 3221,
+  "product": "Woolworths Baby Leaf Spinach",
+  "size": "120g",
+  "id": 524322
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.8,
+  "rung": "rung1",
+  "ingredient": "parmesan",
+  "original": "40 g finely grated parmesan",
+  "store": 3221,
+  "product": "Zanetti Parmigiano Reggiano Grated",
+  "size": "100g",
+  "id": 463981
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "rung1",
+  "ingredient": "ground nutmeg",
+  "original": "1/4 tsp (1 g) ground nutmeg",
+  "store": 3221,
+  "product": "Woolworths Nutmeg Ground",
+  "size": "30g",
+  "id": 251123
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.49,
+  "rung": "rung1",
+  "ingredient": "lemon",
+  "original": "1 lemon",
+  "store": 3221,
+  "product": "Lemon Loose",
+  "size": "each",
+  "id": 259514
+ }
+]

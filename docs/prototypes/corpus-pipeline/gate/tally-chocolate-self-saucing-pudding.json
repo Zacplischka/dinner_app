@@ -1,0 +1,98 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.3,
+  "rung": "rung1",
+  "ingredient": "self raising flour",
+  "original": "150 g self-raising flour",
+  "store": 3221,
+  "product": "Woolworths Essentials Self Raising Flour",
+  "size": "1kg",
+  "id": 33296
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 7.5,
+  "rung": "rung1",
+  "ingredient": "cocoa powder",
+  "original": "50 g cocoa powder (half for the batter, half for the topping)",
+  "store": 3221,
+  "product": "Woolworths Cocoa Powder",
+  "size": "375g",
+  "id": 311782
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 8.9,
+  "rung": "rung1",
+  "ingredient": "caster sugar",
+  "original": "110 g caster sugar",
+  "store": 3221,
+  "product": "Whole Earth Monk Fruit Raw Sugar Replacement",
+  "size": "200g",
+  "id": 141705
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "brown sugar",
+  "original": "110 g brown sugar",
+  "store": 3221,
+  "product": "Woolworths Essentials Brown Sugar",
+  "size": "1kg",
+  "id": 720342
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 7.9,
+  "rung": "spoonacular",
+  "ingredient": "milk",
+  "original": "125 ml milk",
+  "store": 3221,
+  "product": "Bellamy's Organic Milk & Vanilla Baby Rice 6+ Months",
+  "size": "125g",
+  "id": 839018
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "egg",
+  "original": "1 egg",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 8,
+  "rung": "rung1",
+  "ingredient": "vanilla extract",
+  "original": "1 tsp vanilla extract",
+  "store": 3221,
+  "product": "Queen Vanilla Extract With Seeds",
+  "size": "50mL",
+  "id": 774157
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.2,
+  "rung": "rung1",
+  "ingredient": "thickened cream",
+  "original": "300 ml thickened cream, to serve",
+  "store": 3221,
+  "product": "Woolworths Thickened Cream",
+  "size": "600mL",
+  "id": 6054098
+ }
+]

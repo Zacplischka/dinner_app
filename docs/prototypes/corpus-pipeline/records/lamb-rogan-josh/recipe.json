@@ -5,27 +5,107 @@
   "readyInMinutes": 135,
   "mealType": "main course",
   "cuisine": "indian",
-  "diets": ["gluten free"],
+  "diets": [
+    "gluten free"
+  ],
   "image": "images/lamb-rogan-josh.webp",
   "extendedIngredients": [
-    {"name": "diced lamb", "amount": 750, "unit": "g", "original": "750 g diced lamb leg or shoulder"},
-    {"name": "greek yoghurt", "amount": 0.5, "unit": "cup", "original": "1/2 cup Greek yoghurt, at room temperature"},
-    {"name": "ghee", "amount": 2, "unit": "tbsp", "original": "2 tbsp ghee"},
-    {"name": "kashmiri chilli powder", "amount": 1, "unit": "tbsp", "original": "1 tbsp kashmiri chilli powder"},
-    {"name": "ground fennel", "searchTerm": "fennel ground", "amount": 2, "unit": "tsp", "original": "2 tsp ground fennel"},
-    {"name": "ground ginger", "amount": 1, "unit": "tsp", "original": "1 tsp ground ginger"},
-    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, thinly sliced"},
-    {"name": "garlic", "amount": 3, "unit": "", "original": "3 garlic cloves, crushed"},
-    {"name": "fresh ginger", "amount": 15, "unit": "g", "original": "15 g fresh ginger, finely grated (a thumb-sized piece)"},
-    {"name": "cinnamon stick", "amount": 1, "unit": "", "original": "1 cinnamon stick"},
-    {"name": "cardamom pods", "amount": 4, "unit": "", "original": "4 green cardamom pods, lightly crushed"},
-    {"name": "whole cloves", "amount": 4, "unit": "", "original": "4 whole cloves"},
-    {"name": "garam masala", "amount": 1, "unit": "tsp", "original": "1 tsp garam masala"},
-    {"name": "basmati rice", "amount": 1.5, "unit": "cup", "original": "1 1/2 cups basmati rice, to serve"},
-    {"name": "fresh coriander", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch fresh coriander, leaves picked, to serve"}
+    {
+      "name": "diced lamb",
+      "amount": 750,
+      "unit": "g",
+      "original": "750 g diced lamb (leg or shoulder)",
+      "searchTerm": "lamb leg roast"
+    },
+    {
+      "name": "greek yoghurt",
+      "amount": 0.5,
+      "unit": "cup",
+      "original": "1/2 cup Greek yoghurt, at room temperature"
+    },
+    {
+      "name": "ghee",
+      "amount": 2,
+      "unit": "tbsp",
+      "original": "2 tbsp ghee"
+    },
+    {
+      "name": "mild chilli powder",
+      "amount": 10,
+      "unit": "g",
+      "original": "1 tbsp (10 g) mild chilli powder (kashmiri-style)",
+      "searchTerm": "chilli powder"
+    },
+    {
+      "name": "ground fennel",
+      "searchTerm": "fennel seeds",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) ground fennel"
+    },
+    {
+      "name": "ground ginger",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp ground ginger"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, thinly sliced"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "",
+      "original": "3 garlic cloves, crushed"
+    },
+    {
+      "name": "fresh ginger",
+      "amount": 15,
+      "unit": "g",
+      "original": "15 g fresh ginger, finely grated (a thumb-sized piece)"
+    },
+    {
+      "name": "cinnamon stick",
+      "amount": 1,
+      "unit": "",
+      "original": "1 cinnamon stick"
+    },
+    {
+      "name": "cardamom pods",
+      "amount": 4,
+      "unit": "",
+      "original": "4 green cardamom pods, lightly crushed"
+    },
+    {
+      "name": "whole cloves",
+      "amount": 4,
+      "unit": "",
+      "original": "4 whole cloves"
+    },
+    {
+      "name": "garam masala",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp garam masala"
+    },
+    {
+      "name": "basmati rice",
+      "amount": 1.5,
+      "unit": "cup",
+      "original": "1 1/2 cups basmati rice, to serve"
+    },
+    {
+      "name": "fresh coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch fresh coriander, leaves picked, to serve"
+    }
   ],
   "steps": [
-    "Whisk the Greek yoghurt with the kashmiri chilli powder, ground fennel, ground ginger and 1 teaspoon of salt in a bowl until smooth. Set aside.",
+    "Whisk the Greek yoghurt with the mild chilli powder, ground fennel (grind the fennel seeds if whole), ground ginger and 1 teaspoon of salt in a bowl until smooth. Set aside.",
     "Melt the ghee in a large heavy-based pot over medium heat. Add the cinnamon stick, cardamom pods and whole cloves and sizzle for about 1 minute until fragrant.",
     "Add the brown onion and cook, stirring, for 8 minutes until golden. Stir in the garlic and fresh ginger and cook for 1 minute more.",
     "Add the diced lamb and sear, turning the pieces, for about 5 minutes until no longer pink on the outside.",

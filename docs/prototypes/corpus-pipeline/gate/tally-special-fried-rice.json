@@ -1,0 +1,122 @@
+[
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.6,
+  "rung": "rung1",
+  "ingredient": "long grain white rice",
+  "original": "300 g long grain white rice (about 4 cups cooked)",
+  "store": 3221,
+  "product": "Woolworths Microwave Long Grain White Rice",
+  "size": "250g",
+  "id": 360343
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "eggs",
+  "original": "3 eggs, lightly beaten",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "estimated",
+  "price": 3.2,
+  "rung": "rung1",
+  "why": "200g x $16.00 / 1KG",
+  "ingredient": "bacon",
+  "original": "200 g bacon, diced",
+  "store": 3221,
+  "product": "D'Orsogna Shortcut Bacon From the Deli",
+  "size": "per 125g",
+  "id": 71841
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 16,
+  "rung": "rung1",
+  "ingredient": "cooked prawns",
+  "original": "300 g cooked peeled prawns",
+  "store": 3221,
+  "product": "Tassal Cooked Aussie Tiger Prawns",
+  "size": "475g",
+  "id": 392138
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.7,
+  "rung": "rung1",
+  "ingredient": "frozen peas",
+  "original": "1 cup (150 g) frozen peas",
+  "store": 3221,
+  "product": "McCain Frozen Peas",
+  "size": "500g",
+  "id": 96206
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.5,
+  "rung": "rung1",
+  "ingredient": "spring onions",
+  "original": "1 bunch spring onions, thinly sliced",
+  "store": 3221,
+  "product": "Spring Onion Bunch",
+  "size": "each",
+  "id": 147603
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 brown onion, finely diced",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.36,
+  "rung": "rung1",
+  "ingredient": "carrot",
+  "original": "1 carrot, finely diced",
+  "store": 3221,
+  "product": "Carrot Fresh",
+  "size": "each",
+  "id": 135344
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 cloves garlic, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "peanut oil",
+  "original": "2 tbsp (40 ml) peanut oil",
+  "store": 3221,
+  "product": "Woolworths Peanut Oil",
+  "size": "750mL",
+  "id": 73073
+ }
+]

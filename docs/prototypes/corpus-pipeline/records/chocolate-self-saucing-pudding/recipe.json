@@ -5,27 +5,75 @@
   "readyInMinutes": 55,
   "mealType": "dessert",
   "cuisine": "modern australian",
-  "diets": ["vegetarian"],
+  "diets": [
+    "vegetarian"
+  ],
   "image": "images/chocolate-self-saucing-pudding.webp",
   "extendedIngredients": [
-    {"name": "self raising flour", "amount": 150, "unit": "g", "original": "150 g self-raising flour"},
-    {"name": "cocoa powder", "amount": 50, "unit": "g", "original": "50 g cocoa powder (half for the batter, half for the topping)"},
-    {"name": "caster sugar", "amount": 110, "unit": "g", "original": "110 g caster sugar"},
-    {"name": "brown sugar", "amount": 110, "unit": "g", "original": "110 g brown sugar"},
-    {"name": "butter", "amount": 60, "unit": "g", "original": "60 g butter, melted"},
-    {"name": "milk", "amount": 125, "unit": "ml", "original": "125 ml milk"},
-    {"name": "egg", "amount": 1, "unit": "", "original": "1 egg", "searchTerm": "eggs"},
-    {"name": "vanilla extract", "amount": 1, "unit": "tsp", "original": "1 tsp vanilla extract"},
-    {"name": "thickened cream", "amount": 300, "unit": "ml", "original": "300 ml thickened cream, to serve"}
+    {
+      "name": "self raising flour",
+      "amount": 150,
+      "unit": "g",
+      "original": "150 g self-raising flour"
+    },
+    {
+      "name": "cocoa powder",
+      "amount": 50,
+      "unit": "g",
+      "original": "50 g cocoa powder (half for the batter, half for the topping)"
+    },
+    {
+      "name": "caster sugar",
+      "amount": 110,
+      "unit": "g",
+      "original": "110 g caster sugar"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 110,
+      "unit": "g",
+      "original": "110 g brown sugar"
+    },
+    {
+      "name": "butter",
+      "amount": 60,
+      "unit": "g",
+      "original": "60 g butter, melted"
+    },
+    {
+      "name": "milk",
+      "amount": 125,
+      "unit": "ml",
+      "original": "125 ml milk"
+    },
+    {
+      "name": "egg",
+      "amount": 1,
+      "unit": "",
+      "original": "1 egg",
+      "searchTerm": "eggs"
+    },
+    {
+      "name": "vanilla extract",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp vanilla extract"
+    },
+    {
+      "name": "thickened cream",
+      "amount": 300,
+      "unit": "ml",
+      "original": "300 ml thickened cream, to serve"
+    }
   ],
   "steps": [
-    "Preheat the oven to 180°C (160°C fan-forced). Grease a 1.5 litre (6 cup) baking dish and sit it on a tray lined with baking paper to catch any drips.",
+    "Heat the oven to 180°C (160°C fan-forced). Butter a 1.5-litre baking dish well, right up the sides.",
     "Melt the butter and let it cool for a minute. Whisk it with the milk, egg and vanilla extract in a large bowl until combined.",
-    "Sift the self raising flour and 25 g of the cocoa powder into the bowl, add the caster sugar and whisk to a smooth batter.",
+    "Sift 25 g of the cocoa powder together with the self-raising flour into the wet mixture, stir the caster sugar through, then whisk everything to a smooth batter.",
     "Spread the batter into the dish and smooth the top.",
     "Mix the brown sugar with the remaining 25 g of cocoa powder in a small bowl, then sprinkle it evenly over the batter.",
-    "Boil the kettle, then slowly pour 375 ml of boiling water over the back of a large spoon held just above the pudding, covering the whole surface without denting the batter.",
-    "Bake for 35 to 40 minutes, until the top is set and springy but the sauce underneath still wobbles when you nudge the dish. Don't overbake or the sauce will dry up.",
+    "Boil the kettle. Rest a large spoon upside down just above the pudding and slowly pour 375 ml of boiling water across its back, so the whole surface is covered without denting the batter.",
+    "Bake for 35 to 40 minutes; the top should be set and springy while the sauce underneath still wobbles when you nudge the dish. Don't overbake or the sauce will dry up.",
     "Rest for 5 minutes, then spoon into bowls and serve warm with the thickened cream."
   ]
 }

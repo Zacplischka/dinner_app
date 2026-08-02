@@ -1,0 +1,122 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.95,
+  "rung": "rung1",
+  "ingredient": "penne",
+  "original": "500 g penne",
+  "store": 3221,
+  "product": "San Remo Penne Pasta No 18",
+  "size": "500g",
+  "id": 35742
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.65,
+  "rung": "rung1",
+  "ingredient": "tuna in olive oil",
+  "original": "425 g tin tuna in olive oil, drained",
+  "store": 3221,
+  "product": "Woolworths Tuna Chunks In Olive Oil Blend",
+  "size": "425g",
+  "id": 6048332
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 4.6,
+  "rung": "rung1",
+  "ingredient": "chopped tomatoes",
+  "original": "2 x 400 g tins chopped tomatoes",
+  "store": 3221,
+  "product": "Mutti Polpa Finely Chopped Tomatoes",
+  "size": "400g",
+  "id": 344550
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.95,
+  "rung": "rung1",
+  "ingredient": "tomato paste",
+  "original": "1 tbsp (20 g) tomato paste",
+  "store": 3221,
+  "product": "Woolworths Essentials Tomato Paste",
+  "size": "170g",
+  "id": 90260
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 brown onion, finely diced",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "rung1",
+  "ingredient": "dried Italian herbs",
+  "original": "1 tsp (1 g) dried Italian herbs",
+  "store": 3221,
+  "product": "Woolworths Italian Dried Herbs",
+  "size": "10g",
+  "id": 251075
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.7,
+  "rung": "rung1",
+  "ingredient": "frozen peas",
+  "original": "1 cup (150 g) frozen peas",
+  "store": 3221,
+  "product": "McCain Frozen Peas",
+  "size": "500g",
+  "id": 96206
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 8.3,
+  "rung": "rung1",
+  "ingredient": "shredded mozzarella",
+  "original": "150 g shredded mozzarella",
+  "store": 3221,
+  "product": "Woolworths Mozzarella Shredded Cheese",
+  "size": "500g",
+  "id": 728983
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "fresh basil",
+  "original": "1/2 bunch fresh basil, leaves torn",
+  "store": 3221,
+  "product": "Woolworths Green Basil Bunch",
+  "size": "each",
+  "id": 133621
+ }
+]

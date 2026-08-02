@@ -5,20 +5,78 @@
   "readyInMinutes": 60,
   "mealType": "main course",
   "cuisine": null,
-  "diets": ["paleo", "gluten free"],
+  "diets": [
+    "paleo",
+    "gluten free"
+  ],
   "image": "images/paleo-chicken-tray-bake.webp",
   "extendedIngredients": [
-    {"name": "chicken thigh fillets", "amount": 700, "unit": "g", "original": "700 g chicken thigh fillets"},
-    {"name": "sweet potato", "amount": 500, "unit": "g", "original": "500 g sweet potato (about 1 large)"},
-    {"name": "carrots", "amount": 2, "unit": "", "original": "2 carrots"},
-    {"name": "red onion", "amount": 1, "unit": "", "original": "1 red onion"},
-    {"name": "red capsicum", "amount": 1, "unit": "", "original": "1 red capsicum"},
-    {"name": "broccoli", "amount": 1, "unit": "", "original": "1 head of broccoli"},
-    {"name": "garlic", "amount": 6, "unit": "", "original": "6 garlic cloves"},
-    {"name": "olive oil", "amount": 40, "unit": "ml", "original": "2 tbsp (40 ml) olive oil"},
-    {"name": "apple cider vinegar", "amount": 20, "unit": "ml", "original": "1 tbsp (20 ml) apple cider vinegar"},
-    {"name": "dried rosemary", "amount": 1, "unit": "tsp", "original": "1 tsp dried rosemary"},
-    {"name": "dried thyme", "amount": 1, "unit": "tsp", "original": "1 tsp dried thyme"}
+    {
+      "name": "chicken thigh fillets",
+      "amount": 700,
+      "unit": "g",
+      "original": "700 g chicken thigh fillets"
+    },
+    {
+      "name": "sweet potato",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g sweet potato (about 1 large)"
+    },
+    {
+      "name": "carrots",
+      "amount": 2,
+      "unit": "",
+      "original": "2 carrots"
+    },
+    {
+      "name": "red onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red onion"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red capsicum"
+    },
+    {
+      "name": "broccoli",
+      "amount": 1,
+      "unit": "",
+      "original": "1 head of broccoli"
+    },
+    {
+      "name": "garlic",
+      "amount": 6,
+      "unit": "",
+      "original": "6 garlic cloves"
+    },
+    {
+      "name": "olive oil",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) olive oil"
+    },
+    {
+      "name": "apple cider vinegar",
+      "amount": 20,
+      "unit": "ml",
+      "original": "1 tbsp (20 ml) apple cider vinegar"
+    },
+    {
+      "name": "dried rosemary",
+      "amount": 1,
+      "unit": "g",
+      "original": "1 tsp (1 g) dried rosemary"
+    },
+    {
+      "name": "dried thyme",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp dried thyme"
+    }
   ],
   "steps": [
     "Preheat the oven to 220°C (200°C fan-forced) and line a large baking tray with baking paper.",

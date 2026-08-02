@@ -1,0 +1,110 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.9,
+  "rung": "rung1",
+  "ingredient": "zucchini",
+  "original": "400 g zucchini (about 3), grated",
+  "store": 3221,
+  "product": "The Odd Bunch Zucchini Prepacked",
+  "size": "750g",
+  "id": 825869
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.36,
+  "rung": "rung1",
+  "ingredient": "carrot",
+  "original": "1 carrot, grated",
+  "store": 3221,
+  "product": "Carrot Fresh",
+  "size": "each",
+  "id": 135344
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 brown onion, finely diced",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 5.0,
+  "rung": "rung1",
+  "ingredient": "spring onion",
+  "original": "2 spring onions, thinly sliced",
+  "store": 3221,
+  "product": "Spring Onion Bunch",
+  "size": "each",
+  "id": 147603
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1,
+  "rung": "rung1",
+  "ingredient": "corn kernels",
+  "original": "125 g can corn kernels, drained",
+  "store": 3221,
+  "product": "Woolworths Corn Sweet Kernels",
+  "size": "420g",
+  "id": 218926
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "eggs",
+  "original": "5 eggs",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.3,
+  "rung": "rung1",
+  "ingredient": "self-raising flour",
+  "original": "150 g (1 cup) self-raising flour",
+  "store": 3221,
+  "product": "Woolworths Essentials Self Raising Flour",
+  "size": "1kg",
+  "id": 33296
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "cheddar cheese",
+  "original": "125 g cheddar cheese, grated",
+  "store": 3221,
+  "product": "Castello Mature Cheddar Cheese",
+  "size": "200g",
+  "id": 925797
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 7,
+  "rung": "rung1",
+  "ingredient": "olive oil",
+  "original": "60 ml (1/4 cup) olive oil",
+  "store": 3221,
+  "product": "Woolworths Spanish Extra Virgin Olive Oil",
+  "size": "500mL",
+  "id": 698956
+ }
+]

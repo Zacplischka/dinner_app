@@ -1,0 +1,86 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1,
+  "rung": "rung1",
+  "ingredient": "fettuccine",
+  "original": "500 g fettuccine",
+  "store": 3221,
+  "product": "Woolworths Pasta Fettuccine",
+  "size": "500g",
+  "id": 346835
+ },
+ {
+  "state": "estimated",
+  "price": 4.0,
+  "rung": "rung1",
+  "why": "250g x $16.00 / 1KG",
+  "ingredient": "shortcut bacon",
+  "original": "250 g shortcut bacon",
+  "store": 3221,
+  "product": "D'Orsogna Shortcut Bacon From the Deli",
+  "size": "per 125g",
+  "id": 71841
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "eggs",
+  "original": "3 eggs",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.2,
+  "rung": "rung1",
+  "ingredient": "thickened cream",
+  "original": "300 ml thickened cream",
+  "store": 3221,
+  "product": "Woolworths Thickened Cream",
+  "size": "600mL",
+  "id": 6054098
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 11.9,
+  "rung": "rung1",
+  "ingredient": "parmesan",
+  "original": "100 g parmesan, finely grated",
+  "store": 3221,
+  "product": "Zanetti Grana Padano Parmesan Cheese Grana Padano",
+  "size": "200g",
+  "id": 324007
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "parsley",
+  "original": "0.5 bunch flat-leaf parsley, chopped",
+  "store": 3221,
+  "product": "Woolworths Fresh Continental Parsley Bunch",
+  "size": "each",
+  "id": 144785
+ }
+]

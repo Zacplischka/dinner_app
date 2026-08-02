@@ -1,0 +1,110 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 12,
+  "rung": "rung1",
+  "ingredient": "beef mince",
+  "original": "500 g beef mince",
+  "store": 3221,
+  "product": "Woolworths Heart Smart Extra Lean Beef Mince",
+  "size": "500g",
+  "id": 577860
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 brown onion, diced",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "spoonacular",
+  "ingredient": "chilli powder",
+  "original": "1 tsp chilli powder",
+  "store": 3221,
+  "product": "Hoyt's Chilli Powder",
+  "size": "50g",
+  "id": 94630
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.4,
+  "rung": "rung1",
+  "ingredient": "tomato paste",
+  "original": "2 tbsp (40 g) tomato paste",
+  "store": 3221,
+  "product": "Mutti Tomato Paste Double Concentrate",
+  "size": "130g",
+  "id": 290303
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.1,
+  "rung": "rung1",
+  "ingredient": "diced tomatoes",
+  "original": "400 g can diced tomatoes",
+  "store": 3221,
+  "product": "Woolworths Diced Italian Tomatoes",
+  "size": "400g",
+  "id": 770320
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.2,
+  "rung": "rung1",
+  "ingredient": "red kidney beans",
+  "original": "400 g can red kidney beans, drained and rinsed",
+  "store": 3221,
+  "product": "Edgell Red Kidney Beans Fibre Rich",
+  "size": "400g",
+  "id": 584315
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "rung1",
+  "ingredient": "gluten-free beef stock",
+  "original": "250 ml (1 cup) gluten-free beef stock",
+  "store": 3221,
+  "product": "Woolworths Beef Liquid Stock",
+  "size": "1L",
+  "id": 310253
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 8,
+  "rung": "rung1",
+  "ingredient": "white rice",
+  "original": "300 g (1.5 cups) white rice",
+  "store": 3221,
+  "product": "Ben's Original Lightly Flavour Coconut Microwave Rice Pouch",
+  "size": "250g",
+  "id": 177521
+ }
+]

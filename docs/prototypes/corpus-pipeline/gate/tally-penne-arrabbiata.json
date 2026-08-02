@@ -1,0 +1,74 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.95,
+  "rung": "rung1",
+  "ingredient": "penne",
+  "original": "500 g penne",
+  "store": 3221,
+  "product": "San Remo Penne Pasta No 18",
+  "size": "500g",
+  "id": 35742
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 7,
+  "rung": "rung1",
+  "ingredient": "olive oil",
+  "original": "3 tbsp olive oil",
+  "store": 3221,
+  "product": "Woolworths Spanish Extra Virgin Olive Oil",
+  "size": "500mL",
+  "id": 698956
+ },
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 5.64,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "3 garlic cloves, thinly sliced",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "spoonacular",
+  "ingredient": "dried chilli flakes",
+  "original": "1/2 tsp dried chilli flakes",
+  "store": 3221,
+  "product": "Woolworths Chilli Flakes",
+  "size": "23g",
+  "id": 250994
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 4.6,
+  "rung": "rung1",
+  "ingredient": "whole peeled tomatoes",
+  "original": "2 x 400 g cans whole peeled tomatoes",
+  "store": 3221,
+  "product": "Mutti Whole Peeled Tomatoes",
+  "size": "400g",
+  "id": 795621
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "continental parsley",
+  "original": "1/2 bunch continental parsley, chopped",
+  "store": 3221,
+  "product": "Woolworths Fresh Continental Parsley Bunch",
+  "size": "each",
+  "id": 144785
+ }
+]

@@ -1,0 +1,98 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.2,
+  "rung": "rung1",
+  "ingredient": "arborio rice",
+  "original": "300 g arborio rice",
+  "store": 3221,
+  "product": "Woolworths Arborio Risotto Rice",
+  "size": "1kg",
+  "id": 6001492
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 7,
+  "rung": "rung1",
+  "ingredient": "cup mushrooms",
+  "original": "500 g mushrooms (cup or mixed), thickly sliced",
+  "store": 3221,
+  "product": "Woolworths Mushrooms Cups Punnet",
+  "size": "500g",
+  "id": 149963
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "rung1",
+  "ingredient": "gluten-free vegetable stock",
+  "original": "1 L gluten-free vegetable stock",
+  "store": 3221,
+  "product": "Woolworths Vegetable Liquid Stock",
+  "size": "1L",
+  "id": 310254
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 brown onion, finely chopped",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 cloves garlic, finely chopped",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 9,
+  "rung": "rung1",
+  "ingredient": "dry white wine",
+  "original": "125 ml dry white wine",
+  "store": 3221,
+  "product": "Baily & Baily Silhouette Dry White",
+  "size": "1L",
+  "id": 853478
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 11.9,
+  "rung": "rung1",
+  "ingredient": "vegetarian parmesan cheese",
+  "original": "80 g vegetarian parmesan cheese, finely grated",
+  "store": 3221,
+  "product": "Zanetti Grana Padano Parmesan Cheese Grana Padano",
+  "size": "200g",
+  "id": 324007
+ },
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 9.9,
+  "rung": "table(herb)",
+  "ingredient": "fresh thyme",
+  "original": "0.5 bunch fresh thyme, leaves picked",
+  "store": 3221,
+  "product": "Woolworths Thyme Fresh Herb Punnet",
+  "size": "10g",
+  "id": 707367
+ }
+]

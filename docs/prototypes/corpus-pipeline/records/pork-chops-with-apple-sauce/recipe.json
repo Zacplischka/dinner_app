@@ -5,19 +5,72 @@
   "readyInMinutes": 45,
   "mealType": "main course",
   "cuisine": "modern australian",
-  "diets": ["gluten free"],
+  "diets": [
+    "gluten free"
+  ],
   "image": "images/pork-chops-with-apple-sauce.webp",
   "extendedIngredients": [
-    {"name": "pork loin chops", "amount": 4, "unit": "", "original": "4 bone-in pork loin chops (about 1 kg)"},
-    {"name": "royal gala apples", "amount": 4, "unit": "", "original": "4 royal gala apples"},
-    {"name": "brown sugar", "amount": 40, "unit": "g", "original": "2 tbsp (40 g) brown sugar"},
-    {"name": "ground cinnamon", "amount": 0.5, "unit": "tsp", "original": "1/2 tsp ground cinnamon"},
-    {"name": "apple cider vinegar", "amount": 20, "unit": "ml", "original": "1 tbsp (20 ml) apple cider vinegar"},
-    {"name": "dijon mustard", "amount": 20, "unit": "g", "original": "1 tbsp (20 g) dijon mustard"},
-    {"name": "butter", "amount": 60, "unit": "g", "original": "60 g butter"},
-    {"name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes"},
-    {"name": "full cream milk", "amount": 125, "unit": "ml", "original": "1/2 cup (125 ml) full cream milk"},
-    {"name": "green beans", "amount": 300, "unit": "g", "original": "300 g green beans, trimmed"}
+    {
+      "name": "pork loin chops",
+      "amount": 4,
+      "unit": "",
+      "original": "4 bone-in pork loin chops (about 1 kg)"
+    },
+    {
+      "name": "royal gala apples",
+      "amount": 4,
+      "unit": "",
+      "original": "4 royal gala apples"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 40,
+      "unit": "g",
+      "original": "2 tbsp (40 g) brown sugar"
+    },
+    {
+      "name": "ground cinnamon",
+      "amount": 0.5,
+      "unit": "tsp",
+      "original": "1/2 tsp ground cinnamon"
+    },
+    {
+      "name": "apple cider vinegar",
+      "amount": 20,
+      "unit": "ml",
+      "original": "1 tbsp (20 ml) apple cider vinegar"
+    },
+    {
+      "name": "dijon mustard",
+      "amount": 20,
+      "unit": "g",
+      "original": "1 tbsp (20 g) dijon mustard"
+    },
+    {
+      "name": "butter",
+      "amount": 60,
+      "unit": "g",
+      "original": "60 g butter"
+    },
+    {
+      "name": "potatoes",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg potatoes",
+      "searchTerm": "potatoes 2kg"
+    },
+    {
+      "name": "full cream milk",
+      "amount": 125,
+      "unit": "ml",
+      "original": "1/2 cup (125 ml) full cream milk"
+    },
+    {
+      "name": "green beans",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g green beans, trimmed"
+    }
   ],
   "steps": [
     "Peel, core and chop the apples. Put them in a small saucepan with the brown sugar, ground cinnamon, apple cider vinegar and 2 tbsp of water. Cover and simmer over low heat for 15-20 minutes, until the apples collapse, then mash to a chunky sauce and stir in 20 g of the butter. Keep warm.",

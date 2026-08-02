@@ -1,0 +1,122 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 13.5,
+  "rung": "rung1",
+  "ingredient": "chicken breast",
+  "original": "600 g chicken breast, diced into 2 cm pieces",
+  "store": 3221,
+  "product": "The Bare Bird Free Range Chicken Breast Fillets",
+  "size": "600g",
+  "id": 902837
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.85,
+  "rung": "spoonacular",
+  "ingredient": "sweet paprika",
+  "original": "2 tsp sweet paprika",
+  "store": 3221,
+  "product": "Hoyt's Paprika Sweet",
+  "size": "100g",
+  "id": 94613
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.6,
+  "rung": "rung1",
+  "ingredient": "long grain white rice",
+  "original": "1 1/2 cups (300 g) long grain white rice",
+  "store": 3221,
+  "product": "Woolworths Microwave Long Grain White Rice",
+  "size": "250g",
+  "id": 360343
+ },
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 4.56,
+  "rung": "rung1",
+  "ingredient": "lime",
+  "original": "3 limes",
+  "store": 3221,
+  "product": "Lime Fresh",
+  "size": "each",
+  "id": 245902
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "coriander",
+  "original": "1 bunch coriander",
+  "store": 3221,
+  "product": "Woolworths Fresh Herb Coriander Bunch",
+  "size": "each",
+  "id": 137091
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.95,
+  "rung": "rung1",
+  "ingredient": "black beans",
+  "original": "400 g can black beans, rinsed and drained",
+  "store": 3221,
+  "product": "Woolworths Black Beans",
+  "size": "420g",
+  "id": 907377
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1,
+  "rung": "rung1",
+  "ingredient": "corn kernels",
+  "original": "400 g can corn kernels, drained",
+  "store": 3221,
+  "product": "Woolworths Corn Sweet Kernels",
+  "size": "420g",
+  "id": 218926
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 4.4,
+  "rung": "rung1",
+  "ingredient": "avocado",
+  "original": "2 avocados",
+  "store": 3221,
+  "product": "Hass Avocado",
+  "size": "each",
+  "id": 120080
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 1.52,
+  "rung": "rung1",
+  "ingredient": "tomato",
+  "original": "2 ripe tomatoes",
+  "store": 3221,
+  "product": "Gourmet Tomato",
+  "size": "each",
+  "id": 134034
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.83,
+  "rung": "rung1",
+  "ingredient": "red onion",
+  "original": "1 small red onion",
+  "store": 3221,
+  "product": "Onion Red",
+  "size": "each",
+  "id": 144497
+ }
+]

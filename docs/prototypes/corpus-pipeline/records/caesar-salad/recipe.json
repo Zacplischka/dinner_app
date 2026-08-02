@@ -16,9 +16,10 @@
     },
     {
       "name": "bacon rashers",
-      "amount": 4,
-      "unit": "",
-      "original": "4 bacon rashers"
+      "amount": 200,
+      "unit": "g",
+      "original": "4 bacon rashers (about 200 g)",
+      "searchTerm": "short cut bacon"
     },
     {
       "name": "baby cos lettuce",
@@ -46,9 +47,9 @@
     },
     {
       "name": "caesar dressing",
-      "amount": 250,
+      "amount": 150,
       "unit": "ml",
-      "original": "250 ml caesar dressing"
+      "original": "150 ml caesar dressing"
     }
   ],
   "steps": [

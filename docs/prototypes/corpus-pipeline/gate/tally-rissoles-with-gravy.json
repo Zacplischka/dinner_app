@@ -1,0 +1,98 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 12,
+  "rung": "rung1",
+  "ingredient": "beef mince",
+  "original": "500 g beef mince",
+  "store": 3221,
+  "product": "Woolworths Heart Smart Extra Lean Beef Mince",
+  "size": "500g",
+  "id": 577860
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 1.26,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "2 brown onions",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "egg",
+  "original": "1 egg",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.7,
+  "rung": "rung1",
+  "ingredient": "breadcrumbs",
+  "original": "1/2 cup (30 g) breadcrumbs",
+  "store": 3221,
+  "product": "Kook A Krumb Breadcrumbs Herb & Garlic",
+  "size": "200g",
+  "id": 181407
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2,
+  "rung": "rung1",
+  "ingredient": "worcestershire sauce",
+  "original": "2 tbsp (40 ml) worcestershire sauce",
+  "store": 3221,
+  "product": "Woolworths Worcestershire Sauce",
+  "size": "250mL",
+  "id": 230475
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.2,
+  "rung": "rung1",
+  "ingredient": "tomato sauce",
+  "original": "1 tbsp (20 ml) tomato sauce",
+  "store": 3221,
+  "product": "MasterFoods Tomato Sauce",
+  "size": "500mL",
+  "id": 99633
+ },
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 66,
+  "rung": "spoonacular",
+  "ingredient": "beef stock",
+  "original": "500 ml beef stock",
+  "store": 3221,
+  "product": "Urban Forager Organic Beef Stock",
+  "size": "250g",
+  "id": 128081
+ }
+]

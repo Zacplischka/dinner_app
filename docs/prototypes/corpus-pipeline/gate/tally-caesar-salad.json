@@ -1,0 +1,86 @@
+[
+ {
+  "state": "estimated",
+  "price": 7.2,
+  "rung": "rung1",
+  "why": "600g x $12.00 / 1KG",
+  "ingredient": "chicken breast fillets",
+  "original": "600 g chicken breast fillets (2 large)",
+  "store": 3221,
+  "product": "Macro Chicken Breast Fillets Free Range",
+  "size": "700g - 1.4kg",
+  "id": 700228
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.8,
+  "rung": "rung1",
+  "ingredient": "bacon rashers",
+  "original": "4 bacon rashers (about 200 g)",
+  "store": 3221,
+  "product": "Woolworths Short Cut Bacon",
+  "size": "200g",
+  "id": 509865
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 7.0,
+  "rung": "rung1",
+  "ingredient": "baby cos lettuce",
+  "original": "2 baby cos lettuce",
+  "store": 3221,
+  "product": "Woolworths Lettuce Baby Cos",
+  "size": "each",
+  "id": 190092
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 7.2,
+  "rung": "rung1",
+  "ingredient": "croutons",
+  "original": "100 g packet croutons",
+  "store": 3221,
+  "product": "Belladotti Classic Cheese Croutons",
+  "size": "90g",
+  "id": 6059473
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "eggs",
+  "original": "4 eggs",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.8,
+  "rung": "rung1",
+  "ingredient": "shaved parmesan",
+  "original": "50 g shaved parmesan",
+  "store": 3221,
+  "product": "Perfect Italiano Parmesan Cheese Shaved Parmesan",
+  "size": "125g",
+  "id": 360904
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6.2,
+  "rung": "rung1",
+  "ingredient": "caesar dressing",
+  "original": "150 ml caesar dressing",
+  "store": 3221,
+  "product": "Birch & Waite Creamy Caesar Dressing",
+  "size": "250mL",
+  "id": 710194
+ }
+]

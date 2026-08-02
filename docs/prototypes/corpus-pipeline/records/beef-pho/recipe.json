@@ -5,22 +5,91 @@
   "readyInMinutes": 40,
   "mealType": "main course",
   "cuisine": "vietnamese",
-  "diets": ["gluten free"],
+  "diets": [
+    "gluten free"
+  ],
   "image": "images/beef-pho.webp",
   "extendedIngredients": [
-    {"name": "gluten-free beef stock", "searchTerm": "beef liquid stock", "amount": 2, "unit": "l", "original": "2 L gluten-free beef stock"},
-    {"name": "beef eye fillet steak", "amount": 300, "unit": "g", "original": "300 g beef eye fillet steak"},
-    {"name": "rice stick noodles", "amount": 400, "unit": "g", "original": "400 g dried rice stick noodles"},
-    {"name": "brown onion", "amount": 2, "unit": "", "original": "2 brown onions"},
-    {"name": "ginger", "amount": 50, "unit": "g", "original": "50 g piece of ginger"},
-    {"name": "star anise", "amount": 3, "unit": "", "original": "3 whole star anise"},
-    {"name": "cinnamon stick", "amount": 1, "unit": "", "original": "1 cinnamon stick"},
-    {"name": "whole cloves", "amount": 4, "unit": "", "original": "4 whole cloves"},
-    {"name": "fish sauce", "amount": 40, "unit": "ml", "original": "2 tbsp (40 ml) fish sauce"},
-    {"name": "brown sugar", "amount": 15, "unit": "g", "original": "1 tbsp (15 g) brown sugar"},
-    {"name": "bean sprouts", "amount": 250, "unit": "g", "original": "250 g bean sprouts"},
-    {"name": "coriander", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch coriander"},
-    {"name": "lime", "amount": 1, "unit": "", "original": "1 lime"}
+    {
+      "name": "gluten-free beef stock",
+      "searchTerm": "beef liquid stock",
+      "amount": 2,
+      "unit": "l",
+      "original": "2 L gluten-free beef stock"
+    },
+    {
+      "name": "beef eye fillet steak",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g beef eye fillet steak"
+    },
+    {
+      "name": "rice stick noodles",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g dried rice stick noodles"
+    },
+    {
+      "name": "brown onion",
+      "amount": 2,
+      "unit": "",
+      "original": "2 brown onions"
+    },
+    {
+      "name": "ginger",
+      "amount": 50,
+      "unit": "g",
+      "original": "50 g piece of ginger"
+    },
+    {
+      "name": "star anise",
+      "amount": 3,
+      "unit": "",
+      "original": "3 whole star anise"
+    },
+    {
+      "name": "cinnamon stick",
+      "amount": 1,
+      "unit": "",
+      "original": "1 cinnamon stick"
+    },
+    {
+      "name": "whole cloves",
+      "amount": 4,
+      "unit": "",
+      "original": "4 whole cloves"
+    },
+    {
+      "name": "gluten-free fish sauce",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) gluten-free fish sauce",
+      "searchTerm": "fish sauce"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 15,
+      "unit": "g",
+      "original": "1 tbsp (15 g) brown sugar"
+    },
+    {
+      "name": "bean sprouts",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g bean sprouts"
+    },
+    {
+      "name": "coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch coriander"
+    },
+    {
+      "name": "lime",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lime"
+    }
   ],
   "steps": [
     "Put the beef eye fillet in the freezer. Twenty minutes of firming makes it much easier to slice thinly.",

@@ -1,0 +1,122 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 12,
+  "rung": "rung1",
+  "ingredient": "beef mince",
+  "original": "500 g beef mince",
+  "store": 3221,
+  "product": "Woolworths Heart Smart Extra Lean Beef Mince",
+  "size": "500g",
+  "id": 577860
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 brown onion, finely diced",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.85,
+  "rung": "spoonacular",
+  "ingredient": "sweet paprika",
+  "original": "2 tsp sweet paprika",
+  "store": 3221,
+  "product": "Hoyt's Paprika Sweet",
+  "size": "100g",
+  "id": 94613
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.4,
+  "rung": "rung1",
+  "ingredient": "tomato paste",
+  "original": "2 tbsp (40 g) tomato paste",
+  "store": 3221,
+  "product": "Mutti Tomato Paste Double Concentrate",
+  "size": "130g",
+  "id": 290303
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 9.5,
+  "rung": "spoonacular",
+  "ingredient": "taco shells",
+  "original": "12 taco shells",
+  "store": 3221,
+  "product": "Old El Paso Hard 'N Soft Taco Kit Mexican Style",
+  "size": "350g",
+  "id": 251433
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6.5,
+  "rung": "rung1",
+  "ingredient": "shredded cheddar cheese",
+  "original": "125 g shredded cheddar cheese",
+  "store": 3221,
+  "product": "The Organic Milk Co. Shredded Cheddar Cheese",
+  "size": "250g",
+  "id": 6080851
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.9,
+  "rung": "rung1",
+  "ingredient": "iceberg lettuce",
+  "original": "1/2 iceberg lettuce, finely shredded",
+  "store": 3221,
+  "product": "Iceberg Lettuce",
+  "size": "each",
+  "id": 154340
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 1.66,
+  "rung": "rung1",
+  "ingredient": "tomatoes",
+  "original": "2 tomatoes, diced",
+  "store": 3221,
+  "product": "Truss Tomatoes",
+  "size": "each",
+  "id": 169438
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 5.0,
+  "rung": "rung1",
+  "ingredient": "sour cream",
+  "original": "125 g sour cream, to serve",
+  "store": 3221,
+  "product": "Sakata Rice Crackers Sour Cream & Chives Snack",
+  "size": "90g",
+  "id": 958907
+ }
+]

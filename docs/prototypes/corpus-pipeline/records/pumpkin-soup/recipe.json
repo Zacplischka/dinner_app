@@ -5,15 +5,50 @@
   "readyInMinutes": 45,
   "mealType": "soup",
   "cuisine": "modern australian",
-  "diets": ["vegetarian", "gluten free"],
+  "diets": [
+    "vegetarian",
+    "gluten free"
+  ],
   "image": "images/pumpkin-soup.webp",
   "extendedIngredients": [
-    {"name": "kent pumpkin", "amount": 1.2, "unit": "kg", "original": "1.2 kg Kent pumpkin"},
-    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion"},
-    {"name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves"},
-    {"name": "gluten-free vegetable stock", "searchTerm": "vegetable liquid stock", "amount": 1, "unit": "l", "original": "1 l gluten-free vegetable stock"},
-    {"name": "thickened cream", "amount": 300, "unit": "ml", "original": "300 ml thickened cream"},
-    {"name": "fresh chives", "amount": 0.5, "unit": "bunch", "original": "0.5 bunch fresh chives"}
+    {
+      "name": "kent pumpkin",
+      "amount": 1,
+      "unit": "",
+      "original": "1 cut Kent pumpkin (about 1.2 kg)",
+      "searchTerm": "kent pumpkin"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves"
+    },
+    {
+      "name": "gluten-free vegetable stock",
+      "searchTerm": "vegetable liquid stock",
+      "amount": 1,
+      "unit": "l",
+      "original": "1 l gluten-free vegetable stock"
+    },
+    {
+      "name": "thickened cream",
+      "amount": 300,
+      "unit": "ml",
+      "original": "300 ml thickened cream"
+    },
+    {
+      "name": "fresh chives",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "0.5 bunch fresh chives"
+    }
   ],
   "steps": [
     "Peel and deseed the pumpkin, then cut it into 3-4 cm chunks. Roughly chop the onion and garlic.",

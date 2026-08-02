@@ -5,17 +5,63 @@
   "readyInMinutes": 45,
   "mealType": "main course",
   "cuisine": "italian",
-  "diets": ["vegetarian", "gluten free"],
+  "diets": [
+    "vegetarian",
+    "gluten free"
+  ],
   "image": "images/mushroom-risotto.webp",
   "extendedIngredients": [
-    {"name": "arborio rice", "amount": 300, "unit": "g", "original": "300 g arborio rice"},
-    {"name": "mixed mushrooms", "amount": 500, "unit": "g", "original": "500 g mixed mushrooms, thickly sliced"},
-    {"name": "gluten-free vegetable stock", "searchTerm": "vegetable liquid stock", "amount": 1, "unit": "l", "original": "1 L gluten-free vegetable stock"},
-    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely chopped"},
-    {"name": "garlic", "amount": 2, "unit": "", "original": "2 cloves garlic, finely chopped"},
-    {"name": "dry white wine", "amount": 125, "unit": "ml", "original": "125 ml dry white wine"},
-    {"name": "vegetarian parmesan cheese", "searchTerm": "parmesan cheese", "amount": 80, "unit": "g", "original": "80 g vegetarian parmesan cheese, finely grated"},
-    {"name": "fresh thyme", "amount": 0.5, "unit": "bunch", "original": "0.5 bunch fresh thyme, leaves picked"}
+    {
+      "name": "arborio rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g arborio rice"
+    },
+    {
+      "name": "cup mushrooms",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g mushrooms (cup or mixed), thickly sliced",
+      "searchTerm": "cup mushrooms"
+    },
+    {
+      "name": "gluten-free vegetable stock",
+      "searchTerm": "vegetable liquid stock",
+      "amount": 1,
+      "unit": "l",
+      "original": "1 L gluten-free vegetable stock"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely chopped"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 cloves garlic, finely chopped"
+    },
+    {
+      "name": "dry white wine",
+      "amount": 125,
+      "unit": "ml",
+      "original": "125 ml dry white wine"
+    },
+    {
+      "name": "vegetarian parmesan cheese",
+      "searchTerm": "parmesan cheese",
+      "amount": 80,
+      "unit": "g",
+      "original": "80 g vegetarian parmesan cheese, finely grated"
+    },
+    {
+      "name": "fresh thyme",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "0.5 bunch fresh thyme, leaves picked"
+    }
   ],
   "steps": [
     "Pour the stock into a saucepan and bring it to a gentle simmer. Keep it hot over low heat while you cook.",

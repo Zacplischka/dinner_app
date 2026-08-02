@@ -1,0 +1,110 @@
+[
+ {
+  "state": "estimated",
+  "price": 13.6,
+  "rung": "rung1",
+  "why": "800g x $17.00 / 1KG",
+  "ingredient": "chicken thigh fillets",
+  "original": "800 g chicken thigh fillets",
+  "store": 3221,
+  "product": "Macro Free Range Chicken Thigh Fillet",
+  "size": "800g - 1.1kg",
+  "id": 764859
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.4,
+  "rung": "rung1",
+  "ingredient": "mirin",
+  "original": "60 ml (1/4 cup) mirin",
+  "store": 3221,
+  "product": "Obento Mirin Seasoning",
+  "size": "250mL",
+  "id": 101938
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "brown sugar",
+  "original": "2 tbsp (40 g) brown sugar",
+  "store": 3221,
+  "product": "Woolworths Essentials Brown Sugar",
+  "size": "1kg",
+  "id": 720342
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 22,
+  "rung": "spoonacular",
+  "ingredient": "ginger",
+  "original": "1 tsp finely grated ginger",
+  "store": 3221,
+  "product": "Urban Forager Turmeric Ginger Broth Concentrate",
+  "size": "240g",
+  "id": 6024841
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 8,
+  "rung": "rung1",
+  "ingredient": "white rice",
+  "original": "300 g (1.5 cups) white rice",
+  "store": 3221,
+  "product": "Ben's Original Lightly Flavour Coconut Microwave Rice Pouch",
+  "size": "250g",
+  "id": 177521
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.95,
+  "rung": "rung1",
+  "ingredient": "broccoli",
+  "original": "1 head broccoli",
+  "store": 3221,
+  "product": "Fresh Broccoli",
+  "size": "each",
+  "id": 134681
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 5.0,
+  "rung": "rung1",
+  "ingredient": "spring onions",
+  "original": "2 spring onions, thinly sliced",
+  "store": 3221,
+  "product": "Spring Onion Bunch",
+  "size": "each",
+  "id": 147603
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.65,
+  "rung": "rung1",
+  "ingredient": "sesame seeds",
+  "original": "1 tbsp (10 g) sesame seeds",
+  "store": 3221,
+  "product": "Woolworths Sesame Seeds",
+  "size": "100g",
+  "id": 501762
+ }
+]

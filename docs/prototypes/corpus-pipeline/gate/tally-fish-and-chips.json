@@ -1,0 +1,86 @@
+[
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 9.8,
+  "rung": "rung1",
+  "ingredient": "white fish fillets",
+  "original": "600 g firm white fish fillets",
+  "store": 3221,
+  "product": "Woolworths Fish Fillets Crumbed",
+  "size": "425g",
+  "id": 700541
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "potatoes",
+  "original": "1 kg potatoes",
+  "store": 3221,
+  "product": "Woolworths Washed Potatoes Bag",
+  "size": "2kg",
+  "id": 262783
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "eggs",
+  "original": "2 eggs",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.9,
+  "rung": "rung1",
+  "ingredient": "panko breadcrumbs",
+  "original": "120 g (2 cups) panko breadcrumbs",
+  "store": 3221,
+  "product": "Obento Japanese Panko Breadcrumbs",
+  "size": "200g",
+  "id": 702323
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.6,
+  "rung": "spoonacular",
+  "ingredient": "sweet paprika",
+  "original": "1 tsp sweet paprika",
+  "store": 3221,
+  "product": "Hoyt's Paprika Sweet",
+  "size": "190g",
+  "id": 57056
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.49,
+  "rung": "rung1",
+  "ingredient": "lemon",
+  "original": "1 lemon, cut into wedges",
+  "store": 3221,
+  "product": "Lemon Loose",
+  "size": "each",
+  "id": 259514
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.5,
+  "rung": "rung1",
+  "ingredient": "tartare sauce",
+  "original": "250 ml jar tartare sauce",
+  "store": 3221,
+  "product": "Woolworths Tartare Sauce",
+  "size": "330mL",
+  "id": 68555
+ }
+]

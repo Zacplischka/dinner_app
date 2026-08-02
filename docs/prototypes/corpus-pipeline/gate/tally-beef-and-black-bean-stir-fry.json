@@ -1,0 +1,110 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 12,
+  "rung": "rung1",
+  "ingredient": "beef stir fry strips",
+  "original": "500 g beef stir fry strips",
+  "store": 3221,
+  "product": "Woolworths Lean Beef Strips",
+  "size": "500g",
+  "id": 6044171
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4,
+  "rung": "rung1",
+  "ingredient": "black bean sauce",
+  "original": "1/2 cup (125 ml) black bean sauce",
+  "store": 3221,
+  "product": "Ayam Blackbean Sauce",
+  "size": "210mL",
+  "id": 86913
+ },
+ {
+  "state": "estimated",
+  "price": 0.23,
+  "rung": "spoonacular",
+  "why": "7g x $33.00 / 1KG",
+  "ingredient": "ginger",
+  "original": "1 tbsp finely grated ginger",
+  "store": 3221,
+  "product": "Ginger Fresh",
+  "size": "per 80g",
+  "id": 138082
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.63,
+  "rung": "rung1",
+  "ingredient": "brown onion",
+  "original": "1 brown onion, cut into thin wedges",
+  "store": 3221,
+  "product": "Onion Brown",
+  "size": "each",
+  "id": 144329
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.98,
+  "rung": "rung1",
+  "ingredient": "red capsicum",
+  "original": "1 red capsicum, sliced into strips",
+  "store": 3221,
+  "product": "Red Capsicum",
+  "size": "each",
+  "id": 135306
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.98,
+  "rung": "rung1",
+  "ingredient": "green capsicum",
+  "original": "1 green capsicum, sliced into strips",
+  "store": 3221,
+  "product": "Woolworths Capsicum Green",
+  "size": "each",
+  "id": 135156
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 5.0,
+  "rung": "rung1",
+  "ingredient": "spring onions",
+  "original": "2 spring onions, thinly sliced",
+  "store": 3221,
+  "product": "Spring Onion Bunch",
+  "size": "each",
+  "id": 147603
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 7.1,
+  "rung": "rung1",
+  "ingredient": "jasmine rice",
+  "original": "1.5 cups (300 g) jasmine rice",
+  "store": 3221,
+  "product": "Sunrice Microwave Jasmine Rice Cup Fragrant Jasmine Rice",
+  "size": "125g x 2 pack",
+  "id": 371052
+ }
+]

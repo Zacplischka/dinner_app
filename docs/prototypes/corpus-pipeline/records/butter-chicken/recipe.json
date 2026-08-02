@@ -5,25 +5,107 @@
   "readyInMinutes": 90,
   "mealType": "main course",
   "cuisine": "indian",
-  "diets": ["gluten free"],
+  "diets": [
+    "gluten free"
+  ],
   "image": "images/butter-chicken.webp",
   "extendedIngredients": [
-    {"name": "chicken thigh fillets", "amount": 800, "unit": "g", "original": "800 g chicken thigh fillets, cut into 3 cm pieces"},
-    {"name": "greek yoghurt", "amount": 0.5, "unit": "cup", "original": "1/2 cup greek yoghurt"},
-    {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon, juiced"},
-    {"name": "garlic", "amount": 4, "unit": "", "original": "4 cloves garlic, crushed"},
-    {"name": "ginger", "amount": 1, "unit": "tbsp", "original": "1 tbsp finely grated ginger"},
-    {"name": "garam masala", "amount": 3, "unit": "tsp", "original": "3 tsp garam masala"},
-    {"name": "ground turmeric", "amount": 1, "unit": "tsp", "original": "1 tsp ground turmeric"},
-    {"name": "ground cumin", "amount": 1, "unit": "tsp", "original": "1 tsp ground cumin"},
-    {"name": "sweet paprika", "amount": 2, "unit": "tsp", "original": "2 tsp sweet paprika"},
-    {"name": "butter", "amount": 80, "unit": "g", "original": "80 g butter"},
-    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely diced"},
-    {"name": "crushed tomatoes", "amount": 400, "unit": "g", "original": "400 g can crushed tomatoes"},
-    {"name": "thickened cream", "amount": 100, "unit": "ml", "original": "100 ml thickened cream"},
-    {"name": "caster sugar", "amount": 2, "unit": "tsp", "original": "2 tsp caster sugar"},
-    {"name": "basmati rice", "amount": 1.5, "unit": "cup", "original": "1 1/2 cups basmati rice"},
-    {"name": "coriander", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch coriander, leaves picked"}
+    {
+      "name": "chicken thigh fillets",
+      "amount": 800,
+      "unit": "g",
+      "original": "800 g chicken thigh fillets, cut into 3 cm pieces"
+    },
+    {
+      "name": "greek yoghurt",
+      "amount": 0.5,
+      "unit": "cup",
+      "original": "1/2 cup greek yoghurt"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon, juiced"
+    },
+    {
+      "name": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 cloves garlic, crushed"
+    },
+    {
+      "name": "ginger",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp finely grated ginger"
+    },
+    {
+      "name": "garam masala",
+      "amount": 3,
+      "unit": "tsp",
+      "original": "3 tsp garam masala"
+    },
+    {
+      "name": "ground turmeric",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp ground turmeric"
+    },
+    {
+      "name": "ground cumin",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp ground cumin"
+    },
+    {
+      "name": "sweet paprika",
+      "amount": 2,
+      "unit": "tsp",
+      "original": "2 tsp sweet paprika"
+    },
+    {
+      "name": "butter",
+      "amount": 80,
+      "unit": "g",
+      "original": "80 g butter"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "crushed tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g can crushed tomatoes"
+    },
+    {
+      "name": "thickened cream",
+      "amount": 100,
+      "unit": "ml",
+      "original": "100 ml thickened cream"
+    },
+    {
+      "name": "caster sugar",
+      "amount": 9,
+      "unit": "g",
+      "original": "2 tsp (9 g) caster sugar"
+    },
+    {
+      "name": "basmati rice",
+      "amount": 1.5,
+      "unit": "cup",
+      "original": "1 1/2 cups basmati rice"
+    },
+    {
+      "name": "coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch coriander, leaves picked"
+    }
   ],
   "steps": [
     "Combine the greek yoghurt, lemon juice, half the garlic, half the ginger, 1 tsp of the garam masala, the turmeric, cumin and 1 tsp of the sweet paprika in a large bowl. Stir in the chicken until well coated, then marinate in the fridge for at least 1 hour, or overnight.",

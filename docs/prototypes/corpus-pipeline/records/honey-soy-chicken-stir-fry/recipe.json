@@ -8,19 +8,86 @@
   "diets": [],
   "image": "images/honey-soy-chicken-stir-fry.webp",
   "extendedIngredients": [
-    {"name": "chicken thigh fillets", "amount": 500, "unit": "g", "original": "500 g chicken thigh fillets, cut into 2.5 cm pieces"},
-    {"name": "honey", "amount": 60, "unit": "ml", "original": "1/4 cup (60 ml) honey"},
-    {"name": "soy sauce", "amount": 60, "unit": "ml", "original": "1/4 cup (60 ml) soy sauce"},
-    {"name": "garlic", "amount": 3, "unit": "", "original": "3 garlic cloves, crushed"},
-    {"name": "fresh ginger", "amount": 2, "unit": "tsp", "original": "2 tsp finely grated fresh ginger"},
-    {"name": "cornflour", "amount": 10, "unit": "g", "original": "1 tbsp (10 g) cornflour"},
-    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, cut into thin wedges"},
-    {"name": "carrot", "amount": 1, "unit": "", "original": "1 carrot, thinly sliced on the diagonal"},
-    {"name": "red capsicum", "amount": 1, "unit": "", "original": "1 red capsicum, seeded and cut into strips"},
-    {"name": "buk choy", "amount": 1, "unit": "", "original": "1 bunch buk choy, stems sliced, leaves kept whole"},
-    {"name": "roasted cashews", "amount": 75, "unit": "g", "original": "75 g roasted unsalted cashews", "searchTerm": "cashews unsalted"},
-    {"name": "spring onions", "amount": 2, "unit": "", "original": "2 spring onions, thinly sliced"},
-    {"name": "jasmine rice", "amount": 300, "unit": "g", "original": "1.5 cups (300 g) jasmine rice, to serve"}
+    {
+      "name": "chicken thigh fillets",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g chicken thigh fillets, cut into 2.5 cm pieces"
+    },
+    {
+      "name": "honey",
+      "amount": 60,
+      "unit": "ml",
+      "original": "1/4 cup (60 ml) honey"
+    },
+    {
+      "name": "soy sauce",
+      "amount": 60,
+      "unit": "ml",
+      "original": "1/4 cup (60 ml) soy sauce"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "",
+      "original": "3 garlic cloves, crushed"
+    },
+    {
+      "name": "fresh ginger",
+      "amount": 2,
+      "unit": "tsp",
+      "original": "2 tsp finely grated fresh ginger"
+    },
+    {
+      "name": "cornflour",
+      "amount": 10,
+      "unit": "g",
+      "original": "1 tbsp (10 g) cornflour"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, cut into thin wedges"
+    },
+    {
+      "name": "carrot",
+      "amount": 1,
+      "unit": "",
+      "original": "1 carrot, thinly sliced on the diagonal"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red capsicum, seeded and cut into strips"
+    },
+    {
+      "name": "buk choy",
+      "amount": 1,
+      "unit": "",
+      "original": "1 bunch buk choy, stems sliced, leaves kept whole",
+      "searchTerm": "pak choy"
+    },
+    {
+      "name": "roasted cashews",
+      "amount": 75,
+      "unit": "g",
+      "original": "75 g roasted unsalted cashews",
+      "searchTerm": "cashews unsalted"
+    },
+    {
+      "name": "spring onions",
+      "amount": 2,
+      "unit": "",
+      "original": "2 spring onions, thinly sliced"
+    },
+    {
+      "name": "jasmine rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "1.5 cups (300 g) jasmine rice, to serve"
+    }
   ],
   "steps": [
     "Cook the jasmine rice according to packet directions, then keep it warm while you stir-fry.",

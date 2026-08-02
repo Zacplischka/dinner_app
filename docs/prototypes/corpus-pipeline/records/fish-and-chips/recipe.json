@@ -5,17 +5,60 @@
   "readyInMinutes": 60,
   "mealType": "main course",
   "cuisine": "modern australian",
-  "diets": ["pescetarian"],
+  "diets": [
+    "pescetarian"
+  ],
   "image": "images/fish-and-chips.webp",
   "extendedIngredients": [
-    {"name": "white fish fillets", "amount": 600, "unit": "g", "original": "600 g firm white fish fillets"},
-    {"name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes"},
-    {"name": "plain flour", "amount": 75, "unit": "g", "original": "75 g (1/2 cup) plain flour"},
-    {"name": "eggs", "amount": 2, "unit": "", "original": "2 eggs"},
-    {"name": "panko breadcrumbs", "amount": 120, "unit": "g", "original": "120 g (2 cups) panko breadcrumbs"},
-    {"name": "sweet paprika", "amount": 1, "unit": "tsp", "original": "1 tsp sweet paprika"},
-    {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon, cut into wedges"},
-    {"name": "tartare sauce", "amount": 250, "unit": "g", "original": "250 g jar tartare sauce"}
+    {
+      "name": "white fish fillets",
+      "amount": 600,
+      "unit": "g",
+      "original": "600 g firm white fish fillets"
+    },
+    {
+      "name": "potatoes",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg potatoes",
+      "searchTerm": "potatoes 2kg"
+    },
+    {
+      "name": "plain flour",
+      "amount": 75,
+      "unit": "g",
+      "original": "75 g (1/2 cup) plain flour"
+    },
+    {
+      "name": "eggs",
+      "amount": 2,
+      "unit": "",
+      "original": "2 eggs"
+    },
+    {
+      "name": "panko breadcrumbs",
+      "amount": 120,
+      "unit": "g",
+      "original": "120 g (2 cups) panko breadcrumbs"
+    },
+    {
+      "name": "sweet paprika",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp sweet paprika"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon, cut into wedges"
+    },
+    {
+      "name": "tartare sauce",
+      "amount": 250,
+      "unit": "ml",
+      "original": "250 ml jar tartare sauce"
+    }
   ],
   "steps": [
     "Preheat the oven to 220°C. Cut the potatoes into thick chips, rinse them in cold water, then dry them completely with a clean tea towel.",

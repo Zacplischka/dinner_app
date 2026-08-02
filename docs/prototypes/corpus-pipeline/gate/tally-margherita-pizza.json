@@ -1,0 +1,86 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.8,
+  "rung": "rung1",
+  "ingredient": "instant dried yeast",
+  "original": "7 g sachet instant dried yeast",
+  "store": 3221,
+  "product": "Lowan Yeast Dried Instant",
+  "size": "280g",
+  "id": 184917
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.2,
+  "rung": "rung1",
+  "ingredient": "caster sugar",
+  "original": "1 tsp (5 g) caster sugar",
+  "store": 3221,
+  "product": "Woolworths Essentials Caster Sugar",
+  "size": "1kg",
+  "id": 720343
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.8,
+  "rung": "rung1",
+  "ingredient": "whole peeled tomatoes",
+  "original": "1 x 400 g can whole peeled tomatoes",
+  "store": 3221,
+  "product": "Ardmona Whole Peeled Vine Ripened Tomatoes",
+  "size": "400g",
+  "id": 235198
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.88,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "1 garlic clove",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "vegetarian fresh mozzarella",
+  "original": "250 g vegetarian fresh mozzarella (2 balls)",
+  "store": 3221,
+  "product": "La Casa Del Formaggio Fresh Mozzarella",
+  "size": "125g",
+  "id": 732059
+ },
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 10.5,
+  "rung": "table(herb)",
+  "ingredient": "basil",
+  "original": "1/2 bunch basil, leaves picked",
+  "store": 3221,
+  "product": "MasterFoods Basil Leaves",
+  "size": "10g",
+  "id": 35961
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.5,
+  "rung": "rung1",
+  "ingredient": "semolina",
+  "original": "2 tbsp (30 g) semolina, for dusting",
+  "store": 3221,
+  "product": "La Gina Semolina Flour",
+  "size": "1kg",
+  "id": 6021336
+ }
+]

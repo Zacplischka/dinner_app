@@ -8,13 +8,50 @@
   "diets": [],
   "image": "images/grilled-steak-with-chips-and-salad.webp",
   "extendedIngredients": [
-    {"name": "beef porterhouse steak", "amount": 4, "unit": "", "original": "4 beef porterhouse steaks (about 200 g each)"},
-    {"name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes (sebago or brushed)"},
-    {"name": "mixed salad leaves", "amount": 120, "unit": "g", "original": "1 bag (120 g) mixed salad leaves"},
-    {"name": "cherry tomatoes", "amount": 250, "unit": "g", "original": "250 g punnet cherry tomatoes, halved"},
-    {"name": "lebanese cucumber", "amount": 1, "unit": "", "original": "1 Lebanese cucumber, sliced"},
-    {"name": "red onion", "amount": 0.5, "unit": "", "original": "1/2 red onion, thinly sliced"},
-    {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon, cut into wedges"}
+    {
+      "name": "beef porterhouse steak",
+      "amount": 800,
+      "unit": "g",
+      "original": "4 beef porterhouse steaks (about 200 g each)",
+      "searchTerm": "beef porterhouse steak"
+    },
+    {
+      "name": "potatoes",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg potatoes (sebago or brushed)",
+      "searchTerm": "potatoes 2kg"
+    },
+    {
+      "name": "mixed salad leaves",
+      "amount": 120,
+      "unit": "g",
+      "original": "1 bag (120 g) mixed salad leaves"
+    },
+    {
+      "name": "cherry tomatoes",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g punnet cherry tomatoes, halved"
+    },
+    {
+      "name": "lebanese cucumber",
+      "amount": 1,
+      "unit": "",
+      "original": "1 Lebanese cucumber, sliced"
+    },
+    {
+      "name": "red onion",
+      "amount": 0.5,
+      "unit": "",
+      "original": "1/2 red onion, thinly sliced"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon, cut into wedges"
+    }
   ],
   "steps": [
     "Preheat the oven to 220C (200C fan-forced). Scrub the potatoes and cut them into chips about 1 cm thick, skin on.",

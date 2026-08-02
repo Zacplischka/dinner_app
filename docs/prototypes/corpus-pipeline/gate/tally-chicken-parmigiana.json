@@ -1,0 +1,110 @@
+[
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 13.5,
+  "rung": "spoonacular",
+  "ingredient": "chicken breast",
+  "original": "2 large chicken breast fillets (about 500 g)",
+  "store": 3221,
+  "product": "The Bare Bird Free Range Chicken Breast Fillets",
+  "size": "600g",
+  "id": 902837
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "eggs",
+  "original": "2 eggs",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.9,
+  "rung": "rung1",
+  "ingredient": "panko breadcrumbs",
+  "original": "1 1/2 cups (90 g) panko breadcrumbs",
+  "store": 3221,
+  "product": "Obento Japanese Panko Breadcrumbs",
+  "size": "200g",
+  "id": 702323
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.8,
+  "rung": "rung1",
+  "ingredient": "parmesan cheese",
+  "original": "1/4 cup (25 g) finely grated parmesan cheese",
+  "store": 3221,
+  "product": "Zanetti Parmigiano Reggiano Grated",
+  "size": "100g",
+  "id": 463981
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.8,
+  "rung": "rung1",
+  "ingredient": "crushed tomatoes",
+  "original": "1 x 400 g can crushed tomatoes",
+  "store": 3221,
+  "product": "Ardmona Crushed Vine Ripened Tomatoes",
+  "size": "400g",
+  "id": 230392
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.2,
+  "rung": "rung1",
+  "ingredient": "sliced leg ham",
+  "original": "4 slices leg ham (about 100 g)",
+  "store": 3221,
+  "product": "D'Orsogna Deli Fresh Ham Champagne Leg",
+  "size": "100g",
+  "id": 758079
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.6,
+  "rung": "rung1",
+  "ingredient": "mozzarella cheese",
+  "original": "1 cup (100 g) grated mozzarella cheese",
+  "store": 3221,
+  "product": "Woolworths Mozzarella Cheese",
+  "size": "350g",
+  "id": 688515
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4,
+  "rung": "rung1",
+  "ingredient": "vegetable oil",
+  "original": "500 ml vegetable oil, for shallow frying",
+  "store": 3221,
+  "product": "Woolworths Vegetable Oil",
+  "size": "750mL",
+  "id": 750738
+ }
+]

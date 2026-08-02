@@ -1,0 +1,122 @@
+[
+ {
+  "state": "estimated",
+  "price": 12.0,
+  "rung": "rung1",
+  "why": "1000g x $12.00 / 1KG",
+  "ingredient": "chicken breast fillets",
+  "original": "1 kg chicken breast fillets",
+  "store": 3221,
+  "product": "Macro Chicken Breast Fillets Free Range",
+  "size": "700g - 1.4kg",
+  "id": 700228
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 5.7,
+  "rung": "spoonacular",
+  "ingredient": "eggs",
+  "original": "3 eggs",
+  "store": 3221,
+  "product": "Woolworths 12 Extra Large Barn Laid Cage Free Eggs",
+  "size": "700g",
+  "id": 6004393
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.9,
+  "rung": "rung1",
+  "ingredient": "panko breadcrumbs",
+  "original": "150 g (about 2 1/2 cups) panko breadcrumbs",
+  "store": 3221,
+  "product": "Obento Japanese Panko Breadcrumbs",
+  "size": "200g",
+  "id": 702323
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4,
+  "rung": "rung1",
+  "ingredient": "vegetable oil",
+  "original": "250 ml vegetable oil, for shallow frying",
+  "store": 3221,
+  "product": "Woolworths Vegetable Oil",
+  "size": "750mL",
+  "id": 750738
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3,
+  "rung": "rung1",
+  "ingredient": "mixed salad leaves",
+  "original": "120 g bag mixed salad leaves",
+  "store": 3221,
+  "product": "Woolworths Mixed Leaf Salad",
+  "size": "200g",
+  "id": 714823
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.2,
+  "rung": "rung1",
+  "ingredient": "cherry tomatoes",
+  "original": "250 g cherry tomatoes, halved",
+  "store": 3221,
+  "product": "Woolworths Cherry Tomatoes Punnet",
+  "size": "250g",
+  "id": 149620
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.24,
+  "rung": "rung1",
+  "ingredient": "cucumber",
+  "original": "1 cucumber, sliced",
+  "store": 3221,
+  "product": "Lebanese Cucumbers",
+  "size": "each",
+  "id": 137130
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.83,
+  "rung": "rung1",
+  "ingredient": "red onion",
+  "original": "\u00bd red onion, finely sliced",
+  "store": 3221,
+  "product": "Onion Red",
+  "size": "each",
+  "id": 144497
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.49,
+  "rung": "rung1",
+  "ingredient": "lemon",
+  "original": "1 lemon",
+  "store": 3221,
+  "product": "Lemon Loose",
+  "size": "each",
+  "id": 259514
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.6,
+  "rung": "spoonacular",
+  "ingredient": "dijon mustard",
+  "original": "1 tsp dijon mustard",
+  "store": 3221,
+  "product": "Your Condiment Co Dijon Mustard Dijon Mustard",
+  "size": "200g",
+  "id": 237378
+ }
+]

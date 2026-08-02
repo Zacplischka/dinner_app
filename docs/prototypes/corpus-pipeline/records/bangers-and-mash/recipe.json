@@ -8,15 +8,61 @@
   "diets": [],
   "image": "images/bangers-and-mash.webp",
   "extendedIngredients": [
-    { "name": "pork sausages", "amount": 8, "unit": "", "original": "8 thick pork sausages" },
-    { "name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes" },
-    { "name": "brown onion", "amount": 2, "unit": "", "original": "2 brown onions" },
-    { "name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves" },
-    { "name": "butter", "amount": 60, "unit": "g", "original": "60 g butter" },
-    { "name": "plain flour", "amount": 20, "unit": "g", "original": "2 tbsp (20 g) plain flour" },
-    { "name": "beef stock", "amount": 500, "unit": "ml", "original": "500 ml beef stock" },
-    { "name": "worcestershire sauce", "amount": 10, "unit": "ml", "original": "2 tsp (10 ml) worcestershire sauce" },
-    { "name": "milk", "amount": 125, "unit": "ml", "original": "125 ml milk" }
+    {
+      "name": "pork sausages",
+      "amount": 8,
+      "unit": "",
+      "original": "8 thick pork sausages"
+    },
+    {
+      "name": "potatoes",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg potatoes",
+      "searchTerm": "potatoes 2kg"
+    },
+    {
+      "name": "brown onion",
+      "amount": 2,
+      "unit": "",
+      "original": "2 brown onions"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves"
+    },
+    {
+      "name": "butter",
+      "amount": 60,
+      "unit": "g",
+      "original": "60 g butter"
+    },
+    {
+      "name": "plain flour",
+      "amount": 20,
+      "unit": "g",
+      "original": "2 tbsp (20 g) plain flour"
+    },
+    {
+      "name": "beef stock",
+      "amount": 500,
+      "unit": "ml",
+      "original": "500 ml beef stock"
+    },
+    {
+      "name": "worcestershire sauce",
+      "amount": 10,
+      "unit": "ml",
+      "original": "2 tsp (10 ml) worcestershire sauce"
+    },
+    {
+      "name": "milk",
+      "amount": 125,
+      "unit": "ml",
+      "original": "125 ml milk"
+    }
   ],
   "steps": [
     "Peel the potatoes and cut them into even chunks. Put them in a large pot of cold salted water, bring to the boil and cook for about 15 minutes, until a fork slides in easily.",

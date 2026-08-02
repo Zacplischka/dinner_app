@@ -1,0 +1,86 @@
+[
+ {
+  "state": "priced",
+  "packs": 3,
+  "price": 11.1,
+  "rung": "rung1",
+  "ingredient": "canned tuna",
+  "original": "425 g can tuna in springwater, drained",
+  "store": 3221,
+  "product": "Sirena Tuna In Oil Italian Style",
+  "size": "185g",
+  "id": 38610
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 0.9,
+  "rung": "rung1",
+  "ingredient": "penne pasta",
+  "original": "300 g penne pasta",
+  "store": 3221,
+  "product": "Woolworths Essentials Pasta Penne",
+  "size": "500g",
+  "id": 188800
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 7.3,
+  "rung": "rung1",
+  "ingredient": "full cream milk",
+  "original": "500 ml full cream milk",
+  "store": 3221,
+  "product": "a2 Milk Full Cream Milk",
+  "size": "2L",
+  "id": 208064
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "cheddar cheese",
+  "original": "150 g grated cheddar cheese",
+  "store": 3221,
+  "product": "Castello Mature Cheddar Cheese",
+  "size": "200g",
+  "id": 925797
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.7,
+  "rung": "rung1",
+  "ingredient": "frozen peas",
+  "original": "1 cup (150 g) frozen peas",
+  "store": 3221,
+  "product": "McCain Frozen Peas",
+  "size": "500g",
+  "id": 96206
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.9,
+  "rung": "rung1",
+  "ingredient": "panko breadcrumbs",
+  "original": "50 g panko breadcrumbs",
+  "store": 3221,
+  "product": "Obento Japanese Panko Breadcrumbs",
+  "size": "200g",
+  "id": 702323
+ }
+]

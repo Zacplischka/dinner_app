@@ -1,0 +1,86 @@
+[
+ {
+  "state": "estimated",
+  "price": 34.0,
+  "rung": "rung1",
+  "why": "1000g x $34.00 / 1KG",
+  "ingredient": "lamb loin chops",
+  "original": "1 kg lamb loin chops (about 8 chops)",
+  "store": 3221,
+  "product": "Woolworths Lamb Midloins Chops 3 - 6 Pieces",
+  "size": "450g - 800g",
+  "id": 764967
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "potatoes",
+  "original": "1 kg potatoes",
+  "store": 3221,
+  "product": "Woolworths Washed Potatoes Bag",
+  "size": "2kg",
+  "id": 262783
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.5,
+  "rung": "rung1",
+  "ingredient": "frozen peas",
+  "original": "500 g frozen peas",
+  "store": 3221,
+  "product": "Woolworths Essentials Frozen Peas",
+  "size": "1kg",
+  "id": 96845
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 7.9,
+  "rung": "spoonacular",
+  "ingredient": "milk",
+  "original": "1/2 cup (125 ml) milk",
+  "store": 3221,
+  "product": "Bellamy's Organic Milk & Vanilla Baby Rice 6+ Months",
+  "size": "125g",
+  "id": 839018
+ },
+ {
+  "state": "priced",
+  "packs": 2,
+  "price": 3.76,
+  "rung": "rung1",
+  "ingredient": "garlic",
+  "original": "2 garlic cloves, crushed",
+  "store": 3221,
+  "product": "Woolworths Garlic Head",
+  "size": "each",
+  "id": 713429
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "fresh mint",
+  "original": "1/2 bunch fresh mint, leaves chopped",
+  "store": 3221,
+  "product": "Woolworths Fresh Mint Bunch",
+  "size": "each",
+  "id": 142948
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.49,
+  "rung": "rung1",
+  "ingredient": "lemon",
+  "original": "1 lemon",
+  "store": 3221,
+  "product": "Lemon Loose",
+  "size": "each",
+  "id": 259514
+ }
+]

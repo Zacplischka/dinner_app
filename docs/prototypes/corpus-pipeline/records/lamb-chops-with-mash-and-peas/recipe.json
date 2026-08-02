@@ -5,17 +5,60 @@
   "readyInMinutes": 35,
   "mealType": "main course",
   "cuisine": "modern australian",
-  "diets": ["gluten free"],
+  "diets": [
+    "gluten free"
+  ],
   "image": "images/lamb-chops-with-mash-and-peas.webp",
   "extendedIngredients": [
-    {"name": "lamb loin chops", "amount": 1, "unit": "kg", "original": "1 kg lamb loin chops (about 8 chops)"},
-    {"name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes"},
-    {"name": "frozen peas", "amount": 500, "unit": "g", "original": "500 g frozen peas"},
-    {"name": "butter", "amount": 60, "unit": "g", "original": "60 g butter"},
-    {"name": "milk", "amount": 125, "unit": "ml", "original": "1/2 cup (125 ml) milk"},
-    {"name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves, crushed"},
-    {"name": "fresh mint", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch fresh mint, leaves chopped"},
-    {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon"}
+    {
+      "name": "lamb loin chops",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg lamb loin chops (about 8 chops)"
+    },
+    {
+      "name": "potatoes",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg potatoes",
+      "searchTerm": "potatoes 2kg"
+    },
+    {
+      "name": "frozen peas",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g frozen peas"
+    },
+    {
+      "name": "butter",
+      "amount": 60,
+      "unit": "g",
+      "original": "60 g butter"
+    },
+    {
+      "name": "milk",
+      "amount": 125,
+      "unit": "ml",
+      "original": "1/2 cup (125 ml) milk"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "fresh mint",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch fresh mint, leaves chopped"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon"
+    }
   ],
   "steps": [
     "Peel the potatoes and cut into even chunks. Boil in a large pot of salted water for about 15 minutes, until tender when pierced with a knife.",

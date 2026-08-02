@@ -2,22 +2,75 @@
   "placeId": "owned:garlic-butter-steak-with-creamed-spinach",
   "title": "Garlic Butter Steak with Creamed Spinach",
   "servings": 4,
-  "readyInMinutes": 35,
+  "readyInMinutes": 50,
   "mealType": "main course",
   "cuisine": null,
-  "diets": ["ketogenic", "gluten free"],
+  "diets": [
+    "ketogenic",
+    "gluten free"
+  ],
   "image": "images/garlic-butter-steak-with-creamed-spinach.webp",
   "extendedIngredients": [
-    {"name": "scotch fillet steak", "amount": 800, "unit": "g", "original": "800 g scotch fillet steaks (4 steaks)"},
-    {"name": "butter", "amount": 60, "unit": "g", "original": "60 g butter"},
-    {"name": "garlic", "amount": 4, "unit": "", "original": "4 garlic cloves, crushed"},
-    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 small brown onion, finely chopped"},
-    {"name": "thickened cream", "amount": 300, "unit": "ml", "original": "300 ml thickened cream"},
-    {"name": "cream cheese", "amount": 60, "unit": "g", "original": "60 g cream cheese, chopped"},
-    {"name": "baby spinach", "amount": 280, "unit": "g", "original": "280 g baby spinach"},
-    {"name": "parmesan", "amount": 40, "unit": "g", "original": "40 g finely grated parmesan"},
-    {"name": "ground nutmeg", "amount": 0.25, "unit": "tsp", "original": "1/4 tsp ground nutmeg"},
-    {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon"}
+    {
+      "name": "scotch fillet steak",
+      "amount": 800,
+      "unit": "g",
+      "original": "800 g scotch fillet steaks (4 steaks)"
+    },
+    {
+      "name": "butter",
+      "amount": 60,
+      "unit": "g",
+      "original": "60 g butter"
+    },
+    {
+      "name": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 garlic cloves, crushed"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 small brown onion, finely chopped"
+    },
+    {
+      "name": "thickened cream",
+      "amount": 300,
+      "unit": "ml",
+      "original": "300 ml thickened cream"
+    },
+    {
+      "name": "cream cheese",
+      "amount": 60,
+      "unit": "g",
+      "original": "60 g cream cheese, chopped"
+    },
+    {
+      "name": "baby spinach",
+      "amount": 280,
+      "unit": "g",
+      "original": "280 g baby spinach"
+    },
+    {
+      "name": "parmesan",
+      "amount": 40,
+      "unit": "g",
+      "original": "40 g finely grated parmesan"
+    },
+    {
+      "name": "ground nutmeg",
+      "amount": 1,
+      "unit": "g",
+      "original": "1/4 tsp (1 g) ground nutmeg"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon"
+    }
   ],
   "steps": [
     "Take the steaks out of the fridge 30 minutes ahead so they come to room temperature. Pat dry and season well on both sides with salt and pepper.",
@@ -26,7 +79,7 @@
     "Stir in the cream cheese until melted and smooth, then add the baby spinach in big handfuls, letting each batch wilt into the sauce before adding the next.",
     "Stir through the parmesan and a squeeze of juice from half the lemon. Season with salt and pepper, take off the heat and keep warm.",
     "Heat a heavy frying pan over high heat until smoking hot. Add a splash of olive oil and sear the steaks for 2 minutes per side without moving them.",
-    "Drop in the remaining 40 g butter and the rest of the garlic. Tilt the pan and spoon the foaming garlic butter over the steaks for 1-2 minutes, then pull them off at 57C in the centre for medium-rare.",
+    "Drop in the remaining 40 g butter and the rest of the garlic. Tilt the pan and spoon the foaming garlic butter over the steaks for 1-2 minutes, then pull them off at 52-54°C in the centre for medium-rare.",
     "Rest the steaks for 5 minutes, then slice thickly. Serve on the creamed spinach with the pan butter spooned over and the remaining lemon cut into wedges."
   ]
 }

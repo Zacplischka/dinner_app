@@ -1,0 +1,110 @@
+[
+ {
+  "state": "estimated",
+  "price": 9.65,
+  "rung": "spoonacular",
+  "why": "536g x $18.00 / 1KG",
+  "ingredient": "pork loin chops",
+  "original": "4 bone-in pork loin chops (about 1 kg)",
+  "store": 3221,
+  "product": "Woolworths Pork Loin Chop Medium",
+  "size": "200g - 600g",
+  "id": 675623
+ },
+ {
+  "state": "priced",
+  "packs": 4,
+  "price": 5.04,
+  "rung": "rung1",
+  "ingredient": "royal gala apples",
+  "original": "4 royal gala apples",
+  "store": 3221,
+  "product": "Apple Royal Gala",
+  "size": "each",
+  "id": 155003
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.3,
+  "rung": "rung1",
+  "ingredient": "brown sugar",
+  "original": "2 tbsp (40 g) brown sugar",
+  "store": 3221,
+  "product": "Woolworths Essentials Brown Sugar",
+  "size": "1kg",
+  "id": 720342
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 1.8,
+  "rung": "spoonacular",
+  "ingredient": "ground cinnamon",
+  "original": "1/2 tsp ground cinnamon",
+  "store": 3221,
+  "product": "Hoyt's Cinnamon Dutch Ground",
+  "size": "25g",
+  "id": 94632
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 3.5,
+  "rung": "rung1",
+  "ingredient": "apple cider vinegar",
+  "original": "1 tbsp (20 ml) apple cider vinegar",
+  "store": 3221,
+  "product": "The Australian Vinegar Co. Organic Apple Cider Vinegar",
+  "size": "250mL",
+  "id": 924549
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 2.6,
+  "rung": "rung1",
+  "ingredient": "dijon mustard",
+  "original": "1 tbsp (20 g) dijon mustard",
+  "store": 3221,
+  "product": "Your Condiment Co Dijon Mustard Dijon Mustard",
+  "size": "200g",
+  "id": 237378
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 6,
+  "rung": "rung1",
+  "ingredient": "potatoes",
+  "original": "1 kg potatoes",
+  "store": 3221,
+  "product": "Woolworths Washed Potatoes Bag",
+  "size": "2kg",
+  "id": 262783
+ },
+ {
+  "state": "priced",
+  "packs": 1,
+  "price": 4.1,
+  "rung": "rung1",
+  "ingredient": "full cream milk",
+  "original": "1/2 cup (125 ml) full cream milk",
+  "store": 3221,
+  "product": "Pauls Zymil Lactose Free Full Cream Milk",
+  "size": "1L",
+  "id": 261178
+ },
+ {
+  "state": "estimated",
+  "price": 2.07,
+  "rung": "rung1",
+  "why": "300g x $6.90 / 1KG",
+  "ingredient": "green beans",
+  "original": "300 g green beans, trimmed",
+  "store": 3221,
+  "product": "Beans Round",
+  "size": "per 250g",
+  "id": 134072
+ }
+]

@@ -8,18 +8,79 @@
   "diets": [],
   "image": "images/beef-tacos.webp",
   "extendedIngredients": [
-    {"name": "beef mince", "amount": 500, "unit": "g", "original": "500 g beef mince"},
-    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely diced"},
-    {"name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves, crushed"},
-    {"name": "ground cumin", "amount": 2, "unit": "tsp", "original": "2 tsp ground cumin"},
-    {"name": "sweet paprika", "amount": 2, "unit": "tsp", "original": "2 tsp sweet paprika"},
-    {"name": "dried oregano", "amount": 1, "unit": "tsp", "original": "1 tsp dried oregano"},
-    {"name": "tomato paste", "amount": 40, "unit": "g", "original": "2 tbsp (40 g) tomato paste"},
-    {"name": "taco shells", "amount": 12, "unit": "", "original": "12 taco shells"},
-    {"name": "shredded cheddar cheese", "amount": 125, "unit": "g", "original": "125 g shredded cheddar cheese"},
-    {"name": "iceberg lettuce", "amount": 0.5, "unit": "", "original": "1/2 iceberg lettuce, finely shredded"},
-    {"name": "tomatoes", "amount": 2, "unit": "", "original": "2 tomatoes, diced"},
-    {"name": "sour cream", "amount": 125, "unit": "g", "original": "125 g sour cream, to serve"}
+    {
+      "name": "beef mince",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g beef mince"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "ground cumin",
+      "amount": 2,
+      "unit": "tsp",
+      "original": "2 tsp ground cumin"
+    },
+    {
+      "name": "sweet paprika",
+      "amount": 2,
+      "unit": "tsp",
+      "original": "2 tsp sweet paprika"
+    },
+    {
+      "name": "dried oregano",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp dried oregano"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 40,
+      "unit": "g",
+      "original": "2 tbsp (40 g) tomato paste"
+    },
+    {
+      "name": "taco shells",
+      "amount": 12,
+      "unit": "",
+      "original": "12 taco shells",
+      "searchTerm": "taco kit"
+    },
+    {
+      "name": "shredded cheddar cheese",
+      "amount": 125,
+      "unit": "g",
+      "original": "125 g shredded cheddar cheese"
+    },
+    {
+      "name": "iceberg lettuce",
+      "amount": 0.5,
+      "unit": "",
+      "original": "1/2 iceberg lettuce, finely shredded"
+    },
+    {
+      "name": "tomatoes",
+      "amount": 2,
+      "unit": "",
+      "original": "2 tomatoes, diced"
+    },
+    {
+      "name": "sour cream",
+      "amount": 125,
+      "unit": "g",
+      "original": "125 g sour cream, to serve"
+    }
   ],
   "steps": [
     "Mix the ground cumin, sweet paprika and dried oregano in a small bowl with 1 tsp salt and a good grind of black pepper.",
