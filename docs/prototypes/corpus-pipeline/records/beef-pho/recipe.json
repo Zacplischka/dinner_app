@@ -1,0 +1,35 @@
+{
+  "placeId": "owned:beef-pho",
+  "title": "Beef Pho",
+  "servings": 4,
+  "readyInMinutes": 40,
+  "mealType": "main course",
+  "cuisine": "vietnamese",
+  "diets": ["gluten free"],
+  "image": "images/beef-pho.webp",
+  "extendedIngredients": [
+    {"name": "gluten-free beef stock", "searchTerm": "beef liquid stock", "amount": 2, "unit": "l", "original": "2 L gluten-free beef stock"},
+    {"name": "beef eye fillet steak", "amount": 300, "unit": "g", "original": "300 g beef eye fillet steak"},
+    {"name": "rice stick noodles", "amount": 400, "unit": "g", "original": "400 g dried rice stick noodles"},
+    {"name": "brown onion", "amount": 2, "unit": "", "original": "2 brown onions"},
+    {"name": "ginger", "amount": 50, "unit": "g", "original": "50 g piece of ginger"},
+    {"name": "star anise", "amount": 3, "unit": "", "original": "3 whole star anise"},
+    {"name": "cinnamon stick", "amount": 1, "unit": "", "original": "1 cinnamon stick"},
+    {"name": "whole cloves", "amount": 4, "unit": "", "original": "4 whole cloves"},
+    {"name": "fish sauce", "amount": 40, "unit": "ml", "original": "2 tbsp (40 ml) fish sauce"},
+    {"name": "brown sugar", "amount": 15, "unit": "g", "original": "1 tbsp (15 g) brown sugar"},
+    {"name": "bean sprouts", "amount": 250, "unit": "g", "original": "250 g bean sprouts"},
+    {"name": "coriander", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch coriander"},
+    {"name": "lime", "amount": 1, "unit": "", "original": "1 lime"}
+  ],
+  "steps": [
+    "Put the beef eye fillet in the freezer. Twenty minutes of firming makes it much easier to slice thinly.",
+    "Halve one brown onion and thickly slice the ginger, skin on. Char both in a dry frying pan over high heat (or straight over a gas flame) until blackened in spots, then scrape off any burnt skin.",
+    "Wipe the pan and dry-toast the star anise, cinnamon stick and cloves for 1 to 2 minutes until fragrant.",
+    "Pour the stock into a large pot and add the charred onion and ginger, the toasted spices, the fish sauce and the brown sugar. Bring to a simmer, partly cover and cook for 25 minutes, skimming any scum. Taste and season with salt until it sits just on the salty side — the noodles and garnishes will dilute it.",
+    "While the broth simmers, thinly slice the second brown onion, cut the lime into wedges and pick the coriander leaves. Cook the rice noodles following the packet directions, rinse under cold water and drain.",
+    "Take the beef from the freezer and slice it paper-thin across the grain.",
+    "Divide the noodles between four deep bowls and lay the raw beef slices on top.",
+    "Strain the broth, return it to a rolling boil and ladle it over each bowl so the hot broth cooks the beef. Top with bean sprouts, sliced onion and coriander, and serve with lime wedges."
+  ]
+}
