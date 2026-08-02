@@ -1,0 +1,35 @@
+{
+  "placeId": "owned:shepherds-pie",
+  "title": "Shepherd's Pie",
+  "servings": 4,
+  "readyInMinutes": 65,
+  "mealType": "main course",
+  "cuisine": "modern australian",
+  "diets": [],
+  "image": "images/shepherds-pie.webp",
+  "extendedIngredients": [
+    {"name": "lamb mince", "amount": 500, "unit": "g", "original": "500 g lamb mince"},
+    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely chopped"},
+    {"name": "carrots", "amount": 2, "unit": "", "original": "2 carrots, diced"},
+    {"name": "garlic", "amount": 3, "unit": "", "original": "3 garlic cloves, crushed"},
+    {"name": "tomato paste", "amount": 40, "unit": "g", "original": "2 tbsp (40 g) tomato paste"},
+    {"name": "plain flour", "amount": 20, "unit": "g", "original": "2 tbsp (20 g) plain flour"},
+    {"name": "worcestershire sauce", "amount": 20, "unit": "ml", "original": "1 tbsp (20 ml) worcestershire sauce"},
+    {"name": "beef stock", "amount": 500, "unit": "ml", "original": "500 ml beef stock"},
+    {"name": "dried thyme", "amount": 1, "unit": "tsp", "original": "1 tsp dried thyme"},
+    {"name": "frozen peas", "amount": 1, "unit": "cup", "original": "1 cup frozen peas"},
+    {"name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes, peeled and chopped"},
+    {"name": "butter", "amount": 50, "unit": "g", "original": "50 g butter"},
+    {"name": "milk", "amount": 125, "unit": "ml", "original": "125 ml milk"}
+  ],
+  "steps": [
+    "Peel and chop the potatoes into even chunks. Put them in a large pot of cold salted water, bring to the boil and cook for 15-20 minutes until very tender.",
+    "Meanwhile, heat a splash of olive oil in a large deep frypan over high heat. Brown the lamb mince in two batches so it colours rather than stews, breaking it up as it cooks, then tip it out and drain off any excess fat.",
+    "Drop the heat to medium, add a little more olive oil and soften the brown onion and carrots for 5 minutes. Add the garlic and cook for 1 minute until fragrant.",
+    "Return the lamb mince to the pan. Stir in the tomato paste and plain flour and cook for 1 minute, stirring so nothing catches.",
+    "Pour in the beef stock, add the worcestershire sauce and dried thyme, and simmer for 12-15 minutes until the filling is thick and glossy. Stir the frozen peas through for the last 2 minutes, then season with salt and pepper.",
+    "Preheat the oven to 200C. Drain the potatoes well, then mash with the butter and warmed milk until smooth. Season the mash with salt and pepper.",
+    "Spread the lamb filling into a baking dish, spoon the mash evenly over the top and rough up the surface with a fork so the peaks crisp in the oven.",
+    "Bake for 20-25 minutes until golden on top. Rest for 5 minutes before serving so the layers set."
+  ]
+}

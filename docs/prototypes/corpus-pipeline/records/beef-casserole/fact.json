@@ -1,0 +1,59 @@
+{
+  "slug": "beef-casserole",
+  "dish": "Slow-cooked beef casserole",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://www.createcookshare.com/single-post/slow-cooker-beef-stew-glutenfree", "publisher": "Create Cook Share", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/beef-casserole/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://therealfooddietitians.com/slow-cooker-beef-stew/", "publisher": "The Real Food Dietitians", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.womensweeklyfood.com.au/recipe/slow-cooker-recipes/slow-cooker-beef-casserole/", "publisher": "Women's Weekly Food", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef chuck steak", "essential": true, "observations": ["1 kg gravy beef or cheap cuts (s0)", "800 g chuck steak, bite-sized (s1)", "2 lb stew meat / cubed chuck (s2)", "1.2 kg chuck steak, coarse chop (s3)"]},
+    {"name": "olive oil", "essential": true, "observations": ["2 tbsp (s0)", "2 tbsp (s1)", "1 tbsp avocado or olive, divided (s2)", "60 ml (s3)"]},
+    {"name": "brown onion", "essential": true, "observations": ["1 large, sliced (s0)", "2, finely diced (s1)", "1 medium yellow, diced (s2)", "2 medium (300 g), wedges (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["4 cloves, sliced (s0)", "1 tbsp chopped (s1)", "4 cloves (s2)", "3 cloves (s3)"]},
+    {"name": "carrots", "essential": true, "observations": ["2 large, 1 cm slices (s0)", "4 large, sliced (s1)", "2 large, 1/2-inch pieces (s2)", "2 medium (240 g) (s3)"]},
+    {"name": "potatoes", "essential": true, "observations": ["8 small, halved (s0)", "500 g baby, halved (s1)", "12 oz, 1/2-inch pieces (s2)"]},
+    {"name": "parsnip", "essential": false, "observations": ["8 oz, 1/2-inch pieces (s2)", "1 medium (250 g) (s3)"]},
+    {"name": "swede", "essential": false, "observations": ["1 medium (225 g) (s3)"]},
+    {"name": "celery", "essential": false, "observations": ["2 stalks (300 g) (s3)"]},
+    {"name": "green beans", "essential": false, "observations": ["2 cups (300 g) (s0)", "8 oz, 1-inch pieces (s2)"]},
+    {"name": "button mushrooms", "essential": false, "observations": ["4 large, halved, optional (s0)"]},
+    {"name": "tomato paste", "essential": true, "observations": ["2 tbsp (s0)", "1 tbsp (s1)", "70 g (s3)"]},
+    {"name": "canned crushed tomatoes", "essential": false, "observations": ["15 oz can diced, with liquid (s2)", "400 g crushed (s3)"]},
+    {"name": "beef stock", "essential": true, "observations": ["700 ml, gluten-free labelled (s0)", "1 l water + 2 tsp stock powder (s1)", "4 cups broth (s2)", "500 ml (s3)"]},
+    {"name": "cornflour", "essential": true, "observations": ["3 tbsp cornflour slurry (s0)", "35 g plain flour (s1)", "1/4 cup cornstarch slurry, optional (s2)", "50 g plain flour coat (s3)"]},
+    {"name": "red wine", "essential": false, "observations": ["250 ml dry (s1)"]},
+    {"name": "tamari", "essential": false, "observations": ["2 tbsp, gluten-free (s0)"]},
+    {"name": "apple cider vinegar", "essential": false, "observations": ["1 tbsp (s0)"]},
+    {"name": "thyme", "essential": true, "observations": ["4 sprigs or 1 tsp dried (s1)", "1.5 tsp dried (s2)", "10 sprigs fresh (s3)"]},
+    {"name": "rosemary", "essential": false, "observations": ["3 sprigs (s0)", "1 tsp dried (s2)"]},
+    {"name": "bay leaves", "essential": false, "observations": ["3 (s0)", "1 (s1)", "2 fresh (s3)"]},
+    {"name": "silverbeet", "essential": false, "observations": ["500 g, shredded (s3)"]},
+    {"name": "fresh parsley", "essential": false, "observations": ["1/2 cup leaves, chopped (s0)", "1/3 cup flat-leaf, chopped (s3)"]}
+  ],
+  "causalSequence": [
+    "season chuck pieces; brown in batches in oil",
+    "soften onion, garlic (plus carrot, celery, parsnip, swede in one build) in same pan",
+    "stir in tomato paste; cook 1 min",
+    "add flour or reserve cornflour for a late slurry",
+    "add stock, tomatoes, thyme, bay; combine with beef in slow cooker or covered pot",
+    "cook low 8 h (slow cooker) or lowest stovetop heat 2-3 h until beef pulls apart",
+    "add potatoes, carrots for the final hour if not in from the start",
+    "thicken with cornflour slurry; cook 15-60 min more",
+    "stir quick-cooking greens through at the end; top with parsley"
+  ],
+  "techniqueFacts": [
+    "chuck/gravy beef is the cut in all 4 sources; connective tissue breaks down over the long low cook",
+    "3 of 4 sources brown the beef in batches first; one is dump-and-go with a dry spice rub (onion/garlic/mustard powder, oregano) instead",
+    "thickening splits 2/2: flour coat or stir-in early vs cornstarch slurry near the end; the slurry route is naturally gluten free",
+    "gluten free build swaps in GF-labelled stock and tamari for soy sauce (1 source)",
+    "quick-cooking veg (green beans, silverbeet) go in only for the last 10-60 min (3 sources)",
+    "root veg added partway (last 1 h) keeps them intact on the stovetop build (1 source); slow-cooker builds load them from the start (3 sources)",
+    "doneness test: beef pulls apart with a fork; extend in 20-min intervals if firm (1 source)",
+    "deglaze the browning pan with water to capture fond (1 source)",
+    "leftovers freeze well up to 3 months (2 sources)"
+  ],
+  "servingsObserved": [5, 6, 8, 6]
+}

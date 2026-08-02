@@ -1,0 +1,52 @@
+{
+  "slug": "chicken-parmigiana",
+  "dish": "Chicken parmigiana",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": []},
+  "sources": [
+    {"url": "https://thescranline.com/crispy-chicken-parmigiana/", "publisher": "The Scranline", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.andy-cooks.com/blogs/recipes/chicken-parmi", "publisher": "Andy Cooks", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://mamalovestocook.com/easy-chicken-parmigiana-recipe/", "publisher": "Mama Loves to Cook", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken breast", "essential": true, "observations": ["4 / 1 kg (s0)", "2 (s1)", "2 large, halved to 4 pieces (s2)"]},
+    {"name": "plain flour", "essential": true, "observations": ["2 cups / 300 g (s0)", "75 g / 1/2 cup (s1)", "1/2 cup (s2)"]},
+    {"name": "eggs", "essential": true, "observations": ["3 / 160 g (s0)", "2 (s1)", "2 (s2)"]},
+    {"name": "breadcrumbs", "essential": true, "observations": ["2 cups / 120 g regular or panko (s0)", "1 cup panko (s1)", "1 cup panko (s2)"]},
+    {"name": "mozzarella cheese", "essential": true, "observations": ["1 cup / 100 g grated (s0)", "100 g block, sliced (s1)", "1 cup grated (s2)"]},
+    {"name": "marinara sauce", "essential": true, "observations": ["homemade from 400 g crushed tomatoes or passata (s0)", "homemade from 400 g can diced tomatoes + can-splash of water (s1)", "1/4 cup store-bought (s2)"]},
+    {"name": "sliced leg ham", "essential": false, "observations": ["100 g (s1)", "4 slices, optional (s2)"]},
+    {"name": "parmesan cheese", "essential": false, "observations": ["1/2 cup / 50 g in crumb, optional (s0)", "2 tbsp in crumb (s2)"]},
+    {"name": "oil for shallow frying", "essential": true, "observations": ["2 cups / 500 ml canola or vegetable (s0)", "olive oil, to ~180 C (s1)", "4 tbsp olive oil (s2)"]},
+    {"name": "butter", "essential": false, "observations": ["2 tbsp, with the frying oil (s2)"]},
+    {"name": "garlic", "essential": false, "observations": ["2 cloves in sauce (s0)", "4 cloves in sauce (s1)"]},
+    {"name": "brown onion", "essential": false, "observations": ["1/2 medium in sauce (s0)"]},
+    {"name": "tomato paste", "essential": false, "observations": ["2-3 tbsp in sauce (s0)"]},
+    {"name": "dried oregano", "essential": false, "observations": ["1 tsp italian herb mix in sauce (s0)", "1 tsp dried oregano in sauce (s1)", "1/2 tsp dried italian herbs in crumb (s2)"]},
+    {"name": "cheddar cheese", "essential": false, "observations": ["1 cup / 100 g grated, mixed with mozzarella (s0)"]},
+    {"name": "garlic powder", "essential": false, "observations": ["1 tsp on brined chicken (s0)", "1/4 tsp garlic salt in crumb (s2)"]},
+    {"name": "smoked paprika", "essential": false, "observations": ["1/2 tsp on brined chicken (s0)"]},
+    {"name": "basil", "essential": false, "observations": ["2 tbsp chopped in sauce + sprinkle to serve (s0)"]},
+    {"name": "chips", "essential": false, "observations": ["to serve (s1)"]},
+    {"name": "green salad", "essential": false, "observations": ["to serve (s1)"]}
+  ],
+  "causalSequence": [
+    "simmer garlic, canned tomato, dried herbs into a quick marinara; cool",
+    "halve or butterfly breasts into thin even pieces; season",
+    "crumb: flour, beaten egg, breadcrumbs; press crumbs on firmly",
+    "shallow-fry 3-4 min per side until golden and cooked",
+    "top fried chicken with ham, marinara, cheese",
+    "grill or bake until cheese melts and bubbles",
+    "serve with chips and salad"
+  ],
+  "techniqueFacts": [
+    "all three thin the breast for even fast cooking: s1 butterflies (love-heart), s0 butterflies whole 1 kg breasts, s2 halves lengthways then flattens to ~3 mm with a mallet",
+    "s0 dry-brines: salt the cut breast, rest in fridge 20-60 min, pat dry — claimed crisper crumb",
+    "standard 3-bowl crumb line in all three; s0 and s2 mix parmesan and seasonings into the crumbs",
+    "sauce is homemade in s0/s1 (canned tomato + garlic base, 8-20 min simmer, cooled before topping so the crust stays crisp); s2 shortcuts with store marinara",
+    "ham layer sits between chicken and sauce in s1/s2; s0 omits ham entirely",
+    "melt stage: oven grill/broiler 3-4 min (s1, s2); s0 bakes at 180 C until golden",
+    "doneness targets differ: s1 pulls at 62 C internal from ~180 C oil; s0 cooks to 73 C internal",
+    "s1 frames it as the pub plate: chips and green salad alongside, mozzarella must be block not fresh (fresh is too wet, goes soggy)"
+  ],
+  "servingsObserved": [4, 2, 4]
+}

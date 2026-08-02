@@ -1,0 +1,48 @@
+{
+  "slug": "mushroom-risotto",
+  "dish": "Mushroom risotto",
+  "cell": {"mealType": "main course", "cuisine": "italian", "diets": ["vegetarian", "gluten free"]},
+  "sources": [
+    {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/really-good-mushroom-risotto-27648/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.loveandlemons.com/mushroom-risotto/", "publisher": "Love and Lemons (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.afamilyfeast.com/mushroom-risotto/", "publisher": "A Family Feast (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "arborio rice", "essential": true, "observations": ["2 cups / 400 g arborio or carnaroli (s0)", "1 1/2 cups ~300 g (s1)", "1 cup ~200 g (s2)"]},
+    {"name": "mixed mushrooms", "essential": true, "observations": ["360 g mixed button/king brown/Swiss/portobello/enoki/oyster (s0)", "1 1/2 lb ~680 g mixed cremini/shiitake/oyster (s1)", "8 oz ~225 g cremini quartered (s2)"]},
+    {"name": "dried porcini mushrooms", "essential": false, "observations": ["10 g, rehydrated in 125 ml boiling water, soaking liquid used (s0)", "absent (s1)", "absent (s2)"]},
+    {"name": "vegetable stock", "essential": true, "observations": ["1 L chicken or vegetable (s0)", "5 cups ~1.25 L vegetable (s1)", "2 1/2 cups ~625 ml chicken (s2)"]},
+    {"name": "onion", "essential": true, "observations": ["1 small red onion 100 g (s0)", "1 medium yellow onion (s1)", "1 cup diced (s2)"]},
+    {"name": "garlic", "essential": true, "observations": ["3 cloves sliced (s0)", "2 cloves chopped (s1)", "absent (s2)"]},
+    {"name": "dry white wine", "essential": true, "observations": ["1/2 cup 125 ml (s0)", "2/3 cup ~160 ml (s1)", "1/3 cup ~80 ml (s2)"]},
+    {"name": "parmesan cheese", "essential": true, "observations": ["1 cup / 80 g Parmigiano Reggiano, extra to serve (s0)", "1/2 cup ~50 g pecorino or parmesan (s1)", "3/4 cup ~75 g grated (s2)"]},
+    {"name": "olive oil", "essential": true, "observations": ["2 tbsp risotto + 2 tbsp mushrooms (s0)", "4 tbsp split (s1)", "3 tbsp split, alongside butter (s2)"]},
+    {"name": "butter", "essential": false, "observations": ["absent (s0)", "absent (s1)", "3 tbsp split mushrooms/rice (s2)"]},
+    {"name": "fresh thyme", "essential": false, "observations": ["4 sprigs with mushrooms, extra to serve (s0)", "1 tbsp leaves in base (s1)", "absent (s2)"]},
+    {"name": "lemon juice", "essential": false, "observations": ["2 tbsp stirred in at end (s0)", "absent (s1)", "absent (s2)"]},
+    {"name": "fresh parsley", "essential": false, "observations": ["absent (s0)", "garnish (s1)", "absent (s2)"]}
+  ],
+  "causalSequence": [
+    "heat stock; hold at gentle simmer in second pan",
+    "saute mushrooms in hot fat, minimal stirring, until browned; set aside",
+    "soften onion (and garlic) in oil ~5 min",
+    "add rice; toast 1-3 min until coated and translucent",
+    "add wine; cook until absorbed",
+    "add hot stock 1/4-1 cup at a time, stirring; absorb between additions, ~20-25 min to al dente",
+    "off heat: stir in parmesan and most of the mushrooms; season",
+    "top with reserved mushrooms; rest ~5 min"
+  ],
+  "techniqueFacts": [
+    "all three cook mushrooms separately and fold in at the end to avoid overcooking",
+    "all three hold stock hot and add gradually with frequent stirring; done = al dente with slight bite, never mushy",
+    "two sources brown mushrooms over high-ish heat stirring only occasionally so they colour instead of steam",
+    "one source boosts flavour with rehydrated dried porcini plus its soaking liquid",
+    "one source finishes with lemon juice; one rests risotto covered 5 min off heat with a little liquid remaining",
+    "wine can be replaced with extra stock (one source)",
+    "vegetarian/GF hold needs vegetable stock: one source uses vegetable only, one lists chicken-or-vegetable, one uses chicken",
+    "one source offers a vegan variant (skip cheese); strict vegetarians need a non-animal-rennet parmesan-style cheese since Parmigiano Reggiano PDO is traditionally made",
+    "all three sources state serves 4-6; total time 45-60 min",
+    "arborio is the standard rice; carnaroli noted as creamier alternative (one source)"
+  ],
+  "servingsObserved": [4, 4, 4]
+}

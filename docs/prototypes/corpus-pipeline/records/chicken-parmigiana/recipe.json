@@ -1,0 +1,33 @@
+{
+  "placeId": "owned:chicken-parmigiana",
+  "title": "Chicken Parmigiana",
+  "servings": 4,
+  "readyInMinutes": 45,
+  "mealType": "main course",
+  "cuisine": "modern australian",
+  "diets": [],
+  "image": "images/chicken-parmigiana.webp",
+  "extendedIngredients": [
+    {"name": "chicken breast", "amount": 2, "unit": "", "original": "2 large chicken breast fillets (about 500 g)"},
+    {"name": "plain flour", "amount": 75, "unit": "g", "original": "1/2 cup (75 g) plain flour"},
+    {"name": "eggs", "amount": 2, "unit": "", "original": "2 eggs"},
+    {"name": "panko breadcrumbs", "amount": 90, "unit": "g", "original": "1 1/2 cups (90 g) panko breadcrumbs"},
+    {"name": "parmesan cheese", "amount": 25, "unit": "g", "original": "1/4 cup (25 g) finely grated parmesan cheese"},
+    {"name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves, crushed"},
+    {"name": "crushed tomatoes", "amount": 400, "unit": "g", "original": "1 x 400 g can crushed tomatoes"},
+    {"name": "dried oregano", "amount": 1, "unit": "g", "original": "1 tsp (1 g) dried oregano"},
+    {"name": "sliced leg ham", "searchTerm": "leg ham", "amount": 100, "unit": "g", "original": "4 slices leg ham (about 100 g)"},
+    {"name": "mozzarella cheese", "amount": 100, "unit": "g", "original": "1 cup (100 g) grated mozzarella cheese"},
+    {"name": "vegetable oil", "amount": 500, "unit": "ml", "original": "500 ml vegetable oil, for shallow frying"}
+  ],
+  "steps": [
+    "Start the sauce first: warm a splash of olive oil in a small pan, let the garlic sizzle for 30 seconds, then tip in the crushed tomatoes and dried oregano. Season with salt and pepper and leave it bubbling gently for about 10 minutes so it thickens, then set aside.",
+    "Slice each chicken breast in half horizontally to give 4 thin steaks. Lay them between two sheets of baking paper and flatten with a rolling pin to an even 1 cm thickness. Season both sides with salt.",
+    "Set up three shallow bowls: plain flour in the first, eggs beaten with a fork in the second, and panko breadcrumbs mixed with the parmesan cheese in the third.",
+    "Coat each chicken steak in flour and shake off the excess, dip in the beaten egg, then press firmly into the crumb mix so it sticks all over.",
+    "Pour the vegetable oil into a large frying pan to about 1 cm deep and heat over medium-high. Fry the chicken in two batches for 3 to 4 minutes per side until deep golden and cooked through. Drain on paper towel.",
+    "Preheat the oven grill to high. Sit the fried chicken on a baking tray, lay the sliced leg ham over each schnitzel, spoon over the tomato sauce and scatter with the mozzarella cheese.",
+    "Slide the tray under the grill and leave it just until the mozzarella bubbles and browns at the edges, about 3 to 4 minutes.",
+    "Serve straight away."
+  ]
+}

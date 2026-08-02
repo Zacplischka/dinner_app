@@ -1,0 +1,46 @@
+{
+  "slug": "pork-chops-with-apple-sauce",
+  "dish": "Pork chops with apple sauce",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://leitesculinaria.com/319873/recipes-pork-chops-applesauce.html", "publisher": "Leite's Culinaria", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://cheflindseyfarr.com/pork-chops-and-applesauce/", "publisher": "Chef Lindsey Farr", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://foxeslovelemons.com/pork-chops-with-spicy-applesauce/", "publisher": "Foxes Love Lemons", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "pork chops (bone-in)", "essential": true, "observations": ["4 x 8 oz loin chops, 4 cm thick (s0)", "4-6 chops (s1)", "2 thick-cut chops, ~2 lb total (s2)"]},
+    {"name": "apples / apple sauce", "essential": true, "observations": ["pre-made applesauce, unquantified, warmed (s0)", "1 1/2 cups pre-made applesauce (s1)", "6 apples, Gala or Honeycrisp, made into sauce (s2)"]},
+    {"name": "dijon mustard", "essential": false, "observations": ["1 tsp in rub (s0)", "2 tbsp rubbed on chops (s2)"]},
+    {"name": "butter", "essential": false, "observations": ["1 tsp baste + 1 tbsp mounted into sauce (s1)", "1 tbsp stirred into sauce (s2)"]},
+    {"name": "black pepper", "essential": false, "observations": ["1 tbsp as crust (s0)", "to taste (s1)", "1/2 tsp (s2)"]},
+    {"name": "sage", "essential": false, "observations": ["fresh or fried leaves, garnish, optional (s0)", "1 tbsp finely chopped (s1)"]},
+    {"name": "rosemary", "essential": false, "observations": ["4 sprigs chopped (s1)", "garnish, optional (s2)"]},
+    {"name": "thyme", "essential": false, "observations": ["1 tbsp picked (s1)", "garnish, optional (s2)"]},
+    {"name": "ground cinnamon", "essential": false, "observations": ["1/2 tsp in sauce (s1)"]},
+    {"name": "apple cider", "essential": false, "observations": ["1/2 cup to deglaze and loosen sauce (s1)"]},
+    {"name": "cider vinegar", "essential": false, "observations": ["1 tbsp in sauce (s2)", "finishing splash, tip only (s1)"]},
+    {"name": "brown sugar", "essential": false, "observations": ["1/3 cup light brown in sauce (s2)"]},
+    {"name": "chilli (cayenne or flakes)", "essential": false, "observations": ["pinch cayenne in rub (s0)", "1/2 tsp red pepper flakes in sauce, optional (s2)"]},
+    {"name": "paprika", "essential": false, "observations": ["1/2 tsp on chops (s2)"]}
+  ],
+  "causalSequence": [
+    "make apple sauce: simmer peeled chopped apples with water, sugar, vinegar 15-20 min covered; puree; stir in butter — or warm pre-made applesauce",
+    "rub chops: dijon plus salt, pepper, spice or chopped herbs",
+    "sear chops in hot ovenproof pan, 2-3 min per side, until golden",
+    "finish in 200 C oven to 63-65 C internal, 4-15 min by thickness",
+    "rest chops 5 min",
+    "optional pan sauce: deglaze with cider, whisk in applesauce, mount butter off heat",
+    "serve chops with warm apple sauce; herb garnish"
+  ],
+  "techniqueFacts": [
+    "all three sources sear hard then finish gently; two mandate a 200 C oven finish, one makes it thick-chop-only",
+    "63-65 C (145-150 F) internal then a rest is the anti-dry lever in all three",
+    "dijon rub binds seasoning to the chop (2 sources)",
+    "sauce is always served warm; cold sauce on hot chops called a fault (1 source)",
+    "one source turns the sauce into a pan sauce: cider deglaze, applesauce whisked in, butter mounted off heat",
+    "acid balances the sauce's sweetness: cider vinegar in the sauce (1 source) or as a finishing splash (1 source tip)",
+    "bone-in chops preferred for juiciness and flavour (all three)",
+    "rub can be applied up to a day ahead and refrigerated for deeper flavour (1 source)"
+  ],
+  "servingsObserved": [4, 6, 4]
+}

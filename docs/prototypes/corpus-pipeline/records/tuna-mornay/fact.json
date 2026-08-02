@@ -1,0 +1,48 @@
+{
+  "slug": "tuna-mornay",
+  "dish": "Tuna mornay",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["pescetarian"]},
+  "sources": [
+    {"url": "https://www.wandercooks.com/tuna-mornay/", "publisher": "Wandercooks", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/supercharged-tuna-mornay/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.cookedandloved.com/recipes/tuna-mornay/", "publisher": "Cooked & Loved", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "canned tuna", "essential": true, "observations": ["425 g in water/brine/oil (s0)", "425 g in olive oil, drained (s1)", "150 g drained (s2)"]},
+    {"name": "pasta", "essential": true, "observations": ["250 g penne or spirals (s0)", "500 g large shells (s1)", "150 g penne (s2)"]},
+    {"name": "butter", "essential": true, "observations": ["100 g (s0)", "100 g (s1)", "2 tbsp (s2)"]},
+    {"name": "plain flour", "essential": true, "observations": ["50 g (s0)", "50 g (s1)", "2 tbsp (s2)"]},
+    {"name": "milk", "essential": true, "observations": ["750 ml full cream (s0)", "875 ml full cream (s1)", "375 ml (s2)"]},
+    {"name": "cheddar cheese", "essential": true, "observations": ["1/2 cup sauce + 1-2 cups topping, tasty (s0)", "125 g sauce + 60 g topping (s1)", "2/3 cup gouda or cheddar (s2)"]},
+    {"name": "parmesan", "essential": false, "observations": ["1/3 cup (s0)", "50 g sauce + 25 g topping (s1)"]},
+    {"name": "breadcrumbs", "essential": true, "observations": ["1/3 cup / 50 g panko (s0, topping)", "60 g panko (s1, topping)", "1/2 cup (s2, topping)"]},
+    {"name": "frozen peas", "essential": false, "observations": ["1 cup (s0)", "155 g (s1)"]},
+    {"name": "corn", "essential": false, "observations": ["1 cup frozen or canned (s0)"]},
+    {"name": "baby spinach", "essential": false, "observations": ["90 g (s1)", "2 cups (s2)"]},
+    {"name": "garlic", "essential": false, "observations": ["2 tsp grated (s1)", "2 cloves (s2)"]},
+    {"name": "lemon", "essential": false, "observations": ["1, zest and juice (s1)"]},
+    {"name": "chicken stock powder", "essential": false, "observations": ["2 tsp (s0)"]},
+    {"name": "nutmeg", "essential": false, "observations": ["1/2 tsp ground (s0)"]}
+  ],
+  "causalSequence": [
+    "cook pasta 1 min short of packet time; drain",
+    "melt butter; cook garlic briefly if using",
+    "stir in flour; cook out 1 min",
+    "whisk in milk gradually; simmer 3-5 min until thickened",
+    "off heat, melt cheeses into sauce; season",
+    "stir through peas, corn or spinach; fold in drained tuna, break into chunks",
+    "combine sauce and pasta in baking dish",
+    "top with grated cheese and breadcrumbs",
+    "bake 180-200 C, 15-20 min, until golden and bubbling"
+  ],
+  "techniqueFacts": [
+    "two sources build a classic roux (butter, flour, then milk); one whisks butter, flour and cold milk together in one pot as a no-fail shortcut",
+    "pasta is deliberately undercooked because it finishes cooking in the oven (2 sources)",
+    "cheese is melted in off the heat or on low so the sauce stays smooth (2 sources)",
+    "bake is short (15-20 min) — everything is already cooked, the oven only browns the topping",
+    "tuna goes in last, drained, broken into chunks rather than mashed",
+    "flavour levers vary by source: nutmeg + stock powder (1), lemon zest and juice (1), baby spinach (2)",
+    "topping is breadcrumbs plus extra cheese in 2 sources, seasoned breadcrumbs alone in 1"
+  ],
+  "servingsObserved": [6, 6, 4]
+}

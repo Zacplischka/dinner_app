@@ -1,0 +1,45 @@
+{
+  "slug": "lamb-chops-with-mash-and-peas",
+  "dish": "Lamb chops with mash and peas",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/lamb-cutlets-with-pea-mash-10421/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://28bysamwood.com/recipes/lamb-chops-with-veggie-mash-roast-potatoes-peas/", "publisher": "28 By Sam Wood (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.craftycookingbyanna.com/video-recipe-australian-lamb-loin-chops-and-mashed-potatoes/", "publisher": "Crafty Cooking by Anna (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://bluebowlrecipes.com/lamb-chops-with-shallot-thyme-pan-sauce-and-garlic-smashed-potatoes/", "publisher": "Blue Bowl Recipes (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "lamb chops", "essential": true, "observations": ["8 cutlets / 600 g for 4 (s0)", "2 chops per serve (s1)", "8 loin chops / ~3 lb (s2)", "4 loin chops for 4 (s3)"]},
+    {"name": "potatoes", "essential": true, "observations": ["1.5 cups cubed per serve (s1)", "3 large baking potatoes (s2)", "24 oz baby golden (s3)"]},
+    {"name": "frozen green peas", "essential": true, "observations": ["500 g for 4 (s0)", "1/3 cup per serve (s1)"]},
+    {"name": "butter", "essential": true, "observations": ["30 g with peas (s0)", "2 tbsp in mash (s2)", "2 tbsp to sear + 2 tbsp in sauce (s3)"]},
+    {"name": "milk", "essential": true, "observations": ["1/2 cup in mash (s2)"]},
+    {"name": "fresh mint", "essential": false, "observations": ["1 tbsp chopped, through peas (s0)", "1 tbsp, through peas (s1)"]},
+    {"name": "garlic", "essential": false, "observations": ["1 clove per serve (s1)", "4 cloves (s2)", "3-4 cloves + 1 in sauce (s3)"]},
+    {"name": "lemon", "essential": false, "observations": ["1/2 lemon juiced over peas (s1)", "1/2 tsp juice + pinch zest in sauce (s3)"]},
+    {"name": "fresh thyme", "essential": false, "observations": ["2 tsp rub + 3 sprigs sauce (s3)"]},
+    {"name": "olive oil", "essential": false, "observations": ["oiled pan (s0)", "light spray (s1)", "3 tbsp marinade (s2)", "2 tbsp on potatoes (s3)"]},
+    {"name": "chicken stock", "essential": false, "observations": ["1/2 cup in pan sauce, or white wine (s3)"]}
+  ],
+  "causalSequence": [
+    "peel, cube potatoes; boil in salted water 15 min until tender",
+    "drain; mash with hot milk, butter; season",
+    "heat peas with butter, splash water until hot",
+    "stir mint through peas; season",
+    "season chops; sear in hot oiled pan 4-6 min per side to liking",
+    "rest chops under foil",
+    "plate chops on mash, peas alongside"
+  ],
+  "techniqueFacts": [
+    "both US sources finish chops by thermometer: 145F medium rare, 160F medium, 170F well (s2, s3)",
+    "sear window 4-8 min per side on medium-high across pan-cooked sources (s2, s3)",
+    "both pea sources stir mint through the peas (s0, s1)",
+    "pea-mash variant: process hot peas, butter, water almost smooth (s0)",
+    "one source roasts chops and potatoes together 180C fan ~20 min (s1)",
+    "mash enrichments beyond milk-butter: cream cheese, parmesan (s2)",
+    "optional pan sauce from chop drippings: shallot, garlic, thyme, stock, butter, lemon (s3)",
+    "rest chops under foil while sauce is made (s3)",
+    "dish is naturally gluten free per one source (s3)"
+  ],
+  "servingsObserved": [4, 1, null, 4]
+}

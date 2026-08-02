@@ -1,0 +1,31 @@
+{
+  "placeId": "owned:zucchini-slice",
+  "title": "Zucchini Slice",
+  "servings": 4,
+  "readyInMinutes": 50,
+  "mealType": "main course",
+  "cuisine": "modern australian",
+  "diets": ["vegetarian"],
+  "image": "images/zucchini-slice.webp",
+  "extendedIngredients": [
+    {"name": "zucchini", "amount": 400, "unit": "g", "original": "400 g zucchini (about 3), grated"},
+    {"name": "carrot", "amount": 1, "unit": "", "original": "1 carrot, grated"},
+    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely diced"},
+    {"name": "spring onion", "amount": 2, "unit": "", "original": "2 spring onions, thinly sliced"},
+    {"name": "corn kernels", "amount": 125, "unit": "g", "original": "125 g can corn kernels, drained", "searchTerm": "corn kernels can"},
+    {"name": "eggs", "amount": 5, "unit": "", "original": "5 eggs"},
+    {"name": "self-raising flour", "amount": 150, "unit": "g", "original": "150 g (1 cup) self-raising flour"},
+    {"name": "cheddar cheese", "amount": 125, "unit": "g", "original": "125 g cheddar cheese, grated"},
+    {"name": "olive oil", "amount": 60, "unit": "ml", "original": "60 ml (1/4 cup) olive oil"}
+  ],
+  "steps": [
+    "Preheat the oven to 180C (160C fan-forced). Grease a 20 x 30 cm slice tin and line it with baking paper.",
+    "Grate the zucchini and carrot. Squeeze the grated zucchini firmly in handfuls over the sink to wring out as much liquid as you can.",
+    "Finely dice the brown onion, thinly slice the spring onions and grate the cheddar cheese.",
+    "Whisk the eggs in a large bowl and season well with salt and pepper.",
+    "Add the zucchini, carrot, brown onion, spring onion, corn kernels, cheddar cheese, self-raising flour and olive oil to the eggs. Stir until just combined.",
+    "Pour the mixture into the tin and level the top with a spatula.",
+    "Bake for 30 to 35 minutes, until the top is golden and the centre springs back when pressed.",
+    "Stand in the tin for 10 minutes, then cut into squares and serve warm or cold."
+  ]
+}

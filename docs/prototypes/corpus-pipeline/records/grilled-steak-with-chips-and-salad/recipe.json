@@ -1,0 +1,28 @@
+{
+  "placeId": "owned:grilled-steak-with-chips-and-salad",
+  "title": "Grilled Steak with Chips and Salad",
+  "servings": 4,
+  "readyInMinutes": 45,
+  "mealType": "main course",
+  "cuisine": "modern australian",
+  "diets": [],
+  "image": "images/grilled-steak-with-chips-and-salad.webp",
+  "extendedIngredients": [
+    {"name": "beef porterhouse steak", "amount": 4, "unit": "", "original": "4 beef porterhouse steaks (about 200 g each)"},
+    {"name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes (sebago or brushed)"},
+    {"name": "mixed salad leaves", "amount": 120, "unit": "g", "original": "1 bag (120 g) mixed salad leaves"},
+    {"name": "cherry tomatoes", "amount": 250, "unit": "g", "original": "250 g punnet cherry tomatoes, halved"},
+    {"name": "lebanese cucumber", "amount": 1, "unit": "", "original": "1 Lebanese cucumber, sliced"},
+    {"name": "red onion", "amount": 0.5, "unit": "", "original": "1/2 red onion, thinly sliced"},
+    {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon, cut into wedges"}
+  ],
+  "steps": [
+    "Preheat the oven to 220C (200C fan-forced). Scrub the potatoes and cut them into chips about 1 cm thick, skin on.",
+    "Toss the chips on a large baking tray with 2 tablespoons of olive oil and a good pinch of salt. Spread them in a single layer and bake for 30-35 minutes, turning once, until golden and crisp.",
+    "While the chips cook, take the steaks out of the fridge so they lose their fridge chill. Rub them with a little olive oil and season generously with salt and pepper.",
+    "Heat a chargrill pan or barbecue over high heat until smoking hot. Cook the steaks for 3-4 minutes each side for medium-rare, or longer to your liking.",
+    "Move the steaks to a warm plate, cover loosely with foil and rest for 5-10 minutes.",
+    "While the steaks rest, toss the salad leaves, cherry tomatoes, cucumber and red onion in a bowl. Dress with a squeeze of lemon, a drizzle of olive oil, salt and pepper.",
+    "Give the hot chips a final sprinkle of salt. Serve the steaks with the chips, salad and remaining lemon wedges."
+  ]
+}

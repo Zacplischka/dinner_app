@@ -1,0 +1,32 @@
+{
+  "placeId": "owned:pork-chops-with-apple-sauce",
+  "title": "Pork Chops with Apple Sauce",
+  "servings": 4,
+  "readyInMinutes": 45,
+  "mealType": "main course",
+  "cuisine": "modern australian",
+  "diets": ["gluten free"],
+  "image": "images/pork-chops-with-apple-sauce.webp",
+  "extendedIngredients": [
+    {"name": "pork loin chops", "amount": 4, "unit": "", "original": "4 bone-in pork loin chops (about 1 kg)"},
+    {"name": "royal gala apples", "amount": 4, "unit": "", "original": "4 royal gala apples"},
+    {"name": "brown sugar", "amount": 40, "unit": "g", "original": "2 tbsp (40 g) brown sugar"},
+    {"name": "ground cinnamon", "amount": 0.5, "unit": "tsp", "original": "1/2 tsp ground cinnamon"},
+    {"name": "apple cider vinegar", "amount": 20, "unit": "ml", "original": "1 tbsp (20 ml) apple cider vinegar"},
+    {"name": "dijon mustard", "amount": 20, "unit": "g", "original": "1 tbsp (20 g) dijon mustard"},
+    {"name": "butter", "amount": 60, "unit": "g", "original": "60 g butter"},
+    {"name": "potatoes", "amount": 1, "unit": "kg", "original": "1 kg potatoes"},
+    {"name": "full cream milk", "amount": 125, "unit": "ml", "original": "1/2 cup (125 ml) full cream milk"},
+    {"name": "green beans", "amount": 300, "unit": "g", "original": "300 g green beans, trimmed"}
+  ],
+  "steps": [
+    "Peel, core and chop the apples. Put them in a small saucepan with the brown sugar, ground cinnamon, apple cider vinegar and 2 tbsp of water. Cover and simmer over low heat for 15-20 minutes, until the apples collapse, then mash to a chunky sauce and stir in 20 g of the butter. Keep warm.",
+    "Meanwhile, peel the potatoes, cut them into even chunks and boil in a large pot of salted water for 15-20 minutes, until tender when pierced with a knife.",
+    "Preheat the oven to 200°C. Pat the pork chops dry, then rub them all over with the dijon mustard, a good pinch of salt and plenty of black pepper.",
+    "Heat a splash of olive oil in a large ovenproof frying pan over high heat. Sear the chops for 2-3 minutes on each side, until deeply golden.",
+    "Transfer the pan to the oven and roast the chops for 5-10 minutes depending on thickness, until just cooked through with a hint of blush at the centre (63°C on a meat thermometer). Rest on a warm plate for 5 minutes.",
+    "While the chops rest, drain the potatoes and mash with the remaining 40 g of butter and the full cream milk. Season with salt and pepper.",
+    "Boil or steam the green beans for 3-4 minutes, until bright green and just tender. Season with a pinch of salt.",
+    "Serve the chops on the mash with the green beans alongside, spooning the warm apple sauce generously over the pork."
+  ]
+}
