@@ -16,10 +16,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && CHANGED=$( { git diff --name-only HEAD -- '*.ts' '*.tsx'; git ls-files --others --exclude-standard -- '*.ts' '*.tsx'; } 2>/dev/null); [ -z \"$CHANGED\" ] && exit 0; OUT=$(npm run lint 2>&1) || { printf '%s\\n' \"$OUT\" | tail -40 >&2; exit 2; }",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && CHANGED=$( { git diff --name-only HEAD -- '*.ts' '*.tsx'; git ls-files --others --exclude-standard -- '*.ts' '*.tsx'; } 2>/dev/null); [ -z \"$CHANGED\" ] && exit 0; OUT=$(npm run lint 2>&1) || { printf '%s\\n' \"$OUT\" | tail -40 >&2; exit 2; }; OUT=$(npm run typecheck 2>&1) || { printf '%s\\n' \"$OUT\" | tail -40 >&2; exit 2; }",
             "asyncRewake": true,
             "timeout": 120,
-            "statusMessage": "Linting changed TypeScript"
+            "statusMessage": "Linting + typechecking changed TypeScript"
           }
         ]
       }
