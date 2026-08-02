@@ -1,0 +1,1 @@
+{"pass": false, "reasons": ["readyInMinutes is 30 but step 1 mandates cooking the rice a day ahead or at least 3 hours ahead to chill; minimum realistic lead time is ~3.5 hours, so the time metadata misleads a cook starting from scratch (the corpus counts passive time elsewhere, e.g. butter-chicken includes its 1-hour marinate in 90 min)"]}

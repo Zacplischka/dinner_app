@@ -1,0 +1,49 @@
+{
+  "slug": "thai-green-chicken-curry",
+  "dish": "Thai green chicken curry",
+  "cell": {"mealType": "main course", "cuisine": "thai", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://healthymadetasty.com.au/recipes/easy-thai-green-chicken-curry/", "publisher": "Healthy Made Tasty (Cancer Council NSW)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.evolvingtable.com/green-chicken-curry/", "publisher": "Evolving Table", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://carlsbadcravings.com/thai-green-curry/", "publisher": "Carlsbad Cravings", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.mccormick.com/blogs/thai-kitchen-recipes/green-curry-chicken", "publisher": "McCormick (Thai Kitchen)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken thighs", "essential": true, "observations": ["600 g thighs (s0)", "1 lb breast (s1)", "1 lb breast or thighs (s2)", "3/4 lb breast (s3)"]},
+    {"name": "green curry paste", "essential": true, "observations": ["2 tbsp jar (s0)", "1/3 cup (s1)", "6 tbsp = one 4 oz jar (s2)", "1-4 tbsp (s3)"]},
+    {"name": "coconut milk", "essential": true, "observations": ["400 ml light (s0)", "15 oz can (s1)", "2 x 13.5 oz cans (s2)", "1 x 13.66 oz can (s3)"]},
+    {"name": "fish sauce", "essential": true, "observations": ["1 tsp (s0)", "2 tbsp (s2)", "2-3 tbsp (s3)"]},
+    {"name": "brown sugar", "essential": false, "observations": ["1 tsp (s0)", "1 tbsp (s2)", "2 tbsp (s3)"]},
+    {"name": "chicken stock", "essential": false, "observations": ["1 cup (s1)", "1/3 cup (s3)"]},
+    {"name": "brown onion", "essential": false, "observations": ["1, wedges (s0)", "1/2 large (s2)"]},
+    {"name": "carrot", "essential": false, "observations": ["2 large (s0)", "3 (s1)", "in 1.5 cup veg mix (s3)"]},
+    {"name": "zucchini", "essential": false, "observations": ["1 (s0)", "1 medium (s1)", "in veg mix (s3)"]},
+    {"name": "red capsicum", "essential": false, "observations": ["1 (s1)", "1 (s2)", "in veg mix (s3)"]},
+    {"name": "green beans", "essential": false, "observations": ["2 handfuls (s0)"]},
+    {"name": "lime juice", "essential": false, "observations": ["1 tsp + wedges (s1)", "2 tbsp (s2)"]},
+    {"name": "basil", "essential": false, "observations": ["1/4 cup Thai basil, Italian ok (s2)", "1/4 cup chopped (s3)", "optional garnish (s1)"]},
+    {"name": "coriander", "essential": false, "observations": ["2 tbsp leaves, optional (s0)", "optional garnish (s1, s2)"]},
+    {"name": "jasmine rice", "essential": true, "observations": ["1.5 cups brown rice for 6 (s0)", "rice base (s1)", "rice base (s2)", "jasmine rice base (s3)"]},
+    {"name": "olive oil", "essential": false, "observations": ["2 tbsp (s0)", "2 tbsp (s1)", "2 tbsp (s2)"]}
+  ],
+  "causalSequence": [
+    "brown chicken pieces in oil; remove",
+    "soften onion, carrot in same pan",
+    "return chicken; fry curry paste 1-2 min to bloom",
+    "stir in coconut milk, fish sauce, brown sugar",
+    "add quick-cooking vegetables; simmer 5-15 min until chicken cooked",
+    "finish with lime juice; scatter basil or coriander",
+    "serve over jasmine rice"
+  ],
+  "techniqueFacts": [
+    "two sources bloom paste in oil with the chicken/aromatics before liquid (s0, s2); two simmer everything straight in the sauce (s1, s3) — blooming is the flavour lever",
+    "short simmer dish: 5 min (s0) to 15+10 min (s3) once liquid is in; whole dish 30-45 min",
+    "full-fat coconut milk gives restaurant creaminess; light works but thinner (s2); AU health source deliberately uses light (s0)",
+    "jar paste heat varies by brand — Thai Kitchen mild, a full 4 oz jar = 6 tbsp used at once (s2); ranges 1-4 tbsp (s3) vs 2 tbsp (s0), start low",
+    "gluten free: fish sauce is naturally GF (GF-labelled brands exist, s3); paste and stock need a label check (s0, s2, s3)",
+    "soy sauce appears in two sources (s1, s2); stated GF swap is tamari — or omit for the GF cell",
+    "cornstarch whisked into coconut milk thickens the sauce (1 source, non-traditional)",
+    "chicken sliced thin (1/4-1/2 inch) or 3 cm pieces so it cooks in the simmer window"
+  ],
+  "servingsObserved": [6, 5, 4, 4]
+}

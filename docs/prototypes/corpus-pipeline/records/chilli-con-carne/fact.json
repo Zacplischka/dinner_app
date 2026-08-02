@@ -1,0 +1,52 @@
+{
+  "slug": "chilli-con-carne",
+  "dish": "Chilli con carne",
+  "cell": {"mealType": "main course", "cuisine": "mexican", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://www.womensweeklyfood.com.au/recipe/quick-and-easy/chilli-con-carne-14661/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.luvele.com.au/blogs/recipe-blog/chilli-con-carne-fantastic-meal-prep-recipe", "publisher": "Luvele (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://nadialim.com/chilli-con-carne/", "publisher": "Nadia Lim (NZ)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://vjcooks.com/chilli-con-carne/", "publisher": "VJ Cooks (NZ)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef mince", "essential": true, "observations": ["500 g lean (s0)", "750 g 80% lean (s1)", "600 g (s2)", "1 kg (s3)"]},
+    {"name": "brown onion", "essential": true, "observations": ["2 medium / 300 g (s0)", "2 (s1)", "1 (s2)", "1 (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves (s0)", "4 cloves (s1)", "onion powder in spice mix instead (s2)", "1.5 tbsp garlic powder (s3)"]},
+    {"name": "ground cumin", "essential": true, "observations": ["1 tsp rounded (s0)", "2 tbsp / 14 g (s1)", "1 tsp in homemade mix (s2)", "1.5 tbsp (s3)"]},
+    {"name": "chilli powder", "essential": true, "observations": ["0.5 tsp or to taste (s0)", "1 tsp / 2 g (s1)", "pinch, optional (s2)", "3 tbsp chipotle sauce optional instead (s3)"]},
+    {"name": "smoked paprika", "essential": true, "observations": ["absent (s0)", "3 tsp / 7.5 g (s1)", "2 tsp in homemade mix (s2)", "1.5 tbsp paprika (s3)"]},
+    {"name": "tomato paste", "essential": true, "observations": ["2 tbsp (s0)", "200 g (s1)", "3 tbsp (s2)", "3 tbsp (s3)"]},
+    {"name": "canned chopped tomatoes", "essential": true, "observations": ["2 x 400 g (s0)", "absent (s1)", "400 g (s2)", "400 g crushed (s3)"]},
+    {"name": "red kidney beans", "essential": true, "observations": ["400 g can, drained rinsed (s0)", "absent (s1)", "400 g can, drained rinsed (s2)", "400 g can (s3)"]},
+    {"name": "beef stock", "essential": true, "observations": ["1 cup / 250 ml (s0)", "300 ml (s1)", "1 cup, gluten-free if required (s2)", "1.5 cups / 375 ml (s3)"]},
+    {"name": "rice", "essential": true, "observations": ["steamed rice to serve (s0)", "1.5 cups / 300 g long grain (s1)", "2 cups jasmine (s2)", "steamed white rice to serve (s3)"]},
+    {"name": "olive oil", "essential": true, "observations": ["2 tbsp (s0)", "2 tsp vegetable oil (s1)", "a little (s2)", "1 tbsp (s3)"]},
+    {"name": "black beans", "essential": false, "observations": ["400 g can (s3)"]},
+    {"name": "long green chillies", "essential": false, "observations": ["3, seeded chopped (s0)"]},
+    {"name": "dried oregano", "essential": false, "observations": ["2 tsp in homemade spice mix (s2)"]},
+    {"name": "brown sugar", "essential": false, "observations": ["2 tsp / 12 g (s1)"]},
+    {"name": "coriander leaves", "essential": false, "observations": ["0.25 cup, garnish (s0)"]},
+    {"name": "sour cream", "essential": false, "observations": ["to serve (s0)", "to serve (s1)", "0.25 cup mixed with tomato sauce (s2)", "to serve (s3)"]},
+    {"name": "grated cheese", "essential": false, "observations": ["0.5 cup, grilled on top (s2)", "to serve (s3)"]}
+  ],
+  "causalSequence": [
+    "cook rice: boil, cover, low 12 min, rest covered off heat",
+    "heat oil; brown mince with onion, breaking up lumps, 5-8 min",
+    "add garlic, cumin, paprika, chilli powder; cook 1 min until fragrant",
+    "stir in tomato paste, canned tomatoes, kidney beans",
+    "add beef stock; cover, simmer low 30-45 min, stirring occasionally",
+    "season with salt and pepper; serve over rice with sour cream"
+  ],
+  "techniqueFacts": [
+    "all four sources blend their own dry spices into the browned mince — no packet chilli spice-mix sachet appears in any source (a GF risk avoided)",
+    "s2 tags the dish gluten free and names beef stock as the only GF swap point ('gluten-free if required'); s0 also categorises the recipe gluten-free",
+    "s2 gives a homemade chilli spice mix: 2 tsp smoked paprika, 2 tsp dried oregano, 2 tsp onion powder, 1 tsp cumin, 1 tsp ground coriander",
+    "covered low simmer 30-45 min is universal; s0 instead bakes covered at 180 C for 45 min",
+    "spices are cooked into the meat before liquids in all sources (bloomed, not stirred in at the end)",
+    "flavour improves after a day or two in the fridge (2 sources); freezes up to 3 months (3 sources)",
+    "s1 is a beanless Tex-Mex outlier: ketchup, American mustard, allspice, cider vinegar, no tomatoes or beans",
+    "s3 doubles the beans (kidney + black) for a big batch; chipotle sauce is its optional heat source",
+    "s2 finishes by grilling grated cheese on top of the pan"
+  ],
+  "servingsObserved": [4, 5, 6, 8]
+}

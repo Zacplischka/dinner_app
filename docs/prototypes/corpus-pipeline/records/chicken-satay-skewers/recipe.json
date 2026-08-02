@@ -1,0 +1,37 @@
+{
+  "placeId": "owned:chicken-satay-skewers",
+  "title": "Chicken Satay Skewers with Rice",
+  "servings": 4,
+  "readyInMinutes": 150,
+  "mealType": "main course",
+  "cuisine": "thai",
+  "diets": [],
+  "image": "images/chicken-satay-skewers.webp",
+  "extendedIngredients": [
+    { "name": "chicken breast fillets", "amount": 800, "unit": "g", "original": "800 g chicken breast fillets" },
+    { "name": "coconut milk", "amount": 400, "unit": "ml", "original": "400 ml can coconut milk" },
+    { "name": "smooth peanut butter", "amount": 125, "unit": "g", "original": "1/2 cup (125 g) smooth peanut butter" },
+    { "name": "soy sauce", "amount": 3, "unit": "tbsp", "original": "3 tbsp soy sauce" },
+    { "name": "fish sauce", "amount": 1, "unit": "tbsp", "original": "1 tbsp fish sauce" },
+    { "name": "brown sugar", "amount": 2, "unit": "tbsp", "original": "2 tbsp brown sugar" },
+    { "name": "lime", "amount": 2, "unit": "", "original": "2 limes" },
+    { "name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves, crushed" },
+    { "name": "fresh ginger", "amount": 2, "unit": "tsp", "original": "2 tsp finely grated fresh ginger" },
+    { "name": "curry powder", "amount": 2, "unit": "tsp", "original": "2 tsp curry powder" },
+    { "name": "ground turmeric", "amount": 1, "unit": "tsp", "original": "1 tsp ground turmeric" },
+    { "name": "jasmine rice", "amount": 300, "unit": "g", "original": "300 g (1 1/2 cups) jasmine rice" },
+    { "name": "roasted peanuts", "amount": 40, "unit": "g", "original": "40 g roasted peanuts, roughly chopped" },
+    { "name": "vegetable oil", "amount": 1, "unit": "tbsp", "original": "1 tbsp vegetable oil" },
+    { "name": "fresh coriander", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch fresh coriander, leaves picked", "searchTerm": "coriander" }
+  ],
+  "steps": [
+    "Whisk 150 ml of the coconut milk in a large bowl with 2 tablespoons of the soy sauce, half the fish sauce, 1 tablespoon of the brown sugar, the garlic, ginger, curry powder, turmeric and the juice of 1 lime.",
+    "Cut the chicken into 2 cm thick strips, add to the marinade and toss to coat. Cover and refrigerate for at least 2 hours, or overnight.",
+    "Soak 8 bamboo skewers in water for 30 minutes, then thread the chicken on, 3 to 4 pieces per skewer.",
+    "Rinse the jasmine rice until the water runs clear. Put it in a saucepan with 450 ml water and a pinch of salt, bring to the boil, then cover and simmer on the lowest heat for 12 minutes. Rest, covered, for 5 minutes and fluff with a fork.",
+    "Meanwhile, simmer the remaining coconut milk with the peanut butter and the remaining soy sauce, fish sauce and brown sugar in a small saucepan, stirring, for about 5 minutes until thick. Loosen with a splash of water and finish with a squeeze of juice from the second lime.",
+    "Heat the vegetable oil in a large frying pan or chargrill pan over medium-high heat, or fire up the barbecue. Cook the skewers for 3 to 4 minutes each side until lightly charred and cooked through.",
+    "Pile the rice onto plates, top with the skewers and spoon over the peanut sauce.",
+    "Scatter with the chopped roasted peanuts and coriander leaves, and serve with the rest of the second lime cut into wedges."
+  ]
+}

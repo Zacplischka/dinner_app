@@ -1,0 +1,54 @@
+{
+  "slug": "bibimbap",
+  "dish": "Bibimbap",
+  "cell": {"mealType": "main course", "cuisine": "korean", "diets": []},
+  "sources": [
+    {"url": "https://www.koreanbapsang.com/bibimbap/", "publisher": "Korean Bapsang", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://mykoreankitchen.com/bibimbap-korean-mixed-rice-with-meat-and-assorted-vegetables/", "publisher": "My Korean Kitchen", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://mymarketkitchen.tv/beef-bibimbap-with-gochujang-sauce/", "publisher": "My Market Kitchen", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef mince", "essential": true, "observations": ["8 oz sliced beef or ground beef (s0)", "100 g beef mince (s1)", "200 g sliced sirloin/ribeye (s2)"]},
+    {"name": "short grain rice", "essential": true, "observations": ["3 cups uncooked (s0)", "3 cups steamed, 3-4 serves (s1)", "2 cups / 400 g cooked (s2)"]},
+    {"name": "spinach", "essential": true, "observations": ["1 bunch ~8 oz (s0)", "250 g (s1)", "2 cups / 200 g (s2)"]},
+    {"name": "bean sprouts", "essential": true, "observations": ["8 oz mung or soybean (s0)", "350 g (s1)", "1 cup / 150 g (s2)"]},
+    {"name": "carrot", "essential": true, "observations": ["2 medium ~5 oz (s0)", "120 g, 1 small (s1)", "1 medium (s2)"]},
+    {"name": "shiitake mushrooms", "essential": true, "observations": ["4 oz any mushroom (s0)", "100 g shiitake (s1)", "1 cup / 150 g shiitake (s2)"]},
+    {"name": "eggs", "essential": true, "observations": ["4, optional (s0)", "3-4 (s1)", "2-3, optional (s2)"]},
+    {"name": "gochujang", "essential": true, "observations": ["4 tbsp (s0)", "2 tbsp (s1)", "3 tbsp (s2)"]},
+    {"name": "soy sauce", "essential": true, "observations": ["1.5 tbsp meat (s0)", "1 tbsp meat (s1)", "2 tbsp marinade + 1 tbsp sauce (s2)"]},
+    {"name": "sesame oil", "essential": true, "observations": ["2 tsp meat + 1 tbsp sauce + veg seasoning (s0)", "1 tbsp meat + 1 tbsp sauce (s1)", "1 tbsp marinade + 1 tbsp sauce (s2)"]},
+    {"name": "sugar", "essential": true, "observations": ["2 tsp meat + 2 tsp sauce (s0)", "1 tsp brown meat + 1 tbsp sauce (s1)", "1 tbsp brown/honey marinade + 1 tbsp sauce (s2)"]},
+    {"name": "garlic", "essential": true, "observations": ["2.5 tsp minced total (s0)", "1/4 tsp meat + 1 tsp sauce (s1)", "2 cloves marinade + 1 clove sauce (s2)"]},
+    {"name": "sesame seeds", "essential": false, "observations": ["veg seasoning + garnish (s0)", "1 tbsp in sauce (s1)", "garnish (s2)"]},
+    {"name": "spring onions", "essential": false, "observations": ["4 tbsp chopped total (s0)", "garnish (s2)"]},
+    {"name": "rice vinegar", "essential": false, "observations": ["1 tsp apple vinegar in sauce (s1)", "1 tsp in sauce (s2)"]},
+    {"name": "rice wine", "essential": false, "observations": ["2 tsp mirin in meat marinade (s0)"]},
+    {"name": "cucumber", "essential": false, "observations": ["2 small ~5 oz, salted and squeezed (s0)"]},
+    {"name": "zucchini", "essential": false, "observations": ["1 small julienned (s2)", "listed as common option (s0)"]},
+    {"name": "seasoned seaweed", "essential": false, "observations": ["some, shredded (s1)"]},
+    {"name": "ginger", "essential": false, "observations": ["1/2 tsp grated in marinade (s2)"]}
+  ],
+  "causalSequence": [
+    "cook short grain rice, slightly dry",
+    "marinate beef mince in soy, sugar, sesame oil, garlic 20-30 min",
+    "blanch spinach and bean sprouts; shock cold, squeeze; season with sesame oil, garlic, salt",
+    "julienne carrot, slice mushrooms; saute each separately 2-3 min with salt",
+    "stir-fry marinated mince over high heat 3-5 min",
+    "mix gochujang, sugar, sesame oil, water into sauce",
+    "fry eggs sunny side up",
+    "bowl rice; arrange mince and each vegetable in separate sections; top with egg",
+    "serve sauce over or alongside; diner mixes at the table"
+  ],
+  "techniqueFacts": [
+    "vegetables are prepared and seasoned individually namul-style, never tossed together (3 sources)",
+    "spinach and sprouts are blanched then cold-shocked; carrot and mushroom are sauteed (3 sources)",
+    "beef gets a bulgogi-style marinade (soy, sugar, sesame oil, garlic) before high-heat cooking (3 sources)",
+    "ground beef is an accepted substitute for sliced bulgogi beef, seasoned the same way (1 source, s1 uses mince outright)",
+    "sauce base is gochujang loosened with sugar, sesame oil, water; 2 sources add a splash of vinegar",
+    "rice cooked slightly drier than usual mixes better (1 source)",
+    "season toppings lightly since the gochujang sauce is mixed through everything (1 source)",
+    "dolsot (hot stone bowl) variant crisps the bottom rice layer (1 source)"
+  ],
+  "servingsObserved": [4, 4, 3]
+}
