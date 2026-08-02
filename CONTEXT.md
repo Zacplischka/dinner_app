@@ -207,7 +207,7 @@ Whoever holds and works a Shopping List, identified only by a self-declared disp
 _Avoid_: participant, buyer, claimer, user
 
 **Cook View**:
-The Shopping List read at the stove: the crowned Recipe's instructions, snapshotted into the list at mint and rendered whole on one screen, each step dimmable by tapping it. Lives on the Shopping List's own URL and inherits everything about it — the same lifetime, the same capability, the same Shopper — so it works after the Session, the pool, and the source's own memory of the Recipe are all gone. Closed by one source credit naming the originating recipe site with a backlink — a licence obligation of the recipe supply, not a style choice — which is also what stands in for a Recipe whose instructions were never snapshotted.
+The Shopping List read at the stove: the crowned Recipe's instructions, snapshotted into the list at mint and rendered whole on one screen, each step dimmable by tapping it. Lives on the Shopping List's own URL and inherits everything about it — the same lifetime, the same capability, the same Shopper — so it works after the Session, the pool, and the source's own memory of the Recipe are all gone. Closed, for a Sourced Recipe, by one source credit naming the originating recipe site with a backlink — a licence obligation of that supply, not a style choice — which is also what stands in for a Sourced Recipe whose instructions were never snapshotted. An Owned Recipe renders no credit, and the absence is correct, not a defect.
 _Avoid_: cooking mode, recipe page, method screen
 
 **Tally**:
@@ -229,3 +229,23 @@ _Avoid_: SKU, listing, matched item
 **Product Matcher**:
 The per-Retailer judge that turns a Retailer's raw search answer into an Ingredient Line's Product Match — or the verdict that no product fulfils it. A clean miss is distinct from the Retailer answering unusably (a failure); exactly one Matcher exists per Retailer. The Storefront Resolver pattern, deliberately not its name or its code.
 _Avoid_: resolver, scraper, fetcher, adapter
+
+**Owned Recipe**:
+A Recipe Dinder authored into the Owned Recipe Store: identified by an `owned:<frozen-slug>` placeId, servings always present, diets declared, written in AU vocabulary — and rendering no source credit, whose absence is correct. Never ages out: dealt today or months from now, it is the same Recipe. In a Deck it is just a Recipe — Deck, Selection, and Top Pick language never forks on provenance.
+_Avoid_: house recipe, custom recipe, our recipe
+
+**Sourced Recipe**:
+A Recipe supplied by an external source under licence — today, exactly Spoonacular. Carries its source's credit obligation into the Cook View and lives under its pool's TTL; past it, the source's memory of the Recipe is gone.
+_Avoid_: vendor recipe, external recipe — and "Spoonacular Recipe" only in external-API contexts
+
+**Owned Recipe Store**:
+The versioned, human-reviewed corpus of Owned Recipes committed to the repository and shipped with the backend, read through an interface (ADR 0011). Blended into every Cook Deck at deal time; images live in object storage, not the repo.
+_Avoid_: corpus — the pipeline's word for the authored collection, not the runtime store — database, library
+
+**Fact Record**:
+The structured artefact the corpus pipeline's reading stage emits — a dish's identity, canonical ingredient set, per-source quantity ranges, causal step sequence, technique facts, and source URLs — and the only artefact of reading that may persist. Authoring writes from the Fact Record with every source closed; that separation is the re-authoring standard's spine, not a pipeline convenience.
+_Avoid_: notes, extract, research summary
+
+**Nearest Craving**:
+The neighbouring Craving offered inline when a Craving's deal comes up empty: cuisine widened or dropped — never diet, never meal type — shown with the Recipe count it can actually deal. Accepting mints it as a genuinely new Craving with its own pool; the original Craving is never silently widened.
+_Avoid_: relaxed craving, suggestion, fallback
