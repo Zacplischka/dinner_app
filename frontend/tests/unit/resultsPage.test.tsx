@@ -679,6 +679,19 @@ describe('ResultsPage', () => {
       expect(await screen.findByText('Shopping list route')).toBeInTheDocument();
     });
 
+    // The header read the restaurant topPick, which a Cook Session never sets, so a
+    // crowned Recipe sat under "No Match Found" / "No restaurants matched…" (#253).
+    it('titles a crowned Recipe as a Match, not "No Match Found"', () => {
+      seedCook();
+      renderResults();
+
+      expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
+      expect(screen.queryByText('No Match Found')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("No restaurants matched everyone's preferences")
+      ).not.toBeInTheDocument();
+    });
+
     it('offers no dead button when nothing could be minted', () => {
       seedCook();
       renderResults();

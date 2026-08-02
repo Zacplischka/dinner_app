@@ -452,13 +452,13 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
       <NavigationHeader
-        title={pick ? (hasOverlap ? 'Perfect Match!' : "Tonight's Pick") : 'No Match Found'}
+        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : "Tonight's Pick") : 'No Match Found'}
         subtitle={
-          pick
+          crownPlaceId
             ? hasOverlap
               ? "Tonight's pick is locked in"
               : "No unanimous Match — here's the closest one"
-            : "No restaurants matched everyone's preferences"
+            : `No ${isCookDeck ? 'recipes' : 'restaurants'} matched everyone's preferences`
         }
         sessionCode={sessionCode}
         showBackButton

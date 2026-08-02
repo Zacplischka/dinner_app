@@ -222,6 +222,7 @@ const socketConfig: SocketConfig = {
           ...event.topPick,
           restaurant: resolvePhotoUrls([event.topPick.restaurant])[0],
         },
+        shoppingListId: event.shoppingListId,
       });
     },
 

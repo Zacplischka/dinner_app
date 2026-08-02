@@ -388,6 +388,24 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.error).toHaveBeenCalledWith('An error occurred');
   });
 
+  it('carries session:results shoppingListId into the store, so a Cook Session can reach its list (#253)', () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+
+    socket.trigger('session:results', {
+      sessionCode: 'AB123',
+      hasOverlap: true,
+      overlappingOptions: [{ placeId: '634891', name: 'Best Chicken Parmesan' }],
+      allSelections: { Alice: ['634891'] },
+      restaurantNames: { '634891': 'Best Chicken Parmesan' },
+      shoppingListId: '42690f06-ec14-4751-8dbf-45ce8dadc9d6',
+    });
+
+    // The binding used to rebuild the payload field-by-field and drop this one,
+    // so the mint succeeded server-side and no Participant could ever reach it.
+    expect(useSessionStore.getState().shoppingListId).toBe('42690f06-ec14-4751-8dbf-45ce8dadc9d6');
+  });
+
   it('order:state toasts a removal by someone else — not my own removal, not an addition', () => {
     const socket = setupSocket();
     useSessionStore.setState({
