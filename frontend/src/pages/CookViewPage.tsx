@@ -118,11 +118,16 @@ export default function CookViewPage() {
                 </ol>
               </>
             )}
-            <SourceCredit
-              hasMethod={list.steps.length > 0}
-              sourceName={list.sourceName}
-              sourceUrl={list.sourceUrl}
-            />
+            {/* #314: an owned Recipe renders no credit at all — a "researched
+                from" line is legally harmful (#311). Absent provenance reads as
+                Spoonacular. Cast: shared type predates the field. */}
+            {(list as { provenance?: string }).provenance !== 'owned' && (
+              <SourceCredit
+                hasMethod={list.steps.length > 0}
+                sourceName={list.sourceName}
+                sourceUrl={list.sourceUrl}
+              />
+            )}
           </div>
         )}
       </div>

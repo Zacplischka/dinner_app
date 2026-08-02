@@ -18,6 +18,7 @@ import type {
 } from '@dinder/shared/types';
 import { logger } from '../logger.js';
 import type { Session } from '../store/sessionStore.js';
+import { OWNED_PREFIX } from './ownedRecipeStore.js';
 import type { IngredientAmount } from './quantityLadder.js';
 import type { PooledIngredient, PooledRecipe } from './spoonacularClient.js';
 import { isStaple } from './staples.js';
@@ -430,7 +431,8 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
   async function build(
     listId: string,
     headcount: number,
-    recipe: PooledRecipe
+    recipe: PooledRecipe,
+    placeId: string
   ): Promise<ShoppingList> {
     // The amounts are stated for the source's own servings; the Headcount is
     // what they are wanted for. A source that never said scales by nothing —
@@ -448,7 +450,9 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       if (built.match) matches[built.line.id] = built.match;
     }
 
-    const list: ShoppingList = {
+    // #314: optional on the wire — absent reads as Spoonacular, so a glitch can
+    // never silently drop the licence credit. Cast: shared type predates the field.
+    const list: ShoppingList & { provenance?: 'owned' } = {
       listId,
       recipeName: recipe.name,
       headcount,
@@ -461,6 +465,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       steps: recipe.steps,
       sourceName: recipe.sourceName,
       sourceUrl: recipe.sourceUrl,
+      ...(placeId.startsWith(OWNED_PREFIX) ? { provenance: 'owned' as const } : {}),
       mintedAt: new Date(now()).toISOString(),
     };
     await deps.redis.set(
@@ -520,7 +525,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       // that id reached no caller, so nothing can ever ask for it.
       if (listId !== candidate) return listId;
 
-      void build(listId, session.headcount, recipe).catch(async (error: unknown) => {
+      void build(listId, session.headcount, recipe, placeId).catch(async (error: unknown) => {
         // A mint that fails leaves no key, so the URL 404s and says so —
         // better than a half-priced list nobody can tell is half-priced.
         // Clearing the marker now rather than waiting out its TTL is what
