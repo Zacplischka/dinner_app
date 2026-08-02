@@ -143,8 +143,13 @@ describe('sessionStore', () => {
   });
 
   describe('persistence boundaries', () => {
+    beforeEach(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
     it('discards persisted state from an older schema version', async () => {
-      localStorage.setItem(
+      sessionStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
           state: {
@@ -164,7 +169,7 @@ describe('sessionStore', () => {
     });
 
     it('does not rehydrate isConnected as true', async () => {
-      localStorage.setItem(
+      sessionStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
           state: { sessionCode: 'AB123', isConnected: true },
@@ -182,10 +187,50 @@ describe('sessionStore', () => {
       useSessionStore.getState().setSessionCode('XYZ78');
       useSessionStore.getState().setConnectionStatus(true);
 
-      const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
+      const persisted = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}');
 
       expect(persisted.state.sessionCode).toBe('XYZ78');
       expect(persisted.state).not.toHaveProperty('isConnected');
+    });
+
+    // #304: two tabs of one browser share localStorage, so an origin-wide
+    // persisted identity lets tab B's auto-rejoin fire as tab A's Participant,
+    // evicting the host. Identity must live per-tab (sessionStorage).
+    it('persists per-tab: writes sessionStorage, never localStorage (#304)', () => {
+      useSessionStore.getState().setSessionCode('TAB01');
+
+      expect(JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}').state?.sessionCode).toBe(
+        'TAB01'
+      );
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    });
+
+    it('never hydrates identity another tab left in localStorage (#304 hijack)', async () => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          state: {
+            sessionCode: 'AB123',
+            currentUserId: 'other-tab-socket',
+            participants: [
+              {
+                participantId: 'other-tab-socket',
+                displayName: 'Alice',
+                sessionCode: 'AB123',
+                joinedAt: 1,
+                hasSubmitted: false,
+                isHost: true,
+              },
+            ],
+          },
+          version: 1,
+        })
+      );
+
+      const store = await freshStore();
+
+      expect(store.getState().sessionCode).toBeNull();
+      expect(store.getState().participants).toEqual([]);
     });
   });
 

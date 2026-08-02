@@ -48,7 +48,7 @@ const socketConfig: SocketConfig = {
       if (store.sessionCode && previousParticipant) {
         void joinSession(store.sessionCode, previousParticipant.displayName).then((ack) => {
           if (!ack.success) {
-            localStorage.removeItem(
+            sessionStorage.removeItem(
               `dinder:rejoin:${store.sessionCode}:${previousParticipant.displayName}`
             );
             store.resetSession();
@@ -289,15 +289,17 @@ export async function joinSession(
   sessionCode: string,
   displayName: string
 ): Promise<Ack<SessionJoinData>> {
+  // #304: sessionStorage, not localStorage — the token is this tab's
+  // identity. Origin-wide it let a second tab rejoin as the first.
   const tokenKey = `dinder:rejoin:${sessionCode}:${displayName}`;
   const ack = await socketService.joinSession(
     sessionCode,
     displayName,
-    localStorage.getItem(tokenKey) ?? undefined
+    sessionStorage.getItem(tokenKey) ?? undefined
   );
   if (!ack.success) return ack;
 
-  localStorage.setItem(tokenKey, ack.data.rejoinToken);
+  sessionStorage.setItem(tokenKey, ack.data.rejoinToken);
 
   const store = useSessionStore.getState();
 
