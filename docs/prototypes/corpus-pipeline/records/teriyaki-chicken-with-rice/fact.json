@@ -1,0 +1,47 @@
+{
+  "slug": "teriyaki-chicken-with-rice",
+  "dish": "Teriyaki chicken with rice",
+  "cell": {"mealType": "main course", "cuisine": "japanese", "diets": []},
+  "sources": [
+    {"url": "https://mykoreankitchen.com/teriyaki-chicken/", "publisher": "My Korean Kitchen", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://natashaskitchen.com/easy-teriyaki-chicken/", "publisher": "Natasha's Kitchen", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.budgetbytes.com/easy-teriyaki-chicken/", "publisher": "Budget Bytes", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.chopstickchronicles.com/teriyaki-chicken/", "publisher": "Chopstick Chronicles", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.wandercooks.com/teriyaki-chicken/", "publisher": "Wandercooks", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken thighs", "essential": true, "observations": ["500 g boneless (s0)", "1.5-2 lb boneless skinless (s1)", "1.75 lb boneless skinless (s2)", "500 g skin-on (s3)", "300 g / 2 thighs (s4)"]},
+    {"name": "soy sauce", "essential": true, "observations": ["1/4 cup (s0)", "1/4 cup (s1)", "1/4 cup (s2)", "component of 50 ml premade sauce (s3)", "1 tbsp in marinade (s4)"]},
+    {"name": "mirin", "essential": true, "observations": ["4 tbsp (s0)", "absent (s1)", "absent (s2)", "sauce component, unquantified (s3)", "1 tbsp (s4)"]},
+    {"name": "brown sugar", "essential": true, "observations": ["2 tbsp (s0)", "3 tbsp honey instead (s1)", "3 tbsp (s2)", "sauce component, unquantified (s3)"]},
+    {"name": "cooking sake", "essential": false, "observations": ["3 tbsp (s0)", "sauce component, unquantified (s3)", "1 tbsp (s4)"]},
+    {"name": "ginger", "essential": false, "observations": ["5 g sliced, strained out (s0)", "1 tsp grated (s1)", "1 tsp grated (s2)"]},
+    {"name": "garlic", "essential": false, "observations": ["1 clove minced (s2)", "1/2 tbsp minced (s4)"]},
+    {"name": "cooking oil", "essential": false, "observations": ["1 tsp (s0)", "1 tbsp olive + 1 tsp sesame (s1)", "2 tbsp divided (s2)", "none, skin renders fat (s3)", "1 tbsp vegetable (s4)"]},
+    {"name": "rice", "essential": true, "observations": ["2 cups cooked (s0)", "hot white rice, amount unstated (s1)", "long-grain white side (s2)", "rice bowl base (s3)", "white/brown/sushi rice (s4)"]},
+    {"name": "broccoli", "essential": true, "observations": ["steamed florets + carrots, optional list (s0)", "steamed broccoli side (s1)", "steamed broccoli side (s2)", "steamed veggies incl broccoli (s4)"]},
+    {"name": "spring onion", "essential": false, "observations": ["15 g white part in sauce + garnish (s0)", "garnish (s1)", "garnish option (s4)"]},
+    {"name": "sesame seeds", "essential": false, "observations": ["2 tsp (s0)", "garnish (s1)", "garnish option (s4)"]}
+  ],
+  "causalSequence": [
+    "combine soy, mirin, sugar (plus sake, ginger if using); heat to dissolve sugar",
+    "flatten thighs to even thickness; pat dry, season",
+    "sear thighs over medium-high, skin side first, ~3 min per side",
+    "pour sauce over chicken; simmer 3-5 min, basting until glossy glaze coats",
+    "if sauce thin, remove chicken and reduce 2-4 min over higher heat",
+    "rest chicken briefly; slice ~2 cm",
+    "serve over steamed rice with steamed greens; drizzle reserved glaze",
+    "garnish spring onion, sesame seeds"
+  ],
+  "techniqueFacts": [
+    "all five sources use chicken thighs; two state breast dries out and needs thinning or overnight marinade",
+    "three sources hold soy + mirin + sake + sugar as the authentic sauce base; two US sources shortcut with sugar or honey plus soy only",
+    "glaze forms by reducing the sauce in the pan with the chicken, spooning it over for gloss (three sources)",
+    "two sources marinate 30 min to overnight instead of simmering sauce over the chicken",
+    "one source cooks skin-on thighs with no added oil, the skin renders its own fat; excess fat wiped away so sauce clings",
+    "one source strains ginger and spring onion out of the sauce before glazing",
+    "reserve a portion of sauce before it touches raw chicken to use as a safe drizzle (two sources)",
+    "mirin sub is 1 tsp sugar (one source); sake sub is extra mirin with sugar cut back (one source)"
+  ],
+  "servingsObserved": [2, 4, 5, 1, 2]
+}

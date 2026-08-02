@@ -1,0 +1,36 @@
+{
+  "placeId": "owned:moussaka",
+  "title": "Moussaka",
+  "servings": 4,
+  "readyInMinutes": 90,
+  "mealType": "main course",
+  "cuisine": "greek",
+  "diets": [],
+  "image": "images/moussaka.webp",
+  "extendedIngredients": [
+    {"name": "eggplant", "amount": 2, "unit": "", "original": "2 large eggplants"},
+    {"name": "lamb mince", "amount": 500, "unit": "g", "original": "500 g lamb mince"},
+    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely chopped"},
+    {"name": "garlic", "amount": 3, "unit": "", "original": "3 garlic cloves, crushed"},
+    {"name": "diced tomatoes", "amount": 400, "unit": "g", "original": "1 x 400 g can diced tomatoes"},
+    {"name": "tomato paste", "amount": 2, "unit": "tbsp", "original": "2 tbsp tomato paste"},
+    {"name": "dried oregano", "amount": 2, "unit": "tsp", "original": "2 tsp dried oregano"},
+    {"name": "ground cinnamon", "amount": 1, "unit": "tsp", "original": "1 tsp ground cinnamon"},
+    {"name": "ground nutmeg", "amount": 0.25, "unit": "tsp", "original": "1/4 tsp ground nutmeg"},
+    {"name": "butter", "amount": 50, "unit": "g", "original": "50 g butter"},
+    {"name": "plain flour", "amount": 50, "unit": "g", "original": "50 g (1/3 cup) plain flour"},
+    {"name": "milk", "amount": 500, "unit": "ml", "original": "500 ml milk"},
+    {"name": "egg", "amount": 1, "unit": "", "original": "1 egg, lightly beaten", "searchTerm": "eggs"},
+    {"name": "parmesan cheese", "amount": 50, "unit": "g", "original": "50 g parmesan cheese, finely grated"}
+  ],
+  "steps": [
+    "Slice the eggplants into 1 cm rounds, spread them out and sprinkle both sides with salt. Leave for 20 minutes to draw out moisture, then pat dry with paper towel. Preheat the oven to 220C.",
+    "Brush the eggplant slices with olive oil on both sides, lay them on two lined trays and roast for about 20 minutes, turning once, until golden and tender. Turn the oven down to 180C.",
+    "While the eggplant roasts, heat a splash of olive oil in a large frying pan over medium heat. Soften the brown onion for 5 minutes, add the garlic for 1 minute, then turn up the heat and brown the lamb mince, breaking it up as it cooks.",
+    "Stir in the tomato paste, dried oregano and ground cinnamon and cook for 1 minute. Add the diced tomatoes and a splash of water, season with salt and pepper, and simmer for 15-20 minutes until thick with no watery liquid left.",
+    "For the bechamel, melt the butter in a saucepan over medium heat, stir in the plain flour and cook for 1-2 minutes. Gradually whisk in the milk and keep whisking until the sauce is smooth and thick enough to coat a spoon.",
+    "Take the bechamel off the heat and stir in the ground nutmeg, half the parmesan cheese and a pinch of salt. Let it cool for a few minutes, then quickly whisk in the beaten egg.",
+    "Layer half the eggplant over the base of a baking dish, spread the meat sauce on top, then cover with the remaining eggplant. Pour the bechamel over and spread it to the edges, then scatter over the rest of the parmesan cheese.",
+    "Bake at 180C for 35-40 minutes until the top is golden and set. Rest for 15 minutes before slicing and serving."
+  ]
+}

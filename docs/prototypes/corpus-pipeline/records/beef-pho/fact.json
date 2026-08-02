@@ -1,0 +1,62 @@
+{
+  "slug": "beef-pho",
+  "dish": "Beef pho",
+  "cell": {"mealType": "main course", "cuisine": "vietnamese", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://vickypham.com/blog/vietnamese-beef-noodle-soup-pho-bo/", "publisher": "Vicky Pham", "accessed": "2026-08-03", "robots_ok": true, "form": "long-simmer"},
+    {"url": "https://scruffandsteph.com/2019/06/21/quick-beef-pho/", "publisher": "Scruff & Steph", "accessed": "2026-08-03", "robots_ok": true, "form": "quick"},
+    {"url": "https://simplehomeedit.com/recipe/quick-beef-pho/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true, "form": "quick"},
+    {"url": "https://www.vietworldkitchen.com/blog/2008/10/pho-beef-noodle-soup.html", "publisher": "Viet World Kitchen", "accessed": "2026-08-03", "robots_ok": true, "form": "long-simmer"}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef stock", "essential": true, "observations": ["2 L beef + 500 ml chicken, low sodium (s1)", "2 L low-sodium (s2)", "quick form only; long-simmer form uses bones instead (s0, s3)"]},
+    {"name": "steak for raw slices (eye fillet, flank, eye of round, sirloin)", "essential": true, "observations": ["eye of round or sirloin, sliced 1/16 in (s0)", "200 gm flank (s1)", "300 g eye fillet (s2)", "1/2 lb eye of round/sirloin/London broil (s3)"]},
+    {"name": "flat rice noodles", "essential": true, "observations": ["2 lbs fresh (s0)", "500 gm fresh or dried (s1)", "200 g dried (s2)", "1.5-2 lbs dried or fresh banh pho (s3)"]},
+    {"name": "brown onion (charred, for broth)", "essential": true, "observations": ["2 yellow (s0)", "1 (s1)", "2 medium yellow (s3)", "s2 omits, uses garlic instead"]},
+    {"name": "ginger", "essential": true, "observations": ["4-inch (s0)", "30 gm (s1)", "1 thumb-sized piece (s2)", "4-inch (s3)"]},
+    {"name": "star anise", "essential": true, "observations": ["8 (s0)", "3 (s1)", "2 (s2)", "5 (s3)"]},
+    {"name": "cinnamon stick", "essential": true, "observations": ["4-inch (s0)", "1 (s1)", "3-inch (s3)", "s2 omits"]},
+    {"name": "whole cloves", "essential": true, "observations": ["2 tsp (s0)", "2 (s1)", "4 (s2)", "6 (s3)"]},
+    {"name": "fish sauce", "essential": true, "observations": ["3 tbsp (s0)", "2 tbsp (s1)", "1 tbsp (s2)", "4 tbsp (s3)"]},
+    {"name": "sugar", "essential": true, "observations": ["2 tbsp white or 20 g rock (s0)", "2 tsp (s1)", "1 tbsp brown (s2)", "1 oz yellow rock (s3)"]},
+    {"name": "bean sprouts", "essential": true, "observations": ["per bowl (s0)", "250 gm (s1)", "2 handfuls (s2)", "1/2 lb (s3)"]},
+    {"name": "coriander (fresh)", "essential": true, "observations": ["1 small bunch (s0)", "1 bunch, optional (s1)", "1/2 bunch (s2)", "1/3 cup chopped (s3)"]},
+    {"name": "spring onions", "essential": true, "observations": ["5 (s0)", "2 (s1)", "optional (s2)", "3-4, green part (s3)"]},
+    {"name": "onion, thinly sliced raw (garnish)", "essential": true, "observations": ["1/2 white/yellow (s0)", "1/2 red (s1)", "1 red (s2)", "1 yellow, soaked in cold water (s3)"]},
+    {"name": "lime", "essential": true, "observations": ["2 (s0)", "1 lemon (s1)", "1 (s2)", "wedges (s3)"]},
+    {"name": "beef bones (long-simmer form)", "essential": false, "observations": ["2 lbs marrow/knuckle + 2 lbs neck bones (s0)", "5-6 lbs marrow and knuckle (s3)"]},
+    {"name": "beef chuck or brisket (simmer cut)", "essential": false, "observations": ["2 lbs bone-in short rib or brisket (s0)", "200 gm chunks, added to quick broth for body (s1)", "1 1/3 lbs chuck/rump/brisket (s3)"]},
+    {"name": "garlic", "essential": false, "observations": ["4 cloves, bruised (s2 only)"]},
+    {"name": "cardamom pods", "essential": false, "observations": ["2 (s0 only)"]},
+    {"name": "coriander seeds", "essential": false, "observations": ["2 tsp (s0 only)"]},
+    {"name": "fennel seeds", "essential": false, "observations": ["2 tsp, optional (s0 only)"]},
+    {"name": "chicken stock", "essential": false, "observations": ["500 ml, cut 4:1 with beef stock for clearer sweeter broth (s1 only)"]},
+    {"name": "Thai basil", "essential": false, "observations": ["accompaniment (s0)", "1 bunch, optional (s1)", "optional (s3)"]},
+    {"name": "fresh chilli", "essential": false, "observations": ["2 jalapenos (s0)", "2, optional (s1)", "optional (s2)", "thin-sliced, optional (s3)"]},
+    {"name": "hoisin sauce", "essential": false, "observations": ["at table (s0)", "optional (s1)", "60 ml (s2)"]},
+    {"name": "sriracha", "essential": false, "observations": ["at table (s0)", "optional (s1)", "optional (s2)"]}
+  ],
+  "causalSequence": [
+    "char halved onion, sliced ginger in dry pan or over flame until blackened in spots; scrape off burnt skin",
+    "dry-toast star anise, cinnamon, cloves until fragrant",
+    "simmer store beef stock with charred aromatics, toasted spices, fish sauce, sugar ~18-30 min, partially covered; skim",
+    "remove/strain aromatics and whole spices",
+    "partially freeze steak 15-30 min; slice paper-thin across grain",
+    "cook rice noodles per packet; rinse cold, drain",
+    "divide noodles between bowls; lay raw beef slices on top",
+    "bring broth to rolling boil; ladle over so it cooks the beef",
+    "top with bean sprouts, coriander, spring onion, raw onion, lime; hoisin/sriracha at table"
+  ],
+  "techniqueFacts": [
+    "all 4 sources char onion + ginger; smoky char is the signature broth flavour",
+    "3 sources dry-toast the whole spices before they go in",
+    "quick form (2 sources): store stock + aromatics simmered 18-30 min; one cuts beef stock with chicken stock 4:1 for a clearer, sweeter broth; one adds 200 g chuck chunks for body",
+    "long-simmer form (2 sources): parboil bones 2-3 min and rinse for a clear broth, then simmer bones + chuck/brisket ~3 h uncovered, skimming; pull the meat when chopstick-tender (~45-105 min), chill, slice thin",
+    "raw paper-thin steak is cooked by the boiling broth in the bowl (all 4); freeze 15-30 min first to slice thin (3 sources)",
+    "season broth slightly over-salty; noodles and garnishes dilute it (2 sources)",
+    "minimum spice set for pho aroma: star anise + cloves + cinnamon (1 source states; matches both quick recipes)",
+    "1 source blanches beef slices 30 s in the broth for cooks who dislike visible raw meat",
+    "pipeline note, not sourced: rice noodles and fish sauce are GF; hoisin and some stocks/sriracha need a GF-label check"
+  ],
+  "servingsObserved": [6, 5, 4, 8]
+}

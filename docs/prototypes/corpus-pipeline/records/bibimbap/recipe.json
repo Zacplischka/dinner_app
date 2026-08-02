@@ -1,0 +1,35 @@
+{
+  "placeId": "owned:bibimbap",
+  "title": "Bibimbap",
+  "servings": 4,
+  "readyInMinutes": 45,
+  "mealType": "main course",
+  "cuisine": "korean",
+  "diets": [],
+  "image": "images/bibimbap.webp",
+  "extendedIngredients": [
+    {"name": "beef mince", "amount": 500, "unit": "g", "original": "500 g beef mince"},
+    {"name": "short grain rice", "amount": 300, "unit": "g", "original": "300 g (1.5 cups) short grain rice"},
+    {"name": "spinach", "amount": 250, "unit": "g", "original": "250 g spinach"},
+    {"name": "bean sprouts", "amount": 250, "unit": "g", "original": "250 g bean sprouts"},
+    {"name": "carrots", "amount": 2, "unit": "", "original": "2 carrots"},
+    {"name": "shiitake mushrooms", "amount": 150, "unit": "g", "original": "150 g shiitake mushrooms"},
+    {"name": "eggs", "amount": 4, "unit": "", "original": "4 eggs"},
+    {"name": "gochujang", "amount": 60, "unit": "g", "original": "3 tbsp (60 g) gochujang"},
+    {"name": "soy sauce", "amount": 40, "unit": "ml", "original": "2 tbsp (40 ml) soy sauce"},
+    {"name": "sesame oil", "amount": 40, "unit": "ml", "original": "2 tbsp (40 ml) sesame oil"},
+    {"name": "white sugar", "amount": 20, "unit": "g", "original": "1 tbsp (20 g) white sugar"},
+    {"name": "garlic", "amount": 3, "unit": "", "original": "3 garlic cloves"},
+    {"name": "spring onions", "amount": 2, "unit": "", "original": "2 spring onions"}
+  ],
+  "steps": [
+    "Rinse the short grain rice and cook it by absorption or in a rice cooker, using slightly less water than usual — drier rice mixes better. Keep warm.",
+    "Make the sauce: stir the gochujang with half the sugar, half the sesame oil and 1-2 tablespoons of water until smooth. Set aside.",
+    "Blanch the spinach for 30 seconds and the bean sprouts for 2 minutes in salted boiling water. Rinse under cold water and squeeze dry, then season each separately with a little of the remaining sesame oil, a pinch of salt and one crushed garlic clove shared between them.",
+    "Cut the carrots into matchsticks and slice the shiitake mushrooms. Stir-fry each separately in a lightly oiled frying pan over high heat for 2-3 minutes with a pinch of salt, then set aside.",
+    "In the same pan, brown the beef mince over high heat, breaking it up as it cooks. Add the soy sauce, the remaining sugar and the remaining garlic, crushed, and cook for another 2 minutes until the liquid is gone and the mince is glossy.",
+    "Wipe out the pan and fry the eggs sunny side up, keeping the yolks runny.",
+    "Divide the rice between four bowls. Arrange the mince, spinach, bean sprouts, carrot and mushrooms in separate piles on top, then finish each bowl with a fried egg.",
+    "Scatter over the sliced spring onions, spoon on the gochujang sauce and mix everything together at the table just before eating."
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "placeId": "owned:pumpkin-soup",
+  "title": "Pumpkin Soup",
+  "servings": 4,
+  "readyInMinutes": 45,
+  "mealType": "soup",
+  "cuisine": "modern australian",
+  "diets": ["vegetarian", "gluten free"],
+  "image": "images/pumpkin-soup.webp",
+  "extendedIngredients": [
+    {"name": "kent pumpkin", "amount": 1.2, "unit": "kg", "original": "1.2 kg Kent pumpkin"},
+    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion"},
+    {"name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves"},
+    {"name": "gluten-free vegetable stock", "searchTerm": "vegetable liquid stock", "amount": 1, "unit": "l", "original": "1 l gluten-free vegetable stock"},
+    {"name": "thickened cream", "amount": 300, "unit": "ml", "original": "300 ml thickened cream"},
+    {"name": "fresh chives", "amount": 0.5, "unit": "bunch", "original": "0.5 bunch fresh chives"}
+  ],
+  "steps": [
+    "Peel and deseed the pumpkin, then cut it into 3-4 cm chunks. Roughly chop the onion and garlic.",
+    "Heat a splash of olive oil in a large pot over medium heat. Cook the onion for about 3 minutes until soft, then add the garlic and cook for 1 minute more.",
+    "Add the pumpkin and vegetable stock. Bring to the boil.",
+    "Reduce the heat and simmer, uncovered, for about 25 minutes until the pumpkin is very tender.",
+    "Take the pot off the heat and let it cool for a few minutes, then blend until smooth with a stick blender.",
+    "Stir in most of the cream, season with salt and pepper, and reheat gently without letting it boil. Thin with a little water if it's too thick.",
+    "Ladle into bowls and finish each with a swirl of the remaining cream, snipped chives and a grind of black pepper."
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "placeId": "owned:chicken-burrito-bowl",
+  "title": "Chicken Burrito Bowl",
+  "servings": 4,
+  "readyInMinutes": 35,
+  "mealType": "main course",
+  "cuisine": "mexican",
+  "diets": ["gluten free"],
+  "image": "images/chicken-burrito-bowl.webp",
+  "extendedIngredients": [
+    {"name": "chicken breast", "amount": 600, "unit": "g", "original": "600 g chicken breast, diced into 2 cm pieces"},
+    {"name": "ground cumin", "amount": 2, "unit": "tsp", "original": "2 tsp ground cumin"},
+    {"name": "sweet paprika", "amount": 2, "unit": "tsp", "original": "2 tsp sweet paprika"},
+    {"name": "smoked paprika", "amount": 1, "unit": "tsp", "original": "1 tsp smoked paprika"},
+    {"name": "dried oregano", "amount": 1, "unit": "tsp", "original": "1 tsp dried oregano"},
+    {"name": "long grain white rice", "amount": 300, "unit": "g", "original": "1 1/2 cups (300 g) long grain white rice"},
+    {"name": "lime", "amount": 3, "unit": "", "original": "3 limes"},
+    {"name": "coriander", "amount": 1, "unit": "bunch", "original": "1 bunch coriander"},
+    {"name": "black beans", "amount": 400, "unit": "g", "original": "400 g can black beans, rinsed and drained"},
+    {"name": "corn kernels", "amount": 400, "unit": "g", "original": "400 g can corn kernels, drained"},
+    {"name": "avocado", "amount": 2, "unit": "", "original": "2 avocados"},
+    {"name": "tomato", "amount": 2, "unit": "", "original": "2 ripe tomatoes"},
+    {"name": "red onion", "amount": 1, "unit": "", "original": "1 small red onion"}
+  ],
+  "steps": [
+    "Mix the cumin, sweet paprika, smoked paprika and oregano with 2 tablespoons of olive oil, a good pinch of salt and a grind of pepper in a large bowl. Add the diced chicken breast and toss until every piece is coated.",
+    "Rinse the rice until the water runs clear, then cook it in a saucepan with 600 ml of water: bring to the boil, cover, and simmer on low for 12 minutes. Take it off the heat and leave the lid on.",
+    "While the rice cooks, finely dice the tomatoes and red onion and roughly chop the coriander. Mix the tomato and onion with half the coriander, the juice of 1 lime and a pinch of salt to make a quick pico de gallo.",
+    "Heat a large frying pan over high heat and cook the chicken in a single layer for 6 to 8 minutes, turning now and then, until browned and cooked through. Splash in a tablespoon of water near the end to lift the spices stuck to the pan, then set the chicken aside to rest.",
+    "In the same pan, warm the black beans and corn kernels together for 2 to 3 minutes until heated through and the corn picks up a little colour.",
+    "Fluff the rice with a fork and stir through the zest and juice of 1 lime and most of the remaining coriander.",
+    "Divide the rice between four bowls and top with the chicken, beans and corn, sliced avocado and pico de gallo. Scatter over the last of the coriander and serve with the remaining lime cut into wedges."
+  ]
+}
