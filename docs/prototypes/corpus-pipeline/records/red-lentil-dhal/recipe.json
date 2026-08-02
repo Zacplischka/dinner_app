@@ -19,10 +19,10 @@
     {"name": "chilli flakes", "amount": 0.5, "unit": "tsp", "original": "1/2 tsp chilli flakes"},
     {"name": "diced tomatoes", "amount": 400, "unit": "g", "original": "400 g can diced tomatoes"},
     {"name": "coconut milk", "amount": 400, "unit": "ml", "original": "400 ml can coconut milk"},
-    {"name": "gluten-free vegetable stock", "amount": 500, "unit": "ml", "original": "500 ml gluten-free vegetable stock"},
+    {"name": "gluten-free vegetable stock", "amount": 500, "unit": "ml", "original": "500 ml gluten-free vegetable stock", "searchTerm": "vegetable liquid stock"},
     {"name": "baby spinach", "amount": 60, "unit": "g", "original": "60 g baby spinach"},
     {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon, juiced"},
-    {"name": "fresh coriander", "amount": 2, "unit": "tbsp", "original": "2 tbsp chopped fresh coriander"}
+    {"name": "fresh coriander", "amount": 0.5, "unit": "bunch", "original": "½ bunch fresh coriander, chopped"}
   ],
   "steps": [
     "Put the red lentils in a sieve and rinse under cold water until the water runs clear. Set aside to drain.",

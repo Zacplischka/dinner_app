@@ -1,0 +1,45 @@
+{
+  "slug": "grilled-steak-with-chips-and-salad",
+  "dish": "Grilled steak with chips and salad",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": []},
+  "sources": [
+    {"url": "https://28bysamwood.com/recipes/healthy-steak-and-chips/", "publisher": "28 By Sam Wood", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.micksmeatbarn.com.au/recipes-1/cattleman%27s-steak-with-chips-and-salad-", "publisher": "Mick's Meat Barn", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://mymarketkitchen.tv/steak-and-chips/", "publisher": "My Market Kitchen", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/steak-and-fries-11642/", "publisher": "Women's Weekly Food", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef steak", "essential": true, "observations": ["240 g porterhouse for 2 (s0)", "4 cattleman's steaks for 4 (s1)", "1.6-2.1 kg bone-in rib eye, shared board (s2)", "1 kg tenderloin cut into 4 steaks (s3)"]},
+    {"name": "potatoes", "essential": true, "observations": ["2 potatoes for 2 (s0)", "6 large (s1)", "1.5 kg royal blue or sebago (s2)", "1 kg, sebago or bintje suggested (s3)"]},
+    {"name": "olive oil", "essential": true, "observations": ["2 tbsp extra-virgin, split between chips and pan (s0)", "rub on steaks, unquantified (s1)", "50 g on steak + 100 g on potatoes (s2)", "1 tbsp for steaks (s3)"]},
+    {"name": "mixed salad leaves", "essential": true, "observations": ["2/3 cup for 2 (s0)", "unquantified (s1)"]},
+    {"name": "cherry tomatoes", "essential": true, "observations": ["1 cup halved for 2 (s0)", "halved, unquantified (s1)"]},
+    {"name": "cucumber", "essential": false, "observations": ["sliced, unquantified (s1)"]},
+    {"name": "red onion", "essential": false, "observations": ["thinly sliced, unquantified (s1)"]},
+    {"name": "salad dressing", "essential": false, "observations": ["favourite dressing, unquantified (s1)"]},
+    {"name": "lemon", "essential": false, "observations": ["1, halved, wedges to serve (s0)"]},
+    {"name": "vegetable oil", "essential": false, "observations": ["for deep-frying chips (s1)", "for deep-frying chips (s3)"]}
+  ],
+  "causalSequence": [
+    "bring steaks to room temp; rub with oil, season salt and pepper",
+    "cut potatoes into chips; toss with oil, season",
+    "cook chips: oven 200C ~25 min until golden, or deep-fry 180C in batches",
+    "sear steaks on hot BBQ or pan, medium-high, 3-5 min per side to liking",
+    "rest steaks 5-10 min",
+    "toss salad leaves, cherry tomatoes, cucumber, red onion; dress",
+    "salt chips while hot; plate steak, chips, salad; lemon wedge"
+  ],
+  "techniqueFacts": [
+    "all four sources rest the steak after cooking (5-10 min)",
+    "steak is oiled and seasoned before hitting the heat, not the pan (3 sources)",
+    "medium-high to high heat, 3-5 min per side gives medium-rare to medium (3 sources)",
+    "one source works to internal temps: 63C medium-rare, 70C medium; brings meat to room temp 20-40 min first",
+    "chip methods split: oven-bake 200C (s0), single deep-fry 180C (s1), double-fry 150C then 180C for crispness (s3), BBQ flat-plate rounds (s2)",
+    "one source soaks cut chips 30 min in cold water and dries them before frying",
+    "sebago named as the chip potato by two sources",
+    "chips salted while still hot (2 sources)",
+    "salad stays simple: leaves plus cherry tomatoes core, cucumber and red onion optional, dressed just before serving (2 sources)",
+    "sauce is an optional add-on, not core: chimichurri (s2), mustard creme fraiche pan sauce (s3)"
+  ],
+  "servingsObserved": [2, 4, null, 4]
+}

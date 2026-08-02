@@ -1,0 +1,49 @@
+{
+  "slug": "fish-and-chips",
+  "dish": "Fish and chips",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["pescetarian"]},
+  "sources": [
+    {"url": "https://www.daringgourmet.com/fish-and-chips/", "publisher": "The Daring Gourmet", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://tastesbetterfromscratch.com/fish-and-chips/", "publisher": "Tastes Better From Scratch", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/homemade-fish-and-chips/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "white fish fillets", "essential": true, "observations": ["1.5 lb cod/haddock/halibut, 4 pieces (s0)", "1.5 lb, cut into long strips; cod/pollock/haddock/perch (s1)", "600 g flathead or any firm white fish (s2)"]},
+    {"name": "potatoes", "essential": true, "observations": ["4 large russet, peeled, thick-sliced (s0)", "any variety, quantity via separate fries recipe (s1)", "1 kg any variety, cut into wedges (s2)"]},
+    {"name": "plain flour", "essential": true, "observations": ["1 cup batter + extra chilled for dredging (s0)", "1 cup batter + extra for dredging (s1)", "75 g / 0.5 cup for crumbing (s2)"]},
+    {"name": "oil for frying", "essential": true, "observations": ["deep-fry depth, beef tallow preferred (s0)", "1-2 inches in deep pot (s1)", "shallow-fry pan depth, or 2-3 tbsp olive oil drizzled if oven-baking fish (s2)"]},
+    {"name": "beer", "essential": false, "observations": ["1.25 cups light beer, very cold (s0)", "1 cup cold light beer; soda water substitutes (s1)"]},
+    {"name": "baking powder", "essential": false, "observations": ["1 tsp (s0)", "1.5 tsp (s1)"]},
+    {"name": "cornflour", "essential": false, "observations": ["0.5 cup in batter (s1)"]},
+    {"name": "paprika", "essential": false, "observations": ["0.25 tsp in batter (s1)", "1 tsp sweet paprika on chips (s2)"]},
+    {"name": "eggs", "essential": false, "observations": ["2, whisked, crumb coating (s2)"]},
+    {"name": "panko breadcrumbs", "essential": false, "observations": ["120 g / 2 cups (s2)"]},
+    {"name": "olive oil", "essential": false, "observations": ["2 tbsp tossed through oven chips (s2)"]},
+    {"name": "lemon", "essential": false, "observations": ["4 wedges to serve (s2)"]},
+    {"name": "tartare sauce", "essential": false, "observations": ["served alongside, non-traditional (s0)", "served alongside (s1)", "homemade: 375 g whole-egg mayonnaise + 1 tbsp each gherkins, capers, red onion, dill, lemon juice (s2)"]},
+    {"name": "malt vinegar", "essential": false, "observations": ["shaken over to serve (s0)", "for dipping (s1)"]}
+  ],
+  "causalSequence": [
+    "cut potatoes into thick chips or wedges; hold in cold water; drain, blot fully dry",
+    "fried chips: fry 325 F until pale 2-3 min, cool, re-fry 375 F until golden; salt while hot",
+    "oven chips: toss with olive oil, paprika, salt; cut side flat on bare tray; 220 C ~45 min, turning once",
+    "battered route: whisk flour, cornflour, baking powder, salt, very cold beer; use immediately",
+    "pat fish dry; dredge in flour; coat in batter",
+    "deep-fry fish 350-375 F, 5-8 min until golden, small batches; drain on paper towel",
+    "crumbed route: coat fish flour, then egg, then panko, pressing crumbs on",
+    "pan-fry crumbed fish 6-8 min, or bake 220 C 12-14 min drizzled with oil",
+    "hold cooked batches warm in a low oven",
+    "serve with lemon wedges, tartare sauce, malt vinegar"
+  ],
+  "techniqueFacts": [
+    "oil at 350-375 F (175-190 C) is the crisp lever: too cool = soggy coating, too hot = burnt crust before fish cooks (2 sources)",
+    "beer's carbonation plus baking powder aerates the batter; very cold beer, and soda water is an accepted substitute (2 sources)",
+    "batter is used immediately, never rested, or the coating fries dense (1 source)",
+    "fish is patted dry and dredged in flour so the batter adheres (all 3 sources dry the fish first)",
+    "double-frying gives chips a soft interior and crisp shell (1 source); oven chips rely on cut-side contact with an unlined tray (1 source)",
+    "fry in small batches so the oil temperature holds (2 sources)",
+    "crumbed flour-egg-panko fish works oven-baked or shallow-fried; battered fish needs deep oil (1 source)",
+    "crumbed raw fish freezes up to 3 months and can bake straight from frozen (1 source)"
+  ],
+  "servingsObserved": [4, 6, 4]
+}

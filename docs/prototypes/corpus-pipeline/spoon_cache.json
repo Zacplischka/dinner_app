@@ -1,0 +1,352 @@
+{
+ "/food/ingredients/search?number=1&query=tomato+paste": {
+  "results": [
+   {
+    "id": 11887,
+    "name": "tomato paste",
+    "image": "tomato-paste.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 2
+ },
+ "/recipes/convert?ingredientName=tomato+paste&sourceAmount=2&sourceUnit=tablespoons&targetUnit=grams": {
+  "sourceAmount": 2.0,
+  "sourceUnit": "tablespoons",
+  "targetAmount": 32.0,
+  "targetUnit": "grams",
+  "answer": "2 tablespoons tomato paste are 32 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=celery+stalks": {
+  "results": [
+   {
+    "id": 10111143,
+    "name": "celery sticks",
+    "image": "celery.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=celery+stalks&sourceAmount=2&sourceUnit=piece&targetUnit=grams": {
+  "sourceAmount": 2.0,
+  "sourceUnit": "piece",
+  "targetAmount": 8.0,
+  "targetUnit": "grams",
+  "answer": "2 piece celery stalks translates to 8 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=garlic+cloves": {
+  "results": [
+   {
+    "id": 10211215,
+    "name": "whole garlic cloves",
+    "image": "garlic.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=garlic+cloves&sourceAmount=3&sourceUnit=piece&targetUnit=grams": {
+  "sourceAmount": 3.0,
+  "sourceUnit": "piece",
+  "targetAmount": 9.0,
+  "targetUnit": "grams",
+  "answer": "3 piece garlic cloves translates to 9 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=green+curry+paste": {
+  "results": [
+   {
+    "id": 10093605,
+    "name": "green curry paste",
+    "image": "green-curry-paste.png"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=green+curry+paste&sourceAmount=3&sourceUnit=tablespoons&targetUnit=grams": {
+  "sourceAmount": 3.0,
+  "sourceUnit": "tablespoons",
+  "targetAmount": 45.0,
+  "targetUnit": "grams",
+  "answer": "3 tablespoons curry paste are 45 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=kaffir+lime+leaves": {
+  "results": [
+   {
+    "id": 93633,
+    "name": "kaffir lime leaves",
+    "image": "lime-leaves.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=kaffir+lime+leaves&sourceAmount=4&sourceUnit=piece&targetUnit=grams": {
+  "sourceAmount": 4.0,
+  "sourceUnit": "piece",
+  "targetAmount": 0.4,
+  "targetUnit": "grams",
+  "answer": "4 piece kaffir lime leaves are 0.4 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=ginger": {
+  "results": [
+   {
+    "id": 11216,
+    "name": "ginger",
+    "image": "ginger.png"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 14
+ },
+ "/recipes/convert?ingredientName=ginger&sourceAmount=1&sourceUnit=thumb&targetUnit=grams": {
+  "sourceAmount": 1.0,
+  "sourceUnit": "",
+  "targetAmount": 7.0,
+  "targetUnit": "grams",
+  "answer": "1 thumb ginger translates to 7 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=taco+seasoning": {
+  "results": [
+   {
+    "id": 2073,
+    "name": "taco seasoning mix",
+    "image": "chili-powder.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=taco+seasoning&sourceAmount=1&sourceUnit=packet&targetUnit=grams": {
+  "sourceAmount": 1.0,
+  "sourceUnit": "packet",
+  "targetAmount": 35.0,
+  "targetUnit": "grams",
+  "answer": "1 packet taco seasoning translates to 35 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=eggs": {
+  "results": [
+   {
+    "id": 1123,
+    "name": "egg",
+    "image": "egg.png"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 9
+ },
+ "/recipes/convert?ingredientName=eggs&sourceAmount=6&sourceUnit=piece&targetUnit=grams": {
+  "sourceAmount": 6.0,
+  "sourceUnit": "piece",
+  "targetAmount": 264.0,
+  "targetUnit": "grams",
+  "answer": "6 piece eggs are 264 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=chicken+breast": {
+  "results": [
+   {
+    "id": 5062,
+    "name": "chicken breast",
+    "image": "chicken-breasts.png"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 15
+ },
+ "/recipes/convert?ingredientName=chicken+breast&sourceAmount=4&sourceUnit=piece&targetUnit=grams": {
+  "sourceAmount": 4.0,
+  "sourceUnit": "piece",
+  "targetAmount": 904.0,
+  "targetUnit": "grams",
+  "answer": "4 piece chicken breast translates to 904 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=japanese+curry+roux": {
+  "results": [],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 0
+ },
+ "/food/ingredients/search?number=1&query=tonkatsu+sauce": {
+  "results": [],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 0
+ },
+ "/food/ingredients/search?number=1&query=sour+cream": {
+  "results": [
+   {
+    "id": 1056,
+    "name": "sour cream",
+    "image": "sour-cream.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 4
+ },
+ "/recipes/convert?ingredientName=sour+cream&sourceAmount=200&sourceUnit=g&targetUnit=grams": {
+  "error": "HTTP Error 402: Payment Required"
+ },
+ "/food/ingredients/search?number=1&query=sourdough+bread": {
+  "error": "HTTP Error 402: Payment Required"
+ },
+ "/food/ingredients/search?number=1&query=beef+stock": {
+  "results": [
+   {
+    "id": 6170,
+    "name": "beef stock",
+    "image": "beef-broth.png"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 3
+ },
+ "/recipes/convert?ingredientName=beef+stock&sourceAmount=250&sourceUnit=ml&targetUnit=grams": {
+  "sourceAmount": 250.0,
+  "sourceUnit": "ml",
+  "targetAmount": 253.61,
+  "targetUnit": "grams",
+  "answer": "250 ml beef stock translates to 253.61 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=bay+leaves": {
+  "results": [
+   {
+    "id": 2004,
+    "name": "bay leaves",
+    "image": "bay-leaves.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 3
+ },
+ "/recipes/convert?ingredientName=bay+leaves&sourceAmount=1&sourceUnit=piece&targetUnit=grams": {
+  "sourceAmount": 1.0,
+  "sourceUnit": "piece",
+  "targetAmount": 0.1,
+  "targetUnit": "grams",
+  "answer": "1 piece bay leaves are 0.1 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=fresh+thyme": {
+  "results": [
+   {
+    "id": 1012049,
+    "name": "fresh thyme",
+    "image": "thyme.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=fresh+thyme&sourceAmount=1&sourceUnit=tablespoons&targetUnit=grams": {
+  "sourceAmount": 1.0,
+  "sourceUnit": "tablespoons",
+  "targetAmount": 7.0,
+  "targetUnit": "grams",
+  "answer": "1 tablespoons thyme are 7 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=chicken+stock": {
+  "results": [
+   {
+    "id": 6172,
+    "name": "chicken stock",
+    "image": "chicken-broth.png"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 4
+ },
+ "/recipes/convert?ingredientName=chicken+stock&sourceAmount=375&sourceUnit=ml&targetUnit=grams": {
+  "sourceAmount": 375.0,
+  "sourceUnit": "ml",
+  "targetAmount": 380.41,
+  "targetUnit": "grams",
+  "answer": "375 ml chicken stock are 380.41 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=gluten+free+cornflour": {
+  "results": [],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 0
+ },
+ "/recipes/convert?ingredientName=ginger&sourceAmount=1&sourceUnit=tablespoons&targetUnit=grams": {
+  "sourceAmount": 1.0,
+  "sourceUnit": "tablespoons",
+  "targetAmount": 7.0,
+  "targetUnit": "grams",
+  "answer": "1 tablespoons ginger are 7 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=ground+coriander": {
+  "results": [
+   {
+    "id": 1002013,
+    "name": "ground coriander",
+    "image": "ground-coriander.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=ground+coriander&sourceAmount=1&sourceUnit=teaspoons&targetUnit=grams": {
+  "sourceAmount": 1.0,
+  "sourceUnit": "teaspoons",
+  "targetAmount": 2.0,
+  "targetUnit": "grams",
+  "answer": "1 teaspoons ground coriander translates to 2 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=chilli+flakes": {
+  "results": [
+   {
+    "id": 1032009,
+    "name": "red pepper flakes",
+    "image": "red-pepper-flakes.jpg"
+   }
+  ],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 1
+ },
+ "/recipes/convert?ingredientName=chilli+flakes&sourceAmount=0.5&sourceUnit=teaspoons&targetUnit=grams": {
+  "sourceAmount": 0.5,
+  "sourceUnit": "teaspoons",
+  "targetAmount": 1.0,
+  "targetUnit": "grams",
+  "answer": "0.5 teaspoons chilli flakes translates to 1 grams.",
+  "type": "CONVERSION"
+ },
+ "/food/ingredients/search?number=1&query=gluten-free+vegetable+stock": {
+  "results": [],
+  "offset": 0,
+  "number": 1,
+  "totalResults": 0
+ }
+}

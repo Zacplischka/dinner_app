@@ -18,9 +18,10 @@
     },
     {
       "name": "potatoes",
-      "amount": 800,
-      "unit": "g",
-      "original": "800 g potatoes"
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg potatoes",
+      "searchTerm": "potatoes 2kg"
     },
     {
       "name": "carrots",
@@ -78,9 +79,10 @@
     },
     {
       "name": "gluten free cornflour",
-      "amount": 1,
-      "unit": "tbsp",
-      "original": "1 tbsp gluten free cornflour"
+      "amount": 10,
+      "unit": "g",
+      "original": "1 tbsp (10 g) gluten free cornflour",
+      "searchTerm": "cornflour gluten free"
     },
     {
       "name": "green beans",

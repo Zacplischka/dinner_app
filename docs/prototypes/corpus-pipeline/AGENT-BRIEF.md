@@ -39,7 +39,7 @@ Standard (#315, #314, #318):
 - Author the method **from the dish**, in Dinder's own voice: plain Australian English, metric, direct imperative steps. No source's sentence architecture — you never saw one.
 - **Amounts are your own**: sane AU-metric numbers informed by the observation ranges — never one source's full set. Round to what a Woolworths shopper buys (500 g mince, not 437 g).
 - **AU vocabulary**: capsicum, coriander, beef mince, thickened cream, plain flour, spring onions, chicken stock, cornflour, icing sugar, caster sugar, bicarbonate of soda.
-- Units from: `g`, `kg`, `ml`, `l`, `tsp`, `tbsp`, `cup`, or `""` with a countable name ("2 eggs", "1 brown onion"). No bunches, no handfuls, no "to taste" in amounts (a pinch of salt goes in the step text, not the ingredient list).
+- Units from: `g`, `kg`, `ml`, `l`, `tsp`, `tbsp`, `cup`, or `""` with a countable name ("2 eggs", "1 brown onion"). Fresh herbs use `bunch` (see amendments); no handfuls, no "to taste" in amounts (a pinch of salt goes in the step text, not the ingredient list).
 - Ingredient `name`s are what you'd type into Woolworths search ("beef mince", not "lean premium ground beef").
 - Every ingredient must appear in some step; every step references only listed ingredients (salt, pepper, water, olive oil are assumed staples and may appear freely).
 - Title = the plain dish name. `servings` mandatory (default 4). `readyInMinutes` honest.
@@ -62,6 +62,14 @@ Standard (#315, #314, #318):
   "steps": ["Heat a splash of olive oil in a large pot over high heat. Brown the beef mince in two batches, breaking it up as it cooks.", "…"]
 }
 ```
+
+## Authoring amendments (from the spike, 2026-08-03)
+
+- **`searchTerm`** (optional, per ingredient): when `name` is diet-qualified or otherwise unmatchable as a search ("gluten free cornflour"), add a plain matchable `searchTerm` ("cornflour gluten free" → or the simplest term that surfaces the right product). Display stays cook-honest; search stays matchable.
+- **Packet goods get structured metric amounts**: small quantities of packet-bought dry/liquid goods use `g`/`ml` in `amount`/`unit`; the cook-friendly phrasing lives in `original` ("1 tbsp (10 g) gluten free cornflour").
+- **Pack-form-aware quantities**: author quantities in the form the product is sold ("1 kg potatoes", not "800 g potatoes").
+- **Fresh herbs are authored in `bunch`** (fractions fine: 0.5 bunch coriander) — #241's static herb table owns that unit end to end.
+- **Tiny dried aromatics (bay leaves) are Staples** for the pilot — excluded from the tally like all Staples; flagged for the spec to review the Staples set.
 
 ## Gates (run by the orchestrator, not agents)
 

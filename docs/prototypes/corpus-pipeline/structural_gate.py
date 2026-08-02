@@ -4,7 +4,7 @@ Checks every records/<slug>/recipe.json (or one). Exit 0 all pass, 1 otherwise."
 import json, re, sys
 from pathlib import Path
 
-KNOWN_UNITS = {"g", "kg", "ml", "l", "tsp", "tbsp", "cup", ""}
+KNOWN_UNITS = {"g", "kg", "ml", "l", "tsp", "tbsp", "cup", "bunch", ""}
 MEAL_TYPES = {"main course", "side dish", "dessert", "appetizer", "salad", "soup", "breakfast", "snack"}
 CUISINES = {"african", "american", "british", "cajun", "caribbean", "chinese", "french", "german",
             "greek", "indian", "italian", "japanese", "korean", "latin american", "mediterranean",
