@@ -1,0 +1,36 @@
+{
+  "placeId": "owned:red-lentil-dhal",
+  "title": "Red Lentil Dhal",
+  "servings": 4,
+  "readyInMinutes": 40,
+  "mealType": "main course",
+  "cuisine": "indian",
+  "diets": ["vegan", "vegetarian", "gluten free"],
+  "image": "images/red-lentil-dhal.webp",
+  "extendedIngredients": [
+    {"name": "red lentils", "amount": 250, "unit": "g", "original": "250 g red lentils"},
+    {"name": "vegetable oil", "amount": 2, "unit": "tbsp", "original": "2 tbsp vegetable oil"},
+    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely chopped"},
+    {"name": "garlic", "amount": 3, "unit": "", "original": "3 garlic cloves, crushed"},
+    {"name": "ginger", "amount": 1, "unit": "tbsp", "original": "1 tbsp finely grated ginger"},
+    {"name": "ground turmeric", "amount": 1, "unit": "tsp", "original": "1 tsp ground turmeric"},
+    {"name": "ground cumin", "amount": 1, "unit": "tsp", "original": "1 tsp ground cumin"},
+    {"name": "ground coriander", "amount": 1, "unit": "tsp", "original": "1 tsp ground coriander"},
+    {"name": "chilli flakes", "amount": 0.5, "unit": "tsp", "original": "1/2 tsp chilli flakes"},
+    {"name": "diced tomatoes", "amount": 400, "unit": "g", "original": "400 g can diced tomatoes"},
+    {"name": "coconut milk", "amount": 400, "unit": "ml", "original": "400 ml can coconut milk"},
+    {"name": "gluten-free vegetable stock", "amount": 500, "unit": "ml", "original": "500 ml gluten-free vegetable stock"},
+    {"name": "baby spinach", "amount": 60, "unit": "g", "original": "60 g baby spinach"},
+    {"name": "lemon", "amount": 1, "unit": "", "original": "1 lemon, juiced"},
+    {"name": "fresh coriander", "amount": 2, "unit": "tbsp", "original": "2 tbsp chopped fresh coriander"}
+  ],
+  "steps": [
+    "Put the red lentils in a sieve and rinse under cold water until the water runs clear. Set aside to drain.",
+    "Heat the vegetable oil in a large saucepan over medium heat. Cook the brown onion for 5 minutes until soft, then add the garlic and ginger and cook for 1 minute until fragrant.",
+    "Add the ground turmeric, ground cumin, ground coriander and chilli flakes. Stir for 1 minute so the spices toast in the oil without burning.",
+    "Tip in the diced tomatoes and cook for 2 to 3 minutes, stirring, until the mixture thickens slightly.",
+    "Add the lentils, gluten-free vegetable stock and coconut milk. Bring to the boil, then reduce the heat and simmer uncovered for 25 minutes, stirring now and then, until the lentils have collapsed and the dhal is thick. Add a splash of water if it gets too thick.",
+    "Stir through the baby spinach until wilted. Take the pan off the heat, squeeze in the lemon juice and season with salt and pepper.",
+    "Ladle into bowls and scatter with the fresh coriander."
+  ]
+}

@@ -1,0 +1,161 @@
+[
+  {
+    "title": "Spaghetti Bolognese",
+    "cuisine": "Italian",
+    "servings": 4,
+    "ingredients": [
+      {"name": "spaghetti", "amount": 400, "unit": "g", "original": "400g spaghetti"},
+      {"name": "beef mince", "amount": 500, "unit": "g", "original": "500g beef mince"},
+      {"name": "tinned tomatoes", "amount": 800, "unit": "g", "original": "2 x 400g tins chopped tomatoes"},
+      {"name": "tomato paste", "amount": 2, "unit": "tbsp", "original": "2 tbsp tomato paste"},
+      {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely diced"},
+      {"name": "carrot", "amount": 1, "unit": "", "original": "1 carrot, finely diced"},
+      {"name": "celery stalks", "amount": 2, "unit": "", "original": "2 celery stalks, finely diced"},
+      {"name": "garlic cloves", "amount": 3, "unit": "", "original": "3 garlic cloves, crushed"},
+      {"name": "parmesan cheese", "amount": 50, "unit": "g", "original": "50g parmesan, grated"},
+      {"name": "red wine", "amount": 125, "unit": "ml", "original": "125ml red wine"}
+    ]
+  },
+  {
+    "title": "Thai Green Chicken Curry",
+    "cuisine": "Thai",
+    "servings": 4,
+    "ingredients": [
+      {"name": "chicken thigh fillets", "amount": 600, "unit": "g", "original": "600g chicken thigh fillets, sliced"},
+      {"name": "green curry paste", "amount": 3, "unit": "tbsp", "original": "3 tbsp green curry paste"},
+      {"name": "coconut milk", "amount": 400, "unit": "ml", "original": "400ml can coconut milk"},
+      {"name": "fish sauce", "amount": 2, "unit": "tbsp", "original": "2 tbsp fish sauce"},
+      {"name": "thai basil", "amount": 1, "unit": "handful", "original": "a handful of Thai basil leaves"},
+      {"name": "coriander", "amount": 1, "unit": "bunch", "original": "1 bunch coriander"},
+      {"name": "green beans", "amount": 200, "unit": "g", "original": "200g green beans, trimmed"},
+      {"name": "bamboo shoots", "amount": 225, "unit": "g", "original": "225g tin bamboo shoots, drained"},
+      {"name": "kaffir lime leaves", "amount": 4, "unit": "", "original": "4 kaffir lime leaves"},
+      {"name": "jasmine rice", "amount": 300, "unit": "g", "original": "300g jasmine rice"}
+    ]
+  },
+  {
+    "title": "Chicken Tikka Masala",
+    "cuisine": "Indian",
+    "servings": 4,
+    "ingredients": [
+      {"name": "chicken breast", "amount": 700, "unit": "g", "original": "700g chicken breast, cubed"},
+      {"name": "greek yoghurt", "amount": 200, "unit": "g", "original": "200g Greek yoghurt"},
+      {"name": "garam masala", "amount": 2, "unit": "tsp", "original": "2 tsp garam masala"},
+      {"name": "ground turmeric", "amount": 1, "unit": "tsp", "original": "1 tsp ground turmeric"},
+      {"name": "ginger", "amount": 1, "unit": "thumb", "original": "1 thumb-sized piece of ginger, grated"},
+      {"name": "passata", "amount": 500, "unit": "g", "original": "500g passata"},
+      {"name": "thickened cream", "amount": 150, "unit": "ml", "original": "150ml thickened cream"},
+      {"name": "basmati rice", "amount": 300, "unit": "g", "original": "300g basmati rice"},
+      {"name": "naan bread", "amount": 4, "unit": "", "original": "4 naan breads"}
+    ]
+  },
+  {
+    "title": "Beef Tacos",
+    "cuisine": "Mexican",
+    "servings": 4,
+    "ingredients": [
+      {"name": "beef mince", "amount": 500, "unit": "g", "original": "500g beef mince"},
+      {"name": "taco seasoning", "amount": 1, "unit": "packet", "original": "1 packet taco seasoning"},
+      {"name": "taco shells", "amount": 12, "unit": "", "original": "12 taco shells"},
+      {"name": "iceberg lettuce", "amount": 0.5, "unit": "", "original": "1/2 iceberg lettuce, shredded"},
+      {"name": "tomatoes", "amount": 2, "unit": "", "original": "2 tomatoes, diced"},
+      {"name": "tasty cheese", "amount": 150, "unit": "g", "original": "150g grated tasty cheese"},
+      {"name": "sour cream", "amount": 200, "unit": "g", "original": "200g sour cream"},
+      {"name": "avocado", "amount": 1, "unit": "", "original": "1 avocado"},
+      {"name": "lime", "amount": 1, "unit": "", "original": "1 lime"}
+    ]
+  },
+  {
+    "title": "Chicken and Black Bean Stir-fry",
+    "cuisine": "Chinese",
+    "servings": 4,
+    "ingredients": [
+      {"name": "chicken breast", "amount": 500, "unit": "g", "original": "500g chicken breast, sliced"},
+      {"name": "black bean sauce", "amount": 150, "unit": "g", "original": "150g jar black bean sauce"},
+      {"name": "capsicum", "amount": 1, "unit": "", "original": "1 red capsicum, sliced"},
+      {"name": "broccoli", "amount": 1, "unit": "head", "original": "1 head of broccoli, cut into florets"},
+      {"name": "spring onions", "amount": 4, "unit": "", "original": "4 spring onions, sliced"},
+      {"name": "hokkien noodles", "amount": 440, "unit": "g", "original": "440g hokkien noodles"},
+      {"name": "soy sauce", "amount": 2, "unit": "tbsp", "original": "2 tbsp soy sauce"},
+      {"name": "sesame oil", "amount": 1, "unit": "tbsp", "original": "1 tbsp sesame oil"}
+    ]
+  },
+  {
+    "title": "Shakshuka",
+    "cuisine": "Middle Eastern",
+    "servings": 4,
+    "ingredients": [
+      {"name": "eggs", "amount": 6, "unit": "", "original": "6 eggs"},
+      {"name": "tinned tomatoes", "amount": 800, "unit": "g", "original": "2 x 400g tins chopped tomatoes"},
+      {"name": "red capsicum", "amount": 2, "unit": "", "original": "2 red capsicums, sliced"},
+      {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, sliced"},
+      {"name": "ground cumin", "amount": 2, "unit": "tsp", "original": "2 tsp ground cumin"},
+      {"name": "smoked paprika", "amount": 1, "unit": "tsp", "original": "1 tsp smoked paprika"},
+      {"name": "feta", "amount": 100, "unit": "g", "original": "100g feta, crumbled"},
+      {"name": "flat leaf parsley", "amount": 1, "unit": "bunch", "original": "1 bunch flat-leaf parsley"},
+      {"name": "sourdough bread", "amount": 1, "unit": "loaf", "original": "1 loaf sourdough, to serve"}
+    ]
+  },
+  {
+    "title": "Lamb Souvlaki with Greek Salad",
+    "cuisine": "Greek",
+    "servings": 4,
+    "ingredients": [
+      {"name": "lamb leg", "amount": 700, "unit": "g", "original": "700g lamb leg, diced"},
+      {"name": "dried oregano", "amount": 2, "unit": "tsp", "original": "2 tsp dried oregano"},
+      {"name": "lemon", "amount": 2, "unit": "", "original": "2 lemons"},
+      {"name": "greek yoghurt", "amount": 250, "unit": "g", "original": "250g Greek yoghurt"},
+      {"name": "lebanese cucumber", "amount": 2, "unit": "", "original": "2 Lebanese cucumbers"},
+      {"name": "kalamata olives", "amount": 100, "unit": "g", "original": "100g kalamata olives"},
+      {"name": "feta", "amount": 200, "unit": "g", "original": "200g feta"},
+      {"name": "pita bread", "amount": 8, "unit": "", "original": "8 pita breads"},
+      {"name": "red onion", "amount": 1, "unit": "", "original": "1 red onion, sliced"}
+    ]
+  },
+  {
+    "title": "Chicken Katsu Curry",
+    "cuisine": "Japanese",
+    "servings": 4,
+    "ingredients": [
+      {"name": "chicken breast", "amount": 4, "unit": "", "original": "4 chicken breasts"},
+      {"name": "panko breadcrumbs", "amount": 150, "unit": "g", "original": "150g panko breadcrumbs"},
+      {"name": "japanese curry roux", "amount": 1, "unit": "packet", "original": "1 packet Japanese curry roux blocks"},
+      {"name": "short grain rice", "amount": 300, "unit": "g", "original": "300g short grain rice"},
+      {"name": "carrot", "amount": 2, "unit": "", "original": "2 carrots, chopped"},
+      {"name": "potato", "amount": 2, "unit": "", "original": "2 potatoes, chopped"},
+      {"name": "plain flour", "amount": 60, "unit": "g", "original": "60g plain flour"},
+      {"name": "tonkatsu sauce", "amount": 4, "unit": "tbsp", "original": "4 tbsp tonkatsu sauce"}
+    ]
+  },
+  {
+    "title": "Vietnamese Beef Pho",
+    "cuisine": "Vietnamese",
+    "servings": 4,
+    "ingredients": [
+      {"name": "beef brisket", "amount": 800, "unit": "g", "original": "800g beef brisket"},
+      {"name": "rice noodles", "amount": 400, "unit": "g", "original": "400g flat rice noodles"},
+      {"name": "beef stock", "amount": 2, "unit": "l", "original": "2L beef stock"},
+      {"name": "star anise", "amount": 4, "unit": "", "original": "4 star anise"},
+      {"name": "cinnamon stick", "amount": 1, "unit": "", "original": "1 cinnamon stick"},
+      {"name": "bean sprouts", "amount": 200, "unit": "g", "original": "200g bean sprouts"},
+      {"name": "coriander", "amount": 1, "unit": "bunch", "original": "1 bunch coriander"},
+      {"name": "hoisin sauce", "amount": 2, "unit": "tbsp", "original": "2 tbsp hoisin sauce"},
+      {"name": "sriracha", "amount": 2, "unit": "tbsp", "original": "2 tbsp sriracha"}
+    ]
+  },
+  {
+    "title": "Roast Chicken and Vegetables",
+    "cuisine": "Australian",
+    "servings": 4,
+    "ingredients": [
+      {"name": "whole chicken", "amount": 1.6, "unit": "kg", "original": "1.6kg whole chicken"},
+      {"name": "desiree potatoes", "amount": 1, "unit": "kg", "original": "1kg Desiree potatoes"},
+      {"name": "pumpkin", "amount": 500, "unit": "g", "original": "500g pumpkin, cut into wedges"},
+      {"name": "carrot", "amount": 3, "unit": "", "original": "3 carrots"},
+      {"name": "rosemary", "amount": 3, "unit": "sprigs", "original": "3 sprigs rosemary"},
+      {"name": "chicken stock", "amount": 250, "unit": "ml", "original": "250ml chicken stock"},
+      {"name": "green peas", "amount": 200, "unit": "g", "original": "200g frozen peas"},
+      {"name": "butter", "amount": 50, "unit": "g", "original": "50g butter"}
+    ]
+  }
+]

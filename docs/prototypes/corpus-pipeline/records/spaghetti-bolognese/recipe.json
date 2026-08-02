@@ -1,0 +1,34 @@
+{
+  "placeId": "owned:spaghetti-bolognese",
+  "title": "Spaghetti Bolognese",
+  "servings": 4,
+  "readyInMinutes": 75,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [],
+  "image": "images/spaghetti-bolognese.webp",
+  "extendedIngredients": [
+    {"name": "beef mince", "amount": 500, "unit": "g", "original": "500 g beef mince"},
+    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion"},
+    {"name": "garlic", "amount": 3, "unit": "", "original": "3 garlic cloves"},
+    {"name": "carrot", "amount": 1, "unit": "", "original": "1 carrot"},
+    {"name": "celery", "amount": 2, "unit": "", "original": "2 celery sticks"},
+    {"name": "tomato paste", "amount": 2, "unit": "tbsp", "original": "2 tbsp tomato paste"},
+    {"name": "canned crushed tomatoes", "amount": 800, "unit": "g", "original": "800 g canned crushed tomatoes (2 x 400 g tins)"},
+    {"name": "beef stock", "amount": 250, "unit": "ml", "original": "250 ml beef stock"},
+    {"name": "red wine", "amount": 125, "unit": "ml", "original": "125 ml red wine"},
+    {"name": "dried oregano", "amount": 1, "unit": "tsp", "original": "1 tsp dried oregano"},
+    {"name": "bay leaves", "amount": 1, "unit": "", "original": "1 bay leaf"},
+    {"name": "spaghetti", "amount": 400, "unit": "g", "original": "400 g spaghetti"},
+    {"name": "parmesan cheese", "amount": 30, "unit": "g", "original": "30 g parmesan cheese, grated"}
+  ],
+  "steps": [
+    "Finely chop the brown onion, carrot and celery, and crush the garlic. Heat a good splash of olive oil in a large heavy-based pot over medium heat and cook the vegetables for 8 minutes, stirring often, until soft.",
+    "Turn the heat up to high, add the beef mince and cook for 5 minutes, breaking it up with a wooden spoon until browned all over.",
+    "Stir in the tomato paste and cook for 1 minute. Pour in the red wine and let it bubble for 2 minutes until mostly cooked off.",
+    "Add the crushed tomatoes, beef stock, dried oregano and bay leaf. Season with salt and pepper and stir well.",
+    "Bring to a simmer, then turn the heat to low and cook, partly covered, for 45 minutes, stirring now and then, until the sauce is thick and rich. Add a splash of water if it dries out before the time is up.",
+    "About 15 minutes before the sauce is done, cook the spaghetti in a large pot of salted boiling water until just tender, then drain.",
+    "Fish out the bay leaf and taste the sauce, adjusting the salt if needed. Divide the spaghetti between bowls, spoon the sauce over the top and finish with grated parmesan cheese."
+  ]
+}

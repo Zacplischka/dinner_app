@@ -40,7 +40,13 @@ def check(recipe, titles, us_side):
         if not isinstance(amt, (int, float)) or amt <= 0: errs.append(f"unparseable amount on {name}")
         # every ingredient referenced in some step (match on any word ≥4 chars of the name)
         toks = [t for t in re.findall(r"[a-z]+", name.lower()) if len(t) >= 4]
-        if toks and not any(t in steps_text or t.rstrip("s") in steps_text for t in toks):
+        def variants(t):
+            v = {t}
+            if t.endswith("ves"): v.add(t[:-3] + "f"); v.add(t[:-3] + "fe")
+            if t.endswith("es"): v.add(t[:-2])
+            if t.endswith("s"): v.add(t[:-1])
+            return v
+        if toks and not any(v in steps_text for t in toks for v in variants(t)):
             errs.append(f"ingredient '{name}' never referenced in steps")
         for us in us_side:
             if re.search(rf"\b{re.escape(us)}\b", name.lower()) or re.search(rf"\b{re.escape(us)}\b", ing.get("original", "").lower()):

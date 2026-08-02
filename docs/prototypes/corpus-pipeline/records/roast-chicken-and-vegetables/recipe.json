@@ -1,0 +1,103 @@
+{
+  "placeId": "owned:roast-chicken-and-vegetables",
+  "title": "Roast Chicken and Vegetables",
+  "servings": 4,
+  "readyInMinutes": 120,
+  "mealType": "main course",
+  "cuisine": "modern australian",
+  "diets": [
+    "gluten free"
+  ],
+  "image": "images/roast-chicken-and-vegetables.webp",
+  "extendedIngredients": [
+    {
+      "name": "whole chicken",
+      "amount": 1.6,
+      "unit": "kg",
+      "original": "1.6 kg whole chicken"
+    },
+    {
+      "name": "potatoes",
+      "amount": 800,
+      "unit": "g",
+      "original": "800 g potatoes"
+    },
+    {
+      "name": "carrots",
+      "amount": 3,
+      "unit": "",
+      "original": "3 carrots"
+    },
+    {
+      "name": "pumpkin",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g pumpkin"
+    },
+    {
+      "name": "red onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red onion"
+    },
+    {
+      "name": "butter",
+      "amount": 50,
+      "unit": "g",
+      "original": "50 g butter, softened"
+    },
+    {
+      "name": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 garlic cloves"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon"
+    },
+    {
+      "name": "olive oil",
+      "amount": 2,
+      "unit": "tbsp",
+      "original": "2 tbsp olive oil"
+    },
+    {
+      "name": "fresh thyme",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp fresh thyme leaves"
+    },
+    {
+      "name": "chicken stock",
+      "amount": 375,
+      "unit": "ml",
+      "original": "375 ml gluten free chicken stock"
+    },
+    {
+      "name": "gluten free cornflour",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp gluten free cornflour"
+    },
+    {
+      "name": "green beans",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g green beans"
+    }
+  ],
+  "steps": [
+    "Preheat the oven to 200C (180C fan-forced). Cut the potatoes into large chunks, boil them in salted water for 10 minutes, then drain well.",
+    "Mash the butter with the thyme leaves and 2 crushed garlic cloves. Loosen the skin over the chicken breast with your fingers and spread the butter underneath. Halve the lemon and push it into the cavity with the remaining 2 garlic cloves, then tie the legs together with kitchen string.",
+    "Cut the pumpkin into large chunks, the carrots into thick batons and the red onion into wedges. Toss them in a large roasting tray with the drained potatoes, the olive oil and a good pinch of salt and pepper.",
+    "Sit the chicken breast-side up on the vegetables. Season the skin with salt and roast for 1 hour.",
+    "Pour half the chicken stock into the tray, spoon the pan juices over the chicken and roast for another 20 to 25 minutes, until the juices run clear when you pierce the thigh.",
+    "Lift the chicken onto a board, cover loosely with foil and rest for 15 minutes. Keep the vegetables warm in the turned-off oven.",
+    "Tip the pan juices into a small saucepan, add the remaining stock and bring to the boil. Stir the gluten free cornflour into 1 tablespoon of cold water, whisk it in and simmer for 2 minutes until the gravy thickens. Season to taste.",
+    "Steam the green beans for 3 to 4 minutes until just tender.",
+    "Carve the chicken and serve with the roast vegetables, green beans and gravy."
+  ]
+}
