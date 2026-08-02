@@ -262,7 +262,10 @@ function toLineState(
 export function lineText(amount: number, unit: string, name: string): string {
   if (!(amount > 0)) return name;
   const shown = Number(amount.toFixed(2));
-  return unit ? `${shown} ${unit} ${name}` : `${shown} ${name}`;
+  // Spoonacular's metric rewrite states grams as "gr"; a human writes "g"
+  // (#305). Display only — the structured unit is what pricing sees.
+  const shownUnit = unit === 'gr' ? 'g' : unit;
+  return shownUnit ? `${shown} ${shownUnit} ${name}` : `${shown} ${name}`;
 }
 
 /**

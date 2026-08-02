@@ -69,6 +69,11 @@ describe('deriveSearchTerm', () => {
     expect(deriveSearchTerm('garlic cloves')).toBe('garlic cloves');
   });
 
+  it('drops a dotted unit token exactly like the bare one (#305)', () => {
+    expect(deriveSearchTerm('.5 lb. of fettuccini pasta')).toBe('fettuccini pasta');
+    expect(deriveSearchTerm('oz. bacon into pieces')).toBe('bacon into pieces');
+  });
+
   it('passes a name that was nothing but measurement through unchanged', () => {
     expect(deriveSearchTerm('6')).toBe('6');
   });
@@ -89,6 +94,16 @@ describe('sanitiseIngredientName', () => {
     expect(sanitiseIngredientName('garlic cloves')).toBe('garlic cloves');
     expect(sanitiseIngredientName('jjapsahl')).toBe('jjapsahl');
     expect(sanitiseIngredientName('vegetable oil')).toBe('vegetable oil');
+  });
+
+  it('strips the imperial token the metric rewrite leaves in the name (#305)', () => {
+    // The #231 corpus recipe as Spoonacular actually parses it: amount/unit
+    // arrive metric (250 'gr') while the name still wears the imperial token,
+    // so the minted line doubled up ("250 gr lb. of fettuccini pasta").
+    expect(sanitiseIngredientName('.5 lb. of fettuccini pasta')).toBe('fettuccini pasta');
+    expect(sanitiseIngredientName('.2 lb. brussels sprouts')).toBe('brussels sprouts');
+    expect(sanitiseIngredientName('oz. bacon into pieces')).toBe('bacon into pieces');
+    expect(sanitiseIngredientName('.5 oz. parmesan cheese')).toBe('parmesan cheese');
   });
 
   it('refuses what it cannot clean rather than guessing', () => {

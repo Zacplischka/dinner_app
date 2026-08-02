@@ -348,6 +348,53 @@ describe('ShoppingListService.mint', () => {
     expect(matchProduct).toHaveBeenCalledWith('garlic');
   });
 
+  it('mints the #305 corpus lines with a single unit, never the doubled pair', async () => {
+    // Recipe 636360, exactly as Spoonacular parses it: the metric rewrite put
+    // "250/gr" in the structured amount but left the imperial token in the
+    // name, and the minted text doubled up ("250 gr lb. of fettuccini pasta").
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          {
+            name: '.5 lb. of fettuccini pasta',
+            amount: 250,
+            unit: 'gr',
+            original: '250gr / 0.5 lb. (dry weight) of good quality fettuccini pasta',
+          },
+          {
+            name: '.2 lb. brussels sprouts',
+            amount: 550,
+            unit: 'gr',
+            original: '550gr / 1.2 lb. Brussels sprouts, cleaned and chopped quite finely',
+          },
+          {
+            name: 'oz. bacon into pieces',
+            amount: 150,
+            unit: 'gr',
+            original: '150gr / 5 oz. smoked bacon chopped into small pieces',
+          },
+          {
+            name: '.5 oz. parmesan cheese',
+            amount: 75,
+            unit: 'gr',
+            original: '75gr / 2.5 oz. finely grated parmesan cheese',
+          },
+        ],
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines.map((line) => line.text)).toEqual([
+      '250 g fettuccini pasta',
+      '550 g brussels sprouts',
+      '150 g bacon into pieces',
+      '75 g parmesan cheese',
+    ]);
+  });
+
   it('degrades a line it cannot clean to the recipe own wording, never a hybrid', async () => {
     const { service } = build({
       recipe: {

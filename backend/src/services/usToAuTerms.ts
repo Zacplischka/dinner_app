@@ -137,6 +137,12 @@ const MEASUREMENT_WORDS = new Set([
 const NUMBER = /^[\d.⁄/]+$/; // "6", "4.5", "1/2"
 const NUMBER_WITH_UNIT = /^\d+(?:\.\d+)?(?:g|kg|ml|l|oz|lb|lbs)$/; // "400g"
 
+// A unit token may arrive wearing its abbreviation period — "lb.", "oz." —
+// when Spoonacular's metric rewrite moves the amount to metric but leaves the
+// imperial token in the parsed name ("250/gr" structured, "lb." still in the
+// text, #305). The dot never changes what the word is.
+const isMeasurementWord = (word: string) => MEASUREMENT_WORDS.has(word.replace(/\.$/, ''));
+
 /**
  * The one search-term derivation (#285): the term the Matcher searches, the
  * term an Unmatched line's search link carries at mint, and the term a
@@ -152,7 +158,7 @@ export function deriveSearchTerm(name: string): string {
     .trim()
     .split(' ')
     .filter(
-      (word) => !NUMBER.test(word) && !NUMBER_WITH_UNIT.test(word) && !MEASUREMENT_WORDS.has(word)
+      (word) => !NUMBER.test(word) && !NUMBER_WITH_UNIT.test(word) && !isMeasurementWord(word)
     );
   while (words[0] === 'of') words.shift();
   return translateTerm(words.join(' ') || name);
@@ -188,11 +194,25 @@ const isNumeric = (word: string) => NUMBER.test(word) || NUMBER_WITH_UNIT.test(w
  */
 export function sanitiseIngredientName(name: string): string | null {
   const words = name.trim().split(/\s+/);
-  while (words.length > 0 && isNumeric(words[0])) {
-    words.shift();
-    const next = words[0]?.toLowerCase();
-    if (next !== undefined && (COUNT_WORDS.has(next) || MEASUREMENT_WORDS.has(next))) words.shift();
+  let stripped = false;
+  while (words.length > 0) {
+    if (isNumeric(words[0])) {
+      words.shift();
+      const next = words[0]?.toLowerCase();
+      if (next !== undefined && (COUNT_WORDS.has(next) || isMeasurementWord(next))) words.shift();
+    } else if (/\.$/.test(words[0]) && isMeasurementWord(words[0].toLowerCase())) {
+      // A dotted token is unambiguously a unit ("oz. bacon", #305), so it
+      // strips even without a number in front — a bare one ("cup") never
+      // does, because standing alone it could be product identity.
+      words.shift();
+    } else {
+      break;
+    }
+    stripped = true;
   }
+  // The "of" the stripped phrase governed ("lb. of fettuccini pasta") goes
+  // with it; an "of" inside a name it never touched stays where it is.
+  while (stripped && words[0]?.toLowerCase() === 'of') words.shift();
   if (words.length === 0) return null;
   // ponytail: two tells, grown from the observed specimens exactly as the
   // vocabulary above grows — a number still inside the name, a stray single
