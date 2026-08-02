@@ -1,0 +1,36 @@
+{
+  "placeId": "owned:special-fried-rice",
+  "title": "Special Fried Rice",
+  "servings": 4,
+  "readyInMinutes": 30,
+  "mealType": "main course",
+  "cuisine": "chinese",
+  "diets": [],
+  "image": "images/special-fried-rice.webp",
+  "extendedIngredients": [
+    {"name": "long grain white rice", "amount": 300, "unit": "g", "original": "300 g long grain white rice (about 4 cups cooked)"},
+    {"name": "eggs", "amount": 3, "unit": "", "original": "3 eggs, lightly beaten"},
+    {"name": "bacon", "amount": 200, "unit": "g", "original": "200 g bacon, diced"},
+    {"name": "cooked prawns", "amount": 300, "unit": "g", "original": "300 g cooked peeled prawns", "searchTerm": "cooked prawns"},
+    {"name": "frozen peas", "amount": 150, "unit": "g", "original": "1 cup (150 g) frozen peas"},
+    {"name": "spring onions", "amount": 1, "unit": "bunch", "original": "1 bunch spring onions, thinly sliced"},
+    {"name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely diced"},
+    {"name": "carrot", "amount": 1, "unit": "", "original": "1 carrot, finely diced"},
+    {"name": "garlic", "amount": 2, "unit": "", "original": "2 cloves garlic, crushed"},
+    {"name": "soy sauce", "amount": 40, "unit": "ml", "original": "2 tbsp (40 ml) soy sauce"},
+    {"name": "sesame oil", "amount": 10, "unit": "ml", "original": "2 tsp (10 ml) sesame oil"},
+    {"name": "peanut oil", "amount": 40, "unit": "ml", "original": "2 tbsp (40 ml) peanut oil"}
+  ],
+  "steps": [
+    "The day before (or at least 3 hours ahead), cook the rice, spread it out on a tray and refrigerate uncovered. Cold, dry grains fry instead of steaming.",
+    "Dice the bacon, brown onion and carrot, crush the garlic, slice the spring onions and lightly beat the eggs. Have everything within reach of the stove, because the fry moves fast.",
+    "Heat half the peanut oil in a wok or large frying pan over high heat until just smoking. Fry the bacon until crisp, then lift it out onto a plate.",
+    "Pour the beaten eggs into the wok and scramble into soft curds. Set aside with the bacon.",
+    "Add the remaining peanut oil to the wok. Stir-fry the brown onion, carrot and garlic for 2 minutes until fragrant and starting to soften.",
+    "Add the prawns and toss for 1 minute to warm through.",
+    "Add the cold rice and stir-fry for 2 to 3 minutes, breaking up any clumps, until every grain is hot.",
+    "Add the frozen peas, then return the bacon and egg to the wok and toss to combine.",
+    "Add the soy sauce and sesame oil, season with a pinch of pepper and toss for another minute until the rice just starts to catch at the edges.",
+    "Stir through most of the spring onions, scatter the rest over the top and serve straight away."
+  ]
+}

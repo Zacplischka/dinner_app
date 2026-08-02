@@ -1,0 +1,57 @@
+{
+  "slug": "beef-and-black-bean-stir-fry",
+  "dish": "Beef and black bean stir-fry",
+  "cell": {"mealType": "main course", "cuisine": "chinese", "diets": []},
+  "sources": [
+    {"url": "https://www.leahitsines.com.au/blogs/recipes/black-bean-and-beef-stirfry", "publisher": "Leah Itsines (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.healthyfood.com/healthy-recipes/beef-and-black-bean-stir-fry/", "publisher": "Healthy Food Guide (AU/NZ)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://ayam.com/recipes/beef-black-bean-stir-fry", "publisher": "AYAM (AU)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef", "essential": true, "observations": ["550 g lean mince (s0)", "500 g sirloin, cut in strips (s1)", "250 g rump steak, diced/strips (s2)"]},
+    {"name": "black beans", "essential": true, "observations": ["125 g canned, drained rinsed (s0)", "2 tbsp canned (s1)", "1/3 cup dried salted, rehydrated 1 hr (s2)"]},
+    {"name": "black bean sauce", "essential": false, "observations": ["5 tbsp (s2)"]},
+    {"name": "red capsicum", "essential": true, "observations": ["1, sliced strips (s0)", "1, deseeded sliced (s1)", "1/2, chunks (s2)"]},
+    {"name": "green capsicum", "essential": false, "observations": ["1, sliced strips (s0)", "1/2, chunks (s2)"]},
+    {"name": "onion", "essential": false, "observations": ["1 brown, diced (s0)", "1/2 white, thin wedges (s2)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves, crushed (s0)", "2 cloves, crushed (s1)", "2 cloves (s2)"]},
+    {"name": "ginger", "essential": true, "observations": ["1 tbsp grated (s0)", "1 tbsp grated fresh (s1)", "1 knob, peeled grated (s2)"]},
+    {"name": "soy sauce", "essential": true, "observations": ["2 tbsp (s0)", "2 tbsp salt-reduced (s1)", "2 tbsp light (s2)"]},
+    {"name": "spring onion", "essential": true, "observations": ["2 stalks, finely sliced (s0)", "2, finely sliced (s1)", "2 sliced + 1 to serve (s2)"]},
+    {"name": "chilli", "essential": false, "observations": ["1 birds eye, diced (s0)", "2 red (s2)"]},
+    {"name": "oyster sauce", "essential": false, "observations": ["1 tbsp (s0)"]},
+    {"name": "sesame oil", "essential": false, "observations": ["2 tsp (s1)", "1/4 tsp black (s2)"]},
+    {"name": "chicken stock", "essential": false, "observations": ["1/2 cup salt-reduced liquid (s1)"]},
+    {"name": "cornflour", "essential": false, "observations": ["1 tbsp + 1 tbsp water slurry (s2)"]},
+    {"name": "sugar", "essential": false, "observations": ["2 tsp (s2)"]},
+    {"name": "rice wine vinegar", "essential": false, "observations": ["1 tbsp (s2)"]},
+    {"name": "coriander", "essential": false, "observations": ["1 bunch, finely chopped (s2)"]},
+    {"name": "olive oil", "essential": false, "observations": ["2 tbsp (s0)", "2 tbsp extra virgin (s2)"]},
+    {"name": "sugar snap peas", "essential": false, "observations": ["150 g, trimmed (s1)"]},
+    {"name": "baby corn", "essential": false, "observations": ["125 g, halved (s1)"]},
+    {"name": "green beans", "essential": false, "observations": ["~2 cups, 4 cm lengths (s1)"]},
+    {"name": "rice", "essential": false, "observations": ["1 cup uncooked, to serve (s0)"]},
+    {"name": "egg noodles", "essential": false, "observations": ["400 g shelf-fresh, to serve (s1)"]}
+  ],
+  "causalSequence": [
+    "slice beef thin (or use mince); optionally marinate 5 min in soy, black bean sauce, sesame oil",
+    "cook rice or noodles per packet; keep warm",
+    "heat oil in wok over high heat",
+    "stir-fry beef 2-3 min (strips) until browned; mince 7-10 min; set aside",
+    "stir-fry onion, garlic, ginger, chilli until fragrant and softening",
+    "add capsicum and any extra veg; stir-fry 2-3 min, keep just tender",
+    "add black beans and sauce liquids (soy, oyster or stock); return beef; toss",
+    "thicken with cornflour slurry, balance with sugar if using",
+    "finish with spring onion, coriander; serve over rice or noodles"
+  ],
+  "techniqueFacts": [
+    "all sources use a wok or large frying pan over high heat",
+    "all sources keep vegetables briefly cooked (2-3 min), just tender",
+    "beef form splits: thin-sliced steak (2 sources) vs mince (1 source)",
+    "black bean form splits: canned black beans (2 sources) vs rehydrated dried salted beans plus black bean sauce (1 source)",
+    "two sources pre-marinate the beef (soy/black bean/sesame, or with aromatics 5 min) before frying",
+    "cornflour slurry as thickener (1 source); stock as sauce base (1 source)",
+    "cook beef separately then return to pan (2 sources)"
+  ],
+  "servingsObserved": [4, 4, 2]
+}

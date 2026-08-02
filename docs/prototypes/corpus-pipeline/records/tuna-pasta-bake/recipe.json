@@ -1,0 +1,32 @@
+{
+  "placeId": "owned:tuna-pasta-bake",
+  "title": "Tuna Pasta Bake",
+  "servings": 4,
+  "readyInMinutes": 45,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": ["pescetarian"],
+  "image": "images/tuna-pasta-bake.webp",
+  "extendedIngredients": [
+    { "name": "penne", "amount": 500, "unit": "g", "original": "500 g penne" },
+    { "name": "tuna in olive oil", "amount": 425, "unit": "g", "original": "425 g tin tuna in olive oil, drained", "searchTerm": "tuna olive oil 425g" },
+    { "name": "chopped tomatoes", "amount": 800, "unit": "g", "original": "2 x 400 g tins chopped tomatoes" },
+    { "name": "tomato paste", "amount": 20, "unit": "g", "original": "1 tbsp (20 g) tomato paste" },
+    { "name": "brown onion", "amount": 1, "unit": "", "original": "1 brown onion, finely diced" },
+    { "name": "garlic", "amount": 2, "unit": "", "original": "2 garlic cloves, crushed", "searchTerm": "garlic" },
+    { "name": "dried Italian herbs", "amount": 1, "unit": "tsp", "original": "1 tsp dried Italian herbs", "searchTerm": "italian herbs" },
+    { "name": "frozen peas", "amount": 1, "unit": "cup", "original": "1 cup frozen peas" },
+    { "name": "shredded mozzarella", "amount": 150, "unit": "g", "original": "150 g shredded mozzarella" },
+    { "name": "fresh basil", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch fresh basil, leaves torn" }
+  ],
+  "steps": [
+    "Set the oven to 190°C (180°C fan-forced). Rub a large baking dish with a little oil.",
+    "Cook the penne in a large pot of salted boiling water for 2 minutes less than the packet says, then drain.",
+    "Meanwhile, heat a splash of olive oil in a large deep frying pan over medium heat. Cook the brown onion for 3-4 minutes until soft, then add the garlic and cook for 1 minute more.",
+    "Stir in the tomato paste, chopped tomatoes and dried Italian herbs. Simmer for 10 minutes until the sauce thickens, then season with salt and pepper.",
+    "Stir the frozen peas through the sauce, then gently fold in the drained tuna, keeping the chunks intact.",
+    "Toss the drained penne through the sauce until well coated, then tip everything into the baking dish.",
+    "Scatter the shredded mozzarella over the top and bake for 20 minutes until golden and bubbling.",
+    "Scatter over the torn basil leaves and serve straight from the dish."
+  ]
+}

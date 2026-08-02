@@ -13,7 +13,7 @@
     {"name": "caster sugar", "amount": 5, "unit": "g", "original": "1 tsp (5 g) caster sugar"},
     {"name": "whole peeled tomatoes", "amount": 400, "unit": "g", "original": "1 x 400 g can whole peeled tomatoes", "searchTerm": "canned whole peeled tomatoes"},
     {"name": "garlic", "amount": 1, "unit": "", "original": "1 garlic clove"},
-    {"name": "fresh mozzarella", "amount": 250, "unit": "g", "original": "250 g fresh mozzarella (2 balls)"},
+    {"name": "vegetarian fresh mozzarella", "amount": 250, "unit": "g", "original": "250 g vegetarian fresh mozzarella (2 balls)", "searchTerm": "fresh mozzarella"},
     {"name": "basil", "amount": 0.5, "unit": "bunch", "original": "1/2 bunch basil, leaves picked"},
     {"name": "semolina", "amount": 30, "unit": "g", "original": "2 tbsp (30 g) semolina, for dusting"}
   ],
