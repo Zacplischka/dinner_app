@@ -1,7 +1,7 @@
 // Zustand store for session state management
 
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 import type { Branch, DeckEntry } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
 import { useOrderStore } from './orderStore';
@@ -204,6 +204,12 @@ export const useSessionStore = create<SessionState>()(
       {
         name: 'dinner-session-storage',
         version: 1,
+        // #304: identity is per-tab. localStorage is origin-wide, so a second
+        // tab of the same browser rehydrated the first tab's Participant and
+        // its auto-rejoin evicted the host. sessionStorage is scoped to the
+        // tab and survives reload (and iOS background-and-return), which is
+        // exactly the case this persistence exists for.
+        storage: createJSONStorage(() => sessionStorage),
         // isConnected is live socket state; rehydrating it as true would lie.
         partialize: ({ isConnected: _isConnected, ...rest }: SessionState): Partial<SessionState> =>
           rest,

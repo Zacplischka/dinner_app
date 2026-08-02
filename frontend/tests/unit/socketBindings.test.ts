@@ -80,6 +80,7 @@ describe('socketBindings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     socketBindings.disconnectSocket();
@@ -121,10 +122,12 @@ describe('socketBindings', () => {
     expect(socketMocks.toast.success).toHaveBeenCalledWith('Reconnected to server');
   });
 
+  // #304: rejoin identity is per-tab (sessionStorage). A token in
+  // localStorage would be shared by every tab and let one hijack another.
   it('rejoins the persisted session after refresh and clears it when rejoin fails', async () => {
     const socket = setupSocket();
     const emitSpy = vi.spyOn(socket, 'emit');
-    localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
     useSessionStore.setState({
       sessionCode: 'AB123',
       currentUserId: participant.participantId,
@@ -164,7 +167,7 @@ describe('socketBindings', () => {
     await vi.waitFor(() => expect(useSessionStore.getState().sessionCode).toBeNull());
     expect(useSessionStore.getState().isConnected).toBe(false);
     expect(useSessionStore.getState().participants).toEqual([]);
-    expect(localStorage.getItem('dinder:rejoin:AB123:Alice')).toBeNull();
+    expect(sessionStorage.getItem('dinder:rejoin:AB123:Alice')).toBeNull();
     expect(socketMocks.toast.error).toHaveBeenCalledWith('Could not rejoin session: expired');
 
     socket.trigger('connect');
@@ -175,7 +178,7 @@ describe('socketBindings', () => {
     const socket = setupSocket();
     const emitSpy = vi.spyOn(socket, 'emit');
     window.history.pushState({}, '', '/session/AB123/order');
-    localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
     useSessionStore.setState({
       sessionCode: 'AB123',
       currentUserId: participant.participantId,
@@ -231,7 +234,7 @@ describe('socketBindings', () => {
   it('leaves orderStore untouched when the reconnect re-fire of order:open fails', async () => {
     const socket = setupSocket();
     window.history.pushState({}, '', '/session/AB123/order');
-    localStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
     useSessionStore.setState({
       sessionCode: 'AB123',
       currentUserId: participant.participantId,
@@ -488,7 +491,7 @@ describe('socketBindings', () => {
     });
     expect(useSessionStore.getState().sessionCode).toBe('AB123');
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Alice');
-    expect(localStorage.getItem('dinder:rejoin:AB123:Alice')).toBe('rejoin-token');
+    expect(sessionStorage.getItem('dinder:rejoin:AB123:Alice')).toBe('rejoin-token');
 
     const emitSpy = vi.spyOn(socket, 'emit');
     await socketBindings.joinSession('AB123', 'Alice');
