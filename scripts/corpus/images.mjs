@@ -21,6 +21,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createInterface } from 'node:readline';
+import { Readable } from 'node:stream';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /** The custom domain the R2 bucket is bound to. r2.dev is rate-limited and dev-only. */
@@ -35,7 +37,8 @@ export const OUTPUT_SIZE = { width: 1200, height: 900 };
 /** 110 KB target, 150 KB hard cap; the pilot's 50 images ran to a 118 KB median. */
 const TARGET_BYTES = 115000;
 
-/** OpenAI batch rates, USD per 1M tokens (standard rate halved for Batch). */
+/** OpenAI Batch rates, USD per 1M tokens — the standard rate halved, which
+ * is what Batch means. The synchronous endpoint bills at double these. */
 const RATE_PER_TOKEN = { input: 2.5 / 1e6, output: 15.0 / 1e6 };
 
 const API = 'https://api.openai.com/v1';
@@ -55,8 +58,13 @@ export function slugOf(record) {
 
 export const imageUrl = (slug) => `${IMAGE_BASE_URL}/${slug}.webp`;
 
-/** The record as it commits: its image is a URL into the bucket. */
-export const withImageUrl = (record) => ({ ...record, image: imageUrl(slugOf(record)) });
+/**
+ * The record as it commits: its image is a URL into the bucket. The field is
+ * `photoUrl` because an Owned Recipe is a Recipe in this repo's own vocabulary
+ * (`shared/types/models.ts`, ADR 0006) — never Spoonacular's wire shape, which
+ * carries the `sourceName`/`sourceUrl` credit fields ADR 0012 forbids here.
+ */
+export const withImageUrl = (record) => ({ ...record, photoUrl: imageUrl(slugOf(record)) });
 
 /** The largest rectangle of `output`'s aspect that fits, centred, in `master`. */
 export function centreCrop(master, output) {
@@ -110,8 +118,11 @@ const pick = (list, seed) => {
 /** The generation prompt for one Owned Recipe. */
 export function imagePrompt(record) {
   const slug = slugOf(record);
+  // Loud here, not silently "A photograph of undefined" across a whole $24
+  // batch: a record still carrying Spoonacular's `title` has no `name`.
+  if (!record.name) throw new Error(`${slug}: record has no name (a Recipe's title field)`);
   return [
-    `A photograph of ${record.title}, plated and ready to eat,`,
+    `A photograph of ${record.name}, plated and ready to eat,`,
     `shot ${pick(ANGLES, `a${slug}`)} on ${pick(SURFACES, `s${slug}`)}`,
     `in ${pick(LIGHTS, `l${slug}`)}.`,
     'Home cooking in a domestic kitchen: no studio gloss, no garnish theatre,',
@@ -136,15 +147,35 @@ export const batchRequests = (records) =>
     },
   }));
 
-/** What a run actually cost, from the usage the batch reports back. */
-export const batchCostUsd = (usages) =>
+/**
+ * What a run actually cost, from the usage the API reports back. `rate` is 1
+ * for the Batch API and 2 for the synchronous endpoint `one` calls, which is
+ * billed at the undiscounted rate — pricing a regeneration at batch rates
+ * reports exactly half of what it bills.
+ */
+export const costUsd = (usages, rate = 1) =>
   usages.reduce(
     (total, u) =>
       total +
-      (u?.input_tokens ?? 0) * RATE_PER_TOKEN.input +
-      (u?.output_tokens ?? 0) * RATE_PER_TOKEN.output,
+      ((u?.input_tokens ?? 0) * RATE_PER_TOKEN.input +
+        (u?.output_tokens ?? 0) * RATE_PER_TOKEN.output) *
+        rate,
     0
   );
+
+/**
+ * What a collect run reports. The denominator is what was *submitted*: a failed
+ * request lands in the batch's error file, never the output one, so counting
+ * output lines prints "1100/1100 images" for a corpus with 60 silent holes.
+ */
+export function collectReport({ submitted, usages, failed }) {
+  const summary =
+    `${usages.length}/${submitted} images, measured cost US$${costUsd(usages).toFixed(2)}` +
+    ` — record it in docs/evidence/owned-recipe-images/README.md`;
+  return failed.length
+    ? `${summary}\n${failed.length} missing — regenerate each with \`one\`: ${failed.join(' ')}`
+    : summary;
+}
 
 // ---------------------------------------------------------------- side effects
 
@@ -209,26 +240,47 @@ async function submit(recordsDir) {
   console.log(`submitted ${records.length} Recipes as batch ${batch.id} (${batch.status})`);
 }
 
+/**
+ * One parsed JSONL object per line of a batch result file, as it arrives. A
+ * batch output carries a whole base64 master per line, so at corpus scale the
+ * file is gigabytes — reading it into one string throws RangeError long before
+ * anything is written (Node caps a string at ~512 MB). Peak memory here is one
+ * image, whatever the batch size.
+ */
+export async function* resultLines(response) {
+  for await (const line of createInterface({ input: Readable.fromWeb(response.body) })) {
+    if (line) yield JSON.parse(line);
+  }
+}
+
+async function* fileLines(fileId) {
+  if (!fileId) return;
+  yield* resultLines(await openai(`/files/${fileId}/content`));
+}
+
 async function collect(batchId, recordsDir, outDir) {
   const batch = await (await openai(`/batches/${batchId}`)).json();
   if (batch.status !== 'completed') throw new Error(`batch ${batchId} is ${batch.status}`);
   const byFile = new Map(readRecords(recordsDir).map((e) => [slugOf(e.record), e]));
-  const lines = (await (await openai(`/files/${batch.output_file_id}/content`)).text())
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
   const usages = [];
-  for (const line of lines) {
+  const failed = [];
+  const fail = (line) => {
+    failed.push(line.custom_id);
+    console.error(`${line.custom_id}: ${JSON.stringify(line.error ?? line.response?.body)}`);
+  };
+  for await (const line of fileLines(batch.output_file_id)) {
     if (line.error || line.response?.status_code !== 200) {
-      console.error(`${line.custom_id}: ${JSON.stringify(line.error ?? line.response?.body)}`);
+      fail(line);
       continue;
     }
     convertAndStamp(line.custom_id, line.response.body.data[0].b64_json, outDir, byFile);
     usages.push(line.response.body.usage);
   }
+  // The requests that never produced an image are in the *error* file. Skip it
+  // and a half-failed batch reads as a finished corpus.
+  for await (const line of fileLines(batch.error_file_id)) fail(line);
   console.log(
-    `${usages.length}/${lines.length} images, measured cost US$${batchCostUsd(usages).toFixed(2)}` +
-      ` — record it in docs/evidence/owned-recipe-images/README.md`
+    collectReport({ submitted: batch.request_counts?.total ?? byFile.size, usages, failed })
   );
 }
 
@@ -246,7 +298,8 @@ async function one(slug, recordsDir, outDir) {
     })
   ).json();
   convertAndStamp(slug, body.data[0].b64_json, outDir, byFile);
-  console.log(`measured cost US$${batchCostUsd([body.usage]).toFixed(4)}`);
+  // Synchronous, so undiscounted: twice what the same image costs in a batch.
+  console.log(`measured cost US$${costUsd([body.usage], 2).toFixed(4)} (standard rates)`);
 }
 
 /** Publishing images is an upload, not a deploy. R2 speaks S3. */

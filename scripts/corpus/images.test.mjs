@@ -4,21 +4,25 @@ import {
   IMAGE_BASE_URL,
   MASTER_SIZE,
   OUTPUT_SIZE,
-  batchCostUsd,
   batchRequests,
   centreCrop,
+  collectReport,
+  costUsd,
   cwebpArgs,
   imagePrompt,
   imageUrl,
+  resultLines,
   slugOf,
   withImageUrl,
 } from './images.mjs';
 
-const record = (slug, title) => ({
+// An Owned Recipe in this repo's own vocabulary (shared/types/models.ts), not
+// Spoonacular's wire shape: `name`/`photoUrl`/`ingredients`, no source credit.
+const record = (slug, name) => ({
   placeId: `owned:${slug}`,
-  title,
+  name,
   servings: 4,
-  extendedIngredients: [],
+  ingredients: [],
 });
 
 test('the frozen slug comes from the placeId, never from the title', () => {
@@ -71,6 +75,9 @@ test('one submission carries a request per Recipe, keyed by frozen slug', () => 
     assert.equal(r.body.n, 1);
   }
   assert.match(requests[0].body.prompt, /Pad Thai/);
+  // A vendor-shaped record fails the whole submission rather than spending a
+  // batch on "A photograph of undefined".
+  assert.throws(() => batchRequests([{ placeId: 'owned:pad-thai', title: 'Pad Thai' }]), /no name/);
 });
 
 test('the prompt is stable per Recipe but varies its look across the corpus', () => {
@@ -83,16 +90,49 @@ test('the prompt is stable per Recipe but varies its look across the corpus', ()
 
 test('the record references its image by URL — no bytes, no repository path', () => {
   const stamped = withImageUrl(record('pad-thai', 'Pad Thai'));
-  assert.equal(stamped.image, `${IMAGE_BASE_URL}/pad-thai.webp`);
-  assert.equal(imageUrl('pad-thai'), stamped.image);
-  assert.equal(stamped.title, 'Pad Thai');
+  // photoUrl, not Spoonacular's `image`: the Deck reads photoUrl, so the wire
+  // name would stamp a field nothing downstream ever looks at.
+  assert.equal(stamped.photoUrl, `${IMAGE_BASE_URL}/pad-thai.webp`);
+  assert.equal(imageUrl('pad-thai'), stamped.photoUrl);
+  assert.equal(stamped.image, undefined);
+  assert.equal(stamped.name, 'Pad Thai');
   assert.equal(stamped.servings, 4);
 });
 
-test('measured cost comes from the batch usage, at batch rates', () => {
+test('measured cost comes from the usage, and the sync endpoint costs double', () => {
   // 1000 Recipes at gpt-image-2 medium 1536x1024: ~1,366 output tokens each
   // at $15.00/1M batch is $20.50, the figure #313 estimated.
-  const usd = batchCostUsd([{ input_tokens: 250, output_tokens: 1366 }]);
-  assert.equal(usd.toFixed(4), '0.0211');
-  assert.equal(batchCostUsd([]), 0);
+  const usage = [{ input_tokens: 250, output_tokens: 1366 }];
+  assert.equal(costUsd(usage).toFixed(4), '0.0211');
+  // `one` calls /v1/images/generations, which is billed undiscounted — pricing
+  // it at batch rates reports half of what lands on the bill.
+  assert.equal(costUsd(usage, 2).toFixed(4), '0.0422');
+  assert.equal(costUsd([]), 0);
+});
+
+test('a partly-failed batch reports against what was submitted, not what came back', () => {
+  const usages = Array.from({ length: 1100 }, () => ({ input_tokens: 250, output_tokens: 1366 }));
+  const report = collectReport({ submitted: 1160, usages, failed: ['pad-thai', 'moussaka'] });
+  // The output file holds only the 1100 that worked; counting its lines would
+  // print 1100/1100 and publish a corpus with 60 holes in it.
+  assert.match(report, /^1100\/1160 images/);
+  assert.match(report, /2 missing — regenerate each with `one`: pad-thai moussaka/);
+  const clean = collectReport({ submitted: 2, usages: [], failed: [] });
+  assert.equal(clean.split('\n').length, 1);
+  assert.match(clean, /^0\/2 images, measured cost US\$0\.00 — record it in docs\//);
+});
+
+test('batch output is parsed line by line as it streams', async () => {
+  // A base64 master per line puts a corpus batch's output well past Node's
+  // ~512 MB string cap, so it can never be read with one .text().
+  const chunks = ['{"custom_id":"pad-thai"}\n{"custom_', 'id":"moussaka"}\n'];
+  const body = new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(new TextEncoder().encode(chunk));
+      controller.close();
+    },
+  });
+  const seen = [];
+  for await (const line of resultLines({ body })) seen.push(line.custom_id);
+  assert.deepEqual(seen, ['pad-thai', 'moussaka']);
 });

@@ -4,6 +4,13 @@ Backs [#330](https://github.com/Zacplischka/dinner_app/issues/330) on spec
 [#326](https://github.com/Zacplischka/dinner_app/issues/326). The pipeline is
 `scripts/corpus/images.mjs`; every constant it carries is justified here.
 
+**Two of #330's criteria are still open, and both need an operator, not a
+commit:** the R2 bucket is not created (below), and no full-corpus cost has been
+measured because the corpus does not exist until
+[#341](https://github.com/Zacplischka/dinner_app/issues/341). The estimate below
+is an estimate; it is not the measurement the ticket asks for, and the Measured
+column stays empty until a real run fills it.
+
 ## The bucket
 
 | | |
@@ -40,11 +47,20 @@ documented 1,366 output tokens for that cell, one image is **US$0.0205**.
 
 | Run | Recipes | Estimate | Measured |
 | --- | --- | --- | --- |
-| Full corpus ([#341](https://github.com/Zacplischka/dinner_app/issues/341)) | ~1,160 | **US$23.77** generation (+US$0.38 of prompt input), **US$33.28** with the 40% regeneration allowance [#313](https://github.com/Zacplischka/dinner_app/issues/313) budgeted for gate rejects — inside its US$30–38 band and under the ticket's ~US$37 | _not yet run — the corpus does not exist yet_ |
+| Full corpus ([#341](https://github.com/Zacplischka/dinner_app/issues/341)) | ~1,160 | **US$23.77** generation (+US$0.38 of prompt input), **US$33.28** with the 40% regeneration allowance [#313](https://github.com/Zacplischka/dinner_app/issues/313) budgeted for gate rejects — inside its US$30–38 band and under the ticket's ~US$37, **provided rejects go back through a batch** | _not yet run — the corpus does not exist yet_ |
+
+**Regenerations belong in a batch.** The US$33.28 line prices the ~464 rejects
+at batch rates, which only holds if they are resubmitted as a second batch.
+`one` calls the synchronous endpoint — no 24-hour window, and no discount:
+**US$0.041 an image**, double the batch figure. Sending all 464 through `one`
+costs US$19.02 rather than US$9.51, putting the run at **US$42.79** — over the
+band, not under it. `one` is for the handful you look at by eye and fix.
 
 `collect` prints the run's real cost from the `usage` the batch reports back
-(`batchCostUsd`), so the measured column is filled from the run itself, not
-re-derived. Record each bucket's figure here as it lands.
+(`costUsd`), so the measured column is filled from the run itself, not
+re-derived; `one` prices its own image at standard rates (`costUsd(usage, 2)`),
+so the two never quietly report the same number for different spends. Record
+each bucket's figure here as it lands.
 
 ## Measurements taken
 
