@@ -213,6 +213,6 @@ jobs:
             Finish with a short summary: the dimension, what you examined, what you filed and
             what you deliberately skipped as a duplicate or below the bar.
           claude_args: |
-            --max-turns 60
+            --max-turns 200
             --mcp-config ${{ runner.temp }}/mcp.json
             --allowedTools "Read,Grep,Glob,WebFetch,mcp__context7,Bash(npm run:*),Bash(npx fallow:*),Bash(git log:*),Bash(git diff:*),Bash(ls:*),Bash(du:*),Bash(find:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue create:*)"
