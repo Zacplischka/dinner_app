@@ -84,6 +84,10 @@ describe('matchProducts', () => {
     // make this pass — it pins it so no future blocklist word evicts the
     // section. The tongs and baskets sharing the answer are marketplace
     // listings with no SAP category.
+    // Provenance: probed from a dev-machine egress with FulfilmentStoreId null
+    // on every answer, so these are some Woolworths store's section strings and
+    // not store-1101 verified (#328 AC3 open — ADR 0010 makes every gate
+    // measured here a this-store gate, and catalogue does move between stores).
     const result = matchProducts(
       [
         product({
@@ -112,14 +116,12 @@ describe('matchProducts', () => {
   });
 
   it('still refuses snack, confectionery and non-food answers (#328)', () => {
-    // Taken from the same probe: crisps and chocolate are named by their
-    // section, while chilled dog food sits under a food section and is only
-    // nameable by its sub-category — which is why the blocklist tests the two
-    // concatenated. A snack sub-category under a food section goes with them
-    // ("VEG / FRESHCUTS / HARD PRODUCE" -> "NUTS AND SNACKS" loses to
-    // "COOKING NEEDS" -> "DRIED FRUIT & NUTS" on "peanuts"); that is the
-    // known cost of keeping "snack" in, and no probed term missed because of
-    // it.
+    // Taken from the same probe, same provenance caveat: dev-machine egress,
+    // FulfilmentStoreId null, not store-1101 verified. Crisps and chocolate are
+    // named by their section, while chilled dog food sits under a food section
+    // and is only nameable by its sub-category — which is why the blocklist
+    // tests the two concatenated. The cost of testing both is pinned in the
+    // next case.
     expect(
       matchProducts(
         [
@@ -145,6 +147,35 @@ describe('matchProducts', () => {
         'sour cream'
       )
     ).toBeNull();
+  });
+
+  it('accepts the one measured cost of "snack": the produce section\'s own nuts (#328)', () => {
+    // Same probe, same caveat (not store-1101 verified). "peanuts" is the one
+    // term where the blocklist costs anything: "NUTS AND SNACKS" under a
+    // produce section is evicted with the crisps. Kept anyway — loosening
+    // "snack" to section level lets that product back in and it outranks the
+    // ingredient, which is AC2 backwards. Stockcodes are synthetic; only the
+    // section strings and the ranking came off the probe.
+    const result = matchProducts(
+      [
+        product({
+          stockcode: 1,
+          name: 'Woolworths Peanuts Roasted & Salted',
+          sapCategory: 'VEG / FRESHCUTS / HARD PRODUCE',
+          sapSubCategory: 'NUTS AND SNACKS',
+        }),
+        product({
+          stockcode: 2,
+          name: 'Woolworths Blanched Peanuts',
+          sapCategory: 'COOKING NEEDS',
+          sapSubCategory: 'DRIED FRUIT & NUTS',
+        }),
+      ],
+      'peanuts'
+    );
+
+    expect(result?.match.stockcode).toBe(2);
+    expect(result?.runnersUp).toEqual([]);
   });
 
   it('prefers the candidate whose name carries the term identity over a higher-ranked stranger', () => {
