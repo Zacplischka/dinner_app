@@ -1,19 +1,22 @@
 // The reading stage's runnable self-check (#329). Offline: search, HTTP and
 // fact extraction are all injected, so nothing here touches the network or
-// spends a token. Covers the two rules the re-authoring standard (ADR 0012)
-// cannot be allowed to lose — robots.txt refusal and the three-publisher floor.
+// spends a token. Covers the rules the re-authoring standard (ADR 0012) cannot
+// be allowed to lose — robots.txt refusal (including across a redirect), the
+// UK/EU skip, and the three-publisher floor.
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { htmlToText, publisher, readDish, robotsAllows } from './read-dish.mjs';
 
-/** A fake web: robots.txt bodies and page HTML keyed by URL. */
-function fakeWeb({ robots = {}, pages = {} } = {}) {
+/** A fake web: robots.txt bodies, page HTML, redirects and dead hosts by URL. */
+function fakeWeb({ robots = {}, pages = {}, redirects = {}, dead = [] } = {}) {
   const requested = [];
   return {
     requested,
     async get(url) {
       requested.push(url);
+      if (dead.includes(url)) throw new Error(`ECONNRESET ${url}`);
+      if (redirects[url]) return { status: 301, location: redirects[url], body: '' };
       const { origin, pathname } = new URL(url);
       if (pathname === '/robots.txt') {
         const body = robots[origin];
@@ -78,7 +81,6 @@ test('a dish name yields a Fact Record over three independent publishers', async
   const urls = ['https://a.com/dish', 'https://b.com/dish', 'https://c.com/dish'];
   const web = fakeWeb({ pages: Object.fromEntries(urls.map((u) => [u, page('Beef stew')])) });
   const { record, captures } = await readDish('Beef stew', {
-    cell: { mealType: 'main course', cuisine: 'modern australian', diets: [] },
     search: async () => urls.map((url) => ({ url })),
     get: web.get,
     extract,
@@ -151,6 +153,119 @@ test('an unreachable robots.txt is a skip, not a licence to fetch', async () => 
     { publisher: 'flaky.com', url: 'https://flaky.com/dish', reason: 'robots-unreachable' },
   ]);
   assert.ok(!web.requested.includes('https://flaky.com/dish'));
+});
+
+test("a redirect is cleared through the destination's own robots.txt", async () => {
+  const web = fakeWeb({
+    robots: { 'https://real.com': 'User-agent: *\nDisallow: /' },
+    redirects: { 'https://mirror.com/dish': 'https://real.com/dish' },
+    pages: {
+      'https://real.com/dish': page('SECRET'),
+      'https://a.com/dish': page('Beef stew'),
+      'https://b.com/dish': page('Beef stew'),
+      'https://c.com/dish': page('Beef stew'),
+    },
+  });
+  const { record, captures } = await readDish('Beef stew', {
+    search: async () => [
+      { url: 'https://mirror.com/dish' },
+      { url: 'https://a.com/dish' },
+      { url: 'https://b.com/dish' },
+      { url: 'https://c.com/dish' },
+    ],
+    get: web.get,
+    extract,
+  });
+
+  // The refusal belongs to the host that answers, not the one that was asked.
+  assert.deepEqual(record.skipped, [
+    { publisher: 'real.com', url: 'https://real.com/dish', reason: 'robots-disallowed' },
+  ]);
+  assert.ok(web.requested.includes('https://real.com/robots.txt'));
+  assert.ok(!web.requested.includes('https://real.com/dish'));
+  assert.ok(!captures.some((c) => c.text.includes('SECRET')));
+});
+
+test('a redirect counts as its destination publisher, once that robots.txt allows', async () => {
+  const web = fakeWeb({
+    redirects: { 'https://old.com/dish': 'https://new.com/dish' },
+    pages: {
+      'https://new.com/dish': page('Beef stew'),
+      'https://b.com/dish': page('Beef stew'),
+      'https://c.com/dish': page('Beef stew'),
+    },
+  });
+  const { record } = await readDish('Beef stew', {
+    search: async () => [
+      { url: 'https://old.com/dish' },
+      { url: 'https://b.com/dish' },
+      { url: 'https://c.com/dish' },
+    ],
+    get: web.get,
+    extract,
+  });
+
+  assert.equal(record.sources[0].url, 'https://new.com/dish');
+  assert.equal(record.sources[0].publisher, 'new.com');
+  assert.ok(web.requested.includes('https://new.com/robots.txt'));
+});
+
+test('a UK or EU publisher is skipped unread — the database right Australia lacks', async () => {
+  const web = fakeWeb({
+    pages: {
+      'https://taste.co.uk/dish': page('Beef stew'),
+      'https://a.com/dish': page('Beef stew'),
+      'https://b.com/dish': page('Beef stew'),
+      'https://c.com/dish': page('Beef stew'),
+    },
+  });
+  const { record } = await readDish('Beef stew', {
+    search: async () => [
+      { url: 'https://taste.co.uk/dish' },
+      { url: 'https://a.com/dish' },
+      { url: 'https://b.com/dish' },
+      { url: 'https://c.com/dish' },
+    ],
+    get: web.get,
+    extract,
+  });
+
+  assert.deepEqual(record.skipped, [
+    { publisher: 'taste.co.uk', url: 'https://taste.co.uk/dish', reason: 'region-excluded' },
+  ]);
+  // Not even its robots.txt: the region rule settles it before any request.
+  assert.ok(!web.requested.some((u) => u.includes('taste.co.uk')));
+});
+
+test('a domain that throws is a skip, not the end of the dish', async () => {
+  const web = fakeWeb({
+    dead: ['https://dns-fail.com/robots.txt', 'https://reset.com/dish'],
+    pages: {
+      'https://reset.com/dish': page('Beef stew'),
+      'https://a.com/dish': page('Beef stew'),
+      'https://b.com/dish': page('Beef stew'),
+      'https://c.com/dish': page('Beef stew'),
+    },
+  });
+  const { record } = await readDish('Beef stew', {
+    search: async () => [
+      { url: 'https://dns-fail.com/dish' },
+      { url: 'https://reset.com/dish' },
+      { url: 'https://a.com/dish' },
+      { url: 'https://b.com/dish' },
+      { url: 'https://c.com/dish' },
+    ],
+    get: web.get,
+    extract,
+  });
+
+  assert.deepEqual(record.skipped, [
+    { publisher: 'dns-fail.com', url: 'https://dns-fail.com/dish', reason: 'robots-unreachable' },
+    { publisher: 'reset.com', url: 'https://reset.com/dish', reason: 'fetch-error' },
+  ]);
+  assert.equal(record.sources.length, 3);
+  // An unread robots.txt is never a licence to fetch the page behind it.
+  assert.ok(!web.requested.includes('https://dns-fail.com/dish'));
 });
 
 test('fewer than three independent publishers emits no Fact Record', async () => {

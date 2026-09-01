@@ -8,10 +8,18 @@
 //     link, an index, a category page or a sitemap. `search` is the sole way a
 //     URL can enter the run.
 //   - robots.txt is honoured absolutely, including disallows aimed at other AI
-//     agents, and every refusal is recorded on the record.
+//     agents, and every refusal is recorded on the record. A redirect is not
+//     followed blind: it re-enters the candidate loop, so the host that finally
+//     answers is one whose own robots.txt we read first.
+//   - UK/EU publishers are skipped outright — the EU database right has no
+//     Australian equivalent, so their compilations carry a claim we cannot
+//     answer. The ADR words this as "avoided"; here it is a hard skip.
 //   - at least three independent publishers, or no Fact Record at all.
 //   - raw source text is returned in memory for the next stage's overlap check
 //     and is never written anywhere, so it cannot outlive the run.
+//
+// A candidate that simply misbehaves — a dead domain, a reset, a timeout, a
+// redirect loop — is skipped and recorded, never allowed to end the dish.
 //
 // Pure Node, no build step. `search`, `get` and `extract` are injectable, which
 // is what lets read-dish.test.mjs assert all of the above offline.
@@ -108,6 +116,18 @@ export function publisher(url) {
   return labels.slice(threeParts ? -3 : -2).join('.');
 }
 
+// ADR 0012 avoids UK/EU sources: the EU/EEA database right protects a
+// compilation Australia would leave free, so reading one buys a claim we have
+// no answer to. The ccTLD is the cheap tell — the search prompt asks for AU/US
+// publishers on top of it.
+// ponytail: a UK/EU publisher on a .com slips through. Add a host list if one
+// ever does; a registry lookup is not worth it for a regional filter.
+const DATABASE_RIGHT_TLD =
+  /\.(uk|ie|de|fr|es|it|nl|be|lu|pt|at|dk|se|fi|no|is|pl|cz|sk|hu|ro|bg|gr|hr|si|ee|lv|lt|cy|mt|eu)$/;
+
+/** True when the URL's ccTLD puts its publisher under the EU/EEA database right. */
+const databaseRightRegion = (url) => DATABASE_RIGHT_TLD.test(new URL(url).hostname.toLowerCase());
+
 const ENTITIES = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", '#x27': "'" };
 
 /** HTML to plain text — enough for the overlap check's word shingles. */
@@ -143,7 +163,6 @@ export const slugify = (dish) =>
  */
 export async function readDish(dish, options = {}) {
   const {
-    cell = {},
     minPublishers = MIN_PUBLISHERS,
     search = searchByDishName,
     get = httpGet,
@@ -156,34 +175,57 @@ export async function readDish(dish, options = {}) {
   const robots = new Map();
   const seen = new Set();
 
-  for (const { url } of candidates) {
+  for (const candidate of candidates) {
     if (captures.length >= minPublishers) break;
-    const name = publisher(url);
-    if (seen.has(name)) continue;
+    // A redirect re-enters this loop at its target rather than being followed,
+    // so the host that finally answers has cleared its own robots.txt and
+    // counts as its own publisher.
+    let url = candidate.url;
+    for (let hops = 0; ; hops++) {
+      const name = publisher(url);
+      if (seen.has(name)) break;
+      if (hops > MAX_REDIRECTS) {
+        skipped.push({ publisher: name, url, reason: 'redirect-loop' });
+        break;
+      }
+      if (databaseRightRegion(url)) {
+        seen.add(name);
+        skipped.push({ publisher: name, url, reason: 'region-excluded' });
+        break;
+      }
 
-    const { origin, pathname, search: query } = new URL(url);
-    if (!robots.has(origin)) robots.set(origin, await get(`${origin}/robots.txt`));
-    const robotsResponse = robots.get(origin);
-    // An unavailable robots.txt (404) leaves us unrestricted; an unreachable
-    // one (5xx) does not — we cannot claim to have honoured what we never read.
-    if (robotsResponse.status >= 500) {
-      seen.add(name);
-      skipped.push({ publisher: name, url, reason: 'robots-unreachable' });
-      continue;
-    }
-    if (robotsResponse.status < 400 && !robotsAllows(robotsResponse.body, pathname + query)) {
-      seen.add(name);
-      skipped.push({ publisher: name, url, reason: 'robots-disallowed' });
-      continue;
-    }
+      const { origin, pathname, search: query } = new URL(url);
+      if (!robots.has(origin)) robots.set(origin, await tryGet(get, `${origin}/robots.txt`));
+      const robotsResponse = robots.get(origin);
+      // An unavailable robots.txt (404) leaves us unrestricted; one we could not
+      // read (5xx, or a throw — DNS, reset, timeout) does not: we cannot claim to
+      // have honoured what we never read.
+      if (!robotsResponse || robotsResponse.status >= 500) {
+        seen.add(name);
+        skipped.push({ publisher: name, url, reason: 'robots-unreachable' });
+        break;
+      }
+      if (robotsResponse.status < 400 && !robotsAllows(robotsResponse.body, pathname + query)) {
+        seen.add(name);
+        skipped.push({ publisher: name, url, reason: 'robots-disallowed' });
+        break;
+      }
 
-    const page = await get(url);
-    if (page.status >= 400) {
-      skipped.push({ publisher: name, url, reason: `fetch-${page.status}` });
-      continue;
+      const page = await tryGet(get, url);
+      if (page?.location && page.status >= 300 && page.status < 400) {
+        url = new URL(page.location, url).href;
+        continue;
+      }
+      // A redirect we cannot follow is as unusable as a 404 — and is never a page.
+      if (!page || page.status >= 300) {
+        const reason = page ? `fetch-${page.status}` : 'fetch-error';
+        skipped.push({ publisher: name, url, reason });
+        break;
+      }
+      seen.add(name);
+      captures.push({ url, publisher: name, text: htmlToText(page.body) });
+      break;
     }
-    seen.add(name);
-    captures.push({ url, publisher: name, text: htmlToText(page.body) });
   }
 
   if (captures.length < minPublishers) {
@@ -198,7 +240,6 @@ export async function readDish(dish, options = {}) {
     record: {
       slug: slugify(dish),
       dish,
-      cell,
       sources: captures.map(({ url, publisher: name }) => ({
         url,
         publisher: name,
@@ -212,13 +253,34 @@ export async function readDish(dish, options = {}) {
   };
 }
 
-/** Default fetch: one request, our own user agent, no link following. */
+const MAX_REDIRECTS = 5;
+
+/**
+ * Default fetch: one request, our own user agent, and no automatic redirect —
+ * following one would fetch a host whose robots.txt was never read, then file
+ * the capture under the pre-redirect publisher with `robots_ok: true`. The
+ * caller re-enters its candidate loop on `location` instead.
+ */
 async function httpGet(url) {
   const response = await fetch(url, {
     headers: { 'user-agent': USER_AGENT },
+    redirect: 'manual',
     signal: AbortSignal.timeout(30_000),
   });
-  return { status: response.status, body: response.ok ? await response.text() : '' };
+  return {
+    status: response.status,
+    location: response.headers.get('location'),
+    body: response.ok ? await response.text() : '',
+  };
+}
+
+/** A throw — DNS, reset, the timeout — is one spent candidate, not a dead dish. */
+async function tryGet(get, url) {
+  try {
+    return await get(url);
+  } catch {
+    return null;
+  }
 }
 
 const MODEL = 'claude-opus-5';
@@ -239,8 +301,8 @@ async function searchByDishName(dish, client = new Anthropic()) {
         content:
           `Search the web for published recipes for the dish "${dish}". Search by the dish ` +
           `name alone. Do not open, list or search within any single site's index, category ` +
-          `or sitemap pages. Prefer Australian and United States publishers. Return nothing ` +
-          `but the search results.`,
+          `or sitemap pages. Prefer Australian and United States publishers — UK and EU ` +
+          `results are discarded unread. Return nothing but the search results.`,
       },
     ],
   });
@@ -297,21 +359,31 @@ with every source closed, so anything you copy verbatim becomes a defect there.`
 
 /** Default extraction: the facts, from the captured text, in one call. */
 async function extractFacts(dish, captures, client = new Anthropic()) {
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 16000,
-    thinking: { type: 'adaptive' },
-    system: EXTRACTION_RULES,
-    output_config: { format: { type: 'json_schema', schema: FACT_SCHEMA } },
-    messages: [
-      {
-        role: 'user',
-        content:
-          `Dish: ${dish}\n\n` +
-          captures.map((c, i) => `=== s${i} ${c.url} ===\n${c.text}`).join('\n\n'),
-      },
-    ],
-  });
+  // Streamed: three full pages in, and thinking shares the output budget, so a
+  // non-streaming call is the one most likely to trip the request timeout.
+  const response = await client.messages
+    .stream({
+      model: MODEL,
+      max_tokens: 64000,
+      thinking: { type: 'adaptive' },
+      system: EXTRACTION_RULES,
+      output_config: { format: { type: 'json_schema', schema: FACT_SCHEMA } },
+      messages: [
+        {
+          role: 'user',
+          content:
+            `Dish: ${dish}\n\n` +
+            captures.map((c, i) => `=== s${i} ${c.url} ===\n${c.text}`).join('\n\n'),
+        },
+      ],
+    })
+    .finalMessage();
+
+  // A truncation (`max_tokens`) or a refusal arrives as a 200 with a half-written
+  // body. Parsing it blind blames JSON for reads that are already spent.
+  if (response.stop_reason !== 'end_turn') {
+    throw new Error(`EXTRACTION_INCOMPLETE: ${dish} stopped on ${response.stop_reason}`);
+  }
 
   const text = response.content
     .filter((block) => block.type === 'text')
@@ -320,33 +392,23 @@ async function extractFacts(dish, captures, client = new Anthropic()) {
   return JSON.parse(text);
 }
 
-// CLI: read-dish.mjs "<dish>" [--meal X] [--cuisine Y] [--diets a,b] [--out path]
+// CLI: read-dish.mjs "<dish>" [--out path]
 // Without --out the Fact Record goes to stdout, so a run writes nothing at all.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [dish, ...rest] = process.argv.slice(2);
   if (!dish) {
-    console.error(
-      'usage: read-dish.mjs "<dish>" [--meal X] [--cuisine Y] [--diets a,b] [--out path]'
-    );
+    console.error('usage: read-dish.mjs "<dish>" [--out path]');
     process.exit(2);
   }
-  const flags = {};
-  for (let i = 0; i < rest.length; i += 2) flags[rest[i].replace(/^--/, '')] = rest[i + 1];
+  const flag = rest.indexOf('--out');
+  const out = flag === -1 ? undefined : rest[flag + 1];
 
-  const { record } = await readDish(dish, {
-    cell: {
-      mealType: flags.meal ?? 'main course',
-      cuisine: flags.cuisine,
-      diets: flags.diets ? flags.diets.split(',') : [],
-    },
-  });
+  const { record } = await readDish(dish);
   const json = `${JSON.stringify(record, null, 2)}\n`;
-  if (flags.out) {
-    mkdirSync(dirname(flags.out), { recursive: true });
-    writeFileSync(flags.out, json);
-    console.error(
-      `${flags.out}: ${record.sources.length} sources, ${record.skipped.length} skipped`
-    );
+  if (out) {
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, json);
+    console.error(`${out}: ${record.sources.length} sources, ${record.skipped.length} skipped`);
   } else {
     process.stdout.write(json);
   }

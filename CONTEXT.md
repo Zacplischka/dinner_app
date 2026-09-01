@@ -243,7 +243,7 @@ The versioned, human-reviewed corpus of Owned Recipes committed to the repositor
 _Avoid_: corpus — the pipeline's word for the authored collection, not the runtime store — database, library
 
 **Fact Record**:
-The structured artefact the corpus pipeline's reading stage emits — a dish's identity, canonical ingredient set, per-source quantity ranges, causal step sequence, technique facts, and source URLs — and the only artefact of reading that may persist. Authoring writes from the Fact Record with every source closed; that separation is the re-authoring standard's spine, not a pipeline convenience.
+The structured artefact the corpus pipeline's reading stage emits — a dish's identity, canonical ingredient set, per-source quantity ranges and observed servings, causal step sequence, technique facts, and source URLs — and the only artefact of reading that may persist. It also records the candidates the stage refused to read and why (a robots.txt disallow, a robots.txt it could not read, a UK/EU publisher), so the audit trail carries the refusals as well as the reads. It holds no coverage plan: which cuisine or diet cell a dish was read for belongs to the stage that plans the corpus, not to the reading of the dish. Authoring writes from the Fact Record with every source closed; that separation is the re-authoring standard's spine, not a pipeline convenience.
 _Avoid_: notes, extract, research summary
 
 **Nearest Craving**:
