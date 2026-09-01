@@ -37,6 +37,7 @@
   "author": "Zac Plischka",
   "license": "MIT",
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "@vitest/coverage-v8": "^1.0.4",
     "fallow": "^3.3.0"
   }
