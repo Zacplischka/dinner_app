@@ -7,7 +7,9 @@ name: Optimisation Audit
 
 on:
   schedule:
-    # Sundays 19:17 UTC = Mondays ~05:17 AEST. Off-peak minute on purpose.
+    # Sundays 19:17 UTC — Monday early morning in Sydney (05:17 AEST / 06:17 AEDT).
+    # cron is always UTC, so the local time shifts by an hour across daylight saving.
+    # Off-peak minute on purpose: :00 and :30 are where every scheduled job in the world piles up.
     - cron: '17 19 * * 0'
   workflow_dispatch:
     inputs:
@@ -43,6 +45,16 @@ jobs:
 
       # Deterministic evidence first, so Claude reasons over facts rather than vibes.
       # fallow exits non-zero whenever it finds anything, which is the normal case.
+      # Idempotent. The label already exists, but provisioning it here means the workflow
+      # depends on nothing that isn't in this file — `gh issue create` hard-fails on a
+      # missing label, which would silently produce zero issues every week.
+      - name: Ensure the automated-audit label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create automated-audit --force \
+            --color BFD4F2 --description "Filed by the weekly optimisation audit"
+
       - name: Run fallow
         run: npm run analyze -- --format markdown --output-file fallow-report.md || true
 
@@ -91,12 +103,15 @@ jobs:
 
             ## Orient first
 
-            Read `CLAUDE.md` (the repo map), `CONTEXT.md` (the domain language — issue titles
-            and bodies MUST use this vocabulary, and each glossary entry lists the words to
-            avoid), and the `CLAUDE.md` of whichever subtree a finding lives in. If a finding
-            touches a decision in `docs/adr/`, read that ADR. Per `docs/agents/domain.md`, a
-            finding that contradicts an ADR must say so explicitly in the issue body rather
-            than quietly proposing it.
+            Read `AGENTS.md` (how to reach the services, and the issue-tracker and label
+            conventions) and `CONTEXT.md` (the domain language — issue titles and bodies MUST
+            use this vocabulary, and each glossary entry lists the words to avoid). A
+            `CLAUDE.md` hierarchy is being introduced as the per-subtree repo map; if a root
+            or subtree `CLAUDE.md` is present in the checkout, read the ones covering your
+            finding, and carry on without them if they are not. If a finding touches a
+            decision in `docs/adr/`, read that ADR. Per `docs/agents/domain.md`, a finding
+            that contradicts an ADR must say so explicitly in the issue body rather than
+            quietly proposing it.
 
             `fallow-report.md` in the repo root is a fresh whole-repo static analysis. Read it
             regardless of dimension — its complexity hotspots are useful context for all four.
