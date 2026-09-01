@@ -6,7 +6,7 @@
 // the split ADR 0011 draws: recipes ship with the deploy, images are an upload.
 //
 // Model, size, aspect, file-size budget and hosting are all settled in
-// docs/evidence/owned-recipe-images/cost.md, which carries the measurement
+// docs/evidence/owned-recipe-images/README.md, which carries the measurement
 // method and the sources behind every number here.
 //
 // Operator vehicle, not application code: needs `cwebp` (libwebp) and `aws`
@@ -20,7 +20,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /** The custom domain the R2 bucket is bound to. r2.dev is rate-limited and dev-only. */
@@ -189,8 +189,8 @@ function convertAndStamp(slug, pngBase64, outDir, byFile) {
 async function submit(recordsDir) {
   const records = readRecords(recordsDir).map(({ record }) => record);
   const jsonl = batchRequests(records)
-    .map((r) => JSON.stringify(r))
-    .join('\n');
+    .map((r) => `${JSON.stringify(r)}\n`)
+    .join('');
   const form = new FormData();
   form.append('purpose', 'batch');
   form.append('file', new Blob([jsonl], { type: 'application/jsonl' }), 'images.jsonl');
@@ -228,7 +228,7 @@ async function collect(batchId, recordsDir, outDir) {
   }
   console.log(
     `${usages.length}/${lines.length} images, measured cost US$${batchCostUsd(usages).toFixed(2)}` +
-      ` — record it in docs/evidence/owned-recipe-images/cost.md`
+      ` — record it in docs/evidence/owned-recipe-images/README.md`
   );
 }
 
