@@ -84,15 +84,23 @@ jobs:
           echo "dimension=$D" >> "$GITHUB_OUTPUT"
           echo "::notice::Optimisation audit dimension: $D"
 
+      # context7 serves current library documentation, so the `libraries` pass reads real
+      # docs instead of trusting training data. Wired as a plain MCP server rather than via a
+      # plugin: it is not published in the marketplace at anthropics/claude-code, and a server
+      # definition is all the plugin would have contributed. Anonymous access works; add a
+      # CONTEXT7_API_KEY only if runs start getting rate-limited.
+      - name: Configure the context7 MCP server
+        run: |
+          cat > "$RUNNER_TEMP/mcp.json" <<'JSON'
+          { "mcpServers": { "context7": { "type": "http", "url": "https://mcp.context7.com/mcp" } } }
+          JSON
+          python3 -c "import json,os; json.load(open(os.environ['RUNNER_TEMP'] + '/mcp.json'))"
+
       - uses: anthropics/claude-code-action@v1
         env:
           GH_TOKEN: ${{ github.token }} # guarantees `gh` inside Bash is authenticated
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: |
-            https://github.com/anthropics/claude-code.git
-          plugins: |
-            context7@claude-code-plugins
           prompt: |
             You are running an unattended weekly optimisation audit on the Dinder repo.
             Nobody is watching this run. Your only output is GitHub issues.
@@ -206,4 +214,5 @@ jobs:
             what you deliberately skipped as a duplicate or below the bar.
           claude_args: |
             --max-turns 60
+            --mcp-config ${{ runner.temp }}/mcp.json
             --allowedTools "Read,Grep,Glob,WebFetch,mcp__context7,Bash(npm run:*),Bash(npx fallow:*),Bash(git log:*),Bash(git diff:*),Bash(ls:*),Bash(du:*),Bash(find:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue create:*)"
