@@ -1,0 +1,209 @@
+name: Optimisation Audit
+
+# Weekly whole-repo optimisation pass. Spawns an ephemeral Claude on a runner, hands it a
+# deterministic fallow report plus one focused dimension, and lets it file findings as issues.
+# Read-only by design: `contents: read` means the token cannot push, so this can never
+# change code or open a PR — the output is issues, nothing else.
+
+on:
+  schedule:
+    # Sundays 19:17 UTC — Monday early morning in Sydney (05:17 AEST / 06:17 AEDT).
+    # cron is always UTC, so the local time shifts by an hour across daylight saving.
+    # Off-peak minute on purpose: :00 and :30 are where every scheduled job in the world piles up.
+    - cron: '17 19 * * 0'
+  workflow_dispatch:
+    inputs:
+      dimension:
+        description: "Which pass to run. 'auto' follows the weekly rotation."
+        required: false
+        type: choice
+        default: auto
+        options: [auto, dead-code, libraries, runtime, bundle]
+
+concurrency: optimisation-audit
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # read-only: the audit must never push code
+      issues: write # the whole point — file findings
+      id-token: write # required by claude-code-action's default auth
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fallow's hotspot analysis reads git log; a shallow clone warns and degrades
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      # Deterministic evidence first, so Claude reasons over facts rather than vibes.
+      # fallow exits non-zero whenever it finds anything, which is the normal case.
+      # Idempotent. The label already exists, but provisioning it here means the workflow
+      # depends on nothing that isn't in this file — `gh issue create` hard-fails on a
+      # missing label, which would silently produce zero issues every week.
+      - name: Ensure the automated-audit label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create automated-audit --force \
+            --color BFD4F2 --description "Filed by the weekly optimisation audit"
+
+      - name: Run fallow
+        run: npm run analyze -- --format markdown --output-file fallow-report.md || true
+
+      # Four dimensions, one per week, so each pass is deep instead of a shallow sweep.
+      # Full coverage every 4 weeks. No persisted state needed — the ISO week number is the state.
+      - name: Pick this week's dimension
+        id: pick
+        env:
+          DIMENSION_INPUT: ${{ inputs.dimension }} # via env, never interpolated into the script
+        run: |
+          set -euo pipefail
+          D="${DIMENSION_INPUT:-auto}"
+          # "auto" (the dispatch default) and "" (every scheduled run) both mean: rotate.
+          if [ "$D" = auto ] || [ -z "$D" ]; then
+            W=$((10#$(date -u +%V)))   # 10# strips the leading zero; "08" is not octal
+            case $((W % 4)) in
+              0) D=dead-code ;;
+              1) D=libraries ;;
+              2) D=runtime ;;
+              3) D=bundle ;;
+            esac
+          fi
+          case "$D" in
+            dead-code|libraries|runtime|bundle) ;;
+            *) echo "::error::unknown dimension '$D'"; exit 1 ;;
+          esac
+          echo "dimension=$D" >> "$GITHUB_OUTPUT"
+          echo "::notice::Optimisation audit dimension: $D"
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }} # guarantees `gh` inside Bash is authenticated
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: |
+            https://github.com/anthropics/claude-code.git
+          plugins: |
+            context7@claude-code-plugins
+          prompt: |
+            You are running an unattended weekly optimisation audit on the Dinder repo.
+            Nobody is watching this run. Your only output is GitHub issues.
+
+            This week's dimension is: ${{ steps.pick.outputs.dimension }}
+            Audit ONLY that dimension. Ignore findings that belong to the other three —
+            they get their own week.
+
+            ## Orient first
+
+            Read `AGENTS.md` (how to reach the services, and the issue-tracker and label
+            conventions) and `CONTEXT.md` (the domain language — issue titles and bodies MUST
+            use this vocabulary, and each glossary entry lists the words to avoid). A
+            `CLAUDE.md` hierarchy is being introduced as the per-subtree repo map; if a root
+            or subtree `CLAUDE.md` is present in the checkout, read the ones covering your
+            finding, and carry on without them if they are not. If a finding touches a
+            decision in `docs/adr/`, read that ADR. Per `docs/agents/domain.md`, a finding
+            that contradicts an ADR must say so explicitly in the issue body rather than
+            quietly proposing it.
+
+            `fallow-report.md` in the repo root is a fresh whole-repo static analysis. Read it
+            regardless of dimension — its complexity hotspots are useful context for all four.
+
+            ## What each dimension means
+
+            - **dead-code** — Lead with `fallow-report.md`: unused files, unused exports and
+              types, unused dependencies, duplication, circular dependencies, complexity
+              hotspots. fallow reports candidates, not verdicts. Before proposing ANY deletion,
+              verify it with `npx fallow dead-code --trace <file>:<export>` (or
+              `--trace-dependency <name>`) and put the trace output in the issue. Dynamic
+              imports, string-keyed lookups and test-only helpers all read as "unused" and are
+              the classic false positives here.
+
+            - **libraries** — This is the research pass. Use the context7 tools to pull the
+              CURRENT documentation for the pinned versions actually installed: express 4.21,
+              socket.io 4.8, ioredis 5.8, react 18.3, react-router-dom 6, zustand 4.5,
+              vite 5.4, tailwindcss 3.4, @supabase/supabase-js 2.86, zod 3.25, pino 10.
+              Do not answer from memory — your training data lags these releases. Look for:
+              deprecated APIs this codebase still calls; patterns that upstream has since
+              superseded; and shipped-but-unused features that would let us delete code here.
+              Every finding cites the specific doc it came from, with a URL.
+
+            - **runtime** — Redis access patterns in `backend/src/store/sessionStore.ts` and
+              `backend/src/services/SessionService.ts`; sequential round-trips that should be a
+              pipeline or a MULTI; consensus paths (`SINTER` over per-participant sets); socket
+              handler hot paths in `backend/src/websocket/`; and React re-render churn in the
+              large pages (`frontend/src/pages/ResultsPage.tsx`, `SelectionPage.tsx`,
+              `GroupOrderPage.tsx`). Redis is the app — a wasted round-trip per participant per
+              swipe is the shape of finding that matters.
+
+            - **bundle** — Run `npm run build` first (it needs no secrets), then measure the real
+              output with `du -sh` / `ls -la` over `frontend/dist/`. Look for code-splitting gaps
+              on a mobile-first critical path, heavy imports pulled into the initial chunk, and
+              unused Tailwind. Cite actual byte sizes, never estimates.
+
+            ## Before you file anything: deduplicate
+
+            This runs every week. Filing a duplicate is worse than filing nothing.
+
+                gh issue list --state all --label automated-audit --limit 200 \
+                  --json number,title,state,body
+
+            Also `gh search issues` on the symptom and the file path, since a human may have
+            filed the same thing by hand. Skip anything already filed — **open or closed**.
+            A finding that was closed as `wontfix` or `duplicate` is a settled decision: do not
+            raise it again.
+
+            ## The bar for filing
+
+            A finding is worth an issue only if you can give all of:
+              1. a specific file and line,
+              2. a concrete before/after — what the code does now, what it should do,
+              3. evidence: a fallow trace, a documentation URL, or a measured number,
+              4. why it is worth doing, and what could break.
+
+            "Consider refactoring X" is not a finding. Neither is a style preference.
+
+            **File at most 3 issues. Fewer is better. Zero is a perfectly good outcome** — a
+            well-maintained repo often has nothing new worth raising in a given week, and an
+            empty run is a real result. Do not pad the run to look productive. If you find
+            nothing, say so in your final message and file nothing.
+
+            ## How to file
+
+            Use a quoted heredoc for the body, per `docs/agents/issue-tracker.md`:
+
+                gh issue create \
+                  --title "..." \
+                  --label "automated-audit,needs-triage" \
+                  --body "$(cat <<'EOF'
+                ## Finding
+                ## Evidence
+                ## Proposed change
+                ## Risk / blast radius
+                ---
+                Filed by the weekly optimisation audit (dimension: ${{ steps.pick.outputs.dimension }})
+                Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                EOF
+                )"
+
+            Always both labels. `needs-triage` is correct and `ready-for-agent` is not — a
+            maintainer evaluates these, the audit does not get to greenlight its own work.
+
+            ## Out of scope
+
+            Do not edit files, do not create branches, do not open pull requests, and do not
+            comment on issues you did not just create. You have no write access to the
+            repository contents; the only mutation you may make is creating these issues.
+
+            Finish with a short summary: the dimension, what you examined, what you filed and
+            what you deliberately skipped as a duplicate or below the bar.
+          claude_args: |
+            --max-turns 60
+            --allowedTools "Read,Grep,Glob,WebFetch,mcp__context7,Bash(npm run:*),Bash(npx fallow:*),Bash(git log:*),Bash(git diff:*),Bash(ls:*),Bash(du:*),Bash(find:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue create:*)"
