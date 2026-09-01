@@ -19,27 +19,10 @@ export interface WoolworthsProduct extends ProductCandidate {
 // Shop sections that never hold a cooking ingredient, matched against the SAP
 // taxonomy only — never the pies category paths, where "Chips" appears inside
 // legitimate ingredient categories like taco shells (#245's store-1101
-// tuning), and never product names. BISCUITS is in per #245: it beats real
-// sour cream at store 1101. A non-food section can hide under a food aisle
-// ("MEAT CONVENIENCE" → "PET NEEDS - FRESH" is chilled dog food), so these
-// are tested against aisle and shelf together.
+// tuning), and never product names. SNACKS/BISCUITS are in per #245: those
+// sections beat real sour cream at store 1101.
 const BLOCKED_SECTIONS =
-  /biscuit|confection|chocolate|soft drink|cordial|energy drink|\bpet\b|dog|cat food|hair|skin|beauty|kitchen|cleaning|laundry|bathroom|baby care|toiletr|manchester/i;
-
-// Snack food is the one section named at aisle level only (#328). "Snack" has
-// to stay — the SNACKS aisle beat real sour cream at store 1101 (#245) — but
-// it also labels shelves *inside* ingredient aisles ("VEG / FRESHCUTS / HARD
-// PRODUCE" → "NUTS AND SNACKS"), and a shelf label must not evict the aisle
-// it sits in: that is how a real ingredient falls to Unmatched with no
-// product behind it.
-const BLOCKED_AISLES = /snack/i;
-
-function inBlockedSection(product: WoolworthsProduct): boolean {
-  return (
-    BLOCKED_AISLES.test(product.sapCategory ?? '') ||
-    BLOCKED_SECTIONS.test(`${product.sapCategory} ${product.sapSubCategory ?? ''}`)
-  );
-}
+  /snack|biscuit|confection|chocolate|soft drink|cordial|energy drink|\bpet\b|dog|cat food|hair|skin|beauty|kitchen|cleaning|laundry|bathroom|baby care|toiletr|manchester/i;
 
 // Descriptor words that carry no product identity ("fresh", "chopped", …).
 const STOP_WORDS = new Set([
@@ -112,7 +95,11 @@ function toCandidate(product: WoolworthsProduct): ProductCandidate {
 export function matchProducts(products: WoolworthsProduct[], term: string): ProductMatch | null {
   const eligible = products
     .map((product, rank) => ({ product, rank }))
-    .filter(({ product }) => product.sapCategory && !inBlockedSection(product));
+    .filter(
+      ({ product }) =>
+        product.sapCategory &&
+        !BLOCKED_SECTIONS.test(`${product.sapCategory} ${product.sapSubCategory ?? ''}`)
+    );
   if (eligible.length === 0) return null;
 
   const keywords = identityKeywords(term);
