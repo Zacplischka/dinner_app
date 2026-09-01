@@ -134,14 +134,28 @@ jobs:
               imports, string-keyed lookups and test-only helpers all read as "unused" and are
               the classic false positives here.
 
-            - **libraries** — This is the research pass. Use the context7 tools to pull the
-              CURRENT documentation for the pinned versions actually installed: express 4.21,
-              socket.io 4.8, ioredis 5.8, react 18.3, react-router-dom 6, zustand 4.5,
-              vite 5.4, tailwindcss 3.4, @supabase/supabase-js 2.86, zod 3.25, pino 10.
-              Do not answer from memory — your training data lags these releases. Look for:
-              deprecated APIs this codebase still calls; patterns that upstream has since
+            - **libraries** — This is the research pass, and the research is the work.
+
+              START by looking the libraries up. For each one you intend to examine, call
+              `mcp__context7__resolve-library-id` and then `mcp__context7__query-docs`
+              BEFORE forming any opinion about it: express 4.21, socket.io 4.8, ioredis 5.8,
+              react 18.3, react-router-dom 6, zustand 4.5, vite 5.4, tailwindcss 3.4,
+              @supabase/supabase-js 2.86, zod 3.25, pino 10. Query the version that is
+              actually installed, not the latest.
+
+              Your training data lags every one of these releases, so answering from memory is
+              wrong by construction. Reading the library's source is NOT a substitute either:
+              a deprecation notice, a migration note, or a superseding pattern lives in the
+              documentation, not in the implementation. Source is a supplement, used to
+              confirm what the docs told you.
+
+              Look for: deprecated APIs this codebase still calls; patterns upstream has since
               superseded; and shipped-but-unused features that would let us delete code here.
-              Every finding cites the specific doc it came from, with a URL.
+
+              **A `libraries` finding that cites no documentation does not meet the bar** — do
+              not file it, however plausible it looks. If a library will not resolve through
+              context7, say so by name in your final summary rather than quietly falling back
+              to reading source.
 
             - **runtime** — Redis access patterns in `backend/src/store/sessionStore.ts` and
               `backend/src/services/SessionService.ts`; sequential round-trips that should be a
