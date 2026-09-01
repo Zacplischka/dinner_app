@@ -4,12 +4,14 @@ Backs [#330](https://github.com/Zacplischka/dinner_app/issues/330) on spec
 [#326](https://github.com/Zacplischka/dinner_app/issues/326). The pipeline is
 `scripts/corpus/images.mjs`; every constant it carries is justified here.
 
-**Two of #330's criteria are still open, and both need an operator, not a
-commit:** the R2 bucket is not created (below), and no full-corpus cost has been
-measured because the corpus does not exist until
-[#341](https://github.com/Zacplischka/dinner_app/issues/341). The estimate below
-is an estimate; it is not the measurement the ticket asks for, and the Measured
-column stays empty until a real run fills it.
+**Two of #330's criteria need an operator, not a commit, so they are split onto
+the tickets that can meet them** rather than left open here: the R2 bucket is not
+created and creating it needs a Cloudflare login
+([#355](https://github.com/Zacplischka/dinner_app/issues/355)), and no
+full-corpus cost has been measured because the corpus does not exist until
+[#341](https://github.com/Zacplischka/dinner_app/issues/341), which now carries
+that criterion. The estimate below is an estimate; it is not a measurement, and
+the Measured column stays empty until a real run fills it.
 
 ## The bucket
 
@@ -22,8 +24,10 @@ column stays empty until a real run fills it.
 | Credentials | An R2 API token (Object Read & Write, this bucket only). Where it lives: `AGENTS.md`. |
 | Cost | US$0.00/month — 0.15 GB of R2's 10 GB free tier, egress free by policy |
 
-**Status: not yet created.** Standing it up needs a Cloudflare login, which no
-credential in this repo or environment carries. The operator runs, once:
+**Status: not yet created —
+[#355](https://github.com/Zacplischka/dinner_app/issues/355).** Standing it up
+needs a Cloudflare login, which no credential in this repo or environment
+carries, so it is a human ticket. The operator runs, once:
 
 ```bash
 wrangler r2 bucket create dinder-recipe-images --location oc
@@ -47,7 +51,7 @@ documented 1,366 output tokens for that cell, one image is **US$0.0205**.
 
 | Run | Recipes | Estimate | Measured |
 | --- | --- | --- | --- |
-| Full corpus ([#341](https://github.com/Zacplischka/dinner_app/issues/341)) | ~1,160 | **US$23.77** generation (+US$0.38 of prompt input), **US$33.28** with the 40% regeneration allowance [#313](https://github.com/Zacplischka/dinner_app/issues/313) budgeted for gate rejects — inside its US$30–38 band and under the ticket's ~US$37, **provided rejects go back through a batch** | _not yet run — the corpus does not exist yet_ |
+| Full corpus ([#341](https://github.com/Zacplischka/dinner_app/issues/341)) | ~1,160 | **US$23.77** generation (+US$0.38 of prompt input), **US$33.28** with the 40% regeneration allowance [#313](https://github.com/Zacplischka/dinner_app/issues/313) budgeted for gate rejects — inside its US$30–38 band and under the ticket's ~US$37, **provided rejects go back through a batch** | _not yet run — the corpus does not exist until [#341](https://github.com/Zacplischka/dinner_app/issues/341), which carries this criterion_ |
 
 **Regenerations belong in a batch.** The US$33.28 line prices the ~464 rejects
 at batch rates, which only holds if they are resubmitted as a second batch.
@@ -55,6 +59,14 @@ at batch rates, which only holds if they are resubmitted as a second batch.
 **US$0.041 an image**, double the batch figure. Sending all 464 through `one`
 costs US$19.02 rather than US$9.51, putting the run at **US$42.79** — over the
 band, not under it. `one` is for the handful you look at by eye and fix.
+
+That second batch is `submit <recordsDir> <slug>...`: named slugs submit only
+those records, so the rejects `collect` listed go back through the Batch API
+without re-billing the ~US$24 of keepers a bare `submit <recordsDir>` would
+resubmit. A slug with no record aborts the submission rather than silently
+shrinking it. Copying reject records into a scratch directory is *not* the same
+thing — `collect` stamps `photoUrl` onto the file it read, so the stamp would
+land on the copies and the real records would stay unstamped.
 
 `collect` prints the run's real cost from the `usage` the batch reports back
 (`costUsd`), so the measured column is filled from the run itself, not

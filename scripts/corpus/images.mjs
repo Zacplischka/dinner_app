@@ -13,7 +13,7 @@
 // (R2 speaks S3) on PATH, and OPENAI_API_KEY / R2_* in the environment. The
 // pure functions below are asserted by images.test.mjs in the lint job.
 //
-//   node scripts/corpus/images.mjs submit  <recordsDir>            # one batch
+//   node scripts/corpus/images.mjs submit  <recordsDir> [slug...]  # one batch
 //   node scripts/corpus/images.mjs collect <batchId> <recordsDir>  # crop+stamp
 //   node scripts/corpus/images.mjs one     <slug> <recordsDir>     # regenerate
 //   node scripts/corpus/images.mjs publish                         # upload
@@ -132,6 +132,23 @@ export function imagePrompt(record) {
   ].join(' ');
 }
 
+/**
+ * The records one submission covers: everything under `<recordsDir>`, or just
+ * the named slugs. Naming slugs is how the reject batch runs — a second
+ * *batch*, at batch rates, which is the only shape the budget in
+ * docs/evidence/owned-recipe-images/README.md fits inside. A slug with no
+ * record is fatal: a typo must never quietly shrink a paid submission.
+ */
+export function selectRecords(entries, slugs = []) {
+  if (!slugs.length) return entries;
+  const bySlug = new Map(entries.map((entry) => [slugOf(entry.record), entry]));
+  return slugs.map((slug) => {
+    const entry = bySlug.get(slug);
+    if (!entry) throw new Error(`no record for slug ${slug}`);
+    return entry;
+  });
+}
+
 /** One Batch API request line per Recipe — the whole corpus, one submission. */
 export const batchRequests = (records) =>
   records.map((record) => ({
@@ -172,8 +189,11 @@ export function collectReport({ submitted, usages, failed }) {
   const summary =
     `${usages.length}/${submitted} images, measured cost US$${costUsd(usages).toFixed(2)}` +
     ` — record it in docs/evidence/owned-recipe-images/README.md`;
+  // Which path matters to the bill: `one` is the synchronous endpoint at double
+  // rate, so a reject *batch* is what the budget in the evidence README prices.
   return failed.length
-    ? `${summary}\n${failed.length} missing — regenerate each with \`one\`: ${failed.join(' ')}`
+    ? `${summary}\n${failed.length} missing — a couple with \`one\`, more than that` +
+        ` back through \`submit <recordsDir>\` (batch rates): ${failed.join(' ')}`
     : summary;
 }
 
@@ -217,8 +237,8 @@ function convertAndStamp(slug, pngBase64, outDir, byFile) {
   console.log(`${slug} → ${webp} (${readFileSync(webp).length} bytes) → ${imageUrl(slug)}`);
 }
 
-async function submit(recordsDir) {
-  const records = readRecords(recordsDir).map(({ record }) => record);
+async function submit(recordsDir, slugs) {
+  const records = selectRecords(readRecords(recordsDir), slugs).map(({ record }) => record);
   const jsonl = batchRequests(records)
     .map((r) => `${JSON.stringify(r)}\n`)
     .join('');
@@ -329,7 +349,7 @@ function publish(outDir) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command, ...rest] = process.argv.slice(2);
   const run = {
-    submit: () => submit(rest[0]),
+    submit: () => submit(rest[0], rest.slice(1)),
     collect: () => collect(rest[0], rest[1], rest[2] ?? DEFAULT_OUT),
     one: () => one(rest[0], rest[1], rest[2] ?? DEFAULT_OUT),
     publish: () => publish(rest[0] ?? DEFAULT_OUT),

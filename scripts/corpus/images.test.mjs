@@ -12,6 +12,7 @@ import {
   imagePrompt,
   imageUrl,
   resultLines,
+  selectRecords,
   slugOf,
   withImageUrl,
 } from './images.mjs';
@@ -80,6 +81,24 @@ test('one submission carries a request per Recipe, keyed by frozen slug', () => 
   assert.throws(() => batchRequests([{ placeId: 'owned:pad-thai', title: 'Pad Thai' }]), /no name/);
 });
 
+test('a submission can be narrowed to named slugs, so a reject batch is a batch', () => {
+  const entries = ['pad-thai', 'moussaka', 'beef-pho'].map((slug) => ({
+    file: `${slug}/recipe.json`,
+    record: record(slug, slug),
+  }));
+  // No slugs named: the whole corpus, one submission.
+  assert.equal(selectRecords(entries).length, 3);
+  // Named: only those. Without this the second batch the budget prices can
+  // only be the whole corpus again (~US$24 re-billed) or `one` per reject at
+  // double rate, which puts the run over its band.
+  assert.deepEqual(
+    selectRecords(entries, ['beef-pho', 'pad-thai']).map((e) => slugOf(e.record)),
+    ['beef-pho', 'pad-thai']
+  );
+  // A typo must not quietly shrink a paid submission.
+  assert.throws(() => selectRecords(entries, ['pad-tahi']), /pad-tahi/);
+});
+
 test('the prompt is stable per Recipe but varies its look across the corpus', () => {
   const padThai = record('pad-thai', 'Pad Thai');
   assert.equal(imagePrompt(padThai), imagePrompt(padThai));
@@ -116,7 +135,9 @@ test('a partly-failed batch reports against what was submitted, not what came ba
   // The output file holds only the 1100 that worked; counting its lines would
   // print 1100/1100 and publish a corpus with 60 holes in it.
   assert.match(report, /^1100\/1160 images/);
-  assert.match(report, /2 missing — regenerate each with `one`: pad-thai moussaka/);
+  // The advice has to name the batch path: 464 rejects through `one` at double
+  // rate is US$42.79, over the band the evidence README prices the run in.
+  assert.match(report, /2 missing — .*`submit <recordsDir>` \(batch rates\): pad-thai moussaka/);
   const clean = collectReport({ submitted: 2, usages: [], failed: [] });
   assert.equal(clean.split('\n').length, 1);
   assert.match(clean, /^0\/2 images, measured cost US\$0\.00 — record it in docs\//);
