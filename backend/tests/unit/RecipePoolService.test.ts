@@ -3,7 +3,12 @@
 import RedisMock from 'ioredis-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Craving } from '@dinder/shared/types';
-import { createRecipePoolService, cravingPoolKey } from '../../src/services/RecipePoolService.js';
+import {
+  createRecipePoolService,
+  cravingPoolKey,
+  cutDeck,
+} from '../../src/services/RecipePoolService.js';
+import type { PooledRecipe } from '../../src/services/spoonacularClient.js';
 import {
   createSpoonacularClient,
   guardDailyPoints,
@@ -321,5 +326,70 @@ describe('redeal — the Restart deal (#260)', () => {
     const wiped = await pool.dealDeck(pasta);
 
     await expect(pool.redeal(key, wiped)).resolves.toHaveLength(7);
+  });
+});
+
+describe('the two seams the deal is split into (#327)', () => {
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+  });
+
+  /** A supply as the pool holds it — whole Recipes, no Redis and no source. */
+  const supply = (count: number): PooledRecipe[] =>
+    Array.from({ length: count }, (_, i) => ({
+      kind: 'recipe' as const,
+      placeId: String(i + 1),
+      name: `Recipe ${i + 1}`,
+      photoUrl: `https://img.spoonacular.com/${i + 1}.jpg`,
+      aggregateLikes: i,
+      servings: 4,
+      ingredients: [{ name: 'olive oil', amount: 1, unit: 'tbsp', original: '1 tbsp olive oil' }],
+      steps: ['Cook it.'],
+    }));
+
+  const inOrder = <T>(entries: T[]): T[] => entries;
+
+  it('cuts a Deck from a supply alone — no Craving, no Redis, no lookup', () => {
+    const deck = cutDeck(supply(60), 15, [], inOrder);
+
+    expect(deck).toHaveLength(15);
+    expect(deck[0]).toEqual({
+      kind: 'recipe',
+      placeId: '1',
+      name: 'Recipe 1',
+      photoUrl: 'https://img.spoonacular.com/1.jpg',
+      aggregateLikes: 0,
+    });
+  });
+
+  it('leads the cut with cards the current Deck missed, then tops up with repeats', () => {
+    const pooled = supply(20);
+    const current = cutDeck(pooled, 15, [], inOrder);
+
+    const next = cutDeck(pooled, 15, current, inOrder);
+
+    expect(next).toHaveLength(15);
+    expect(next.slice(0, 5).map((entry) => entry.placeId)).toEqual(['16', '17', '18', '19', '20']);
+  });
+
+  it('reads the Sourced supply as whole Recipes, without dealing anything', async () => {
+    const { service: pool, searches } = service(recipeHits(60));
+
+    const sourced = await pool.sourcedSupply(pasta);
+
+    expect(sourced).toHaveLength(60);
+    expect(sourced[0].ingredients).toHaveLength(1);
+    expect(sourced[0].steps).toEqual(['Cook it.']);
+    expect(searches()).toHaveLength(1);
+  });
+
+  it('deals from the supply the pool already holds — one fill, then cuts', async () => {
+    const { service: pool, searches } = service(recipeHits(60));
+
+    await pool.sourcedSupply(pasta);
+    const deck = await pool.dealDeck(pasta);
+
+    expect(deck).toHaveLength(15);
+    expect(searches()).toHaveLength(1);
   });
 });
