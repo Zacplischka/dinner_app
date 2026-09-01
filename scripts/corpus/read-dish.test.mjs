@@ -155,6 +155,65 @@ test('an unreachable robots.txt is a skip, not a licence to fetch', async () => 
   assert.ok(!web.requested.includes('https://flaky.com/dish'));
 });
 
+test('a robots.txt that redirects or is refused is a skip, not a licence to fetch', async () => {
+  // Two ordinary configurations that answer neither 200 nor 404: an apex that
+  // canonicalises robots.txt to www, and a CDN that 403s bot requests for it.
+  const web = {
+    requested: [],
+    async get(url) {
+      web.requested.push(url);
+      if (url === 'https://redir.com/robots.txt')
+        return { status: 301, location: 'https://www.redir.com/robots.txt', body: '' };
+      if (url === 'https://cdn.com/robots.txt') return { status: 403, body: '' };
+      if (url.endsWith('/robots.txt')) return { status: 404, body: '' };
+      return { status: 200, body: page('Beef stew') };
+    },
+  };
+  const { record } = await readDish('Beef stew', {
+    search: async () => [
+      { url: 'https://redir.com/dish' },
+      { url: 'https://cdn.com/dish' },
+      { url: 'https://a.com/dish' },
+      { url: 'https://b.com/dish' },
+      { url: 'https://c.com/dish' },
+    ],
+    get: web.get,
+    extract,
+  });
+
+  assert.deepEqual(record.skipped, [
+    { publisher: 'redir.com', url: 'https://redir.com/dish', reason: 'robots-unreachable' },
+    { publisher: 'cdn.com', url: 'https://cdn.com/dish', reason: 'robots-unreachable' },
+  ]);
+  assert.equal(record.sources.length, 3);
+  assert.ok(!web.requested.includes('https://redir.com/dish'));
+  assert.ok(!web.requested.includes('https://cdn.com/dish'));
+});
+
+test('a URL that will not parse is a skip, not the end of the dish', async () => {
+  const urls = ['https://a.com/dish', 'https://b.com/dish', 'https://c.com/dish'];
+  const web = fakeWeb({
+    redirects: { 'https://broken.com/dish': 'http://' },
+    pages: Object.fromEntries(urls.map((u) => [u, page('Beef stew')])),
+  });
+  const { record } = await readDish('Beef stew', {
+    // A search result that arrived without a scheme, then a broken Location.
+    search: async () => [
+      { url: 'www.example.com/dish' },
+      { url: 'https://broken.com/dish' },
+      ...urls.map((url) => ({ url })),
+    ],
+    get: web.get,
+    extract,
+  });
+
+  assert.deepEqual(record.skipped, [
+    { publisher: null, url: 'www.example.com/dish', reason: 'bad-url' },
+    { publisher: null, url: 'http://', reason: 'bad-url' },
+  ]);
+  assert.equal(record.sources.length, 3);
+});
+
 test("a redirect is cleared through the destination's own robots.txt", async () => {
   const web = fakeWeb({
     robots: { 'https://real.com': 'User-agent: *\nDisallow: /' },

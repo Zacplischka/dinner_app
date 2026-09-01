@@ -10,7 +10,8 @@
 //   - robots.txt is honoured absolutely, including disallows aimed at other AI
 //     agents, and every refusal is recorded on the record. A redirect is not
 //     followed blind: it re-enters the candidate loop, so the host that finally
-//     answers is one whose own robots.txt we read first.
+//     answers is one whose own robots.txt we read first. Only a 2xx robots.txt
+//     is one we read: anything else but a 404/410 is a skip, never a licence.
 //   - UK/EU publishers are skipped outright — the EU database right has no
 //     Australian equivalent, so their compilations carry a claim we cannot
 //     answer. The ADR words this as "avoided"; here it is a hard skip.
@@ -19,7 +20,8 @@
 //     and is never written anywhere, so it cannot outlive the run.
 //
 // A candidate that simply misbehaves — a dead domain, a reset, a timeout, a
-// redirect loop — is skipped and recorded, never allowed to end the dish.
+// redirect loop, a URL that will not parse — is skipped and recorded, never
+// allowed to end the dish.
 //
 // Pure Node, no build step. `search`, `get` and `extract` are injectable, which
 // is what lets read-dish.test.mjs assert all of the above offline.
@@ -182,6 +184,13 @@ export async function readDish(dish, options = {}) {
     // counts as its own publisher.
     let url = candidate.url;
     for (let hops = 0; ; hops++) {
+      // A search result is untrusted model output and a Location header is
+      // untrusted server text: one that will not parse is a spent candidate,
+      // not a dead dish.
+      if (!URL.canParse(url)) {
+        skipped.push({ publisher: null, url, reason: 'bad-url' });
+        break;
+      }
       const name = publisher(url);
       if (seen.has(name)) break;
       if (hops > MAX_REDIRECTS) {
@@ -197,15 +206,19 @@ export async function readDish(dish, options = {}) {
       const { origin, pathname, search: query } = new URL(url);
       if (!robots.has(origin)) robots.set(origin, await tryGet(get, `${origin}/robots.txt`));
       const robotsResponse = robots.get(origin);
-      // An unavailable robots.txt (404) leaves us unrestricted; one we could not
-      // read (5xx, or a throw — DNS, reset, timeout) does not: we cannot claim to
-      // have honoured what we never read.
-      if (!robotsResponse || robotsResponse.status >= 500) {
+      // Only a 2xx is a robots.txt we read, and only a 404/410 is one that is
+      // genuinely absent — that one leaves us unrestricted. Everything else is a
+      // file we never read: a redirect (an apex that canonicalises to www), a
+      // 403 or 429 from a bot-hostile CDN, a 5xx, a throw (DNS, reset, timeout).
+      // We cannot claim to have honoured what we never read, so all of it skips.
+      const status = robotsResponse?.status ?? 0;
+      const readable = status >= 200 && status < 300;
+      if (!readable && status !== 404 && status !== 410) {
         seen.add(name);
         skipped.push({ publisher: name, url, reason: 'robots-unreachable' });
         break;
       }
-      if (robotsResponse.status < 400 && !robotsAllows(robotsResponse.body, pathname + query)) {
+      if (readable && !robotsAllows(robotsResponse.body, pathname + query)) {
         seen.add(name);
         skipped.push({ publisher: name, url, reason: 'robots-disallowed' });
         break;
@@ -213,7 +226,8 @@ export async function readDish(dish, options = {}) {
 
       const page = await tryGet(get, url);
       if (page?.location && page.status >= 300 && page.status < 400) {
-        url = new URL(page.location, url).href;
+        // A Location that will not resolve re-enters at the guard above.
+        url = URL.canParse(page.location, url) ? new URL(page.location, url).href : page.location;
         continue;
       }
       // A redirect we cannot follow is as unusable as a 404 — and is never a page.
