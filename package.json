@@ -22,6 +22,7 @@
     "compare:smoke": "npm run compare:smoke --workspace=backend --",
     "check:production-edge": "node --test scripts/check-production-edge.test.mjs",
     "check:comment-paths": "node --test scripts/check-comment-paths.test.mjs",
+    "check:reading-stage": "node --test scripts/corpus/read-dish.test.mjs",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",
@@ -37,6 +38,7 @@
   "author": "Zac Plischka",
   "license": "MIT",
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "@vitest/coverage-v8": "^1.0.4",
     "fallow": "^3.3.0"
   }
