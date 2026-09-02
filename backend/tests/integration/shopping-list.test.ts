@@ -256,18 +256,16 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
 
   it('cooks an Owned Recipe end to end: minted from the corpus, in tally, uncredited', async () => {
     // The whole of #332 in one flow. The crowned card is Owned, so the mint
-    // reads it from the corpus rather than the pool — which is emptied here to
-    // prove it — prices it through the same ladder, and marks the payload
-    // `owned` so the Cook View credits nobody. The line reads as the record
-    // wrote it while the Retailer is asked for the term the record authored;
-    // without that term Woolworths answers "gluten free spaghetti" with
-    // nothing, and the line would fall out of the tally.
+    // reads it from the corpus — nothing ever writes an `owned:` record to the
+    // pool, so the fixture's name and lines below can have come from nowhere
+    // else — prices it through the same ladder, and marks the payload `owned`
+    // so the Cook View credits nobody. The line reads as the record wrote it
+    // while the Retailer is asked for the term the record authored; without
+    // that term Woolworths answers "gluten free spaghetti" with nothing, and
+    // the line would fall out of the tally.
     const { results } = await decided(4, 'owned:fixture-pasta');
-    const listId = results!.shoppingListId!;
-    await readList(listId);
-    await redis.del(poolKey);
 
-    const { body } = await readList(listId);
+    const { body } = await readList(results!.shoppingListId!);
 
     expect(results?.topPick?.restaurant.placeId).toBe('owned:fixture-pasta');
     expect(body.recipeName).toBe('Fixture Pasta');

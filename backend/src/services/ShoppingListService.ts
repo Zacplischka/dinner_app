@@ -407,9 +407,11 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     // The Retailer search is what an Unmatched line offers instead of a product,
     // so it is exactly the term the Matcher searched (#285) — measurement junk
     // dropped, in the local dialect (#241). An Owned Recipe may author it
-    // instead (#332): the line still reads as the record wrote it, and only
-    // the search changes.
-    const searchTerm = ingredient.searchTerm ?? deriveSearchTerm(ingredient.name);
+    // instead of leaving it to the name (#332), but it is derived all the same:
+    // `matchProduct` derives whatever it is handed, so deriving here is what
+    // makes the two agree by construction rather than only when the authored
+    // term happened to be normalised already.
+    const searchTerm = deriveSearchTerm(ingredient.searchTerm ?? ingredient.name);
     const unmatched = { line: { ...fields, state: 'unmatched', searchTerm } as ShoppingListLine };
 
     // A Staple is assumed already at home and counted by nothing, so it never

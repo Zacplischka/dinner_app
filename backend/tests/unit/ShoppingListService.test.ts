@@ -353,6 +353,26 @@ describe('ShoppingListService.mint', () => {
     });
   });
 
+  it('derives the authored term too, so the link and the search stay one term', async () => {
+    // The one-derivation rule (#285) on the authored path: `matchProduct`
+    // derives whatever it is handed, so an authored term that is not already
+    // normalised — "Vegetable Broth", which the US→AU table answers — would
+    // otherwise search "vegetable stock" and hand the Shopper "Vegetable
+    // Broth". Nothing makes an author normalise, so the mint does.
+    const { service } = build({
+      recipe: {
+        ...authored,
+        ingredients: [{ ...authored.ingredients[0], searchTerm: 'Vegetable Broth' }],
+      },
+      outcome: { status: 'no_product' },
+      resolution: { state: 'unmatched' },
+    });
+
+    const list = await service.readList((await service.mint('AB123', 'owned:gf-stew'))!);
+
+    expect(list?.lines[0]).toMatchObject({ searchTerm: 'vegetable stock' });
+  });
+
   it('merges an ingredient stated twice into one claimable line, amounts combined', async () => {
     // The production duplicate (#286): 1.5 cups jjapsahl twice, as two
     // separately claimable lines — two Shoppers buying what is one ingredient.
