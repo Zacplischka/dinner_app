@@ -6,7 +6,13 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Branch, Craving, SessionLocation } from '@dinder/shared/types';
+import {
+  isApiError,
+  type ApiError,
+  type Branch,
+  type Craving,
+  type SessionLocation,
+} from '@dinder/shared/types';
 import { createSession } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
@@ -34,15 +40,16 @@ export function useCreateAndJoinSession() {
   const { inviteFriendsToSession } = useFriendsStore();
 
   /**
-   * Resolves to an error message when the Session could not be created or
-   * joined, or null once the host has landed in the lobby. Callers render the
-   * message; the hook owns the sequence.
+   * Resolves to the failure when the Session could not be created or joined, or
+   * null once the host has landed in the lobby. Callers render its message; the
+   * code is there for the few failures a screen can do something about — the
+   * zero-Recipe refusal Cook setup answers with a Nearest Craving (#334).
    */
   async function createAndJoin(
     hostName: string,
     setup: SessionSetup,
     friendIds: Set<string>
-  ): Promise<string | null> {
+  ): Promise<ApiError | null> {
     setIsCreating(true);
     try {
       const [response, { waitForConnection, joinSession }] = await Promise.all([
@@ -62,7 +69,7 @@ export function useCreateAndJoinSession() {
 
       if (!ack.success) {
         setIsCreating(false);
-        return ack.error.message;
+        return ack.error;
       }
 
       setCurrentUserId(ack.data.participantId);
@@ -80,7 +87,12 @@ export function useCreateAndJoinSession() {
       return null;
     } catch (err: unknown) {
       setIsCreating(false);
-      return err instanceof Error ? err.message : 'Failed to create session';
+      // An ApiClientError carries the public code the backend sent (#104); a
+      // transport failure carries none, and `isApiError` is what tells them
+      // apart rather than a second `instanceof` here.
+      const message = err instanceof Error ? err.message : 'Failed to create session';
+      const failure = { code: (err as { code?: unknown } | null)?.code, message };
+      return isApiError(failure) ? failure : { code: 'UNKNOWN', message };
     }
   }
 

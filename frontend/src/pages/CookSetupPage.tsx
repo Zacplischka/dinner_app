@@ -11,13 +11,16 @@ import {
   DIETS,
   MAX_HEADCOUNT,
   MEAL_TYPES,
+  type Craving,
   type Cuisine,
   type Diet,
   type MealType,
+  type NearestCraving,
 } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
+import { fetchNearestCraving } from '../services/apiClient';
 
 /** Toggle membership of a chip set, preserving the rest. */
 function toggle<T>(values: T[], value: T): T[] {
@@ -33,7 +36,33 @@ export default function CookSetupPage() {
   const [headcount, setHeadcount] = useState(2);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const [offer, setOffer] = useState<NearestCraving | null>(null);
   const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
+
+  /**
+   * Deal this Craving — and, when it deals nothing, ask what would. The
+   * refusal lands inline at setup with every chip exactly as the Host set it
+   * (#260), and the Nearest Craving arrives beside it as an offer: tapping it
+   * comes back through here with the Craving it named, and ignoring it changes
+   * nothing (#334).
+   */
+  const deal = async (craving: Craving) => {
+    setError('');
+    setOffer(null);
+
+    const failure = await createAndJoin(
+      hostName.trim(),
+      { branch: 'cook', craving, headcount },
+      selectedFriendIds
+    );
+    setError(failure?.message ?? '');
+
+    // Only the zero-Recipe refusal has a neighbour worth offering: a source
+    // that did not answer says nothing about the Craving (#250).
+    if (failure?.code === 'NO_RECIPES_FOUND') {
+      setOffer(await fetchNearestCraving(craving).catch(() => null));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,15 +73,7 @@ export default function CookSetupPage() {
       return;
     }
 
-    // A zero-Recipe Craving comes back here as a message, leaving every chip
-    // exactly as the Host set it — the refusal lands inline at setup (#260).
-    setError(
-      (await createAndJoin(
-        hostName.trim(),
-        { branch: 'cook', craving: { mealType, cuisines, diets }, headcount },
-        selectedFriendIds
-      )) ?? ''
-    );
+    await deal({ mealType, cuisines, diets });
   };
 
   const chipClass = (selected: boolean) =>
@@ -202,6 +223,19 @@ export default function CookSetupPage() {
             <div className="rounded-xl border border-coral/30 bg-coral/10 p-3">
               <p className="text-sm text-coral-soft">{error}</p>
             </div>
+          )}
+
+          {offer && (
+            <button
+              type="button"
+              onClick={() => deal(offer.craving)}
+              disabled={isLoading}
+              className="btn btn-secondary min-h-[48px] w-full"
+            >
+              <span className="capitalize">Deal {[...diets, offer.label].join(' + ')} instead</span>
+              {' — '}
+              {offer.recipeCount} {offer.recipeCount === 1 ? 'recipe' : 'recipes'}
+            </button>
           )}
 
           <div className="pt-2">

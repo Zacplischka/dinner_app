@@ -17,6 +17,8 @@ import type {
   GeocodedArea,
   GetProfileResponse,
   LoadRestaurantsResponse,
+  NearestCraving,
+  NearestCravingResponse,
   SearchUsersResponse,
   SendFriendRequestPayload,
   SendSessionInviteRequest,
@@ -79,6 +81,24 @@ export async function createSession(
     },
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * The Nearest Craving to one that just dealt nothing (#334) — cuisine widened
+ * or dropped, with the count it can actually deal. Null when even the widest
+ * step is empty. Asking is not accepting: minting the offer is another
+ * `createSession` with the Craving it names.
+ */
+export async function fetchNearestCraving(craving: Craving): Promise<NearestCraving | null> {
+  const query = new URLSearchParams({
+    mealType: craving.mealType,
+    cuisines: craving.cuisines.join(','),
+    diets: craving.diets.join(','),
+  });
+  const { nearest } = await request<NearestCravingResponse>(
+    `/cravings/nearest?${query.toString()}`
+  );
+  return nearest;
 }
 
 /**
