@@ -298,6 +298,42 @@ describe('ShoppingListService.mint', () => {
     expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'water' });
   });
 
+  it('searches an Owned Recipe’s searchTerm while the line still reads the honest name', async () => {
+    // #336: a name kept cook-honest for the culinary gate ("gluten free
+    // vegetable stock") searches like nothing, so the corpus authors the
+    // matchable term beside it — and everything that searches takes that one.
+    const { service, matchProduct, resolveLine } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          {
+            name: 'gluten free vegetable stock',
+            searchTerm: 'vegetable stock',
+            amount: 500,
+            unit: 'ml',
+            original: '500 ml gluten free vegetable stock',
+          },
+        ],
+      },
+      outcome: { status: 'no_product' },
+      resolution: { state: 'unmatched' },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(matchProduct).toHaveBeenCalledWith('vegetable stock');
+    expect(resolveLine).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'vegetable stock' }),
+      expect.anything()
+    );
+    expect(list?.lines[0]).toMatchObject({
+      text: '500 ml gluten free vegetable stock',
+      state: 'unmatched',
+      searchTerm: 'vegetable stock',
+    });
+  });
+
   it('merges an ingredient stated twice into one claimable line, amounts combined', async () => {
     // The production duplicate (#286): 1.5 cups jjapsahl twice, as two
     // separately claimable lines — two Shoppers buying what is one ingredient.

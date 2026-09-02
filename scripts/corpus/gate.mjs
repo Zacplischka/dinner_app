@@ -31,7 +31,7 @@
 // Pure Node, no build step. The judges are injectable, which is what lets
 // gate.test.mjs assert all of the above offline.
 //
-//   node scripts/corpus/gate.mjs check <recordsDir> [--images .corpus-images] [slug...]
+//   node scripts/corpus/gate.mjs check <recordsDir> [--structural] [--images .corpus-images] [slug...]
 //   node scripts/corpus/gate.mjs dish  "<dish>" [--out records]
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -580,6 +580,16 @@ export async function gateDish(record, captures, options = {}) {
 
 // ------------------------------------------------------- the CLI
 
+/** The flags that eat the argument behind them. Every other `--flag` is a
+ *  boolean, so what follows it is positional. Keyed rather than inferred from
+ *  position: `--structural black-bean-tacos` is a slug, and reading it as a
+ *  flag value silently widens a one-record run into the whole corpus. */
+const VALUE_FLAGS = new Set(['--images', '--out']);
+
+/** The arguments that are not a flag and not a flag's value. */
+export const positionalArgs = (rest) =>
+  rest.filter((argument, index) => !argument.startsWith('--') && !VALUE_FLAGS.has(rest[index - 1]));
+
 /** Every `<recordsDir>/<slug>/recipe.json`, or just the named slugs. */
 function selectSlugs(recordsDir, slugs) {
   const present = readdirSync(recordsDir, { withFileTypes: true })
@@ -642,9 +652,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const at = rest.indexOf(name);
     return at === -1 ? fallback : rest[at + 1];
   };
-  const positional = rest.filter(
-    (argument, index) => !argument.startsWith('--') && !rest[index - 1]?.startsWith('--')
-  );
+  const positional = positionalArgs(rest);
 
   const run = {
     check: () =>

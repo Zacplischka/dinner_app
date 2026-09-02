@@ -24,6 +24,7 @@ import {
   culinaryFailures,
   gateDish,
   imageFailures,
+  positionalArgs,
   shapeFailures,
 } from './gate.mjs';
 
@@ -407,4 +408,24 @@ test('a Recipe that will not come good throws by name rather than vanishing', as
     () => gateDish(RECORD, [], { author, judges, maxRegates: 1 }),
     /GATE_UNRESOLVED.*the rice is raw/s
   );
+});
+
+// ------------------------------------------------------------------- the CLI's arguments
+
+test('a slug behind --structural is a slug, not the flag’s value', () => {
+  // The whole point of naming slugs is to gate those records; swallowing one
+  // as a flag value widens a one-record run into the whole corpus silently —
+  // the mirror image of the typo `selectSlugs` refuses.
+  assert.deepEqual(positionalArgs(['backend/recipes', '--structural', 'black-bean-tacos']), [
+    'backend/recipes',
+    'black-bean-tacos',
+  ]);
+  // The flags that do take a value still eat it, in either order.
+  assert.deepEqual(positionalArgs(['records', '--images', '.corpus-images', 'beef-ragu']), [
+    'records',
+    'beef-ragu',
+  ]);
+  assert.deepEqual(positionalArgs(['records', '--structural', '--images', '.corpus-images']), [
+    'records',
+  ]);
 });

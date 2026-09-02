@@ -397,21 +397,28 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
         : lineText(scaled, ingredient.unit, ingredient.name),
       staple: isStaple(ingredient.name),
     };
+    // Everything downstream of the card's own text searches the matchable term
+    // — the Matcher, the ladder's ingredient lookup, and the Retailer link a
+    // line falls back to. It is the name, unless an Owned Recipe authored a
+    // searchable one beside a cook-honest one (#336).
+    const matchable = ingredient.searchTerm ?? ingredient.name;
     // The Retailer search is what an Unmatched line offers instead of a product,
     // so it is exactly the term the Matcher searched (#285) — measurement junk
     // dropped, in the local dialect (#241).
-    const searchTerm = deriveSearchTerm(ingredient.name);
+    const searchTerm = deriveSearchTerm(matchable);
     const unmatched = { line: { ...fields, state: 'unmatched', searchTerm } as ShoppingListLine };
 
     // A Staple is assumed already at home and counted by nothing, so it never
     // costs a Retailer lookup — it renders as its own text, still shoppable.
     if (fields.staple) return unmatched;
 
-    const outcome = await deps.matchProduct(ingredient.name);
+    const outcome = await deps.matchProduct(matchable);
     // A zero or missing amount is not a quantity, and the ladder is explicit
-    // that null degrades rather than pricing a line nobody can shop.
+    // that null degrades rather than pricing a line nobody can shop. The
+    // matchable term is what rides into the stored Match, so a demoted swap
+    // derives the same Retailer search the mint did (#285).
     const amount: IngredientAmount = {
-      name: ingredient.name,
+      name: matchable,
       amount: scaled > 0 ? scaled : null,
       unit: ingredient.unit,
     };

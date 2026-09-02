@@ -39,7 +39,9 @@ const ownedRecipeSchema = z
           /** The matchable Woolworths term, when `name` has to stay
            *  cook-honest to clear the corpus's culinary gate: "gluten free
            *  vegetable stock" reads right on the card and searches like
-           *  nothing, so the Product Match gets "vegetable stock" here. */
+           *  nothing, so the Product Match gets "vegetable stock" here. Read
+           *  by the mint as `PooledIngredient.searchTerm` — the line keeps the
+           *  name, everything that searches takes this. */
           searchTerm: z.string().min(1).optional(),
           amount: z.number(),
           unit: z.string(),
