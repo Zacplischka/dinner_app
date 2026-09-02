@@ -8,29 +8,17 @@
 // pools are read — so it needs no rate window of its own.
 
 import { Router } from 'express';
-import { z } from 'zod';
-import { CUISINES, DIETS, MEAL_TYPES, type NearestCravingResponse } from '@dinder/shared/types';
+import type { NearestCravingResponse } from '@dinder/shared/types';
 import { asyncHandler } from './asyncHandler.js';
+import { cravingSchema } from './cravingSchema.js';
 import { DomainError } from '../services/DomainError.js';
 import type { RecipePoolService } from '../services/RecipePoolService.js';
 
+/** An absent chip set is no chips, not a bad request. */
+const chips = (raw: unknown) => (typeof raw === 'string' && raw ? raw.split(',') : []);
+
 export function createCravingsRouter(recipePool: RecipePoolService) {
   const router = Router();
-
-  /** An absent chip set is no chips, not a bad request. */
-  const chips = z
-    .string()
-    .optional()
-    .transform((raw) => (raw ? raw.split(',') : []));
-
-  // The same closed vocabularies the create endpoint validates against: these
-  // values reach a shared pool key, so only what the setup screen offers gets
-  // through.
-  const cravingQuerySchema = z.object({
-    mealType: z.enum(MEAL_TYPES),
-    cuisines: chips.pipe(z.array(z.enum(CUISINES))),
-    diets: chips.pipe(z.array(z.enum(DIETS))),
-  });
 
   /**
    * GET /api/cravings/nearest?mealType=&cuisines=&diets=
@@ -40,7 +28,13 @@ export function createCravingsRouter(recipePool: RecipePoolService) {
   router.get(
     '/nearest',
     asyncHandler(async (req, res) => {
-      const validation = cravingQuerySchema.safeParse(req.query);
+      // The query is the create endpoint's Craving, comma-encoded: split the
+      // chip sets back into arrays and the one schema validates both paths.
+      const validation = cravingSchema.safeParse({
+        mealType: req.query.mealType,
+        cuisines: chips(req.query.cuisines),
+        diets: chips(req.query.diets),
+      });
 
       if (!validation.success) {
         req.log.warn({ reason: 'validation_error' }, 'Rejected nearest Craving read');

@@ -1,7 +1,7 @@
 // Cook setup (#259): one screen captures the Craving and the Headcount, then
 // creates the Session that deals the Recipe Deck.
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -237,6 +237,52 @@ describe('CookSetupPage — the Nearest Craving', () => {
       'korean',
       'thai',
     ]);
+  });
+
+  // An offer names one Craving. Edit the Craving under it and it is an offer
+  // about something else — which is how a button reading "vegan + gluten free
+  // + Asian" ends up dealing a Craving with no gluten-free chip on it.
+  it.each([
+    ['a cuisine chip', () => fireEvent.click(screen.getByRole('button', { name: 'thai' }))],
+    ['a diet chip', () => fireEvent.click(screen.getByRole('button', { name: 'gluten free' }))],
+    [
+      'the meal type',
+      () => fireEvent.change(screen.getByLabelText('Meal'), { target: { value: 'dessert' } }),
+    ],
+  ])('drops the offer when %s changes under it', async (_label, edit) => {
+    await refusedAs();
+
+    edit();
+
+    expect(screen.queryByRole('button', { name: /instead/i })).not.toBeInTheDocument();
+  });
+
+  it('ignores an offer for a Craving already dealt over', async () => {
+    let landFirstOffer!: (offer: unknown) => void;
+    serviceMocks.fetchNearestCraving
+      .mockImplementationOnce(() => new Promise((resolve) => (landFirstOffer = resolve)))
+      .mockImplementationOnce(async () => null);
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'korean' }));
+    await submitAs();
+    await waitFor(() => expect(serviceMocks.fetchNearestCraving).toHaveBeenCalledTimes(1));
+
+    // The refusal is back before its offer read is: a second deal starts, and
+    // the first Craving's neighbour is no longer an offer about anything.
+    fireEvent.click(screen.getByRole('button', { name: 'thai' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start swiping' }));
+    await waitFor(() => expect(serviceMocks.fetchNearestCraving).toHaveBeenCalledTimes(2));
+
+    await act(async () => {
+      landFirstOffer({
+        craving: { mealType: 'main course', cuisines: ASIAN, diets: [] },
+        label: 'Asian',
+        recipeCount: 12,
+      });
+    });
+
+    expect(screen.queryByRole('button', { name: /instead/i })).not.toBeInTheDocument();
   });
 
   it('leaves the refusal standing inline when even the widest step is empty', async () => {

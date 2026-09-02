@@ -66,6 +66,17 @@ describe('Contract Test: GET /api/cravings/nearest', () => {
     expect(response.body).toEqual({ nearest: null });
   });
 
+  it('refuses more chips than the vocabulary holds', async () => {
+    // A repeated chip is otherwise unbounded: it would build an arbitrarily
+    // long pool key and an arbitrarily long scan of the corpus behind it.
+    const response = await request(app)
+      .get('/api/cravings/nearest')
+      .query({ mealType: 'main course', cuisines: Array(50).fill('italian').join(',') })
+      .expect(400);
+
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+  });
+
   it('refuses a value the setup screen never offers, in the canonical shape', async () => {
     const response = await request(app)
       .get('/api/cravings/nearest')
