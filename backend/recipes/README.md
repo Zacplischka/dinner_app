@@ -47,10 +47,9 @@ had been through no gate layer at all and is gone.
 | 5   | A matching Craving deals these, one crowned and cooked with a fully in-tally Shopping List | **Done** — dealt, crowned and minted offline below; every line of every Recipe in tally at store 1101 by the run above                                                   |
 | 6   | Every failure rewritten or dropped, and which recorded                                     | **Done** — nothing dropped; "What the re-gate changed"                                                                                                                   |
 
-Nothing stays open on the batch: merging it closes #338. The one thing still
-owed nearby is [#355](https://github.com/Zacplischka/dinner_app/issues/355)'s
-R2 API token, which `images.mjs publish` needs for the next batch and today's
-upload did not.
+Nothing stays open on the batch: merging it closes #338, and
+[#355](https://github.com/Zacplischka/dinner_app/issues/355) closed the same
+day once `images.mjs publish` had run green against a scoped R2 token.
 
 ### What the tally sent back
 

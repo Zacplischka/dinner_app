@@ -53,11 +53,15 @@ The first attempt, the day before, failed on every call with Cloudflare's
 `10001` internal error and a `10058` rate limit that outlived a three-minute
 backoff; the same commands ran clean the next day. Nothing on our side changed.
 
-**What the operator still owes: the R2 API token.** `publish` uploads with the
-three `R2_*` values `AGENTS.md` names — an API token scoped Object Read & Write
-to this bucket — and the OAuth login `wrangler` holds cannot mint one, so it
-comes from the dashboard (R2 → Manage API tokens). Until it exists, uploads run
-as above under the login; nothing else in the pipeline depends on it.
+**The token, and `publish` against it.** The OAuth login `wrangler` holds
+cannot mint an R2 API token, so the operator minted one from the dashboard (R2
+→ Manage API tokens): Object Read & Write, this bucket only, 30-day TTL per
+`AGENTS.md`'s "let it expire". With it exported as the `R2_*` values,
+`node scripts/corpus/images.mjs publish` ran green from the lane on
+2026-09-03 — an `aws s3 sync` that found all 50 objects already present, which
+is exactly the proof wanted: the credential and the endpoint work, and the
+sync is idempotent. The token lives nowhere in the repo, Railway or GitHub;
+the next batch mints its own if this one has expired.
 
 ## The budget
 
