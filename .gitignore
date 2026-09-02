@@ -16,4 +16,8 @@ supabase/database.types.d.ts
 supabase/database.types.*.map
 .playwright-cli
 output/
+# Owned Recipe hero images (#330): masters and WebPs are working files on
+# their way to R2. The record references the image by URL; the bytes never
+# enter the repository.
+.corpus-images/
 docs/production-cold-load-cdn-plan.md

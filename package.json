@@ -23,6 +23,7 @@
     "check:production-edge": "node --test scripts/check-production-edge.test.mjs",
     "check:comment-paths": "node --test scripts/check-comment-paths.test.mjs",
     "check:reading-stage": "node --test scripts/corpus/read-dish.test.mjs",
+    "check:corpus-images": "node --test scripts/corpus/images.test.mjs",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",

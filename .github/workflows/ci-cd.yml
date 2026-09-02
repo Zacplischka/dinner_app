@@ -71,6 +71,11 @@ jobs:
       # HTTP and extraction — no network, no tokens spent.
       - name: Check reading stage
         run: npm run check:reading-stage
+      # Offline self-check for the Owned Recipe image pipeline's pure parts
+      # (#330) — crop geometry, batch request shape, image URL, cost maths.
+      # Does not touch the network and does not need cwebp.
+      - name: Check corpus image pipeline
+        run: npm run check:corpus-images
 
   contract-tests:
     name: Contract Tests
