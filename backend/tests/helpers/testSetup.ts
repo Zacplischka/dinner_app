@@ -50,6 +50,11 @@ export async function cleanupTestData(redis: Redis): Promise<void> {
       await redis.del(...keys);
     }
   }
+  // The vendor-dark latch (#333) is cleared too: a test that darkens Spoonacular
+  // leaves it latched for five minutes, and the next file's cold deal would
+  // silently deal owned-only instead of calling its own fake. Two fixed names,
+  // so they go by name — a wildcard sweep would take out a parallel lane's.
+  await redis.del('recipes:vendor:dark', 'recipes:vendor:blips');
 }
 
 /**

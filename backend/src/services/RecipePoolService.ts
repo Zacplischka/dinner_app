@@ -22,11 +22,14 @@ import type { Craving, Cuisine, DeckEntry, Diet, MealType, Recipe } from '@dinde
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import type { OwnedRecipeStore } from './ownedRecipeStore.js';
+import { SpoonacularRefusal } from './spoonacularClient.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
 
 // --- Keyspace ----------------------------------------------------------
 // recipes:pool:{craving}    string: the pooled Recipes, JSON, TTL from config
 // recipes:offset:{craving}  string: how many times this pool has been refreshed
+// recipes:vendor:dark       string: present while the vendor is latched dark
+// recipes:vendor:blips      string: consecutive vendor failures so far
 
 /**
  * The canonical Craving, and with it the shared pool key. Sorting the sets and
@@ -81,11 +84,29 @@ const OFFSET_TTL_MULTIPLE = 4;
  */
 const OWNED_FLOOR = 3;
 
+/** The vendor-dark latch (#333, #317), shared in Redis rather than per-process. */
+const DARK_KEY = 'recipes:vendor:dark';
+const BLIP_KEY = 'recipes:vendor:blips';
+
+/**
+ * How long a dark vendor stays latched. Recovery is demand-driven: this key
+ * expiring, and the next real deal probing once. No poller, no probe spend —
+ * so the window is the whole cost of an outage that has already ended.
+ */
+const VENDOR_DARK_TTL_MS = 5 * 60_000;
+
+/**
+ * Consecutive vendor failures before a blip is treated as an outage. A single
+ * timeout or 5xx is per-call best-effort (#316); three in a row are a fact.
+ */
+const BLIP_LATCH = 3;
+
 interface RedisLike {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
   incr(key: string): Promise<number>;
   pexpire(key: string, ttlMs: number): Promise<unknown>;
+  del(key: string): Promise<unknown>;
 }
 
 interface RecipePoolServiceDeps {
@@ -101,19 +122,39 @@ interface RecipePoolServiceDeps {
   deckSize?: number;
   /** How many Owned Recipes a full Deck holds at least (#316). */
   ownedFloor?: number;
+  /** How long the vendor-dark latch holds before the next deal re-probes (#333). */
+  vendorDarkTtlMs?: number;
+  /** The deal-time budget on a vendor fetch (#333). */
+  dealBudgetMs?: number;
   /** Injected so tests can deal deterministically. */
   shuffle?: <T>(entries: T[]) => T[];
+}
+
+/**
+ * A dealt Deck, and whether the recipe source being dark is why it came up
+ * short (#333). A full Deck never carries it — the branch not darkening is the
+ * product — and a thin Craving on a healthy vendor never carries it either,
+ * because that is a fact about the catalogue, not about us (#250).
+ */
+export interface DealtDeck {
+  entries: Recipe[];
+  recipeSourceDown: boolean;
 }
 
 export interface RecipePoolService {
   /**
    * The Sourced supply for a Craving: the shared Redis pool, filled from the
    * vendor when it is cold. Whole pooled Recipes, not a Deck — the cut is
-   * `cutDeck`'s job. Transport failures throw and write nothing.
+   * `cutDeck`'s job. Failures throw and write nothing, and a latched-dark
+   * vendor throws without being called at all (#333).
    */
   sourcedSupply(craving: Craving): Promise<PooledRecipe[]>;
-  /** A Session's Deck: min(pool, deckSize) Recipes, randomly cut from the pool. */
-  dealDeck(craving: Craving): Promise<Recipe[]>;
+  /**
+   * A Session's Deck: min(supply, deckSize) Recipes cut from the union of both
+   * supplies. The vendor half is best-effort — its failure is swallowed while
+   * the corpus can still deal, and propagates only when owned is empty too.
+   */
+  dealDeck(craving: Craving): Promise<DealtDeck>;
   /**
    * A Restart's Deck (#246, #260): a fresh cut of the pool `current` was dealt
    * from. A pool that has aged out degrades to reshuffling `current` rather
@@ -213,7 +254,34 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   const poolSize = deps.poolSize ?? config.spoonacular.poolSize;
   const deckSize = deps.deckSize ?? config.spoonacular.deckSize;
   const ownedFloor = deps.ownedFloor ?? OWNED_FLOOR;
+  const vendorDarkTtlMs = deps.vendorDarkTtlMs ?? VENDOR_DARK_TTL_MS;
+  const dealBudgetMs = deps.dealBudgetMs ?? config.spoonacular.dealBudgetMs;
   const shuffle = deps.shuffle ?? shuffleInPlace;
+
+  /** Latch the vendor dark. The blip run is over — the outage subsumes it. */
+  async function latchDark(): Promise<void> {
+    await deps.redis.set(DARK_KEY, '1', 'PX', vendorDarkTtlMs);
+    await deps.redis.del(BLIP_KEY);
+  }
+
+  /**
+   * Record one vendor failure, and latch if it has earned it. A categorical
+   * refusal latches on sight; a blip only counts, and the count is consecutive
+   * — any answered call clears it. The counter carries the latch's own TTL so
+   * three failures a week apart are three separate bad moments, not an outage.
+   */
+  async function recordVendorFailure(error: unknown): Promise<void> {
+    if (error instanceof SpoonacularRefusal) {
+      logger.warn({ err: error }, 'Recipe source refused — latching it dark');
+      return latchDark();
+    }
+    const blips = await deps.redis.incr(BLIP_KEY);
+    await deps.redis.pexpire(BLIP_KEY, vendorDarkTtlMs);
+    if (blips >= BLIP_LATCH) {
+      logger.warn({ err: error, blips }, 'Recipe source failing in a row — latching it dark');
+      await latchDark();
+    }
+  }
 
   /** Where the next refresh of this Craving starts in the source catalogue. */
   async function nextOffset(key: string): Promise<number> {
@@ -241,28 +309,48 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
     const pooled = await readPool(key);
     if (pooled) return pooled;
 
+    // Latched: the vendor is not called at all. That is the point — no spend,
+    // no wait, and no hammering the exact call path #236's silent unbounded
+    // billing lives on. This same read finding the key expired IS the
+    // recovery probe, which is why there is no poller anywhere (#317).
+    if (await deps.redis.get(DARK_KEY)) {
+      throw new Error('Spoonacular is latched dark');
+    }
+
     // ponytail: read-then-fill, no lock. Two Sessions starting the same
     // cold Craving in the same instant both fetch, both burn a lookup and
     // an offset step, and the later SET wins — nobody sees a failure and
     // both get a full Deck. Upgrade path if Cook traffic ever makes that
     // bite: SETNX a short-lived fill marker and have the loser re-read.
     let offset = await nextOffset(key);
-    // A throw here writes nothing: a transport failure must never be
-    // remembered as "this Craving has no Recipes" (#260). The clean miss
-    // is cached, and briefly, because it is an answer about the catalogue.
-    let pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
+    // The deal-time budget covers the whole deal, both pages of it: one signal
+    // created here and shared, so a vendor that answers the first page slowly
+    // cannot spend the budget twice.
+    const budget = AbortSignal.timeout(dealBudgetMs);
+    let pool: PooledRecipe[];
+    try {
+      // A throw here writes nothing: a transport failure must never be
+      // remembered as "this Craving has no Recipes" (#260). The clean miss
+      // is cached, and briefly, because it is an answer about the catalogue.
+      pool = await deps.client.searchRecipes(craving, { number: poolSize, offset }, budget);
 
-    if (pool.length === 0 && offset > 0) {
-      // Not a clean miss — the rotation has simply paged off the end of a
-      // Craving smaller than the offset it has climbed to. Caching that as
-      // "nothing matches" would refuse a Craving that has Recipes, and #250
-      // is explicit that a wrong empty answer must not kill a Craving.
-      // ponytail: ask from the top rather than track each Craving's size.
-      // Ceiling: one wasted lookup per refresh of a lapped Craving — about
-      // one a day. Upgrade path: pool `totalResults` and cap the offset.
-      offset = 0;
-      pool = await deps.client.searchRecipes(craving, { number: poolSize, offset });
+      if (pool.length === 0 && offset > 0) {
+        // Not a clean miss — the rotation has simply paged off the end of a
+        // Craving smaller than the offset it has climbed to. Caching that as
+        // "nothing matches" would refuse a Craving that has Recipes, and #250
+        // is explicit that a wrong empty answer must not kill a Craving.
+        // ponytail: ask from the top rather than track each Craving's size.
+        // Ceiling: one wasted lookup per refresh of a lapped Craving — about
+        // one a day. Upgrade path: pool `totalResults` and cap the offset.
+        offset = 0;
+        pool = await deps.client.searchRecipes(craving, { number: poolSize, offset }, budget);
+      }
+    } catch (error) {
+      await recordVendorFailure(error);
+      throw error;
     }
+    // An answered call ends whatever blip run was in progress.
+    await deps.redis.del(BLIP_KEY);
 
     const ttlMs = pool.length > 0 ? poolTtlMs : emptyPoolTtlMs;
     await deps.redis.set(key, JSON.stringify(pool), 'PX', ttlMs);
@@ -273,9 +361,23 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   return {
     sourcedSupply,
 
-    async dealDeck(craving: Craving): Promise<Recipe[]> {
+    async dealDeck(craving: Craving): Promise<DealtDeck> {
       const owned = deps.owned.forCraving(craving);
-      return blendDeck(owned, await sourcedSupply(craving), deckSize, ownedFloor, [], shuffle);
+      // Best-effort (#333): the Cook Branch keeps dealing while the vendor is
+      // dark, owned-only. The failure propagates only when owned is empty too
+      // — the one case where the vendor's silence is the whole answer, and the
+      // one case where "the source is unavailable" is still the true thing to
+      // say. Nothing was written either way, so a failure is never remembered
+      // as "this Craving has no Recipes".
+      let sourceDown = false;
+      const sourced = await sourcedSupply(craving).catch((error: unknown) => {
+        if (owned.length === 0) throw error;
+        logger.warn({ err: error, craving }, 'Recipe source dark — dealing owned alone');
+        sourceDown = true;
+        return [];
+      });
+      const entries = blendDeck(owned, sourced, deckSize, ownedFloor, [], shuffle);
+      return { entries, recipeSourceDown: sourceDown && entries.length < deckSize };
     },
 
     async redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]> {

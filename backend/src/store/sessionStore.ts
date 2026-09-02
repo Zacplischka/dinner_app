@@ -36,6 +36,13 @@ export interface Session {
   headcount?: number;
   cravingKey?: string;
   /**
+   * Cook Branch only (#333). This Session's Deck came up short because the
+   * recipe source was dark when it was dealt — the one plain line every
+   * Participant sees. A fact about the deal, so it is fixed at creation
+   * alongside the Deck itself.
+   */
+  recipeSourceDown?: boolean;
+  /**
    * The Shopping List this Session minted from its Top Pick (#262). Written
    * once, by whichever completion got there first — the Session's record that
    * minting has happened, not a handle on anything it owns: the list lives on
@@ -201,6 +208,7 @@ export function createSessionStore(redis: Redis) {
       branch?: Branch;
       headcount?: number;
       cravingKey?: string;
+      recipeSourceDown?: boolean;
       location?: { latitude: number; longitude: number; address?: string };
       searchRadiusMiles?: number;
       /** The Deck this Session deals: Restaurants or Recipes. */
@@ -220,6 +228,7 @@ export function createSessionStore(redis: Redis) {
       branch: opts.branch,
       headcount: opts.headcount,
       cravingKey: opts.cravingKey,
+      recipeSourceDown: opts.recipeSourceDown || undefined,
       location: opts.location,
       searchRadiusMiles: opts.searchRadiusMiles,
     };
@@ -235,6 +244,7 @@ export function createSessionStore(redis: Redis) {
     if (opts.branch) sessionData.branch = opts.branch;
     if (opts.headcount !== undefined) sessionData.headcount = opts.headcount;
     if (opts.cravingKey) sessionData.cravingKey = opts.cravingKey;
+    if (opts.recipeSourceDown) sessionData.recipeSourceDown = '1';
     if (opts.location) {
       sessionData.locationLat = opts.location.latitude;
       sessionData.locationLng = opts.location.longitude;
@@ -274,6 +284,7 @@ export function createSessionStore(redis: Redis) {
       branch: data.branch as Branch | undefined,
       headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,
       cravingKey: data.cravingKey,
+      recipeSourceDown: data.recipeSourceDown === '1' ? true : undefined,
       shoppingListId: data.shoppingListId,
     };
 
