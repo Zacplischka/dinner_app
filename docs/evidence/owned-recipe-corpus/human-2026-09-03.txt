@@ -1,0 +1,11 @@
+(no cuisine): pass
+chinese: pass
+greek: pass
+indian: pass
+italian: pass
+japanese: pass
+korean: pass
+mexican: pass
+middle eastern: pass
+thai: pass
+vietnamese: pass

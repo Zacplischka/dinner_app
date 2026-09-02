@@ -14,6 +14,8 @@ is not re-checkable; these files are.
 | `culinary-2026-09-02-regate2.json` | both judges over the one record the re-gate sent back again                                                                                      |
 | `culinary-2026-09-02-regate3.json` | both judges over the two records the re-gate's Google calls dropped                                                                              |
 | `structural-2026-09-03.txt`        | `gate.mjs check --structural` over all 50, with `photoUrl` stamped and the 50 images in `.corpus-images/`                                        |
+| `human-2026-09-03.json`            | the operator's verdict on each of the 12 sampled Recipes                                                                                         |
+| `human-2026-09-03.txt`             | `human.mjs verdict` over that file: the outcome per stratum                                                                                      |
 
 ## Tally at store 1101
 
@@ -69,6 +71,9 @@ in the corpus README.
 
 ## Human
 
-`human.mjs sample backend/recipes` names 12 of the 50, stratified by cuisine.
-The verdicts are a person's and are recorded through `human.mjs verdict` when
-given; nothing here stands in for them.
+`human.mjs sample backend/recipes` names 12 of the 50, stratified by cuisine:
+one per cuisine with a Recipe in the batch, two for the Recipes carrying none.
+The operator read the 12 on 2026-09-03 — photo, ingredients and method side by
+side — and passed every one. `human-2026-09-03.json` is the answer as given,
+`human-2026-09-03.txt` is what `human.mjs verdict` made of it: every stratum
+passes, none escalates, so the other 38 stand on the sample.
