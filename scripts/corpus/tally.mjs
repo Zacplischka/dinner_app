@@ -80,6 +80,22 @@ const UNIT_PRICED_PACKS = new Set(['variable', 'range']);
 /** The line the container prints its one verdict on, so CLI noise never is one. */
 const VERDICT = 'TALLY ';
 
+/** Where this file sits in the repo; the container runs its own deployed copy. */
+const SCRIPT = 'scripts/corpus/tally.mjs';
+
+/**
+ * The measurement command, resolved in the container rather than guessed here.
+ * The backend service's Railway root directory is `backend/` — that is where
+ * `railway.json` lives, its buildCommand is `cd .. && npm ci`, and its
+ * startCommand `node dist/server.js` resolves to `backend/dist` — so the repo
+ * root, and this script, are one level up from the working directory. This is
+ * the gate's one live use, and a wrong path spends the whole run's setup before
+ * measuring anything, so it tries here and one up instead of betting on either.
+ */
+const RESOLVE_AND_MEASURE =
+  `for d in . ..; do [ -f "$d/${SCRIPT}" ] && exec node "$d/${SCRIPT}" measure "$0"; done; ` +
+  `echo "TALLY_NO_SCRIPT: no ${SCRIPT} in $(pwd) or its parent" >&2; exit 1`;
+
 // ------------------------------------------------------- what travels
 
 /**
@@ -179,9 +195,9 @@ export async function railwayProbe(payload, run = execFileAsync) {
     'railway',
     [
       'ssh',
-      'node',
-      'scripts/corpus/tally.mjs',
-      'measure',
+      'sh',
+      '-c',
+      RESOLVE_AND_MEASURE,
       Buffer.from(JSON.stringify(payload)).toString('base64'),
     ],
     { maxBuffer: 64 * 1024 * 1024 }
@@ -195,7 +211,17 @@ export async function railwayProbe(payload, run = execFileAsync) {
   const measurements = String(stdout)
     .split('\n')
     .filter((line) => line.startsWith(VERDICT))
-    .map((line) => JSON.parse(line.slice(VERDICT.length)));
+    // A run that died mid-print leaves a truncated last verdict, which is
+    // exactly the case the `.catch` above exists for: parsing it defensively
+    // keeps every Recipe printed before it, and TALLY_UNMEASURED_RECIPES names
+    // the half-written one. Throwing here would discard the whole run's budget.
+    .flatMap((line) => {
+      try {
+        return [JSON.parse(line.slice(VERDICT.length))];
+      } catch {
+        return [];
+      }
+    });
   if (!measurements.length && payload.length) {
     throw new Error(`TALLY_NO_MEASUREMENT: the container answered\n${stdout}`);
   }
@@ -204,16 +230,18 @@ export async function railwayProbe(payload, run = execFileAsync) {
 
 /**
  * Every Recipe measured, in the order asked. Refuses an answer from the wrong
- * store — per Recipe, because production can be served another store mid-run —
- * and refuses a short one: a Recipe the run skipped has not passed this layer,
- * and letting it read as a pass is the failure mode the gate exists for.
+ * store — per Recipe, because production can be served another store mid-run,
+ * and a measurement that names no store at all is refused the same way: no
+ * evidence is not the reference store. Refuses a short answer too: a Recipe the
+ * run skipped has not passed this layer, and letting it read as a pass is the
+ * failure mode the gate exists for.
  */
 export async function tallyGate(records, probe = railwayProbe) {
   const measurements = await probe(probePayload(records));
   const elsewhere = measurements.find((m) => m.storeId !== REFERENCE_STORE_ID);
   if (elsewhere) {
     throw new Error(
-      `TALLY_WRONG_STORE: ${elsewhere.slug} measured at ${elsewhere.storeId}, ` +
+      `TALLY_WRONG_STORE: ${elsewhere.slug} measured at ${elsewhere.storeId ?? 'no recorded store'}, ` +
         `not ${REFERENCE_STORE_ID} — the corpus is judged at production’s ` +
         'reference store or not at all'
     );
@@ -325,9 +353,16 @@ async function measure(encoded) {
   // Read per Recipe rather than once at the end: the Matcher rewrites this key
   // the moment production is served another store, so each Recipe reports the
   // store it was actually measured at rather than the one the run ended on.
+  //
+  // No fallback to `config.woolworths.defaultStoreId`: it is 1101 as well, so
+  // substituting it would report the reference store on no evidence at all — a
+  // fresh keyspace, or a re-run inside the price cache's Freshness Window where
+  // nothing cold-fetched — and TALLY_WRONG_STORE could never fire. The gate
+  // refuses an answer that did not come from store 1101, and an answer that
+  // cannot say where it came from did not come from store 1101.
   const storeId = async () => {
     const stored = Number(await redis.get('woolworths:store'));
-    return Number.isFinite(stored) && stored ? stored : config.woolworths.defaultStoreId;
+    return Number.isFinite(stored) && stored ? stored : null;
   };
 
   try {

@@ -8,6 +8,10 @@
 // ingredient is a fact about store 1101, not a defect in the Recipe.
 
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import {
   REFERENCE_STORE_ID,
@@ -231,6 +235,17 @@ test('a measurement from any other store is refused outright', async () => {
   );
 });
 
+test('a measurement that names no store is refused the same way', async () => {
+  // The container reports null when `woolworths:store` is unset or unreadable —
+  // a fresh keyspace, or a re-run inside the price cache's window where nothing
+  // cold-fetched. Substituting the configured default would spell 1101 and read
+  // as the reference store on no evidence at all.
+  await assert.rejects(
+    tallyGate([recipe], probeOf(measured([line({})]), null)),
+    /TALLY_WRONG_STORE.*no recorded store/
+  );
+});
+
 test('the gate reports every Recipe, and fails only the ones that failed', async () => {
   const two = ['a', 'b'].map((slug) => ({ slug, recipe: { ...recipe.recipe } }));
   const probe = async () => [
@@ -287,9 +302,61 @@ test('the railway probe runs the measurement in production and reads a line per 
 
   const [command, args] = calls[0];
   assert.equal(command, 'railway');
-  assert.deepEqual(args.slice(0, 4), ['ssh', 'node', 'scripts/corpus/tally.mjs', 'measure']);
+  assert.deepEqual(args.slice(0, 3), ['ssh', 'sh', '-c']);
   // Base64 so a shell between here and the container has nothing to chew on.
   assert.deepEqual(JSON.parse(Buffer.from(args[4], 'base64').toString('utf8')), payload);
+});
+
+test('the container finds the script from the backend directory it starts in', async () => {
+  // The backend service's Railway root directory is backend/ (that is where
+  // railway.json lives, and `node dist/server.js` resolves to backend/dist), so
+  // the container's cwd is one level below this script — a repo-root-relative
+  // argv would MODULE_NOT_FOUND at the gate's one live use, after the setup is
+  // already paid for. Run the argv the probe actually emits, with `node` stubbed.
+  const dir = mkdtempSync(join(tmpdir(), 'tally-container-'));
+  try {
+    mkdirSync(join(dir, 'scripts/corpus'), { recursive: true });
+    writeFileSync(join(dir, 'scripts/corpus/tally.mjs'), '');
+    mkdirSync(join(dir, 'backend/bin'), { recursive: true });
+    writeFileSync(join(dir, 'backend/bin/node'), '#!/bin/sh\necho "$@"\n', { mode: 0o755 });
+
+    let argv;
+    const run = async (_command, args) => {
+      argv = args;
+      return { stdout: `TALLY ${JSON.stringify({ storeId: REFERENCE_STORE_ID, slug: 'a' })}\n` };
+    };
+    await railwayProbe([{ slug: 'a', ingredients: [] }], run);
+
+    const invoked = execFileSync('/bin/sh', argv.slice(2), {
+      cwd: join(dir, 'backend'),
+      env: { PATH: join(dir, 'backend/bin') },
+    }).toString();
+    assert.match(invoked, /^\.\.\/scripts\/corpus\/tally\.mjs measure /, invoked);
+    assert.deepEqual(
+      JSON.parse(Buffer.from(invoked.trim().split(' ')[2], 'base64').toString('utf8')),
+      [{ slug: 'a', ingredients: [] }]
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a run that died mid-line keeps every Recipe it finished printing', async () => {
+  // The truncated tail still starts with `TALLY `, and throwing on it would
+  // discard exactly the measurements the .catch above it exists to keep.
+  const run = async () => {
+    const error = new Error('ssh: connection closed by remote host');
+    error.stdout =
+      `TALLY ${JSON.stringify({ storeId: REFERENCE_STORE_ID, slug: 'a', lines: [] })}\n` +
+      `TALLY {"storeId":1101,"slug":"b","li`;
+    throw error;
+  };
+  const measurements = await railwayProbe([{ slug: 'a' }, { slug: 'b' }], run);
+  assert.deepEqual(
+    measurements.map((measurement) => measurement.slug),
+    ['a'],
+    'the half-written Recipe is unmeasured, not fatal'
+  );
 });
 
 test('a run that died keeps the Recipes it had already measured', async () => {
