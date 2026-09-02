@@ -230,11 +230,13 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
   });
 
   it('shows a source failure as a failure, and remembers nothing of it', async () => {
+    // The unowned Craving, because since #333 a source failure only reaches
+    // the Host when the corpus had nothing to deal either.
     fakeSpoonacular(recipeHits(60), 503);
 
     const response = await request(app)
       .post('/api/sessions')
-      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
       .expect(503);
 
     // "Remove a filter" is the wrong instruction when nothing was wrong with
@@ -242,6 +244,44 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
     expect(response.body.code).toBe('RECIPE_SOURCE_UNAVAILABLE');
     expect(response.body.message).toMatch(/try again/i);
     await expect(testKeys(redis, 'recipes:pool:*')).resolves.toEqual([]);
+  });
+
+  // The dark vendor (#333): the Cook Branch keeps dealing, owned-only, and the
+  // Deck coming up short is the only thing anyone is told about.
+  it('deals owned alone while the source is dark, and says so on a short Deck', async () => {
+    fakeSpoonacular(recipeHits(60), 503);
+
+    const { body: session } = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(201);
+
+    expect(session.restaurantCount).toBe(OWNED_IN_FIXTURE);
+    // Read back through the Session every Participant loads, so the one plain
+    // line is the same line for the whole room.
+    const { body: read } = await request(app)
+      .get(`/api/sessions/${session.sessionCode}`)
+      .expect(200);
+    expect(read.recipeSourceDown).toBe(true);
+    // Nothing of the outage is remembered as an answer about the Craving.
+    await expect(testKeys(redis, 'recipes:pool:*')).resolves.toEqual([]);
+  });
+
+  it('stops calling a source that refused the key, until the window expires', async () => {
+    const spoonacular = fakeSpoonacular(recipeHits(60), 401);
+
+    // A revoked key is the source's own answer, not the network's: it latches
+    // at once rather than being re-asked (and re-billed) on every deal.
+    await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
+      .expect(503);
+    await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
+      .expect(503);
+
+    expect(spoonacular.recipeSearches()).toHaveLength(1);
   });
 
   it('deals the whole thin pool with no warning when owned cannot top it up', async () => {

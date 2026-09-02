@@ -35,6 +35,14 @@ export interface SessionResponse {
   expiresAt: string;
   shareableLink: string;
   branch?: Branch;
+  /**
+   * Cook Branch only (#333): this Session's Deck came up short because the
+   * recipe source was dark when it was dealt. Absent on a full Deck — the
+   * branch not darkening is the product — and absent on a thin Craving the
+   * source answered honestly, which is a fact about the catalogue, not us.
+   * Every Participant reads it here, so the line they see is one line.
+   */
+  recipeSourceDown?: boolean;
 }
 
 // POST /api/sessions response — a Session plus the host-supplied setup echoed back.

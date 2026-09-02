@@ -44,7 +44,10 @@ export async function cleanupTestData(redis: Redis): Promise<void> {
   // Shopping Lists are swept here too: any test that completes a Cook Session
   // mints one, and unlike a Session it carries a 7-day TTL — left behind, they
   // accumulate across runs in the shared dev Redis (#262).
-  for (const pattern of ['session:*', 'participant:*', 'shoppinglist:*']) {
+  // The vendor-dark latch (#333) is swept too: a test that darkens Spoonacular
+  // leaves it latched for five minutes, and the next file's cold deal would
+  // silently deal owned-only instead of calling its own fake.
+  for (const pattern of ['session:*', 'participant:*', 'shoppinglist:*', 'recipes:vendor:*']) {
     const keys = await testKeys(redis, pattern);
     if (keys.length > 0) {
       await redis.del(...keys);

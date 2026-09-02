@@ -40,6 +40,8 @@ function service(
     /** The Owned Recipe Store's corpus — empty unless a test blends (#331). */
     owned?: OwnedRecipe[];
     ownedFloor?: number;
+    /** Shortened when a test needs the vendor-dark latch to actually expire. */
+    vendorDarkTtlMs?: number;
     /** Deterministic by default: no shuffle, so assertions are about the cut. */
     shuffle?: <T>(entries: T[]) => T[];
   } = {}
@@ -62,6 +64,7 @@ function service(
     poolSize: 60,
     deckSize: 15,
     ownedFloor: overrides.ownedFloor ?? 3,
+    vendorDarkTtlMs: overrides.vendorDarkTtlMs,
     // Deterministic deal: no shuffle, so assertions are about the cut, not luck.
     shuffle: overrides.shuffle ?? ((entries) => entries),
   });
@@ -107,7 +110,7 @@ describe('createRecipePoolService', () => {
   it('deals a Deck of deckSize Recipes from a freshly fetched pool', async () => {
     const { service: pool, searches } = service();
 
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(searches()).toHaveLength(1);
@@ -117,7 +120,7 @@ describe('createRecipePoolService', () => {
   it('deals the Deck Entry alone — ingredients and steps stay in the pool', async () => {
     const { service: pool } = service();
 
-    const [card] = await pool.dealDeck(pasta);
+    const [card] = (await pool.dealDeck(pasta)).entries;
 
     expect(card).toEqual({
       kind: 'recipe',
@@ -135,7 +138,7 @@ describe('createRecipePoolService', () => {
 
     // A different Session, its own service instance, the same Craving.
     const second = service(recipeHits(60), { redis });
-    const deck = await second.service.dealDeck(pasta);
+    const deck = (await second.service.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(second.searches()).toHaveLength(0);
@@ -188,13 +191,13 @@ describe('createRecipePoolService', () => {
   it('deals the whole pool when it is thinner than a Deck', async () => {
     const { service: pool } = service(recipeHits(4));
 
-    await expect(pool.dealDeck(pasta)).resolves.toHaveLength(4);
+    expect((await pool.dealDeck(pasta)).entries).toHaveLength(4);
   });
 
   it('deals nothing for a Craving the catalogue has no answer to', async () => {
     const { service: pool } = service(recipeHits(0));
 
-    await expect(pool.dealDeck(pasta)).resolves.toEqual([]);
+    expect((await pool.dealDeck(pasta)).entries).toEqual([]);
   });
 
   it('caches the clean miss briefly, so fiddling with chips costs one lookup', async () => {
@@ -224,7 +227,7 @@ describe('createRecipePoolService', () => {
     await pool.dealDeck(pasta);
     await redis.del(cravingPoolKey(pasta));
 
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(searches().map((r) => r.url.searchParams.get('offset'))).toEqual(['0', '60', '0']);
@@ -257,7 +260,7 @@ describe('createRecipePoolService', () => {
 
     const dark = service(recipeHits(60), { redis, pointCeiling: 1400 });
 
-    await expect(dark.service.dealDeck(pasta)).resolves.toHaveLength(15);
+    expect((await dark.service.dealDeck(pasta)).entries).toHaveLength(15);
     expect(dark.searches()).toHaveLength(0);
   });
 
@@ -273,8 +276,8 @@ describe('createRecipePoolService', () => {
       deckSize: 15,
     });
 
-    const first = await pool.dealDeck(pasta);
-    const second = await pool.dealDeck(pasta);
+    const first = (await pool.dealDeck(pasta)).entries;
+    const second = (await pool.dealDeck(pasta)).entries;
 
     expect(first.map((r) => r.placeId)).not.toEqual(second.map((r) => r.placeId));
   });
@@ -289,7 +292,7 @@ describe('redeal — the Restart deal (#260)', () => {
 
   it('avoids the just-wiped deal when the pool can afford it', async () => {
     const { service: pool } = service(recipeHits(60));
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
 
     const next = await pool.redeal(key, wiped);
 
@@ -301,7 +304,7 @@ describe('redeal — the Restart deal (#260)', () => {
   it('tops up with repeats rather than dealing short from a thin pool', async () => {
     // 20 pooled, 15 wiped: only 5 are fresh, so 10 must come back around.
     const { service: pool } = service(recipeHits(20));
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
 
     const next = await pool.redeal(key, wiped);
 
@@ -313,7 +316,7 @@ describe('redeal — the Restart deal (#260)', () => {
 
   it('reshuffles the wiped deal when the pool has aged out — never an error', async () => {
     const { redis, service: pool } = service(recipeHits(60));
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
     await redis.del(key);
 
     const next = await pool.redeal(key, wiped);
@@ -325,7 +328,7 @@ describe('redeal — the Restart deal (#260)', () => {
 
   it('pays no lookup for a Restart — a cold pool degrades, it does not refetch', async () => {
     const { redis, service: pool, searches } = service(recipeHits(60));
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
     await redis.del(key);
 
     await pool.redeal(key, wiped);
@@ -335,7 +338,7 @@ describe('redeal — the Restart deal (#260)', () => {
 
   it('deals the whole thin pool rather than refusing to Restart', async () => {
     const { service: pool } = service(recipeHits(7));
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
 
     await expect(pool.redeal(key, wiped)).resolves.toHaveLength(7);
   });
@@ -399,7 +402,7 @@ describe('the two seams the deal is split into (#327)', () => {
     const { service: pool, searches } = service(recipeHits(60));
 
     await pool.sourcedSupply(pasta);
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(searches()).toHaveLength(1);
@@ -419,7 +422,7 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
   it('deals 3 owned and 12 sourced from a healthy vendor', async () => {
     const { service: pool } = service(recipeHits(60), { owned: corpus });
 
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(deck.filter(isOwned)).toHaveLength(3);
@@ -430,7 +433,7 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
     // than letting the Deck come out a third full.
     const { service: pool } = service(recipeHits(5), { owned: corpus });
 
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(deck.filter(isOwned)).toHaveLength(10);
@@ -442,7 +445,7 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
       owned: ownedRecipes(12, { cuisine: 'thai' }),
     });
 
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(deck.filter(isOwned)).toEqual([]);
@@ -457,14 +460,14 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
       shuffle: (entries) => [...entries].reverse(),
     });
 
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck.slice(-3).every(isOwned)).toBe(true);
   });
 
   it('holds the floor on a Restart, with fresh cards first within each source', async () => {
     const { service: pool } = service(recipeHits(60), { owned: corpus });
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
 
     const next = await pool.redeal(key, wiped);
 
@@ -480,7 +483,7 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
   it('holds the floor with a corpus thinner than the floor, rather than dealing short', async () => {
     const { service: pool } = service(recipeHits(60), { owned: corpus.slice(0, 2) });
 
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
 
     expect(deck).toHaveLength(15);
     expect(deck.filter(isOwned)).toHaveLength(2);
@@ -494,7 +497,7 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
     const { service: pool } = service(recipeHits(0), {
       owned: ownedRecipes(20, { cuisine: 'italian', diets: ['vegetarian'] }),
     });
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
 
     const next = await pool.redeal(key, wiped);
 
@@ -508,7 +511,7 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
     // this Craving's Recipes under a live Session dealt owned-only. Blending
     // would deal nothing; the Restart still deals a Deck.
     const { redis, service: pool } = service(recipeHits(0), { owned: corpus });
-    const wiped = await pool.dealDeck(pasta);
+    const wiped = (await pool.dealDeck(pasta)).entries;
 
     const next = await service(recipeHits(0), { redis, owned: [] }).service.redeal(key, wiped);
 
@@ -522,7 +525,7 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
     // only one — nothing owned is ever written to the pool — and it outlives
     // the pool the Sourced cards on the same Deck came from.
     const { redis, service: pool } = service(recipeHits(60), { owned: corpus });
-    const deck = await pool.dealDeck(pasta);
+    const deck = (await pool.dealDeck(pasta)).entries;
     const crowned = deck.find(isOwned)!;
     const sourced = deck.find((entry) => !isOwned(entry))!;
     await redis.del(key);
@@ -545,6 +548,159 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
         cravingPoolKey({ mealType: 'dessert', cuisines: ['thai', 'italian'], diets: [] })
       )
     ).toEqual({ mealType: 'dessert', cuisines: ['italian', 'thai'], diets: [] });
+  });
+});
+
+describe('the vendor-dark latch — dealing while Spoonacular is down (#333)', () => {
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+  });
+
+  /** A corpus deep enough to fill a Deck on its own, all of it answering `pasta`. */
+  const deep = ownedRecipes(20, { cuisine: 'italian', diets: ['vegetarian'] });
+  /** A corpus that answers the Craving but cannot fill a Deck alone. */
+  const thin = ownedRecipes(5, { cuisine: 'italian', diets: ['vegetarian'] });
+
+  it('deals owned alone, and says nothing, when the outage leaves the Deck full', async () => {
+    const { service: pool } = service(recipeHits(60), { owned: deep, failWith: 503 });
+
+    const { entries, recipeSourceDown } = await pool.dealDeck(pasta);
+
+    // The branch not darkening is the product: a full Deck is silent.
+    expect(entries).toHaveLength(15);
+    expect(recipeSourceDown).toBe(false);
+  });
+
+  it('says so when the outage is why the deal came up short', async () => {
+    const { service: pool } = service(recipeHits(60), { owned: thin, failWith: 503 });
+
+    const { entries, recipeSourceDown } = await pool.dealDeck(pasta);
+
+    expect(entries).toHaveLength(5);
+    expect(recipeSourceDown).toBe(true);
+  });
+
+  it('says nothing about a thin Craving the vendor answered honestly (#250)', async () => {
+    const { service: pool } = service(recipeHits(7));
+
+    const { entries, recipeSourceDown } = await pool.dealDeck(pasta);
+
+    // Thinness the catalogue is telling the truth about is not our outage.
+    expect(entries).toHaveLength(7);
+    expect(recipeSourceDown).toBe(false);
+  });
+
+  it('propagates the failure when owned is empty too', async () => {
+    const { service: pool } = service(recipeHits(60), { failWith: 503 });
+
+    await expect(pool.dealDeck(pasta)).rejects.toThrow();
+  });
+
+  it('writes nothing to the pool when the vendor fails under an owned-only deal', async () => {
+    const { redis, service: pool } = service(recipeHits(60), { owned: deep, failWith: 503 });
+
+    await pool.dealDeck(pasta);
+
+    // A failure remembered as "this Craving has no Recipes" would outlive the
+    // outage by the empty pool's whole TTL.
+    await expect(redis.exists(cravingPoolKey(pasta))).resolves.toBe(0);
+  });
+
+  it.each([
+    ['a revoked key', 401],
+    ['a payment stop', 402],
+  ])('latches on %s, and never calls the vendor again while latched', async (_name, status) => {
+    const dark = service(recipeHits(60), { owned: deep, failWith: status });
+
+    await dark.service.dealDeck(pasta);
+    await dark.service.dealDeck(pasta);
+    await dark.service.dealDeck(pasta);
+
+    expect(dark.searches()).toHaveLength(1);
+  });
+
+  it('latches when the points guard refuses the call (#261)', async () => {
+    const redis = new RedisMock();
+    await redis.set(pointsKey(), '1400');
+    const dark = service(recipeHits(60), { redis, owned: deep, pointCeiling: 1400 });
+
+    await dark.service.dealDeck(pasta);
+
+    await expect(redis.exists('recipes:vendor:dark')).resolves.toBe(1);
+  });
+
+  it('keeps a transport blip per-call — one failure does not latch', async () => {
+    const blip = service(recipeHits(60), { owned: deep, failWith: 503 });
+
+    await blip.service.dealDeck(pasta);
+    await blip.service.dealDeck(pasta);
+
+    expect(blip.searches()).toHaveLength(2);
+  });
+
+  it('latches once three transport blips land in a row', async () => {
+    const blip = service(recipeHits(60), { owned: deep, failWith: 503 });
+
+    for (let i = 0; i < 5; i++) await blip.service.dealDeck(pasta);
+
+    expect(blip.searches()).toHaveLength(3);
+  });
+
+  it('ends the blip run on any call the vendor answers', async () => {
+    const redis = new RedisMock();
+    const blip = service(recipeHits(60), { redis, owned: deep, failWith: 503 });
+    await blip.service.dealDeck(pasta);
+    await blip.service.dealDeck(pasta);
+
+    // A different Craving, so this deal is a cold fill of its own rather than
+    // a warm-pool read that never reaches the vendor.
+    await service(recipeHits(60), { redis }).service.dealDeck({ ...pasta, cuisines: ['thai'] });
+
+    await expect(redis.exists('recipes:vendor:blips')).resolves.toBe(0);
+  });
+
+  it('re-probes on the next real deal once the window expires, at no probe cost', async () => {
+    const redis = new RedisMock();
+    const dark = service(recipeHits(60), {
+      redis,
+      owned: deep,
+      failWith: 401,
+      vendorDarkTtlMs: 30,
+    });
+    await dark.service.dealDeck(pasta);
+    await dark.service.dealDeck(pasta);
+    expect(dark.searches()).toHaveLength(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    // Two pages deep, because the dark deal still stepped the Craving's offset.
+    const back = service(recipeHits(120), { redis, owned: deep });
+    const { entries } = await back.service.dealDeck(pasta);
+
+    // Exactly one call, and it is the deal's own — recovery costs no probe.
+    expect(back.searches()).toHaveLength(1);
+    expect(entries).toHaveLength(15);
+  });
+
+  it('gives up on a vendor that never answers rather than holding up the deal', async () => {
+    // A vendor that answers only by hanging. The fake honours the abort the
+    // deal-time budget arms, which is what real fetch does with that signal.
+    const hangs = ((_input: unknown, init?: { signal?: AbortSignal }) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+      })) as unknown as typeof fetch;
+    const pool = createRecipePoolService({
+      redis: new RedisMock(),
+      client: createSpoonacularClient(hangs, 'test-key'),
+      owned: createOwnedRecipeStore(deep),
+      deckSize: 15,
+      ownedFloor: 3,
+      dealBudgetMs: 20,
+      shuffle: (entries) => entries,
+    });
+
+    // The assertion is that this resolves at all: without the budget the deal
+    // would wait on the vendor for as long as it cared to hang.
+    await expect(pool.dealDeck(pasta)).resolves.toMatchObject({ recipeSourceDown: false });
   });
 });
 
