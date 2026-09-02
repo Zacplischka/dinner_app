@@ -1,0 +1,79 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:chorizo-and-chickpea-stew",
+  "name": "Chorizo and Chickpea Stew",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "spanish",
+  "diets": ["gluten free"],
+  "ingredients": [
+    {
+      "name": "chorizo",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g chorizo, sliced 1 cm thick"
+    },
+    {
+      "name": "chickpeas",
+      "amount": 800,
+      "unit": "g",
+      "original": "2 x 400 g tins chickpeas, drained and rinsed"
+    },
+    {
+      "name": "diced tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g tin diced tomatoes"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, sliced"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red capsicum, sliced"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "cloves",
+      "original": "3 garlic cloves, sliced"
+    },
+    {
+      "name": "smoked paprika",
+      "amount": 6,
+      "unit": "g",
+      "original": "6 g smoked paprika"
+    },
+    {
+      "name": "chicken stock",
+      "amount": 400,
+      "unit": "ml",
+      "original": "400 ml chicken stock"
+    },
+    {
+      "name": "olive oil",
+      "amount": 20,
+      "unit": "ml",
+      "original": "20 ml olive oil"
+    },
+    {
+      "name": "baby spinach",
+      "amount": 100,
+      "unit": "g",
+      "original": "100 g baby spinach"
+    }
+  ],
+  "steps": [
+    "Warm the oil in a heavy saucepan and fry the chorizo over medium heat for 5 minutes, until it curls and releases its red oil.",
+    "Lift the chorizo out and cook the onion and capsicum in the spiced oil for 10 minutes, until soft.",
+    "Add the garlic and smoked paprika, stir for a minute, then add the tomatoes and cook for 5 minutes until they darken.",
+    "Return the chorizo with the chickpeas and stock, bring to a simmer and cook uncovered for 25 minutes, until the stew thickens enough to hold a spoon upright.",
+    "Stir the spinach through until it wilts and season to taste.",
+    "Rest for 5 minutes before serving — the stew is better just below piping hot."
+  ]
+}

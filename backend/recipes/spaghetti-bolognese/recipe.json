@@ -1,0 +1,91 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:spaghetti-bolognese",
+  "name": "Spaghetti Bolognese",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "olive oil",
+      "amount": 2,
+      "unit": "tbsp",
+      "original": "2 tbsp olive oil"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "carrot",
+      "amount": 1,
+      "unit": "",
+      "original": "1 carrot, finely diced"
+    },
+    {
+      "name": "celery",
+      "amount": 2,
+      "unit": "stalks",
+      "original": "2 celery stalks, finely diced"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "cloves",
+      "original": "3 garlic cloves, crushed"
+    },
+    {
+      "name": "beef mince",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g beef mince"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 60,
+      "unit": "g",
+      "original": "60 g tomato paste"
+    },
+    {
+      "name": "tomato passata",
+      "amount": 700,
+      "unit": "g",
+      "original": "700 g tomato passata"
+    },
+    {
+      "name": "beef stock",
+      "amount": 250,
+      "unit": "ml",
+      "original": "250 ml beef stock"
+    },
+    {
+      "name": "dried oregano",
+      "amount": 2,
+      "unit": "g",
+      "original": "2 g dried oregano"
+    },
+    {
+      "name": "spaghetti",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g spaghetti"
+    },
+    {
+      "name": "parmesan",
+      "amount": 40,
+      "unit": "g",
+      "original": "40 g parmesan, finely grated"
+    }
+  ],
+  "steps": [
+    "Heat the olive oil in a heavy saucepan over medium heat and cook the onion, carrot and celery for 10 minutes, until soft and sweet but not coloured.",
+    "Add the garlic and cook for 1 minute, then raise the heat and add the beef mince. Break it up with a wooden spoon and brown it properly — 8 minutes, until the liquid has gone and the meat is catching on the base.",
+    "Stir in the tomato paste and cook for 2 minutes so it darkens, then add the passata, stock and oregano.",
+    "Bring to a simmer, drop the heat to low and cook uncovered for 45 minutes, stirring now and then, until the sauce is thick and glossy. Season with salt and pepper.",
+    "Cook the spaghetti in well-salted boiling water until al dente, reserving a cup of the cooking water before draining.",
+    "Toss the drained pasta through the sauce with a splash of the cooking water so it clings, and serve with the grated parmesan."
+  ]
+}
