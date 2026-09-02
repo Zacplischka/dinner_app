@@ -257,6 +257,34 @@ describe('CookSetupPage — the Nearest Craving', () => {
     expect(screen.queryByRole('button', { name: /instead/i })).not.toBeInTheDocument();
   });
 
+  // The likeliest moment to edit a chip is the one right after being told "No
+  // recipes match those choices" — while the offer read for that refusal is
+  // still out. It must not land on top of the Craving the Host just changed.
+  it('ignores an offer for a Craving edited out from under it', async () => {
+    let landOffer!: (offer: unknown) => void;
+    serviceMocks.fetchNearestCraving.mockImplementationOnce(
+      () => new Promise((resolve) => (landOffer = resolve))
+    );
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'korean' }));
+    await submitAs();
+    await waitFor(() => expect(serviceMocks.fetchNearestCraving).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'thai' }));
+    expect(screen.getByRole('button', { name: 'thai' })).toHaveAttribute('aria-pressed', 'true');
+
+    await act(async () => {
+      landOffer({
+        craving: { mealType: 'main course', cuisines: ASIAN, diets: [] },
+        label: 'Asian',
+        recipeCount: 12,
+      });
+    });
+
+    expect(screen.queryByRole('button', { name: /instead/i })).not.toBeInTheDocument();
+  });
+
   it('ignores an offer for a Craving already dealt over', async () => {
     let landFirstOffer!: (offer: unknown) => void;
     serviceMocks.fetchNearestCraving

@@ -40,9 +40,10 @@ export default function CookSetupPage() {
   const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
 
   /**
-   * Which deal is current. `createAndJoin` has already cleared `isCreating` by
-   * the time the offer read behind it resolves, so a second deal can start
-   * underneath one — and only the newest deal's offer may land.
+   * Which offer is current. `createAndJoin` has already cleared `isCreating` by
+   * the time the offer read behind it resolves, so the form is live underneath
+   * an in-flight read: a second deal can start, or the Craving can be edited.
+   * Either supersedes the read, and only the newest one's offer may land.
    */
   const dealsStarted = useRef(0);
 
@@ -76,9 +77,12 @@ export default function CookSetupPage() {
   /**
    * Every hand-edit of the Craving supersedes the offer: it named a neighbour
    * of a Craving that is no longer the one on screen, and an offer must deal
-   * exactly the Craving its words promise (CONTEXT.md, Nearest Craving).
+   * exactly the Craving its words promise (CONTEXT.md, Nearest Craving) — so
+   * the read still out for the old Craving is superseded too, not just the
+   * offer already on screen.
    */
   const editCraving = (edit: () => void) => {
+    dealsStarted.current++;
     setOffer(null);
     edit();
   };
