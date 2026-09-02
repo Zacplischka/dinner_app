@@ -1,5 +1,8 @@
 // The Owned Recipe Store (#331): which Owned Recipes answer a Craving, and the
 // shipped corpus the store is built over.
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Craving } from '@dinder/shared/types';
 import {
@@ -89,6 +92,35 @@ describe('forCraving — the Owned Recipe Store filter', () => {
     expect(store.forCraving(craving({ diets: ['vegan'] })).map((r) => r.placeId)).toEqual([
       'owned:vegan',
     ]);
+  });
+});
+
+describe('loadOwnedCorpus — the record shape', () => {
+  const write = (recipe: unknown): URL => {
+    const dir = new URL(`${mkdtempSync(join(tmpdir(), 'owned-'))}/`, 'file:');
+    mkdirSync(new URL('a-dish/', dir));
+    writeFileSync(new URL('a-dish/recipe.json', dir), JSON.stringify(recipe));
+    return dir;
+  };
+
+  it('keeps an Ingredient Line’s searchTerm, where the name has to stay cook-honest', () => {
+    const [record] = ownedRecipes(1, { placeId: 'owned:a-dish' });
+    const corpus = loadOwnedCorpus(
+      write({
+        ...record,
+        ingredients: [
+          {
+            name: 'gluten free vegetable stock',
+            searchTerm: 'vegetable stock',
+            amount: 500,
+            unit: 'ml',
+            original: '500 ml gluten free vegetable stock',
+          },
+        ],
+      })
+    );
+
+    expect(corpus[0].ingredients[0].searchTerm).toBe('vegetable stock');
   });
 });
 

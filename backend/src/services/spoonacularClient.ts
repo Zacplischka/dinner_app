@@ -23,6 +23,11 @@ export interface IngredientInfo {
 /** One ingredient of a pooled Recipe, as the source states it. */
 export interface PooledIngredient {
   name: string;
+  /** The term everything downstream of the card searches on, when `name` is
+   * not searchable: an Owned Recipe authors "gluten free vegetable stock" to
+   * read right on the card and "vegetable stock" here (#336). Never set by a
+   * Sourced Recipe — Spoonacular states one name and it is the only one. */
+  searchTerm?: string;
   amount: number;
   unit: string;
   /** The recipe's own wording — an Unmatched line falls back to it (#262). */

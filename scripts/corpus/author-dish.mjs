@@ -96,8 +96,8 @@ dish, not a version of anybody's page.
   AU search term. Where yours must differ, keep the record's words somewhere in "original".
 - Every ingredient appears in some step; every step names only listed ingredients. Salt, pepper,
   water and olive oil are staples and may appear freely.
-- "name" is the plain dish name. "servings" is mandatory, "readyInMinutes" honest. One meal type,
-  at most one cuisine, diets declared only when the recipe genuinely holds them.
+- "name" is the plain dish name. "servings" is mandatory. One meal type, at most one cuisine,
+  diets declared only when the recipe genuinely holds them.
 
 Banned phrasings. These are the idioms every recipe site converges on, and an overlap checker
 cannot tell convergence from copying. Never write them, in any tense or inflection — write the
@@ -135,7 +135,7 @@ function sharedCount(a, b) {
  */
 const prose = (recipe) => [
   recipe.name ?? '',
-  ...(recipe.extendedIngredients ?? []).map((i) => i.original ?? ''),
+  ...(recipe.ingredients ?? []).map((i) => i.original ?? ''),
   ...(recipe.steps ?? []),
 ];
 
@@ -189,7 +189,7 @@ export const quantitySet = (recipe, record = {}) => {
   const names = recordNames(record);
   const out = new Map();
   const claims = new Map();
-  for (const ingredient of recipe.extendedIngredients ?? []) {
+  for (const ingredient of recipe.ingredients ?? []) {
     const quantity = normaliseQuantity(`${ingredient.amount ?? ''} ${ingredient.unit ?? ''}`);
     const original = normaliseName(ingredient.original ?? '');
     // Deduped per ingredient: an authored name that is also the record's word
@@ -319,11 +319,10 @@ const RECIPE_SCHEMA = {
   properties: {
     name: { type: 'string' },
     servings: { type: 'integer' },
-    readyInMinutes: { type: 'integer' },
     mealType: { type: 'string' },
     cuisine: { type: 'string' },
     diets: { type: 'array', items: { type: 'string' } },
-    extendedIngredients: {
+    ingredients: {
       type: 'array',
       items: {
         type: 'object',
@@ -340,16 +339,7 @@ const RECIPE_SCHEMA = {
     },
     steps: { type: 'array', items: { type: 'string' } },
   },
-  required: [
-    'name',
-    'servings',
-    'readyInMinutes',
-    'mealType',
-    'cuisine',
-    'diets',
-    'extendedIngredients',
-    'steps',
-  ],
+  required: ['name', 'servings', 'mealType', 'cuisine', 'diets', 'ingredients', 'steps'],
   additionalProperties: false,
 };
 
@@ -405,12 +395,22 @@ async function authorRecipe(record, notes = [], client = new Anthropic()) {
  * Returns a Recipe the checker passed, or throws. A flagged Recipe is never
  * returned with a warning attached — ADR 0012's "a flag is a re-author" only
  * means anything if there is no other way out of this function.
+ *
+ * `options.notes` seeds the author with instructions from outside this loop —
+ * how the gate layers (#336) send a Recipe back. They survive an overlap
+ * rewrite rather than being replaced by it, so a draft that fixes the phrasing
+ * and re-breaks what the gate objected to is not the way out.
  */
 export async function authorDish(record, captures, options = {}) {
-  const { author = authorRecipe, maxRewrites = MAX_REWRITES } = options;
-  let notes = [];
+  const { author = authorRecipe, maxRewrites = MAX_REWRITES, notes: seed = [] } = options;
+  let notes = seed;
   for (let attempt = 0; ; attempt++) {
     const recipe = {
+      // An Owned Recipe is a Recipe in this repo's own vocabulary (ADR 0006),
+      // which `backend/src/services/ownedRecipeStore.ts` loads and the
+      // structural gate checks. The model writes the dish; the identity fields
+      // are ours.
+      kind: 'recipe',
       ...(await author(record, notes)),
       // Frozen from the Fact Record's slug, never from the authored title, so a
       // retitled dish keeps the placeId its image was published under (#330).
@@ -424,7 +424,9 @@ export async function authorDish(record, captures, options = {}) {
         `OVERLAP_UNRESOLVED: ${record.dish} still flagged (${kinds}) after ${maxRewrites} rewrites`
       );
     }
-    notes = [...new Set(flags.map((flag) => REWRITE_NOTES[flag.kind]).filter(Boolean))];
+    notes = [...new Set([...seed, ...flags.map((flag) => REWRITE_NOTES[flag.kind])])].filter(
+      Boolean
+    );
   }
 }
 
@@ -459,5 +461,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
   const { record, captures } = await readDish(dish);
   const recipe = await authorDish(record, captures);
-  console.error(`${commitRecord(out, record, recipe)}: ${recipe.name}, ${recipe.servings} servings`);
+  console.error(
+    `${commitRecord(out, record, recipe)}: ${recipe.name}, ${recipe.servings} servings`
+  );
 }
