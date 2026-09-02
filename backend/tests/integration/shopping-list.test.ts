@@ -63,8 +63,29 @@ const wholeTomatoes = {
   AdditionalAttributes: { sapcategoryname: 'CANNED FOOD', sapsubcategoryname: 'TOMATOES' },
 };
 
+/**
+ * What the fixture corpus's Owned Recipe is shopping for. Its line is named
+ * "gluten free spaghetti" — cook-honest, and a term Woolworths answers with
+ * nothing — so the record authors "spaghetti" beside it (#332), and this is
+ * the product only that term reaches.
+ */
+const glutenFreeSpaghetti = {
+  Stockcode: 54321,
+  Name: 'San Remo Gluten Free Spaghetti',
+  PackageSize: '500g',
+  Price: 3,
+  InstorePrice: 3,
+  CupString: '$0.60 / 100G',
+  IsAvailable: true,
+  AdditionalAttributes: { sapcategoryname: 'PASTA', sapsubcategoryname: 'DRY PASTA' },
+};
+
+/** Every term the Retailer was actually asked for, in order. */
+const searched: string[] = [];
+
 function fakes() {
   const spoonacular = spoonacularFetchFake({ recipes: hits });
+  searched.length = 0;
   return (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('woolworths.com.au')) {
@@ -75,10 +96,14 @@ function fakes() {
         });
       }
       const term = (JSON.parse(String(init?.body)) as { SearchTerm: string }).SearchTerm;
-      // "yuzu kosho" is the clean miss: the search returns nothing at all.
-      return Response.json(
-        woolworthsAnswer(term === 'canned tomatoes' ? [dicedTomatoes, wholeTomatoes] : [])
-      );
+      searched.push(term);
+      // Anything else — "yuzu kosho", "gluten free spaghetti" — is the clean
+      // miss: the search returns nothing at all.
+      const answers: Record<string, unknown[]> = {
+        'canned tomatoes': [dicedTomatoes, wholeTomatoes],
+        spaghetti: [glutenFreeSpaghetti],
+      };
+      return Response.json(woolworthsAnswer(answers[term] ?? []));
     }
     return spoonacular.fetchImpl(input, init);
   }) as typeof fetch;
@@ -104,7 +129,9 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
     // previous run outlives the run — and the shared dev Redis then serves the
     // old candidate list to the new fixtures. Exact keys, never a wildcard: the
     // store is the fake's own 1101, and the terms are this Recipe's own.
-    ...['canned tomatoes', 'yuzu kosho'].map((term) => `woolworths:price:1101:${term}`),
+    ...['canned tomatoes', 'yuzu kosho', 'spaghetti', 'gluten free spaghetti'].map(
+      (term) => `woolworths:price:1101:${term}`
+    ),
   ];
 
   beforeEach(async () => {
@@ -118,8 +145,12 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
     await redis.del(...ownKeys);
   });
 
-  /** A Cook Session decided by one Participant, crowning the only Recipe. */
-  async function decided(headcount: number) {
+  /**
+   * A Cook Session decided by one Participant, crowning one dealt Recipe: the
+   * vendor's by default, or an Owned one from the fixture corpus the blend
+   * deals alongside it (#331).
+   */
+  async function decided(headcount: number, crowned = '11') {
     const { sessionCode } = await sessionService.createSession(
       'Alice',
       undefined,
@@ -131,7 +162,7 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
       }
     );
     await sessionService.joinSession(sessionCode, 'alice', 'Alice');
-    const { results } = await sessionService.submitSelections(sessionCode, 'alice', ['11']);
+    const { results } = await sessionService.submitSelections(sessionCode, 'alice', [crowned]);
     return { sessionCode, results };
   }
 
@@ -221,6 +252,44 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
     expect(body.steps).toEqual(['Boil the pasta.', 'Fry the garlic.']);
     expect(body.sourceName).toBe('Full Belly Sisters');
     expect(body.sourceUrl).toBe('https://example.test/aglio');
+  });
+
+  it('cooks an Owned Recipe end to end: minted from the corpus, in tally, uncredited', async () => {
+    // The whole of #332 in one flow. The crowned card is Owned, so the mint
+    // reads it from the corpus rather than the pool — which is emptied here to
+    // prove it — prices it through the same ladder, and marks the payload
+    // `owned` so the Cook View credits nobody. The line reads as the record
+    // wrote it while the Retailer is asked for the term the record authored;
+    // without that term Woolworths answers "gluten free spaghetti" with
+    // nothing, and the line would fall out of the tally.
+    const { results } = await decided(4, 'owned:fixture-pasta');
+    const listId = results!.shoppingListId!;
+    await readList(listId);
+    await redis.del(poolKey);
+
+    const { body } = await readList(listId);
+
+    expect(results?.topPick?.restaurant.placeId).toBe('owned:fixture-pasta');
+    expect(body.recipeName).toBe('Fixture Pasta');
+    expect(body.provenance).toBe('owned');
+    expect(body.sourceName).toBeUndefined();
+    expect(searched).toContain('spaghetti');
+    expect(body.lines[0]).toMatchObject({
+      text: '400 g gluten free spaghetti',
+      state: 'priced',
+      packs: 1,
+      priceCents: 300,
+      product: { stockcode: 54321, packageSize: '500g' },
+    });
+    // 100% of the non-Staple lines in the tally, per Recipe — what the
+    // corpus's own tally gate promises at authoring time (#318).
+    const shoppable = body.lines.filter((line: ShoppingListLine) => !line.staple);
+    expect(shoppable.map((line: ShoppingListLine) => line.state)).toEqual(['priced']);
+    expect(shoppingListTotal(body.lines)).toEqual({
+      cents: 300,
+      estimated: false,
+      unpricedCount: 0,
+    });
   });
 
   it('lives 7 days from mint, and reading does not extend it', async () => {
