@@ -1,7 +1,6 @@
 {
   "slug": "special-fried-rice",
   "dish": "Special fried rice",
-  "cell": { "mealType": "main course", "cuisine": "chinese", "diets": [] },
   "sources": [
     {
       "url": "https://www.thecookingcollective.com.au/best-takeaway-fried-rice-recipe/",

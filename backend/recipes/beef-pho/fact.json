@@ -1,7 +1,6 @@
 {
   "slug": "beef-pho",
   "dish": "Beef pho",
-  "cell": {"mealType": "main course", "cuisine": "vietnamese", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://vickypham.com/blog/vietnamese-beef-noodle-soup-pho-bo/", "publisher": "Vicky Pham", "accessed": "2026-08-03", "robots_ok": true, "form": "long-simmer"},
     {"url": "https://scruffandsteph.com/2019/06/21/quick-beef-pho/", "publisher": "Scruff & Steph", "accessed": "2026-08-03", "robots_ok": true, "form": "quick"},

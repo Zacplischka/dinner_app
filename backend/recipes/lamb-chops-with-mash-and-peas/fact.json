@@ -1,7 +1,6 @@
 {
   "slug": "lamb-chops-with-mash-and-peas",
   "dish": "Lamb chops with mash and peas",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/lamb-cutlets-with-pea-mash-10421/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://28bysamwood.com/recipes/lamb-chops-with-veggie-mash-roast-potatoes-peas/", "publisher": "28 By Sam Wood (AU)", "accessed": "2026-08-03", "robots_ok": true},

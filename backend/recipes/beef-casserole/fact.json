@@ -1,7 +1,6 @@
 {
   "slug": "beef-casserole",
   "dish": "Slow-cooked beef casserole",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://www.createcookshare.com/single-post/slow-cooker-beef-stew-glutenfree", "publisher": "Create Cook Share", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://simplehomeedit.com/recipe/beef-casserole/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},

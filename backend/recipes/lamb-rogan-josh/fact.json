@@ -1,7 +1,6 @@
 {
   "slug": "lamb-rogan-josh",
   "dish": "Lamb rogan josh",
-  "cell": {"mealType": "main course", "cuisine": "indian", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://chefjackovens.com/lamb-rogan-josh/", "publisher": "Chef Jack Ovens (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.indianhealthyrecipes.com/rogan-josh/", "publisher": "Swasthi's Recipes", "accessed": "2026-08-03", "robots_ok": true},

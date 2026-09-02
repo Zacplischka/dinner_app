@@ -1,7 +1,6 @@
 {
   "slug": "chilli-con-carne",
   "dish": "Chilli con carne",
-  "cell": {"mealType": "main course", "cuisine": "mexican", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://www.womensweeklyfood.com.au/recipe/quick-and-easy/chilli-con-carne-14661/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.luvele.com.au/blogs/recipe-blog/chilli-con-carne-fantastic-meal-prep-recipe", "publisher": "Luvele (AU)", "accessed": "2026-08-03", "robots_ok": true},

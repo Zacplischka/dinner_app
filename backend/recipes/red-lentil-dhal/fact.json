@@ -1,7 +1,6 @@
 {
   "slug": "red-lentil-dhal",
   "dish": "Red lentil dhal",
-  "cell": {"mealType": "main course", "cuisine": "indian", "diets": ["vegan", "vegetarian", "gluten free"]},
   "sources": [
     {"url": "https://www.foxandbriar.com/easy-red-lentil-dal/", "publisher": "Fox and Briar", "accessed": "2026-08-02", "robots_ok": true},
     {"url": "https://www.indianhealthyrecipes.com/masoor-dal-recipe/", "publisher": "Swasthi's Recipes", "accessed": "2026-08-02", "robots_ok": true},

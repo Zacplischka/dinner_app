@@ -1,7 +1,6 @@
 {
   "slug": "pumpkin-soup",
   "dish": "Pumpkin soup",
-  "cell": {"mealType": "soup", "cuisine": "modern australian", "diets": ["vegetarian", "gluten free"]},
   "sources": [
     {"url": "https://www.cookingwithnanaling.com/creamy-pumpkin-soup/", "publisher": "Cooking with Nana Ling", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://australianflavours.com.au/recipes/pumpkin-soup-recipe/", "publisher": "Australian Flavours", "accessed": "2026-08-03", "robots_ok": true},

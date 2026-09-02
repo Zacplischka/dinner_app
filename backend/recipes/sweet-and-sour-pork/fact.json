@@ -1,7 +1,6 @@
 {
   "slug": "sweet-and-sour-pork",
   "dish": "Sweet and sour pork",
-  "cell": {"mealType": "main course", "cuisine": "chinese", "diets": []},
   "sources": [
     {"url": "https://www.madewithlau.com/recipes/sweet-sour-pork", "publisher": "Made With Lau", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://simplehomeedit.com/recipe/easy-sweet-and-sour-pork/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},

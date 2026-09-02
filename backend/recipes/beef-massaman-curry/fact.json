@@ -1,7 +1,6 @@
 {
   "slug": "beef-massaman-curry",
   "dish": "Beef massaman curry",
-  "cell": {"mealType": "main course", "cuisine": "thai", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://simplehomeedit.com/recipe/massaman-beef-slow-cooker/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.wokandskillet.com/slow-cooker-beef-massaman-curry/", "publisher": "Wok & Skillet (US)", "accessed": "2026-08-03", "robots_ok": true},

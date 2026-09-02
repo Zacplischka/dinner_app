@@ -1,7 +1,6 @@
 {
   "slug": "pad-thai",
   "dish": "Pad thai",
-  "cell": {"mealType": "main course", "cuisine": "thai", "diets": []},
   "sources": [
     {"url": "https://scruffandsteph.com/2019/12/24/chicken-and-prawn-pad-thai/", "publisher": "Scruff & Steph (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://hot-thai-kitchen.com/best-pad-thai/", "publisher": "Hot Thai Kitchen (CA)", "accessed": "2026-08-03", "robots_ok": true},

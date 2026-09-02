@@ -1,7 +1,6 @@
 {
   "slug": "teriyaki-chicken-with-rice",
   "dish": "Teriyaki chicken with rice",
-  "cell": {"mealType": "main course", "cuisine": "japanese", "diets": []},
   "sources": [
     {"url": "https://mykoreankitchen.com/teriyaki-chicken/", "publisher": "My Korean Kitchen", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://natashaskitchen.com/easy-teriyaki-chicken/", "publisher": "Natasha's Kitchen", "accessed": "2026-08-03", "robots_ok": true},

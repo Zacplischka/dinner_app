@@ -1,7 +1,6 @@
 {
   "slug": "chicken-burrito-bowl",
   "dish": "Chicken burrito bowl",
-  "cell": {"mealType": "main course", "cuisine": "mexican", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://simplehomeedit.com/recipe/chicken-burrito-bowls/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://feelgoodfoodie.net/recipe/chicken-burrito-bowl-cilantro-lime-rice/", "publisher": "Feel Good Foodie", "accessed": "2026-08-03", "robots_ok": true},

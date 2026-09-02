@@ -1,7 +1,6 @@
 {
   "slug": "tuna-pasta-bake",
   "dish": "Tuna pasta bake",
-  "cell": { "mealType": "main course", "cuisine": "italian", "diets": ["pescetarian"] },
   "sources": [
     { "url": "https://www.iga.com.au/recipes/dinner/tomato-tuna-pasta-bake/", "publisher": "IGA (recipe supplied by John West)", "accessed": "2026-08-03", "robots_ok": true },
     { "url": "https://sanremo.com.au/recipes/pasta-bake-tuna/", "publisher": "San Remo", "accessed": "2026-08-03", "robots_ok": true },

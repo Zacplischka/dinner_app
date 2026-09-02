@@ -1,7 +1,6 @@
 {
   "slug": "tuna-mornay",
   "dish": "Tuna mornay",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["pescetarian"]},
   "sources": [
     {"url": "https://www.wandercooks.com/tuna-mornay/", "publisher": "Wandercooks", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://simplehomeedit.com/recipe/supercharged-tuna-mornay/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},

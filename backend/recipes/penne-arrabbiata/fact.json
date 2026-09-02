@@ -1,7 +1,6 @@
 {
   "slug": "penne-arrabbiata",
   "dish": "Penne arrabbiata",
-  "cell": {"mealType": "main course", "cuisine": "italian", "diets": ["vegan", "vegetarian"]},
   "sources": [
     {"url": "https://www.themediterraneandish.com/penne-arrabbiata/", "publisher": "The Mediterranean Dish (US)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://tastesbetterfromscratch.com/penne-arrabbiata/", "publisher": "Tastes Better From Scratch (US)", "accessed": "2026-08-03", "robots_ok": true},

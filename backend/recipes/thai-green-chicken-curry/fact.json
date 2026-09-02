@@ -1,7 +1,6 @@
 {
   "slug": "thai-green-chicken-curry",
   "dish": "Thai green chicken curry",
-  "cell": {"mealType": "main course", "cuisine": "thai", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://healthymadetasty.com.au/recipes/easy-thai-green-chicken-curry/", "publisher": "Healthy Made Tasty (Cancer Council NSW)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.evolvingtable.com/green-chicken-curry/", "publisher": "Evolving Table", "accessed": "2026-08-03", "robots_ok": true},

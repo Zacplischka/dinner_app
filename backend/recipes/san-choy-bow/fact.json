@@ -1,7 +1,6 @@
 {
   "slug": "san-choy-bow",
   "dish": "San choy bow",
-  "cell": {"mealType": "main course", "cuisine": "chinese", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://omnivorescookbook.com/san-choy-bow/", "publisher": "Omnivore's Cookbook (US)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://simplehomeedit.com/recipe/san-choy-bow/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},

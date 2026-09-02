@@ -1,7 +1,6 @@
 {
   "slug": "beef-tacos",
   "dish": "Beef tacos",
-  "cell": {"mealType": "main course", "cuisine": "mexican", "diets": []},
   "sources": [
     {"url": "https://simplehomeedit.com/recipe/beef-tacos/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://natashaskitchen.com/ground-beef-tacos/", "publisher": "Natasha's Kitchen", "accessed": "2026-08-03", "robots_ok": true},

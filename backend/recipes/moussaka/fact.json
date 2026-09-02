@@ -1,7 +1,6 @@
 {
   "slug": "moussaka",
   "dish": "Moussaka",
-  "cell": {"mealType": "main course", "cuisine": "greek", "diets": []},
   "sources": [
     {"url": "https://www.themediterraneandish.com/moussaka-recipe-eggplant-casserole/", "publisher": "The Mediterranean Dish", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.feastingathome.com/rustic-eggplant-moussaka/", "publisher": "Feasting at Home", "accessed": "2026-08-03", "robots_ok": true},

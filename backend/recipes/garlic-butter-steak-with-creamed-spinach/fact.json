@@ -1,7 +1,6 @@
 {
   "slug": "garlic-butter-steak-with-creamed-spinach",
   "dish": "Garlic butter steak with creamed spinach",
-  "cell": {"mealType": "main course", "cuisine": null, "diets": ["ketogenic", "gluten free"]},
   "sources": [
     {"url": "https://www.eatwell101.com/lemon-garlic-butter-steak-and-spinach-recipe", "publisher": "Eatwell101", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://ohsnapletseat.com/2020/08/16/pan-seared-garlic-butter-rosemary-ribeye/", "publisher": "Oh Snap! Let's Eat!", "accessed": "2026-08-03", "robots_ok": true},

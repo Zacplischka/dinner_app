@@ -1,7 +1,6 @@
 {
   "slug": "chicken-parmigiana",
   "dish": "Chicken parmigiana",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": []},
   "sources": [
     {"url": "https://thescranline.com/crispy-chicken-parmigiana/", "publisher": "The Scranline", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.andy-cooks.com/blogs/recipes/chicken-parmi", "publisher": "Andy Cooks", "accessed": "2026-08-03", "robots_ok": true},

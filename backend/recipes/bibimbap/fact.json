@@ -1,7 +1,6 @@
 {
   "slug": "bibimbap",
   "dish": "Bibimbap",
-  "cell": {"mealType": "main course", "cuisine": "korean", "diets": []},
   "sources": [
     {"url": "https://www.koreanbapsang.com/bibimbap/", "publisher": "Korean Bapsang", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://mykoreankitchen.com/bibimbap-korean-mixed-rice-with-meat-and-assorted-vegetables/", "publisher": "My Korean Kitchen", "accessed": "2026-08-03", "robots_ok": true},

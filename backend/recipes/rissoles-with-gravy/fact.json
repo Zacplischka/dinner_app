@@ -1,7 +1,6 @@
 {
   "slug": "rissoles-with-gravy",
   "dish": "Beef rissoles with gravy",
-  "cell": { "mealType": "main course", "cuisine": "modern australian", "diets": [] },
   "sources": [
     { "url": "https://simplehomeedit.com/recipe/beef-rissoles/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true },
     { "url": "https://www.theirishmanswife.com/beef-rissoles-recipe/", "publisher": "The Irishman's Wife (AU)", "accessed": "2026-08-03", "robots_ok": true },

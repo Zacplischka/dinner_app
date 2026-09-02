@@ -1,7 +1,6 @@
 {
   "slug": "margherita-pizza",
   "dish": "Margherita pizza",
-  "cell": {"mealType": "main course", "cuisine": "italian", "diets": ["vegetarian"]},
   "sources": [
     {"url": "https://www.acouplecooks.com/margherita-pizza-recipe/", "publisher": "A Couple Cooks", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.kingarthurbaking.com/recipes/margherita-pizza-recipe", "publisher": "King Arthur Baking", "accessed": "2026-08-03", "robots_ok": true},

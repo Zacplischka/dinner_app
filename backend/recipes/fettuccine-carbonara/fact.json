@@ -1,7 +1,6 @@
 {
   "slug": "fettuccine-carbonara",
   "dish": "Fettuccine carbonara",
-  "cell": {"mealType": "main course", "cuisine": "italian", "diets": []},
   "sources": [
     {"url": "https://www.chefspencil.com/fettuccine-carbonara/", "publisher": "Chef's Pencil", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://myfoodbook.com.au/recipes/show/quick-and-easy-fettuccine-carbonara", "publisher": "myfoodbook (AU)", "accessed": "2026-08-03", "robots_ok": true},

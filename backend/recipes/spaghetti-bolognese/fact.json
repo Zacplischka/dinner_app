@@ -1,7 +1,6 @@
 {
   "slug": "spaghetti-bolognese",
   "dish": "Spaghetti bolognese",
-  "cell": {"mealType": "main course", "cuisine": "italian", "diets": []},
   "sources": [
     {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/spaghetti-bolognese-11346/", "publisher": "Women's Weekly Food", "accessed": "2026-08-02", "robots_ok": true},
     {"url": "https://feelgoodfoodie.net/recipe/pasta-bolognese/", "publisher": "Feel Good Foodie", "accessed": "2026-08-02", "robots_ok": true},

@@ -1,7 +1,6 @@
 {
   "slug": "lamb-souvlaki-with-greek-salad",
   "dish": "Lamb souvlaki with Greek salad",
-  "cell": {"mealType": "main course", "cuisine": "greek", "diets": []},
   "sources": [
     {"url": "https://www.savingdessert.com/lamb-souvlaki-with-tzatziki/", "publisher": "Saving Room for Dessert (US)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://cookprimalgourmet.com/recipes/greek-lamb-souvlaki/", "publisher": "Primal Gourmet (CA)", "accessed": "2026-08-03", "robots_ok": true},

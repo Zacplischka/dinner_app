@@ -1,7 +1,6 @@
 {
   "slug": "pork-chops-with-apple-sauce",
   "dish": "Pork chops with apple sauce",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://leitesculinaria.com/319873/recipes-pork-chops-applesauce.html", "publisher": "Leite's Culinaria", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://cheflindseyfarr.com/pork-chops-and-applesauce/", "publisher": "Chef Lindsey Farr", "accessed": "2026-08-03", "robots_ok": true},

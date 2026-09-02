@@ -1,7 +1,6 @@
 {
   "slug": "butter-chicken",
   "dish": "Butter chicken",
-  "cell": {"mealType": "main course", "cuisine": "indian", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://www.andy-cooks.com/blogs/recipes/butter-chicken", "publisher": "Andy Cooks", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.budgetbytes.com/butter-chicken/", "publisher": "Budget Bytes", "accessed": "2026-08-03", "robots_ok": true},

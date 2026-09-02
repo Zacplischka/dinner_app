@@ -1,7 +1,6 @@
 {
   "slug": "chicken-katsu-curry",
   "dish": "Chicken katsu curry",
-  "cell": {"mealType": "main course", "cuisine": "japanese", "diets": []},
   "sources": [
     {"url": "https://cjeatsrecipes.com/chicken-katsu-curry/", "publisher": "CJ Eats Recipes", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://onehappybite.com/chicken-katsu-curry-recipe-video/", "publisher": "One Happy Bite", "accessed": "2026-08-03", "robots_ok": true},

@@ -1,7 +1,6 @@
 {
   "slug": "chicken-schnitzel-with-salad",
   "dish": "Chicken schnitzel with salad",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": []},
   "sources": [
     {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/chicken-schnitzel-27759/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://simplehomeedit.com/recipe/freezer-friendly-chicken-schnitzel/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},

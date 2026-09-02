@@ -1,7 +1,6 @@
 {
   "slug": "grilled-steak-with-chips-and-salad",
   "dish": "Grilled steak with chips and salad",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": []},
   "sources": [
     {"url": "https://28bysamwood.com/recipes/healthy-steak-and-chips/", "publisher": "28 By Sam Wood", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.micksmeatbarn.com.au/recipes-1/cattleman%27s-steak-with-chips-and-salad-", "publisher": "Mick's Meat Barn", "accessed": "2026-08-03", "robots_ok": true},

@@ -1,7 +1,6 @@
 {
   "slug": "beef-lasagne",
   "dish": "Beef lasagne",
-  "cell": { "mealType": "main course", "cuisine": "italian", "diets": [] },
   "sources": [
     { "url": "https://bakeplaysmile.com/easy-beef-lasagne/", "publisher": "Bake Play Smile", "accessed": "2026-08-03", "robots_ok": true },
     { "url": "https://www.spendwithpennies.com/easy-homemade-lasagna/", "publisher": "Spend With Pennies", "accessed": "2026-08-03", "robots_ok": true },

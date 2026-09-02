@@ -1,7 +1,6 @@
 {
   "slug": "honey-soy-chicken-stir-fry",
   "dish": "Honey soy chicken stir-fry",
-  "cell": {"mealType": "main course", "cuisine": "chinese", "diets": []},
   "sources": [
     {"url": "https://www.coles.com.au/recipes-inspiration/recipes/sticky-honey-soy-chicken-stir-fry", "publisher": "Coles (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://cafedelites.com/honey-soy-chicken-stir-fry/", "publisher": "Cafe Delites", "accessed": "2026-08-03", "robots_ok": true},

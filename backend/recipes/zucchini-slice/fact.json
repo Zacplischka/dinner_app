@@ -1,7 +1,6 @@
 {
   "slug": "zucchini-slice",
   "dish": "Zucchini slice",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["vegetarian"]},
   "sources": [
     {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/zucchini-slice-6436/", "publisher": "Women's Weekly Food (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://simplehomeedit.com/recipe/zucchini-slice/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},

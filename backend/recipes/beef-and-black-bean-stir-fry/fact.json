@@ -1,7 +1,6 @@
 {
   "slug": "beef-and-black-bean-stir-fry",
   "dish": "Beef and black bean stir-fry",
-  "cell": {"mealType": "main course", "cuisine": "chinese", "diets": []},
   "sources": [
     {"url": "https://www.leahitsines.com.au/blogs/recipes/black-bean-and-beef-stirfry", "publisher": "Leah Itsines (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.healthyfood.com/healthy-recipes/beef-and-black-bean-stir-fry/", "publisher": "Healthy Food Guide (AU/NZ)", "accessed": "2026-08-03", "robots_ok": true},

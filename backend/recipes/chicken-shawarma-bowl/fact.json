@@ -1,7 +1,6 @@
 {
   "slug": "chicken-shawarma-bowl",
   "dish": "Chicken shawarma bowl",
-  "cell": {"mealType": "main course", "cuisine": "middle eastern", "diets": []},
   "sources": [
     {"url": "https://simplehomeedit.com/recipe/chicken-shawarma-with-garlic-yoghurt-sauce/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://thewoodenskillet.com/chicken-shawarma-bowl/", "publisher": "The Wooden Skillet (US)", "accessed": "2026-08-03", "robots_ok": true},

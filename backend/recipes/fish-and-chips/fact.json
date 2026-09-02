@@ -1,7 +1,6 @@
 {
   "slug": "fish-and-chips",
   "dish": "Fish and chips",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["pescetarian"]},
   "sources": [
     {"url": "https://www.daringgourmet.com/fish-and-chips/", "publisher": "The Daring Gourmet", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://tastesbetterfromscratch.com/fish-and-chips/", "publisher": "Tastes Better From Scratch", "accessed": "2026-08-03", "robots_ok": true},

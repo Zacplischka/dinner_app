@@ -1,7 +1,6 @@
 {
   "slug": "paleo-chicken-tray-bake",
   "dish": "Paleo chicken and vegetable tray bake",
-  "cell": {"mealType": "main course", "cuisine": null, "diets": ["paleo", "gluten free"]},
   "sources": [
     {"url": "https://www.paleorunningmomma.com/sheet-pan-chicken-veggies-paleo-whole30/", "publisher": "Paleo Running Momma (US)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://therealfooddietitians.com/one-pan-roasted-chicken-and-vegetables/", "publisher": "The Real Food Dietitians (US)", "accessed": "2026-08-03", "robots_ok": true},

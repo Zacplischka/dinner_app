@@ -1,7 +1,6 @@
 {
   "slug": "chocolate-self-saucing-pudding",
   "dish": "Chocolate self-saucing pudding",
-  "cell": {"mealType": "dessert", "cuisine": "modern australian", "diets": ["vegetarian"]},
   "sources": [
     {"url": "https://bakeplaysmile.com/classic-chocolate-self-saucing-pudding/", "publisher": "Bake Play Smile (AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.katysfoodfinds.com/chocolate-self-saucing-pudding/", "publisher": "Katy's Food Finds (NZ)", "accessed": "2026-08-03", "robots_ok": true},

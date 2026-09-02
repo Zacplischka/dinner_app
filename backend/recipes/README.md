@@ -12,6 +12,11 @@ stage was allowed to read, the observations it took from them, and nothing the
 author ever saw as prose. Nothing at runtime reads it. It is here because it is
 the demonstration that the rules held for this Recipe.
 
+These fifty were read by the pilot's own reading stage, so they carry no
+`skipped` list — the candidates it refused, and why, were not written down.
+That is a gap in this batch's audit trail rather than a gap in the record
+shape; every Fact Record `read-dish.mjs` writes from here on carries one.
+
 **This is the 50-Recipe pilot batch ([#319](https://github.com/Zacplischka/dinner_app/issues/319)),
 re-gated through the rebuilt pipeline and committed by
 [#338](https://github.com/Zacplischka/dinner_app/issues/338).** It replaces the

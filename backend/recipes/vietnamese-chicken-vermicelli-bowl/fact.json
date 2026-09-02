@@ -1,7 +1,6 @@
 {
   "slug": "vietnamese-chicken-vermicelli-bowl",
   "dish": "Vietnamese chicken vermicelli bowl",
-  "cell": {"mealType": "main course", "cuisine": "vietnamese", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://www.cooking-therapy.com/bun-ga-nuong/", "publisher": "Cooking Therapy (US)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.wandercooks.com/vietnamese-chicken-noodle-salad/", "publisher": "Wandercooks (AU)", "accessed": "2026-08-03", "robots_ok": true},

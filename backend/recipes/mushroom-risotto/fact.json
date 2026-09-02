@@ -1,7 +1,6 @@
 {
   "slug": "mushroom-risotto",
   "dish": "Mushroom risotto",
-  "cell": {"mealType": "main course", "cuisine": "italian", "diets": ["vegetarian", "gluten free"]},
   "sources": [
     {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/really-good-mushroom-risotto-27648/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.loveandlemons.com/mushroom-risotto/", "publisher": "Love and Lemons (US)", "accessed": "2026-08-03", "robots_ok": true},

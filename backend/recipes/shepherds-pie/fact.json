@@ -1,7 +1,6 @@
 {
   "slug": "shepherds-pie",
   "dish": "Shepherd's pie",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": []},
   "sources": [
     {"url": "https://www.womensweeklyfood.com.au/recipe/baking/shepherds-pie-27856/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://seekinggoodeats.com/lamb-mince-shepherds-pie/", "publisher": "Seeking Good Eats (US)", "accessed": "2026-08-03", "robots_ok": true},

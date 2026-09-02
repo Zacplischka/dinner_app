@@ -1,7 +1,6 @@
 {
   "slug": "shakshuka",
   "dish": "Shakshuka",
-  "cell": {"mealType": "main course", "cuisine": "middle eastern", "diets": ["vegetarian", "gluten free"]},
   "sources": [
     {"url": "https://www.themediterraneandish.com/shakshuka-recipe/", "publisher": "The Mediterranean Dish", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.loveandlemons.com/shakshuka-recipe/", "publisher": "Love and Lemons", "accessed": "2026-08-03", "robots_ok": true},

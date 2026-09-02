@@ -1,7 +1,6 @@
 {
   "slug": "chana-masala",
   "dish": "Chana masala",
-  "cell": {"mealType": "main course", "cuisine": "indian", "diets": ["vegan", "vegetarian", "gluten free"]},
   "sources": [
     {"url": "https://www.indianhealthyrecipes.com/chana-masala/", "publisher": "Swasthi's Recipes", "accessed": "2026-08-03", "robots_ok": true},
     {"url": "https://www.loveandlemons.com/chana-masala/", "publisher": "Love and Lemons", "accessed": "2026-08-03", "robots_ok": true},

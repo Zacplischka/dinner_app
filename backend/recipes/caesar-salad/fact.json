@@ -1,7 +1,6 @@
 {
   "slug": "caesar-salad",
   "dish": "Chicken Caesar salad",
-  "cell": { "mealType": "salad", "cuisine": null, "diets": [] },
   "sources": [
     {
       "url": "https://www.crazyforcrust.com/caesar-salad-with-chicken-and-bacon-recipe/",

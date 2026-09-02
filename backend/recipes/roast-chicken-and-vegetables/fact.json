@@ -1,7 +1,6 @@
 {
   "slug": "roast-chicken-and-vegetables",
   "dish": "Roast chicken and vegetables",
-  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
   "sources": [
     {"url": "https://wholesomebysarah.com.au/recipes/one-tray-roast-chicken-with-golden-vegetables", "publisher": "Wholesome by Sarah", "accessed": "2026-08-02", "robots_ok": true},
     {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/classic-roast-chicken-with-gravy-12652/", "publisher": "Australian Women's Weekly Food (Are Media)", "accessed": "2026-08-02", "robots_ok": true},
