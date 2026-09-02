@@ -498,8 +498,9 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
 
       const recipe = await deps.readRecipe(session.cravingKey, placeId);
       if (!recipe) {
-        // ponytail: the shared pool is the only copy of a dealt Recipe's
-        // ingredients, and a Session (30 min) can outlive the pool it dealt
+        // ponytail: the shared pool is the only copy of a dealt *Sourced*
+        // Recipe's ingredients — an Owned one is read from the corpus, which
+        // never ages out — and a Session (30 min) can outlive the pool it dealt
         // from (24 h) by minutes. Ceiling: that Session ends at its Top Pick
         // with no list. Upgrade path: stash the dealt Recipes whole beside the
         // Deck at deal time, which costs every Session what this costs ~1%.

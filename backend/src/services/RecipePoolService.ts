@@ -125,9 +125,11 @@ export interface RecipePoolService {
    */
   redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]>;
   /**
-   * The whole pooled Recipe behind a dealt card — ingredients, steps, servings,
-   * credit — which is what the Shopping List is minted from (#262). Null once
-   * the pool has aged out; the mint degrades rather than paying a lookup.
+   * The whole Recipe behind a dealt card — ingredients, steps, servings,
+   * credit — which is what the Shopping List is minted from (#262). Both
+   * supplies answer: the corpus for an `owned:` card, the pool for a Sourced
+   * one. Null once a *Sourced* Recipe's pool has aged out; the mint degrades
+   * rather than paying a lookup. An Owned Recipe never ages out.
    */
   readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null>;
 }
@@ -278,16 +280,27 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
 
     async redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]> {
       const pool = await readPool(poolKey);
-      // Nothing left to cut from, so the wiped Deck is the supply: a Restart
-      // never fails and never leaves a Session without a Deck. It already
-      // holds the floor — it was blended — so reshuffling it keeps the floor
-      // as well as the Deck's size, which cutting owned alone would not.
-      if (!pool || pool.length === 0) return shuffle(current);
+      // `null` and `[]` part company here, the same way they do in
+      // `sourcedSupply`. An aged-out pool (`null`) has nothing left to name
+      // the Sourced cards the Deck was dealt, so the wiped Deck is the supply:
+      // reshuffling it keeps the Deck's size and its floor, which cutting
+      // owned alone would not. A cached clean miss (`[]`) is an answer — the
+      // corpus is the whole supply and always was, so the Restart blends
+      // against it and deals its unshown cards first.
+      if (!pool) return shuffle(current);
       const owned = deps.owned.forCraving(cravingFromPoolKey(poolKey));
-      return blendDeck(owned, pool, deckSize, ownedFloor, current, shuffle);
+      const dealt = blendDeck(owned, pool, deckSize, ownedFloor, current, shuffle);
+      // Only reachable when a redeploy takes the corpus out from under a live
+      // Session that was dealt owned-only: a Restart never returns no Deck.
+      return dealt.length > 0 ? dealt : shuffle(current);
     },
 
     async readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null> {
+      // The corpus first: an Owned Recipe is dealt from memory and never
+      // written to the pool, so the Shopping List its crown mints has to come
+      // back from where the card did — and that copy never ages out.
+      const owned = deps.owned.byPlaceId(placeId);
+      if (owned) return owned;
       const pool = await readPool(poolKey);
       return pool?.find((recipe) => recipe.placeId === placeId) ?? null;
     },

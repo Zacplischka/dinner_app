@@ -1,0 +1,13 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:fixture-pasta",
+  "name": "Fixture Pasta",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": ["vegetarian"],
+  "ingredients": [
+    { "name": "spaghetti", "amount": 400, "unit": "g", "original": "400 g spaghetti" }
+  ],
+  "steps": ["Boil the spaghetti.", "Toss and serve."]
+}

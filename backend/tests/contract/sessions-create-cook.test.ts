@@ -1,6 +1,12 @@
 // Contract Test: POST /api/sessions in the Cook Branch (#259).
 // Drives the real app over HTTP with Spoonacular faked at the fetch boundary —
 // the seam #253 names, and the only new external source in this flow.
+//
+// The second supply is substituted at its own seam: `OWNED_RECIPES_DIR` (set
+// for this project in vitest.workspace.ts) points the app's corpus at three
+// italian vegetarian mains under tests/fixtures/owned-recipes/. Every count
+// below is therefore about the blend, and a PR that grows the shipped seed
+// cannot turn these red (#331).
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
@@ -14,12 +20,14 @@ const craving = {
 };
 
 /**
- * A Craving the Owned Recipe Store has no answer for, so the Deck is purely
- * Sourced and the vendor's own supply is the whole supply. Every test about
- * what the vendor alone does uses it, rather than doing arithmetic against a
- * corpus that grows ticket by ticket (#331).
+ * A Craving the fixture corpus has no answer for — it is all italian — so the
+ * Deck is purely Sourced and the vendor's supply is the whole supply. Every
+ * test about what the vendor alone does uses it.
  */
 const unownedCraving = { ...craving, cuisines: ['korean'] };
+
+/** The fixture corpus, all of it answering `craving`: the floor, exactly. */
+const OWNED_IN_FIXTURE = 3;
 
 /** Points the app's late-bound fetch at the Spoonacular fake. */
 function fakeSpoonacular(hits = recipeHits(60), failWith?: number) {
@@ -111,7 +119,9 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
     const owned = options.restaurants.filter((card: { placeId: string }) =>
       card.placeId.startsWith('owned:')
     );
-    expect(owned.length).toBeGreaterThan(0);
+    // The floor (#316), and with a pinned corpus it is an equality: a healthy
+    // vendor fills the other twelve.
+    expect(owned).toHaveLength(OWNED_IN_FIXTURE);
     // The pool stays purely Sourced — the union happens at deal time only.
     const pooled = JSON.parse(
       (await redis.get(`recipes:pool:main course|italian,thai|vegetarian`)) ?? '[]'
@@ -201,7 +211,7 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
       .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
       .expect(201);
 
-    expect(session.restaurantCount).toBeGreaterThan(0);
+    expect(session.restaurantCount).toBe(OWNED_IN_FIXTURE);
   });
 
   it('serves the clean miss from cache — fiddling with chips is one lookup', async () => {

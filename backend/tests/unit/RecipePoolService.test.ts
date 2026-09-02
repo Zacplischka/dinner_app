@@ -486,6 +486,56 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
     expect(deck.filter(isOwned)).toHaveLength(2);
   });
 
+  it('blends the corpus into a Restart of a Craving the vendor answered nothing for', async () => {
+    // `[]` is a cached clean miss, not a cold pool (the distinction
+    // `sourcedSupply` draws): the corpus is the whole supply and is still
+    // there, so a Restart deals its unshown cards rather than reshuffling the
+    // same fifteen back at the Session.
+    const { service: pool } = service(recipeHits(0), {
+      owned: ownedRecipes(20, { cuisine: 'italian', diets: ['vegetarian'] }),
+    });
+    const wiped = await pool.dealDeck(pasta);
+
+    const next = await pool.redeal(key, wiped);
+
+    expect(next).toHaveLength(15);
+    const wipedIds = new Set(wiped.map((entry) => entry.placeId));
+    expect(next.slice(0, 5).some((entry) => wipedIds.has(entry.placeId))).toBe(false);
+  });
+
+  it('reshuffles the wiped Deck when the owned-only supply has gone too', async () => {
+    // The corpus ships with the deploy, so "gone" is a redeploy that dropped
+    // this Craving's Recipes under a live Session dealt owned-only. Blending
+    // would deal nothing; the Restart still deals a Deck.
+    const { redis, service: pool } = service(recipeHits(0), { owned: corpus });
+    const wiped = await pool.dealDeck(pasta);
+
+    const next = await service(recipeHits(0), { redis, owned: [] }).service.redeal(key, wiped);
+
+    expect(next.map((entry) => entry.placeId).sort()).toEqual(
+      wiped.map((entry) => entry.placeId).sort()
+    );
+  });
+
+  it('reads a crowned Owned Recipe whole from the corpus, with no pool at all', async () => {
+    // What the Shopping List is minted from (#262). The corpus copy is the
+    // only one — nothing owned is ever written to the pool — and it outlives
+    // the pool the Sourced cards on the same Deck came from.
+    const { redis, service: pool } = service(recipeHits(60), { owned: corpus });
+    const deck = await pool.dealDeck(pasta);
+    const crowned = deck.find(isOwned)!;
+    const sourced = deck.find((entry) => !isOwned(entry))!;
+    await redis.del(key);
+
+    const recipe = await pool.readRecipe(key, crowned.placeId);
+
+    expect(recipe).toMatchObject({ placeId: crowned.placeId, servings: 4 });
+    expect(recipe?.ingredients.length).toBeGreaterThan(0);
+    expect(recipe?.steps.length).toBeGreaterThan(0);
+    // A Sourced Recipe is still the pool's, and still ages out with it.
+    await expect(pool.readRecipe(key, sourced.placeId)).resolves.toBeNull();
+  });
+
   it('reads the Craving back out of the pool key a Restart names', () => {
     // The Restart path carries the pool key, not the Craving — and the key is
     // the canonical Craving, which is exactly what the corpus filters on.

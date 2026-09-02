@@ -1,0 +1,13 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:fixture-risotto",
+  "name": "Fixture Risotto",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": ["vegetarian"],
+  "ingredients": [
+    { "name": "arborio rice", "amount": 300, "unit": "g", "original": "300 g arborio rice" }
+  ],
+  "steps": ["Toast the rice.", "Ladle in stock until it is done."]
+}

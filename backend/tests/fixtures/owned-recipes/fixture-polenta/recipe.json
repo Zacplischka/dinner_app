@@ -1,0 +1,13 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:fixture-polenta",
+  "name": "Fixture Polenta",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": ["vegetarian"],
+  "ingredients": [
+    { "name": "polenta", "amount": 250, "unit": "g", "original": "250 g coarse polenta" }
+  ],
+  "steps": ["Whisk the polenta into salted water.", "Stir until it thickens."]
+}

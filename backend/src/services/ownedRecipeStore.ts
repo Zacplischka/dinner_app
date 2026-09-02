@@ -13,6 +13,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { z } from 'zod';
 import { CUISINES, DIETS, MEAL_TYPES, type Craving, type Diet } from '@dinder/shared/types';
+import { config } from '../config/index.js';
 
 const ownedRecipeSchema = z
   .object({
@@ -65,6 +66,13 @@ export interface OwnedRecipeStore {
    * diet satisfied. In memory and synchronous — there is nothing to await.
    */
   forCraving(craving: Craving): OwnedRecipe[];
+  /**
+   * The whole Recipe behind an `owned:` card, whatever Craving dealt it — what
+   * the Shopping List is minted from (#262, #332). The corpus is the only copy: an
+   * Owned Recipe is never written to the Redis pool, so it can never be read
+   * back out of one, and unlike a Sourced Recipe it never ages out.
+   */
+  byPlaceId(placeId: string): OwnedRecipe | undefined;
 }
 
 export function createOwnedRecipeStore(recipes: readonly OwnedRecipe[]): OwnedRecipeStore {
@@ -83,23 +91,21 @@ export function createOwnedRecipeStore(recipes: readonly OwnedRecipe[]): OwnedRe
         )
         .map(({ recipe }) => recipe);
     },
+    // ponytail: a scan, not an index — one lookup per Shopping List over a
+    // corpus in the thousands. Upgrade path if a hot path ever calls it per
+    // card: build a Map beside `indexed`.
+    byPlaceId: (placeId) => recipes.find((recipe) => recipe.placeId === placeId),
   };
 }
 
 /**
- * The corpus on disk: `backend/recipes/<frozen-slug>/recipe.json`, the same
- * layout `scripts/corpus/images.mjs` reads and stamps `photoUrl` into. One
- * level under the package root from `src/` and from `dist/` alike, so the
- * built server and `tsx` find the same directory.
- */
-const CORPUS_DIR = new URL('../../recipes/', import.meta.url);
-
-/**
- * Read at boot, once. A record that will not parse throws by name rather than
+ * Read at boot, once, from `config.ownedRecipesDir` — `<dir>/<frozen-slug>/
+ * recipe.json`, the same layout `scripts/corpus/images.mjs` reads and stamps
+ * `photoUrl` into. A record that will not parse throws by name rather than
  * going quietly missing from every Deck — this is reviewed data shipped with
  * the deploy, so a bad batch should fail loudly and be one revert from gone.
  */
-export function loadOwnedCorpus(dir: URL = CORPUS_DIR): OwnedRecipe[] {
+export function loadOwnedCorpus(dir: URL = config.ownedRecipesDir): OwnedRecipe[] {
   return readdirSync(dir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => {
