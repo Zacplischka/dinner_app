@@ -302,9 +302,12 @@ test('the railway probe runs the measurement in production and reads a line per 
 
   const [command, args] = calls[0];
   assert.equal(command, 'railway');
-  assert.deepEqual(args.slice(0, 3), ['ssh', 'sh', '-c']);
-  // Base64 so a shell between here and the container has nothing to chew on.
-  assert.deepEqual(JSON.parse(Buffer.from(args[4], 'base64').toString('utf8')), payload);
+  assert.deepEqual(args.slice(0, 2), ['ssh', '--']);
+  // Base64, as one shell word in a variable: `railway ssh` flattens its argv
+  // into a single string the container's bash re-parses, so the payload can
+  // carry nothing that shell would chew on and cannot rely on being an argument.
+  const [, encoded] = args[2].match(/^P=([A-Za-z0-9+/=]+);/);
+  assert.deepEqual(JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')), payload);
 });
 
 test('the container finds the script from the backend directory it starts in', async () => {
@@ -327,7 +330,9 @@ test('the container finds the script from the backend directory it starts in', a
     };
     await railwayProbe([{ slug: 'a', ingredients: [] }], run);
 
-    const invoked = execFileSync('/bin/sh', argv.slice(2), {
+    // What `railway ssh` does with the argv: joins it into one string and hands
+    // that to the container's shell. A script that only works quoted dies here.
+    const invoked = execFileSync('/bin/sh', ['-c', argv.slice(2).join(' ')], {
       cwd: join(dir, 'backend'),
       env: { PATH: join(dir, 'backend/bin') },
     }).toString();
