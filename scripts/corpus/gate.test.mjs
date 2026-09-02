@@ -171,6 +171,22 @@ test('a US term in a step is caught too', () => {
   assert.match(failures, /coriander/);
 });
 
+test('a plural or hyphenated US term is the same US term', () => {
+  // The table's keys are normalised singulars; a step's prose is neither.
+  const failures = report(
+    withRecipe({
+      ingredients: [
+        ...CLEAN.ingredients,
+        { name: 'bell peppers', amount: 2, unit: '', original: '2 bell peppers, sliced' },
+      ],
+      steps: [...CLEAN.steps, 'Slice the bell peppers, then dust with self-rising flour.'],
+    }),
+    { slug: 'beef-ragu' }
+  );
+  assert.match(failures, /capsicum/);
+  assert.match(failures, /self-raising flour/);
+});
+
 test('a US term inside a longer word is not a US term', () => {
   // "beet" must not fire on "beetroot"; the lint matches on word boundaries.
   const clean = withIngredient(1, {

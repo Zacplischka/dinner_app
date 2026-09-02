@@ -167,8 +167,18 @@ const PACK_STEP_FROM = 100;
 
 const escape = (term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** On word boundaries: "beet" is not in "beetroot", "sage" is not in "sausage". */
-const wordRe = (term) => new RegExp(`(?<![a-z0-9])${escape(term)}(?![a-z0-9])`);
+/**
+ * On word boundaries: "beet" is not in "beetroot", "sage" is not in "sausage".
+ *
+ * A term is written the way `translateTerm` normalises one — lowercase, hyphens
+ * and whitespace collapsed — but the text it is matched against is not, so the
+ * pattern spells the separator back out and forgives a trailing plural. Without
+ * that, half the table only bites in the exact spelling it happens to be
+ * written in: "bell peppers" and "self-rising flour" would walk past the lint
+ * while "bell pepper" is caught.
+ */
+const wordRe = (term) =>
+  new RegExp(`(?<![a-z0-9])${escape(term).replace(/[\s-]+/g, '[\\s-]+')}(?:e?s)?(?![a-z0-9])`);
 
 const holds = (text, term) => wordRe(term).test(text);
 
