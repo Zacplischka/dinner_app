@@ -278,7 +278,7 @@ export async function liveSessions(redis) {
  * ponytail: the three lines that turn an ingredient into a state mirror
  * `ShoppingListService.buildLine`, which is not exported and would need a whole
  * Session's worth of dependencies to reach. Mirror them if the mint changes;
- * the seed corpus failing this gate is what would say so.
+ * the shipped corpus failing this gate is what would say so.
  */
 async function measure(encoded) {
   const dist = (path) => import(new URL(`../../backend/dist/${path}`, import.meta.url).href);

@@ -5,7 +5,7 @@
 // The second supply is substituted at its own seam: `OWNED_RECIPES_DIR` (set
 // for this project in vitest.workspace.ts) points the app's corpus at three
 // italian vegetarian mains under tests/fixtures/owned-recipes/. Every count
-// below is therefore about the blend, and a PR that grows the shipped seed
+// below is therefore about the blend, and a PR that grows the shipped batch
 // cannot turn these red (#331).
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
