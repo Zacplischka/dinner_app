@@ -71,6 +71,11 @@ jobs:
       # HTTP and extraction — no network, no tokens spent.
       - name: Check reading stage
         run: npm run check:reading-stage
+      # Offline self-check for the corpus pipeline's authoring stage (#335):
+      # the sources-closed boundary, the overlap checker fed a deliberate lift,
+      # and the rewrite loop. Injected author — no network, no tokens spent.
+      - name: Check authoring stage
+        run: npm run check:authoring-stage
       # Offline self-check for the Owned Recipe image pipeline's pure parts
       # (#330) — crop geometry, batch request shape, image URL, cost maths.
       # Does not touch the network and does not need cwebp.
