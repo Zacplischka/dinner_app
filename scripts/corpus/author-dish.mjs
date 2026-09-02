@@ -92,6 +92,8 @@ dish, not a version of anybody's page.
   "to taste" in an amount — a pinch of salt belongs in the step text.
 - "name" is what you would type into Woolworths search. When it has to be diet-qualified to stay
   honest ("gluten free cornflour"), add a plain matchable "searchTerm" beside it.
+- Name each ingredient with the Fact Record's canonicalIngredients wording — it is already a plain
+  AU search term. Where yours must differ, keep the record's words somewhere in "original".
 - Every ingredient appears in some step; every step names only listed ingredients. Salt, pepper,
   water and olive oil are staples and may appear freely.
 - "name" is the plain dish name. "servings" is mandatory, "readyInMinutes" honest. One meal type,
@@ -148,19 +150,38 @@ const normaliseName = (name) => String(name).toLowerCase().trim().replace(/\s+/g
 // ponytail: string comparison, no unit conversion. "Verbatim" is the standard
 // ADR 0012 sets — 0.5 kg where a source wrote 500 g is a different quantity as
 // written, and that is exactly the independence the check is asking for.
+//
+// A fragment stating no number ("salt, to taste") is not a quantity, and comes
+// back null. It has to leave the comparison entirely: the authored side is
+// always numeric, so one such observation would disagree with everything and
+// clear the whole source on its own.
 const normaliseQuantity = (fragment) => {
   const match = /^\s*([\d./]+)\s*([a-z]*)/i.exec(String(fragment));
-  return match ? `${match[1]} ${match[2].toLowerCase()}`.trim() : normaliseName(fragment);
+  return match ? `${match[1]} ${match[2].toLowerCase()}`.trim() : null;
 };
 
-/** The authored quantity for each ingredient, by name. */
-export const quantitySet = (recipe) =>
-  new Map(
-    (recipe.extendedIngredients ?? []).map((i) => [
-      normaliseName(i.name),
-      normaliseQuantity(`${i.amount ?? ''} ${i.unit ?? ''}`),
-    ])
-  );
+const recordNames = (record) =>
+  (record.canonicalIngredients ?? []).map((i) => normaliseName(i.name)).filter(Boolean);
+
+/**
+ * The authored quantity for each ingredient, keyed by the authored name *and*
+ * by any Fact Record name the shopper phrasing still carries. `name` is written
+ * for Woolworths search and Product Match reads it, so the record's word for
+ * the same ingredient often survives only in `original` ("diced tomatoes" /
+ * "400 g tinned tomatoes, diced"). Keying on one alone drops the ingredient out
+ * of the join and quietly weakens the check.
+ */
+export const quantitySet = (recipe, record = {}) => {
+  const names = recordNames(record);
+  const out = new Map();
+  for (const ingredient of recipe.extendedIngredients ?? []) {
+    const quantity = normaliseQuantity(`${ingredient.amount ?? ''} ${ingredient.unit ?? ''}`);
+    const original = normaliseName(ingredient.original ?? '');
+    for (const key of [normaliseName(ingredient.name), ...names.filter((n) => original.includes(n))])
+      out.set(key, quantity);
+  }
+  return out;
+};
 
 /**
  * One quantity set per source, read off the Fact Record's observations — which
@@ -205,9 +226,22 @@ export function checkOverlap(recipe, record, captures) {
     }
   }
 
-  const authoredQuantities = quantitySet(recipe);
+  const authoredQuantities = quantitySet(recipe, record);
+  // A join that lands on nothing is not a pass, it is the check not running.
+  // ADR 0012 counts the quantity-set fingerprint as a compliance control, so
+  // names that drift off the record come back as a re-author, not as silence.
+  const names = recordNames(record);
+  const joined = names.filter((name) => authoredQuantities.has(name));
+  if (names.length >= MIN_QUANTITY_SET && joined.length < MIN_QUANTITY_SET) {
+    flags.push({ kind: 'quantities-uncheckable', joined: joined.length, of: names.length });
+  }
+
   for (const [index, source] of sourceQuantitySets(record)) {
-    const shared = [...source].filter(([name]) => authoredQuantities.has(name));
+    // Unparseable on either side is not evidence either way — dropped, never a
+    // vote against a match. `!= null` covers the absent key too.
+    const shared = [...source].filter(
+      ([name, quantity]) => quantity !== null && authoredQuantities.get(name) != null
+    );
     if (shared.length < MIN_QUANTITY_SET) continue;
     if (shared.every(([name, quantity]) => authoredQuantities.get(name) === quantity)) {
       const publisher = record.sources?.[index]?.publisher;
@@ -236,6 +270,10 @@ const REWRITE_NOTES = {
   quantities:
     'A previous attempt reproduced one publisher’s quantities as a set. Choose your own ' +
     'AU-metric, pack-form amounts across the whole ingredient list.',
+  'quantities-uncheckable':
+    'A previous attempt named its ingredients so far off the Fact Record that the quantity ' +
+    'check could not run. Use the record’s canonicalIngredients wording for each ingredient, ' +
+    'or keep it in "original".',
 };
 
 const MODEL = 'claude-opus-5';
@@ -290,10 +328,14 @@ async function authorRecipe(record, notes = [], client = new Anthropic()) {
   // a model that knows whose page it is can reach for the house style it
   // remembers. The facts are the whole brief.
   const { sources, skipped, ...facts } = record;
+  // Streamed, so the budget is the streaming one: thinking shares the output
+  // tokens, and 16000 is the ceiling for a *non*-streaming call. A truncation
+  // here throws AUTHORING_INCOMPLETE past the rewrite loop and the dish dies
+  // with its tokens spent.
   const response = await client.messages
     .stream({
       model: MODEL,
-      max_tokens: 16000,
+      max_tokens: 64000,
       thinking: { type: 'adaptive' },
       system: AUTHORING_RULES,
       output_config: { format: { type: 'json_schema', schema: RECIPE_SCHEMA } },

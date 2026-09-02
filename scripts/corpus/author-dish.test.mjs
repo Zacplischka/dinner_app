@@ -143,6 +143,80 @@ test('too few shared ingredients is convergence, not reproduction', () => {
   assert.deepEqual(checkOverlap(copied, thin, CAPTURES), []);
 });
 
+test('an observation stating no number drops out instead of clearing the source', () => {
+  // "to taste" is not a quantity. Left in the comparison it disagrees with the
+  // authored amount every time, and one of them would pass a source whose every
+  // real amount was copied.
+  const record = {
+    ...RECORD,
+    canonicalIngredients: [
+      ...RECORD.canonicalIngredients,
+      { name: 'sea salt', essential: true, observations: ['1 tsp (s0)', 'to taste (s2)'] },
+    ],
+  };
+  const copied = {
+    ...CLEAN,
+    extendedIngredients: [
+      { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
+      { name: 'brown onion', amount: 1, unit: '', original: '1 brown onion, finely chopped' },
+      { name: 'tinned tomatoes', amount: 400, unit: 'g', original: '400 g tinned tomatoes' },
+      { name: 'sea salt', amount: 2, unit: 'tsp', original: '2 tsp sea salt' },
+    ],
+  };
+
+  const flags = checkOverlap(copied, record, CAPTURES);
+  assert.deepEqual(kinds(flags), ['quantities']);
+  assert.equal(flags[0].publisher, 'c.com');
+  assert.equal(flags[0].matched, 3);
+});
+
+test('the join follows the record’s name into "original" when the authored name drifts', () => {
+  // Product Match reads "name", so retail phrasing there is designed in; the
+  // record's word for the same ingredient survives in the shopper phrasing.
+  const copied = {
+    ...CLEAN,
+    extendedIngredients: [
+      { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
+      { name: 'brown onions', amount: 1, unit: '', original: '1 brown onion, finely chopped' },
+      {
+        name: 'canned diced tomatoes',
+        amount: 400,
+        unit: 'g',
+        original: '400 g tinned tomatoes, diced',
+      },
+      { name: 'beef stock', amount: 300, unit: 'ml', original: '300 ml beef stock' },
+    ],
+  };
+
+  const flags = checkOverlap(copied, RECORD, CAPTURES);
+  assert.deepEqual(kinds(flags), ['quantities']);
+  assert.equal(flags[0].publisher, 'c.com');
+});
+
+test('names too far off the record are flagged uncheckable, never passed in silence', async () => {
+  const drifted = {
+    ...CLEAN,
+    extendedIngredients: CLEAN.extendedIngredients.map((ingredient, n) => ({
+      ...ingredient,
+      name: `mystery item ${n}`,
+      original: `${ingredient.amount} ${ingredient.unit} mystery item ${n}`,
+    })),
+  };
+  assert.deepEqual(kinds(checkOverlap(drifted, RECORD, CAPTURES)), ['quantities-uncheckable']);
+
+  // And it spends a rewrite like any other flag, with a note that names the fix.
+  const drafts = [drifted, CLEAN];
+  const notes = [];
+  const recipe = await authorDish(RECORD, CAPTURES, {
+    author: async (_record, rewriteNotes) => {
+      notes.push(rewriteNotes);
+      return drafts.shift();
+    },
+  });
+  assert.deepEqual(recipe.steps, CLEAN.steps);
+  assert.ok(notes[1][0].includes('canonicalIngredients'));
+});
+
 test('sourceQuantitySets reads the reading stage’s own source tags', () => {
   const sets = sourceQuantitySets(RECORD);
   assert.equal(sets.get(0).get('beef mince'), '500 g');
