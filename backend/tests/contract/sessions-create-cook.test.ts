@@ -284,6 +284,21 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
     expect(spoonacular.recipeSearches()).toHaveLength(1);
   });
 
+  // The latch outlives the Session that set it, so teardown has to name both
+  // of its keys — miss one and the next file deals owned-only for five minutes
+  // without ever calling its own fake.
+  it('leaves no latch behind for the next file', async () => {
+    fakeSpoonacular(recipeHits(60), 401);
+    await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
+      .expect(503);
+
+    await cleanupTestData(redis);
+
+    await expect(redis.exists('recipes:vendor:dark', 'recipes:vendor:blips')).resolves.toBe(0);
+  });
+
   it('deals the whole thin pool with no warning when owned cannot top it up', async () => {
     fakeSpoonacular(recipeHits(7));
 
