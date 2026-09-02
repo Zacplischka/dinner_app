@@ -1,0 +1,62 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:caesar-salad",
+  "name": "Chicken Caesar Salad",
+  "servings": 4,
+  "mealType": "salad",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "chicken breast fillets",
+      "amount": 600,
+      "unit": "g",
+      "original": "600 g chicken breast fillets (2 large)"
+    },
+    {
+      "name": "bacon rashers",
+      "searchTerm": "short cut bacon",
+      "amount": 200,
+      "unit": "g",
+      "original": "4 bacon rashers (about 200 g)"
+    },
+    {
+      "name": "baby cos lettuce",
+      "amount": 2,
+      "unit": "",
+      "original": "2 baby cos lettuce"
+    },
+    {
+      "name": "croutons",
+      "amount": 100,
+      "unit": "g",
+      "original": "100 g packet croutons"
+    },
+    {
+      "name": "eggs",
+      "amount": 4,
+      "unit": "",
+      "original": "4 eggs"
+    },
+    {
+      "name": "shaved parmesan",
+      "amount": 50,
+      "unit": "g",
+      "original": "50 g shaved parmesan"
+    },
+    {
+      "name": "caesar dressing",
+      "amount": 150,
+      "unit": "ml",
+      "original": "150 ml caesar dressing"
+    }
+  ],
+  "steps": [
+    "Put the eggs in a small saucepan, cover with cold water and bring to the boil. Cook for 8 minutes, then cool under cold running water, peel and quarter.",
+    "Split each chicken breast in half horizontally so you have 4 thin fillets. Rub with a little olive oil and season with salt and pepper.",
+    "Heat a chargrill pan or barbecue over medium-high heat. Grill the chicken for 3-4 minutes each side until cooked through. Rest for 5 minutes, then slice thickly.",
+    "While the chicken rests, fry the bacon rashers in the same pan until crisp. Drain on paper towel and roughly chop.",
+    "Wash the baby cos, tear the leaves into large pieces and dry well. Toss the leaves in a large bowl with about half the caesar dressing.",
+    "Pile the dressed leaves onto plates. Top with the sliced chicken, bacon, egg quarters and croutons.",
+    "Scatter over the shaved parmesan, drizzle with the remaining dressing and grind over black pepper to serve."
+  ]
+}

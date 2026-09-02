@@ -1,0 +1,70 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:fish-and-chips",
+  "name": "Fish and Chips",
+  "servings": 4,
+  "mealType": "main course",
+  "diets": [
+    "pescetarian"
+  ],
+  "ingredients": [
+    {
+      "name": "white fish fillets",
+      "amount": 600,
+      "unit": "g",
+      "original": "600 g firm white fish fillets"
+    },
+    {
+      "name": "potatoes",
+      "searchTerm": "potatoes 2kg",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg potatoes"
+    },
+    {
+      "name": "plain flour",
+      "amount": 75,
+      "unit": "g",
+      "original": "75 g (1/2 cup) plain flour"
+    },
+    {
+      "name": "eggs",
+      "amount": 2,
+      "unit": "",
+      "original": "2 eggs"
+    },
+    {
+      "name": "panko breadcrumbs",
+      "amount": 120,
+      "unit": "g",
+      "original": "120 g (2 cups) panko breadcrumbs"
+    },
+    {
+      "name": "sweet paprika",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) sweet paprika"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon, cut into wedges"
+    },
+    {
+      "name": "tartare sauce",
+      "amount": 250,
+      "unit": "ml",
+      "original": "250 ml jar tartare sauce"
+    }
+  ],
+  "steps": [
+    "Preheat the oven to 220°C. Cut the potatoes into thick chips, rinse them in cold water, then dry them completely with a clean tea towel.",
+    "Toss the chips with a good splash of olive oil, the sweet paprika and a pinch of salt. Spread them in a single layer, cut side down, on an unlined baking tray and bake for 45 minutes, turning once halfway, until golden and crisp.",
+    "While the chips bake, set up three shallow dishes: the plain flour seasoned with salt and pepper in the first, the eggs whisked in the second, and the panko breadcrumbs in the third.",
+    "Pat the fish fillets dry with paper towel and cut into 8 even pieces. Coat each piece in flour, dip in the egg, then press firmly into the panko so the crumbs stick all over.",
+    "When the chips have about 15 minutes to go, heat a generous layer of olive oil in a large frying pan over medium-high heat until it shimmers.",
+    "Fry the fish in two batches so the pan stays hot, 3-4 minutes each side, until the crumb is deep golden and the fish flakes easily. Drain on paper towel and season with salt while hot.",
+    "Pile the fish and chips onto plates and serve with lemon wedges and tartare sauce."
+  ]
+}

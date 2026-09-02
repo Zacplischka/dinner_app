@@ -1,0 +1,95 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:chilli-con-carne",
+  "name": "Chilli con Carne",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "mexican",
+  "diets": [
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "beef mince",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g beef mince"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, diced"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "ground cumin",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) ground cumin"
+    },
+    {
+      "name": "smoked paprika",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) smoked paprika"
+    },
+    {
+      "name": "chilli powder",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) chilli powder"
+    },
+    {
+      "name": "dried oregano",
+      "amount": 1,
+      "unit": "g",
+      "original": "1 tsp (1 g) dried oregano"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 40,
+      "unit": "g",
+      "original": "2 tbsp (40 g) tomato paste"
+    },
+    {
+      "name": "diced tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g can diced tomatoes"
+    },
+    {
+      "name": "red kidney beans",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g can red kidney beans, drained and rinsed"
+    },
+    {
+      "name": "gluten-free beef stock",
+      "searchTerm": "beef liquid stock",
+      "amount": 250,
+      "unit": "ml",
+      "original": "250 ml (1 cup) gluten-free beef stock"
+    },
+    {
+      "name": "white rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g (1.5 cups) white rice"
+    }
+  ],
+  "steps": [
+    "Heat a splash of olive oil in a large pot over medium-high heat. Add the beef mince and diced brown onion and cook for 6-8 minutes, breaking up the mince with a wooden spoon, until browned.",
+    "Add the crushed garlic, ground cumin, smoked paprika, chilli powder and dried oregano. Stir for 1 minute until fragrant.",
+    "Stir in the tomato paste and cook for 1 minute, then add the diced tomatoes and gluten-free beef stock.",
+    "Stir in the drained red kidney beans, cover, and simmer on low for 30 minutes, stirring now and then.",
+    "Meanwhile, rinse the white rice and put it in a saucepan with 600 ml of water and a pinch of salt. Bring to the boil, cover, turn the heat to low and cook for 12 minutes, then rest off the heat, still covered, for 5 minutes.",
+    "Uncover the chilli, season with salt and pepper, and simmer for another 5 minutes until thick and glossy.",
+    "Fluff the rice with a fork and serve the chilli spooned over the top."
+  ]
+}

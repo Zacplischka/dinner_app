@@ -1,0 +1,88 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:beef-and-black-bean-stir-fry",
+  "name": "Beef and Black Bean Stir-Fry",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "chinese",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "beef stir fry strips",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g beef stir fry strips"
+    },
+    {
+      "name": "black bean sauce",
+      "amount": 125,
+      "unit": "ml",
+      "original": "1/2 cup (125 ml) black bean sauce"
+    },
+    {
+      "name": "soy sauce",
+      "amount": 2,
+      "unit": "tbsp",
+      "original": "2 tbsp soy sauce"
+    },
+    {
+      "name": "ginger",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp finely grated ginger"
+    },
+    {
+      "name": "garlic",
+      "searchTerm": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, cut into thin wedges"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red capsicum, sliced into strips"
+    },
+    {
+      "name": "green capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 green capsicum, sliced into strips"
+    },
+    {
+      "name": "spring onions",
+      "amount": 2,
+      "unit": "",
+      "original": "2 spring onions, thinly sliced"
+    },
+    {
+      "name": "sesame oil",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp sesame oil"
+    },
+    {
+      "name": "jasmine rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "1.5 cups (300 g) jasmine rice"
+    }
+  ],
+  "steps": [
+    "Cook the jasmine rice according to packet directions, then cover and keep warm.",
+    "Toss the beef strips with the soy sauce and half the grated ginger. Set aside for 5 minutes while you slice the onion, capsicums and spring onions.",
+    "Heat 1 tablespoon of olive oil in a wok or large frying pan over high heat until just smoking. Stir-fry the beef in two batches for 2-3 minutes each, until browned, and set aside on a plate.",
+    "Add a little more oil to the wok. Stir-fry the onion for 2 minutes, then add the garlic and remaining ginger and stir-fry for 30 seconds until fragrant.",
+    "Add the red and green capsicum and stir-fry for 2-3 minutes, keeping them just tender.",
+    "Return the beef and any resting juices to the wok. Add the black bean sauce and 1/4 cup of water, then toss for 1-2 minutes until everything is glossy and coated.",
+    "Remove from the heat and stir through the sesame oil and most of the spring onions.",
+    "Serve the stir-fry over the rice, scattered with the remaining spring onions."
+  ]
+}

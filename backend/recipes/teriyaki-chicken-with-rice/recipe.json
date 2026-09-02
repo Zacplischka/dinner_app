@@ -1,0 +1,81 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:teriyaki-chicken-with-rice",
+  "name": "Teriyaki Chicken with Rice",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "japanese",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "chicken thigh fillets",
+      "amount": 800,
+      "unit": "g",
+      "original": "800 g chicken thigh fillets"
+    },
+    {
+      "name": "soy sauce",
+      "amount": 80,
+      "unit": "ml",
+      "original": "80 ml (1/3 cup) soy sauce"
+    },
+    {
+      "name": "mirin",
+      "amount": 60,
+      "unit": "ml",
+      "original": "60 ml (1/4 cup) mirin"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 40,
+      "unit": "g",
+      "original": "2 tbsp (40 g) brown sugar"
+    },
+    {
+      "name": "ginger",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp finely grated ginger"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "white rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g (1.5 cups) white rice"
+    },
+    {
+      "name": "broccoli",
+      "amount": 1,
+      "unit": "",
+      "original": "1 head broccoli"
+    },
+    {
+      "name": "spring onions",
+      "amount": 2,
+      "unit": "",
+      "original": "2 spring onions, thinly sliced"
+    },
+    {
+      "name": "sesame seeds",
+      "amount": 10,
+      "unit": "g",
+      "original": "1 tbsp (10 g) sesame seeds"
+    }
+  ],
+  "steps": [
+    "Rinse the white rice until the water runs clear. Put it in a saucepan with 600 ml water, bring to the boil, then cover, turn the heat to low and cook for 12 minutes. Leave covered off the heat until serving.",
+    "Stir the soy sauce, mirin, brown sugar, ginger and garlic together in a jug until the sugar dissolves. Pour 2 tablespoons into a small bowl and set aside for drizzling.",
+    "Trim the chicken thigh fillets and flatten any thick spots so they cook evenly. Pat dry and season with pepper.",
+    "Heat a splash of olive oil in a large frying pan over medium-high heat. Cook the chicken for about 4 minutes each side until deep golden and cooked through.",
+    "Pour the remaining sauce into the pan and simmer for 3 to 4 minutes, turning the chicken and spooning the sauce over it, until it thickens to a glossy glaze that coats the chicken.",
+    "While the chicken glazes, cut the broccoli into florets and steam for 3 to 4 minutes until bright green and just tender.",
+    "Rest the chicken on a board for 2 minutes, then slice into 2 cm strips.",
+    "Fluff the rice into bowls, top with the sliced chicken and broccoli, drizzle over the reserved sauce and scatter with the spring onions and sesame seeds."
+  ]
+}

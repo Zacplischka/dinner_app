@@ -1,0 +1,119 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:butter-chicken",
+  "name": "Butter Chicken",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "indian",
+  "diets": [
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "chicken thigh fillets",
+      "amount": 800,
+      "unit": "g",
+      "original": "800 g chicken thigh fillets, cut into 3 cm pieces"
+    },
+    {
+      "name": "greek yoghurt",
+      "amount": 0.5,
+      "unit": "cup",
+      "original": "1/2 cup greek yoghurt"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon, juiced"
+    },
+    {
+      "name": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 cloves garlic, crushed"
+    },
+    {
+      "name": "ginger",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp finely grated ginger"
+    },
+    {
+      "name": "garam masala",
+      "amount": 6,
+      "unit": "g",
+      "original": "3 tsp (6 g) garam masala"
+    },
+    {
+      "name": "ground turmeric",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) ground turmeric"
+    },
+    {
+      "name": "ground cumin",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) ground cumin"
+    },
+    {
+      "name": "sweet paprika",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) sweet paprika"
+    },
+    {
+      "name": "butter",
+      "amount": 80,
+      "unit": "g",
+      "original": "80 g butter"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "crushed tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g can crushed tomatoes"
+    },
+    {
+      "name": "thickened cream",
+      "amount": 100,
+      "unit": "ml",
+      "original": "100 ml thickened cream"
+    },
+    {
+      "name": "caster sugar",
+      "amount": 9,
+      "unit": "g",
+      "original": "2 tsp (9 g) caster sugar"
+    },
+    {
+      "name": "basmati rice",
+      "amount": 1.5,
+      "unit": "cup",
+      "original": "1 1/2 cups basmati rice"
+    },
+    {
+      "name": "coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch coriander, leaves picked"
+    }
+  ],
+  "steps": [
+    "Combine the greek yoghurt, lemon juice, half the garlic, half the ginger, 1 tsp of the garam masala, the turmeric, cumin and 1 tsp of the sweet paprika in a large bowl. Stir in the chicken until well coated, then marinate in the fridge for at least 1 hour, or overnight.",
+    "Heat a splash of olive oil in a large frying pan over high heat. Cook the chicken in two batches until charred at the edges and just cooked through, about 4 minutes per batch. Set aside on a plate.",
+    "Reduce the heat to medium. Melt the butter in the same pan and cook the onion until soft and golden, about 5 minutes. Add the remaining garlic and ginger and cook for 1 minute until fragrant.",
+    "Stir in the remaining 2 tsp garam masala and 1 tsp sweet paprika, then add the crushed tomatoes and 1/2 cup of water. Simmer gently for 10 minutes, stirring now and then.",
+    "Meanwhile, rinse the basmati rice until the water runs clear. Combine with 2 1/4 cups of water and a pinch of salt in a saucepan, bring to the boil, then cover and simmer on the lowest heat for 12 minutes. Rest off the heat, covered.",
+    "Blend the sauce until completely smooth with a stick blender, then return it to the pan over low heat.",
+    "Stir in the thickened cream and caster sugar, then return the chicken and any resting juices to the pan. Simmer gently for 5 minutes and season with salt to taste.",
+    "Fluff the rice with a fork and divide between bowls. Spoon over the butter chicken and scatter with the coriander leaves."
+  ]
+}

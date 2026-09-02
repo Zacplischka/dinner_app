@@ -1,0 +1,60 @@
+{
+  "slug": "beef-lasagne",
+  "dish": "Beef lasagne",
+  "cell": { "mealType": "main course", "cuisine": "italian", "diets": [] },
+  "sources": [
+    { "url": "https://bakeplaysmile.com/easy-beef-lasagne/", "publisher": "Bake Play Smile", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://www.spendwithpennies.com/easy-homemade-lasagna/", "publisher": "Spend With Pennies", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://www.vincenzosplate.com/beef-lasagna-recipe/", "publisher": "Vincenzo's Plate", "accessed": "2026-08-03", "robots_ok": true }
+  ],
+  "canonicalIngredients": [
+    { "name": "beef mince", "essential": true, "observations": ["500 g (s0)", "1/2 lb lean, plus 1/2 lb Italian sausage (s1)", "500 g veal mince + 500 g pork mince in place of beef (s2)"] },
+    { "name": "lasagne sheets", "essential": true, "observations": ["375 g fresh (s0)", "12 dried noodles (s1)", "fresh egg sheets, unquantified (s2)"] },
+    { "name": "canned tomatoes / passata", "essential": true, "observations": ["800 g canned tomatoes (s0)", "36 oz pasta sauce (s1)", "1.5 bottles passata (s2)"] },
+    { "name": "tomato paste", "essential": false, "observations": ["65 g (s0)", "2 tbsp (s1)", "absent (s2)"] },
+    { "name": "onion", "essential": true, "observations": ["1 (s0)", "1 yellow (s1)", "1/2 brown (s2)"] },
+    { "name": "garlic", "essential": false, "observations": ["1 clove (s0)", "2 cloves (s1)", "absent - traditional Bolognese omits it (s2)"] },
+    { "name": "mozzarella", "essential": true, "observations": ["250 g shredded (s0)", "4 cups shredded total: 1.5 in cheese mix + 2.5 topping (s1)", "buffalo mozzarella, unquantified (s2)"] },
+    { "name": "parmesan", "essential": true, "observations": ["50 g grated (s0)", "1/2 cup shredded total (s1)", "grated pecorino or parmigiano, unquantified (s2)"] },
+    { "name": "beef stock", "essential": false, "observations": ["500 ml (s0)"] },
+    { "name": "dried Italian herbs", "essential": false, "observations": ["2 tsp (s0)", "1 tsp Italian seasoning (s1)"] },
+    { "name": "carrot", "essential": false, "observations": ["1, diced for soffritto (s2)"] },
+    { "name": "celery", "essential": false, "observations": ["1 stick, diced for soffritto (s2)"] },
+    { "name": "red wine", "essential": false, "observations": ["1 glass (s2)"] },
+    { "name": "ricotta", "essential": false, "observations": ["2 cups, or cottage cheese (s1)"] },
+    { "name": "egg", "essential": false, "observations": ["1 large, into ricotta mix (s1)"] },
+    { "name": "fresh parsley", "essential": false, "observations": ["1/4 cup chopped, into ricotta mix (s1)"] },
+    { "name": "provolone", "essential": false, "observations": ["unquantified, layered with mozzarella (s2)"] },
+    { "name": "butter", "essential": false, "observations": ["25 g, bechamel (s2)"] },
+    { "name": "plain flour", "essential": false, "observations": ["25 g, bechamel (s2)"] },
+    { "name": "milk", "essential": false, "observations": ["250 ml, bechamel (s2)"] },
+    { "name": "nutmeg", "essential": false, "observations": ["sprinkle, bechamel (s2)"] },
+    { "name": "olive oil", "essential": false, "observations": ["1 tbs (s0)", "generous EVOO for soffritto (s2)"] }
+  ],
+  "causalSequence": [
+    "soften onion in oil (plus garlic s0/s1; plus carrot celery soffritto s2)",
+    "add mince; brown, breaking up",
+    "deglaze with red wine, evaporate (s2)",
+    "add tomato base (+ paste, stock, herbs per source); simmer covered",
+    "simmer 15-20 min (s0), 5 min (s1), or 2 h adding water as it dries (s2)",
+    "if using: make bechamel - melt butter, whisk in flour, add milk gradually, season salt nutmeg (s2)",
+    "if using: mix ricotta, egg, parsley, mozzarella, parmesan, salt (s1)",
+    "boil dried noodles al dente first (s1); fresh sheets go in raw (s0, s2)",
+    "grease dish; thin sauce layer on base",
+    "layer sheets, sauce, cheese layer (mozzarella s0 / ricotta mix s1 / cheeses + bechamel s2); repeat 3-6 layers",
+    "finish with sauce and cheese on top",
+    "bake 180 C ~30-40 min (s0) or covered then uncovered to brown (s1: 45+15 min at 350 F; s2: 20+10 min)",
+    "rest before slicing"
+  ],
+  "techniqueFacts": [
+    "cheese layer diverges by tradition: plain mozzarella (s0), ricotta-egg mixture (s1), bechamel plus provolone and mozzarella (s2)",
+    "two sources bake covered with foil then uncover to brown the cheese top",
+    "all three rest the baked lasagne before slicing (5-15 min); one allows up to 45 min",
+    "fresh sheets need no pre-boil (2 sources); dried noodles are boiled al dente and rinsed cold (1 source)",
+    "sauce simmer time is the flavour lever: 15-20 min weeknight versions vs 2 h traditional ragu",
+    "one source deliberately omits garlic from the ragu to keep the Bolognese flavour soft",
+    "one source reduces the sauce well before layering so the lasagne is not soggy",
+    "one source starts every layer with sauce on the dish base to prevent sticking"
+  ],
+  "servingsObserved": [8, 12, 6]
+}

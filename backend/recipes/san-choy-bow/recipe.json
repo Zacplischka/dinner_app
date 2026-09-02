@@ -1,0 +1,95 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:san-choy-bow",
+  "name": "San Choy Bow",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "chinese",
+  "diets": [
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "pork mince",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g pork mince"
+    },
+    {
+      "name": "iceberg lettuce",
+      "amount": 1,
+      "unit": "",
+      "original": "1 iceberg lettuce, leaves separated into cups"
+    },
+    {
+      "name": "water chestnuts",
+      "amount": 225,
+      "unit": "g",
+      "original": "225 g can water chestnuts, drained and roughly chopped"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "ginger",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp finely grated ginger"
+    },
+    {
+      "name": "carrot",
+      "amount": 1,
+      "unit": "",
+      "original": "1 carrot, coarsely grated"
+    },
+    {
+      "name": "spring onions",
+      "amount": 3,
+      "unit": "",
+      "original": "3 spring onions, thinly sliced"
+    },
+    {
+      "name": "tamari",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) tamari"
+    },
+    {
+      "name": "gluten free oyster sauce",
+      "searchTerm": "oyster sauce gluten free",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) gluten free oyster sauce"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 15,
+      "unit": "g",
+      "original": "1 tbsp (15 g) brown sugar"
+    },
+    {
+      "name": "sesame oil",
+      "amount": 20,
+      "unit": "ml",
+      "original": "1 tbsp (20 ml) sesame oil"
+    },
+    {
+      "name": "roasted peanuts",
+      "amount": 40,
+      "unit": "g",
+      "original": "40 g roasted peanuts, roughly chopped"
+    }
+  ],
+  "steps": [
+    "Stir the tamari, gluten free oyster sauce and brown sugar together in a small bowl until the sugar dissolves.",
+    "Trim the base off the iceberg lettuce, separate the leaves into cups, rinse and drain well, then chill until serving.",
+    "Heat a splash of olive oil in a wok or large frying pan over high heat. Stir-fry the garlic and ginger for 30 seconds until fragrant.",
+    "Add the pork mince and cook for 5 to 6 minutes, breaking it up into small pieces with your spoon, until browned all over.",
+    "Pour in the sauce and toss for 2 minutes so the mince is glossy and well coated.",
+    "Stir in the water chestnuts and carrot and cook for 1 to 2 minutes, keeping their crunch. Take off the heat and stir through the sesame oil and most of the spring onions.",
+    "Spoon the mince into the lettuce cups at the table, scatter with the peanuts and remaining spring onion, and eat straight away while the lettuce is crisp."
+  ]
+}

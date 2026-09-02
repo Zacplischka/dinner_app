@@ -1,0 +1,83 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:beef-lasagne",
+  "name": "Beef Lasagne",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "beef mince",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g beef mince"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 50,
+      "unit": "g",
+      "original": "50 g tomato paste (2 heaped tbsp)"
+    },
+    {
+      "name": "passata",
+      "amount": 700,
+      "unit": "g",
+      "original": "700 g bottle passata"
+    },
+    {
+      "name": "beef stock",
+      "amount": 250,
+      "unit": "ml",
+      "original": "250 ml beef stock"
+    },
+    {
+      "name": "dried Italian herbs",
+      "searchTerm": "italian herbs",
+      "amount": 2,
+      "unit": "g",
+      "original": "2 tsp (2 g) dried Italian herbs"
+    },
+    {
+      "name": "instant lasagne sheets",
+      "searchTerm": "instant lasagne",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g dried instant lasagne sheets (about 9 sheets)"
+    },
+    {
+      "name": "shredded mozzarella",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g shredded mozzarella"
+    },
+    {
+      "name": "parmesan",
+      "amount": 40,
+      "unit": "g",
+      "original": "40 g finely grated parmesan"
+    }
+  ],
+  "steps": [
+    "Preheat the oven to 180°C. Heat a splash of olive oil in a large deep frying pan over medium-high heat and cook the brown onion for 3-4 minutes until soft, then add the garlic and cook for 1 minute more.",
+    "Add the beef mince and cook for 5-6 minutes, breaking it up with a wooden spoon, until browned all over.",
+    "Stir in the tomato paste and dried Italian herbs and cook for 1 minute. Pour in the passata and beef stock, season with salt and pepper, and simmer uncovered for 15 minutes. Keep the sauce loose rather than thick - the lasagne sheets soak up the liquid as they bake.",
+    "Spread a thin layer of sauce over the base of a roughly 20 x 30 cm baking dish so the pasta doesn't stick.",
+    "Build the layers: a layer of instant lasagne sheets, a third of the remaining sauce, then a scatter of shredded mozzarella. Repeat twice more so you finish with sauce on top, making sure the top sheets are fully covered.",
+    "Scatter the remaining shredded mozzarella and all the parmesan over the top.",
+    "Cover the dish with foil and bake for 30 minutes, then remove the foil and bake for another 10-15 minutes until the cheese is golden and the pasta is tender when pierced with a knife.",
+    "Rest the lasagne for 10 minutes before slicing so the layers hold together, then serve."
+  ]
+}

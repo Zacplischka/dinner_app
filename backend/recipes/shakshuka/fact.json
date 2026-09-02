@@ -1,0 +1,48 @@
+{
+  "slug": "shakshuka",
+  "dish": "Shakshuka",
+  "cell": {"mealType": "main course", "cuisine": "middle eastern", "diets": ["vegetarian", "gluten free"]},
+  "sources": [
+    {"url": "https://www.themediterraneandish.com/shakshuka-recipe/", "publisher": "The Mediterranean Dish", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.loveandlemons.com/shakshuka-recipe/", "publisher": "Love and Lemons", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://theforkedspoon.com/spicy-poached-eggs-in-tomato-sauce/", "publisher": "The Forked Spoon", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.feastingathome.com/shakshuka-north-african-skillet-eggs/", "publisher": "Feasting at Home", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "olive oil", "essential": true, "observations": ["3 tbsp (s0)", "2 tbsp (s1)", "1 tbsp (s2)", "3 tbsp (s3)"]},
+    {"name": "onion", "essential": true, "observations": ["1 large yellow (s0)", "1 small white (s1)", "1 (s2)", "1 red (s3)"]},
+    {"name": "capsicum", "essential": true, "observations": ["2 green (s0)", "1 red (s1)", "1 red (s2)", "1 large red + 1 large yellow (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves (s0)", "3 cloves (s1)", "4 cloves (s2)", "4 cloves (s3)"]},
+    {"name": "ground cumin", "essential": true, "observations": ["1/2 tsp (s0)", "1 tsp (s1)", "1 tsp (s2)", "1 tsp (s3)"]},
+    {"name": "paprika", "essential": true, "observations": ["1 tsp sweet (s0)", "1/2 tsp (s1)", "1 1/2 tsp sweet (s2)", "1 tsp smoked (s3)"]},
+    {"name": "tomatoes", "essential": true, "observations": ["6 medium fresh (~6 cups) + 1/2 cup tomato sauce (s0)", "1 x 28 oz can fire-roasted crushed (s1)", "1 x 28 oz can diced (s2)", "3 medium fresh or 1 x 14 oz can diced (s3)"]},
+    {"name": "eggs", "essential": true, "observations": ["6 large (s0)", "6 large (s1)", "6-8 large (s2)", "4-6 extra large (s3)"]},
+    {"name": "ground coriander", "essential": false, "observations": ["1 tsp (s0)"]},
+    {"name": "chilli powder", "essential": false, "observations": ["1 tsp (s2)"]},
+    {"name": "cayenne or chilli flakes", "essential": false, "observations": ["pinch chilli flakes, optional (s0)", "pinch cayenne, optional (s1)", "1/2 tsp cayenne, optional (s2)", "1/2 tsp Aleppo flakes, optional (s3)"]},
+    {"name": "tomato paste", "essential": false, "observations": ["2 tbsp (s2)"]},
+    {"name": "sugar", "essential": false, "observations": ["1 tsp, optional (s3)"]},
+    {"name": "water or white wine", "essential": false, "observations": ["1/3 cup (s3)"]},
+    {"name": "fresh parsley", "essential": false, "observations": ["1/4 cup parsley + 1/4 cup mint (s0)", "1/4 cup parsley or coriander (s1)", "2-3 tbsp parsley (s2)", "2 tbsp basil, coriander or parsley (s3)"]},
+    {"name": "feta", "essential": false, "observations": ["sprinkle, optional (s0)", "1/4 cup crumbled (s1)", "crumbled, optional (s2)", "1/4-1/2 cup feta or goat cheese, optional (s3)"]}
+  ],
+  "causalSequence": [
+    "saute onion, capsicum in olive oil until soft, 5-8 min",
+    "add garlic, spices (tomato paste if using); bloom 30-60 sec",
+    "add tomatoes with juices; simmer until thick, 10-15 min",
+    "press wells in sauce; crack an egg into each",
+    "cover; cook on low until whites set, yolks still runny, 5-10 min",
+    "scatter herbs, feta if using; serve straight from the pan"
+  ],
+  "techniqueFacts": [
+    "all 4 sources poach eggs in wells pressed into the simmered sauce",
+    "3 sources cover the pan so whites set while yolks stay runny; 1 source finishes in a 190 C oven instead",
+    "sauce must thicken before eggs go in; 2 sources call for extra uncovered simmering to reduce",
+    "spices are bloomed with the aromatics before tomatoes go in (all 4 sources)",
+    "sauce can be made up to 4 days ahead and reheated before adding eggs (3 sources)",
+    "heat comes from optional cayenne/chilli flakes/chilli powder; all sources mark heat additions optional",
+    "canned tomatoes are the standard base; fresh swap is ~1.5-2 lb (6-8 medium) per 28 oz can (2 sources)",
+    "dish is served straight from the skillet; bread is a serving suggestion, not part of the cook (all sources)"
+  ],
+  "servingsObserved": [6, 4, 4, 4]
+}

@@ -1,0 +1,62 @@
+{
+  "slug": "lamb-souvlaki-with-greek-salad",
+  "dish": "Lamb souvlaki with Greek salad",
+  "cell": {"mealType": "main course", "cuisine": "greek", "diets": []},
+  "sources": [
+    {"url": "https://www.savingdessert.com/lamb-souvlaki-with-tzatziki/", "publisher": "Saving Room for Dessert (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://cookprimalgourmet.com/recipes/greek-lamb-souvlaki/", "publisher": "Primal Gourmet (CA)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.aheadofthyme.com/greek-lamb-souvlaki-skewers/", "publisher": "Ahead of Thyme (CA)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.themediterraneandish.com/traditional-greek-salad-recipe/", "publisher": "The Mediterranean Dish (US)", "accessed": "2026-08-03", "robots_ok": true, "note": "greek salad component only"}
+  ],
+  "canonicalIngredients": [
+    {"name": "lamb leg or shoulder, boneless", "essential": true, "observations": ["2 lb, 1.5-inch cubes (s0)", "3 lb, 1-inch pieces (s1)", "1 lb, 1.5-inch cubes (s2)"]},
+    {"name": "olive oil", "essential": true, "observations": ["1/2 cup marinade + 2 tbsp tzatziki (s0)", "1/4 cup marinade + 1 tbsp tzatziki + 3 tbsp salad (s1)", "1/3 cup marinade, divided (s2)", "1/4 cup salad (s3)"]},
+    {"name": "lemon juice", "essential": true, "observations": ["1/2 cup, ~3 lemons (s0)", "2 tbsp (s1)", "1 tbsp (s2)"]},
+    {"name": "lemon zest", "essential": false, "observations": ["zest of 1 lemon, in reserved sauce (s0)", "2 tsp (s1)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves marinade + 1 clove tzatziki (s0)", "6 cloves marinade + 2 cloves tzatziki (s1)", "2 tbsp minced (s2)"]},
+    {"name": "dried oregano", "essential": true, "observations": ["2 tbsp fresh (s0)", "1.5 tsp dry marinade + 0.5 tsp tzatziki (s1)", "within 2 tbsp Italian seasoning (s2)", "1.5 tsp salad (s3)"]},
+    {"name": "dried thyme", "essential": false, "observations": ["1.5 tsp (s1)", "within Italian seasoning (s2)"]},
+    {"name": "ground cumin", "essential": false, "observations": ["3/4 tsp (s1)", "1 tbsp (s2)"]},
+    {"name": "paprika", "essential": false, "observations": ["1.5 tsp (s1)"]},
+    {"name": "white wine vinegar", "essential": false, "observations": ["1/4 cup marinade (s1)"]},
+    {"name": "yellow mustard", "essential": false, "observations": ["2 tbsp marinade (s1)"]},
+    {"name": "greek yogurt", "essential": true, "observations": ["1 cup plain (s0)", "1/2 cup whole milk (s1)"]},
+    {"name": "cucumber", "essential": true, "observations": ["1/2 English, tzatziki (s0)", "2 Persian tzatziki + 4 Persian salad (s1)", "1 English, salad (s3)"]},
+    {"name": "fresh dill", "essential": false, "observations": ["2 tbsp minced, tzatziki (s0)"]},
+    {"name": "dried mint", "essential": false, "observations": ["1/2 tsp, tzatziki (s1)"]},
+    {"name": "red wine vinegar", "essential": true, "observations": ["1 tbsp tzatziki + 1.5 tbsp salad (s1)", "1-2 tbsp salad (s3)"]},
+    {"name": "tomatoes", "essential": true, "observations": ["3, large chunks (s1)", "4 medium (s3)"]},
+    {"name": "green capsicum", "essential": true, "observations": ["1/2, thinly sliced (s1)", "1, sliced into rings (s3)"]},
+    {"name": "red onion", "essential": true, "observations": ["1 large, skewered with lamb (s0)", "1/4, thinly sliced in salad (s1)", "1 medium, half moons in salad (s3)"]},
+    {"name": "kalamata olives", "essential": true, "observations": ["1/4 cup (s1)", "1 handful pitted (s3)"]},
+    {"name": "feta", "essential": true, "observations": ["3 oz (s1)", "7 oz block in brine, torn into slabs (s3)"]},
+    {"name": "capers", "essential": false, "observations": ["2 tbsp brined, drained (s1)"]},
+    {"name": "pita bread", "essential": true, "observations": ["grilled to warm, for wraps (s0)", "warm flatbread serving option (s1)", "warm pita serving suggestion (s2)"]},
+    {"name": "fresh parsley", "essential": false, "observations": ["2 tbsp tzatziki + 1 tbsp reserved sauce (s0)"]},
+    {"name": "red capsicum", "essential": false, "observations": ["2, skewered with lamb (s0)"]}
+  ],
+  "causalSequence": [
+    "cube lamb leg or shoulder 2.5-4 cm",
+    "marinate lamb: olive oil, lemon juice, garlic, oregano (plus vinegar, mustard, cumin, paprika per source); 4 h to overnight refrigerated",
+    "grate cucumber; squeeze or drain dry",
+    "stir tzatziki: yogurt, drained cucumber, garlic, olive oil, herbs, vinegar; chill 30 min",
+    "chop salad: tomato, cucumber, capsicum, red onion, olives; dress with olive oil, red wine vinegar, oregano; top with feta slabs",
+    "soak wooden skewers; thread lamb, discard marinade",
+    "grill skewers over high direct heat, turning, until charred and medium inside (140-155 F)",
+    "rest lamb off heat a few minutes",
+    "warm pita on grill",
+    "serve skewers with pita, tzatziki, greek salad"
+  ],
+  "techniqueFacts": [
+    "all three souvlaki sources marinate 4 h to overnight for preference; one allows 30 min minimum (s2)",
+    "acid (lemon juice, wine vinegar) tenderizes the lamb; one source adds yellow mustard as tang plus binder for spices (s1)",
+    "two sources squeeze or drain the grated cucumber hard before mixing tzatziki to avoid a watery sauce (s0, s1)",
+    "target doneness is medium, 140-155 F internal, with an off-heat rest to finish (s1, s2)",
+    "one source reserves half the marinade (never meat-touched) with honey, lemon zest, parsley as a finishing drizzle (s0)",
+    "salad dressing is unwhisked: oil and red wine vinegar poured straight over the vegetables (s1, s3)",
+    "feta goes on top of the salad in slabs, not tossed through (s1, s3)",
+    "wooden skewers get a 10-30 min water soak before grilling (s0, s1, s2)",
+    "leg is leaner and easier to cube; shoulder is fattier and more flavourful (s1, s2)"
+  ],
+  "servingsObserved": [6]
+}

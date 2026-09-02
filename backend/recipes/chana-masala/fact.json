@@ -1,0 +1,57 @@
+{
+  "slug": "chana-masala",
+  "dish": "Chana masala",
+  "cell": {"mealType": "main course", "cuisine": "indian", "diets": ["vegan", "vegetarian", "gluten free"]},
+  "sources": [
+    {"url": "https://www.indianhealthyrecipes.com/chana-masala/", "publisher": "Swasthi's Recipes", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.loveandlemons.com/chana-masala/", "publisher": "Love and Lemons", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.cookwithmanali.com/chana-masala/", "publisher": "Cook with Manali", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://sharethespice.com/chana-masala-recipe/", "publisher": "Share the Spice", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chickpeas", "essential": true, "observations": ["1 cup dried or 2x425 g cans (s0)", "3 cups cooked (s1)", "1 cup dried / 200 g or 2.5 cups canned (s2)", "2x425 g cans (s3)"]},
+    {"name": "oil", "essential": true, "observations": ["2 tbsp neutral oil (s0)", "2 tbsp olive oil (s1)", "2 tbsp / 30 ml avocado oil (s2)", "1 tbsp olive oil (s3)"]},
+    {"name": "onion", "essential": true, "observations": ["1.5 cups chopped, 2 large (s0)", "1 medium yellow (s1)", "1 large red (s2)", "2 medium (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["in 0.75-1 tbsp ginger garlic paste (s0)", "2 cloves (s1)", "3-4 large cloves (s2)", "4 cloves (s3)"]},
+    {"name": "ginger", "essential": true, "observations": ["in ginger garlic paste (s0)", "0.5 tsp grated (s1)", "1 inch (s2)", "1 inch (s3)"]},
+    {"name": "tomatoes", "essential": true, "observations": ["1.5 cups chopped, 3 large, or puree (s0)", "1x800 g can whole peeled (s1)", "2 medium pureed (s2)", "2 medium diced (s3)"]},
+    {"name": "tomato paste", "essential": false, "observations": ["1 tbsp (s2)", "1 tbsp (s3)"]},
+    {"name": "green chilli", "essential": false, "observations": ["1 slit, optional (s0)", "1 (s2)", "1 jalapeno optional for heat (s3)"]},
+    {"name": "cumin seeds", "essential": true, "observations": ["1 tsp (s1)", "0.75 tsp (s2)", "1 tsp (s3)"]},
+    {"name": "garam masala", "essential": true, "observations": ["1 tsp (s0)", "1 tsp (s1)", "0.25 tsp (s2)", "2 tsp chana masala or garam masala (s3)"]},
+    {"name": "ground coriander", "essential": true, "observations": ["2 tsp (s0)", "0.5 tsp (s1)", "1 tsp (s2)"]},
+    {"name": "ground turmeric", "essential": true, "observations": ["0.25 tsp (s0)", "0.5 tsp (s1)", "0.25 tsp (s2)", "1 tsp (s3)"]},
+    {"name": "chilli powder", "essential": false, "observations": ["1.5 tsp Kashmiri (s0)", "pinch cayenne (s1)", "0.5 tsp paprika (s2)"]},
+    {"name": "ground cumin", "essential": false, "observations": ["0.5 tsp optional (s0)", "0.5 tsp (s2)"]},
+    {"name": "kasuri methi", "essential": false, "observations": ["1 tsp optional (s0)", "1 tsp (s2)", "0.25 cup (s3)"]},
+    {"name": "whole spices (bay leaf, cinnamon, cardamom, cloves)", "essential": false, "observations": ["1 bay + 1 in cinnamon + 2 cloves + 2 cardamom, optional (s0)", "0.25 tsp ground cardamom only (s1)", "1 bay + 4 cardamom + 3 cloves + 1 in cinnamon + 7 peppercorns (s2)"]},
+    {"name": "salt", "essential": true, "observations": ["0.75 tsp + to taste (s0)", "1 heaped tsp (s1)", "0.875 tsp divided (s2)", "0.5 tsp + to taste (s3)"]},
+    {"name": "coriander leaves", "essential": true, "observations": ["2 tbsp chopped (s0)", "0.5 cup chopped (s1)", "1-2 tbsp (s2)", "garnish, optional (s3)"]},
+    {"name": "lemon juice", "essential": false, "observations": ["sprinkle optional (s0)", "1 tsp (s1)", "squeeze optional (s2)"]},
+    {"name": "amchur", "essential": false, "observations": ["0.25 tsp optional (s0)"]},
+    {"name": "water", "essential": true, "observations": ["1.75-2 cups with canned chickpeas (s0)", "0.5 cup (s1)", "2 cups, chickpea cooking water preferred (s2)", "0.25-0.5 cup optional for looser gravy (s3)"]}
+  ],
+  "causalSequence": [
+    "optional: soak dried chickpeas overnight; pressure cook till squashable (or use canned, drained)",
+    "heat oil; sizzle whole spices and cumin seeds till fragrant",
+    "add onion; cook till golden",
+    "add ginger, garlic, green chilli; cook 1 min",
+    "add tomato, salt; cook down to thick pulp",
+    "stir in ground spices; fry 30 sec-4 min till aromatic, oil separating",
+    "add chickpeas, water; cover, simmer 10-25 min till thick",
+    "finish with kasuri methi, coriander leaves; lemon juice to taste",
+    "serve with rice or naan"
+  ],
+  "techniqueFacts": [
+    "all four sources temper spices in hot oil before onion; two name blooming as the flavour foundation",
+    "two sources cook ground spices into the reduced tomato until oil separates from the masala",
+    "three sources accept canned chickpeas as a direct swap for soaked-and-pressure-cooked dried",
+    "one source blends the onion-tomato masala for a smooth restaurant-style gravy",
+    "end-added tang is standard: lemon juice (3 sources), amchur (1), kasuri methi (3)",
+    "one source uses chickpea cooking water as the gravy liquid",
+    "vegan: all four cook in plant oil, never ghee; one notes an optional ghee-fried ginger garnish that breaks vegan",
+    "dairy appears only at serve time: one source dollops Greek yogurt on the plate; the dish itself is dairy-free",
+    "gluten free as cooked; GF serving is rice, naan/roti sides contain wheat"
+  ],
+  "servingsObserved": [4, 4, 3, 4]
+}

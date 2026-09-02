@@ -1,0 +1,61 @@
+{
+  "slug": "chicken-shawarma-bowl",
+  "dish": "Chicken shawarma bowl",
+  "cell": {"mealType": "main course", "cuisine": "middle eastern", "diets": []},
+  "sources": [
+    {"url": "https://simplehomeedit.com/recipe/chicken-shawarma-with-garlic-yoghurt-sauce/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://thewoodenskillet.com/chicken-shawarma-bowl/", "publisher": "The Wooden Skillet (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://juliasalbum.com/chicken-shawarma-bowl/", "publisher": "Julia's Album (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.dimitrasdishes.com/delicious-healthy-chicken-shawarma-rice-bowls-halal-cart-style/", "publisher": "Dimitras Dishes (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken thighs", "essential": true, "observations": ["500 g boneless skinless (s0)", "1 lb boneless skinless (s1)", "1.5 lb pre-cooked shawarma (s2)", "2 lb boneless skinless (s3)"]},
+    {"name": "greek yoghurt", "essential": true, "observations": ["250 g sauce + 2 tbsp marinade (s0)", "1/4 cup marinade + 1/2 cup sauce (s1)", "1.5 cups as tzatziki (s2)", "1 cup plain yoghurt sauce (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["1 tsp minced marinade + toum in sauce (s0)", "2 tbsp minced marinade + 1 tbsp sauce (s1)", "4 cloves in rice (s2)", "5 cloves marinade + 1-2 cloves sauce (s3)"]},
+    {"name": "lemon juice", "essential": true, "observations": ["2 tbsp marinade (s0)", "1 tbsp sauce (s1)", "wedges to serve (s2)", "1/4 cup marinade + 2 tbsp sauce + 2 tbsp rice (s3)"]},
+    {"name": "ground cumin", "essential": true, "observations": ["2 tsp (s0)", "1.5 tsp marinade + 0.5 tsp sauce (s1)", "2 tsp (s3)"]},
+    {"name": "paprika", "essential": true, "observations": ["1 tsp sweet + 1 tsp smoked (s0)", "1 tsp smoked (s1)", "2 tsp (s3)"]},
+    {"name": "rice", "essential": true, "observations": ["4 cups cooked (s1)", "1.5 cups basmati raw (s2)", "2 cups long grain raw (s3)"]},
+    {"name": "tomatoes", "essential": true, "observations": ["2 sliced (s0)", "1-2 cups cherry, halved (s1)", "5 oz cherry, quartered (s2)"]},
+    {"name": "cucumber", "essential": true, "observations": ["1-2 cups English, sliced (s1)", "0.5 lb Persian, cubed (s2)"]},
+    {"name": "red onion", "essential": false, "observations": ["1 finely sliced (s0)", "quick-pickled (s1)"]},
+    {"name": "ground coriander", "essential": false, "observations": ["1 tsp (s3)"]},
+    {"name": "turmeric", "essential": false, "observations": ["1.5 tsp in rice (s2)", "1/4 tsp in spice mix (s3)"]},
+    {"name": "garlic powder", "essential": false, "observations": ["1 tsp (s0)", "2 tsp (s1)", "1/2 tsp in rice (s3)"]},
+    {"name": "onion powder", "essential": false, "observations": ["1 tsp (s0)", "2 tsp (s1)"]},
+    {"name": "ground cinnamon", "essential": false, "observations": ["1/4 tsp (s1)"]},
+    {"name": "ground cardamom", "essential": false, "observations": ["1 tsp (s0)"]},
+    {"name": "sumac", "essential": false, "observations": ["1/2 tsp garnish (s0)", "1 tsp in spice mix (s3)"]},
+    {"name": "olive oil", "essential": false, "observations": ["3 tbsp marinade (s0)", "2 tbsp salad (s2)", "1/4 cup marinade (s3)"]},
+    {"name": "tomato paste", "essential": false, "observations": ["1 tbsp marinade (s0)"]},
+    {"name": "fresh mint", "essential": false, "observations": ["1 tbsp chopped (s0)", "garnish (s1)", "1 tbsp minced in salad (s2)"]},
+    {"name": "fresh parsley", "essential": false, "observations": ["garnish (s1)", "1 tbsp minced in salad (s2)"]},
+    {"name": "feta", "essential": false, "observations": ["1/2 cup crumbled (s1)", "8 oz crumbled (s2)"]},
+    {"name": "chickpeas", "essential": false, "observations": ["7 oz canned (s2)", "2 x 425 g cans, buttered into rice (s3)"]},
+    {"name": "mayonnaise", "essential": false, "observations": ["1 tbsp sauce (s1)", "1/4 cup sauce (s3)"]},
+    {"name": "chicken stock", "essential": false, "observations": ["2.5 cups for rice (s2)", "2 cups for rice (s3)"]},
+    {"name": "brown onion", "essential": false, "observations": ["1/2 diced in rice (s2)", "1 sliced, cooked with chicken (s3)"]},
+    {"name": "butter", "essential": false, "observations": ["2 tbsp ghee/butter for rice (s2)", "2-3 tbsp for rice (s3)"]},
+    {"name": "lime juice", "essential": false, "observations": ["1.5 tbsp marinade (s1)"]}
+  ],
+  "causalSequence": [
+    "whisk yoghurt, lemon, garlic, shawarma spices; coat thighs, marinate 30 min-24 h",
+    "simmer rice in chicken stock 15 min covered; optional turmeric-onion toast first",
+    "stir yoghurt, garlic, lemon (optional mayo) for garlic sauce; chill",
+    "sear thighs in hot pan 5-6 min per side until charred through (74 C)",
+    "rest 5 min; slice thin",
+    "toss tomato, cucumber, red onion, mint with olive oil",
+    "bowl up: rice, sliced chicken, salad; drizzle garlic sauce; lemon wedge to finish"
+  ],
+  "techniqueFacts": [
+    "three sources marinate in a yoghurt-spice paste; yoghurt tenderises and helps char but sticks, so one source advises nonstick over cast iron",
+    "all four sources use chicken thighs; one notes thighs stay juicy overcooked where breast does not",
+    "marinade window disputed: one source caps ~30 min (acid breaks down meat), another allows up to 24 h for deeper flavour",
+    "rest chicken 5 min then slice thin (three sources)",
+    "rice cooked absorption-style in chicken stock, 15 min covered simmer (two sources); turmeric rice variant (two sources)",
+    "sauce base = yoghurt + garlic + lemon; two sources add mayonnaise for halal-cart richness",
+    "chicken works in pan, air fryer, barbecue, or under the grill (one source lists all)",
+    "one source splashes water into the pan late to lift the fond over the chicken"
+  ],
+  "servingsObserved": [4, 4, 6, 4]
+}

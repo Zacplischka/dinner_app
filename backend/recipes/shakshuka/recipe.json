@@ -1,0 +1,90 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:shakshuka",
+  "name": "Shakshuka",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "middle eastern",
+  "diets": [
+    "vegetarian",
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 large red capsicum"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "",
+      "original": "3 cloves garlic"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 40,
+      "unit": "g",
+      "original": "2 tbsp (40 g) tomato paste"
+    },
+    {
+      "name": "ground cumin",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) ground cumin"
+    },
+    {
+      "name": "paprika",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) paprika"
+    },
+    {
+      "name": "chilli flakes",
+      "amount": 1,
+      "unit": "g",
+      "original": "1/2 tsp (1 g) chilli flakes"
+    },
+    {
+      "name": "diced tomatoes",
+      "amount": 800,
+      "unit": "g",
+      "original": "2 x 400 g cans diced tomatoes"
+    },
+    {
+      "name": "eggs",
+      "amount": 6,
+      "unit": "",
+      "original": "6 eggs"
+    },
+    {
+      "name": "vegetarian feta",
+      "searchTerm": "feta",
+      "amount": 100,
+      "unit": "g",
+      "original": "100 g vegetarian feta, crumbled"
+    },
+    {
+      "name": "parsley",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch parsley, chopped"
+    }
+  ],
+  "steps": [
+    "Finely chop the brown onion, dice the red capsicum and crush the garlic.",
+    "Heat a splash of olive oil in a large deep frying pan over medium heat. Cook the onion and capsicum, stirring now and then, for 6-8 minutes until soft.",
+    "Add the garlic, tomato paste, ground cumin, paprika and chilli flakes (skip the flakes for a milder sauce). Stir for 1 minute until fragrant.",
+    "Tip in the diced tomatoes with their juices, season with salt and pepper, and simmer uncovered for 12-15 minutes until the sauce is thick enough to hold its shape when you drag a spoon through it.",
+    "Press 6 wells into the sauce with the back of a spoon and crack an egg into each.",
+    "Cover the pan and cook on low for 6-8 minutes, until the egg whites are set but the yolks are still runny.",
+    "Scatter over the crumbled vegetarian feta and chopped parsley, and serve straight from the pan."
+  ]
+}

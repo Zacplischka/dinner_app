@@ -1,0 +1,81 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:rissoles-with-gravy",
+  "name": "Beef Rissoles with Gravy",
+  "servings": 4,
+  "mealType": "main course",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "beef mince",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g beef mince"
+    },
+    {
+      "name": "brown onion",
+      "amount": 2,
+      "unit": "",
+      "original": "2 brown onions"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "egg",
+      "searchTerm": "eggs",
+      "amount": 1,
+      "unit": "",
+      "original": "1 egg"
+    },
+    {
+      "name": "breadcrumbs",
+      "amount": 30,
+      "unit": "g",
+      "original": "1/2 cup (30 g) breadcrumbs"
+    },
+    {
+      "name": "worcestershire sauce",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) worcestershire sauce"
+    },
+    {
+      "name": "tomato sauce",
+      "amount": 20,
+      "unit": "ml",
+      "original": "1 tbsp (20 ml) tomato sauce"
+    },
+    {
+      "name": "plain flour",
+      "amount": 20,
+      "unit": "g",
+      "original": "2 tbsp (20 g) plain flour"
+    },
+    {
+      "name": "beef stock",
+      "amount": 500,
+      "unit": "ml",
+      "original": "500 ml beef stock"
+    },
+    {
+      "name": "butter",
+      "amount": 20,
+      "unit": "g",
+      "original": "20 g butter"
+    }
+  ],
+  "steps": [
+    "Grate one brown onion into a large bowl. Add the beef mince, crushed garlic, egg, breadcrumbs, tomato sauce and 1 tablespoon of the worcestershire sauce. Season with salt and pepper and mix by hand until just combined - don't overwork it or the rissoles turn firm.",
+    "With wet hands, shape the mixture into 8 thick rissoles. Keep them chunky rather than flattening them like burgers so they hold their juices.",
+    "Heat a splash of olive oil in a large frying pan over medium heat. Brown the rissoles in two batches so they don't crowd the pan, about 3 minutes each side, then transfer to a plate. They don't need to be cooked through yet.",
+    "Thinly slice the remaining onion. Melt the butter in the same pan and cook the onion for about 5 minutes until soft and golden, scraping up any browned bits.",
+    "Stir the plain flour into the onions and cook for 1 minute.",
+    "Gradually whisk in the beef stock and the remaining tablespoon of worcestershire sauce. Simmer for 2 to 3 minutes until the gravy starts to thicken.",
+    "Return the rissoles and any resting juices to the pan. Simmer gently over low heat for 8 to 10 minutes, turning once, until the rissoles are cooked through and the gravy is thick and glossy.",
+    "Spoon the onion gravy generously over the rissoles and serve hot, straight from the pan."
+  ]
+}

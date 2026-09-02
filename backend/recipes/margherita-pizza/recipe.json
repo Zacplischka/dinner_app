@@ -1,0 +1,74 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:margherita-pizza",
+  "name": "Margherita Pizza",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [
+    "vegetarian"
+  ],
+  "ingredients": [
+    {
+      "name": "plain flour",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g plain flour, plus extra for kneading"
+    },
+    {
+      "name": "instant dried yeast",
+      "amount": 7,
+      "unit": "g",
+      "original": "7 g sachet instant dried yeast"
+    },
+    {
+      "name": "caster sugar",
+      "amount": 5,
+      "unit": "g",
+      "original": "1 tsp (5 g) caster sugar"
+    },
+    {
+      "name": "whole peeled tomatoes",
+      "searchTerm": "canned whole peeled tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "1 x 400 g can whole peeled tomatoes"
+    },
+    {
+      "name": "garlic",
+      "amount": 1,
+      "unit": "",
+      "original": "1 garlic clove"
+    },
+    {
+      "name": "vegetarian fresh mozzarella",
+      "searchTerm": "fresh mozzarella",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g vegetarian fresh mozzarella (2 balls)"
+    },
+    {
+      "name": "basil",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch basil, leaves picked"
+    },
+    {
+      "name": "semolina",
+      "amount": 30,
+      "unit": "g",
+      "original": "2 tbsp (30 g) semolina, for dusting"
+    }
+  ],
+  "steps": [
+    "Mix the flour, yeast, sugar and 1 teaspoon of salt in a large bowl. Add 320 ml of lukewarm water and 1 tablespoon of olive oil, then stir to a shaggy dough.",
+    "Knead on a lightly floured bench for 5-8 minutes until smooth and slightly tacky. Return to the bowl, cover and leave in a warm spot for 60-90 minutes, until doubled in size.",
+    "Meanwhile, blend the whole peeled tomatoes with the garlic, 1 tablespoon of olive oil and half a teaspoon of salt until smooth. Set the sauce aside - no cooking needed.",
+    "Half an hour before baking, crank the oven to its highest setting (250 C or more) with a pizza stone or a sturdy upside-down oven tray on the middle shelf.",
+    "Punch down the dough, divide it into 2 balls and rest, covered, for 20 minutes. Pat the mozzarella dry with paper towel and tear it into chunks.",
+    "Dust a sheet of baking paper or a pizza peel with semolina. Stretch one ball into a 30 cm round, leaving the rim a little thicker.",
+    "Spread half the sauce thinly over the base, keeping a 2-3 cm border, and scatter over half the mozzarella. Slide onto the hot stone or tray and bake for 8-10 minutes, until the crust is browned and the cheese is blistered.",
+    "Repeat with the second ball of dough and the remaining sauce and mozzarella.",
+    "Rest each pizza for a minute, then top with the basil leaves, a drizzle of olive oil and a grind of black pepper. Slice and serve."
+  ]
+}

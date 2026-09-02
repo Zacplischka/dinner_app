@@ -1,0 +1,89 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:paleo-chicken-tray-bake",
+  "name": "Paleo Chicken and Vegetable Tray Bake",
+  "servings": 4,
+  "mealType": "main course",
+  "diets": [
+    "paleo",
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "chicken thigh fillets",
+      "amount": 700,
+      "unit": "g",
+      "original": "700 g chicken thigh fillets"
+    },
+    {
+      "name": "sweet potato",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g sweet potato (about 1 large)"
+    },
+    {
+      "name": "carrots",
+      "amount": 2,
+      "unit": "",
+      "original": "2 carrots"
+    },
+    {
+      "name": "red onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red onion"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red capsicum"
+    },
+    {
+      "name": "broccoli",
+      "amount": 1,
+      "unit": "",
+      "original": "1 head of broccoli"
+    },
+    {
+      "name": "garlic",
+      "amount": 6,
+      "unit": "",
+      "original": "6 garlic cloves"
+    },
+    {
+      "name": "olive oil",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) olive oil"
+    },
+    {
+      "name": "apple cider vinegar",
+      "amount": 20,
+      "unit": "ml",
+      "original": "1 tbsp (20 ml) apple cider vinegar"
+    },
+    {
+      "name": "dried rosemary",
+      "amount": 1,
+      "unit": "g",
+      "original": "1 tsp (1 g) dried rosemary"
+    },
+    {
+      "name": "dried thyme",
+      "amount": 1,
+      "unit": "g",
+      "original": "1 tsp (1 g) dried thyme"
+    }
+  ],
+  "steps": [
+    "Preheat the oven to 220°C (200°C fan-forced) and line a large baking tray with baking paper.",
+    "Cut the sweet potato into 2 cm chunks, the carrots into thick batons, the red onion into wedges and the red capsicum into chunky pieces. Cut the broccoli into florets and peel the garlic cloves, leaving them whole.",
+    "Toss the sweet potato, carrots, onion and garlic on the tray with half the olive oil, the dried rosemary, the dried thyme and a good pinch of salt and pepper. Roast for 10 minutes to give the dense vegetables a head start.",
+    "Meanwhile, toss the chicken thigh fillets in a bowl with the remaining olive oil, the apple cider vinegar and a pinch of salt and pepper.",
+    "Add the broccoli and capsicum to the tray, toss to coat in the pan juices, then nestle the chicken among the vegetables so it sits slightly on top.",
+    "Roast for 30 minutes, turning the chicken and stirring the vegetables once halfway, until the chicken is cooked through and the vegetables are tender.",
+    "Switch the oven to grill and cook for a final 3 minutes to brown the chicken.",
+    "Rest for 5 minutes, then serve straight from the tray."
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "slug": "roast-chicken-and-vegetables",
+  "dish": "Roast chicken and vegetables",
+  "cell": {"mealType": "main course", "cuisine": "modern australian", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://wholesomebysarah.com.au/recipes/one-tray-roast-chicken-with-golden-vegetables", "publisher": "Wholesome by Sarah", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/classic-roast-chicken-with-gravy-12652/", "publisher": "Australian Women's Weekly Food (Are Media)", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://www.theseasonedmom.com/roast-chicken/", "publisher": "The Seasoned Mom", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://getinspiredeveryday.com/food/roast-chicken-and-vegetables/", "publisher": "Get Inspired Everyday", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/chicken-vegetable-tray-bake/", "publisher": "Simple Home Edit", "accessed": "2026-08-02", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "whole chicken", "essential": true, "observations": ["1.2 kg (s0)", "1.4 kg (s1)", "4-4.5 lb (s2)", "4-5 lb (s3)", "1.2-1.8 kg (s4)"]},
+    {"name": "potatoes", "essential": true, "observations": ["4, halved (s0)", "500 g / 3 medium sebago (s1)", "6-8 medium Yukon Gold (s2)", "2 lb / 6 medium (s3)", "6, wedges (s4)"]},
+    {"name": "carrots", "essential": true, "observations": ["10 small (s0)", "320 g / 3 medium (s1)", "6 (s2)", "1.5 lb / 8 (s3)", "2 (s4)"]},
+    {"name": "pumpkin", "essential": true, "observations": ["no qty observed; named as swap-in/add-in roast veg in 2 AU sources' variation notes (s0, s4)"]},
+    {"name": "onion", "essential": true, "observations": ["1 small red (s0)", "285 g / 2 white (s1)", "1 Vidalia (s2)", "1 red (s3)", "2 red (s4)"]},
+    {"name": "butter", "essential": true, "observations": ["40 g (s0)", "50 g (s1)", "2 tbsp melted (s2)", "4 tbsp (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["4 cloves (s0)", "1 clove (s1)", "3 cloves (s2)", "2 cloves (s3)"]},
+    {"name": "lemon", "essential": true, "observations": ["1/2 (s0)", "1 quartered (s2)", "1 juiced (s3)", "2 thick slices (s4)"]},
+    {"name": "olive oil", "essential": true, "observations": ["4 tbsp (s0)", "1 tbsp (s1)", "2 tbsp (s2)", "1-2 tbsp optional (s3)", "4 tbsp (s4)"]},
+    {"name": "fresh thyme", "essential": false, "observations": ["10 sprigs (s2)", "part of 3 tbsp chopped mixed herbs (s3)", "1 tbsp dried (s4)"]},
+    {"name": "fresh rosemary", "essential": false, "observations": ["10 sprigs (s2)", "part of 3 tbsp chopped mixed herbs (s3)"]},
+    {"name": "chicken stock", "essential": false, "observations": ["375 ml, gravy (s1)", "2-4 cups, poured over veg (s3)", "1 tsp stock powder + 250 ml water (s4)"]},
+    {"name": "cornflour", "essential": false, "observations": ["0 sources; GF stand-in for the 1 tbsp plain flour gravy thickener (s1)"]},
+    {"name": "green beans", "essential": false, "observations": ["0 sources; steamed greens are the AU roast-dinner side convention per dish identity"]}
+  ],
+  "causalSequence": [
+    "preheat oven 180-200C fan-forced",
+    "par-cook potato chunks 10 min, drain",
+    "toss potatoes, pumpkin, carrots, onion in oil; season",
+    "spread garlic butter under breast skin; stuff cavity with lemon, garlic; tie legs",
+    "sit chicken on/among veg in one roasting tray",
+    "roast 60-100 min until thigh juices run clear, basting once",
+    "rest chicken 10-15 min under foil",
+    "make GF gravy from pan juices, cornflour, stock; or serve pan juices as-is",
+    "steam greens; carve chicken, serve with veg and gravy"
+  ],
+  "techniqueFacts": [
+    "par-cooking potatoes 10 min before roasting speeds crisping (1 source)",
+    "garlic-herb butter under the breast skin self-bastes the lean meat (2 sources)",
+    "start breast-down 20 min then flip breast-up for juicy breast plus crisp skin (1 source)",
+    "doneness = clear thigh juices (3 sources) or 77C between leg and thigh (2 sources)",
+    "rest 10-15 min before carving (3 sources)",
+    "hotter oven 200-220C for 60-70 min (3 sources) vs slower 175-190C for 95-120 min (2 sources)",
+    "gravy = pan juices browned with 1 tbsp plain flour + 375 ml stock (1 source); cornflour slurry swap keeps it gluten free",
+    "adding water/stock to the tray mid-roast stops veg sticking and makes pan juices (2 sources)",
+    "pumpkin and sweet potato in large chunks go in at the start, same rate as chicken (variation notes, 2 AU sources)"
+  ],
+  "servingsObserved": [4, 4, 4, 6, 4]
+}

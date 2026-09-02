@@ -1,0 +1,94 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:beef-tacos",
+  "name": "Beef Tacos",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "mexican",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "beef mince",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g beef mince"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "ground cumin",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) ground cumin"
+    },
+    {
+      "name": "sweet paprika",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) sweet paprika"
+    },
+    {
+      "name": "dried oregano",
+      "amount": 1,
+      "unit": "g",
+      "original": "1 tsp (1 g) dried oregano"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 40,
+      "unit": "g",
+      "original": "2 tbsp (40 g) tomato paste"
+    },
+    {
+      "name": "taco shells",
+      "searchTerm": "taco kit",
+      "amount": 12,
+      "unit": "",
+      "original": "12 taco shells"
+    },
+    {
+      "name": "shredded cheddar cheese",
+      "amount": 125,
+      "unit": "g",
+      "original": "125 g shredded cheddar cheese"
+    },
+    {
+      "name": "iceberg lettuce",
+      "amount": 0.5,
+      "unit": "",
+      "original": "1/2 iceberg lettuce, finely shredded"
+    },
+    {
+      "name": "tomatoes",
+      "amount": 2,
+      "unit": "",
+      "original": "2 tomatoes, diced"
+    },
+    {
+      "name": "sour cream",
+      "amount": 125,
+      "unit": "g",
+      "original": "125 g sour cream, to serve"
+    }
+  ],
+  "steps": [
+    "Mix the ground cumin, sweet paprika and dried oregano in a small bowl with 1 tsp salt and a good grind of black pepper.",
+    "Heat a splash of olive oil in a large frying pan over medium heat. Cook the brown onion for 3-4 minutes until soft, then add the garlic and cook for 1 minute more.",
+    "Turn the heat up to high, add the beef mince and brown it well, breaking up any lumps with a wooden spoon. Tip off any excess fat.",
+    "Stir in the spice mix and tomato paste and cook for 1 minute until fragrant.",
+    "Pour in 125 ml water and simmer for 3-5 minutes, stirring now and then, until the filling is thick but still saucy.",
+    "Meanwhile, warm the taco shells in a 160°C oven for 4-5 minutes until crisp.",
+    "Put the shredded lettuce, diced tomatoes, cheddar cheese and sour cream in bowls on the table.",
+    "Spoon the beef filling into the warm shells and let everyone build their own tacos."
+  ]
+}

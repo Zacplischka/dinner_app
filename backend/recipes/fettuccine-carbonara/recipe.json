@@ -1,0 +1,63 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:fettuccine-carbonara",
+  "name": "Fettuccine Carbonara",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "fettuccine",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g fettuccine"
+    },
+    {
+      "name": "shortcut bacon",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g shortcut bacon"
+    },
+    {
+      "name": "eggs",
+      "amount": 3,
+      "unit": "",
+      "original": "3 eggs"
+    },
+    {
+      "name": "thickened cream",
+      "amount": 300,
+      "unit": "ml",
+      "original": "300 ml thickened cream"
+    },
+    {
+      "name": "parmesan",
+      "amount": 100,
+      "unit": "g",
+      "original": "100 g parmesan, finely grated"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "parsley",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "0.5 bunch flat-leaf parsley, chopped"
+    }
+  ],
+  "steps": [
+    "Bring a large pot of salted water to the boil and cook the fettuccine until al dente, following the packet time. Just before draining, scoop out half a cup of the pasta water and set it aside.",
+    "While the pasta cooks, trim the shortcut bacon and cut it into 2 cm strips. Heat a splash of olive oil in a large deep frying pan over medium-high heat and fry the bacon for about 5 minutes until golden and starting to crisp.",
+    "Add the crushed garlic to the bacon and cook for 1 minute until fragrant, then take the pan off the heat.",
+    "Whisk the eggs, thickened cream and about three-quarters of the grated parmesan together in a jug. Season generously with cracked black pepper.",
+    "Drain the fettuccine and tip it straight into the pan with the bacon, still off the heat. Pour over the egg and cream mixture and toss quickly with tongs so the heat of the pasta thickens the sauce without scrambling the eggs.",
+    "Loosen the sauce with the reserved pasta water, a splash at a time, until it coats the pasta and looks glossy. If it needs a little more heat, return the pan to the lowest setting for a minute, stirring constantly, and do not let it boil.",
+    "Stir through the chopped parsley and taste, adding a pinch of salt only if it needs it (the bacon and parmesan are already salty).",
+    "Serve immediately in warm bowls, topped with the remaining parmesan and extra black pepper."
+  ]
+}

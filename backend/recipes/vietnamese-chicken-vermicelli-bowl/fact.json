@@ -1,0 +1,60 @@
+{
+  "slug": "vietnamese-chicken-vermicelli-bowl",
+  "dish": "Vietnamese chicken vermicelli bowl",
+  "cell": {"mealType": "main course", "cuisine": "vietnamese", "diets": ["gluten free"]},
+  "sources": [
+    {"url": "https://www.cooking-therapy.com/bun-ga-nuong/", "publisher": "Cooking Therapy (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.wandercooks.com/vietnamese-chicken-noodle-salad/", "publisher": "Wandercooks (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.theforkbite.com/vietnamese-lemongrass-chicken-bun-ga-nuong/", "publisher": "The Fork Bite (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://asianinspirations.com.au/recipes/vietnamese-noodles-with-lemongrass-chicken-bun-ga-nuong/", "publisher": "Asian Inspirations (AU)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken thigh fillets", "essential": true, "observations": ["2 lb boneless skinless (s0)", "500 g (s1)", "1.5 lb (s2)", "600-800 g (s3)"]},
+    {"name": "lemongrass", "essential": true, "observations": ["2 tbsp minced (s0)", "3 cm finely chopped (s1)", "1 stalk trimmed chopped (s2)", "1 stalk white part, bruised sliced (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves marinade (s0)", "3 cloves marinade (s1)", "1 tbsp marinade + 1 clove sauce (s2)", "2 cloves marinade + 2 cloves sauce (s3)"]},
+    {"name": "fish sauce", "essential": true, "observations": ["2 tbsp marinade (s0)", "1.5 tbsp marinade (s1)", "1.5 tbsp marinade + 0.5 cup sauce (s2)", "2 tbsp marinade + 0.25 cup sauce (s3)"]},
+    {"name": "soy sauce", "essential": false, "observations": ["1 tbsp, tamari for gluten free (s0)", "2 tbsp (s1)", "1.5 tsp dark (s2)", "1 tbsp light (s3)"]},
+    {"name": "brown sugar", "essential": true, "observations": ["1 tbsp light brown + 1 tbsp honey (s0)", "1 tsp sugar (s1)", "2 tbsp marinade + 3 tbsp sauce (s2)", "2 tbsp marinade + 2 tbsp white sugar sauce (s3)"]},
+    {"name": "shallot", "essential": false, "observations": ["1 minced (s0)", "1 finely chopped (s1)", "0.5 medium onion/shallot (s2)"]},
+    {"name": "vegetable oil", "essential": false, "observations": ["2 tbsp marinade (s0)", "1 tbsp marinade + 2 tbsp pan (s1)", "1 tbsp marinade (s2)", "1 tbsp marinade + 0.5 tbsp pan (s3)"]},
+    {"name": "ginger", "essential": false, "observations": ["0.5 tsp finely chopped (s1)"]},
+    {"name": "rice vermicelli noodles", "essential": true, "observations": ["16 oz (s0)", "150 g (s1)", "7 oz dried (s2)", "200 g (s3)"]},
+    {"name": "rice vinegar", "essential": false, "observations": ["0.25 cup sauce (s2)", "4 tbsp sauce (s3)"]},
+    {"name": "lime juice", "essential": true, "observations": ["0.25 cup sauce (s2)", "2 tbsp marinade + 3 tbsp sauce (s3)"]},
+    {"name": "red chilli", "essential": false, "observations": ["1 Thai red chilli sauce (s2)", "1 birdseye chilli sauce (s3)"]},
+    {"name": "water", "essential": false, "observations": ["5 tbsp sauce (s2)", "0.5 cup sauce (s3)"]},
+    {"name": "premade nuoc cham", "essential": false, "observations": ["0.5 cup Vietnamese dipping sauce (s0)", "0.5 cup nuoc mam cham (s1)"]},
+    {"name": "lettuce", "essential": true, "observations": ["4 cups (s0)", "5 cups iceberg finely sliced (s2)", "5 cups iceberg finely sliced (s3)"]},
+    {"name": "carrot", "essential": true, "observations": ["0.25 cup pickled (s0)", "1 julienned, or carrot-daikon pickle (s1)", "2 julienned (s2)", "2 julienned (s3)"]},
+    {"name": "cucumber", "essential": true, "observations": ["0.5 cup thinly sliced (s0)", "0.5 julienned (s1)", "2 julienned (s2)", "2 seeded julienned (s3)"]},
+    {"name": "pickled daikon", "essential": false, "observations": ["0.25 cup (s0)"]},
+    {"name": "bean sprouts", "essential": false, "observations": ["3 cups (s2)", "3 cups (s3)"]},
+    {"name": "mint", "essential": true, "observations": ["0.25 cup (s0)", "1 handful (s1)", "handful (s2)", "handful (s3)"]},
+    {"name": "coriander", "essential": true, "observations": ["1 handful (s1)", "handful (s2)", "handful (s3)"]},
+    {"name": "peanuts", "essential": false, "observations": ["2 tbsp crushed, optional (s0)", "2 tbsp chopped (s1)"]},
+    {"name": "lime wedges", "essential": false, "observations": ["1 lime, optional (s1)", "2 wedges (s2)", "to serve, optional (s3)"]}
+  ],
+  "causalSequence": [
+    "mince lemongrass, garlic, shallot; mix with fish sauce, soy, sugar, oil into marinade",
+    "coat chicken thighs; marinate 15 min minimum, 1 hr to overnight preferred",
+    "stir nuoc cham: fish sauce, lime juice, rice vinegar, sugar, water, garlic, chilli; dissolve sugar",
+    "soak or boil vermicelli per packet; rinse cold, drain",
+    "julienne carrot and cucumber; shred lettuce; pick mint and coriander",
+    "grill or sear chicken in very hot pan ~5 min per side until caramelised; rest, slice into strips",
+    "assemble bowl: noodles, lettuce, pickled/fresh veg, herbs, chicken on top",
+    "drizzle nuoc cham over; finish with crushed peanuts and lime wedges"
+  ],
+  "techniqueFacts": [
+    "grilling is traditional (ga nuong = grilled chicken); a very hot pan gives the same char and caramelisation (3 sources)",
+    "longer marinade is the flavour lever: 15 min works, 1 hr to overnight is best, past 24 hr texture degrades (all 4 sources)",
+    "rinse cooked vermicelli in cold water to stop sticking; serve at room temperature (3 sources)",
+    "nuoc cham rests ~20 min so flavours meld; taste-adjust sweet/sour/heat (2 sources)",
+    "tamari swap for the soy sauce makes the dish gluten free; rest of the dish (rice noodles, fish sauce) is naturally GF (1 source explicit)",
+    "boneless thigh preferred for juiciness; breast is an accepted substitute (2 sources)",
+    "whole-stalk lemongrass marinade: pick pieces off chicken before slicing (1 source)",
+    "two sources use premade nuoc cham (0.5 cup) instead of making the sauce from scratch",
+    "spoon leftover marinade over chicken while pan-cooking to build glaze (1 source)",
+    "dress-and-toss or dip-as-you-go both observed; keep sauce separate for packed lunches (1 source)"
+  ],
+  "servingsObserved": [4, 2, 5, 4]
+}

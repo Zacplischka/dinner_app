@@ -1,0 +1,58 @@
+{
+  "slug": "sweet-and-sour-pork",
+  "dish": "Sweet and sour pork",
+  "cell": {"mealType": "main course", "cuisine": "chinese", "diets": []},
+  "sources": [
+    {"url": "https://www.madewithlau.com/recipes/sweet-sour-pork", "publisher": "Made With Lau", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/easy-sweet-and-sour-pork/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://cookingformysoul.com/sweet-and-sour-pork/", "publisher": "Cooking For My Soul", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "pork shoulder", "essential": true, "observations": ["10 oz pork shoulder butt (s0)", "600 g pork scotch fillet / butt, 2 cm pieces (s1)", "1.5 lb pork butt or shoulder, 1 inch cubes, fat trimmed (s2)"]},
+    {"name": "cornflour", "essential": true, "observations": ["3 tbsp coating + 1 tsp in sauce (s0)", "60 g / 1/2 cup in batter + 1 tbsp sauce slurry (s1)", "1 tbsp in marinade + 1/2 cup dredge, optional slurry (s2)"]},
+    {"name": "egg", "essential": true, "observations": ["1/2 egg in marinade (s0)", "1 egg in batter (s1)", "1 egg white in marinade (s2)"]},
+    {"name": "soy sauce", "essential": false, "observations": ["1 tbsp light soy in marinade (s0)", "1 tbsp in marinade + 1 tbsp in sauce (s1)"]},
+    {"name": "plain flour", "essential": false, "observations": ["2 tbsp first coat before cornflour (s0)"]},
+    {"name": "tomato ketchup", "essential": true, "observations": ["4 tbsp (s0)", "80 g / 1/3 cup (s1)", "1/2 cup (s2)"]},
+    {"name": "brown sugar", "essential": true, "observations": ["4 tbsp brown (s0)", "55 g / 1/4 cup brown (s1)", "6 tbsp white granulated (s2)"]},
+    {"name": "vinegar", "essential": true, "observations": ["3 tbsp unspecified (s0)", "80 ml apple cider or rice wine (s1)", "1/4 cup white (s2)"]},
+    {"name": "pineapple", "essential": true, "observations": ["4 oz slices, bite-size (s0)", "95 g / 1/2 cup canned chunks in juice, drained (s1)", "2 cups fresh, cubed (s2)"]},
+    {"name": "pineapple juice", "essential": false, "observations": ["60 ml from the can, into the sauce (s1)"]},
+    {"name": "capsicum", "essential": true, "observations": ["1 oz each red, yellow, green (s0)", "1 red + 1 green, diced (s1)", "1/2 red + 1/2 green, 1 inch pieces (s2)"]},
+    {"name": "onion", "essential": true, "observations": ["1 oz red + 1 oz yellow (s0)", "1 brown + 1 red, diced (s1)", "1/2 yellow, 1 inch pieces (s2)"]},
+    {"name": "garlic", "essential": false, "observations": ["1 tbsp minced, marinade (s1)"]},
+    {"name": "ginger", "essential": false, "observations": ["1 tsp minced, marinade (s1)"]},
+    {"name": "bicarbonate of soda", "essential": false, "observations": ["1/4 tsp in marinade, optional tenderiser (s1)"]},
+    {"name": "garlic salt", "essential": false, "observations": ["1 tsp in marinade (s0)"]},
+    {"name": "worcestershire sauce", "essential": false, "observations": ["1 tbsp in sauce (s2)"]},
+    {"name": "white pepper", "essential": false, "observations": ["1/4 tsp in marinade, or black (s2)"]},
+    {"name": "spring onion", "essential": false, "observations": ["1, sliced diagonally, garnish (s2)"]},
+    {"name": "oil for frying", "essential": true, "observations": ["0.5 lb corn oil, deep-fry (s0)", "neutral oil 1.5 cm deep in pan, reused after (s1)", "vegetable oil for deep-fry, or 1 cm shallow-fry (s2)"]},
+    {"name": "jasmine rice", "essential": false, "observations": ["steamed, to serve (s1)", "steamed, to serve (s2)"]},
+    {"name": "sesame seeds", "essential": false, "observations": ["scatter to serve (s1)"]}
+  ],
+  "causalSequence": [
+    "cube pork 2-3 cm; marinate with soy/salt, egg, seasoning 15-20 min",
+    "stir sauce: ketchup, sugar, vinegar, water (+ soy or pineapple juice); set aside",
+    "chop capsicum, onion, pineapple into bite-size chunks",
+    "coat marinated pork in cornflour",
+    "fry pork in batches 5-8 min until golden and cooked through; drain on paper towel",
+    "stir-fry capsicum and onion 1-3 min until crisp-charred; add pineapple briefly",
+    "pour in sauce; bubble 1-2 min until thick and glossy",
+    "return pork, toss to coat; serve immediately over rice"
+  ],
+  "techniqueFacts": [
+    "cut is unanimous: pork shoulder / scotch fillet (butt) — fat keeps it juicy; lean loin or tenderloin dries out (s1, s2 warn explicitly)",
+    "all three velvet the pork: egg-based marinade 15-20 min; s1 adds 1/4 tsp bicarb for restaurant-soft texture (optional), s2 uses egg white only",
+    "coating is cornflour-led everywhere; s0 layers plain flour first then cornstarch",
+    "double-fry is the restaurant crunch lever (s0: 150-175 C 7-8 min then 200 C 1-2 min; s2: 350 F then 1 min refry)",
+    "single shallow pan-fry is a sanctioned home path: s1 fries once in 1.5 cm oil 5-6 min per batch and notes the sauce softens the coating anyway; s2 endorses ~1 cm shallow-fry with thinner pieces; s2 tested baking and rejects it (dry, not crispy)",
+    "sauce base is ketchup + sugar + vinegar in all three; acid varies (white / apple cider / rice wine); s1 says cut vinegar to 60 ml for a sweeter sauce; s2 adds worcestershire for depth and skips cornflour (ketchup body is enough)",
+    "veg stays crisp: 30 s in the wok (s0) up to 2-3 min (s2); pineapple always added after the veg, briefly",
+    "s1 uses canned pineapple in juice (never syrup) and puts the reserved juice in the sauce; s2 argues fresh pineapple caramelises better",
+    "serve immediately — the coating soaks sauce and softens within minutes (all three)",
+    "s1 is the speed benchmark: 35 min total, one pan; also gives a 200 C air-fryer variant, 8-10 min flipping halfway",
+    "high-smoke-point neutral oil only (corn, canola, vegetable, peanut); olive oil warned against (s0, s2)"
+  ],
+  "servingsObserved": [3, 4, 4]
+}

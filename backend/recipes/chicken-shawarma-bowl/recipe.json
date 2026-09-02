@@ -1,0 +1,106 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:chicken-shawarma-bowl",
+  "name": "Chicken Shawarma Bowl",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "middle eastern",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "chicken thigh fillets",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg chicken thigh fillets"
+    },
+    {
+      "name": "greek yoghurt",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g Greek yoghurt"
+    },
+    {
+      "name": "garlic cloves",
+      "searchTerm": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 garlic cloves, crushed"
+    },
+    {
+      "name": "lemons",
+      "searchTerm": "lemon",
+      "amount": 2,
+      "unit": "",
+      "original": "2 lemons"
+    },
+    {
+      "name": "ground cumin",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) ground cumin"
+    },
+    {
+      "name": "smoked paprika",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) smoked paprika"
+    },
+    {
+      "name": "ground coriander",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) ground coriander"
+    },
+    {
+      "name": "ground turmeric",
+      "amount": 1,
+      "unit": "g",
+      "original": "1/2 tsp (1 g) ground turmeric"
+    },
+    {
+      "name": "basmati rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g basmati rice"
+    },
+    {
+      "name": "chicken stock",
+      "amount": 500,
+      "unit": "ml",
+      "original": "500 ml chicken stock"
+    },
+    {
+      "name": "cherry tomatoes",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g cherry tomatoes, halved"
+    },
+    {
+      "name": "continental cucumber",
+      "amount": 1,
+      "unit": "",
+      "original": "1 continental cucumber, diced"
+    },
+    {
+      "name": "red onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red onion, finely sliced"
+    },
+    {
+      "name": "fresh mint",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch fresh mint, leaves chopped"
+    }
+  ],
+  "steps": [
+    "Whisk 2 tablespoons of the Greek yoghurt with the juice of 1 lemon, 3 crushed garlic cloves, the cumin, smoked paprika, ground coriander, a splash of olive oil and a good pinch of salt in a large bowl. Add the chicken thigh fillets, turn to coat and marinate for at least 30 minutes, or up to 24 hours in the fridge.",
+    "Stir the remaining Greek yoghurt with the last crushed garlic clove, a squeeze of lemon juice and a pinch of salt to make the garlic sauce. Chill until serving.",
+    "Rinse the basmati rice, then put it in a saucepan with the chicken stock and ground turmeric. Bring to the boil, cover, and simmer on low for 12 minutes. Turn off the heat and leave covered for 5 minutes, then fluff with a fork.",
+    "Heat a large non-stick frying pan over medium-high heat. Cook the marinated chicken for 5 to 6 minutes per side until deeply charred and cooked through, working in two batches if needed.",
+    "Rest the chicken for 5 minutes, then slice thinly.",
+    "Toss the cherry tomatoes, cucumber, red onion and most of the mint with a splash of olive oil, a squeeze of lemon juice, salt and pepper.",
+    "Divide the rice between bowls, top with the sliced chicken and salad, drizzle over the garlic sauce and scatter with the remaining mint. Serve with the leftover lemon cut into wedges."
+  ]
+}
