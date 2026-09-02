@@ -23,19 +23,15 @@ export interface IngredientInfo {
 /** One ingredient of a pooled Recipe, as the source states it. */
 export interface PooledIngredient {
   name: string;
+  /** The term everything downstream of the card searches on, when `name` is
+   * not searchable: an Owned Recipe authors "gluten free vegetable stock" to
+   * read right on the card and "vegetable stock" here (#336). Never set by a
+   * Sourced Recipe — Spoonacular states one name and it is the only one. */
+  searchTerm?: string;
   amount: number;
   unit: string;
   /** The recipe's own wording — an Unmatched line falls back to it (#262). */
   original: string;
-  /**
-   * What the Retailer is asked for, when the name itself cannot be (#332).
-   * Only an Owned Recipe ever authors one: its name and `original` are held to
-   * a diet-qualified, cook-honest standard ("gluten-free vegetable stock")
-   * that Woolworths has no product for, so the search gets a matchable term
-   * beside them. Absent — every Sourced Recipe — the term is derived from the
-   * name exactly as it always was.
-   */
-  searchTerm?: string;
 }
 
 /**
@@ -59,15 +55,30 @@ export interface PooledRecipe extends Recipe {
   sourceUrl?: string;
 }
 
+/**
+ * A refusal the source means, as against a blip on the way to it: a revoked key
+ * (401), a payment or subscription stop (402), and the #261 points guard
+ * declining to call at all. It will still be true a second from now, so it
+ * latches the source dark rather than being retried per call (#333) — every
+ * further call would be spend on a certainty. Anything else — a transport
+ * error, a timeout, a 5xx — is not this.
+ */
+export class SpoonacularRefusal extends Error {}
+
 export interface SpoonacularClient {
   /** Grams for one `sourceUnit` of the ingredient; null when Convert answers
    * without a number. Transport failures throw — the ladder falls through. */
   gramsPerUnit(ingredientName: string, sourceUnit: string): Promise<number | null>;
   ingredientInfo(ingredientName: string): Promise<IngredientInfo>;
-  /** One page of the Craving's recipe pool. Transport failures throw. */
+  /**
+   * One page of the Craving's recipe pool. Transport failures throw; a
+   * categorical refusal throws `SpoonacularRefusal`. `signal` is the caller's
+   * budget — an aborted fetch throws like any other transport failure.
+   */
   searchRecipes(
     craving: Craving,
-    page: { number: number; offset: number }
+    page: { number: number; offset: number },
+    signal?: AbortSignal
   ): Promise<PooledRecipe[]>;
 }
 
@@ -178,13 +189,27 @@ export function guardDailyPoints(
     const key = pointsKey();
     const used = Number(await redis.get(key)) || 0;
     if (used >= ceiling) {
-      throw new Error(`Spoonacular daily point ceiling reached (${used}/${ceiling})`);
+      throw new SpoonacularRefusal(`Spoonacular daily point ceiling reached (${used}/${ceiling})`);
     }
-    const response = await fetchImpl(input, init);
     // A response the source didn't count is still one it charged for. Leaving
     // the counter frozen on a header that stopped arriving is the guard
     // quietly ceasing to guard — the silent bill it exists to prevent — so an
     // uncounted response costs the cheapest a call can be, loudly.
+    let response: Response;
+    try {
+      response = await fetchImpl(input, init);
+    } catch (error) {
+      // A call that never came back is the same invariant, and the case that
+      // needs it most: the deal-time budget (#333) aborts the calls the source
+      // is slowest to answer — the ones it has already received and will bill.
+      await redis.set(key, String(used + 1), 'PX', POINTS_TTL_MS);
+      logger.warn(
+        // The path only — the query string carries the API key.
+        { used, path: new URL(String(input)).pathname, err: error },
+        'Spoonacular call failed before any quota header'
+      );
+      throw error;
+    }
     const reported = Number(response.headers.get('X-API-Quota-Used') ?? NaN);
     if (Number.isNaN(reported)) {
       // The path only — the query string carries the API key.
@@ -203,12 +228,24 @@ export function createSpoonacularClient(
   fetchImpl: typeof fetch = fetch,
   apiKey: string | undefined = config.spoonacular.apiKey
 ): SpoonacularClient {
-  async function get(path: string, params: Record<string, string>): Promise<unknown> {
+  async function get(
+    path: string,
+    params: Record<string, string>,
+    signal?: AbortSignal
+  ): Promise<unknown> {
     const query = new URLSearchParams({ ...params, apiKey: apiKey ?? '' }).toString();
     const response = await fetchImpl(`${BASE}${path}?${query}`, {
       headers: { 'User-Agent': PINNED_UA, Accept: 'application/json' },
+      signal,
     });
-    if (!response.ok) throw new Error(`Spoonacular ${path} failed with status ${response.status}`);
+    if (!response.ok) {
+      const message = `Spoonacular ${path} failed with status ${response.status}`;
+      // A revoked key and a payment stop are the source's own answer, not the
+      // network's: they latch (#333). Everything else stays a per-call blip.
+      throw response.status === 401 || response.status === 402
+        ? new SpoonacularRefusal(message)
+        : new Error(message);
+    }
     return response.json();
   }
 
@@ -223,19 +260,23 @@ export function createSpoonacularClient(
       return number(body.targetAmount) ?? null;
     },
 
-    async searchRecipes(craving, page) {
-      const body = (await get('/recipes/complexSearch', {
-        type: craving.mealType,
-        // Spoonacular ORs a comma-separated cuisine list and ANDs the diets:
-        // "italian or thai, and vegetarian" is exactly the chips' meaning.
-        ...(craving.cuisines.length > 0 && { cuisine: craving.cuisines.join(',') }),
-        ...(craving.diets.length > 0 && { diet: craving.diets.join(',') }),
-        instructionsRequired: 'true',
-        addRecipeInformation: 'true',
-        fillIngredients: 'true',
-        number: String(page.number),
-        offset: String(page.offset),
-      })) as { results?: RecipeSearchResult[] };
+    async searchRecipes(craving, page, signal) {
+      const body = (await get(
+        '/recipes/complexSearch',
+        {
+          type: craving.mealType,
+          // Spoonacular ORs a comma-separated cuisine list and ANDs the diets:
+          // "italian or thai, and vegetarian" is exactly the chips' meaning.
+          ...(craving.cuisines.length > 0 && { cuisine: craving.cuisines.join(',') }),
+          ...(craving.diets.length > 0 && { diet: craving.diets.join(',') }),
+          instructionsRequired: 'true',
+          addRecipeInformation: 'true',
+          fillIngredients: 'true',
+          number: String(page.number),
+          offset: String(page.offset),
+        },
+        signal
+      )) as { results?: RecipeSearchResult[] };
       return (body.results ?? []).flatMap((result) => toPooledRecipe(result) ?? []);
     },
 

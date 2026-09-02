@@ -67,7 +67,7 @@ describe('SessionService', () => {
     ];
 
     it('deals the Deck from the Craving pool, not from a restaurant search', async () => {
-      dealRecipeDeck.mockResolvedValue(deck);
+      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: false });
 
       const session = await SessionService.createSession('Alice', undefined, undefined, 'cook', {
         craving,
@@ -83,7 +83,7 @@ describe('SessionService', () => {
     });
 
     it('stores the Headcount on the Session, untouched by the deal', async () => {
-      dealRecipeDeck.mockResolvedValue(deck);
+      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: false });
 
       const session = await SessionService.createSession('Alice', undefined, undefined, 'cook', {
         craving,
@@ -99,7 +99,7 @@ describe('SessionService', () => {
     });
 
     it('refuses a Craving that pools no Recipes rather than opening an unswipeable Deck', async () => {
-      dealRecipeDeck.mockResolvedValue([]);
+      dealRecipeDeck.mockResolvedValue({ entries: [], recipeSourceDown: false });
 
       await expect(
         SessionService.createSession('Alice', undefined, undefined, 'cook', {
@@ -118,6 +118,39 @@ describe('SessionService', () => {
           headcount: 2,
         })
       ).rejects.toMatchObject({ code: 'RECIPE_SOURCE_UNAVAILABLE' });
+    });
+
+    it('freezes a short outage deal on the Session, for every Participant to read (#333)', async () => {
+      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: true });
+
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'cook',
+        { craving, headcount: 2 }
+      );
+
+      // Read back through the same Session lookup every Participant's page
+      // makes, so the one plain line they see is one line.
+      await expect(SessionService.getSession(sessionCode)).resolves.toMatchObject({
+        recipeSourceDown: true,
+      });
+    });
+
+    it('leaves a full deal saying nothing at all (#333)', async () => {
+      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: false });
+
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'cook',
+        { craving, headcount: 2 }
+      );
+
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.recipeSourceDown).toBeUndefined();
     });
   });
 
@@ -138,7 +171,7 @@ describe('SessionService', () => {
 
     /** A Cook Session decided once, so Restart has an outcome to wipe. */
     async function decidedCookSession(): Promise<string> {
-      dealRecipeDeck.mockResolvedValue(dealt);
+      dealRecipeDeck.mockResolvedValue({ entries: dealt, recipeSourceDown: false });
       const { sessionCode } = await SessionService.createSession(
         'Alice',
         undefined,
@@ -181,7 +214,7 @@ describe('SessionService', () => {
       // The lobby's "start selecting" is this same command on a 'waiting'
       // Session. Re-dealing there would throw away the deal setup just made.
       redealRecipeDeck.mockResolvedValue(nextDeal);
-      dealRecipeDeck.mockResolvedValue(dealt);
+      dealRecipeDeck.mockResolvedValue({ entries: dealt, recipeSourceDown: false });
       const { sessionCode } = await SessionService.createSession(
         'Alice',
         undefined,

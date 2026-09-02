@@ -48,7 +48,11 @@ const RECORD = {
   ],
   skipped: [],
   canonicalIngredients: [
-    { name: 'beef mince', essential: true, observations: ['500 g (s0)', '1 lb (s1)', '750 g (s2)'] },
+    {
+      name: 'beef mince',
+      essential: true,
+      observations: ['500 g (s0)', '1 lb (s1)', '750 g (s2)'],
+    },
     { name: 'brown onion', essential: true, observations: ['1 (s0)', '2 (s1)', '1 (s2)'] },
     {
       name: 'tinned tomatoes',
@@ -66,11 +70,10 @@ const RECORD = {
 const CLEAN = {
   name: 'Beef Ragu',
   servings: 4,
-  readyInMinutes: 90,
   mealType: 'main course',
   cuisine: 'italian',
   diets: [],
-  extendedIngredients: [
+  ingredients: [
     { name: 'beef mince', amount: 500, unit: 'g', original: '500 g beef mince' },
     { name: 'brown onion', amount: 2, unit: '', original: '2 brown onions, finely chopped' },
     { name: 'tinned tomatoes', amount: 800, unit: 'g', original: '800 g tinned tomatoes' },
@@ -94,9 +97,10 @@ const LIFTED = {
 const kinds = (flags) => flags.map((flag) => flag.kind).sort();
 
 test('shingles: distinct n-word windows, punctuation and case ignored', () => {
-  assert.deepEqual([...shingles('Brown the mince, in batches.', 5)], [
-    'brown the mince in batches',
-  ]);
+  assert.deepEqual(
+    [...shingles('Brown the mince, in batches.', 5)],
+    ['brown the mince in batches']
+  );
   assert.equal(shingles('one two three', 5).size, 0);
 });
 
@@ -115,7 +119,7 @@ test('reproducing one source’s quantity set is caught even with original wordi
   // s2's observations exactly: 750 g mince, 1 onion, 400 g tomatoes.
   const copied = {
     ...CLEAN,
-    extendedIngredients: [
+    ingredients: [
       { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
       { name: 'brown onion', amount: 1, unit: '', original: '1 brown onion, finely chopped' },
       { name: 'tinned tomatoes', amount: 400, unit: 'g', original: '400 g tinned tomatoes' },
@@ -136,7 +140,7 @@ test('too few shared ingredients is convergence, not reproduction', () => {
   // floor, two amounts agreeing is two cooks reaching for the same tin.
   const copied = {
     ...CLEAN,
-    extendedIngredients: [
+    ingredients: [
       { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
       { name: 'brown onion', amount: 1, unit: '', original: '1 brown onion' },
     ],
@@ -157,7 +161,7 @@ test('an observation stating no number drops out instead of clearing the source'
   };
   const copied = {
     ...CLEAN,
-    extendedIngredients: [
+    ingredients: [
       { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
       { name: 'brown onion', amount: 1, unit: '', original: '1 brown onion, finely chopped' },
       { name: 'tinned tomatoes', amount: 400, unit: 'g', original: '400 g tinned tomatoes' },
@@ -176,7 +180,7 @@ test('the join follows the record’s name into "original" when the authored nam
   // record's word for the same ingredient survives in the shopper phrasing.
   const copied = {
     ...CLEAN,
-    extendedIngredients: [
+    ingredients: [
       { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
       { name: 'brown onions', amount: 1, unit: '', original: '1 brown onion, finely chopped' },
       {
@@ -209,7 +213,7 @@ test('a decoy carrying a record name cannot clear the source it collides with', 
   };
   const copied = {
     ...CLEAN,
-    extendedIngredients: [
+    ingredients: [
       { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
       { name: 'brown onion', amount: 1, unit: '', original: '1 brown onion' },
       { name: 'beef stock', amount: 500, unit: 'ml', original: '500 ml beef stock' },
@@ -227,7 +231,7 @@ test('a decoy carrying a record name cannot clear the source it collides with', 
 test('a record name is claimed on a word boundary, not as a substring', () => {
   const set = quantitySet(
     {
-      extendedIngredients: [
+      ingredients: [
         { name: 'salted butter', amount: 100, unit: 'g', original: '100 g salted butter' },
       ],
     },
@@ -267,7 +271,7 @@ test('a record whose observations lost their source tags is flagged, not passed'
 test('names too far off the record are flagged uncheckable, never passed in silence', async () => {
   const drifted = {
     ...CLEAN,
-    extendedIngredients: CLEAN.extendedIngredients.map((ingredient, n) => ({
+    ingredients: CLEAN.ingredients.map((ingredient, n) => ({
       ...ingredient,
       name: `mystery item ${n}`,
       original: `${ingredient.amount} ${ingredient.unit} mystery item ${n}`,

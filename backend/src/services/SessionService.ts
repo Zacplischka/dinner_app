@@ -33,8 +33,14 @@ function middleRung(entry: DeckEntry): number {
 interface SessionServiceDeps {
   store: SessionStore;
   searchNearbyRestaurants: typeof RestaurantSearchService.searchNearbyRestaurants;
-  /** The Cook Branch's Deck supply: a random cut of the shared Craving pool. */
-  dealRecipeDeck: (craving: Craving) => Promise<DeckEntry[]>;
+  /**
+   * The Cook Branch's Deck supply: a random cut of the union of both Recipe
+   * supplies, plus whether the recipe source being dark is why the cut came up
+   * short (#333). Rejects only when neither supply could answer.
+   */
+  dealRecipeDeck: (
+    craving: Craving
+  ) => Promise<{ entries: DeckEntry[]; recipeSourceDown: boolean }>;
   /**
    * A Cook Restart's Deck: another cut of the same pool, avoiding the just-wiped
    * deal where it can. Best-effort by contract — it degrades to reshuffling what
@@ -138,27 +144,33 @@ export function createSessionService({
     // Deal the Session's Deck. A Cook Session deals Recipes from the shared
     // Craving pool; every other Branch searches nearby Restaurants as before.
     let deckEntries: DeckEntry[] = [];
+    let recipeSourceDown = false;
     if (cook) {
       // The two ways a deal can come back without Recipes are different facts
       // and get different words (#250): the source answering "none" is about
       // the Craving, the source not answering is not.
       //
       // Every rejection is read as the second, which holds because dealDeck's
-      // one documented failure is the transport (RecipePoolService). A deal
-      // that ever learns to reject for a reason of its own must say so with a
+      // one documented failure is the source, and since #333 it only rejects
+      // when the Owned Recipe Store had nothing to deal either. A deal that
+      // ever learns to reject for a reason of its own must say so with a
       // DomainError and be let through here, or it will be mislabelled.
-      deckEntries = await dealRecipeDeck(cook.craving).catch((error: unknown) => {
+      const dealt = await dealRecipeDeck(cook.craving).catch((error: unknown) => {
         logger.error({ err: error, sessionCode }, 'Recipe source failed dealing a Deck');
         throw new DomainError(
           'RECIPE_SOURCE_UNAVAILABLE',
           "Couldn't load recipes just now. Try again in a moment."
         );
       });
+      deckEntries = dealt.entries;
+      recipeSourceDown = dealt.recipeSourceDown;
 
       if (deckEntries.length === 0) {
         // The zero-Recipe Craving: the Cook Branch's one refusal, and it lands
         // at setup with the chips still editable, never on a Session (#260).
-        // Nothing is auto-relaxed — the Host relaxes their own chips.
+        // Since the blend it is a statement about the *union* — both supplies
+        // empty (#316). Nothing is auto-relaxed — the Host relaxes their own
+        // chips.
         logger.warn({ sessionCode, craving: cook.craving }, 'No recipes found for Craving');
         throw new DomainError(
           'NO_RECIPES_FOUND',
@@ -203,6 +215,7 @@ export function createSessionService({
       branch,
       headcount: cook?.headcount,
       cravingKey: cook && cravingPoolKey(cook.craving),
+      recipeSourceDown,
       entries: deckEntries,
     });
 
@@ -243,6 +256,7 @@ export function createSessionService({
     expiresAt: string;
     shareableLink: string;
     branch?: Branch;
+    recipeSourceDown?: boolean;
   } | null> {
     const session = await store.readSession(sessionCode);
 
@@ -284,6 +298,9 @@ export function createSessionService({
       expiresAt: getExpiresAtISO(expireAt),
       shareableLink: shareableLink(sessionCode),
       branch: session.branch,
+      // Read by every Participant's Selection screen, so the one plain line
+      // about the short deal is the same line for the whole room (#333).
+      recipeSourceDown: session.recipeSourceDown,
     };
   }
 

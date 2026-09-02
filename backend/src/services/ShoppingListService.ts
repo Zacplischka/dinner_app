@@ -106,13 +106,6 @@ const STORED_VERSION = 1;
 interface LineMatch {
   ingredient: IngredientAmount;
   candidates: ProductCandidate[];
-  /**
-   * The term this line's one search was made with, so a demotion offers the
-   * search the mint made rather than deriving a second one (#285). Absent on a
-   * list minted before #332, which falls back to deriving it from the name —
-   * which is what the mint did then, so the two still agree.
-   */
-  searchTerm?: string;
 }
 
 interface StoredList {
@@ -404,28 +397,28 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
         : lineText(scaled, ingredient.unit, ingredient.name),
       staple: isStaple(ingredient.name),
     };
+    // Everything downstream of the card's own text searches the matchable term
+    // — the Matcher, the ladder's ingredient lookup, and the Retailer link a
+    // line falls back to. It is the name, unless an Owned Recipe authored a
+    // searchable one beside a cook-honest one (#336).
+    const matchable = ingredient.searchTerm ?? ingredient.name;
     // The Retailer search is what an Unmatched line offers instead of a product,
     // so it is exactly the term the Matcher searched (#285) — measurement junk
-    // dropped, in the local dialect (#241). An Owned Recipe may author it
-    // instead of leaving it to the name (#332), but it is derived all the same:
-    // `matchProduct` derives whatever it is handed, so deriving here is what
-    // makes the two agree by construction rather than only when the authored
-    // term happened to be normalised already.
-    const searchTerm = deriveSearchTerm(ingredient.searchTerm ?? ingredient.name);
+    // dropped, in the local dialect (#241).
+    const searchTerm = deriveSearchTerm(matchable);
     const unmatched = { line: { ...fields, state: 'unmatched', searchTerm } as ShoppingListLine };
 
     // A Staple is assumed already at home and counted by nothing, so it never
     // costs a Retailer lookup — it renders as its own text, still shoppable.
     if (fields.staple) return unmatched;
 
-    // The record's own term when it has one, the name when it does not — the
-    // Matcher derives a search from a name (#243), and an authored term goes
-    // through the same translation, authored to come out the other side whole.
-    const outcome = await deps.matchProduct(ingredient.searchTerm ?? ingredient.name);
+    const outcome = await deps.matchProduct(matchable);
     // A zero or missing amount is not a quantity, and the ladder is explicit
-    // that null degrades rather than pricing a line nobody can shop.
+    // that null degrades rather than pricing a line nobody can shop. The
+    // matchable term is what rides into the stored Match, so a demoted swap
+    // derives the same Retailer search the mint did (#285).
     const amount: IngredientAmount = {
-      name: ingredient.name,
+      name: matchable,
       amount: scaled > 0 ? scaled : null,
       unit: ingredient.unit,
     };
@@ -437,7 +430,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       // The whole top-5 the one search paid for, written down beside the line
       // so the swap picker never costs a second one (#264). The scaled amount
       // rides along because re-pricing needs the same input the ladder had.
-      match: { ingredient: amount, candidates: [outcome.match, ...outcome.runnersUp], searchTerm },
+      match: { ingredient: amount, candidates: [outcome.match, ...outcome.runnersUp] },
     };
   }
 
@@ -618,7 +611,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       // The Retailer search a demoted line falls back to is the same one it
       // would have had if the Matcher had found nothing in the first place —
       // one derivation for mint and demotion both (#285).
-      const searchTerm = match.searchTerm ?? deriveSearchTerm(match.ingredient.name);
+      const searchTerm = deriveSearchTerm(match.ingredient.name);
       let state: ShoppingListLineState;
       if (stockcode === null) {
         // "None of these": Unmatched, out of the tally and every Tally with it.

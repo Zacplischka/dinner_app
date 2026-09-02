@@ -14,6 +14,9 @@ no source consulted and carry no Fact Record, so they have been through none of
 the four gate layers ([#336](https://github.com/Zacplischka/dinner_app/issues/336),
 [#337](https://github.com/Zacplischka/dinner_app/issues/337)) — in particular
 nothing has measured their ingredient lines against the Tally at store 1101.
+`node scripts/corpus/gate.mjs check backend/recipes --structural` says so out
+loud, and every line of that report is a real defect in the seed rather than a
+gap in the gate.
 
 Growing or replacing this seed cannot break a test: `OWNED_RECIPES_DIR`
 overrides the directory the store loads (`config.ownedRecipesDir`), and the

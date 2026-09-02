@@ -257,4 +257,27 @@ describe('guardDailyPoints', () => {
     // The path only — the query string carries the API key.
     expect(JSON.stringify(warned[0])).not.toContain('test-key');
   });
+
+  it('counts a point for a call that never came back, rather than freezing', async () => {
+    const logs = captureLogs();
+    const redis = new RedisMock();
+    await redis.set(key, '5');
+    // What the deal-time budget (#333) does to a slow vendor: the request is
+    // out — Spoonacular has it and will bill it — and only the answer is gone.
+    const aborted = guardDailyPoints(
+      redis,
+      () => Promise.reject(new DOMException('The operation was timed out', 'TimeoutError')),
+      CEILING
+    );
+
+    await expect(
+      aborted(`https://api.spoonacular.com/recipes/complexSearch?apiKey=test-key`)
+    ).rejects.toThrow(/timed out/);
+    expect(await redis.get(key)).toBe('6');
+
+    const warned = logs.withMsg('Spoonacular call failed before any quota header');
+    expect(warned).toHaveLength(1);
+    expect(warned[0]).toMatchObject({ used: 5, path: '/recipes/complexSearch' });
+    expect(JSON.stringify(warned[0])).not.toContain('test-key');
+  });
 });

@@ -320,6 +320,42 @@ describe('ShoppingListService.mint', () => {
     expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'water' });
   });
 
+  it('searches an Owned Recipe’s searchTerm while the line still reads the honest name', async () => {
+    // #336: a name kept cook-honest for the culinary gate ("gluten free
+    // vegetable stock") searches like nothing, so the corpus authors the
+    // matchable term beside it — and everything that searches takes that one.
+    const { service, matchProduct, resolveLine } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          {
+            name: 'gluten free vegetable stock',
+            searchTerm: 'vegetable stock',
+            amount: 500,
+            unit: 'ml',
+            original: '500 ml gluten free vegetable stock',
+          },
+        ],
+      },
+      outcome: { status: 'no_product' },
+      resolution: { state: 'unmatched' },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(matchProduct).toHaveBeenCalledWith('vegetable stock');
+    expect(resolveLine).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'vegetable stock' }),
+      expect.anything()
+    );
+    expect(list?.lines[0]).toMatchObject({
+      text: '500 ml gluten free vegetable stock',
+      state: 'unmatched',
+      searchTerm: 'vegetable stock',
+    });
+  });
+
   it('searches the Retailer for an authored term, and still renders the line as written', async () => {
     // What an Owned Recipe buys with `searchTerm` (#332): "gluten free
     // vegetable stock" is what the cook reads and what the culinary gate
@@ -332,24 +368,6 @@ describe('ShoppingListService.mint', () => {
     expect(list?.lines[0]).toMatchObject({
       text: '500 ml gluten free vegetable stock',
       state: 'priced',
-    });
-  });
-
-  it('offers the authored term as the Unmatched line’s own Retailer search', async () => {
-    // The search a Shopper is handed is the one the Matcher was given — the
-    // #285 rule, now including the term the record authored.
-    const { service } = build({
-      recipe: authored,
-      outcome: { status: 'no_product' },
-      resolution: { state: 'unmatched' },
-    });
-
-    const list = await service.readList((await service.mint('AB123', 'owned:gf-stew'))!);
-
-    expect(list?.lines[0]).toMatchObject({
-      text: '500 ml gluten free vegetable stock',
-      state: 'unmatched',
-      searchTerm: 'vegetable stock',
     });
   });
 
@@ -1014,23 +1032,6 @@ describe('ShoppingListService swaps', () => {
     const list = await service.swapLine(listId, '0', null);
 
     expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'garlic' });
-  });
-
-  it('demotes a list minted before the term was written down, deriving it as that mint did', async () => {
-    // The stored Match grew a field, additively (ADR 0007), and a list lives
-    // seven days across deploys: one minted before #332 carries no term beside
-    // its candidates, and the demotion derives the one that mint derived.
-    const { service, redis, listId } = await minted();
-    const key = `shoppinglist:${listId}`;
-    const stored = JSON.parse(redis.keys.get(key)!.value) as {
-      matches: Record<string, { searchTerm?: string }>;
-    };
-    delete stored.matches['0'].searchTerm;
-    redis.keys.set(key, { value: JSON.stringify(stored), ttlMs: 1 });
-
-    const list = await service.swapLine(listId, '0', null);
-
-    expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'canned tomatoes' });
   });
 
   it('demotes an authored line back onto its own authored term', async () => {
