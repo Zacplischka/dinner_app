@@ -163,6 +163,14 @@ const normaliseQuantity = (fragment) => {
 const recordNames = (record) =>
   (record.canonicalIngredients ?? []).map((i) => normaliseName(i.name)).filter(Boolean);
 
+// On a word boundary, never as a bare substring: "salt" does not appear in
+// "salted butter", and claiming it there would key a record ingredient to an
+// unrelated authored amount.
+const mentions = (original, name) =>
+  new RegExp(`(?<![a-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9])`).test(
+    original
+  );
+
 /**
  * The authored quantity for each ingredient, keyed by the authored name *and*
  * by any Fact Record name the shopper phrasing still carries. `name` is written
@@ -170,16 +178,32 @@ const recordNames = (record) =>
  * the same ingredient often survives only in `original` ("diced tomatoes" /
  * "400 g tinned tomatoes, diced"). Keying on one alone drops the ingredient out
  * of the join and quietly weakens the check.
+ *
+ * A key two ingredients both claim — a record's "tomatoes" carried by both the
+ * tinned and the cherry ones — names no single authored amount, so it leaves
+ * the comparison the way an unparseable quantity does. Letting the last writer
+ * take it is worse than dropping it: it hands the arm an amount from the wrong
+ * ingredient, which clears a source whose set was reproduced exactly.
  */
 export const quantitySet = (recipe, record = {}) => {
   const names = recordNames(record);
   const out = new Map();
+  const claims = new Map();
   for (const ingredient of recipe.extendedIngredients ?? []) {
     const quantity = normaliseQuantity(`${ingredient.amount ?? ''} ${ingredient.unit ?? ''}`);
     const original = normaliseName(ingredient.original ?? '');
-    for (const key of [normaliseName(ingredient.name), ...names.filter((n) => original.includes(n))])
+    // Deduped per ingredient: an authored name that is also the record's word
+    // for it claims the one key once, not twice.
+    const keys = new Set([
+      normaliseName(ingredient.name),
+      ...names.filter((name) => mentions(original, name)),
+    ]);
+    for (const key of keys) {
+      claims.set(key, (claims.get(key) ?? 0) + 1);
       out.set(key, quantity);
+    }
   }
+  for (const [key, count] of claims) if (count > 1) out.delete(key);
   return out;
 };
 
@@ -236,7 +260,16 @@ export function checkOverlap(recipe, record, captures) {
     flags.push({ kind: 'quantities-uncheckable', joined: joined.length, of: names.length });
   }
 
-  for (const [index, source] of sourceQuantitySets(record)) {
+  // The `(sN)` tag is a prompt convention, not a schema constraint, so a record
+  // can arrive with every observation untagged — and then no source set is
+  // recoverable and the arm silently does not run. Same stance as the join
+  // guard above: an arm that could not run is a flag, not a pass.
+  const sources = sourceQuantitySets(record);
+  if (names.length >= MIN_QUANTITY_SET && sources.size === 0) {
+    flags.push({ kind: 'quantities-untagged', of: names.length });
+  }
+
+  for (const [index, source] of sources) {
     // Unparseable on either side is not evidence either way — dropped, never a
     // vote against a match. `!= null` covers the absent key too.
     const shared = [...source].filter(
@@ -274,6 +307,9 @@ const REWRITE_NOTES = {
     'A previous attempt named its ingredients so far off the Fact Record that the quantity ' +
     'check could not run. Use the record’s canonicalIngredients wording for each ingredient, ' +
     'or keep it in "original".',
+  // `quantities-untagged` deliberately has no note. It is a defect in the
+  // record, not the draft, and there is nothing to tell an author who cannot
+  // fix it — the dish runs out its rewrites and is dropped, which is the point.
 };
 
 const MODEL = 'claude-opus-5';
@@ -388,7 +424,7 @@ export async function authorDish(record, captures, options = {}) {
         `OVERLAP_UNRESOLVED: ${record.dish} still flagged (${kinds}) after ${maxRewrites} rewrites`
       );
     }
-    notes = [...new Set(flags.map((flag) => REWRITE_NOTES[flag.kind]))];
+    notes = [...new Set(flags.map((flag) => REWRITE_NOTES[flag.kind]).filter(Boolean))];
   }
 }
 

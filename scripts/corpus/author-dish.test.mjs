@@ -19,6 +19,7 @@ import {
   authorDish,
   checkOverlap,
   commitRecord,
+  quantitySet,
   shingles,
   sourceQuantitySets,
 } from './author-dish.mjs';
@@ -191,6 +192,76 @@ test('the join follows the record’s name into "original" when the authored nam
   const flags = checkOverlap(copied, RECORD, CAPTURES);
   assert.deepEqual(kinds(flags), ['quantities']);
   assert.equal(flags[0].publisher, 'c.com');
+});
+
+test('a decoy carrying a record name cannot clear the source it collides with', () => {
+  // "tomatoes" is the record's word, and two authored ingredients carry it. The
+  // ambiguous key leaves the comparison; what it must not do is hand the arm
+  // the cherry amount and clear a source whose other amounts were copied whole.
+  const record = {
+    ...RECORD,
+    canonicalIngredients: [
+      { name: 'beef mince', essential: true, observations: ['750 g (s2)'] },
+      { name: 'brown onion', essential: true, observations: ['1 (s2)'] },
+      { name: 'beef stock', essential: false, observations: ['500 ml (s2)'] },
+      { name: 'tomatoes', essential: true, observations: ['400 g (s2)'] },
+    ],
+  };
+  const copied = {
+    ...CLEAN,
+    extendedIngredients: [
+      { name: 'beef mince', amount: 750, unit: 'g', original: '750 g beef mince' },
+      { name: 'brown onion', amount: 1, unit: '', original: '1 brown onion' },
+      { name: 'beef stock', amount: 500, unit: 'ml', original: '500 ml beef stock' },
+      { name: 'tinned tomatoes', amount: 400, unit: 'g', original: '400 g tinned tomatoes' },
+      { name: 'cherry tomatoes', amount: 200, unit: 'g', original: '200 g cherry tomatoes' },
+    ],
+  };
+
+  assert.equal(quantitySet(copied, record).has('tomatoes'), false);
+  const flags = checkOverlap(copied, record, CAPTURES);
+  assert.deepEqual(kinds(flags), ['quantities']);
+  assert.equal(flags[0].publisher, 'c.com');
+});
+
+test('a record name is claimed on a word boundary, not as a substring', () => {
+  const set = quantitySet(
+    {
+      extendedIngredients: [
+        { name: 'salted butter', amount: 100, unit: 'g', original: '100 g salted butter' },
+      ],
+    },
+    { canonicalIngredients: [{ name: 'salt' }] }
+  );
+  assert.deepEqual([...set.keys()], ['salted butter']);
+});
+
+test('a record whose observations lost their source tags is flagged, not passed', async () => {
+  // The "(sN)" tag is a prompt convention in the reading stage, not a schema
+  // constraint, so an untagged record recovers no source set at all.
+  const untagged = {
+    ...RECORD,
+    canonicalIngredients: RECORD.canonicalIngredients.map((ingredient) => ({
+      ...ingredient,
+      observations: ingredient.observations.map((o) => o.replace(/\s*\(s\d+\)$/, '')),
+    })),
+  };
+  assert.equal(sourceQuantitySets(untagged).size, 0);
+  assert.deepEqual(kinds(checkOverlap(CLEAN, untagged, CAPTURES)), ['quantities-untagged']);
+
+  // Nothing an author can fix, so it costs the dish rather than passing — and
+  // no invented advice reaches the author on the way there.
+  const notes = [];
+  await assert.rejects(
+    authorDish(untagged, CAPTURES, {
+      author: async (_record, rewriteNotes) => {
+        notes.push(rewriteNotes);
+        return CLEAN;
+      },
+    }),
+    /OVERLAP_UNRESOLVED.*quantities-untagged/
+  );
+  assert.deepEqual(notes, [[], [], []]);
 });
 
 test('names too far off the record are flagged uncheckable, never passed in silence', async () => {
