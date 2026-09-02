@@ -4,20 +4,23 @@
 // no solo/group question: a Session starts as yours and becomes a group when
 // you invite someone.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CUISINES,
   DIETS,
   MAX_HEADCOUNT,
   MEAL_TYPES,
+  type Craving,
   type Cuisine,
   type Diet,
   type MealType,
+  type NearestCraving,
 } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
+import { fetchNearestCraving } from '../services/apiClient';
 
 /** Toggle membership of a chip set, preserving the rest. */
 function toggle<T>(values: T[], value: T): T[] {
@@ -33,7 +36,56 @@ export default function CookSetupPage() {
   const [headcount, setHeadcount] = useState(2);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
+  const [offer, setOffer] = useState<NearestCraving | null>(null);
   const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
+
+  /**
+   * Which offer is current. `createAndJoin` has already cleared `isCreating` by
+   * the time the offer read behind it resolves, so the form is live underneath
+   * an in-flight read: a second deal can start, or the Craving can be edited.
+   * Either supersedes the read, and only the newest one's offer may land.
+   */
+  const dealsStarted = useRef(0);
+
+  /**
+   * Deal this Craving — and, when it deals nothing, ask what would. The
+   * refusal lands inline at setup with every chip exactly as the Host set it
+   * (#260), and the Nearest Craving arrives beside it as an offer: tapping it
+   * comes back through here with the Craving it named, and ignoring it changes
+   * nothing (#334).
+   */
+  const deal = async (craving: Craving) => {
+    const dealt = ++dealsStarted.current;
+    setError('');
+    setOffer(null);
+
+    const failure = await createAndJoin(
+      hostName.trim(),
+      { branch: 'cook', craving, headcount },
+      selectedFriendIds
+    );
+    setError(failure?.message ?? '');
+
+    // Only the zero-Recipe refusal has a neighbour worth offering: a source
+    // that did not answer says nothing about the Craving (#250).
+    if (failure?.code === 'NO_RECIPES_FOUND') {
+      const nearest = await fetchNearestCraving(craving).catch(() => null);
+      if (dealsStarted.current === dealt) setOffer(nearest);
+    }
+  };
+
+  /**
+   * Every hand-edit of the Craving supersedes the offer: it named a neighbour
+   * of a Craving that is no longer the one on screen, and an offer must deal
+   * exactly the Craving its words promise (CONTEXT.md, Nearest Craving) — so
+   * the read still out for the old Craving is superseded too, not just the
+   * offer already on screen.
+   */
+  const editCraving = (edit: () => void) => {
+    dealsStarted.current++;
+    setOffer(null);
+    edit();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,15 +96,7 @@ export default function CookSetupPage() {
       return;
     }
 
-    // A zero-Recipe Craving comes back here as a message, leaving every chip
-    // exactly as the Host set it — the refusal lands inline at setup (#260).
-    setError(
-      (await createAndJoin(
-        hostName.trim(),
-        { branch: 'cook', craving: { mealType, cuisines, diets }, headcount },
-        selectedFriendIds
-      )) ?? ''
-    );
+    await deal({ mealType, cuisines, diets });
   };
 
   const chipClass = (selected: boolean) =>
@@ -98,7 +142,7 @@ export default function CookSetupPage() {
             <select
               id="mealType"
               value={mealType}
-              onChange={(e) => setMealType(e.target.value as MealType)}
+              onChange={(e) => editCraving(() => setMealType(e.target.value as MealType))}
               disabled={isLoading}
               className="input capitalize"
             >
@@ -123,7 +167,7 @@ export default function CookSetupPage() {
                     key={cuisine}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => setCuisines(toggle(cuisines, cuisine))}
+                    onClick={() => editCraving(() => setCuisines(toggle(cuisines, cuisine)))}
                     disabled={isLoading}
                     className={chipClass(selected)}
                   >
@@ -149,7 +193,7 @@ export default function CookSetupPage() {
                     key={diet}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => setDiets(toggle(diets, diet))}
+                    onClick={() => editCraving(() => setDiets(toggle(diets, diet)))}
                     disabled={isLoading}
                     className={chipClass(selected)}
                   >
@@ -202,6 +246,23 @@ export default function CookSetupPage() {
             <div className="rounded-xl border border-coral/30 bg-coral/10 p-3">
               <p className="text-sm text-coral-soft">{error}</p>
             </div>
+          )}
+
+          {offer && (
+            <button
+              type="button"
+              onClick={() => deal(offer.craving)}
+              disabled={isLoading}
+              className="btn btn-secondary min-h-[48px] w-full"
+            >
+              {/* The words come from the offer, never from the live chips: the
+                  button must name the Craving its tap actually deals. */}
+              <span className="capitalize">
+                Deal {[...offer.craving.diets, offer.label].join(' + ')} instead
+              </span>
+              {' — '}
+              {offer.recipeCount} {offer.recipeCount === 1 ? 'recipe' : 'recipes'}
+            </button>
           )}
 
           <div className="pt-2">

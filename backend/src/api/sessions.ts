@@ -3,14 +3,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
+import { cravingSchema } from './cravingSchema.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import {
   BRANCHES,
-  CUISINES,
-  DIETS,
   MAX_HEADCOUNT,
-  MEAL_TYPES,
   SESSION_CODE_PATTERN,
   type CreateSessionRequest,
   type CreateSessionResponse,
@@ -33,16 +31,7 @@ export function createSessionsRouter(sessionService: SessionService) {
         .optional(),
       searchRadiusMiles: z.number().min(1).max(15).optional(),
       branch: z.enum(BRANCHES).optional(),
-      // The chips are closed vocabularies, not free text: they reach a
-      // Spoonacular query and a shared Redis pool key, so only the values the
-      // setup screen offers get through.
-      craving: z
-        .object({
-          mealType: z.enum(MEAL_TYPES),
-          cuisines: z.array(z.enum(CUISINES)).max(CUISINES.length),
-          diets: z.array(z.enum(DIETS)).max(DIETS.length),
-        })
-        .optional(),
+      craving: cravingSchema.optional(),
       headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
     })
     // A Cook Session has nothing to deal without its setup. This narrows what

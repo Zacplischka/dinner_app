@@ -124,13 +124,12 @@ export default function CreateSessionPage() {
 
     const searchRadiusMiles = toBackendRadiusMiles(searchRadiusKm);
 
-    setError(
-      (await createAndJoin(
-        hostName.trim(),
-        { location, searchRadiusMiles, branch },
-        selectedFriendIds
-      )) ?? ''
+    const failure = await createAndJoin(
+      hostName.trim(),
+      { location, searchRadiusMiles, branch },
+      selectedFriendIds
     );
+    setError(failure?.message ?? '');
   };
 
   return (

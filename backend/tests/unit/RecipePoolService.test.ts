@@ -749,3 +749,63 @@ describe('blendDeck — the union rule (#316)', () => {
     ]);
   });
 });
+
+describe('the Nearest Craving — offering the closest deal there is (#334)', () => {
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+  });
+
+  const ASIAN = ['chinese', 'indian', 'japanese', 'korean', 'thai', 'vietnamese'] as const;
+  const koreanVegan: Craving = {
+    mealType: 'main course',
+    cuisines: ['korean'],
+    diets: ['vegan'],
+  };
+
+  it('prices the offer from the corpus and the pools already warm, never the vendor', async () => {
+    const { service: pool, searches } = service(recipeHits(60), {
+      owned: ownedRecipes(4, { cuisine: 'japanese', diets: ['vegan'] }),
+    });
+    // A pool already warm for the widened Craving is part of what it can deal.
+    await pool.dealDeck({ ...koreanVegan, cuisines: [...ASIAN] });
+    const warmed = searches().length;
+
+    const nearest = await pool.nearestCraving(koreanVegan);
+
+    expect(nearest).toEqual({
+      craving: { mealType: 'main course', cuisines: [...ASIAN], diets: ['vegan'] },
+      label: 'Asian',
+      recipeCount: 64,
+    });
+    // Pricing an offer spends nothing: no lookup, no points, no wait.
+    expect(searches()).toHaveLength(warmed);
+  });
+
+  it('climbs past a widening the corpus cannot answer to the step that deals', async () => {
+    const { service: pool } = service(recipeHits(60), {
+      owned: ownedRecipes(3, { cuisine: 'italian', diets: ['vegan'] }),
+    });
+
+    const nearest = await pool.nearestCraving(koreanVegan);
+
+    expect(nearest).toMatchObject({ label: 'any cuisine', recipeCount: 3 });
+    expect(nearest?.craving.cuisines).toEqual([]);
+  });
+
+  it('offers nothing when even the widest step is empty — the refusal stands', async () => {
+    const { service: pool, searches } = service(recipeHits(60));
+
+    await expect(pool.nearestCraving(koreanVegan)).resolves.toBeNull();
+    expect(searches()).toHaveLength(0);
+  });
+
+  it('never offers a diet away, whatever the corpus holds', async () => {
+    const { service: pool } = service(recipeHits(60), {
+      owned: ownedRecipes(9, { cuisine: 'korean', diets: [] }),
+    });
+
+    // Nine korean mains sit right there, and none of them is vegan: the offer
+    // is the Craving with its cuisine widened, or there is no offer.
+    await expect(pool.nearestCraving(koreanVegan)).resolves.toBeNull();
+  });
+});
