@@ -11,7 +11,9 @@
 //     over-reading a good one. Every non-empty bucket is sampled, however small.
 //   - **One failure reviews that stratum**: the rest of the bucket goes to a
 //     person, because one defect in a sample of three is not evidence of one
-//     defect.
+//     defect. That round's verdicts go back into the same `verdict` run,
+//     alongside the sample's — an escalation nobody can record is an
+//     escalation that decides nothing.
 //   - **Two failures re-gate it**: the bucket goes back through the machine
 //     layers and is re-authored, the already-reviewed Recipes included. Two is
 //     not bad luck; it is a bad batch, and ADR 0011's answer to a bad batch is
@@ -24,9 +26,10 @@
 //   node scripts/corpus/human.mjs sample  <recordsDir>
 //   node scripts/corpus/human.mjs verdict <recordsDir> <reviews.json>
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { recordSlugs } from './records.mjs';
 
 /** 10% of the batch — the spec's number, and the pilot's reading budget. */
 export const REVIEW_FRACTION = 0.1;
@@ -74,12 +77,29 @@ export function reviewSample(recipes, fraction = REVIEW_FRACTION) {
  * The sample's verdicts turned into what happens to each bucket. `reviewed` is
  * slug → whether the person passed the Recipe; it must cover the sample exactly,
  * because a missing verdict is silence and silence is not a pass.
+ *
+ * A bucket whose sample failed has *escalated*, and the same call takes the
+ * escalated round's verdicts too — the rest of that bucket is what
+ * `review-stratum` just asked a person to read, so refusing to record what they
+ * read would leave the one-failure rule with no way to finish and the
+ * two-failure rule with no way to fire. Failures count across sample and
+ * escalation together: the second one anywhere in the bucket re-gates it,
+ * whichever round found it. A verdict about a bucket that never escalated is
+ * still a typo, and still refused.
  */
 export function review(recipes, reviewed, fraction = REVIEW_FRACTION) {
   const sample = reviewSample(recipes, fraction);
   const sampled = new Set([...sample.values()].flat());
+  const buckets = strata(recipes);
 
-  const unsampled = Object.keys(reviewed).filter((slug) => !sampled.has(slug));
+  const escalated = new Set(
+    [...sample]
+      .filter(([, slugs]) => slugs.some((slug) => reviewed[slug] === false))
+      .flatMap(([bucket]) => buckets.get(bucket))
+  );
+  const unsampled = Object.keys(reviewed).filter(
+    (slug) => !sampled.has(slug) && !escalated.has(slug)
+  );
   if (unsampled.length) {
     throw new Error(`HUMAN_REVIEW_UNSAMPLED: ${unsampled.join(', ')} — nobody was asked to read`);
   }
@@ -88,15 +108,18 @@ export function review(recipes, reviewed, fraction = REVIEW_FRACTION) {
     throw new Error(`HUMAN_REVIEW_INCOMPLETE: no verdict for ${missing.join(', ')}`);
   }
 
-  const buckets = strata(recipes);
   return [...sample].map(([bucket, slugs]) => {
-    const failed = slugs.filter((slug) => !reviewed[slug]);
     const all = buckets.get(bucket);
+    // Across both rounds, and `=== false` because an escalated Recipe nobody
+    // has read yet is unread, not failed.
+    const failed = all.filter((slug) => reviewed[slug] === false);
     if (failed.length >= 2) {
       return { bucket, sampled: slugs, failed, action: 're-gate-stratum', recipes: all };
     }
     if (failed.length === 1) {
-      const rest = all.filter((slug) => !slugs.includes(slug));
+      // What is still unread. Empty once the escalated round finishes with the
+      // one failure standing: nothing left to read, and still not a pass.
+      const rest = all.filter((slug) => reviewed[slug] === undefined);
       return { bucket, sampled: slugs, failed, action: 'review-stratum', recipes: rest };
     }
     return { bucket, sampled: slugs, failed, action: 'pass', recipes: [] };
@@ -107,15 +130,10 @@ export function review(recipes, reviewed, fraction = REVIEW_FRACTION) {
 
 /** Every `<recordsDir>/<slug>/recipe.json`, as `{ slug, cuisine }`. */
 export function loadBatch(recordsDir) {
-  return readdirSync(recordsDir, { withFileTypes: true })
-    .filter(
-      (entry) => entry.isDirectory() && existsSync(join(recordsDir, entry.name, 'recipe.json'))
-    )
-    .map((entry) => ({
-      slug: entry.name,
-      cuisine: JSON.parse(readFileSync(join(recordsDir, entry.name, 'recipe.json'), 'utf8'))
-        .cuisine,
-    }));
+  return recordSlugs(recordsDir).map((slug) => ({
+    slug,
+    cuisine: JSON.parse(readFileSync(join(recordsDir, slug, 'recipe.json'), 'utf8')).cuisine,
+  }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

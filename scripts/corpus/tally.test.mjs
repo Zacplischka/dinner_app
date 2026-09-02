@@ -37,13 +37,22 @@ const recipe = {
   },
 };
 
-/** One measured line as the container reports it; `searchTerm` follows the name. */
+/**
+ * One measured line as the container reports it; `searchTerm` follows the name.
+ * The store's evidence rides along with every matched line — a stocked, priced,
+ * readable, unit-priced product — so a test only says what it changes.
+ */
 const line = ({ name = 'beef mince', ...changes }) => ({
   name,
   searchTerm: name,
   staple: false,
   outcome: 'matched',
   state: 'priced',
+  available: true,
+  priced: true,
+  packKind: 'fixed',
+  unitPriced: true,
+  convertFailed: false,
   ...changes,
 });
 
@@ -51,10 +60,7 @@ const measured = (lines) => ({ slug: 'beef-ragu', lines });
 
 const probeOf =
   (measurement, storeId = REFERENCE_STORE_ID) =>
-  async () => ({
-    storeId,
-    recipes: [measurement],
-  });
+  async () => [{ storeId, ...measurement }];
 
 test('the probe is sent every ingredient — the store decides which are Staples', () => {
   const [payload] = probePayload([recipe]);
@@ -121,11 +127,13 @@ test('ranged but priceless, and ranged but out of stock, are the store as well',
         name: 'kaffir lime leaves',
         state: 'unpriced_matched',
         reason: 'no price on product',
+        priced: false,
       }),
       line({
         name: 'thai basil',
         state: 'unpriced_matched',
         reason: 'no price on product',
+        priced: false,
         available: false,
       }),
     ])
@@ -133,6 +141,76 @@ test('ranged but priceless, and ranged but out of stock, are the store as well',
   assert.deepEqual(report.defects, []);
   assert.equal(report.storeFacts.length, 2);
   assert.match(report.storeFacts[1], /not stocked/);
+});
+
+test('the store/defect split reads the store, never the ladder’s prose', () => {
+  // `reason` is diagnostic prose (shared/types/grocery.ts) and quantityLadder
+  // is free to reword it. If a reword can move a line from storeFacts to
+  // defects, the layer is grading the store's problem as the author's.
+  const report = tallyReport(
+    measured([
+      line({
+        name: 'kaffir lime leaves',
+        state: 'unpriced_matched',
+        reason: 'the ladder said something else entirely',
+        priced: false,
+      }),
+    ])
+  );
+  assert.deepEqual(report.defects, []);
+  assert.match(report.storeFacts[0], /no price/);
+});
+
+test('a pack Woolworths writes unreadably, or prices by nothing, is the store’s', () => {
+  const report = tallyReport(
+    measured([
+      // quantityLadder.ts: `unparsed pack "..."` — Woolworths' own string.
+      line({
+        name: 'lamb shoulder',
+        state: 'unpriced_matched',
+        reason: 'unparsed pack "big one"',
+        packKind: null,
+      }),
+      // quantityLadder.ts: `variable pack, no unit price` — no cup price to
+      // estimate from, and no rewrite of the Recipe produces one.
+      line({
+        name: 'whole snapper',
+        state: 'unpriced_matched',
+        reason: 'variable pack, no unit price',
+        packKind: 'variable',
+        unitPriced: false,
+      }),
+    ])
+  );
+  assert.deepEqual(report.defects, [], 'neither is something an author can restate');
+  assert.equal(report.storeFacts.length, 2);
+  assert.match(report.storeFacts[0], /pack size nothing can read/);
+  assert.match(report.storeFacts[1], /variable pack with no unit price/);
+});
+
+test('a line Spoonacular refused is unmeasured — our quota, not their Recipe', () => {
+  const report = tallyReport(
+    measured([
+      line({}),
+      line({
+        name: 'curry roux',
+        state: 'unpriced_matched',
+        reason: 'no conversion for "packet"',
+        convertFailed: true,
+      }),
+    ])
+  );
+  assert.deepEqual(report.defects, [], 'the point ceiling is ours to fix, not the author’s');
+  assert.equal(report.unmeasured.length, 1);
+  assert.match(report.unmeasured[0], /Spoonacular/);
+  assert.equal(report.measured, 1);
+  assert.equal(report.passed, false);
+});
+
+test('a line that priced anyway is measured, whatever Spoonacular did', () => {
+  const report = tallyReport(measured([line({ state: 'estimated', convertFailed: true })]));
+  assert.equal(report.passed, true);
+  assert.deepEqual(report.unmeasured, []);
 });
 
 test('a search the Retailer refused is unmeasured, and never graded as a defect', () => {
@@ -155,13 +233,14 @@ test('a measurement from any other store is refused outright', async () => {
 
 test('the gate reports every Recipe, and fails only the ones that failed', async () => {
   const two = ['a', 'b'].map((slug) => ({ slug, recipe: { ...recipe.recipe } }));
-  const probe = async () => ({
-    storeId: REFERENCE_STORE_ID,
-    recipes: [
-      { slug: 'a', lines: [line({})] },
-      { slug: 'b', lines: [line({ state: 'unpriced_matched', reason: 'unparsed pack ""' })] },
-    ],
-  });
+  const probe = async () => [
+    { storeId: REFERENCE_STORE_ID, slug: 'a', lines: [line({})] },
+    {
+      storeId: REFERENCE_STORE_ID,
+      slug: 'b',
+      lines: [line({ state: 'unpriced_matched', reason: 'no bridge' })],
+    },
+  ];
   const { reports } = await tallyGate(two, probe);
   assert.deepEqual(
     reports.map((report) => [report.slug, report.passed]),
@@ -174,37 +253,72 @@ test('the gate reports every Recipe, and fails only the ones that failed', async
 
 test('a measurement that skipped a Recipe is not that Recipe passing', async () => {
   const two = ['a', 'b'].map((slug) => ({ slug, recipe: { ...recipe.recipe } }));
-  const probe = async () => ({
-    storeId: REFERENCE_STORE_ID,
-    recipes: [{ slug: 'a', lines: [line({})] }],
-  });
+  const probe = async () => [{ storeId: REFERENCE_STORE_ID, slug: 'a', lines: [line({})] }];
   await assert.rejects(tallyGate(two, probe), /TALLY_UNMEASURED_RECIPES.*\bb\b/);
 });
 
-test('the railway probe runs the measurement in production and reads its one line', async () => {
+test('one Recipe measured at another store is refused, however the run ended', async () => {
+  const two = ['a', 'b'].map((slug) => ({ slug, recipe: { ...recipe.recipe } }));
+  const probe = async () => [
+    { storeId: 3221, slug: 'a', lines: [line({})] },
+    { storeId: REFERENCE_STORE_ID, slug: 'b', lines: [line({})] },
+  ];
+  await assert.rejects(tallyGate(two, probe), /TALLY_WRONG_STORE: a measured at 3221/);
+});
+
+test('the railway probe runs the measurement in production and reads a line per Recipe', async () => {
   const calls = [];
-  const answer = { storeId: REFERENCE_STORE_ID, recipes: [] };
+  const verdict = (slug) => `TALLY ${JSON.stringify({ storeId: REFERENCE_STORE_ID, slug })}`;
   const run = async (command, args) => {
     calls.push([command, args]);
     return {
       // Anything the CLI says on its way in must not be mistaken for a verdict.
-      stdout: `Connecting to service...\nTALLY ${JSON.stringify(answer)}\n`,
+      stdout: `Connecting to service...\n${verdict('a')}\n${verdict('b')}\n`,
     };
   };
-  assert.deepEqual(await railwayProbe([{ slug: 'a', ingredients: [] }], run), answer);
+  const payload = [
+    { slug: 'a', ingredients: [] },
+    { slug: 'b', ingredients: [] },
+  ];
+  assert.deepEqual(
+    (await railwayProbe(payload, run)).map((measurement) => measurement.slug),
+    ['a', 'b']
+  );
 
   const [command, args] = calls[0];
   assert.equal(command, 'railway');
   assert.deepEqual(args.slice(0, 4), ['ssh', 'node', 'scripts/corpus/tally.mjs', 'measure']);
   // Base64 so a shell between here and the container has nothing to chew on.
-  assert.deepEqual(JSON.parse(Buffer.from(args[4], 'base64').toString('utf8')), [
-    { slug: 'a', ingredients: [] },
-  ]);
+  assert.deepEqual(JSON.parse(Buffer.from(args[4], 'base64').toString('utf8')), payload);
+});
+
+test('a run that died keeps the Recipes it had already measured', async () => {
+  // The budget those lines cost is the one thing this file cannot re-spend, so
+  // a dropped session must not throw them away — the gate names the rest.
+  const run = async () => {
+    const error = new Error('ssh: connection closed by remote host');
+    error.stdout = `TALLY ${JSON.stringify({ storeId: REFERENCE_STORE_ID, slug: 'a', lines: [] })}\n`;
+    throw error;
+  };
+  const two = ['a', 'b'].map((slug) => ({ slug, recipe: { ...recipe.recipe } }));
+  await assert.rejects(
+    tallyGate(two, (payload) => railwayProbe(payload, run)),
+    /TALLY_UNMEASURED_RECIPES: b/
+  );
+});
+
+test('a run that died before measuring anything is the error it died of', async () => {
+  const run = async () => {
+    const error = new Error('ssh: no active deployment');
+    error.stdout = '';
+    throw error;
+  };
+  await assert.rejects(railwayProbe([{ slug: 'a', ingredients: [] }], run), /no active deployment/);
 });
 
 test('the railway probe says so when the container answered with no verdict', async () => {
   const run = async () => ({ stdout: 'error: no active deployment\n' });
-  await assert.rejects(railwayProbe([], run), /TALLY_NO_MEASUREMENT/);
+  await assert.rejects(railwayProbe([{ slug: 'a', ingredients: [] }], run), /TALLY_NO_MEASUREMENT/);
 });
 
 test('a live Session is live traffic, and the scan stops at the first one', async () => {

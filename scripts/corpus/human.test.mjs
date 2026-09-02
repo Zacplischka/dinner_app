@@ -105,3 +105,51 @@ test('a verdict about a Recipe nobody sampled is a typo, not a verdict', () => {
     /HUMAN_REVIEW_UNSAMPLED.*italian-02/
   );
 });
+
+test('the escalated round’s verdicts are verdicts — the stratum was opened by its failure', () => {
+  // `review-stratum` sends 27 more Recipes to a person. If reading them cannot
+  // be recorded, the one-failure rule has no way to finish.
+  const recipes = batch('italian', 30);
+  const sample = reviewSample(recipes);
+  const report = review(recipes, {
+    ...allPassing(sample),
+    'italian-01': false,
+    'italian-02': true,
+    'italian-03': true,
+  });
+  assert.equal(report[0].action, 'review-stratum');
+  assert.deepEqual(report[0].failed, ['italian-01']);
+  assert.equal(report[0].recipes.length, 25, 'what is still unread, sample and escalation aside');
+  assert.ok(!report[0].recipes.includes('italian-02'));
+});
+
+test('a second failure found in the escalated round re-gates the stratum', () => {
+  // The rule the escalation exists for: two is not bad luck, it is a bad batch.
+  const recipes = batch('italian', 30);
+  const sample = reviewSample(recipes);
+  const report = review(recipes, {
+    ...allPassing(sample),
+    'italian-01': false,
+    'italian-07': false,
+  });
+  assert.equal(report[0].action, 're-gate-stratum');
+  assert.deepEqual(report[0].failed, ['italian-01', 'italian-07']);
+  assert.equal(report[0].recipes.length, 30, 'the reviewed Recipes go back through too');
+});
+
+test('a whole stratum read out with one failure has nothing left to read, and still fails', () => {
+  const recipes = batch('italian', 30);
+  const verdicts = Object.fromEntries(recipes.map(({ slug }) => [slug, true]));
+  const report = review(recipes, { ...verdicts, 'italian-01': false });
+  assert.equal(report[0].action, 'review-stratum');
+  assert.deepEqual(report[0].recipes, []);
+});
+
+test('a stratum that never escalated does not accept verdicts from another one', () => {
+  const recipes = [...batch('italian', 30), ...batch('korean', 30)];
+  const sample = reviewSample(recipes);
+  assert.throws(
+    () => review(recipes, { ...allPassing(sample), 'italian-01': false, 'korean-02': true }),
+    /HUMAN_REVIEW_UNSAMPLED.*korean-02/
+  );
+});
