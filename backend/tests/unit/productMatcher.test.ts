@@ -75,6 +75,109 @@ describe('matchProducts', () => {
     expect(tacoShells?.match.stockcode).toBe(4);
   });
 
+  it('keeps matching a taco-class term (#328 regression pin, not a fix)', () => {
+    // #328 probed "taco shells", "tortillas", "corn tortillas" and "taco
+    // seasoning" live and found them already matching: every result sits in
+    // the "ETHNIC / GOURMET FOOD" section under "MEXICAN FOODS", and the
+    // "Chips" that #326 feared lives only in the pies category path, which
+    // #245 already put out of the blocklist's reach. Nothing here changed to
+    // make this pass — it pins it so no future blocklist word evicts the
+    // section. The tongs and baskets sharing the answer are marketplace
+    // listings with no SAP category.
+    // Provenance: probed from a dev-machine egress with FulfilmentStoreId null
+    // on every answer, so these are some Woolworths store's section strings and
+    // not store-1101 verified (#328 AC3 open — ADR 0010 makes every gate
+    // measured here a this-store gate, and catalogue does move between stores).
+    const result = matchProducts(
+      [
+        product({
+          stockcode: 6038264,
+          name: 'Old El Paso Original Taco Shells',
+          sapCategory: 'ETHNIC / GOURMET FOOD',
+          sapSubCategory: 'MEXICAN FOODS',
+        }),
+        product({
+          stockcode: 333915,
+          name: 'Mission Original Tortillas',
+          sapCategory: 'ETHNIC / GOURMET FOOD',
+          sapSubCategory: 'MEXICAN FOODS',
+        }),
+        product({
+          stockcode: 1123923157,
+          name: 'JOYBUY 6 Pcs Taco Shell Tong with Clip',
+          sapCategory: undefined,
+        }),
+      ],
+      'taco shells'
+    );
+
+    expect(result?.match.stockcode).toBe(6038264);
+    expect(result?.runnersUp.map((candidate) => candidate.stockcode)).toEqual([333915]);
+  });
+
+  it('still refuses snack, confectionery and non-food answers (#328)', () => {
+    // Taken from the same probe, same provenance caveat: dev-machine egress,
+    // FulfilmentStoreId null, not store-1101 verified. Crisps and chocolate are
+    // named by their section, while chilled dog food sits under a food section
+    // and is only nameable by its sub-category — which is why the blocklist
+    // tests the two concatenated. The cost of testing both is pinned in the
+    // next case.
+    expect(
+      matchProducts(
+        [
+          product({
+            stockcode: 332426,
+            name: "Smith's Thinly Cut Potato Chips Sour Cream & Onion",
+            sapCategory: 'SNACKS',
+            sapSubCategory: 'CHIPS - SHARING',
+          }),
+          product({
+            stockcode: 54641,
+            name: 'Woolworths Milk Chocolate Peanuts',
+            sapCategory: 'CONFECTIONERY',
+            sapSubCategory: 'CONFEC SHARING - CHOCOLATE',
+          }),
+          product({
+            stockcode: 831291,
+            name: 'VIP Chunkers Adult Chilled Fresh Dog Food',
+            sapCategory: 'MEAT CONVENIENCE',
+            sapSubCategory: 'PET NEEDS - FRESH',
+          }),
+        ],
+        'sour cream'
+      )
+    ).toBeNull();
+  });
+
+  it('accepts the one measured cost of "snack": the produce section\'s own nuts (#328)', () => {
+    // Same probe, same caveat (not store-1101 verified). "peanuts" is the one
+    // term where the blocklist costs anything: "NUTS AND SNACKS" under a
+    // produce section is evicted with the crisps. Kept anyway — loosening
+    // "snack" to section level lets that product back in and it outranks the
+    // ingredient, which is AC2 backwards. Stockcodes are synthetic; only the
+    // section strings and the ranking came off the probe.
+    const result = matchProducts(
+      [
+        product({
+          stockcode: 1,
+          name: 'Woolworths Peanuts Roasted & Salted',
+          sapCategory: 'VEG / FRESHCUTS / HARD PRODUCE',
+          sapSubCategory: 'NUTS AND SNACKS',
+        }),
+        product({
+          stockcode: 2,
+          name: 'Woolworths Blanched Peanuts',
+          sapCategory: 'COOKING NEEDS',
+          sapSubCategory: 'DRIED FRUIT & NUTS',
+        }),
+      ],
+      'peanuts'
+    );
+
+    expect(result?.match.stockcode).toBe(2);
+    expect(result?.runnersUp).toEqual([]);
+  });
+
   it('prefers the candidate whose name carries the term identity over a higher-ranked stranger', () => {
     const result = matchProducts(
       [
