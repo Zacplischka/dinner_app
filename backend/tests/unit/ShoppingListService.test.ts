@@ -51,6 +51,28 @@ const recipe: PooledRecipe = {
   ],
 };
 
+/**
+ * An Owned Recipe whose line authors its own Retailer term (#332). The pilot's
+ * conflict: the culinary gate demands diet-qualified names, the tally gate
+ * needs matchable ones — so the name stays cook-honest and `searchTerm`
+ * carries the term Woolworths can answer. Stated for the Headcount, so the
+ * scale is not what this is about.
+ */
+const authored: PooledRecipe = {
+  ...recipe,
+  placeId: 'owned:gf-stew',
+  servings: 6,
+  ingredients: [
+    {
+      name: 'gluten free vegetable stock',
+      amount: 500,
+      unit: 'ml',
+      original: '500 ml gluten-free vegetable stock',
+      searchTerm: 'vegetable stock',
+    },
+  ],
+};
+
 /** A store the service can write to and the test can read back. */
 function fakeRedis() {
   const keys = new Map<string, { value: string; ttlMs: number }>();
@@ -332,6 +354,41 @@ describe('ShoppingListService.mint', () => {
       state: 'unmatched',
       searchTerm: 'vegetable stock',
     });
+  });
+
+  it('searches the Retailer for an authored term, and still renders the line as written', async () => {
+    // What an Owned Recipe buys with `searchTerm` (#332): "gluten free
+    // vegetable stock" is what the cook reads and what the culinary gate
+    // demands, "vegetable stock" is what Woolworths can answer.
+    const { service, matchProduct } = build({ recipe: authored });
+
+    const list = await service.readList((await service.mint('AB123', 'owned:gf-stew'))!);
+
+    expect(matchProduct).toHaveBeenCalledWith('vegetable stock');
+    expect(list?.lines[0]).toMatchObject({
+      text: '500 ml gluten free vegetable stock',
+      state: 'priced',
+    });
+  });
+
+  it('derives the authored term too, so the link and the search stay one term', async () => {
+    // The one-derivation rule (#285) on the authored path: `matchProduct`
+    // derives whatever it is handed, so an authored term that is not already
+    // normalised — "Vegetable Broth", which the US→AU table answers — would
+    // otherwise search "vegetable stock" and hand the Shopper "Vegetable
+    // Broth". Nothing makes an author normalise, so the mint does.
+    const { service } = build({
+      recipe: {
+        ...authored,
+        ingredients: [{ ...authored.ingredients[0], searchTerm: 'Vegetable Broth' }],
+      },
+      outcome: { status: 'no_product' },
+      resolution: { state: 'unmatched' },
+    });
+
+    const list = await service.readList((await service.mint('AB123', 'owned:gf-stew'))!);
+
+    expect(list?.lines[0]).toMatchObject({ searchTerm: 'vegetable stock' });
   });
 
   it('merges an ingredient stated twice into one claimable line, amounts combined', async () => {
@@ -975,6 +1032,22 @@ describe('ShoppingListService swaps', () => {
     const list = await service.swapLine(listId, '0', null);
 
     expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'garlic' });
+  });
+
+  it('demotes an authored line back onto its own authored term', async () => {
+    // Same one-derivation rule (#285) on a record that authored the term
+    // rather than leaving it to be derived: a demoted line offers the search
+    // it would have minted Unmatched with, never the cook-honest name.
+    const { service } = build({
+      recipe: authored,
+      outcome: { status: 'matched', match: tin, runnersUp },
+    });
+    const listId = (await service.mint('AB123', 'owned:gf-stew'))!;
+    await service.readList(listId);
+
+    const list = await service.swapLine(listId, '0', null);
+
+    expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'vegetable stock' });
   });
 
   it('keeps the Claim on a line that gets swapped', async () => {
