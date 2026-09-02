@@ -53,6 +53,10 @@ export const config = {
     // stops short of the included quota, and the gap absorbs the in-flight
     // calls whose points only land on the counter once they answer.
     dailyPointCeiling: parseInt(process.env.SPOONACULAR_DAILY_POINT_CEILING || '1400', 10),
+    // The deal-time budget on a vendor fetch (#333). A slow source is a source
+    // failure for that deal: past this the deal gives up on it and deals owned
+    // alone, so a hanging Spoonacular can never hold a Host at setup.
+    dealBudgetMs: parseInt(process.env.RECIPE_DEAL_BUDGET_MS || '2500', 10),
   },
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,

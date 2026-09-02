@@ -50,15 +50,30 @@ export interface PooledRecipe extends Recipe {
   sourceUrl?: string;
 }
 
+/**
+ * A refusal the source means, as against a blip on the way to it: a revoked key
+ * (401), a payment or subscription stop (402), and the #261 points guard
+ * declining to call at all. It will still be true a second from now, so it
+ * latches the source dark rather than being retried per call (#333) — every
+ * further call would be spend on a certainty. Anything else — a transport
+ * error, a timeout, a 5xx — is not this.
+ */
+export class SpoonacularRefusal extends Error {}
+
 export interface SpoonacularClient {
   /** Grams for one `sourceUnit` of the ingredient; null when Convert answers
    * without a number. Transport failures throw — the ladder falls through. */
   gramsPerUnit(ingredientName: string, sourceUnit: string): Promise<number | null>;
   ingredientInfo(ingredientName: string): Promise<IngredientInfo>;
-  /** One page of the Craving's recipe pool. Transport failures throw. */
+  /**
+   * One page of the Craving's recipe pool. Transport failures throw; a
+   * categorical refusal throws `SpoonacularRefusal`. `signal` is the caller's
+   * budget — an aborted fetch throws like any other transport failure.
+   */
   searchRecipes(
     craving: Craving,
-    page: { number: number; offset: number }
+    page: { number: number; offset: number },
+    signal?: AbortSignal
   ): Promise<PooledRecipe[]>;
 }
 
@@ -169,7 +184,7 @@ export function guardDailyPoints(
     const key = pointsKey();
     const used = Number(await redis.get(key)) || 0;
     if (used >= ceiling) {
-      throw new Error(`Spoonacular daily point ceiling reached (${used}/${ceiling})`);
+      throw new SpoonacularRefusal(`Spoonacular daily point ceiling reached (${used}/${ceiling})`);
     }
     const response = await fetchImpl(input, init);
     // A response the source didn't count is still one it charged for. Leaving
@@ -194,12 +209,24 @@ export function createSpoonacularClient(
   fetchImpl: typeof fetch = fetch,
   apiKey: string | undefined = config.spoonacular.apiKey
 ): SpoonacularClient {
-  async function get(path: string, params: Record<string, string>): Promise<unknown> {
+  async function get(
+    path: string,
+    params: Record<string, string>,
+    signal?: AbortSignal
+  ): Promise<unknown> {
     const query = new URLSearchParams({ ...params, apiKey: apiKey ?? '' }).toString();
     const response = await fetchImpl(`${BASE}${path}?${query}`, {
       headers: { 'User-Agent': PINNED_UA, Accept: 'application/json' },
+      signal,
     });
-    if (!response.ok) throw new Error(`Spoonacular ${path} failed with status ${response.status}`);
+    if (!response.ok) {
+      const message = `Spoonacular ${path} failed with status ${response.status}`;
+      // A revoked key and a payment stop are the source's own answer, not the
+      // network's: they latch (#333). Everything else stays a per-call blip.
+      throw response.status === 401 || response.status === 402
+        ? new SpoonacularRefusal(message)
+        : new Error(message);
+    }
     return response.json();
   }
 
@@ -214,19 +241,23 @@ export function createSpoonacularClient(
       return number(body.targetAmount) ?? null;
     },
 
-    async searchRecipes(craving, page) {
-      const body = (await get('/recipes/complexSearch', {
-        type: craving.mealType,
-        // Spoonacular ORs a comma-separated cuisine list and ANDs the diets:
-        // "italian or thai, and vegetarian" is exactly the chips' meaning.
-        ...(craving.cuisines.length > 0 && { cuisine: craving.cuisines.join(',') }),
-        ...(craving.diets.length > 0 && { diet: craving.diets.join(',') }),
-        instructionsRequired: 'true',
-        addRecipeInformation: 'true',
-        fillIngredients: 'true',
-        number: String(page.number),
-        offset: String(page.offset),
-      })) as { results?: RecipeSearchResult[] };
+    async searchRecipes(craving, page, signal) {
+      const body = (await get(
+        '/recipes/complexSearch',
+        {
+          type: craving.mealType,
+          // Spoonacular ORs a comma-separated cuisine list and ANDs the diets:
+          // "italian or thai, and vegetarian" is exactly the chips' meaning.
+          ...(craving.cuisines.length > 0 && { cuisine: craving.cuisines.join(',') }),
+          ...(craving.diets.length > 0 && { diet: craving.diets.join(',') }),
+          instructionsRequired: 'true',
+          addRecipeInformation: 'true',
+          fillIngredients: 'true',
+          number: String(page.number),
+          offset: String(page.offset),
+        },
+        signal
+      )) as { results?: RecipeSearchResult[] };
       return (body.results ?? []).flatMap((result) => toPooledRecipe(result) ?? []);
     },
 
