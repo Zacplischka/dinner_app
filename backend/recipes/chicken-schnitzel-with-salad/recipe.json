@@ -1,0 +1,88 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:chicken-schnitzel-with-salad",
+  "name": "Chicken Schnitzel with Salad",
+  "servings": 4,
+  "mealType": "main course",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "chicken breast fillets",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg chicken breast fillets"
+    },
+    {
+      "name": "plain flour",
+      "amount": 75,
+      "unit": "g",
+      "original": "1/2 cup (75 g) plain flour"
+    },
+    {
+      "name": "eggs",
+      "amount": 3,
+      "unit": "",
+      "original": "3 eggs"
+    },
+    {
+      "name": "panko breadcrumbs",
+      "amount": 150,
+      "unit": "g",
+      "original": "150 g (about 2 1/2 cups) panko breadcrumbs"
+    },
+    {
+      "name": "vegetable oil",
+      "amount": 250,
+      "unit": "ml",
+      "original": "250 ml vegetable oil, for shallow frying"
+    },
+    {
+      "name": "mixed salad leaves",
+      "amount": 120,
+      "unit": "g",
+      "original": "120 g bag mixed salad leaves"
+    },
+    {
+      "name": "cherry tomatoes",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g cherry tomatoes, halved"
+    },
+    {
+      "name": "cucumber",
+      "amount": 1,
+      "unit": "",
+      "original": "1 cucumber, sliced"
+    },
+    {
+      "name": "red onion",
+      "amount": 0.5,
+      "unit": "",
+      "original": "½ red onion, finely sliced"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon",
+      "searchTerm": "lemon loose"
+    },
+    {
+      "name": "dijon mustard",
+      "amount": 1,
+      "unit": "tsp",
+      "original": "1 tsp dijon mustard"
+    }
+  ],
+  "steps": [
+    "Slice each chicken breast in half horizontally, then pound between two sheets of baking paper to an even 1 cm thickness. Season both sides with salt and pepper.",
+    "Set up three shallow dishes: plain flour in the first, eggs beaten in the second, panko breadcrumbs in the third.",
+    "Coat each piece of chicken in flour and shake off the excess, dip in the egg, then press firmly into the panko so the crumbs stick all over. If you have time, chill the crumbed chicken for 15 minutes to help the coating set.",
+    "Heat the vegetable oil in a large frying pan over medium-high heat until a pinch of crumbs sizzles straight away. Fry the schnitzels two at a time so the pan stays hot, about 3 minutes each side, until deep golden and cooked through.",
+    "Drain the schnitzels on a wire rack or paper towel and season with a little salt while hot.",
+    "Make the dressing: whisk 2 tablespoons of olive oil with the juice of half the lemon, the dijon mustard and a pinch of salt. Cut the rest of the lemon into wedges.",
+    "Toss the salad leaves, cherry tomatoes, cucumber and half the red onion, thinly sliced, with the dressing in a large bowl.",
+    "Serve the schnitzels with the salad piled alongside and the lemon wedges for squeezing over."
+  ],
+  "photoUrl": "https://img.dinder.it.com/chicken-schnitzel-with-salad.webp"
+}

@@ -1,0 +1,47 @@
+{
+  "slug": "red-lentil-dhal",
+  "dish": "Red lentil dhal",
+  "sources": [
+    {"url": "https://www.foxandbriar.com/easy-red-lentil-dal/", "publisher": "Fox and Briar", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://www.indianhealthyrecipes.com/masoor-dal-recipe/", "publisher": "Swasthi's Recipes", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://www.dadaeats.com/recipes/the-best-dal-ever-aka-dadaeats-coconut-curry-dal", "publisher": "Dada Eats", "accessed": "2026-08-02", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "red lentils", "essential": true, "observations": ["1 cup (s0)", "1/2 cup / 95 g (s1)", "1 cup (s2)"]},
+    {"name": "vegetable oil", "essential": true, "observations": ["2 tbsp avocado oil (s0)", "1 tbsp oil, ghee/butter alternatives (s1)", "3 tbsp olive oil (s2)"]},
+    {"name": "brown onion", "essential": true, "observations": ["1 cup diced (s0)", "1 yellow onion (s2)"]},
+    {"name": "garlic", "essential": true, "observations": ["3 cloves (s0)", "2 cloves (s1)", "5 cloves (s2)"]},
+    {"name": "ginger", "essential": true, "observations": ["1 tbsp grated (s0)", "3-inch piece (s2)"]},
+    {"name": "ground turmeric", "essential": true, "observations": ["1 tsp (s0)", "1/4 tsp (s1)", "1/2 tsp (s2)"]},
+    {"name": "cumin", "essential": true, "observations": ["1 tsp ground (s0)", "1/2 tsp seeds (s1)", "1.5 tsp ground (s2)"]},
+    {"name": "ground coriander", "essential": false, "observations": ["1 tsp (s0)", "1 tsp (s2)"]},
+    {"name": "chilli", "essential": false, "observations": ["1/4-1/2 tsp Kashmiri chilli powder + 1 dried red chilli (s1)", "1/2 tsp cayenne (s2)"]},
+    {"name": "garam masala", "essential": false, "observations": ["1/8 tsp (s1)"]},
+    {"name": "mustard seeds", "essential": false, "observations": ["1/4 tsp, optional (s1)"]},
+    {"name": "tomatoes", "essential": false, "observations": ["2 medium fresh, chopped (s1)", "440 g can diced + 1 tsp paste (s2)"]},
+    {"name": "coconut milk", "essential": false, "observations": ["400 ml can full fat (s0)", "400 ml can (s2)"]},
+    {"name": "vegetable stock", "essential": true, "observations": ["1 cup (s0)", "1.25-1.5 cups water (s1)", "2 cups (s2)"]},
+    {"name": "baby spinach", "essential": false, "observations": ["2 cups chopped (s2)"]},
+    {"name": "lemon juice", "essential": false, "observations": ["1-2 tbsp (s1)", "1 tbsp (s2)"]},
+    {"name": "fresh coriander", "essential": false, "observations": ["2 tbsp chopped, garnish (s1)", "garnish (s2)"]}
+  ],
+  "causalSequence": [
+    "rinse lentils until water runs clear",
+    "saute onion garlic ginger in oil until soft",
+    "bloom ground spices in the oil 1-2 min",
+    "add tomato; cook down",
+    "add lentils, stock, coconut milk; simmer 20-30 min until lentils collapse",
+    "wilt spinach; finish with lemon juice",
+    "garnish coriander; serve with rice"
+  ],
+  "techniqueFacts": [
+    "all 3 sources heat spices in oil (bloomed with aromatics or as a tadka) rather than adding them raw to liquid",
+    "one source cooks the dal plain then pours a separate tempering (tadka) over at the end",
+    "dal thickens on cooling; thin with hot water (1 source)",
+    "30 min soak speeds cooking; old lentils need it (2 sources)",
+    "acidic canned tomato slows lentil softening; add after lentils are soft (1 source)",
+    "lemon juice added off heat at the end brightens (2 sources)",
+    "coconut milk makes the creamy variant (2 sources); the third uses water only for a leaner dal"
+  ],
+  "servingsObserved": [5, 3]
+}

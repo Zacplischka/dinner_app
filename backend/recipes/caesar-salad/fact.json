@@ -1,0 +1,111 @@
+{
+  "slug": "caesar-salad",
+  "dish": "Chicken Caesar salad",
+  "sources": [
+    {
+      "url": "https://www.crazyforcrust.com/caesar-salad-with-chicken-and-bacon-recipe/",
+      "publisher": "Crazy for Crust (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://lilluna.com/ultimate-chicken-caesar-salad/",
+      "publisher": "Lil' Luna (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://www.womensweeklyfood.com.au/recipes/warm-chicken-caesar-salad-20048",
+      "publisher": "Women's Weekly Food (AU)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://butteryourbiscuit.com/grilled-chicken-avocado-caesar-salad/",
+      "publisher": "Butter Your Biscuit (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    }
+  ],
+  "canonicalIngredients": [
+    {
+      "name": "chicken breast",
+      "essential": true,
+      "observations": ["2 cups cooked shredded (s0)", "1 large breast (s1)", "2 x 200 g fillets (s2)", "2 breasts or 6-8 tenders (s3)"]
+    },
+    {
+      "name": "bacon",
+      "essential": true,
+      "observations": ["4 slices (s0)", "3 slices (s1)", "4 rashers (s2)", "6 strips (s3)"]
+    },
+    {
+      "name": "cos lettuce",
+      "essential": true,
+      "observations": ["10 oz romaine (s0)", "6 cups romaine (s1)", "2 baby cos (s2)", "6 cups romaine (s3)"]
+    },
+    {
+      "name": "croutons",
+      "essential": true,
+      "observations": ["1 cup (s0)", "1 cup (s1)", "2 slices bread, torn, pan-toasted (s2)", "2 cups (s3)"]
+    },
+    {
+      "name": "eggs",
+      "essential": true,
+      "observations": ["3 boiled (s1)", "4 poached (s2)", "2-3 hard-boiled (s3)"]
+    },
+    {
+      "name": "parmesan cheese",
+      "essential": true,
+      "observations": ["1/4 cup shredded (s0)", "3 tbsp grated+shaved (s1)", "1/2 cup (40 g) shaved (s2)", "shaved, unmeasured (s3)"]
+    },
+    {
+      "name": "caesar dressing",
+      "essential": true,
+      "observations": ["1/4-1/2 cup (s0)", "bottled, to taste (s1)", "1 cup (250 ml) prepared (s2)", "~1.5 cups homemade (s3)"]
+    },
+    {
+      "name": "olive oil",
+      "essential": false,
+      "observations": ["2 tbsp, for chicken and croutons (s2)", "2 tbsp rub for chicken (s3)"]
+    },
+    {
+      "name": "anchovies",
+      "essential": false,
+      "observations": ["8 fillets, optional, fried with croutons (s2)", "1.5 tsp paste in dressing (s3)"]
+    },
+    {
+      "name": "cherry tomatoes",
+      "essential": false,
+      "observations": ["1 cup (s1)", "1.5 cups halved (s3)"]
+    },
+    {
+      "name": "avocado",
+      "essential": false,
+      "observations": ["1 medium (s0)", "1 sliced (s3)"]
+    },
+    {
+      "name": "red onion",
+      "essential": false,
+      "observations": ["1/2 medium (85 g), sliced thin (s2)"]
+    }
+  ],
+  "causalSequence": [
+    "season chicken, rub with oil; grill or pan-fry 3-5 min per side until just cooked",
+    "rest chicken 5 min; slice",
+    "cook bacon until crisp; drain, chop",
+    "toast bread pieces in pan until golden for croutons",
+    "boil or poach eggs; slice or halve",
+    "toss lettuce (and onion) with dressing",
+    "top with chicken, bacon, egg; scatter croutons and shaved parmesan"
+  ],
+  "techniqueFacts": [
+    "three of four sources dress just before serving to keep leaves crisp",
+    "one source cooks everything sequentially in one pan: chicken, then bacon, then croutons fried in the rendered fat with anchovies",
+    "splitting breasts horizontally halves cook time to ~3 min per side (1 source)",
+    "egg style splits: runny poached (1 source) vs hard-boiled (2 sources)",
+    "two sources use pre-cooked or rotisserie chicken as a shortcut",
+    "homemade mayo-base dressing (1 source): 1 cup mayo, 2 garlic cloves, 1.5 tsp anchovy paste, 2 tbsp lemon juice, 1 tsp dijon, 1 tbsp worcestershire, 1/2 cup grated parmesan, 1/4 cup olive oil; thin with water",
+    "one source rates its 4-serve quantities as 2 dinner-sized mains"
+  ],
+  "servingsObserved": [4, 4, 4, 6]
+}

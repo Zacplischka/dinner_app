@@ -9,7 +9,7 @@ export const config = {
   // one level under the package root from `src/` and from `dist/` alike, so the
   // built server and `tsx` read the same directory. Overridable so a test can
   // point the app at a fixed fixture corpus rather than assert against whatever
-  // the shipped seed holds this week (#331) — an absolute path wins outright,
+  // the shipped batch holds this week (#338) — an absolute path wins outright,
   // a relative one resolves from here.
   ownedRecipesDir: new URL(
     // The trailing slash is what makes `<dir>/<slug>/recipe.json` resolve, so

@@ -1,0 +1,62 @@
+{
+  "slug": "beef-tacos",
+  "dish": "Beef tacos",
+  "sources": [
+    {"url": "https://simplehomeedit.com/recipe/beef-tacos/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://natashaskitchen.com/ground-beef-tacos/", "publisher": "Natasha's Kitchen", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://houseofyumm.com/best-ever-taco-meat/", "publisher": "House of Yumm", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef mince", "essential": true, "observations": ["300 g regular not lean (s0)", "1 lb 85/15 (s1)", "1 lb 70-80% lean (s2)"]},
+    {"name": "brown onion", "essential": true, "observations": ["80 g finely chopped (s0)", "1 small yellow, diced (s1)"]},
+    {"name": "garlic", "essential": true, "observations": ["1 tsp minced (s0)", "2 cloves (s1)"]},
+    {"name": "tomato paste", "essential": true, "observations": ["2 tsp (s0)", "1 tbsp (s1)"]},
+    {"name": "tomato passata/sauce", "essential": false, "observations": ["1/2 cup canned tomato sauce, replaces water (s2)"]},
+    {"name": "taco seasoning", "essential": true, "observations": ["3 tbsp homemade or store-bought per 1 lb (s1)"]},
+    {"name": "ground cumin", "essential": true, "observations": ["2 tsp (s0)", "3/4 tsp (s2)"]},
+    {"name": "sweet paprika", "essential": false, "observations": ["2 tsp (s0)"]},
+    {"name": "chili powder", "essential": false, "observations": ["1 tbsp (s2)"]},
+    {"name": "dried oregano", "essential": true, "observations": ["1 tsp (s0)", "1/2 tsp Mexican (s2)"]},
+    {"name": "onion powder", "essential": false, "observations": ["1 tsp (s0)", "1/4 tsp granulated (s2)"]},
+    {"name": "garlic powder", "essential": false, "observations": ["1 tsp (s0)", "1/4 tsp granulated (s2)"]},
+    {"name": "salt", "essential": false, "observations": ["1 tsp flakes (s0)", "1/2 tsp (s2)"]},
+    {"name": "black pepper", "essential": false, "observations": ["1/2 tsp (s0)"]},
+    {"name": "olive oil", "essential": false, "observations": ["1 tbsp (s0)"]},
+    {"name": "water", "essential": false, "observations": ["125 ml (s0)", "1/2 cup, or broth (s1)"]},
+    {"name": "canned kidney beans", "essential": false, "observations": ["400 g can, drained (s0)"]},
+    {"name": "taco shells", "essential": true, "observations": ["12 shells (s0)", "8 shells or small tortillas (s1)", "8 white corn tortillas, fried into shells (s2)"]},
+    {"name": "oil for frying tortillas", "essential": false, "observations": ["1/2 cup avocado or vegetable (s2)"]},
+    {"name": "cheddar cheese", "essential": true, "observations": ["125 g grated (s0)", "shredded, or Mexican blend (s1)", "shredded mild, topping note (s2)"]},
+    {"name": "lettuce", "essential": false, "observations": ["shredded (s1)", "shredded, topping note (s2)"]},
+    {"name": "red cabbage", "essential": false, "observations": ["15 g shredded (s0)"]},
+    {"name": "tomato", "essential": false, "observations": ["50 g diced (s0)", "diced, or pico de gallo (s1)", "sliced grape, topping note (s2)"]},
+    {"name": "avocado", "essential": false, "observations": ["1/2 sliced (s0)", "sliced, or guacamole (s1)", "guacamole, topping note (s2)"]},
+    {"name": "sour cream", "essential": false, "observations": ["125 g sriracha mayo and/or sour cream (s0)", "extra (s1)", "topping note (s2)"]},
+    {"name": "coriander", "essential": false, "observations": ["7 g leaves (s0)", "garnish (s1)", "diced, topping note (s2)"]},
+    {"name": "jalapeno", "essential": false, "observations": ["sliced, garnish (s0)", "for spice (s1)", "topping note (s2)"]},
+    {"name": "lime", "essential": false, "observations": ["wedges, garnish (s1)"]}
+  ],
+  "causalSequence": [
+    "mix spice blend (or measure packet taco seasoning)",
+    "brown mince, break up lumps; soften onion, garlic (before or alongside)",
+    "drain excess fat",
+    "stir in seasoning + tomato paste, toast 1 min",
+    "add water (or tomato sauce, or beans + water); simmer 3-5 min until thick but still saucy",
+    "warm or fry shells/tortillas",
+    "fill shells; serve toppings build-your-own"
+  ],
+  "techniqueFacts": [
+    "all three season browned mince with a taco spice blend then simmer briefly (3-5 min) to a thick, still-moist coat",
+    "s1 and s2 drain fat after browning; s1 keeps ~1 tbsp in the pan for flavour",
+    "liquid diverges: s0/s1 add ~125 ml water (s1 allows broth); s2 skips water and uses 1/2 cup tomato sauce so spices cling",
+    "spice route diverges: s1 uses 3 tbsp pre-mixed taco seasoning per 1 lb; s0/s2 itemise components (cumin + oregano + onion/garlic powder, plus paprika s0 / chili powder s2)",
+    "s0 stretches 300 g mince with a 400 g can of kidney beans to feed 4",
+    "s0 blooms fresh onion and garlic in oil before the mince; s1 browns mince first then softens onion in the fat; s2 uses no fresh aromatics, only granulated",
+    "shells: s2 shallow-fries 6-inch corn tortillas ~30 sec/side and folds while hot; s1 crisps bought shells at 325 F 4-6 min or warms tortillas 30 sec/side in a dry pan",
+    "toppings are build-your-own in all three; cheese, lettuce/cabbage, tomato, avocado, sour cream recur",
+    "s1 counts servings as 8 tacos; s2 FAQ holds 1 lb mince feeds 4 at 2-3 tbsp per taco",
+    "regular (not lean) mince preferred in all three for flavour and moisture",
+    "make-ahead: filling keeps 2-4 days refrigerated, 2-3 months frozen (all three)"
+  ],
+  "servingsObserved": [4, 8, 4]
+}

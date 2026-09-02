@@ -1,0 +1,52 @@
+{
+  "slug": "chicken-schnitzel-with-salad",
+  "dish": "Chicken schnitzel with salad",
+  "sources": [
+    {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/chicken-schnitzel-27759/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/freezer-friendly-chicken-schnitzel/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://littleferrarokitchen.com/chicken-schnitzel-salad/", "publisher": "The Little Ferraro Kitchen (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://aperfectfeast.com/chicken-schnitzel-and-tomato-salad/", "publisher": "A Perfect Feast (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken breast", "essential": true, "observations": ["2 breasts, halved horizontally, pounded (s0)", "1 kg, halved horizontally (s1)", "2 breasts, cut into cutlets (s2)", "1 lb thin cutlets (s3)"]},
+    {"name": "plain flour", "essential": true, "observations": ["1/2 cup, seasoned (s0)", "75 g / 1/2 cup (s1)", "1 cup (s2)", "1 cup (s3)"]},
+    {"name": "eggs", "essential": true, "observations": ["2 (s0)", "3 (s1)", "3 (s2)", "3 (s3)"]},
+    {"name": "breadcrumbs", "essential": true, "observations": ["1 cup dried (s0)", "180 g / 3 cups panko (s1)", "2 cups panko (s2)", "2 cups plain (s3)"]},
+    {"name": "parmesan", "essential": false, "observations": ["3/4 cup grated, mixed into crumb (s0)"]},
+    {"name": "oil for shallow frying", "essential": true, "observations": ["unspecified, with 20 g butter (s0)", "60 ml olive oil (s1)", "canola/vegetable to ~1 cm depth (s2)", "1 cup vegetable (s3)"]},
+    {"name": "salad leaves", "essential": true, "observations": ["side salad, unspecified (s0)", "simple green salad suggested side (s1)", "2-3 cups rocket + 1 small radicchio (s2)", "4 cups spring greens (s3)"]},
+    {"name": "cherry tomatoes", "essential": false, "observations": ["1 cup, halved (s3)"]},
+    {"name": "cucumber", "essential": false, "observations": ["1 cup, sliced (s3)"]},
+    {"name": "red onion", "essential": false, "observations": ["1/2 cup, sliced (s3)"]},
+    {"name": "capsicum", "essential": false, "observations": ["1/2 cup sliced red (s3)"]},
+    {"name": "feta", "essential": false, "observations": ["1/2 cup (s3)"]},
+    {"name": "pear", "essential": false, "observations": ["2 bosc, thinly sliced (s2)"]},
+    {"name": "olive oil (dressing)", "essential": false, "observations": ["1/2 cup (s2)", "1/2 cup extra virgin (s3)"]},
+    {"name": "lemon juice", "essential": false, "observations": ["2 tbsp (s3)"]},
+    {"name": "apple cider vinegar", "essential": false, "observations": ["1/4 cup (s2)"]},
+    {"name": "dijon mustard", "essential": false, "observations": ["2 tsp (s2)"]}
+  ],
+  "causalSequence": [
+    "halve chicken breasts horizontally; pound to ~1 cm even thickness",
+    "season chicken with salt, pepper",
+    "set dredge line: seasoned flour, beaten egg, breadcrumbs",
+    "coat each piece: flour, shake off excess; dip egg; press firmly into crumbs",
+    "optionally chill crumbed chicken 15 min to set coating",
+    "shallow-fry medium-high, 3-5 min per side, golden and cooked through; work in batches",
+    "drain on paper towel or wire rack",
+    "whisk dressing: olive oil, acid (lemon juice or cider vinegar), mustard",
+    "toss salad leaves and vegetables with dressing",
+    "serve schnitzel with salad; slice over or plate beside"
+  ],
+  "techniqueFacts": [
+    "all 4 sources use the three-stage dredge flour -> egg -> crumbs, pressed on firmly",
+    "3 sources pound cutlets to an even ~1 cm thickness so they cook evenly",
+    "shallow-fry is the default; oven-bake 220C 12-15 min and air-fry 200C 8-10 min are stated alternatives (1 source)",
+    "don't overcrowd the pan - oil temperature drops and the crumb goes soggy (2 sources)",
+    "salting the chicken first acts as a dry brine and keeps it juicy (1 source)",
+    "1 source chills crumbed chicken 15 min pre-fry to set the crumb; 2 rest fried schnitzel on a wire rack",
+    "parmesan mixed into the crumb is the AU test-kitchen variation (1 source)",
+    "panko preferred over dried crumbs for crunch (2 sources)"
+  ],
+  "servingsObserved": [4, 4, 4, 4]
+}

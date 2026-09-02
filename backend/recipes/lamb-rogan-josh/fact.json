@@ -1,0 +1,57 @@
+{
+  "slug": "lamb-rogan-josh",
+  "dish": "Lamb rogan josh",
+  "sources": [
+    {"url": "https://chefjackovens.com/lamb-rogan-josh/", "publisher": "Chef Jack Ovens (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.indianhealthyrecipes.com/rogan-josh/", "publisher": "Swasthi's Recipes", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.chefdehome.com/recipes/593/lamb-rogan-josh-indian-kashmiri-mutton-lamb-curry", "publisher": "ChefDeHome (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "lamb leg or shoulder, diced", "essential": true, "observations": ["750 g leg or shoulder (s0)", "500 g bone-in leg/shoulder, 2 in pieces (s1)", "1.5 lb boneless, cubed (s2)"]},
+    {"name": "plain yogurt", "essential": true, "observations": ["190 g Greek (s0)", "1/2 cup curd, room temp (s1)", "1/2 cup, thick Greek best (s2)"]},
+    {"name": "ghee or neutral oil", "essential": true, "observations": ["28 g ghee + 15 ml neutral oil (s0)", "2-3 tbsp ghee or mustard oil (s1)", "3 tbsp canola oil (s2)"]},
+    {"name": "kashmiri chilli powder", "essential": true, "observations": ["14 g (s0)", "1-1.5 tbsp (s1)", "2 tsp degi mirch, or 1/2 tsp cayenne + 1 tsp paprika (s2)"]},
+    {"name": "shallots or onion", "essential": true, "observations": ["3 shallots, sliced (s0)", "1.25 cup sliced shallot/onion, marked optional and non-traditional (s1)", "1/2 cup red onion (s2)"]},
+    {"name": "garlic", "essential": false, "observations": ["4 cloves, grated (s0)", "in 1.5 tbsp ginger-garlic paste (s2)", "avoided in traditional Pandit version (s1)"]},
+    {"name": "fresh ginger", "essential": false, "observations": ["15 g grated (s0)", "in 1.5 tbsp ginger-garlic paste (s2)"]},
+    {"name": "ground dried ginger", "essential": true, "observations": ["2 g (s0)", "1 tsp (s1)"]},
+    {"name": "ground fennel", "essential": true, "observations": ["4 g (s0)", "2 tsp fennel seed powder (s1)", "1 tsp fennel seeds (s2)"]},
+    {"name": "cinnamon stick", "essential": true, "observations": ["1 stick (s0)", "1 in piece (s1)"]},
+    {"name": "green cardamom pods", "essential": true, "observations": ["5 (s0)", "3 (s1)", "4 (s2)"]},
+    {"name": "black cardamom", "essential": false, "observations": ["1 (s1)", "2 (s2)"]},
+    {"name": "whole cloves", "essential": true, "observations": ["4 (s0)", "3-4 (s1)", "2 (s2)"]},
+    {"name": "cumin seeds", "essential": false, "observations": ["4.5 g (s0)"]},
+    {"name": "bay leaves", "essential": false, "observations": ["3 dried (s0)", "1 (s1)", "2 (s2)"]},
+    {"name": "hot water or stock", "essential": true, "observations": ["180 ml water or chicken stock (s0)", "1 cup, up to 5 cups as needed (s1)", "1-1.5 cups (s2)"]},
+    {"name": "asafoetida (hing)", "essential": false, "observations": ["1/4 tsp, optional (s1)"]},
+    {"name": "garam masala", "essential": false, "observations": ["1 tsp optional (s1)", "1.5 tsp as whole-spice substitute (s2)"]},
+    {"name": "ground turmeric", "essential": false, "observations": ["1/4 tsp (s2)"]},
+    {"name": "coriander powder", "essential": false, "observations": ["1 tsp (s2)"]},
+    {"name": "potatoes", "essential": false, "observations": ["2 medium, large cubes, slow-cooker variant only (s2)"]},
+    {"name": "whole dried red chilli", "essential": false, "observations": ["1 (s2)"]},
+    {"name": "mace", "essential": false, "observations": ["1 blade (s2)"]},
+    {"name": "fresh coriander", "essential": false, "observations": ["garnish (s0)", "garnish (s2)"]}
+  ],
+  "causalSequence": [
+    "optionally marinate lamb in yogurt 1-24 h (1 source)",
+    "temper whole spices (cinnamon, cardamom, cloves, bay, cumin) in ghee ~1 min",
+    "brown shallots/onion 5-10 min; add garlic-ginger 1 min",
+    "sear lamb until colour gone, 2-6 min",
+    "stir in yogurt whisked with chilli, fennel, dried ginger, salt — off heat or in batches to stop curdling",
+    "add hot water/stock; simmer covered on low until lamb tender (40 min stovetop marinated cut to ~2 h bone-in; slow cooker 5 h; pressure cooker 15 min)",
+    "uncover, simmer to reduce until gravy slightly thick",
+    "rest, garnish coriander; serve with basmati rice or naan"
+  ],
+  "techniqueFacts": [
+    "kashmiri chilli powder is the colour lever: deep red with mild heat, all 3 sources",
+    "fennel + dried ginger are the signature Kashmiri flavour pair (2 sources; 3rd uses fennel seeds)",
+    "yogurt curdles if dumped on high heat — add off heat or in batches (2 sources); 3rd marinates the lamb in it instead",
+    "slow simmer until fall-apart is the tenderness lever; time varies 1-2 h stovetop by cut",
+    "traditional rogan josh has no tomato; body comes from yogurt, reduction, bone marrow (1 source emphatic)",
+    "gravy thickens by uncovered reduction or optional fried-onion+yogurt paste — no flour or starch in any source (naturally gluten free)",
+    "GF caution: asafoetida (optional, 1 source) is commonly cut with wheat flour — omit or use certified GF hing",
+    "GF caution: served with naan/roti (wheat) in all sources; rice serve is the GF option",
+    "resting a few hours before serving develops flavour (1 source)"
+  ],
+  "servingsObserved": [4, 3, 4]
+}

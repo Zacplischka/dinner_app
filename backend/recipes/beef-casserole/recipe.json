@@ -1,0 +1,109 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:beef-casserole",
+  "name": "Slow-Cooked Beef Casserole",
+  "servings": 4,
+  "mealType": "main course",
+  "diets": [
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "beef chuck steak",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg beef chuck steak"
+    },
+    {
+      "name": "brown onion",
+      "amount": 2,
+      "unit": "",
+      "original": "2 brown onions"
+    },
+    {
+      "name": "celery",
+      "amount": 2,
+      "unit": "",
+      "original": "2 celery stalks"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "",
+      "original": "3 garlic cloves"
+    },
+    {
+      "name": "carrots",
+      "amount": 3,
+      "unit": "",
+      "original": "3 carrots"
+    },
+    {
+      "name": "baby potatoes",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g baby potatoes"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 50,
+      "unit": "g",
+      "original": "2 tbsp (50 g) tomato paste"
+    },
+    {
+      "name": "crushed tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g can crushed tomatoes"
+    },
+    {
+      "name": "gluten-free beef stock",
+      "searchTerm": "beef liquid stock",
+      "amount": 500,
+      "unit": "ml",
+      "original": "500 ml gluten-free beef stock"
+    },
+    {
+      "name": "gluten free cornflour",
+      "searchTerm": "cornflour gluten free",
+      "amount": 20,
+      "unit": "g",
+      "original": "2 tbsp (20 g) gluten free cornflour"
+    },
+    {
+      "name": "fresh thyme",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "0.5 bunch fresh thyme"
+    },
+    {
+      "name": "bay leaves",
+      "amount": 1,
+      "unit": "g",
+      "original": "2 dried bay leaves (1 g)"
+    },
+    {
+      "name": "green beans",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g green beans"
+    },
+    {
+      "name": "fresh parsley",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "0.5 bunch fresh parsley"
+    }
+  ],
+  "steps": [
+    "Cut the beef chuck steak into 4 cm chunks and season well with salt and pepper. Heat a splash of olive oil in a large heavy-based pot over high heat and brown the beef in batches, setting each batch aside as it colours.",
+    "Turn the heat down to medium. Roughly chop the brown onions and celery, add them to the pot and cook for 5 minutes until soft, scraping up the browned bits from the base. Crush in the garlic and cook for 1 minute more.",
+    "Stir in the tomato paste and cook for 1 minute until it darkens a shade.",
+    "Return the beef and any resting juices to the pot. Pour in the crushed tomatoes and gluten-free beef stock, drop in the thyme sprigs and 2 bay leaves, and add a splash of water to loosen. Bring to a gentle simmer.",
+    "Cover and cook on the lowest heat for 2 hours, giving it a stir every now and then.",
+    "Cut the carrots into thick chunks and halve the baby potatoes. Stir them into the pot, cover again and cook for another hour, until the beef pulls apart with a fork and the potatoes are tender.",
+    "Mix the gluten free cornflour with 2 tablespoons of cold water to make a slurry. Trim and halve the green beans. Stir both through the casserole and simmer uncovered for 10 minutes until the sauce thickens and the beans are just tender.",
+    "Fish out the thyme stalks and bay leaves and season to taste with salt and pepper. Roughly chop the parsley leaves and scatter them over to serve."
+  ],
+  "photoUrl": "https://img.dinder.it.com/beef-casserole.webp"
+}

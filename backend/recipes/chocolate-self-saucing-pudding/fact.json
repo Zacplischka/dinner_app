@@ -1,0 +1,45 @@
+{
+  "slug": "chocolate-self-saucing-pudding",
+  "dish": "Chocolate self-saucing pudding",
+  "sources": [
+    {"url": "https://bakeplaysmile.com/classic-chocolate-self-saucing-pudding/", "publisher": "Bake Play Smile (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.katysfoodfinds.com/chocolate-self-saucing-pudding/", "publisher": "Katy's Food Finds (NZ)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.cookingwithnanaling.com/chocolate-self-saucing-pudding/", "publisher": "Cooking with Nana Ling (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.womensweeklyfood.com.au/recipe/baking/classic-chocolate-self-saucing-pudding-11721/", "publisher": "Women's Weekly Food (AU)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "self-raising flour", "essential": true, "observations": ["150 g SR (s0)", "1 cup plain + 1 tsp baking powder (s1)", "160 g SR, or plain + 2 tsp baking powder (s2)", "150 g SR (s3)"]},
+    {"name": "cocoa powder", "essential": true, "observations": ["25 g batter + 25 g sauce (s0)", "15 g batter + 15 g sauce (s1)", "2 tbsp batter + 2 tbsp sauce (s2)", "25 g batter + 35 g sauce (s3)"]},
+    {"name": "caster sugar", "essential": true, "observations": ["110 g batter (s0)", "150 g white/caster batter (s1)", "115 g batter (s2)", "s3 uses brown sugar in batter instead"]},
+    {"name": "brown sugar", "essential": true, "observations": ["s0 uses 110 g caster in sauce instead", "150 g white or brown in sauce (s1)", "110 g brown in sauce (s2)", "110 g brown in batter + 110 g brown in sauce (s3)"]},
+    {"name": "butter", "essential": true, "observations": ["60 g melted (s0)", "60 g melted (s1)", "40 g melted (s2)", "60 g melted, cooled (s3)"]},
+    {"name": "milk", "essential": true, "observations": ["125 ml (s0)", "125 ml full cream (s1)", "125 ml (s2)", "125 ml (s3)"]},
+    {"name": "egg", "essential": true, "observations": ["1, lightly beaten (s0)", "none - egg-free version (s1)", "1, lightly beaten (s2)", "1 (s3)"]},
+    {"name": "vanilla extract", "essential": false, "observations": ["2 tsp (s0)", "1 tsp batter + 1 tsp topping (s1)", "none (s2)", "none (s3)"]},
+    {"name": "salt", "essential": false, "observations": ["1/2 tsp (s1 only)"]},
+    {"name": "boiling water", "essential": true, "observations": ["450 ml (s0)", "375 ml (s1)", "375 ml (s2)", "430 ml (s3)"]},
+    {"name": "cream or vanilla ice cream", "essential": false, "observations": ["to serve (all four sources)"]}
+  ],
+  "causalSequence": [
+    "preheat oven 160-180 C; grease 1.5 L (6 cup) baking dish; set dish on lined tray",
+    "whisk melted butter, milk, egg together",
+    "sift in flour, cocoa; add sugar; whisk to smooth batter",
+    "spread batter in dish",
+    "mix sauce cocoa + sugar; sprinkle evenly over batter",
+    "pour boiling water gently over back of a spoon",
+    "bake 30-50 min until top set and springy, sauce wobbly beneath",
+    "rest 5 min; dust with icing sugar; serve warm with cream or ice cream"
+  ],
+  "techniqueFacts": [
+    "cocoa-sugar topping plus boiling water sinks as the cake rises, forming the sauce underneath (all sources)",
+    "pour the water over the back of a spoon so it doesn't dent the batter (3 sources)",
+    "doneness is top set but very wobbly beneath; overbaking dries up the sauce (2 sources warn)",
+    "bake time tracks dish depth: 30 min in a shallow dish up to 50 min in a deep 17 cm dish; wider dish cuts 5-10 min (s3)",
+    "brown sugar in the sauce layer is the common choice (s2, s3; s1 optional)",
+    "one source dissolves the topping in a jug with the boiling water first to avoid cocoa clumps (s1)",
+    "egg-free version works (s1); 1 egg is standard elsewhere",
+    "oven temps observed: 160 C fan (s0), 180 C (s1), 170 C (s2), 180 C / 160 C fan (s3)",
+    "best served immediately; sauce thickens fudgy as it cools; fridge leftovers 2-4 days, no freezing (2 sources)"
+  ],
+  "servingsObserved": [8, 6, 6, 6]
+}

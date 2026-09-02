@@ -1,0 +1,42 @@
+{
+  "slug": "penne-arrabbiata",
+  "dish": "Penne arrabbiata",
+  "sources": [
+    {"url": "https://www.themediterraneandish.com/penne-arrabbiata/", "publisher": "The Mediterranean Dish (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://tastesbetterfromscratch.com/penne-arrabbiata/", "publisher": "Tastes Better From Scratch (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.savoringitaly.com/easy-penne-all-arrabbiata-spicy-tomato-sauce-recipe/", "publisher": "Savoring Italy (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.hotforfoodblog.com/recipes/2016/02/23/penne-arrabbiata/", "publisher": "hot for food (CA, vegan)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "penne", "essential": true, "observations": ["1 lb (s0)", "1 lb penne rigate (s1)", "1 lb (s2)", "3 cups uncooked (s3)"]},
+    {"name": "olive oil", "essential": true, "observations": ["1/4 cup extra-virgin (s0)", "3 tbsp (s1)", "3 tbsp extra-virgin (s2)", "1 tbsp (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["2-4 cloves crushed (s0)", "3 cloves (s1)", "2 cloves minced (s2)", "2 cloves minced (s3)"]},
+    {"name": "dried chilli flakes", "essential": true, "observations": ["1/2 tsp (s0)", "1/4 tsp (s1)", "1/2 tsp (s2)", "1/2 tsp (s3)"]},
+    {"name": "canned tomatoes", "essential": true, "observations": ["28 oz can whole, hand-crushed, with juice (s0)", "28 oz can whole peeled (s1)", "28 oz can whole peeled San Marzano (s2)", "1 cup crushed (s3)"]},
+    {"name": "tomato paste", "essential": false, "observations": ["2 tbsp (s1)"]},
+    {"name": "flat-leaf parsley", "essential": false, "observations": ["1/4 cup finely chopped, into sauce (s0)", "1/3 cup chopped, topping (s1)", "1 small bunch chopped (s2)"]},
+    {"name": "basil", "essential": false, "observations": ["6 leaves chopped, off heat (s1)", "1/4 cup chopped (s3)"]},
+    {"name": "salt", "essential": false, "observations": ["1/2 tsp fine (s0)", "1 tsp sea salt (s2)", "staple in all"]},
+    {"name": "parmesan or pecorino", "essential": false, "observations": ["freshly grated, optional garnish (s0)", "1/2 cup freshly grated, topping (s1)", "absent - dish stated vegan (s2)", "vegan parmesan only, optional (s3)"]}
+  ],
+  "causalSequence": [
+    "heat olive oil over medium-low; soften whole/minced garlic gently, never browned",
+    "add chilli flakes; bloom briefly in the oil",
+    "add canned tomatoes with juice, crush roughly; season salt; simmer 20-30 min until thickened",
+    "stir parsley (or basil) through off heat",
+    "boil penne in salted water to 1-2 min short of al dente",
+    "transfer pasta into sauce with a splash of starchy pasta water; toss over medium heat 1-2 min to finish",
+    "serve; grated cheese optional garnish only"
+  ],
+  "techniqueFacts": [
+    "all four sources bloom garlic + chilli flakes in olive oil before tomatoes, garlic kept from browning",
+    "simmer time is the main variance: 5-10 min (s1), 20-25 min (s0), 25-30 min (s2)",
+    "two sources (s0, s2) finish pasta in the sauce with reserved starchy water, cooking it 1-2 min under al dente first",
+    "sauce itself is dairy-free in every source; parmesan/pecorino appears only as a finishing garnish - optional (s0), listed topping (s1), omitted with dish called vegan (s2), vegan parmesan (s3) - so the vegan cell holds if cheese is omitted or vegan; s1-as-written is vegetarian not vegan",
+    "herb split: parsley (s0, s2) vs basil (s1, s3), always added at the end",
+    "s3 is a variant: adds vegan Italian sausage and pickled pepperoncini + brine; not canonical",
+    "s1 alone adds tomato paste; s2 notes passata as an accepted tomato substitute",
+    "s2 and s3 state the dish is naturally vegan/dairy-free; Roman origin, heat level meant to be adjustable via flake quantity"
+  ],
+  "servingsObserved": [6, 5, 6, 4]
+}

@@ -84,16 +84,21 @@ const VERDICT = 'TALLY ';
 const SCRIPT = 'scripts/corpus/tally.mjs';
 
 /**
- * The measurement command, resolved in the container rather than guessed here.
- * The backend service's Railway root directory is `backend/` — that is where
+ * The measurement command. `railway ssh` joins its argv with spaces into one
+ * string that the container's bash re-parses, so nothing sent here arrives as
+ * a separate argument: the script has to read correctly flattened, and the
+ * payload rides in a shell variable — base64 is one shell-safe word unquoted.
+ *
+ * The script is resolved in the container rather than guessed here. The
+ * backend service's Railway root directory is `backend/` — that is where
  * `railway.json` lives, its buildCommand is `cd .. && npm ci`, and its
- * startCommand `node dist/server.js` resolves to `backend/dist` — so the repo
- * root, and this script, are one level up from the working directory. This is
- * the gate's one live use, and a wrong path spends the whole run's setup before
- * measuring anything, so it tries here and one up instead of betting on either.
+ * startCommand `node dist/server.js` resolves to `backend/dist` — yet the
+ * container's cwd was the repo root when this was run. This is the gate's one
+ * live use, and a wrong path spends the whole run's setup before measuring
+ * anything, so it tries here and one up instead of betting on either.
  */
-const RESOLVE_AND_MEASURE =
-  `for d in . ..; do [ -f "$d/${SCRIPT}" ] && exec node "$d/${SCRIPT}" measure "$0"; done; ` +
+const measureCommand = (payload) =>
+  `P=${payload}; for d in . ..; do [ -f "$d/${SCRIPT}" ] && exec node "$d/${SCRIPT}" measure "$P"; done; ` +
   `echo "TALLY_NO_SCRIPT: no ${SCRIPT} in $(pwd) or its parent" >&2; exit 1`;
 
 // ------------------------------------------------------- what travels
@@ -193,13 +198,7 @@ const execFileAsync = promisify(execFile);
 export async function railwayProbe(payload, run = execFileAsync) {
   const { stdout } = await run(
     'railway',
-    [
-      'ssh',
-      'sh',
-      '-c',
-      RESOLVE_AND_MEASURE,
-      Buffer.from(JSON.stringify(payload)).toString('base64'),
-    ],
+    ['ssh', '--', measureCommand(Buffer.from(JSON.stringify(payload)).toString('base64'))],
     { maxBuffer: 64 * 1024 * 1024 }
   ).catch((error) => {
     // A run that died — dropped session, redeploy, a Session opening mid-run —
@@ -278,7 +277,7 @@ export async function liveSessions(redis) {
  * ponytail: the three lines that turn an ingredient into a state mirror
  * `ShoppingListService.buildLine`, which is not exported and would need a whole
  * Session's worth of dependencies to reach. Mirror them if the mint changes;
- * the seed corpus failing this gate is what would say so.
+ * the shipped corpus failing this gate is what would say so.
  */
 async function measure(encoded) {
   const dist = (path) => import(new URL(`../../backend/dist/${path}`, import.meta.url).href);

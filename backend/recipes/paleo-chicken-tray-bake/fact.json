@@ -1,0 +1,45 @@
+{
+  "slug": "paleo-chicken-tray-bake",
+  "dish": "Paleo chicken and vegetable tray bake",
+  "sources": [
+    {"url": "https://www.paleorunningmomma.com/sheet-pan-chicken-veggies-paleo-whole30/", "publisher": "Paleo Running Momma (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://therealfooddietitians.com/one-pan-roasted-chicken-and-vegetables/", "publisher": "The Real Food Dietitians (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://thecleaneatingcouple.com/paleo-sheet-pan-rosemary-balsamic-chicken-and-veggies/", "publisher": "The Clean Eating Couple (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.southernkissed.com/paleo-chicken/", "publisher": "Southern Kissed (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken thighs", "essential": true, "observations": ["1.5 lb boneless skinless thighs (s0)", "1.5-2 lb bone-in skin-on thighs, or 1 lb boneless (s1)", "1.5 lb chicken breasts used instead (s2)", "1.5 lb drumsticks skin-on used instead (s3)"]},
+    {"name": "sweet potato", "essential": true, "observations": ["1 large, 1/2 inch pieces (s0)", "12 oz cubed, named sub for baby red potatoes (s1)"]},
+    {"name": "onion", "essential": true, "observations": ["1 med red, quartered (s0)", "1 medium red, wedges (s1)", "1 cup quartered yellow (s2)", "1 medium, eighths (s3)"]},
+    {"name": "red capsicum", "essential": false, "observations": ["1 med, 1 inch pieces (s0)", "2 large, 3 cups chopped (s2)"]},
+    {"name": "broccoli", "essential": false, "observations": ["1 crown, ~3 cups florets (s0)"]},
+    {"name": "carrot", "essential": false, "observations": ["12 oz whole, cut to sticks (s1)", "1 cup baby carrots (s3)"]},
+    {"name": "garlic", "essential": false, "observations": ["3-4 cloves minced (s1)", "1 tbsp minced (s2)", "12 whole cloves (s3)"]},
+    {"name": "olive oil", "essential": true, "observations": ["2.5 tbsp avocado or olive (s0)", "0.5-1 tbsp (s1)", "1/4 cup (s2)", "1/4 cup (s3)"]},
+    {"name": "rosemary", "essential": true, "observations": ["1 tbsp fresh or 1 tsp dried (s1)", "1 tsp dried (s2)"]},
+    {"name": "thyme", "essential": false, "observations": ["2 tsp fresh or 3/4 tsp dried (s1)", "1 tsp dried (s3)"]},
+    {"name": "vinegar", "essential": false, "observations": ["1/4 cup balsamic (s2)", "1 tbsp apple cider (s3)"]}
+  ],
+  "causalSequence": [
+    "preheat oven hot (200-230 C); line large tray",
+    "chop veg to even chunks; keep sweet potato small so it cooks through",
+    "toss veg with olive oil, herbs, salt directly on tray",
+    "nestle chicken among veg, sitting slightly on top",
+    "stagger option: roast chicken + sweet potato 10 min before adding quick-cooking veg",
+    "roast 30-35 min, stir veg and turn chicken once, until chicken cooked through and veg tender",
+    "grill/broil final 2-5 min to brown"
+  ],
+  "techniqueFacts": [
+    "all four sources land on ~1.5 lb (700 g) chicken for the tray",
+    "paleo compliance: no grain, legume, or dairy ingredient in any source; roasting fat is olive or avocado oil in all four",
+    "paleo swap pattern: one source replaces soy sauce with coconut aminos and sweetens with blended dates instead of sugar (s0)",
+    "sweet potato is the paleo-compliant tray starch; white potato appears in two sources (baby red s1/s2, russet s3) but strict paleo excludes it — s1 explicitly offers sweet potato as the swap",
+    "green beans appear in one source (s1) despite being legume-family — tolerated on Whole30, excluded under strict paleo",
+    "bone-in skin-on thighs hold up best to high-heat roasting (s1); boneless thighs pair with the 450 F fast method (s0)",
+    "oven temp trades against time: 450 F = ~25 min roast (s0), 425 F = 30-35 min (s1, s2), 400 F = 50-60 min (s3)",
+    "staggered veg add (dense first, quick veg after 10 min) keeps broccoli and capsicum from overcooking (s0)",
+    "broiler finish for browning is held by two sources (s0, s2)",
+    "everything-on-one-tray toss with vinegar + herbs is the no-marinade shortcut; marinating 30 min is optional (s2)"
+  ],
+  "servingsObserved": [6, 4, 4, 6]
+}

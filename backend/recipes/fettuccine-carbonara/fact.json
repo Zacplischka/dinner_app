@@ -1,0 +1,44 @@
+{
+  "slug": "fettuccine-carbonara",
+  "dish": "Fettuccine carbonara",
+  "sources": [
+    {"url": "https://www.chefspencil.com/fettuccine-carbonara/", "publisher": "Chef's Pencil", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://myfoodbook.com.au/recipes/show/quick-and-easy-fettuccine-carbonara", "publisher": "myfoodbook (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.newidea.com.au/recipe/recipes/fettuccine-carbonara/", "publisher": "New Idea (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.giovanniranausa.com/recipes/fettuccine-carbonara.html", "publisher": "Giovanni Rana USA", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "fettuccine", "essential": true, "observations": ["500 g dry (s0)", "375 g dried (s1)", "375 g (s2)", "9 oz / ~255 g (s3)"]},
+    {"name": "bacon", "essential": true, "observations": ["200 g prosciutto (s0)", "200 g bacon, thinly sliced (s1)", "8 short-cut rashers (s2)", "4 oz / ~115 g slab bacon (s3)"]},
+    {"name": "eggs", "essential": true, "observations": ["4 whole (s0)", "2 whole (s1)", "2 yolks only (s2)", "4 yolks only (s3)"]},
+    {"name": "parmesan", "essential": true, "observations": ["100 g parmesan (s0)", "125 g / 1 cup grated parmesan (s1)", "50 g / 0.5 cup grated parmesan (s2)", "0.5 cup grated pecorino romano (s3)"]},
+    {"name": "cream", "essential": false, "observations": ["180 g fresh cream (s0)", "185 ml light thickened cooking cream (s1)", "300 ml light cooking cream (s2)", "absent (s3)"]},
+    {"name": "garlic", "essential": false, "observations": ["2 cloves (s0)", "2 cloves crushed (s1)", "2 cloves crushed (s2)", "absent (s3)"]},
+    {"name": "olive oil", "essential": false, "observations": ["splash (s0)", "1 tbsp (s1)", "2 tsp (s2)"]},
+    {"name": "parsley", "essential": false, "observations": ["2 tbsp chopped (s0)", "0.25 cup flat-leaf, chopped (s1)", "2 tbsp chopped (s2)"]},
+    {"name": "butter", "essential": false, "observations": ["2 tbsp (s0)"]},
+    {"name": "white wine", "essential": false, "observations": ["splash (s0)"]},
+    {"name": "brown onion", "essential": false, "observations": ["1, finely chopped (s2)"]},
+    {"name": "button mushrooms", "essential": false, "observations": ["200 g thinly sliced (s2)"]},
+    {"name": "chives", "essential": false, "observations": ["2 tbsp chopped + extra to garnish (s2)"]},
+    {"name": "black pepper", "essential": true, "observations": ["to season (s0)", "to season (s1)", "to season (s2)", "to season (s3)"]}
+  ],
+  "causalSequence": [
+    "boil salted water; cook fettuccine al dente; reserve some pasta water",
+    "crisp bacon in pan (garlic added in 3 of 4 sources); set aside",
+    "whisk eggs (whole or yolks) with grated cheese; cream joins the whisk in cream-style versions",
+    "toss hot drained pasta through egg mix off the heat so residual heat sets sauce without scrambling",
+    "loosen with reserved pasta water; season with pepper",
+    "serve immediately topped with extra cheese"
+  ],
+  "techniqueFacts": [
+    "traditional egg-only form: yolks + pecorino + bacon, no cream, no garlic (s3); s0 explicitly notes the traditional recipe uses no cream",
+    "Australian cream-style variant: light cooking/thickened cream whisked with whole eggs (s1) or yolks (s2) — cream holds in s0, s1, s2",
+    "off-heat tossing is the anti-scramble lever (s0, s3); cream doubles as scramble insurance (s0) with a 'do not overheat' caveat (s1)",
+    "cream-stabilised versions tolerate gentle direct heat — s2 stirs the sauce over heat until hot",
+    "reserved pasta cooking water loosens the sauce (s2, s3)",
+    "AU cream-style pads the dish out: onion, button mushrooms and herbs (s2); garlic + parsley (s1)",
+    "cheese split: part whisked into the sauce, part reserved for serving (s0, s1, s2)"
+  ],
+  "servingsObserved": [4, 4, 4, 2]
+}

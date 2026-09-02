@@ -1,0 +1,103 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:thai-green-chicken-curry",
+  "name": "Thai Green Chicken Curry",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "thai",
+  "diets": [
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "chicken thighs",
+      "amount": 600,
+      "unit": "g",
+      "original": "600 g chicken thighs, cut into 3 cm pieces"
+    },
+    {
+      "name": "gluten-free Thai green curry paste",
+      "searchTerm": "thai green curry paste",
+      "amount": 60,
+      "unit": "g",
+      "original": "3 tbsp (60 g) gluten-free Thai green curry paste"
+    },
+    {
+      "name": "coconut milk",
+      "amount": 400,
+      "unit": "ml",
+      "original": "400 ml can coconut milk"
+    },
+    {
+      "name": "fish sauce",
+      "amount": 20,
+      "unit": "ml",
+      "original": "1 tbsp (20 ml) fish sauce"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 10,
+      "unit": "g",
+      "original": "2 tsp (10 g) brown sugar"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, cut into wedges"
+    },
+    {
+      "name": "carrot",
+      "amount": 2,
+      "unit": "",
+      "original": "2 carrots, thickly sliced"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red capsicum, sliced"
+    },
+    {
+      "name": "zucchini",
+      "amount": 1,
+      "unit": "",
+      "original": "1 zucchini, halved lengthways and sliced"
+    },
+    {
+      "name": "green beans",
+      "amount": 150,
+      "unit": "g",
+      "original": "150 g green beans, trimmed and halved"
+    },
+    {
+      "name": "lime",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lime, juiced"
+    },
+    {
+      "name": "basil",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch basil, leaves picked"
+    },
+    {
+      "name": "jasmine rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g jasmine rice"
+    }
+  ],
+  "steps": [
+    "Rinse the jasmine rice, then combine with 500 ml water in a saucepan. Bring to the boil, cover, reduce the heat to low and cook for 12 minutes. Rest off the heat, covered, until serving.",
+    "Heat a splash of olive oil in a large deep frying pan over high heat. Brown the chicken thigh pieces in two batches, then set aside on a plate.",
+    "Add the onion wedges and carrot to the same pan and cook for 3 minutes until starting to soften.",
+    "Return the chicken to the pan, add the gluten-free Thai green curry paste and fry for 1-2 minutes until fragrant.",
+    "Stir in the coconut milk, fish sauce and brown sugar, scraping up anything stuck to the base of the pan, and bring to a simmer.",
+    "Add the capsicum, zucchini and green beans. Simmer, uncovered, for 8-10 minutes until the chicken is cooked through and the vegetables are just tender.",
+    "Stir in the lime juice, then taste and add a pinch of salt if needed.",
+    "Fluff the rice and serve the curry over it, scattered with the basil leaves."
+  ],
+  "photoUrl": "https://img.dinder.it.com/thai-green-chicken-curry.webp"
+}

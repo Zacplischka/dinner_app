@@ -1,0 +1,104 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:beef-massaman-curry",
+  "name": "Beef Massaman Curry",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "thai",
+  "diets": [
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "beef chuck steak",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg beef chuck steak, cut into 4 cm chunks"
+    },
+    {
+      "name": "gluten-free massaman curry paste",
+      "amount": 100,
+      "unit": "g",
+      "original": "100 g gluten-free massaman curry paste (about 5 tbsp)",
+      "searchTerm": "massaman curry paste"
+    },
+    {
+      "name": "coconut milk",
+      "amount": 400,
+      "unit": "ml",
+      "original": "400 ml can coconut milk"
+    },
+    {
+      "name": "potatoes",
+      "amount": 4,
+      "unit": "",
+      "original": "4 medium potatoes, peeled and cut into 4 cm chunks"
+    },
+    {
+      "name": "brown onion",
+      "amount": 2,
+      "unit": "",
+      "original": "2 brown onions, cut into thick wedges"
+    },
+    {
+      "name": "roasted peanuts",
+      "amount": 75,
+      "unit": "g",
+      "original": "75 g roasted peanuts, roughly chopped (about 1/2 cup)"
+    },
+    {
+      "name": "gluten-free fish sauce",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) gluten-free fish sauce",
+      "searchTerm": "fish sauce"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 15,
+      "unit": "g",
+      "original": "1 tbsp (15 g) brown sugar"
+    },
+    {
+      "name": "tamarind paste",
+      "amount": 20,
+      "unit": "g",
+      "original": "1 tbsp (20 g) tamarind paste"
+    },
+    {
+      "name": "cinnamon sticks",
+      "amount": 4,
+      "unit": "g",
+      "original": "1 cinnamon stick (4 g)"
+    },
+    {
+      "name": "star anise",
+      "amount": 2,
+      "unit": "g",
+      "original": "2 star anise (2 g)"
+    },
+    {
+      "name": "jasmine rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g jasmine rice (1 1/2 cups)"
+    },
+    {
+      "name": "coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch coriander, leaves picked"
+    }
+  ],
+  "steps": [
+    "Cut the beef chuck steak into 4 cm chunks and season with salt. Heat a splash of oil in a large heavy pot over high heat and brown the beef in two batches. Set the beef aside.",
+    "Drop the heat to medium. Add the massaman curry paste and a few spoonfuls of the thick cream from the top of the coconut milk. Fry for 2 minutes, stirring, until fragrant.",
+    "Return the beef to the pot with the rest of the coconut milk, 250 ml water, the fish sauce, brown sugar, tamarind paste, cinnamon stick and star anise. Stir well and bring to a gentle simmer.",
+    "Cover and simmer on low for 1 hour, stirring now and then so nothing catches on the bottom.",
+    "Add the potatoes and onion wedges. Simmer uncovered for another 45 minutes, until the beef pulls apart easily and the potatoes are tender. The sauce thickens on its own as it reduces and the potatoes soften.",
+    "While the curry finishes, rinse the jasmine rice and cook it by absorption or per the packet.",
+    "Fish out the cinnamon stick and star anise. Taste the curry and balance it with a little extra fish sauce or brown sugar if it needs it.",
+    "Serve the curry over the rice, topped with the chopped roasted peanuts and coriander leaves."
+  ],
+  "photoUrl": "https://img.dinder.it.com/beef-massaman-curry.webp"
+}

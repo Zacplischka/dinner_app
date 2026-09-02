@@ -1,0 +1,63 @@
+{
+  "slug": "chicken-burrito-bowl",
+  "dish": "Chicken burrito bowl",
+  "sources": [
+    {"url": "https://simplehomeedit.com/recipe/chicken-burrito-bowls/", "publisher": "Simple Home Edit", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://feelgoodfoodie.net/recipe/chicken-burrito-bowl-cilantro-lime-rice/", "publisher": "Feel Good Foodie", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.chelseasmessyapron.com/meal-prep-chicken-burrito-bowls/", "publisher": "Chelsea's Messy Apron", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken breast", "essential": true, "observations": ["400 g diced 2 cm (s0)", "1.5 lb cut into strips (s1)", "1 lb halved into 4 thin filets, pounded even (s2)"]},
+    {"name": "olive oil", "essential": true, "observations": ["3 tbsp in marinade (s0)", "2 tbsp in marinade (s1)", "2 tbsp divided rub + pan (s2)"]},
+    {"name": "chipotle in adobo", "essential": false, "observations": ["1 tbsp diced in marinade + 1 tbsp in mayo; sub 1 tsp smoked paprika or omit (s0)", "3 chillies chopped + 1.5 tbsp adobo sauce (s1)"]},
+    {"name": "ground cumin", "essential": true, "observations": ["1 tsp (s0)", "2 tsp (s2)"]},
+    {"name": "sweet paprika", "essential": true, "observations": ["1 tsp (s0)", "2 tsp (s2)"]},
+    {"name": "dried oregano", "essential": false, "observations": ["1 tsp (s0)", "1 tsp (s2)"]},
+    {"name": "onion powder", "essential": false, "observations": ["1 tsp (s0)", "1 tsp (s2)"]},
+    {"name": "garlic", "essential": false, "observations": ["1 tsp freshly minced (s0)", "1.5 tsp garlic powder (s1)"]},
+    {"name": "chili powder", "essential": false, "observations": ["3/4 tsp (s2)"]},
+    {"name": "tomato paste", "essential": false, "observations": ["1 tbsp in marinade (s0)"]},
+    {"name": "salt", "essential": false, "observations": ["1 tsp flakes chicken + 1/2 tsp pico + 1/2 tsp mayo (s0)", "3/4 tsp marinade + 1/4 tsp rice (s1)", "1 tsp (s2)"]},
+    {"name": "black pepper", "essential": false, "observations": ["1/4 tsp in mayo (s0)"]},
+    {"name": "lime", "essential": true, "observations": ["1 juiced in pico + 1 tbsp juice in mayo + wedges (s0)", "3 tbsp juice marinade + 1 zested + 2 tbsp juice in rice (s1)", "wedges, topping note (s2)"]},
+    {"name": "rice", "essential": true, "observations": ["450 g packet microwave long-grain/brown/Mexican (s0)", "1 cup long-grain white, rinsed, cooked in 1.5 cups water (s1)", "1 batch cilantro-lime or white or brown, 3-4 cups cooked (s2)"]},
+    {"name": "coriander", "essential": true, "observations": ["1/3 bunch shredded in pico + garnish (s0)", "1/4 cup chopped in rice (s1)", "topping note (s2)"]},
+    {"name": "canned black beans", "essential": true, "observations": ["180 g (1 cup) rinsed drained (s0)", "15 oz can rinsed drained (s1)", "15 oz can drained rinsed warm (s2)"]},
+    {"name": "corn kernels", "essential": true, "observations": ["150 g (1 cup) fresh/frozen/canned (s0)", "1 cup frozen thawed (s1)", "1.5 cups frozen, sauteed in butter/oil, or 1 can (s2)"]},
+    {"name": "avocado", "essential": true, "observations": ["1 mashed (s0)", "guacamole or diced (s1)", "1 large diced or guacamole (s2)"]},
+    {"name": "tomato", "essential": true, "observations": ["2 finely diced in pico (s0)", "1 cup diced (s1)", "diced grape, or salsa/pico (s2)"]},
+    {"name": "onion", "essential": false, "observations": ["1 small finely diced in pico (s0)", "1/2 small red chopped raw or pickled (s1)"]},
+    {"name": "cos lettuce", "essential": false, "observations": ["1 head romaine chopped (s1)"]},
+    {"name": "corn chips", "essential": false, "observations": ["100 g (s0)"]},
+    {"name": "whole-egg mayonnaise", "essential": false, "observations": ["125 g (1/2 cup) for chipotle mayo (s0)"]},
+    {"name": "jalapeno", "essential": false, "observations": ["1 sliced, optional (s0)", "fresh or pickled, topping note (s2)"]},
+    {"name": "cheese", "essential": false, "observations": ["cheddar/pepper jack/cotija, topping note (s2)"]},
+    {"name": "sour cream", "essential": false, "observations": ["topping note (s2)"]},
+    {"name": "water", "essential": false, "observations": ["1-2 tbsp to deglaze pan (s0)", "1.5 cups for rice (s1)"]}
+  ],
+  "causalSequence": [
+    "mix own spice coat: oil + cumin, paprika, oregano, onion powder (+ chipotle in adobo s0/s1, chili powder s2)",
+    "coat chicken; marinate (s1 2 h-overnight; s0 brief; s2 straight to pan)",
+    "cook rice; stir through lime zest, lime juice, coriander (s0 shortcuts with microwave packet)",
+    "mix pico de gallo: tomato, onion, coriander, lime, salt (s0)",
+    "mix chipotle mayo (s0)",
+    "sear chicken in hot pan 5-8 min; splash water to lift stuck marinade (s0); rest 5 min then dice (s2)",
+    "warm black beans; saute frozen corn (s2)",
+    "assemble bowls: rice base, chicken, beans, corn, avocado, tomato/pico; toppings build-your-own",
+    "drizzle chipotle mayo, extra lime (s0)"
+  ],
+  "techniqueFacts": [
+    "all three season the chicken with an own-mixed blend of single spices and/or chipotle in adobo — none uses a packet taco seasoning mix; s0 explicitly frames the dish against 'out-of-the-packet' spice-mix meals (GF lever: single spices avoid wheat-filler risk in packet mixes)",
+    "s0 and s2 are tagged gluten-free; s0 carries a disclaimer to check ingredient panels on specific brands (relevant to corn chips, chipotle in adobo, stock-based extras)",
+    "chipotle in adobo is the smoky flavour lever in s0/s1; s2 stays dry-rub only (cumin + paprika + chili powder); s0 subs smoked paprika if unavailable",
+    "chicken format diverges: s0 dices 2 cm pieces before cooking (6-8 min stirring); s1 marinates strips 2 h+ then 5 min in hot pan; s2 pounds thin filets, 2-4 min/side over high heat to 165 F, rests 5 min, dices after",
+    "rice diverges: s1/s2 cook cilantro-lime rice (lime zest + juice + coriander folded into hot rice); s0 shortcuts with a 450 g microwave packet",
+    "s0 deglazes with 1-2 tbsp water so the tomato-paste marinade doesn't burn",
+    "bowl core repeats in all three: rice base + chicken + black beans + corn + avocado + tomato; toppings are build-your-own",
+    "s0 layers crunch (100 g corn chips) and a chipotle mayo drizzle; s1 adds a head of chopped romaine under/with the rice",
+    "s2 sautes frozen corn in butter or oil before adding, or swaps in canned",
+    "meal-prep pattern in all three: components stored separately 2-4 days refrigerated; avocado/guacamole/pico best fresh; s0 preps marinade, pico, mayo up to 2 days ahead",
+    "totals: s0 30 min (15 prep/15 cook); s2 30 min; s1 stretches to ~3 h only because of the 2 h marinate"
+  ],
+  "servingsObserved": [4, 4, 4]
+}

@@ -1,0 +1,74 @@
+{
+  "slug": "bangers-and-mash",
+  "dish": "Bangers and mash with onion gravy",
+  "sources": [
+    {
+      "url": "https://wholesomebysarah.com.au/recipes/bangers-mash-with-creamy-onion-gravy",
+      "publisher": "Wholesome by Sarah (AU)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://www.billyparisi.com/homemade-bangers-and-mash-recipe/",
+      "publisher": "Chef Billy Parisi (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://www.ourhappymess.com/bangers-and-mash-recipe/",
+      "publisher": "Our Happy Mess (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://www.soulfullymade.com/bangers-and-mash-with-onion-gravy/",
+      "publisher": "Soulfully Made (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    }
+  ],
+  "canonicalIngredients": [
+    { "name": "pork sausages", "essential": true, "observations": ["8 any-flavour (s0)", "8 bangers or pork sausages (s1)", "8 fresh pork (s2)", "8 sausages (s3)"] },
+    { "name": "potatoes", "essential": true, "observations": ["1 kg white (s0)", "1 lb russet + 1 lb yukon gold (s1)", "2 lb yukon gold (s2)", "2 lb (s3)"] },
+    { "name": "brown onion", "essential": true, "observations": ["1 large brown (s0)", "2 yellow (s1)", "1/2 large (s2)", "1 large yellow (s3)"] },
+    { "name": "butter", "essential": true, "observations": ["2 tbsp (s0)", "1 stick + 4 tbsp (s1)", "4 tbsp split mash/gravy (s2)", "1/2 cup in mash (s3)"] },
+    { "name": "plain flour", "essential": true, "observations": ["1 tbsp (s0)", "2 tbsp (s1)", "2 tbsp (s2)", "1/4 cup (s3)"] },
+    { "name": "stock", "essential": true, "observations": ["2 chicken stock cubes + 1.5 cups water (s0)", "3 cups beef (s1)", "2 cups chicken (s2)", "2 cups beef (s3)"] },
+    { "name": "milk", "essential": true, "observations": ["1/4 cup (s0)", "1/2 cup whole (s1)", "1/2 cup half-and-half + 1/2 cup buttermilk (s2)", "1/2 cup milk or cream (s3)"] },
+    { "name": "garlic", "essential": false, "observations": ["2 cloves (s1)", "2 cloves (s2)", "2 cloves (s3)"] },
+    { "name": "olive oil", "essential": false, "observations": ["1 tbsp (s0)", "1 tbsp (s2)", "2 tsp (s3)"] },
+    { "name": "worcestershire sauce", "essential": false, "observations": ["dash (s1)"] },
+    { "name": "red wine", "essential": false, "observations": ["1/4 cup (s1)"] },
+    { "name": "balsamic vinegar", "essential": false, "observations": ["1 tbsp (s1)"] },
+    { "name": "apple cider (juice)", "essential": false, "observations": ["1 cup (s2)"] },
+    { "name": "fresh thyme", "essential": false, "observations": ["5 sprigs (s2)"] },
+    { "name": "dijon mustard", "essential": false, "observations": ["1 tsp (s0)"] },
+    { "name": "parmesan cheese", "essential": false, "observations": ["1 cup grated (s0)"] },
+    { "name": "frozen peas", "essential": false, "observations": ["1 cup (s0)"] },
+    { "name": "sugar", "essential": false, "observations": ["1/2 tsp for caramelising onion (s0)"] },
+    { "name": "parsley", "essential": false, "observations": ["1-2 tbsp chopped, garnish (s0)", "garnish (s1)", "garnish (s2)"] }
+  ],
+  "causalSequence": [
+    "boil potatoes until fork-tender",
+    "drain; steam dry in pot",
+    "mash with butter, warm milk; season",
+    "brown sausages in oil over medium-high; set aside",
+    "soften sliced onion (plus garlic) in same pan",
+    "stir in flour; cook out 1-2 min",
+    "add stock gradually, whisking; simmer until thickened",
+    "season gravy; return sausages to warm through",
+    "plate mash, top with sausages, pour gravy over"
+  ],
+  "techniqueFacts": [
+    "gravy is built in the sausage pan on the fond (3 sources)",
+    "flour is whisked into the cooked onions before any liquid to prevent lumps (all 4)",
+    "stock goes in gradually while whisking (3 sources)",
+    "low-and-slow onions caramelise and sweeten the gravy (2 sources)",
+    "potatoes are steamed dry after draining for creamier mash (2 sources)",
+    "two sources only sear sausages first, then finish/warm them in the gravy for flavour",
+    "stock split: beef (s1, s3) vs chicken (s0, s2)",
+    "enrichment varies by source: red wine + balsamic + worcestershire (s1), apple cider + thyme (s2), dijon + parmesan (s0)",
+    "onion sliced thin but in large pieces so it can be picked out (1 source)"
+  ],
+  "servingsObserved": [4, 8, 4, 4]
+}

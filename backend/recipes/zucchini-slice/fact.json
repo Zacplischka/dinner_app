@@ -1,0 +1,45 @@
+{
+  "slug": "zucchini-slice",
+  "dish": "Zucchini slice",
+  "sources": [
+    {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/zucchini-slice-6436/", "publisher": "Women's Weekly Food (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/zucchini-slice/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.budgetbytes.com/zucchini-slice/", "publisher": "Budget Bytes (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.mirchitales.com/vegetarian-zucchini-slice/", "publisher": "Mirchi Tales (AU-based)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "zucchini", "essential": true, "observations": ["375 g grated (s0)", "270 g / 2 cups grated (s1)", "3/4 lb / 2 cups shredded (s2)", "400 g / 3 shredded (s3)"]},
+    {"name": "eggs", "essential": true, "observations": ["5 (s0)", "5 (s1)", "5 large (s2)", "6 (s3)"]},
+    {"name": "self-raising flour", "essential": true, "observations": ["1 cup (s0)", "150 g / 1 cup (s1)", "1 cup self-rising (s2)", "150 g plain flour + 1/2 tsp baking powder (s3)"]},
+    {"name": "cheddar cheese", "essential": true, "observations": ["1 cup grated (s0)", "125 g / 1 cup grated (s1)", "1 cup shredded (s2)", "100 g / 1 1/4 cup shredded (s3)"]},
+    {"name": "onion", "essential": true, "observations": ["1 large (s0)", "40 g / 1/4 cup brown, diced (s1)", "1 yellow (s2)", "110 g / 1, diced (s3)"]},
+    {"name": "oil", "essential": true, "observations": ["1/2 cup vegetable (s0)", "1/2 tsp olive, tin-greasing only, none in batter (s1)", "1/4 cup olive (s2)", "60 g / 1/3 cup (s3)"]},
+    {"name": "bacon", "essential": false, "observations": ["3 rashers (s0)", "115 g / 3 rashers, marked optional (s1)", "2 strips (s2)", "omitted, vegetarian version (s3)"]},
+    {"name": "corn kernels", "essential": false, "observations": ["100 g / 1/2 cup, optional (s1)"]},
+    {"name": "carrot", "essential": false, "observations": ["100 g / 1 shredded (s3)"]},
+    {"name": "spring onion", "essential": false, "observations": ["15 g / 1/4 cup sliced (s1)"]},
+    {"name": "butter", "essential": false, "observations": ["1 tbsp, saute fat for bacon and onion (s2)"]},
+    {"name": "dried Italian herbs", "essential": false, "observations": ["1/2 tsp, plus 1/4 tsp chilli flakes, 1/2 tsp onion flakes (s3)"]}
+  ],
+  "causalSequence": [
+    "preheat 180C (160C fan); grease, line slab tin (16x26 to 20x30 cm)",
+    "grate zucchini; squeeze out excess moisture",
+    "dice onion; grate cheese",
+    "whisk eggs in large bowl",
+    "stir in zucchini, onion, cheese, flour, oil; season salt pepper",
+    "pour into tin, level",
+    "bake 30-45 min until set, golden, firm to touch",
+    "stand 10-15 min; cut into squares"
+  ],
+  "techniqueFacts": [
+    "classic slice carries bacon; vegetarian variant = omit it entirely (3 sources), with cheese + extra veg (corn, carrot, roasted capsicum, sun-dried tomato, sauteed mushroom, feta) covering the savoury gap",
+    "squeezing the grated zucchini dry is the anti-sogginess lever (3 sources; s2 salts it in a colander first to draw moisture)",
+    "self-raising flour gives the fluffy muffin-like set; sub is 1 cup plain flour + 2 tsp baking powder (s2), s3 builds it from plain flour + baking powder",
+    "AU method is one-bowl, everything combined raw; s2 (US) sautes onion (and bacon) in butter first for flavour",
+    "done cues: golden top, springs back, skewer near-clean, edges pull from tin; bottom rack helps the base brown (s0)",
+    "resting 10-15 min after baking firms the slice for clean cutting (s1, s3)",
+    "eats hot or cold; fridge 3-5 days, freezes 2-3 months, freezer-friendly per all sources",
+    "keeps a tender moist crumb - firmer than frittata, softer than bread (s0); s3 grills last few minutes for a crisper top"
+  ],
+  "servingsObserved": [4, 6, 8, 4]
+}

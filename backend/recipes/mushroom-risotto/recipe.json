@@ -1,0 +1,76 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:mushroom-risotto",
+  "name": "Mushroom Risotto",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [
+    "vegetarian",
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "arborio rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g arborio rice"
+    },
+    {
+      "name": "cup mushrooms",
+      "searchTerm": "cup mushrooms",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g mushrooms (cup or mixed), thickly sliced"
+    },
+    {
+      "name": "gluten-free vegetable stock",
+      "searchTerm": "vegetable liquid stock",
+      "amount": 1,
+      "unit": "l",
+      "original": "1 L gluten-free vegetable stock"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely chopped"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 cloves garlic, finely chopped"
+    },
+    {
+      "name": "dry white wine",
+      "amount": 125,
+      "unit": "ml",
+      "original": "125 ml dry white wine"
+    },
+    {
+      "name": "vegetarian parmesan cheese",
+      "searchTerm": "parmesan cheese",
+      "amount": 80,
+      "unit": "g",
+      "original": "80 g vegetarian parmesan cheese, finely grated"
+    },
+    {
+      "name": "fresh thyme",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "0.5 bunch fresh thyme, leaves picked"
+    }
+  ],
+  "steps": [
+    "Pour the stock into a saucepan and bring it to a gentle simmer. Keep it hot over low heat while you cook.",
+    "Heat a splash of olive oil in a large deep frying pan over high heat. Add the mushrooms and half the thyme leaves and cook, stirring only now and then, for 6-8 minutes until deeply browned. Season with salt and pepper, tip onto a plate and set aside.",
+    "Reduce the heat to medium and add another splash of olive oil to the same pan. Cook the onion for 5 minutes until soft, then add the garlic and cook for 1 minute more.",
+    "Add the rice and stir for 2 minutes until the grains are coated and the edges turn translucent.",
+    "Pour in the wine and stir until it has been absorbed.",
+    "Add the hot stock a ladleful at a time, stirring often and letting each addition absorb before the next. Continue for 20-25 minutes until the rice is creamy but still has a slight bite; you may not need every drop of stock.",
+    "Take the pan off the heat. Stir in the parmesan and most of the mushrooms, season with salt and pepper, then cover and rest for 5 minutes.",
+    "Spoon into bowls and top with the reserved mushrooms and the remaining thyme leaves."
+  ],
+  "photoUrl": "https://img.dinder.it.com/mushroom-risotto.webp"
+}

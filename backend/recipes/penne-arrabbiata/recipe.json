@@ -1,0 +1,61 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:penne-arrabbiata",
+  "name": "Penne Arrabbiata",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [
+    "vegan",
+    "vegetarian"
+  ],
+  "ingredients": [
+    {
+      "name": "penne",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g penne"
+    },
+    {
+      "name": "olive oil",
+      "amount": 3,
+      "unit": "tbsp",
+      "original": "3 tbsp olive oil"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "",
+      "original": "3 garlic cloves, thinly sliced"
+    },
+    {
+      "name": "dried chilli flakes",
+      "amount": 1,
+      "unit": "g",
+      "original": "1/2 tsp (1 g) dried chilli flakes"
+    },
+    {
+      "name": "whole peeled tomatoes",
+      "amount": 800,
+      "unit": "g",
+      "original": "2 x 400 g cans whole peeled tomatoes"
+    },
+    {
+      "name": "continental parsley",
+      "searchTerm": "parsley",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch continental parsley, chopped"
+    }
+  ],
+  "steps": [
+    "Heat the olive oil in a large deep frypan over medium-low heat. Add the sliced garlic and cook gently for 1-2 minutes until fragrant and just golden at the edges - don't let it brown.",
+    "Stir in the chilli flakes and cook for 30 seconds so they bloom in the oil. Use a little less or more chilli to suit how hot you like it.",
+    "Tip in the whole peeled tomatoes with their juice and crush them roughly with the back of a spoon. Season with a good pinch of salt and simmer gently for 20-25 minutes, stirring now and then, until thickened.",
+    "Meanwhile, bring a large pot of well-salted water to the boil. Cook the penne for 2 minutes less than the packet says, then scoop out a cup of the pasta water and drain.",
+    "Add the penne to the sauce with a splash of the reserved pasta water. Toss over medium heat for 1-2 minutes until the sauce clings to the pasta, adding more pasta water if it looks dry.",
+    "Take the pan off the heat and stir through most of the chopped parsley. Taste and season with salt and pepper.",
+    "Serve in bowls scattered with the remaining parsley. Add a grating of vegan parmesan if you like."
+  ],
+  "photoUrl": "https://img.dinder.it.com/penne-arrabbiata.webp"
+}

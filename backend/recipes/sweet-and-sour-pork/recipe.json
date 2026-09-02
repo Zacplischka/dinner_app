@@ -1,0 +1,107 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:sweet-and-sour-pork",
+  "name": "Sweet and Sour Pork",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "chinese",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "pork shoulder",
+      "amount": 600,
+      "unit": "g",
+      "original": "600 g pork shoulder, trimmed and cut into 3 cm pieces"
+    },
+    {
+      "name": "soy sauce",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp soy sauce"
+    },
+    {
+      "name": "egg",
+      "amount": 1,
+      "unit": "",
+      "original": "1 egg"
+    },
+    {
+      "name": "garlic",
+      "amount": 2,
+      "unit": "",
+      "original": "2 garlic cloves, crushed"
+    },
+    {
+      "name": "cornflour",
+      "amount": 65,
+      "unit": "g",
+      "original": "1/2 cup (65 g) cornflour"
+    },
+    {
+      "name": "tomato sauce",
+      "amount": 80,
+      "unit": "ml",
+      "original": "1/3 cup (80 ml) tomato sauce"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 55,
+      "unit": "g",
+      "original": "1/4 cup (55 g) brown sugar"
+    },
+    {
+      "name": "white vinegar",
+      "amount": 60,
+      "unit": "ml",
+      "original": "60 ml white vinegar"
+    },
+    {
+      "name": "canned pineapple pieces",
+      "searchTerm": "pineapple pieces",
+      "amount": 440,
+      "unit": "g",
+      "original": "440 g can pineapple pieces in juice, drained, 60 ml juice reserved"
+    },
+    {
+      "name": "red capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red capsicum"
+    },
+    {
+      "name": "green capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 green capsicum"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion"
+    },
+    {
+      "name": "vegetable oil",
+      "amount": 500,
+      "unit": "ml",
+      "original": "500 ml vegetable oil, for shallow frying"
+    },
+    {
+      "name": "jasmine rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "1 1/2 cups (300 g) jasmine rice"
+    }
+  ],
+  "steps": [
+    "Rinse the jasmine rice and cook it by the absorption method or in a rice cooker. Keep it warm with the lid on.",
+    "Cut the pork shoulder into 3 cm pieces, trimming any large bits of fat. Toss with the soy sauce, egg, crushed garlic and a pinch of salt, then set aside to marinate for 15 minutes.",
+    "Cut the capsicums and onion into bite-size chunks. Drain the pineapple pieces, keeping 60 ml of the juice.",
+    "Stir the tomato sauce, brown sugar, white vinegar and reserved pineapple juice together in a jug until the sugar dissolves. Set aside.",
+    "Tip the cornflour over the marinated pork and toss until every piece is well coated.",
+    "Pour the vegetable oil into a large deep frying pan to a depth of about 1 cm and set it over medium-high heat. Fry the pork in batches for 5-6 minutes, turning, until deep golden and cooked through. Drain on paper towel.",
+    "Carefully pour off all but about 1 tablespoon of the oil. Return the pan to high heat and stir-fry the capsicum and onion for 2-3 minutes until lightly charred but still crisp, then add the pineapple pieces and toss for 1 minute.",
+    "Pour in the sauce and let it bubble for 1-2 minutes until glossy and slightly thickened. Return the pork, toss to coat, and serve straight away over the rice."
+  ],
+  "photoUrl": "https://img.dinder.it.com/sweet-and-sour-pork.webp"
+}

@@ -1,0 +1,65 @@
+{
+  "slug": "chicken-satay-skewers",
+  "dish": "Chicken satay skewers with rice",
+  "sources": [
+    {
+      "url": "https://thescranline.com/thai-chicken-satay-skewers-with-peanut-sauce/",
+      "publisher": "The Scranline (AU)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://www.aheadofthyme.com/chicken-satay-skewers-with-peanut-sauce/",
+      "publisher": "Ahead of Thyme (CA)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://cravingsbychrissyteigen.com/blogs/recipes/peppers-chicken-satay-peanut-sauce",
+      "publisher": "Cravings by Chrissy Teigen (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    }
+  ],
+  "canonicalIngredients": [
+    { "name": "chicken breast", "essential": true, "observations": ["1 kg breast or thigh, strips (s0)", "2 lb breast, 1-inch cubes (s1)", "2 lb breast or thigh, strips (s2)"] },
+    { "name": "coconut milk", "essential": true, "observations": ["60 ml marinade + 125 ml sauce (s0)", "1/4 cup marinade (s1)", "1 cup marinade + 400 ml can sauce (s2)"] },
+    { "name": "peanut butter", "essential": true, "observations": ["240 g natural (s0)", "2 tbsp (s1)", "none - 3/4 cup pounded roasted peanuts instead (s2)"] },
+    { "name": "soy sauce", "essential": true, "observations": ["2 tbsp marinade + 2 tbsp sauce, light (s0)", "2 tbsp marinade (s1)", "none - salt instead (s2)"] },
+    { "name": "fish sauce", "essential": true, "observations": ["1 tbsp marinade + 1 tbsp sauce (s0)", "1 tbsp marinade (s1)", "2 tsp sauce (s2)"] },
+    { "name": "brown sugar", "essential": true, "observations": ["2 tbsp marinade + 2 tbsp sauce (s0)", "1 tbsp marinade (s1)", "1/4 cup marinade + 2 tbsp sauce (s2)"] },
+    { "name": "lime", "essential": true, "observations": ["1 juiced marinade + 1 juiced sauce (s0)", "1/2 tbsp juice sauce (s1)", "1 tbsp juice sauce (s2)"] },
+    { "name": "garlic", "essential": false, "observations": ["1/2 tsp powder (s0)", "1 tbsp minced (s1)"] },
+    { "name": "ginger", "essential": false, "observations": ["1/2 tsp powder (s0)", "1 tbsp grated (s1)"] },
+    { "name": "turmeric powder", "essential": false, "observations": ["1/2 tsp (s0)", "1 tbsp (s2)"] },
+    { "name": "ground coriander", "essential": false, "observations": ["1 tsp (s0)", "1 tbsp (s2)"] },
+    { "name": "ground cumin", "essential": false, "observations": ["2 tsp (s2)"] },
+    { "name": "curry powder", "essential": false, "observations": ["1 tsp sauce, optional (s0)", "1 tbsp yellow, marinade (s1)"] },
+    { "name": "red curry paste", "essential": false, "observations": ["1 tbsp sauce, optional (s1)", "1 tbsp sauce (s2)"] },
+    { "name": "roasted peanuts", "essential": false, "observations": ["crushed, garnish (s0)", "2 tbsp chopped, sauce topping + garnish (s1)", "3/4 cup pounded, sauce base (s2)"] },
+    { "name": "rice", "essential": true, "observations": ["steamed rice to serve (s0); s1 serves with lime wedges, s2 with roti"] },
+    { "name": "vegetable oil", "essential": false, "observations": ["1 tbsp for pan-frying (s0)", "1 tbsp in marinade + grill brushing (s1)", "for grilling (s2)"] },
+    { "name": "fresh coriander", "essential": false, "observations": ["chopped, garnish (s0)", "1 tsp chopped, garnish (s1)"] },
+    { "name": "cucumber", "essential": false, "observations": ["sliced, to serve, optional (s0)"] }
+  ],
+  "causalSequence": [
+    "mix marinade: coconut milk, soy sauce, fish sauce, brown sugar, lime juice, spices",
+    "slice chicken into strips or cubes; coat in marinade; refrigerate 2 h to overnight",
+    "soak bamboo skewers 30 min; thread chicken 4-5 pieces per skewer",
+    "grill or pan-fry skewers 3-5 min per side to 75 C internal",
+    "simmer sauce: coconut milk, peanut butter, brown sugar, soy and fish sauce; 5 min until thick; loosen with water; finish with lime",
+    "steam rice; plate skewers on rice; pour over sauce; top with peanuts, coriander, lime wedges"
+  ],
+  "techniqueFacts": [
+    "all three marinate at least 1-2 h, overnight preferred for juiciness",
+    "internal temperature target 75 C / 165 F (two sources)",
+    "two sources thread 4-5 pieces per skewer; one threads a single long strip per skewer",
+    "two sources soak bamboo skewers in water ~30 min before grilling",
+    "natural unsweetened peanut butter called out as the sauce lever (s0); s2 pounds whole roasted peanuts instead for chunkier sauce",
+    "sauce simmered ~5 min to thicken in two sources; s1 only whisks with boiling water, no cooking",
+    "turmeric supplies the signature yellow colour (two sources)",
+    "cook on grill, grill pan, non-stick pan, or under broiler; ~3-5 min per side in all three",
+    "servings note: s0 card says serves 3 but author note says ~30 skewers serving 6; s1 states yield only (10-12 skewers)"
+  ],
+  "servingsObserved": [6, 4, 6]
+}

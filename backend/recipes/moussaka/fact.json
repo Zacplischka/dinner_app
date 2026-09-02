@@ -1,0 +1,57 @@
+{
+  "slug": "moussaka",
+  "dish": "Moussaka",
+  "sources": [
+    {"url": "https://www.themediterraneandish.com/moussaka-recipe-eggplant-casserole/", "publisher": "The Mediterranean Dish", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.feastingathome.com/rustic-eggplant-moussaka/", "publisher": "Feasting at Home", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://girlcarnivore.com/lamb-moussaka/", "publisher": "Girl Carnivore", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "eggplant", "essential": true, "observations": ["2 large globe (s0)", "3 lb / 2-3 eggplants (s1)", "2 large (s2)"]},
+    {"name": "lamb mince", "essential": true, "observations": ["1 lb lamb or beef (s0)", "2 lb lamb or beef (s1)", "1 lb lamb (s2)"]},
+    {"name": "brown onion", "essential": true, "observations": ["1 large yellow (s0)", "1 large (s1)", "1 medium yellow (s2)"]},
+    {"name": "garlic", "essential": false, "observations": ["4 cloves (s1)", "3 cloves (s2)"]},
+    {"name": "canned diced tomatoes", "essential": true, "observations": ["1 x 14 oz can diced (s0)", "1.5 cups diced / 14 oz can (s1)", "1 cup crushed (s2)"]},
+    {"name": "tomato paste", "essential": false, "observations": ["3 tbsp (s1)", "1 tbsp (s2)"]},
+    {"name": "red wine", "essential": false, "observations": ["1/2 cup red (s0)", "1/2 cup white, optional (s1)", "1/4 cup dry red (s2)"]},
+    {"name": "beef stock", "essential": false, "observations": ["1/2 cup beef broth (s0)", "1/4 cup chicken broth (s2)"]},
+    {"name": "dried oregano", "essential": true, "observations": ["1 tbsp (s0)", "2 tsp (s1)", "1 tsp (s2)"]},
+    {"name": "ground cinnamon", "essential": true, "observations": ["1 tsp ground (s0)", "1 tsp ground (s1)", "1 cinnamon stick (s2)"]},
+    {"name": "ground nutmeg", "essential": false, "observations": ["1/2 tsp meat sauce + 1/4 tsp bechamel (s0)", "1/2 tsp bechamel (s1)"]},
+    {"name": "paprika", "essential": false, "observations": ["1/2 tsp (s0)"]},
+    {"name": "sugar", "essential": false, "observations": ["1 tsp (s0)", "1 tsp (s1)"]},
+    {"name": "bay leaf", "essential": false, "observations": ["1 (s2)"]},
+    {"name": "parsley", "essential": false, "observations": ["2-3 tbsp chopped (s1)", "chopped, garnish (s2)"]},
+    {"name": "olive oil", "essential": true, "observations": ["for eggplant + 1/3 cup + 2 tbsp in bechamel (s0)", "3 tbsp eggplant + 2 tbsp sauce (s1)", "3 tbsp eggplant + 2 tbsp filling (s2)"]},
+    {"name": "butter", "essential": false, "observations": ["3 tbsp, or olive oil (s1)", "1/3 cup unsalted (s2)"]},
+    {"name": "plain flour", "essential": true, "observations": ["2/3 cup (s0)", "4 tbsp (s1)", "1/3 cup (s2)"]},
+    {"name": "milk", "essential": true, "observations": ["4 cups 2% (s0)", "2 cups (s1)", "2 cups whole (s2)"]},
+    {"name": "egg", "essential": true, "observations": ["2 large (s0)", "1 (s1)", "1 large (s2)"]},
+    {"name": "parmesan cheese", "essential": false, "observations": ["1/4 cup parmesan/pecorino/kefalotiri + 1/4 cup top optional (s1)", "1/2 cup finely grated parmesan (s2)"]},
+    {"name": "breadcrumbs", "essential": false, "observations": ["1/4 cup (s0)"]}
+  ],
+  "causalSequence": [
+    "slice eggplant 5 mm-1 cm; salt 20-30 min to draw moisture",
+    "pat dry, brush with olive oil; roast or grill until golden and tender",
+    "soften onion, add garlic; brown mince, drain fat",
+    "stir in tomato paste, oregano, cinnamon, spices; add tomatoes, wine, stock; simmer 15-30 min until thick",
+    "bechamel: cook flour in butter or oil 1-3 min; whisk in warm milk; simmer until it coats a spoon",
+    "off heat season with nutmeg, cheese; temper beaten egg into bechamel",
+    "layer half eggplant, all meat sauce, remaining eggplant; pour bechamel over, spread to edges",
+    "top with breadcrumbs or extra parmesan",
+    "bake 175 C 45-60 min until golden and set",
+    "rest 10-30 min before slicing"
+  ],
+  "techniqueFacts": [
+    "all three salt eggplant slices before cooking to pull moisture and bitterness",
+    "all three pre-cook the eggplant (roast/broil/grill) before layering; one notes this prevents a watery bake",
+    "all three temper a beaten egg into the finished bechamel so the topping sets sliceable",
+    "cinnamon in the meat sauce in all three (ground in two, whole stick fished out in one)",
+    "all three rest the baked dish 10-30 min for clean slices",
+    "two warm the milk before whisking into the roux",
+    "wine deglaze in all three but flagged optional in one",
+    "one source builds the bechamel on olive oil instead of butter",
+    "lamb is the preferred mince; two sources allow beef interchangeably"
+  ],
+  "servingsObserved": [12, 8, 10]
+}

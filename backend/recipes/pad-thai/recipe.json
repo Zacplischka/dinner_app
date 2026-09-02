@@ -1,0 +1,101 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:pad-thai",
+  "name": "Pad Thai",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "thai",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "rice stick noodles",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g dried flat rice stick noodles"
+    },
+    {
+      "name": "chicken thigh fillets",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g chicken thigh fillets, sliced into thin strips"
+    },
+    {
+      "name": "eggs",
+      "amount": 3,
+      "unit": "",
+      "original": "3 eggs, lightly beaten"
+    },
+    {
+      "name": "bean sprouts",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g bean sprouts"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "",
+      "original": "3 garlic cloves, finely chopped"
+    },
+    {
+      "name": "spring onions",
+      "amount": 4,
+      "unit": "",
+      "original": "4 spring onions, sliced, white and green parts separated"
+    },
+    {
+      "name": "roasted peanuts",
+      "amount": 75,
+      "unit": "g",
+      "original": "1/2 cup (75 g) roasted peanuts, roughly chopped"
+    },
+    {
+      "name": "tamarind puree",
+      "amount": 60,
+      "unit": "g",
+      "original": "3 tbsp (60 g) tamarind puree"
+    },
+    {
+      "name": "fish sauce",
+      "amount": 60,
+      "unit": "ml",
+      "original": "3 tbsp (60 ml) fish sauce"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 50,
+      "unit": "g",
+      "original": "3 tbsp (50 g) brown sugar"
+    },
+    {
+      "name": "limes",
+      "amount": 2,
+      "unit": "",
+      "original": "2 limes, cut into wedges"
+    },
+    {
+      "name": "dried chilli flakes",
+      "searchTerm": "chilli flakes",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) dried chilli flakes, to serve"
+    },
+    {
+      "name": "vegetable oil",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) vegetable oil"
+    }
+  ],
+  "steps": [
+    "Put the rice stick noodles in a large bowl, cover with just-boiled water and soak for 6-8 minutes until pliable but still firm in the centre. Drain and rinse under cold water - they finish cooking in the wok.",
+    "Stir the tamarind puree, fish sauce and brown sugar together in a small bowl until the sugar dissolves.",
+    "Heat half the vegetable oil in a large wok over high heat. Stir-fry the chicken strips for 3-4 minutes until browned and just cooked through, then set aside on a plate.",
+    "Add a splash more oil to the wok, pour in the beaten eggs and scramble for about 30 seconds until just set. Set aside with the chicken.",
+    "Heat the remaining oil in the wok over high heat. Stir-fry the garlic and the white parts of the spring onions for 30 seconds until fragrant.",
+    "Add the drained noodles and the tamarind sauce. Toss constantly over high heat for 2-3 minutes until the noodles absorb the sauce and turn tender. If your wok is small, do this in two batches so the noodles fry rather than steam.",
+    "Take the wok off the heat. Return the chicken and eggs, then toss through the bean sprouts, the green parts of the spring onions and half the peanuts - the residual heat keeps the sprouts crisp.",
+    "Divide between bowls and top with the remaining peanuts and a pinch of chilli flakes. Serve with lime wedges for squeezing over."
+  ],
+  "photoUrl": "https://img.dinder.it.com/pad-thai.webp"
+}

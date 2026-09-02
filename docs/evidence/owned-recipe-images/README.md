@@ -4,42 +4,64 @@ Backs [#330](https://github.com/Zacplischka/dinner_app/issues/330) on spec
 [#326](https://github.com/Zacplischka/dinner_app/issues/326). The pipeline is
 `scripts/corpus/images.mjs`; every constant it carries is justified here.
 
-**Two of #330's criteria need an operator, not a commit, so they are split onto
-the tickets that can meet them** rather than left open here: the R2 bucket is not
-created and creating it needs a Cloudflare login
-([#355](https://github.com/Zacplischka/dinner_app/issues/355)), and no
-full-corpus cost has been measured because the corpus does not exist until
+**Two of #330's criteria needed an operator, not a commit, so they were split
+onto the tickets that can meet them** rather than left open here: the R2 bucket
+needed a Cloudflare login
+([#355](https://github.com/Zacplischka/dinner_app/issues/355), now stood up —
+see The bucket), and no full-corpus cost has been measured because the corpus
+does not exist until
 [#341](https://github.com/Zacplischka/dinner_app/issues/341), which now carries
 that criterion. The estimate below is an estimate; it is not a measurement, and
 the Measured column stays empty until a real run fills it.
 
 ## The bucket
 
-| | |
-| --- | --- |
-| Provider | Cloudflare R2, on the existing `dinder.it.com` zone |
-| Bucket | `dinder-recipe-images`, location hint `oc` |
+|                 |                                                                                                                |
+| --------------- | -------------------------------------------------------------------------------------------------------------- |
+| Provider        | Cloudflare R2, on the existing `dinder.it.com` zone                                                            |
+| Bucket          | `dinder-recipe-images`, location hint `oc`                                                                     |
 | Public URL base | `https://img.dinder.it.com` — a custom domain, **not** `r2.dev` (rate-limited, documented as development-only) |
-| Object key | `<frozen-slug>.webp`, so a record's image URL is `https://img.dinder.it.com/pad-thai.webp` |
-| Credentials | An R2 API token (Object Read & Write, this bucket only). Where it lives: `AGENTS.md`. |
-| Cost | US$0.00/month — 0.15 GB of R2's 10 GB free tier, egress free by policy |
+| Object key      | `<frozen-slug>.webp`, so a record's image URL is `https://img.dinder.it.com/pad-thai.webp`                     |
+| Credentials     | An R2 API token (Object Read & Write, this bucket only). Where it lives: `AGENTS.md`.                          |
+| Cost            | US$0.00/month — 0.15 GB of R2's 10 GB free tier, egress free by policy                                         |
 
-**Status: not yet created —
-[#355](https://github.com/Zacplischka/dinner_app/issues/355).** Standing it up
-needs a Cloudflare login, which no credential in this repo or environment
-carries, so it is a human ticket. The operator runs, once:
+**Status: created 2026-09-03
+([#355](https://github.com/Zacplischka/dinner_app/issues/355)).** Under the
+operator's `wrangler login`:
 
 ```bash
 wrangler r2 bucket create dinder-recipe-images --location oc
-# Then bind img.dinder.it.com to it as a custom domain (R2 → Settings → Public
-# access → Custom domains; the dinder.it.com zone is already on this account),
-# and mint an R2 API token scoped Object Read & Write to this bucket — that
-# token is the three R2_* values AGENTS.md names.
+wrangler r2 bucket domain add dinder-recipe-images --domain img.dinder.it.com --zone-id <dinder.it.com zone>
+# per image, the 50 pilot images from .corpus-images/:
+wrangler r2 object put dinder-recipe-images/<slug>.webp --file .corpus-images/<slug>.webp --content-type image/webp --remote
 ```
 
-Until it exists, `publish` has nothing to upload to and the URLs the records
-carry 404. Nothing else in the pipeline depends on it: generation, cropping and
-stamping all run first.
+`wrangler r2 bucket domain list` reports the domain enabled, ownership active,
+SSL active. The recorded GET, 2026-09-03:
+
+```
+$ curl -sI https://img.dinder.it.com/beef-pho.webp
+HTTP/2 200
+content-type: image/webp
+content-length: 126398
+etag: "c6000d85491f20952d91ff0667948e5a"
+server: cloudflare
+cf-cache-status: HIT
+```
+
+The first attempt, the day before, failed on every call with Cloudflare's
+`10001` internal error and a `10058` rate limit that outlived a three-minute
+backoff; the same commands ran clean the next day. Nothing on our side changed.
+
+**The token, and `publish` against it.** The OAuth login `wrangler` holds
+cannot mint an R2 API token, so the operator minted one from the dashboard (R2
+→ Manage API tokens): Object Read & Write, this bucket only, 30-day TTL per
+`AGENTS.md`'s "let it expire". With it exported as the `R2_*` values,
+`node scripts/corpus/images.mjs publish` ran green from the lane on
+2026-09-03 — an `aws s3 sync` that found all 50 objects already present, which
+is exactly the proof wanted: the credential and the endpoint work, and the
+sync is idempotent. The token lives nowhere in the repo, Railway or GitHub;
+the next batch mints its own if this one has expired.
 
 ## The budget
 
@@ -49,9 +71,9 @@ image output **US$15.00/1M tokens**, text input **US$2.50/1M tokens**
 ([OpenAI API pricing](https://developers.openai.com/api/docs/pricing)). At the
 documented 1,366 output tokens for that cell, one image is **US$0.0205**.
 
-| Run | Recipes | Estimate | Measured |
-| --- | --- | --- | --- |
-| Full corpus ([#341](https://github.com/Zacplischka/dinner_app/issues/341)) | ~1,160 | **US$23.77** generation (+US$0.38 of prompt input), **US$33.28** with the 40% regeneration allowance [#313](https://github.com/Zacplischka/dinner_app/issues/313) budgeted for gate rejects — inside its US$30–38 band and under the ticket's ~US$37, **provided rejects go back through a batch** | _not yet run — the corpus does not exist until [#341](https://github.com/Zacplischka/dinner_app/issues/341), which carries this criterion_ |
+| Run                                                                        | Recipes | Estimate                                                                                                                                                                                                                                                                                           | Measured                                                                                                                                   |
+| -------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Full corpus ([#341](https://github.com/Zacplischka/dinner_app/issues/341)) | ~1,160  | **US$23.77** generation (+US$0.38 of prompt input), **US$33.28** with the 40% regeneration allowance [#313](https://github.com/Zacplischka/dinner_app/issues/313) budgeted for gate rejects — inside its US$30–38 band and under the ticket's ~US$37, **provided rejects go back through a batch** | _not yet run — the corpus does not exist until [#341](https://github.com/Zacplischka/dinner_app/issues/341), which carries this criterion_ |
 
 **Regenerations belong in a batch.** The US$33.28 line prices the ~464 rejects
 at batch rates, which only holds if they are resubmitted as a second batch.
@@ -64,7 +86,7 @@ That second batch is `submit <recordsDir> <slug>...`: named slugs submit only
 those records, so the rejects `collect` listed go back through the Batch API
 without re-billing the ~US$24 of keepers a bare `submit <recordsDir>` would
 resubmit. A slug with no record aborts the submission rather than silently
-shrinking it. Copying reject records into a scratch directory is *not* the same
+shrinking it. Copying reject records into a scratch directory is _not_ the same
 thing — `collect` stamps `photoUrl` onto the file it read, so the stamp would
 land on the copies and the real records would stay unstamped.
 

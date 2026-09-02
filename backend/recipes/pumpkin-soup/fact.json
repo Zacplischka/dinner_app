@@ -1,0 +1,44 @@
+{
+  "slug": "pumpkin-soup",
+  "dish": "Pumpkin soup",
+  "sources": [
+    {"url": "https://www.cookingwithnanaling.com/creamy-pumpkin-soup/", "publisher": "Cooking with Nana Ling", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://australianflavours.com.au/recipes/pumpkin-soup-recipe/", "publisher": "Australian Flavours", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.bhg.com.au/recipe/food/pumpkin-soup-recipe/", "publisher": "Better Homes & Gardens Australia", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://stayathomemum.com.au/recipes/soups-stews/creamy-pumpkin-soup/", "publisher": "Stay at Home Mum", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "pumpkin", "essential": true, "observations": ["850 g (s0)", "1.5 kg (s1)", "1.25 kg Kent (s2)", "1 kg (s3)"]},
+    {"name": "brown onion", "essential": true, "observations": ["2 large (s0)", "1 (s1)", "1 large (s2)", "1 large (s3)"]},
+    {"name": "garlic", "essential": false, "observations": ["2 cloves (s1)", "2 cloves (s2)", "2 cloves (s3)", "deliberately omitted (s0)"]},
+    {"name": "olive oil", "essential": false, "observations": ["2 tbsp (s1)", "2 tbsp (s2)", "2 tbsp, or butter (s3)", "none, boil method (s0)"]},
+    {"name": "stock", "essential": true, "observations": ["3 chicken stock cubes + 4 cups water (s0)", "4 cups vegetable or chicken broth (s1)", "1 l vegetable stock + 3/4 cup water (s2)", "1 l chicken or vegetable stock (s3)"]},
+    {"name": "thickened cream", "essential": true, "observations": ["1 cup / 250 ml (s0)", "drizzle, optional topping (s1)", "1/2 cup (s2)", "250 ml (s3)"]},
+    {"name": "potato", "essential": false, "observations": ["250 g / 2 medium (s0)"]},
+    {"name": "ground cumin", "essential": false, "observations": ["1 tsp (s1)"]},
+    {"name": "ground cinnamon", "essential": false, "observations": ["1/2 tsp (s1)"]},
+    {"name": "ground nutmeg", "essential": false, "observations": ["1/4 tsp (s1)"]},
+    {"name": "fresh chives", "essential": false, "observations": ["chopped, garnish (s0)", "parsley or chives, garnish (s1)", "parsley, garnish (s3)"]}
+  ],
+  "causalSequence": [
+    "peel, deseed pumpkin; cut 3-4 cm pieces",
+    "soften onion, garlic in olive oil over medium heat ~3 min",
+    "add pumpkin, stock; boil then simmer uncovered 20-30 min until very tender",
+    "cool slightly; blend smooth with stick blender",
+    "stir in cream; season; reheat gently without boiling",
+    "serve with cream swirl, chives, black pepper"
+  ],
+  "techniqueFacts": [
+    "Kent, butternut, Queensland Blue are the preferred AU soup pumpkins (2 sources); one source rates Kent/Jap over butternut for flavour",
+    "three sources build flavour by sauteing onion, garlic first; one boils everything raw with no saute and no garlic",
+    "season after blending; blending mellows flavour (1 source)",
+    "cool before blending to avoid scald (2 sources)",
+    "do not boil once cream is added (1 source)",
+    "vegetable stock keeps it vegetarian; two sources default to or allow chicken stock",
+    "coconut cream swap makes it dairy-free/vegan (2 sources)",
+    "thin with water after blending to desired consistency (1 source)",
+    "one source adds potato for body; one adds cumin, cinnamon, nutmeg spice mix",
+    "freezes up to 3 months (3 sources)"
+  ],
+  "servingsObserved": [6, 8, 4, 4]
+}

@@ -8,10 +8,12 @@ const unitEnv = {
 
 // The corpus is reference data read at boot, so every suite that boots the app
 // is pointed at a fixed fixture corpus — three italian vegetarian mains —
-// instead of the seed that ships this week (#331). It is the same
+// instead of the batch that ships this week (#338). It is the same
 // substitutable seam the Spoonacular fake uses, one layer out: these tests
 // state what the blend does, not what the corpus happens to hold, so growing
-// or re-cuisining the shipped seed cannot turn them red.
+// or re-cuisining the shipped batch cannot turn them red. The unit project sets
+// no override, which is what lets tests/unit/shippedCorpus.test.ts deal and cook
+// the batch that actually ships.
 const serviceEnv = {
   ...unitEnv,
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',

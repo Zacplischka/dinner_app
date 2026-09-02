@@ -1,0 +1,102 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:lamb-souvlaki-with-greek-salad",
+  "name": "Lamb Souvlaki with Greek Salad",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "greek",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "boneless lamb leg",
+      "searchTerm": "lamb leg",
+      "amount": 800,
+      "unit": "g",
+      "original": "800 g boneless lamb leg"
+    },
+    {
+      "name": "lemon",
+      "amount": 2,
+      "unit": "",
+      "original": "2 lemons",
+      "searchTerm": "lemon loose"
+    },
+    {
+      "name": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 garlic cloves"
+    },
+    {
+      "name": "dried oregano",
+      "amount": 10,
+      "unit": "g",
+      "original": "1 1/2 tbsp (10 g) dried oregano"
+    },
+    {
+      "name": "greek yoghurt",
+      "amount": 250,
+      "unit": "g",
+      "original": "1 cup (250 g) Greek-style yoghurt"
+    },
+    {
+      "name": "continental cucumber",
+      "amount": 1,
+      "unit": "",
+      "original": "1 continental cucumber"
+    },
+    {
+      "name": "tomatoes",
+      "amount": 4,
+      "unit": "",
+      "original": "4 tomatoes"
+    },
+    {
+      "name": "green capsicum",
+      "amount": 1,
+      "unit": "",
+      "original": "1 green capsicum"
+    },
+    {
+      "name": "red onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red onion"
+    },
+    {
+      "name": "pitted kalamata olives",
+      "amount": 90,
+      "unit": "g",
+      "original": "1/2 cup (90 g) pitted kalamata olives"
+    },
+    {
+      "name": "feta",
+      "amount": 200,
+      "unit": "g",
+      "original": "200 g feta"
+    },
+    {
+      "name": "red wine vinegar",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) red wine vinegar"
+    },
+    {
+      "name": "pita bread",
+      "amount": 4,
+      "unit": "",
+      "original": "4 pita breads"
+    }
+  ],
+  "steps": [
+    "Cut the lamb into 3 cm cubes. In a large bowl, whisk 60 ml olive oil, the juice of 1 lemon, 3 crushed garlic cloves, 1 tbsp of the oregano and a good pinch of salt and pepper. Toss the lamb through, cover and refrigerate for at least 1 hour, or overnight if you can.",
+    "Make the tzatziki: coarsely grate half the cucumber, then squeeze it hard in your hands to wring out the liquid. Stir it through the yoghurt with the remaining garlic clove, crushed, a squeeze of lemon juice, a drizzle of olive oil and a pinch of salt. Chill until serving.",
+    "Make the salad: cut the tomatoes into chunks, slice the remaining cucumber, slice the capsicum into rings and cut half the red onion into thin half moons. Toss with the olives, the red wine vinegar, 2 tbsp olive oil and the remaining oregano, season with salt and pepper, then top with the feta broken into slabs.",
+    "Soak 8 wooden skewers in water for 20 minutes (skip this if using metal). Cut the remaining onion half into chunks, then thread the lamb onto the skewers with a piece of onion between every few cubes. Discard the marinade.",
+    "Heat a barbecue or chargrill pan over high heat. Grill the skewers for 10-12 minutes, turning every few minutes, until charred outside and just pink in the middle.",
+    "Rest the skewers on a plate, loosely covered with foil, for 5 minutes.",
+    "Warm the pita breads on the grill for about 30 seconds each side.",
+    "Cut the remaining lemon into wedges and serve the skewers with the warm pita, tzatziki, Greek salad and lemon wedges."
+  ],
+  "photoUrl": "https://img.dinder.it.com/lamb-souvlaki-with-greek-salad.webp"
+}

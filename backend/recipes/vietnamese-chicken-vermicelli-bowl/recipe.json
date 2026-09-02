@@ -1,0 +1,108 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:vietnamese-chicken-vermicelli-bowl",
+  "name": "Vietnamese Chicken Vermicelli Bowl",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "vietnamese",
+  "diets": [
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "chicken thigh fillets",
+      "amount": 800,
+      "unit": "g",
+      "original": "800 g chicken thigh fillets"
+    },
+    {
+      "name": "rice vermicelli noodles",
+      "amount": 250,
+      "unit": "g",
+      "original": "250 g rice vermicelli noodles"
+    },
+    {
+      "name": "lemongrass",
+      "amount": 2,
+      "unit": "",
+      "original": "2 lemongrass stalks, white part only, finely chopped"
+    },
+    {
+      "name": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 garlic cloves"
+    },
+    {
+      "name": "gluten-free fish sauce",
+      "amount": 100,
+      "unit": "ml",
+      "original": "100 ml gluten-free fish sauce (2 tbsp for the marinade, 3 tbsp for the sauce)",
+      "searchTerm": "fish sauce"
+    },
+    {
+      "name": "brown sugar",
+      "amount": 60,
+      "unit": "g",
+      "original": "4 tbsp (60 g) brown sugar"
+    },
+    {
+      "name": "limes",
+      "amount": 3,
+      "unit": "",
+      "original": "3 limes"
+    },
+    {
+      "name": "rice vinegar",
+      "amount": 40,
+      "unit": "ml",
+      "original": "2 tbsp (40 ml) rice vinegar"
+    },
+    {
+      "name": "red chilli",
+      "amount": 1,
+      "unit": "",
+      "original": "1 red chilli, thinly sliced"
+    },
+    {
+      "name": "carrots",
+      "amount": 2,
+      "unit": "",
+      "original": "2 carrots, julienned"
+    },
+    {
+      "name": "lebanese cucumbers",
+      "amount": 2,
+      "unit": "",
+      "original": "2 Lebanese cucumbers, julienned"
+    },
+    {
+      "name": "iceberg lettuce",
+      "amount": 0.5,
+      "unit": "",
+      "original": "1/2 iceberg lettuce, finely shredded"
+    },
+    {
+      "name": "mint",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch mint, leaves picked"
+    },
+    {
+      "name": "coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch coriander, leaves picked"
+    }
+  ],
+  "steps": [
+    "Finely chop the lemongrass and crush 2 garlic cloves. Mix in a large bowl with 2 tbsp of the fish sauce, 2 tbsp of the brown sugar and a splash of olive oil. Add the chicken thigh fillets and turn to coat. Marinate for at least 15 minutes, or up to overnight in the fridge for the best flavour.",
+    "Make the nuoc cham dressing: crush the remaining 2 garlic cloves and stir together with the remaining 3 tbsp fish sauce, the juice of 2 limes, the rice vinegar, the remaining 2 tbsp brown sugar, the sliced chilli and 125 ml water. Stir until the sugar dissolves, then set aside so the flavours meld.",
+    "Cook the rice vermicelli noodles according to the packet directions. Rinse under cold water to stop them sticking, then drain well.",
+    "Julienne the carrots and cucumbers, finely shred the iceberg lettuce, and pick the mint and coriander leaves.",
+    "Heat a chargrill pan or barbecue over high heat until very hot. Cook the chicken for about 5 minutes each side until deeply caramelised and cooked through. Rest for 5 minutes, then slice into strips.",
+    "Divide the noodles between 4 bowls. Arrange the lettuce, carrot and cucumber around the noodles, scatter over the mint and coriander, and top with the sliced chicken.",
+    "Cut the remaining lime into wedges. Drizzle the nuoc cham generously over each bowl and serve with the lime wedges."
+  ],
+  "photoUrl": "https://img.dinder.it.com/vietnamese-chicken-vermicelli-bowl.webp"
+}

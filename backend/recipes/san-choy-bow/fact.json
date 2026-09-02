@@ -1,0 +1,53 @@
+{
+  "slug": "san-choy-bow",
+  "dish": "San choy bow",
+  "sources": [
+    {"url": "https://omnivorescookbook.com/san-choy-bow/", "publisher": "Omnivore's Cookbook (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://simplehomeedit.com/recipe/san-choy-bow/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://hw.qld.gov.au/blog/boost-your-recipes/san-choy-bow/", "publisher": "Health and Wellbeing Queensland (AU gov)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://wholesome-cook.com/2011/02/18/quick-pork-san-choy-bow/", "publisher": "Wholesome Cook (AU)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "pork mince", "essential": true, "observations": ["450 g / 1 lb (s0)", "500 g (s1)", "500 g extra lean (s2)", "500 g (s3)"]},
+    {"name": "lettuce cups", "essential": true, "observations": ["10-12 leaves iceberg/bibb/butterhead/romaine (s0)", "4 cups gem or oak leaf (s1)", "15-20 leaves gem/cos/iceberg (s2)", "1 iceberg cut into 10 cups (s3)"]},
+    {"name": "water chestnuts", "essential": true, "observations": ["100 g can (s0)", "220 g, optional (s1)", "200 g can (s2)", "220 g can, optional (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves (s0)", "1 tbsp chopped (s1)", "4 cloves (s2)", "2 cloves (s3)"]},
+    {"name": "ginger", "essential": false, "observations": ["1 tbsp minced (s0)", "2 tsp grated (s2)", "1 tbsp ground (s3)"]},
+    {"name": "spring onions", "essential": true, "observations": ["sliced, garnish (s0)", "1 + extra (s1)", "2 (s2)", "2 sprigs (s3)"]},
+    {"name": "soy sauce or tamari", "essential": true, "observations": ["1 tbsp light + 1 tsp dark, tamari for GF (s0)", "2 tbsp tamari + 1 tbsp dark soy (s1)", "2 tbsp salt-reduced, GF-checked (s2)", "3 tbsp (s3)"]},
+    {"name": "oyster sauce", "essential": false, "observations": ["2 tbsp, GF version for GF (s0)", "3 tbsp (s3)"]},
+    {"name": "hoisin sauce", "essential": false, "observations": ["1 tbsp (s0)"]},
+    {"name": "shaoxing wine", "essential": false, "observations": ["1 tbsp, dry sherry for GF (s0)"]},
+    {"name": "sesame oil", "essential": false, "observations": ["1 tbsp (s1)", "1 tbsp (s2)", "3 tbsp (s3)"]},
+    {"name": "onion", "essential": false, "observations": ["1 white (s0)", "1 brown (s2)"]},
+    {"name": "carrot", "essential": false, "observations": ["80 g grated (s1)", "2 finely diced (s2)"]},
+    {"name": "red capsicum", "essential": false, "observations": ["1 diced (s0)", "1 diced (s2)"]},
+    {"name": "roasted peanuts", "essential": false, "observations": ["1/4 cup chopped (s0)", "40 g crushed (s1)"]},
+    {"name": "lime", "essential": false, "observations": ["4 wedges (s1)", "1/2 juiced + 1 in wedges (s2)"]},
+    {"name": "red chilli", "essential": false, "observations": ["2 sliced, optional (s1)", "1 long, deseeded (s2)"]},
+    {"name": "brown sugar", "essential": false, "observations": ["2 tbsp (s1)"]},
+    {"name": "bean sprouts", "essential": false, "observations": ["45 g (s1)"]},
+    {"name": "coriander", "essential": false, "observations": ["2 tbsp leaves, to serve (s2)"]},
+    {"name": "cooking oil", "essential": false, "observations": ["1.5 tbsp peanut (s0)", "1 tbsp olive (s1)", "1/4 cup peanut (s3)"]}
+  ],
+  "causalSequence": [
+    "mix sauce: soy/tamari, oyster or hoisin, sugar",
+    "heat oil; soften garlic ginger onion",
+    "add pork mince; brown, breaking up fine",
+    "pour in sauce; cook 2 min to coat",
+    "stir in water chestnuts, diced veg; brief cook to keep crunch",
+    "finish with spring onion, sesame oil",
+    "spoon into lettuce cups; top peanuts, spring onion; serve immediately"
+  ],
+  "techniqueFacts": [
+    "GF path is well supported: tamari swaps for soy (2 sources), gluten free oyster sauce is named as available (s0), dry sherry replaces Shaoxing wine (s0), AU gov source says check products carry a gluten free label (s2)",
+    "s1 is GF-labelled with no oyster or hoisin at all — tamari + dark soy + brown sugar carries the sauce",
+    "water chestnuts appear in all 4 sources (2 mark optional); their crunch against the mince is the signature texture",
+    "break the mince into small granules — s3 mashes with a whisk, s0 sears in an even layer then chops",
+    "veg goes in late and cooks briefly so it stays crisp; s2 inverts and softens carrot/onion/capsicum before the mince",
+    "cups filled at the table and eaten immediately so lettuce stays crisp; iceberg, gem and cos all observed",
+    "total times observed: 25 min (s0), 20 min (s3), 20 min prep (s2)",
+    "s3's optional crunchy fried noodles contain gluten — omit for GF"
+  ],
+  "servingsObserved": [4, 4, 5, 4]
+}

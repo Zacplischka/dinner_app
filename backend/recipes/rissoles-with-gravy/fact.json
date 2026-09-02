@@ -1,0 +1,51 @@
+{
+  "slug": "rissoles-with-gravy",
+  "dish": "Beef rissoles with gravy",
+  "sources": [
+    { "url": "https://simplehomeedit.com/recipe/beef-rissoles/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://www.theirishmanswife.com/beef-rissoles-recipe/", "publisher": "The Irishman's Wife (AU)", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://everydaygourmet.tv/recipes/rissoles-with-onion-gravy", "publisher": "Everyday Gourmet (AU)", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://farmerswifehomestead.com/slow-cooker-beef-rissoles-in-gravy/", "publisher": "Farmer's Wife Homestead (NZ)", "accessed": "2026-08-03", "robots_ok": true }
+  ],
+  "canonicalIngredients": [
+    { "name": "beef mince", "essential": true, "observations": ["500 g regular (s0)", "500 g premium (s1)", "600 g (s2)", "1 kg (s3)"] },
+    { "name": "sausage mince", "essential": false, "observations": ["500 g, blended with beef for fat/juiciness (s1)"] },
+    { "name": "brown onion", "essential": true, "observations": ["1 grated, in mix (s0)", "1 finely diced, in mix (s1)", "2 sliced, in gravy (s2)", "1 diced in mix + 2 large sliced in gravy (s3)"] },
+    { "name": "garlic", "essential": true, "observations": ["1 tsp minced (s0)", "3 cloves crushed (s1)", "2 cloves minced, in gravy (s2)", "1/2 tsp garlic powder (s3)"] },
+    { "name": "egg", "essential": true, "observations": ["1 (s0)", "2 (s1)", "2 (s3)", "none (s2)"] },
+    { "name": "breadcrumbs", "essential": true, "observations": ["60 g / 1 cup panko (s0)", "1 1/4 cup fresh (s1)", "1/2 cup (s3)", "none (s2)"] },
+    { "name": "worcestershire sauce", "essential": true, "observations": ["1 tbsp in mix (s0)", "1 tsp in gravy (s2)", "2 tbsp in mix (s3)"] },
+    { "name": "tomato sauce", "essential": false, "observations": ["1 tbsp ketchup in mix (s0)", "3 tbsp in mix (s3)"] },
+    { "name": "plain flour", "essential": true, "observations": ["3 tbsp for gravy roux (s2)", "1/4 cup optional binder (s3)"] },
+    { "name": "beef stock", "essential": true, "observations": ["500 ml for gravy (s2)", "3 cups water + 6 tbsp gravy mix instead (s3)"] },
+    { "name": "beef stock powder", "essential": false, "observations": ["1 tsp seasoning option (s0)", "2 Oxo cubes or 2 tbsp in mix (s3)"] },
+    { "name": "butter", "essential": false, "observations": ["80 g unsalted, for gravy onions (s2)"] },
+    { "name": "herbs", "essential": false, "observations": ["2 tbsp fresh basil (s1)", "2 sprigs thyme in gravy (s2)", "2 tbsp mixed herbs (s3)"] },
+    { "name": "onion powder", "essential": false, "observations": ["1 tsp (s3)"] },
+    { "name": "olive oil", "essential": false, "observations": ["3 tbsp for frying (s0)", "drizzle (s1)", "1 tbsp (s2)", "a little (s3)"] }
+  ],
+  "causalSequence": [
+    "grate or finely dice onion",
+    "combine mince, onion, garlic, egg, breadcrumbs, worcestershire, seasonings; mix by hand until just combined",
+    "portion; shape thick patties with wet hands",
+    "brown rissoles in oiled pan over medium heat, in batches, turning once",
+    "remove rissoles; soften sliced onion (with butter) in same pan",
+    "stir flour into onions; cook 1 min",
+    "whisk in beef stock and worcestershire; simmer few min to thicken",
+    "return rissoles to gravy; simmer low 8-10 min until gravy thick and glossy",
+    "serve with mashed potato and steamed greens"
+  ],
+  "techniqueFacts": [
+    "batch-fry without crowding so rissoles brown instead of steam (3 sources)",
+    "medium heat preserves juiciness; high heat dries the outside before the centre cooks (2 sources)",
+    "keep shape thick, not flattened like a burger, to hold juices (2 sources)",
+    "don't overwork the mix or rissoles turn firm (2 sources)",
+    "finishing rissoles by simmering in the gravy tenderises them and trades flavour both ways (2 sources)",
+    "grated onion gives pulp that seasons the mix without chunks (1 source)",
+    "sausage mince blended with beef adds fat for tenderness and old-fashioned flavour (1 source)",
+    "regular not lean mince is required for juicy rissoles (2 sources)",
+    "gravy path splits: scratch roux of butter-flour-beef stock (1 source) vs packet gravy mix in water (1 source) vs deglazed pan drippings (1 source)",
+    "stock powder in the mix is a flavour lever interchangeable with salt (2 sources)"
+  ],
+  "servingsObserved": [4, 12, 4, 6]
+}

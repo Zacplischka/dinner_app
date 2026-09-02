@@ -1,0 +1,51 @@
+{
+  "slug": "pad-thai",
+  "dish": "Pad thai",
+  "sources": [
+    {"url": "https://scruffandsteph.com/2019/12/24/chicken-and-prawn-pad-thai/", "publisher": "Scruff & Steph (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://hot-thai-kitchen.com/best-pad-thai/", "publisher": "Hot Thai Kitchen (CA)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://therecipecritic.com/pad-thai/", "publisher": "The Recipe Critic (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://cafedelites.com/pad-thai-with-chicken-tofu/", "publisher": "Cafe Delites (AU)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "dried flat rice noodles", "essential": true, "observations": ["125 g for 2 (s0)", "115 g for 2 (s1)", "225 g for 4 (s2)", "200 g for 4 (s3)"]},
+    {"name": "chicken (breast or thigh)", "essential": true, "observations": ["2 thigh fillets for 2 (s0)", "225 g breast for 4 (s2)", "200 g breast for 4 (s3)"]},
+    {"name": "raw prawns", "essential": false, "observations": ["8 for 2 (s0)", "10 medium for 2 (s1)"]},
+    {"name": "eggs", "essential": true, "observations": ["2 (s0)", "2 (s1)", "2 (s2)", "3 (s3)"]},
+    {"name": "firm tofu", "essential": false, "observations": ["150 g (s0)", "85 g pressed (s1)", "1 cup cubed (s3)"]},
+    {"name": "bean sprouts", "essential": true, "observations": ["1 cup (s0)", "120 g / 2.5 cups (s1)", "1 cup (s2)", "2.5 cups (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves (s0)", "3 cloves (s1)", "3 cloves (s2)", "3.5 cloves (s3)"]},
+    {"name": "roasted peanuts", "essential": true, "observations": ["30 g (s0)", "0.25 cup (s1)", "0.5 cup (s2)", "0.5 cup (s3)"]},
+    {"name": "tamarind puree", "essential": true, "observations": ["1 tbsp (s0)", "3-4 tbsp Thai tamarind (s1)", "2 tbsp (s3)"]},
+    {"name": "fish sauce", "essential": true, "observations": ["2 tbsp (s0)", "2 tbsp (s1)", "3 tbsp (s2)", "3.5 tbsp (s3)"]},
+    {"name": "brown sugar", "essential": true, "observations": ["3 tbsp (s0)", "35 g palm sugar (s1)", "0.25 cup (s2)", "3 tbsp (s3)"]},
+    {"name": "oyster sauce", "essential": false, "observations": ["1 tbsp (s0)", "2.5 tbsp (s3)"]},
+    {"name": "lime", "essential": true, "observations": ["0.25 lime wedges (s0)", "1 (s1)", "2 in wedges (s2)", "wedges (s3)"]},
+    {"name": "garlic chives", "essential": false, "observations": ["2 stalks optional (s0)", "70 g / 7-10 stalks (s1)"]},
+    {"name": "spring onions", "essential": false, "observations": ["3 (s2)", "0.5 cup sliced (s3)"]},
+    {"name": "brown onion", "essential": false, "observations": ["0.5 small (s0)", "0.25 cup shallots (s1)", "1 sliced (s3)"]},
+    {"name": "coriander", "essential": false, "observations": ["2 sprigs optional (s0)", "0.5 cup chopped (s2)"]},
+    {"name": "dried chilli flakes", "essential": false, "observations": ["to taste (s1)", "1 tbsp sriracha (s2)", "optional sprinkle (s3)"]},
+    {"name": "vegetable oil", "essential": true, "observations": ["1 tbsp (s0)", "3 tbsp (s1)", "1.5 tbsp olive (s2)", "5 tbsp (s3)"]}
+  ],
+  "causalSequence": [
+    "soak or briefly cook rice noodles until just pliable; drain, rinse",
+    "stir tamarind, fish sauce, sugar (plus oyster sauce if using) into a sauce",
+    "sear chicken and prawns in a hot oiled wok; set aside",
+    "scramble eggs; set aside",
+    "stir-fry garlic, onion, tofu briefly",
+    "add noodles and sauce over high heat; toss until sauce absorbs and noodles finish",
+    "return proteins and eggs; add bean sprouts, chives, half the peanuts; toss off heat",
+    "serve with remaining peanuts, lime wedges, chilli, extra sprouts"
+  ],
+  "techniqueFacts": [
+    "noodles are soaked/undercooked, never fully boiled — they finish cooking in the sauce in the wok (s1 explicit; s0, s3 drain and rinse after a short soak)",
+    "cook no more than 2 portions per wok on high heat — crowding steams the noodles (s1)",
+    "bean sprouts and chives go in at the end, often off heat, to stay crisp (all 4 sources)",
+    "half the peanuts are tossed through, half reserved for serving (s0, s1, s3)",
+    "tamarind is the sour backbone (s0, s1, s3); s2 substitutes rice vinegar + soy + peanut butter — the westernised shortcut",
+    "traditional extras in s1 only: dried shrimp, sweet preserved radish, palm sugar caramelised before the liquids go in",
+    "proteins seared first and removed, returned at the end so they don't overcook (s0, s1)"
+  ],
+  "servingsObserved": [2, 2, 4, 4]
+}

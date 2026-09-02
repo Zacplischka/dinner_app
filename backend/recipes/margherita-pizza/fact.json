@@ -1,0 +1,53 @@
+{
+  "slug": "margherita-pizza",
+  "dish": "Margherita pizza",
+  "sources": [
+    {"url": "https://www.acouplecooks.com/margherita-pizza-recipe/", "publisher": "A Couple Cooks", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.kingarthurbaking.com/recipes/margherita-pizza-recipe", "publisher": "King Arthur Baking", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.loveandlemons.com/margherita-pizza/", "publisher": "Love and Lemons", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://sallysbakingaddiction.com/classic-margherita-pizza/", "publisher": "Sally's Baking Addiction", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "plain flour", "essential": true, "observations": ["232 g '00' pizza flour for 2 pizzas (s1)", "438-500 g unbleached all-purpose for 2 pizzas (s3)", "dough via linked recipe, no inline qty (s0, s2)"]},
+    {"name": "instant yeast", "essential": true, "observations": ["1/8 tsp for 12-24 h overnight rise (s1)", "7 g / 2.25 tsp for 60-90 min rise (s3)"]},
+    {"name": "water", "essential": true, "observations": ["170 g lukewarm (s1)", "320 ml warm 43 C (s3)"]},
+    {"name": "sugar", "essential": true, "observations": ["1/2 tsp granulated in dough (s1)", "13 g / 1 tbsp in dough (s3)"]},
+    {"name": "olive oil", "essential": true, "observations": ["1 tbsp in sauce (s0)", "38 g / 3 tbsp in sauce (s1)", "2 tsp in sauce + finishing drizzle (s2)", "30 ml in dough + 1 tbsp in sauce (s3)"]},
+    {"name": "salt", "essential": true, "observations": ["1/2 tsp kosher in sauce (s0)", "8 g in dough + 1 tsp in sauce (s1)", "1/2 tsp sea salt in sauce (s2)", "1 tsp in dough + pinch in sauce (s3)"]},
+    {"name": "canned whole peeled tomatoes", "essential": true, "observations": ["425 g / 15 oz crushed fire-roasted or San Marzano (s0)", "411 g / 14.5 oz can whole peeled, San Marzano preferred (s1)", "794 g / 28 oz can whole San Marzano (s2)", "794 g / 28 oz can San Marzano for 2 pizzas (s3)"]},
+    {"name": "garlic", "essential": true, "observations": ["1 small clove (s0)", "2 cloves (s1)", "2 small cloves (s2)", "2 cloves (s3)"]},
+    {"name": "fresh mozzarella", "essential": true, "observations": ["55-85 g / 2-3 oz fresh (or 3/4 cup shredded) per pizza (s0)", "113 g / 4 oz for 2 pizzas (s1)", "225 g / 8 oz for 1 large pizza (s2)", "55-85 g / 2-3 oz per pizza (s3)"]},
+    {"name": "fresh basil", "essential": true, "observations": ["leaves for garnish, qty unspecified (s0, s1, s2)", "handful roughly chopped per pizza (s3)"]},
+    {"name": "dried oregano", "essential": false, "observations": ["1/2 tsp in sauce (s0 only)"]},
+    {"name": "parmesan cheese", "essential": false, "observations": ["thin grated layer before bake, optional (s0)", "2 tbsp grated per pizza after bake (s3)"]},
+    {"name": "black pepper", "essential": false, "observations": ["1/2 tsp in sauce (s1 only)"]},
+    {"name": "semolina or cornmeal", "essential": false, "observations": ["for dusting peel/tray (s0, s2, s3)"]},
+    {"name": "red pepper flakes", "essential": false, "observations": ["pinches to finish (s2 only)"]}
+  ],
+  "causalSequence": [
+    "mix flour, yeast, sugar, salt, warm water, olive oil to shaggy dough",
+    "knead ~5 min until soft, slightly tacky",
+    "rise until doubled: 60-90 min warm, or 12-24 h slow-rise with scant yeast",
+    "blend canned tomatoes, garlic, olive oil, salt raw; no-cook sauce",
+    "preheat oven as hot as it goes (475-550 F / 245-290 C) with stone, steel or tray inside, 30 min",
+    "punch down, divide dough (about 200 g per pizza), ball, rest 45-60 min",
+    "pat fresh mozzarella dry; slice or tear",
+    "dust peel or tray with semolina/cornmeal; stretch dough to 25-30 cm round, leave rim untouched",
+    "spread thin sauce layer (60-125 ml), keep 2-3 cm border",
+    "scatter torn mozzarella",
+    "bake 5-12 min until crust browned, cheese blistered; optional 2-3 min broiler finish to char rim",
+    "rest 1-2 min; top with fresh basil, optional parmesan and olive-oil drizzle; slice"
+  ],
+  "techniqueFacts": [
+    "all four sources use a raw blended no-cook tomato sauce",
+    "all four add basil after baking, never before",
+    "three sources hold a long-preheated stone/steel at the oven's max temp is the crisp-crust lever",
+    "dough fork: overnight cold-ferment with 1/8 tsp yeast for flavour (s1) vs same-day 60-90 min rise with a full 7 g packet (s3)",
+    "pat fresh mozzarella dry or it waters out the pizza (s0)",
+    "sauce goes on thin, 60-125 ml per pizza; leftover keeps ~1 week refrigerated (s0, s1, s2)",
+    "brushing the shaped dough with olive oil before saucing guards against a soggy crust (s3)",
+    "broiler finish 2-3 min after the bake chars the rim like a pizzeria oven (s1)",
+    "no peel? use the back of a baking sheet, or bake on a cornmeal-dusted tray (s0, s2)"
+  ],
+  "servingsObserved": [4, 4]
+}

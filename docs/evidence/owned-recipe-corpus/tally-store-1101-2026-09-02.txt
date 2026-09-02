@@ -1,0 +1,177 @@
+# Tally at store 1101 — run 1, 2026-09-02 12:33–12:46 UTC, all 50, from commit 6fc6cc4
+# node scripts/corpus/tally.mjs check backend/recipes  (via railway ssh, production container)
+
+bangers-and-mash: 8/8 in tally
+beef-and-black-bean-stir-fry: 10/10 in tally
+beef-casserole: 13/14 in tally — FAIL
+  defect: ingredient "bay leaves" is out of the Tally: no conversion for "" — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+beef-lasagne: 10/10 in tally
+beef-massaman-curry: 12/12 in tally
+beef-pho: 13/13 in tally
+beef-tacos: 9/11 in tally — FAIL
+  defect: ingredient "taco shells" is out of the Tally: no conversion for "" — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  defect: ingredient "sour cream" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  unmeasured: "ground cumin" — Woolworths answered unusably; nothing was measured
+bibimbap: 11/11 in tally
+butter-chicken: 13/14 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  unmeasured: "ground cumin" — Woolworths answered unusably; nothing was measured
+caesar-salad: 7/7 in tally
+chana-masala: 14/15 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+chicken-burrito-bowl: 12/12 in tally — FAIL
+  unmeasured: "ground cumin" — Woolworths answered unusably; nothing was measured
+chicken-katsu-curry: 10/10 in tally
+chicken-parmigiana: 8/8 in tally — FAIL
+  unmeasured: "leg ham" — Woolworths answered unusably; nothing was measured
+chicken-satay-skewers: 12/12 in tally
+chicken-schnitzel-with-salad: 8/9 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+chicken-shawarma-bowl: 12/13 in tally — FAIL
+  defect: ingredient "lemons" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  unmeasured: "ground cumin" — Woolworths answered unusably; nothing was measured
+chilli-con-carne: 11/11 in tally — FAIL
+  unmeasured: "ground cumin" — Woolworths answered unusably; nothing was measured
+chocolate-self-saucing-pudding: 6/6 in tally
+fettuccine-carbonara: 7/7 in tally
+fish-and-chips: 4/7 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  defect: ingredient "tartare sauce" is out of the Tally: no conversion for "ml" — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  store 1101: "white fish fillets" is not ranged at store 1101
+garlic-butter-steak-with-creamed-spinach: 9/10 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+grilled-steak-with-chips-and-salad: 6/7 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+honey-soy-chicken-stir-fry: 10/11 in tally — FAIL
+  store 1101: "cashews unsalted" is not ranged at store 1101
+lamb-chops-with-mash-and-peas: 6/8 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  store 1101: "lamb loin chops" is not ranged at store 1101
+lamb-rogan-josh: 15/15 in tally
+lamb-souvlaki-with-greek-salad: 12/13 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+margherita-pizza: 6/6 in tally
+moussaka: 13/13 in tally
+mushroom-risotto: 7/7 in tally — FAIL
+  unmeasured: "vegetable liquid stock" — Woolworths answered unusably; nothing was measured
+pad-thai: 11/11 in tally
+paleo-chicken-tray-bake: 8/10 in tally — FAIL
+  defect: ingredient "sweet potato" is out of the Tally: g vs count pack, no bridge — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  defect: ingredient "apple cider vinegar" is out of the Tally: ml vs count pack, no bridge — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+penne-arrabbiata: 5/5 in tally
+pork-chops-with-apple-sauce: 8/9 in tally — FAIL
+  defect: ingredient "apple cider vinegar" is out of the Tally: ml vs count pack, no bridge — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+pumpkin-soup: 5/5 in tally — FAIL
+  unmeasured: "vegetable liquid stock" — Woolworths answered unusably; nothing was measured
+red-lentil-dhal: 11/12 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  unmeasured: "ground cumin" — Woolworths answered unusably; nothing was measured
+  unmeasured: "vegetable liquid stock" — Woolworths answered unusably; nothing was measured
+rissoles-with-gravy: 9/9 in tally
+roast-chicken-and-vegetables: 11/12 in tally — FAIL
+  defect: ingredient "lemon" is out of the Tally: grams vs volume pack, not liquid — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+san-choy-bow: 11/11 in tally
+shakshuka: 10/10 in tally — FAIL
+  unmeasured: "ground cumin" — Woolworths answered unusably; nothing was measured
+shepherds-pie: 12/12 in tally
+spaghetti-bolognese: 12/13 in tally — FAIL
+  defect: ingredient "bay leaves" is out of the Tally: no conversion for "" — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+special-fried-rice: 11/11 in tally
+sweet-and-sour-pork: 10/10 in tally
+teriyaki-chicken-with-rice: 8/8 in tally
+thai-green-chicken-curry: 12/12 in tally
+tuna-mornay: 8/8 in tally
+tuna-pasta-bake: 9/9 in tally
+vietnamese-chicken-vermicelli-bowl: 12/12 in tally — FAIL
+  unmeasured: "lebanese cucumbers" — Woolworths answered unusably; nothing was measured
+zucchini-slice: 5/7 in tally — FAIL
+  defect: ingredient "zucchini" is out of the Tally: g vs count pack, no bridge — restate its amount in a unit the ladder can buy, or give it a matchable "searchTerm"
+  store 1101: "corn kernels can" is not ranged at store 1101
+
+25/50 in tally at store 1101
+
+# Tally at store 1101 — run 2, 2026-09-02 12:57 UTC, the 25 that failed run 1, after the rewrites in 2453d5f
+# (four cached transient search failures — ground cumin, vegetable liquid stock, leg ham, lebanese cucumbers — deleted first so the terms were fetched fresh)
+
+beef-casserole: 14/14 in tally
+beef-tacos: 12/12 in tally
+butter-chicken: 15/15 in tally
+chana-masala: 15/15 in tally
+chicken-burrito-bowl: 13/13 in tally
+chicken-parmigiana: 9/9 in tally
+chicken-schnitzel-with-salad: 9/9 in tally
+chicken-shawarma-bowl: 14/14 in tally
+chilli-con-carne: 12/12 in tally
+fish-and-chips: 7/7 in tally
+garlic-butter-steak-with-creamed-spinach: 10/10 in tally
+grilled-steak-with-chips-and-salad: 7/7 in tally
+honey-soy-chicken-stir-fry: 11/11 in tally
+lamb-chops-with-mash-and-peas: 8/8 in tally
+lamb-souvlaki-with-greek-salad: 13/13 in tally
+mushroom-risotto: 8/8 in tally
+paleo-chicken-tray-bake: 10/10 in tally
+pork-chops-with-apple-sauce: 9/9 in tally
+pumpkin-soup: 6/6 in tally
+red-lentil-dhal: 14/14 in tally
+roast-chicken-and-vegetables: 12/12 in tally
+shakshuka: 11/11 in tally
+spaghetti-bolognese: 13/13 in tally
+vietnamese-chicken-vermicelli-bowl: 13/13 in tally
+zucchini-slice: 7/7 in tally
+
+25/25 in tally at store 1101
+
+# Tally at store 1101 — run 3, 2026-09-02 12:59–13:02 UTC, all 50, as the branch stands (after the culinary rewrites)
+
+bangers-and-mash: 8/8 in tally
+beef-and-black-bean-stir-fry: 10/10 in tally
+beef-casserole: 14/14 in tally
+beef-lasagne: 10/10 in tally
+beef-massaman-curry: 12/12 in tally
+beef-pho: 13/13 in tally
+beef-tacos: 12/12 in tally
+bibimbap: 11/11 in tally
+butter-chicken: 15/15 in tally
+caesar-salad: 7/7 in tally
+chana-masala: 15/15 in tally
+chicken-burrito-bowl: 13/13 in tally
+chicken-katsu-curry: 10/10 in tally
+chicken-parmigiana: 9/9 in tally
+chicken-satay-skewers: 12/12 in tally
+chicken-schnitzel-with-salad: 9/9 in tally
+chicken-shawarma-bowl: 14/14 in tally
+chilli-con-carne: 12/12 in tally
+chocolate-self-saucing-pudding: 6/6 in tally
+fettuccine-carbonara: 7/7 in tally
+fish-and-chips: 7/7 in tally
+garlic-butter-steak-with-creamed-spinach: 10/10 in tally
+grilled-steak-with-chips-and-salad: 7/7 in tally
+honey-soy-chicken-stir-fry: 11/11 in tally
+lamb-chops-with-mash-and-peas: 8/8 in tally
+lamb-rogan-josh: 15/15 in tally
+lamb-souvlaki-with-greek-salad: 13/13 in tally
+margherita-pizza: 6/6 in tally
+moussaka: 13/13 in tally
+mushroom-risotto: 8/8 in tally
+pad-thai: 11/11 in tally
+paleo-chicken-tray-bake: 10/10 in tally
+penne-arrabbiata: 5/5 in tally
+pork-chops-with-apple-sauce: 9/9 in tally
+pumpkin-soup: 6/6 in tally
+red-lentil-dhal: 14/14 in tally
+rissoles-with-gravy: 9/9 in tally
+roast-chicken-and-vegetables: 12/12 in tally
+san-choy-bow: 11/11 in tally
+shakshuka: 11/11 in tally
+shepherds-pie: 12/12 in tally
+spaghetti-bolognese: 13/13 in tally
+special-fried-rice: 11/11 in tally
+sweet-and-sour-pork: 10/10 in tally
+teriyaki-chicken-with-rice: 8/8 in tally
+thai-green-chicken-curry: 12/12 in tally
+tuna-mornay: 8/8 in tally
+tuna-pasta-bake: 9/9 in tally
+vietnamese-chicken-vermicelli-bowl: 13/13 in tally
+zucchini-slice: 7/7 in tally
+
+50/50 in tally at store 1101

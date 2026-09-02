@@ -1,0 +1,45 @@
+{
+  "slug": "tuna-pasta-bake",
+  "dish": "Tuna pasta bake",
+  "sources": [
+    { "url": "https://www.iga.com.au/recipes/dinner/tomato-tuna-pasta-bake/", "publisher": "IGA (recipe supplied by John West)", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://sanremo.com.au/recipes/pasta-bake-tuna/", "publisher": "San Remo", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://www.heartfoundation.org.au/recipes/tuna-pasta-bake", "publisher": "Heart Foundation Australia", "accessed": "2026-08-03", "robots_ok": true },
+    { "url": "https://www.tablefortwoblog.com/tuna-pasta-bake/", "publisher": "Table for Two", "accessed": "2026-08-03", "robots_ok": true }
+  ],
+  "canonicalIngredients": [
+    { "name": "short pasta (penne / spirals / fusilli)", "essential": true, "observations": ["2 cups penne (s0)", "500 g penne (s1)", "200 g wholemeal spirals (s2)", "2 cups / 120 g dried pasta (s3)"] },
+    { "name": "tinned tuna", "essential": true, "observations": ["425 g in olive oil, drained (s0)", "2 x 185 g in olive oil (s1)", "400 g in springwater, drained (s2)", "425 g chunk in olive oil, drained (s3)"] },
+    { "name": "tinned chopped/crushed tomatoes", "essential": true, "observations": ["absent - 500 g creamy tomato jar sauce instead (s0)", "2 x 400 g tins chopped (s1)", "400 g no-added-salt chopped (s2)", "424 g crushed (s3)"] },
+    { "name": "tomato paste", "essential": false, "observations": ["1 tbsp (s3)"] },
+    { "name": "brown onion", "essential": true, "observations": ["1, finely diced (s1)", "4 spring onions instead (s2)", "1/2 medium, diced (s3)"] },
+    { "name": "garlic", "essential": false, "observations": ["2 cloves (s2)", "3 cloves (s3)"] },
+    { "name": "olive oil", "essential": false, "observations": ["2 tbsp extra virgin (s1)", "1 tbsp + spray (s2)", "1 tbsp (s3)"] },
+    { "name": "fresh basil", "essential": false, "observations": ["garnish leaves (s0)", "1/4 bunch (s1)", "1 bunch (s2)", "garnish, chopped (s3)"] },
+    { "name": "grated cheese topping", "essential": true, "observations": ["1 cup mozzarella (s0)", "1 cup parmesan (s1)", "1/2 cup reduced-fat cheddar (s2)", "56 g mozzarella + 25 g parmesan (s3)"] },
+    { "name": "frozen peas", "essential": false, "observations": ["1 cup (s2)"] },
+    { "name": "dried Italian herbs", "essential": false, "observations": ["1 tsp dried basil as fresh-basil substitute (s1)", "1/2 tbsp Italian seasoning (s3)"] },
+    { "name": "dried chilli flakes", "essential": false, "observations": ["1/2 tsp (s2)"] }
+  ],
+  "causalSequence": [
+    "boil short pasta to just under packet time; drain",
+    "soften onion (and garlic) in olive oil, 3-5 min",
+    "add tinned tomato (+ paste, dried herbs); simmer to thicken",
+    "fold drained tuna through sauce, keeping chunks intact",
+    "toss pasta through sauce; transfer to greased baking dish",
+    "top with grated cheese",
+    "bake 180-190 C until golden and bubbling, 15-30 min",
+    "scatter basil; serve"
+  ],
+  "techniqueFacts": [
+    "three sources fold the tuna in gently so chunks stay intact rather than shredding",
+    "sauce is thickened on the stove before baking: 20 min covered simmer (s1) vs quick 3-4 min reduction (s2)",
+    "s3 half-cooks the pasta and finishes it in the oven (25 min bake); s1 and s2 cook pasta fully first",
+    "bake temperatures cluster at 180 C fan-forced / 190 C; times range 10-15 min (jar sauce, s0) to 25-30 min covered then uncovered 5 min to crisp (s1)",
+    "tuna in olive oil is the majority pick (s0, s1, s3); the health-focused source uses springwater tuna and reduced-fat cheddar (s2)",
+    "s1 layers half the parmesan mid-dish and half on top",
+    "s0 is a jarred-sauce shortcut variant with baby spinach and pine nuts stirred through",
+    "s2 lightens the dish with peas, halved cherry tomatoes, lemon zest, rocket and wholemeal pasta, and reserves 1/3 cup pasta water for the sauce"
+  ],
+  "servingsObserved": [4, 4, 4, 4]
+}

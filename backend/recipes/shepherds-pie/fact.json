@@ -1,0 +1,60 @@
+{
+  "slug": "shepherds-pie",
+  "dish": "Shepherd's pie",
+  "sources": [
+    {"url": "https://www.womensweeklyfood.com.au/recipe/baking/shepherds-pie-27856/", "publisher": "Women's Weekly Food (Are Media, AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://seekinggoodeats.com/lamb-mince-shepherds-pie/", "publisher": "Seeking Good Eats (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://themom100.com/recipe/shepherds-pie/", "publisher": "The Mom 100 (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "lamb mince", "essential": true, "observations": ["1 kg (s0)", "1 lb (s1)", "1.5 lb (s2)"]},
+    {"name": "onion", "essential": true, "observations": ["2, finely chopped (s0)", "1 large (s1)", "1 cup chopped (s2)"]},
+    {"name": "carrot", "essential": true, "observations": ["1 large, grated (s0)", "2, sliced (s1)", "1/2 cup chopped (s2)"]},
+    {"name": "garlic", "essential": true, "observations": ["5 cloves (s0)", "4 tsp minced (s1)", "1 tsp minced (s2)"]},
+    {"name": "stock (lamb, beef or chicken)", "essential": true, "observations": ["4 cups lamb or chicken (s0)", "2 cups lamb or beef (s1)", "1/2 cup chicken (s2)"]},
+    {"name": "tomato paste", "essential": true, "observations": ["1/4 cup (s0)", "2 tbsp (s1)"]},
+    {"name": "worcestershire sauce", "essential": true, "observations": ["3 tbsp (s0)", "1 tbsp (s1)", "1 tsp (s2)"]},
+    {"name": "potatoes", "essential": true, "observations": ["1.5 kg floury, peeled (s0)", "1 lb yukon gold, peeled (s1)", "~2 lb russet/all-purpose, peeled (s2)"]},
+    {"name": "butter", "essential": true, "observations": ["50 g (s0)", "1/2 cup (s1)", "4 tbsp divided filling+mash (s2)"]},
+    {"name": "milk or cream", "essential": true, "observations": ["1/3 cup milk or cream (s0)", "1/2 cup heavy cream (s1)", "1 1/4 cups whole milk divided sauce+mash (s2)"]},
+    {"name": "frozen peas", "essential": false, "observations": ["3/4 cup (s1)", "1/2 cup (s2)"]},
+    {"name": "dried thyme", "essential": false, "observations": ["1.5 tsp dried or 1 tbsp fresh (s1)", "1/2 tsp dried (s2)"]},
+    {"name": "olive oil", "essential": false, "observations": ["3 tbsp (s0)", "1 tbsp (s1)"]},
+    {"name": "cheese", "essential": false, "observations": ["1/2 cup grated parmesan, optional topping (s0)", "1/2 cup cheddar + 1/2 cup havarti in mash (s2)"]},
+    {"name": "plain flour", "essential": false, "observations": ["2 tbsp, sauce thickener (s2)"]},
+    {"name": "tinned tomatoes", "essential": false, "observations": ["400 g tin (s0)"]},
+    {"name": "anchovies", "essential": false, "observations": ["2, finely chopped (s0)"]},
+    {"name": "bay leaves", "essential": false, "observations": ["2 (s0)"]},
+    {"name": "spinach or kale", "essential": false, "observations": ["2 cups finely chopped (s0)"]},
+    {"name": "fresh mint", "essential": false, "observations": ["1 bunch, stirred through filling (s0)"]},
+    {"name": "dried rosemary", "essential": false, "observations": ["1 tsp dried or 1 tbsp fresh (s1)"]},
+    {"name": "celery", "essential": false, "observations": ["1/2 cup chopped (s2)"]},
+    {"name": "fennel", "essential": false, "observations": ["1/2 cup chopped bulb (s2)"]},
+    {"name": "frozen corn", "essential": false, "observations": ["1/2 cup (s2)"]}
+  ],
+  "causalSequence": [
+    "boil peeled potatoes in salted water until very tender, 15-20 min",
+    "brown lamb mince, in batches; drain excess fat",
+    "soften onion, carrot (celery/fennel) in same pan, 5-10 min",
+    "add garlic; cook 1-2 min",
+    "stir in tomato paste or flour to thicken",
+    "add stock, worcestershire, herbs; simmer until thick, 10-45 min",
+    "stir in peas (and corn) near end",
+    "drain potatoes; mash with butter and warmed milk/cream; season",
+    "spread filling in baking dish; top evenly with mash; rough peaks or cheese on top",
+    "bake 180-200C until golden, 15-30 min",
+    "rest 5-10 min; serve"
+  ],
+  "techniqueFacts": [
+    "browning order varies: mince first then vegetables (s0, s2) vs vegetables first then mince (s1)",
+    "thickening lever varies: 45 min open reduction (s0), tomato paste + 10 min reduction (s1), flour coating on the vegetables (s2)",
+    "batch-browning the mince so it colours rather than stews (s0)",
+    "peas go in late so they hold colour and texture (s1, s2)",
+    "surface texture drives browning: wavy peaks in the mash (s2) or a parmesan sprinkle (s0); optional broiler/grill finish (s2)",
+    "bake is short (15-30 min) and only for browning - the filling is fully cooked before assembly (all)",
+    "oven temps observed: 180C (s0), 200C/400F (s1, s2)",
+    "rest 5-10 min before serving so the layers set (s2)",
+    "warming the milk/butter before mashing keeps the mash smooth (s1, s2)"
+  ],
+  "servingsObserved": [6, 5, 6]
+}

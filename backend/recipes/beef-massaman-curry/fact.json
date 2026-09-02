@@ -1,0 +1,49 @@
+{
+  "slug": "beef-massaman-curry",
+  "dish": "Beef massaman curry",
+  "sources": [
+    {"url": "https://simplehomeedit.com/recipe/massaman-beef-slow-cooker/", "publisher": "Simple Home Edit (AU)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.wokandskillet.com/slow-cooker-beef-massaman-curry/", "publisher": "Wok & Skillet (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://thai-foodie.com/thaifood/thai-massaman-beef-curry-crockpot/", "publisher": "Thai-Foodie (US)", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://rasamalaysia.com/beef-massaman-curry-recipe/", "publisher": "Rasa Malaysia (US)", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef chuck / stewing beef", "essential": true, "observations": ["1 kg chuck, whole or large pieces (s0)", "2 lb chuck/brisket/shank, 2-inch chunks (s1)", "3 lb lean stew beef, bite-size (s2)", "750 g chuck, cubed (s3)"]},
+    {"name": "massaman curry paste (jar/can, store-bought)", "essential": true, "observations": ["114 g can Maesri (s0)", "1/2 cup (s1)", "1/2 cup (s2)", "3 tbsp Maesri (s3)"]},
+    {"name": "coconut milk", "essential": true, "observations": ["400 ml (s0)", "400 ml can (s1)", "1 can (s2)", "2 x 165 ml cans (s3)"]},
+    {"name": "potatoes", "essential": true, "observations": ["8 small or 4 large, 2 cm chunks (s0)", "3 medium Yukon Gold, 1-inch cubes (s1)", "4 white waxy, 2-inch cubes (s2)", "1 medium, chunks (s3)"]},
+    {"name": "roasted peanuts", "essential": true, "observations": ["crushed, to serve (s0)", "1/2 cup chopped, sprinkled at end (s1)", "1/2 cup, added at end (s2)", "4 tbsp unsalted roasted (s3)"]},
+    {"name": "fish sauce", "essential": true, "observations": ["1 tbsp, optional booster (s0)", "1 tbsp (s1)", "2-3 tbsp to taste (s2)", "2.5 tbsp (s3)"]},
+    {"name": "palm sugar or brown sugar", "essential": true, "observations": ["1 tbsp sugar, optional booster (s0)", "3 tbsp palm or regular (s1)", "1-2 tsp sugar (s2)", "2 tbsp palm or brown (s3)"]},
+    {"name": "stock or water", "essential": false, "observations": ["250 ml chicken stock (s0)", "1 cup beef stock or water + cube (s1)", "1 cup water (s3)"]},
+    {"name": "onion or shallots", "essential": false, "observations": ["2 onions, thick wedges (s0)", "1 small white onion, strips (s2)", "8 whole shallots (s3)"]},
+    {"name": "tamarind paste", "essential": false, "observations": ["1-2 tbsp to taste (s2)", "0.5 tbsp (s3)"]},
+    {"name": "cinnamon stick", "essential": false, "observations": ["2, optional (s0)", "1 (s1)", "2 (s3)"]},
+    {"name": "star anise", "essential": false, "observations": ["1, optional (s0)", "1 (s1)", "3 (s3)"]},
+    {"name": "cooking oil", "essential": false, "observations": ["2 tbsp olive, for browning (s0)", "2 tbsp (s3)"]},
+    {"name": "jasmine rice", "essential": false, "observations": ["steamed, to serve (s0)", "to serve (s1)", "to serve (s2)", "steamed, to serve (s3)"]},
+    {"name": "fresh coriander", "essential": false, "observations": ["1/4 bunch, leaves picked, to serve (s0)", "garnish (s1)"]}
+  ],
+  "causalSequence": [
+    "brown beef chunks (optional; adds depth)",
+    "whisk curry paste, coconut milk, stock, fish sauce, sugar into a sauce",
+    "layer potatoes, beef, onion in slow cooker; pour sauce over",
+    "drop in cinnamon stick, star anise",
+    "slow-cook low 8 h or high 4-5 h until beef falls apart",
+    "adjust with fish sauce, sugar, tamarind to taste",
+    "serve over jasmine rice; top with peanuts, coriander"
+  ],
+  "techniqueFacts": [
+    "all 4 sources use or endorse store-bought paste; 2 name Maesri canned paste specifically",
+    "3 of 4 slow-cook low 8 h / high 4-6 h; the stovetop source simmers 1.5 h total",
+    "chuck or other connective-tissue cuts named best in all 4 sources",
+    "waxy potatoes hold shape better than floury during long cooking (2 sources)",
+    "peanuts go on at the end as topping, not cooked through (3 sources)",
+    "fish sauce / sugar / tamarind balance is adjusted after cooking, to taste (2 sources)",
+    "browning the beef is optional — 2 slow-cooker sources skip it entirely",
+    "1 source dredges beef in plain wheat flour to thicken — gluten free cell must swap (cornflour) or thicken by reducing/mashing potato (2 sources thicken that way)",
+    "curry is mild by nature; extra paste or fresh chilli lifts heat (2 sources)",
+    "slow-cooker versions run thinner; sauce thickens as potatoes break down (2 sources)"
+  ],
+  "servingsObserved": [4, 4, 4, 4]
+}

@@ -80,7 +80,7 @@ export const US_TO_AU = new Map(
  * `ownedRecipeStore.ts`'s zod schema — the gate is what a corpus run is judged
  * by and the store is what boots, and the two must agree. `steps`/`ingredients`
  * are this repo's own vocabulary (ADR 0006), never Spoonacular's wire shape.
- * ponytail: two spellings, kept in step by the seed corpus passing this gate.
+ * ponytail: two spellings, kept in step by the shipped corpus passing this gate.
  * Collapse them only if one can be generated from the other without a build.
  */
 const REQUIRED_FIELDS = [

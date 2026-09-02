@@ -1,0 +1,46 @@
+{
+  "slug": "spaghetti-bolognese",
+  "dish": "Spaghetti bolognese",
+  "sources": [
+    {"url": "https://www.womensweeklyfood.com.au/recipe/dinner/spaghetti-bolognese-11346/", "publisher": "Women's Weekly Food", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://feelgoodfoodie.net/recipe/pasta-bolognese/", "publisher": "Feel Good Foodie", "accessed": "2026-08-02", "robots_ok": true},
+    {"url": "https://www.laurafuentes.com/spaghetti-bolognese-recipe/", "publisher": "Laura Fuentes", "accessed": "2026-08-02", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "beef mince", "essential": true, "observations": ["500 g (s0)", "1 lb (s1)", "1 lb (s2)"]},
+    {"name": "brown onion", "essential": true, "observations": ["1 medium 150 g (s0)", "1 (s1)", "1 large (s2)"]},
+    {"name": "garlic", "essential": true, "observations": ["2 cloves (s0)", "2 cloves (s1)", "3 cloves (s2)"]},
+    {"name": "carrot", "essential": true, "observations": ["1 medium 120 g (s0)", "2 (s1)", "2 large (s2)"]},
+    {"name": "celery", "essential": true, "observations": ["1 stalk 150 g (s0)", "3 sticks (s1)"]},
+    {"name": "olive oil", "essential": true, "observations": ["1 tbsp (s0)", "1 tbsp (s1)"]},
+    {"name": "tomato paste", "essential": true, "observations": ["95 g / 1/3 cup (s0)", "2 tbsp (s1)", "2 tbsp (s2)"]},
+    {"name": "canned crushed tomatoes", "essential": true, "observations": ["400 g (s0)", "28 oz (s1)", "28 oz + 14 oz diced (s2)"]},
+    {"name": "spaghetti", "essential": true, "observations": ["375 g (s0)", "16 oz tagliatelle (s1)", "1 lb (s2)"]},
+    {"name": "beef stock", "essential": false, "observations": ["250 ml (s0)", "1 cup (s2)"]},
+    {"name": "red wine", "essential": false, "observations": ["125 ml (s0)", "1/2 cup (s2)"]},
+    {"name": "oregano", "essential": false, "observations": ["1 tbsp fresh (s0)", "2 tsp dried (s1)", "1/2 tsp dried (s2)"]},
+    {"name": "parmesan cheese", "essential": false, "observations": ["25 g flaked (s0)", "to serve (s1)", "to serve (s2)"]},
+    {"name": "parsley", "essential": false, "observations": ["2 tbsp fresh (s0)", "to serve (s1)"]},
+    {"name": "milk", "essential": false, "observations": ["1 cup whole (s1)"]},
+    {"name": "bay leaf", "essential": false, "observations": ["1 (s1)", "2 (s2)"]},
+    {"name": "nutmeg", "essential": false, "observations": ["1/4 tsp (s1)", "pinch (s2)"]},
+    {"name": "bacon", "essential": false, "observations": ["3 strips (s2)"]},
+    {"name": "italian sausage", "essential": false, "observations": ["1/2 lb (s2)"]}
+  ],
+  "causalSequence": [
+    "soften onion garlic carrot celery in oil",
+    "brown mince, break up lumps",
+    "stir in tomato paste; deglaze with wine, cook off",
+    "add crushed tomatoes, stock, herbs; simmer 30-90 min to thicken",
+    "cook spaghetti; top with sauce, parmesan"
+  ],
+  "techniqueFacts": [
+    "all three simmer 30+ min; range 30 min uncovered (s1) to 90 min covered (s2)",
+    "s0 splits the simmer: 30 min covered then 30 min uncovered to thicken",
+    "s1 reduces whole milk into the browned mince before tomatoes for richness",
+    "s2 renders bacon first and adds italian sausage for depth",
+    "wine deglaze in 2 of 3 sources; nutmeg in 2 of 3",
+    "sauce is spooned over drained pasta in all three, not tossed through"
+  ],
+  "servingsObserved": [4, 8, 8]
+}

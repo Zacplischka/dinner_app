@@ -1,0 +1,123 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:chana-masala",
+  "name": "Chana Masala",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "indian",
+  "diets": [
+    "vegan",
+    "vegetarian",
+    "gluten free"
+  ],
+  "ingredients": [
+    {
+      "name": "canned chickpeas",
+      "amount": 800,
+      "unit": "g",
+      "original": "2 x 400 g cans chickpeas, drained and rinsed"
+    },
+    {
+      "name": "basmati rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g basmati rice"
+    },
+    {
+      "name": "vegetable oil",
+      "amount": 2,
+      "unit": "tbsp",
+      "original": "2 tbsp vegetable oil"
+    },
+    {
+      "name": "brown onion",
+      "amount": 2,
+      "unit": "",
+      "original": "2 brown onions, finely chopped"
+    },
+    {
+      "name": "garlic",
+      "amount": 4,
+      "unit": "",
+      "original": "4 garlic cloves, crushed"
+    },
+    {
+      "name": "ginger",
+      "amount": 1,
+      "unit": "",
+      "original": "1 thumb-sized piece fresh ginger, finely grated"
+    },
+    {
+      "name": "green chilli",
+      "amount": 1,
+      "unit": "",
+      "original": "1 long green chilli, slit lengthways"
+    },
+    {
+      "name": "canned crushed tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "1 x 400 g can crushed tomatoes"
+    },
+    {
+      "name": "tomato paste",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp tomato paste"
+    },
+    {
+      "name": "cumin seeds",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) cumin seeds"
+    },
+    {
+      "name": "ground coriander",
+      "amount": 4,
+      "unit": "g",
+      "original": "2 tsp (4 g) ground coriander"
+    },
+    {
+      "name": "ground turmeric",
+      "amount": 1,
+      "unit": "g",
+      "original": "1/2 tsp (1 g) ground turmeric"
+    },
+    {
+      "name": "chilli powder",
+      "amount": 1,
+      "unit": "g",
+      "original": "1/2 tsp (1 g) chilli powder"
+    },
+    {
+      "name": "garam masala",
+      "amount": 2,
+      "unit": "g",
+      "original": "1 tsp (2 g) garam masala"
+    },
+    {
+      "name": "coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch coriander, leaves roughly chopped"
+    },
+    {
+      "name": "lemon",
+      "amount": 1,
+      "unit": "",
+      "original": "1 lemon",
+      "searchTerm": "lemon loose"
+    }
+  ],
+  "steps": [
+    "Rinse the basmati rice until the water runs clear, then cook it in plenty of boiling salted water for 12 minutes. Drain and keep warm.",
+    "Meanwhile, heat the vegetable oil in a large deep frying pan over medium heat. Add the cumin seeds and sizzle for 30 seconds until fragrant.",
+    "Add the brown onions and cook for 8 to 10 minutes, stirring often, until deep golden.",
+    "Stir in the garlic, ginger and green chilli and cook for 1 minute.",
+    "Add the crushed tomatoes, tomato paste and a good pinch of salt. Cook for 6 to 8 minutes, stirring now and then, until the mixture thickens to a jammy pulp.",
+    "Stir in the ground coriander, turmeric and chilli powder and fry for 1 minute, until the oil starts to separate at the edges of the masala.",
+    "Add the chickpeas and 375 ml water. Cover and simmer for 15 minutes, then mash a few chickpeas against the side of the pan and cook uncovered for a couple of minutes until the gravy is thick. Season with salt.",
+    "Take the pan off the heat and stir through the garam masala and the juice of half the lemon. Serve over the rice, scattered with the chopped coriander, with the remaining lemon in wedges."
+  ],
+  "photoUrl": "https://img.dinder.it.com/chana-masala.webp"
+}

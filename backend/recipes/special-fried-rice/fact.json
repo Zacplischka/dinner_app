@@ -1,0 +1,124 @@
+{
+  "slug": "special-fried-rice",
+  "dish": "Special fried rice",
+  "sources": [
+    {
+      "url": "https://www.thecookingcollective.com.au/best-takeaway-fried-rice-recipe/",
+      "publisher": "The Cooking Collective (AU)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://cafedelites.com/fried-rice/",
+      "publisher": "Cafe Delites (AU)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://poshjournal.com/fried-rice-recipe",
+      "publisher": "Posh Journal (US)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    },
+    {
+      "url": "https://www.sunrice.com.au/find-my-perfect-meal/prawn-fried-rice",
+      "publisher": "SunRice (AU)",
+      "accessed": "2026-08-03",
+      "robots_ok": true
+    }
+  ],
+  "canonicalIngredients": [
+    {
+      "name": "cooked long grain white rice, day-old",
+      "essential": true,
+      "observations": ["4 cups cooked (s0)", "4 cups cooked (s1)", "3 cups cooked (s2)", "2 cups raw + 3 cups water (s3)"]
+    },
+    {
+      "name": "eggs",
+      "essential": true,
+      "observations": ["3 (s0)", "4 (s1)", "2 (s2)", "4 (s3)"]
+    },
+    {
+      "name": "bacon / ham / char siu pork",
+      "essential": true,
+      "observations": ["300 g char siu pork, or bacon (s0)", "4 oz (115 g) bacon diced (s1)", "1/8 lb (55 g) deli ham cubed (s2)", "2 cups leg ham finely diced (s3)"]
+    },
+    {
+      "name": "prawns",
+      "essential": false,
+      "observations": ["350 g green, peeled (s0)", "5 shrimp chopped small (s2)", "300 g small cooked, peeled (s3)"]
+    },
+    {
+      "name": "frozen peas",
+      "essential": true,
+      "observations": ["1 cup (s0)", "1 cup thawed (s1)", "1 cup (s2)", "1 cup (s3)"]
+    },
+    {
+      "name": "spring onions",
+      "essential": true,
+      "observations": ["2, chopped (s0)", "1 tbsp sliced, garnish (s1)", "2 cups thinly sliced (s3)"]
+    },
+    {
+      "name": "soy sauce",
+      "essential": true,
+      "observations": ["3-4 tbsp light (s0)", "3 tbsp low sodium (s1)", "1 tbsp + 1 tsp low sodium (s2)", "1 tbsp dark (s3)"]
+    },
+    {
+      "name": "sesame oil",
+      "essential": false,
+      "observations": ["1 tbsp (s0)", "2 tsp (s1)", "1 tbsp (s2)"]
+    },
+    {
+      "name": "peanut oil (or vegetable oil)",
+      "essential": true,
+      "observations": ["4 tbsp (s0)", "2 tbsp divided (s1)", "3 tbsp vegetable (s2)", "1 tbsp (s3)"]
+    },
+    {
+      "name": "brown onion",
+      "essential": false,
+      "observations": ["1 chopped (s0)", "1 diced (s1)"]
+    },
+    {
+      "name": "garlic",
+      "essential": false,
+      "observations": ["1 tsp powder (s0)", "4 cloves minced (s1)", "3 cloves minced (s2)"]
+    },
+    {
+      "name": "ginger",
+      "essential": false,
+      "observations": ["12 g fresh grated (s0)", "1 tbsp minced (s2)"]
+    },
+    {
+      "name": "carrot",
+      "essential": false,
+      "observations": ["2 medium diced (s1)", "2 chopped (s2)"]
+    },
+    {
+      "name": "oyster sauce",
+      "essential": false,
+      "observations": ["1 tbsp (s1)"]
+    }
+  ],
+  "causalSequence": [
+    "cook rice ahead; chill overnight so grains dry and separate",
+    "stage all ingredients in bowls; mix sauce before heat goes on",
+    "heat wok until smoking; crisp bacon (or warm ham / char siu), remove",
+    "scramble eggs in the wok, or later in a well in the rice; set aside",
+    "stir-fry onion, carrot, garlic, ginger 1-3 min until fragrant",
+    "add prawns; fry ~1 min until just pink (pre-cooked prawns only need warming)",
+    "add cold rice; toss on high heat 2-3 min, breaking clumps",
+    "add peas; fold egg and bacon back through",
+    "add soy, sesame oil, oyster sauce; toss 1-2 min until rice starts to catch",
+    "finish with spring onion; serve immediately"
+  ],
+  "techniqueFacts": [
+    "all four sources use cold day-old rice — fresh rice steams and clumps",
+    "three sources cook egg separately (or in a well) then fold back so curds stay distinct",
+    "smoking-hot wok with everything prepped first is the fry-not-steam lever (two sources state it explicitly)",
+    "pork element varies: char siu (s0, notes bacon or 175 g Chinese sausage swap), bacon (s1), deli ham (s2), leg ham (s3)",
+    "raw prawns get ~1 min to pink (s0); pre-cooked prawns are only warmed through (s3)",
+    "soy sauce is the one universal seasoning; sesame oil appears in three sources; one source adds oyster/hoisin/butter (s1), one builds a jug sauce with fish sauce, shaoxing and stock (s0)",
+    "one source rinses rice until water runs clear before cooking to cut starch (s3); s0 echoes washing to avoid clumping"
+  ],
+  "servingsObserved": [6, 6, 4, 4]
+}

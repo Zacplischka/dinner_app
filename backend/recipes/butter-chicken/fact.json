@@ -1,0 +1,53 @@
+{
+  "slug": "butter-chicken",
+  "dish": "Butter chicken",
+  "sources": [
+    {"url": "https://www.andy-cooks.com/blogs/recipes/butter-chicken", "publisher": "Andy Cooks", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.budgetbytes.com/butter-chicken/", "publisher": "Budget Bytes", "accessed": "2026-08-03", "robots_ok": true},
+    {"url": "https://www.indianhealthyrecipes.com/butter-chicken/", "publisher": "Swasthi's Recipes", "accessed": "2026-08-03", "robots_ok": true}
+  ],
+  "canonicalIngredients": [
+    {"name": "chicken thigh fillets", "essential": true, "observations": ["8 thigh fillets, sliced (s0)", "2 breasts ~1.5 lb / 680 g, thighs ok (s1)", "500 g boneless thigh or breast, 1 inch pieces (s2)"]},
+    {"name": "greek yoghurt", "essential": true, "observations": ["120 ml (s0)", "1/2 cup (s1)", "1/3 cup thick/hung (s2)"]},
+    {"name": "lemon juice", "essential": true, "observations": ["juice of 1 lemon (s0)", "1 tbsp (s1)", "3/4-1 tbsp (s2)"]},
+    {"name": "garlic", "essential": true, "observations": ["6 cloves, split marinade/sauce (s0)", "2 cloves marinade + 2 sauce (s1)", "~1.5 tbsp ginger-garlic paste split (s2)"]},
+    {"name": "ginger", "essential": true, "observations": ["1 thumb piece, split (s0)", "1 tsp marinade + 1 tsp sauce (s1)", "in ginger-garlic paste (s2)"]},
+    {"name": "garam masala", "essential": true, "observations": ["1 tsp marinade + 1 tbsp sauce (s0)", "2 tsp + 2 tsp (s1)", "3/4-1 tsp + 1-1.5 tsp (s2)"]},
+    {"name": "ground turmeric", "essential": true, "observations": ["1 tsp + 1/2 tsp (s0)", "1/2 tsp + 1/4 tsp (s1)", "1/8 tsp optional (s2)"]},
+    {"name": "ground cumin", "essential": true, "observations": ["1.5 tsp + 1.5 tsp (s0)", "1/2 tsp sauce (s1)", "1/2 tsp + 1/2 tsp optional (s2)"]},
+    {"name": "ground coriander", "essential": false, "observations": ["1.5 tsp + 1.5 tsp (s0)", "1 tsp + 1-1.5 tsp optional (s2)"]},
+    {"name": "kashmiri chilli powder", "essential": true, "observations": ["1 tsp + 1 tsp kashmiri (s0)", "1/2 tsp + 1/2 tsp smoked paprika (s1)", "1/2-3/4 tsp + 1-2 tsp kashmiri or paprika, reduce for kids (s2)"]},
+    {"name": "butter", "essential": true, "observations": ["100 g unsalted (s0)", "3 tbsp (s1)", "2-3 tbsp butter or ghee (s2)"]},
+    {"name": "neutral oil", "essential": false, "observations": ["2 tbs peanut oil (s0)", "2 tbsp cooking oil (s1)", "3/4-1 tbsp marinade + 1 tbsp (s2)"]},
+    {"name": "brown onion", "essential": true, "observations": ["1 red onion (s0)", "1 yellow onion (s1)", "1 medium / 130 g, optional acidity-cutter (s2)"]},
+    {"name": "canned crushed tomatoes", "essential": true, "observations": ["400 g can or 6 fresh (s0)", "15 oz can tomato sauce/passata + 1/4 cup water (s1)", "600 g fresh or 1 cup passata (s2)"]},
+    {"name": "raw cashews", "essential": false, "observations": ["60 g (s0)", "42 g / 1/3 cup, sub extra cream (s2)"]},
+    {"name": "thickened cream", "essential": true, "observations": ["100 ml thickened (s0)", "1/3 cup heavy (s1)", "80-100 ml heavy (s2)"]},
+    {"name": "sugar", "essential": false, "observations": ["1-2 tbsp caster, to taste (s0)", "1 tsp (s2)"]},
+    {"name": "dried fenugreek leaves", "essential": false, "observations": ["kasoori methi, finishing garnish (s0)", "1 tsp marinade + 1 tbsp sauce, kasuri methi (s2)"]},
+    {"name": "whole spices", "essential": false, "observations": ["4 cardamom pods, 3 cloves, 2 bay leaves (s0)", "cinnamon piece, 2-4 cardamom, 2-4 cloves, all optional (s2)"]},
+    {"name": "basmati rice", "essential": true, "observations": ["steamed, to serve (s0)", "to serve (s1)", "to serve (s2)"]},
+    {"name": "coriander leaves", "essential": false, "observations": ["garnish (s0)", "garnish, optional (s1)", "2 tbsp garnish (s2)"]}
+  ],
+  "causalSequence": [
+    "mix yoghurt, lemon juice, garlic, ginger, ground spices; coat chicken",
+    "marinate 1 h minimum, overnight better",
+    "sear or grill chicken over high heat until charred, just cooked; set aside",
+    "melt butter with oil; soften onion, garlic, ginger; add whole spices then bloom ground spices",
+    "add tomatoes, cashews, water; simmer 10-20 min",
+    "blend sauce completely smooth; return to pan",
+    "stir in cream, sugar, kasuri methi; add chicken, simmer 5 min",
+    "serve over steamed basmati rice, garnish coriander"
+  ],
+  "techniqueFacts": [
+    "all three marinate in spiced yoghurt; thick/greek yoghurt clings, runny yoghurt bleeds marinade off (1 source)",
+    "two sources hold high-heat char on the chicken as the depth lever (tandoor stand-in); one skips char for a pan-fry weeknight form",
+    "cashews blended into the tomato base give body without long reduction (2 sources); cream-only is the nut-free path",
+    "kasuri methi stirred in at the end is the signature finishing flavour (2 sources)",
+    "sugar balances tomato acidity (2 sources); onion also cuts acidity (1 source)",
+    "mild dish by design; kashmiri chilli is colour not heat, paprika sub keeps it kid-mild (2 sources)",
+    "no gluten ingredients; only risk is anti-caking agents in packet spice blends (1 source flags certified GF garam masala)",
+    "sauce keeps 3-5 days, improves overnight, freezes 3 months (2 sources)"
+  ],
+  "servingsObserved": [4, 4, 4]
+}
