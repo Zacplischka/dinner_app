@@ -122,7 +122,7 @@ function toDeckEntry(recipe: PooledRecipe): Recipe {
 /**
  * A Deck cut from a supply: min(supply, `size`) Recipes, Deck Entry half only,
  * cards `current` has not already shown leading the ones it has. A first deal
- * passes no `current` and is simply the random cut; a Restart passes the wiped
+ * passes an empty `current` and is simply the random cut; a Restart passes the wiped
  * Deck and gets the #260 rule — fresh first, topped up with repeats when the
  * supply is thin, so Restart means "show me different ones" and never "no".
  *
@@ -136,8 +136,8 @@ function toDeckEntry(recipe: PooledRecipe): Recipe {
 export function cutDeck(
   supply: readonly PooledRecipe[],
   size: number,
-  current: readonly DeckEntry[] = [],
-  shuffle: <T>(entries: T[]) => T[] = shuffleInPlace
+  current: readonly DeckEntry[],
+  shuffle: <T>(entries: T[]) => T[]
 ): Recipe[] {
   const wiped = new Set(current.map((entry) => entry.placeId));
   const fresh = supply.filter((recipe) => !wiped.has(recipe.placeId));
