@@ -34,6 +34,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 }));
 
 import SelectionPage from '../../src/pages/SelectionPage';
+import { getSession } from '../../src/services/apiClient';
 import { sendLiveSelection } from '../../src/services/socketBindings';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
@@ -96,5 +97,28 @@ describe('Recipe Deck', () => {
     expect(sendLiveSelection).toHaveBeenCalledWith('AB123', 'recipe-716429');
     // The next card is dealt by the same cursor the restaurant deck uses.
     expect(screen.getByText('Aglio e Olio')).toBeInTheDocument();
+  });
+
+  // #333 — the outage's one plain line. It rides the Session, so every
+  // Participant's page reads the same fact off the same load.
+  it('says nothing about a Deck the recipe source filled', async () => {
+    renderSelectionPage();
+    await screen.findByText('Beef Rendang');
+
+    expect(screen.queryByTestId('source-down-note')).not.toBeInTheDocument();
+  });
+
+  it('shows one plain line when the source was dark and the deal came up short', async () => {
+    vi.mocked(getSession).mockResolvedValueOnce({
+      shareableLink: 'http://localhost:3000/join?code=AB123',
+      recipeSourceDown: true,
+    } as Awaited<ReturnType<typeof getSession>>);
+
+    renderSelectionPage();
+    await screen.findByText('Beef Rendang');
+
+    expect(await screen.findByTestId('source-down-note')).toHaveTextContent(
+      /recipe source is down/i
+    );
   });
 });

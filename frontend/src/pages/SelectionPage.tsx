@@ -58,6 +58,10 @@ export default function SelectionPage() {
   const [reveal, setReveal] = useState<{ count: number; total: number; name: string } | null>(null);
   const [fullHousePlaceId, setFullHousePlaceId] = useState<string | null>(null);
   const [shareableLink, setShareableLink] = useState('');
+  // The one plain line a short deal carries when the recipe source was dark
+  // (#333). It rides the Session, so every Participant's page reads the same
+  // fact, and a full Deck says nothing at all.
+  const [recipeSourceDown, setRecipeSourceDown] = useState(false);
   const toast = useToast();
   // Count-keyed, not boolean: stores the buffer length last announced per placeId so
   // a card re-reveals when its like count GROWS (the room is audible: "1 of 3" then
@@ -102,7 +106,10 @@ export default function SelectionPage() {
     // costs only the header button — the code badge still shows.
     if (sessionCode) {
       void getSession(sessionCode)
-        .then((session) => setShareableLink(session.shareableLink))
+        .then((session) => {
+          setShareableLink(session.shareableLink);
+          setRecipeSourceDown(session.recipeSourceDown === true);
+        })
         .catch(() => {});
     }
   }, [sessionCode]);
@@ -511,6 +518,14 @@ export default function SelectionPage() {
               : `${participants.length} together`}
           </p>
         </div>
+        {recipeSourceDown && (
+          <p
+            data-testid="source-down-note"
+            className="mb-3 w-full max-w-sm flex-shrink-0 text-center text-xs text-muted"
+          >
+            Fewer recipes than usual — our recipe source is down right now.
+          </p>
+        )}
         <div
           data-testid="card-stack"
           className="relative w-full max-w-sm flex-1 min-h-0 max-h-[30rem]"
