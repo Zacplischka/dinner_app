@@ -5,9 +5,7 @@
   "servings": 4,
   "mealType": "main course",
   "cuisine": "vietnamese",
-  "diets": [
-    "gluten free"
-  ],
+  "diets": ["gluten free"],
   "ingredients": [
     {
       "name": "gluten-free beef stock",
@@ -84,6 +82,12 @@
       "original": "1/2 bunch coriander"
     },
     {
+      "name": "spring onions",
+      "amount": 3,
+      "unit": "",
+      "original": "3 spring onions"
+    },
+    {
       "name": "lime",
       "amount": 1,
       "unit": "",
@@ -95,9 +99,9 @@
     "Halve one brown onion and thickly slice the ginger, skin on. Char both in a dry frying pan over high heat (or straight over a gas flame) until blackened in spots, then scrape off any burnt skin.",
     "Wipe the pan and dry-toast the star anise, cinnamon stick and cloves for 1 to 2 minutes until fragrant.",
     "Pour the stock into a large pot and add the charred onion and ginger, the toasted spices, the fish sauce and the brown sugar. Bring to a simmer, partly cover and cook for 25 minutes, skimming any scum. Taste and season with salt until it sits just on the salty side — the noodles and garnishes will dilute it.",
-    "While the stock simmers, thinly slice the second brown onion, cut the lime into wedges and pick the coriander leaves. Cook the rice noodles following the packet directions, rinse under cold water and drain.",
+    "While the stock simmers, thinly slice the second brown onion and the spring onions, cut the lime into wedges and pick the coriander leaves. Cook the rice noodles following the packet directions, rinse under cold water and drain.",
     "Take the beef from the freezer and slice it paper-thin across the grain.",
     "Divide the noodles between four deep bowls and lay the raw beef slices on top.",
-    "Strain the stock, return it to a rolling boil and ladle it over each bowl so the hot stock cooks the beef. Top with bean sprouts, sliced onion and coriander, and serve with lime wedges."
+    "Strain the stock, return it to a rolling boil and ladle it over each bowl so the hot stock cooks the beef. Top with bean sprouts, sliced onion, spring onion and coriander, and serve with lime wedges."
   ]
 }
