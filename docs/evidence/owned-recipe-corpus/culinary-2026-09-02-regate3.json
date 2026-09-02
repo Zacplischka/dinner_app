@@ -1,0 +1,19 @@
+{
+  "judges": [
+    "openai (codex exec)",
+    "google (gemini-pro-latest)"
+  ],
+  "date": "2026-09-02T13:04:17.601Z",
+  "passed": 2,
+  "total": 2,
+  "results": [
+    {
+      "slug": "chana-masala",
+      "failures": []
+    },
+    {
+      "slug": "lamb-chops-with-mash-and-peas",
+      "failures": []
+    }
+  ]
+}

@@ -28,41 +28,70 @@ had been through no gate layer at all and is gone.
 
 ## Where the batch stands against the four-layer gate
 
-| Layer               | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Structural          | **0/50 pass.** `node scripts/corpus/gate.mjs check backend/recipes --structural` prints `0/50 pass structural`. Every one of the 100 failure lines is the image sub-check, so the rest of the layer — the record shape, the AU vocabulary, the authoring amendments — is clean on all 50; but the layer is one gate and it does not pass.                                                                                                                                                                                             |
-| Images              | **Neither generated nor served.** No record carries a `photoUrl` and there is no `.corpus-images/<slug>.webp` to stamp one from: `images.mjs generate` has not run, and the R2 bucket behind `img.dinder.it.com` does not exist ([#355](https://github.com/Zacplischka/dinner_app/issues/355), a human ticket). A committed URL that 404s reads worse on a card than no photo, so the field stays absent until both happen — and landing #355 plus one `generate`/`collect` pass is the whole distance from 0/50 to 50/50 structural. |
-| Culinary            | **Half-run.** The Google judge read all 50 and the batch answers it; the OpenAI judge has not run — no `OPENAI_API_KEY` exists in this environment, and `gate.mjs` refuses a one-family pair by design. One family is not this layer.                                                                                                                                                                                                                                                                                                 |
-| Tally at store 1101 | **Not run.** `tally.mjs check` measures inside the production container over `railway ssh`, and the Railway CLI here is unauthenticated (`railway login` is a browser flow).                                                                                                                                                                                                                                                                                                                                                          |
-| Human               | **Not run.** `node scripts/corpus/human.mjs sample backend/recipes` names the 12 Recipes to read.                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Layer               | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Structural          | **0/50 pass.** `node scripts/corpus/gate.mjs check backend/recipes --structural` prints `0/50 pass structural`. Every one of the 100 failure lines is the image sub-check, so the rest of the layer — the record shape, the AU vocabulary, the authoring amendments — is clean on all 50; but the layer is one gate and it does not pass.                                                                                                                                                                                                                                    |
+| Images              | **Neither generated nor served.** No record carries a `photoUrl` and there is no `.corpus-images/<slug>.webp` to stamp one from: `images.mjs generate` has not run, and the R2 bucket behind `img.dinder.it.com` does not exist ([#355](https://github.com/Zacplischka/dinner_app/issues/355), a human ticket). A committed URL that 404s reads worse on a card than no photo, so the field stays absent until both happen — and landing #355 plus one `generate`/`collect` pass is the whole distance from 0/50 to 50/50 structural.                                        |
+| Culinary            | **50/50 pass, both families.** The Google judge as shipped; the OpenAI judge through `codex exec` on the operator's ChatGPT subscription, since no `OPENAI_API_KEY` exists here — same rubric, same strict-JSON verdict, both through the gate's own `culinaryFailures`. First pass 41/50: eight sent back for diets claimed on unlabelled ingredients and three method faults, all rewritten; the re-gate sent one back again (baking paper under a grill), rewritten and passed. Runs in [`docs/evidence/owned-recipe-corpus/`](../../docs/evidence/owned-recipe-corpus/). |
+| Tally at store 1101 | **50/50 in tally.** Measured where production runs, over `railway ssh`, on 2026-09-02. The batch as ported measured 25/50; every failure was the Retailer's answer to the pilot's store-3221 terms and pack forms, rewritten line by line below, and the re-run measured 50/50. The runs are in [`docs/evidence/owned-recipe-corpus/`](../../docs/evidence/owned-recipe-corpus/).                                                                                                                                                                                            |
+| Human               | **Waiting on a person.** `node scripts/corpus/human.mjs sample backend/recipes` names the 12 Recipes to read; `human.mjs verdict` records the answers.                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
-**No layer passes, so #338 does not close on this branch.** The batch ships
-because it is strictly better than the ungated seed it replaces, not because it
-has cleared the gate. Against #338's six acceptance criteria:
+**Culinary and tally pass; structural fails only on its image sub-check; the
+human layer waits on a reader.** Against #338's six acceptance criteria:
 
-| #   | Criterion                                                                                  |                                                                                    |
-| --- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| 1   | All 50 through the four-layer gate, tally at 1101                                          | **Open** — see the table above                                                     |
-| 2   | The final record shape, with per-ingredient search terms                                   | **Shape done, terms carried forward** — below                                      |
-| 3   | Images generated and served from R2                                                        | **Open** — blocked on [#355](https://github.com/Zacplischka/dinner_app/issues/355) |
-| 4   | The blend ticket's provisional seed gone, unreferenced                                     | **Done**                                                                           |
-| 5   | A matching Craving deals these, one crowned and cooked with a fully in-tally Shopping List | **Dealt, crowned and cooked; "in tally" open** — below                             |
-| 6   | Every failure rewritten or dropped, and which recorded                                     | **Done** — "What the re-gate changed"                                              |
+| #   | Criterion                                                                                  |                                                                                                                        |
+| --- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 1   | All 50 through the four-layer gate, tally at 1101                                          | **Culinary and tally done; structural open on the image sub-check; human open** — see the table above                  |
+| 2   | The final record shape, with per-ingredient search terms                                   | **Done** — 71 `searchTerm`s across 44 records, every one now a term store 1101 answered                                |
+| 3   | Images generated and served from R2                                                        | **Open** — blocked on [#355](https://github.com/Zacplischka/dinner_app/issues/355)                                     |
+| 4   | The blend ticket's provisional seed gone, unreferenced                                     | **Done**                                                                                                               |
+| 5   | A matching Craving deals these, one crowned and cooked with a fully in-tally Shopping List | **Done** — dealt, crowned and minted offline below; every line of every Recipe in tally at store 1101 by the run above |
+| 6   | Every failure rewritten or dropped, and which recorded                                     | **Done** — nothing dropped; "What the re-gate changed"                                                                 |
 
-Every open half sits behind a credential or a bucket that is not an agent's to
-mint: an `OPENAI_API_KEY`, an authenticated `railway`, and the R2 bucket. Closing
-#338 wants those runs; committing this batch does not.
+What stays open sits behind a bucket and a person: the R2 bucket
+([#355](https://github.com/Zacplischka/dinner_app/issues/355)) for the image
+sub-check, and a reader for the human layer. Closing #338 wants both;
+committing this batch does not.
 
-### What is carried forward rather than measured
+### What the tally sent back
 
-The 52 `searchTerm`s across 37 records, and the `g`/`ml` pack forms the re-gate
-restated, are the pilot's — measured against **store 3221**, which is the store
-[#338](https://github.com/Zacplischka/dinner_app/issues/338) exists to move off,
-because the two stores stock differently. They are in the right shape and they
-route (`tests/unit/shippedCorpus.test.ts`), but no run has established that
-these are the terms 1101 answers. When the tally layer does run, let it name the
-lines that miss and correct `searchTerm` from that run — do not read the present
-set as a 1101 measurement.
+The pilot's 52 `searchTerm`s and `g`/`ml` pack forms were measured against
+**store 3221**; the first run at store 1101 measured 25/50. Every failure was a
+line the Retailer answered differently from 3221, and every one was rewritten in
+the record rather than in the Matcher — the cook's wording stays in `name` and
+`original`, the store's in `searchTerm` and the unit:
+
+- **`lemon`, 11 records.** Store 1101 ranks lemon soda and iced tea above the
+  fruit, and the Matcher scores on name coverage, so "1 lemon" bought a 330 mL
+  drink. `searchTerm: "lemon loose"` — its two identity words outscore any
+  drink's one — and the count line then buys the each-priced fruit.
+- **`sour cream`** (beef-tacos): stated in grams against a 300 mL tub. Restated
+  in millilitres.
+- **`taco shells`** (beef-tacos): the pilot's `taco kit` term found a 350 g kit
+  that a count of shells cannot buy. `searchTerm: "taco shells"` finds the
+  12-pack.
+- **`tartare sauce`** (fish-and-chips): 250 ml against a 220 g jar. Restated as
+  the jar.
+- **`sweet potato`, `zucchini`**: grams against each-priced produce, which the
+  ladder has no bridge for. Restated as counts, grams kept in `original`.
+- **`apple cider vinegar`, 2 records**: outranked by vinegar gummies.
+  `searchTerm: "cornwells apple cider vinegar"`.
+- **`bay leaves`, 2 records**: by the leaf against a 15 g pack. Restated in
+  grams, as the batch's other spices already are.
+- **Not ranged under those words, 4 records**: `basa fillets` for the white
+  fish, `lamb chops` for the loin chops, `corn kernels` for the can, and
+  `roasted cashews` — the cooking-aisle pack, where `cashews unsalted` only
+  found a produce-aisle line the snack blocklist hides.
+- **Four transient search failures** (`ground cumin` ×7 records, `vegetable
+liquid stock` ×3, `leg ham`, `lebanese cucumbers`): Woolworths answered those
+  four searches with an error once, and the hour-long failure cache made every
+  Recipe sharing the term unmeasured. The four cached failures were deleted and
+  the terms fetched fresh; all four priced.
+
+The Matcher's share of this — drinks and supplements outranking food, a produce
+aisle blocked as snacks — is
+[#367](https://github.com/Zacplischka/dinner_app/issues/367), because a Sourced
+Recipe saying "1 lemon" gets the same iced tea and no `searchTerm` can reach it.
 
 ## What the re-gate changed, Recipe by Recipe
 
@@ -102,9 +131,21 @@ and delete the entry. caesar-salad, garlic-butter-steak-with-creamed-spinach and
 paleo-chicken-tray-bake are the other three untagged records: they carried no
 cuisine in the pilot either, and are not pending anything.
 
-**Culinary rewrites (1).** beef-casserole cooked with two bay leaves that no
+**Culinary rewrites (10).** beef-casserole cooked with two bay leaves that no
 Ingredient Line carried — a hole a shopper would find at the stove. The pilot
 treated bay leaves as a Staple; `staples.ts` does not, so the line is listed.
+The two-family run then sent back eight more, all of the kind the pilot warned
+about: a diet claimed on an ingredient not labelled for it — fish sauce
+(beef-massaman-curry, vietnamese-chicken-vermicelli-bowl), tamari
+(san-choy-bow) and curry paste (beef-massaman-curry) now named gluten-free with
+the plain term kept in `searchTerm`; zucchini-slice's cheddar named for
+vegetarian rennet; pumpkin-soup's thickened cream, which can carry gelatine,
+replaced by pure cream — plus three method faults: chicken-katsu-curry's rice
+had no water or time, bangers-and-mash left the potatoes boiling while the rest
+cooked, and garlic-butter-steak dropped butter and garlic into a smoking pan.
+The re-gate sent paleo-chicken-tray-bake back once more for baking paper under
+a grill. Beef-pho, separately, cooked without the spring onions every source
+garnishes with; they are listed and on the bowl.
 
 `readyInMinutes` and the pilot's local `image` path are gone: neither is a field
 of the shipped record.
@@ -143,7 +184,8 @@ node scripts/corpus/human.mjs sample backend/recipes
 The tally run spends the shared Woolworths politeness budget and half the day's
 Spoonacular points, so it must not run while anyone is using the app — it
 refuses to start while a Session is live. See `AGENTS.md` for where each
-credential lives.
+credential lives. The runs behind the numbers above are in
+[`docs/evidence/owned-recipe-corpus/`](../../docs/evidence/owned-recipe-corpus/).
 
 Growing or replacing this batch cannot break a blend test: `OWNED_RECIPES_DIR`
 overrides the directory the store loads (`config.ownedRecipesDir`), and the

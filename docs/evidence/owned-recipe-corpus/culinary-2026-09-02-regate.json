@@ -1,0 +1,113 @@
+{
+  "judges": [
+    "openai (codex exec)",
+    "google (gemini-pro-latest)"
+  ],
+  "date": "2026-09-02T13:03:20.756Z",
+  "passed": 23,
+  "total": 25,
+  "results": [
+    {
+      "slug": "bangers-and-mash",
+      "failures": []
+    },
+    {
+      "slug": "beef-casserole",
+      "failures": []
+    },
+    {
+      "slug": "beef-massaman-curry",
+      "failures": []
+    },
+    {
+      "slug": "beef-pho",
+      "failures": []
+    },
+    {
+      "slug": "beef-tacos",
+      "failures": []
+    },
+    {
+      "slug": "butter-chicken",
+      "failures": []
+    },
+    {
+      "slug": "chana-masala",
+      "failures": []
+    },
+    {
+      "slug": "chicken-katsu-curry",
+      "failures": []
+    },
+    {
+      "slug": "chicken-schnitzel-with-salad",
+      "failures": []
+    },
+    {
+      "slug": "chicken-shawarma-bowl",
+      "failures": []
+    },
+    {
+      "slug": "fish-and-chips",
+      "failures": []
+    },
+    {
+      "slug": "garlic-butter-steak-with-creamed-spinach",
+      "failures": []
+    },
+    {
+      "slug": "grilled-steak-with-chips-and-salad",
+      "failures": []
+    },
+    {
+      "slug": "honey-soy-chicken-stir-fry",
+      "failures": []
+    },
+    {
+      "slug": "lamb-chops-with-mash-and-peas",
+      "error": "fetch failed"
+    },
+    {
+      "slug": "lamb-souvlaki-with-greek-salad",
+      "failures": []
+    },
+    {
+      "slug": "paleo-chicken-tray-bake",
+      "failures": [
+        "openai judge: The baking-paper-lined tray is placed under the grill, where exposed paper can scorch or ignite; remove the baking paper before grilling or use a grill-safe unlined tray."
+      ]
+    },
+    {
+      "slug": "pork-chops-with-apple-sauce",
+      "failures": []
+    },
+    {
+      "slug": "pumpkin-soup",
+      "failures": []
+    },
+    {
+      "slug": "red-lentil-dhal",
+      "failures": []
+    },
+    {
+      "slug": "roast-chicken-and-vegetables",
+      "failures": []
+    },
+    {
+      "slug": "san-choy-bow",
+      "failures": []
+    },
+    {
+      "slug": "spaghetti-bolognese",
+      "failures": []
+    },
+    {
+      "slug": "vietnamese-chicken-vermicelli-bowl",
+      "failures": []
+    },
+    {
+      "slug": "zucchini-slice",
+      "failures": []
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "judges": [
+    "openai (codex exec)",
+    "google (gemini-pro-latest)"
+  ],
+  "date": "2026-09-02T12:51:47.940Z",
+  "passed": 41,
+  "total": 50,
+  "results": [
+    {
+      "slug": "bangers-and-mash",
+      "failures": [
+        "openai judge: The potatoes are not drained until after the sausages, onions and gravy are cooked, so they may remain boiling well beyond the stated 15 minutes and become waterlogged; drain and steam-dry them as soon as tender, then mash later or keep the mash warm."
+      ]
+    },
+    {
+      "slug": "beef-and-black-bean-stir-fry",
+      "failures": []
+    },
+    {
+      "slug": "beef-casserole",
+      "failures": []
+    },
+    {
+      "slug": "beef-lasagne",
+      "failures": []
+    },
+    {
+      "slug": "beef-massaman-curry",
+      "failures": [
+        "openai judge: The gluten-free claim is not guaranteed because the massaman curry paste is not specified as gluten-free and commercial pastes may contain gluten-bearing additives; use a certified gluten-free massaman curry paste.",
+        "openai judge: The fish sauce is not specified as gluten-free and some brands contain wheat-derived ingredients; use fish sauce labelled gluten-free."
+      ]
+    },
+    {
+      "slug": "beef-pho",
+      "failures": []
+    },
+    {
+      "slug": "beef-tacos",
+      "failures": []
+    },
+    {
+      "slug": "bibimbap",
+      "failures": []
+    },
+    {
+      "slug": "butter-chicken",
+      "failures": []
+    },
+    {
+      "slug": "caesar-salad",
+      "failures": []
+    },
+    {
+      "slug": "chana-masala",
+      "error": "fetch failed"
+    },
+    {
+      "slug": "chicken-burrito-bowl",
+      "failures": []
+    },
+    {
+      "slug": "chicken-katsu-curry",
+      "failures": [
+        "openai judge: The rice method gives no water quantity or absorption cooking time, so it is not complete enough to reliably cook 300 g of medium-grain rice; specify the water amount, covered simmer time and resting time, or give precise rice-cooker directions."
+      ]
+    },
+    {
+      "slug": "chicken-parmigiana",
+      "failures": []
+    },
+    {
+      "slug": "chicken-satay-skewers",
+      "failures": []
+    },
+    {
+      "slug": "chicken-schnitzel-with-salad",
+      "failures": []
+    },
+    {
+      "slug": "chicken-shawarma-bowl",
+      "failures": []
+    },
+    {
+      "slug": "chilli-con-carne",
+      "failures": []
+    },
+    {
+      "slug": "chocolate-self-saucing-pudding",
+      "failures": []
+    },
+    {
+      "slug": "fettuccine-carbonara",
+      "failures": []
+    },
+    {
+      "slug": "fish-and-chips",
+      "failures": []
+    },
+    {
+      "slug": "garlic-butter-steak-with-creamed-spinach",
+      "failures": [
+        "openai judge: The pan remains over high heat after being heated until smoking, so the butter and crushed garlic are likely to burn during the 1–2 minute baste; reduce the heat to medium before adding them."
+      ]
+    },
+    {
+      "slug": "grilled-steak-with-chips-and-salad",
+      "failures": []
+    },
+    {
+      "slug": "honey-soy-chicken-stir-fry",
+      "failures": []
+    },
+    {
+      "slug": "lamb-chops-with-mash-and-peas",
+      "failures": []
+    },
+    {
+      "slug": "lamb-rogan-josh",
+      "failures": []
+    },
+    {
+      "slug": "lamb-souvlaki-with-greek-salad",
+      "failures": []
+    },
+    {
+      "slug": "margherita-pizza",
+      "failures": []
+    },
+    {
+      "slug": "moussaka",
+      "failures": []
+    },
+    {
+      "slug": "mushroom-risotto",
+      "failures": []
+    },
+    {
+      "slug": "pad-thai",
+      "failures": []
+    },
+    {
+      "slug": "paleo-chicken-tray-bake",
+      "failures": []
+    },
+    {
+      "slug": "penne-arrabbiata",
+      "failures": []
+    },
+    {
+      "slug": "pork-chops-with-apple-sauce",
+      "failures": []
+    },
+    {
+      "slug": "pumpkin-soup",
+      "failures": [
+        "openai judge: Generic Australian thickened cream may contain animal-derived gelatine, so the vegetarian diet is not guaranteed; specify a gelatine-free vegetarian thickened cream or use pure cream."
+      ]
+    },
+    {
+      "slug": "red-lentil-dhal",
+      "failures": []
+    },
+    {
+      "slug": "rissoles-with-gravy",
+      "failures": []
+    },
+    {
+      "slug": "roast-chicken-and-vegetables",
+      "failures": []
+    },
+    {
+      "slug": "san-choy-bow",
+      "failures": [
+        "openai judge: The gluten-free diet is not guaranteed because the tamari is not explicitly labelled gluten free and some tamari contains wheat; specify gluten-free tamari."
+      ]
+    },
+    {
+      "slug": "shakshuka",
+      "failures": []
+    },
+    {
+      "slug": "shepherds-pie",
+      "failures": []
+    },
+    {
+      "slug": "spaghetti-bolognese",
+      "failures": []
+    },
+    {
+      "slug": "special-fried-rice",
+      "failures": []
+    },
+    {
+      "slug": "sweet-and-sour-pork",
+      "failures": []
+    },
+    {
+      "slug": "teriyaki-chicken-with-rice",
+      "failures": []
+    },
+    {
+      "slug": "thai-green-chicken-curry",
+      "failures": []
+    },
+    {
+      "slug": "tuna-mornay",
+      "failures": []
+    },
+    {
+      "slug": "tuna-pasta-bake",
+      "failures": []
+    },
+    {
+      "slug": "vietnamese-chicken-vermicelli-bowl",
+      "failures": [
+        "openai judge: The gluten-free claim is not guaranteed because the fish sauce is not specified as gluten-free; use a fish sauce labelled gluten-free."
+      ]
+    },
+    {
+      "slug": "zucchini-slice",
+      "failures": [
+        "openai judge: The vegetarian claim is not guaranteed because cheddar can be made with animal rennet; specify a cheddar labelled vegetarian or made with non-animal rennet."
+      ]
+    }
+  ]
+}

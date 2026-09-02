@@ -1,0 +1,15 @@
+{
+  "judges": [
+    "openai (codex exec)",
+    "google (gemini-pro-latest)"
+  ],
+  "date": "2026-09-02T12:59:37.415Z",
+  "passed": 1,
+  "total": 1,
+  "results": [
+    {
+      "slug": "paleo-chicken-tray-bake",
+      "failures": []
+    }
+  ]
+}
