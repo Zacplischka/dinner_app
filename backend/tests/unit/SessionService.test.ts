@@ -1508,6 +1508,30 @@ describe('SessionService', () => {
         });
       });
 
+      // The blend deals Owned Recipes into every Cook Deck (#331), and an Owned
+      // Recipe carries no aggregateLikes — nothing backfills one. The rung
+      // reads `?? -1`, so it sinks within its own rung and wins on the rung
+      // above exactly as any Recipe does: the crowning path never forks on
+      // provenance, and this is the test that says so.
+      it('crowns an Owned Recipe on Selections, absent aggregateLikes and all', async () => {
+        const sessionCode = await createSessionWithRecipeDeck([
+          { kind: 'recipe', placeId: 'owned:spaghetti-bolognese', name: 'Spaghetti Bolognese' },
+          { kind: 'recipe', placeId: 'rec2', name: 'Beef Rendang', aggregateLikes: 640 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', [
+          'owned:spaghetti-bolognese',
+        ]);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', [
+          'owned:spaghetti-bolognese',
+        ]);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'owned:spaghetti-bolognese' }),
+          likedBy: 2,
+          of: 2,
+        });
+      });
+
       // The Cook ending (#262): the crown is where the Shopping List is minted.
       it('mints the Shopping List for the crowned Recipe', async () => {
         mintShoppingList.mockResolvedValue('list-1');
