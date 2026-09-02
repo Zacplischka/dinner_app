@@ -132,14 +132,20 @@ describe('Integration Test: a Cook Session end to end', () => {
       return { sessionCode, wiped };
     }
 
-    it('deals a Deck that avoids the just-wiped one when the pool can afford it', async () => {
+    it('deals a Deck that avoids the just-wiped one where a supply can afford it', async () => {
       const { sessionCode, wiped } = await decided(60);
 
       await sessionService.restartSession(sessionCode, 'alice');
 
       const dealt = (await store.getDeck(sessionCode)).entries;
       expect(dealt).toHaveLength(15);
-      expect(dealt.filter((entry) => wiped.includes(entry.placeId))).toEqual([]);
+      // Fresh-first is computed per source (#331). The vendor's sixty easily
+      // afford twelve unshown cards; the corpus's answers to this Craving were
+      // all on the wiped Deck, and the floor holds rather than being quietly
+      // dropped to go looking for fresher ones.
+      const sourced = dealt.filter((entry) => !entry.placeId.startsWith('owned:'));
+      expect(sourced.filter((entry) => wiped.includes(entry.placeId))).toEqual([]);
+      expect(dealt.length - sourced.length).toBe(3);
     });
 
     it('tops up with repeats rather than dealing short from a thin pool', async () => {
