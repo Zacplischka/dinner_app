@@ -10,6 +10,7 @@ import { logger } from './logger.js';
 import { redis, pingRedis } from './redis/client.js';
 import { createSessionsRouter } from './api/sessions.js';
 import { createOptionsRouter } from './api/options.js';
+import { createCravingsRouter } from './api/cravings.js';
 import { createFriendsRouter } from './api/friends.js';
 import { createComparisonRouter } from './api/comparison.js';
 import { createRedirectRouter } from './api/redirect.js';
@@ -158,6 +159,7 @@ app.use(express.json());
 // REST API routes
 app.use('/api/sessions', createSessionsRouter(sessionService));
 app.use('/api/options', createOptionsRouter(sessionStore));
+app.use('/api/cravings', createCravingsRouter(recipePoolService));
 app.use(
   '/api/comparison',
   createComparisonRouter({
