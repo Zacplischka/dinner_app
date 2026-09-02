@@ -81,6 +81,12 @@ jobs:
       # Does not touch the network and does not need cwebp.
       - name: Check corpus image pipeline
         run: npm run check:corpus-images
+      # Offline self-checks for the corpus pipeline's structural and culinary
+      # gate layers (#336): the record shape, the AU lint, the authoring
+      # amendments, the 4:3 image, and the two-family judge rule. Injected
+      # judges — no network, no tokens spent.
+      - name: Check gate layers
+        run: npm run check:gate-layers
 
   contract-tests:
     name: Contract Tests
