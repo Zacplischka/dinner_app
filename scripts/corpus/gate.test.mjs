@@ -10,7 +10,7 @@
 // agree on before a Recipe ships.
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -27,6 +27,7 @@ import {
   positionalArgs,
   shapeFailures,
 } from './gate.mjs';
+import { recordSlugs } from './records.mjs';
 
 /** A Recipe as it ships: the shape `backend/src/services/ownedRecipeStore.ts` loads. */
 const CLEAN = {
@@ -431,7 +432,7 @@ test('a Recipe that will not come good throws by name rather than vanishing', as
 test('a slug behind --structural is a slug, not the flag’s value', () => {
   // The whole point of naming slugs is to gate those records; swallowing one
   // as a flag value widens a one-record run into the whole corpus silently —
-  // the mirror image of the typo `selectSlugs` refuses.
+  // the mirror image of the typo `recordSlugs` refuses.
   assert.deepEqual(positionalArgs(['backend/recipes', '--structural', 'black-bean-tacos']), [
     'backend/recipes',
     'black-bean-tacos',
@@ -444,4 +445,20 @@ test('a slug behind --structural is a slug, not the flag’s value', () => {
   assert.deepEqual(positionalArgs(['records', '--structural', '--images', '.corpus-images']), [
     'records',
   ]);
+});
+
+test('a record is a directory with a recipe.json, and a typo is not a smaller run', () => {
+  // One spelling of this walk, shared with tally.mjs and human.mjs: three
+  // copies is three chances for one of them to quietly gate nothing.
+  const dir = mkdtempSync(join(tmpdir(), 'gate-records-'));
+  for (const slug of ['beef-ragu', 'black-bean-tacos']) {
+    mkdirSync(join(dir, slug));
+    writeFileSync(join(dir, slug, 'recipe.json'), '{}');
+  }
+  mkdirSync(join(dir, '.corpus-images'));
+  writeFileSync(join(dir, 'README.md'), '');
+
+  assert.deepEqual(recordSlugs(dir), ['beef-ragu', 'black-bean-tacos']);
+  assert.deepEqual(recordSlugs(dir, ['beef-ragu']), ['beef-ragu']);
+  assert.throws(() => recordSlugs(dir, ['beef-ragoo']), /no .*beef-ragoo/);
 });

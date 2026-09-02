@@ -18,6 +18,11 @@ nothing has measured their ingredient lines against the Tally at store 1101.
 loud, and every line of that report is a real defect in the seed rather than a
 gap in the gate.
 
+The remaining two layers are `node scripts/corpus/tally.mjs check backend/recipes`
+— which measures at production's store 1101 through `railway ssh`, spends the
+shared Woolworths politeness budget, and so must not run while anyone is using
+the app — and `node scripts/corpus/human.mjs sample backend/recipes`.
+
 Growing or replacing this seed cannot break a test: `OWNED_RECIPES_DIR`
 overrides the directory the store loads (`config.ownedRecipesDir`), and the
 integration and contract suites — every suite that boots the app — point it at

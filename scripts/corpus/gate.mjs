@@ -34,12 +34,13 @@
 //   node scripts/corpus/gate.mjs check <recordsDir> [--structural] [--images .corpus-images] [slug...]
 //   node scripts/corpus/gate.mjs dish  "<dish>" [--out records]
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { authorDish, commitRecord } from './author-dish.mjs';
 import { imageUrl } from './images.mjs';
 import { readDish } from './read-dish.mjs';
+import { recordSlugs } from './records.mjs';
 
 // ------------------------------------------------------- the vocabularies, borrowed
 
@@ -600,21 +601,6 @@ const VALUE_FLAGS = new Set(['--images', '--out']);
 export const positionalArgs = (rest) =>
   rest.filter((argument, index) => !argument.startsWith('--') && !VALUE_FLAGS.has(rest[index - 1]));
 
-/** Every `<recordsDir>/<slug>/recipe.json`, or just the named slugs. */
-function selectSlugs(recordsDir, slugs) {
-  const present = readdirSync(recordsDir, { withFileTypes: true })
-    .filter(
-      (entry) => entry.isDirectory() && existsSync(join(recordsDir, entry.name, 'recipe.json'))
-    )
-    .map((entry) => entry.name);
-  if (!slugs.length) return present.sort();
-  // A typo must never quietly shrink a gate run into a pass.
-  for (const slug of slugs) {
-    if (!present.includes(slug)) throw new Error(`no ${join(recordsDir, slug, 'recipe.json')}`);
-  }
-  return slugs;
-}
-
 /**
  * Both layers over a corpus that already exists — what #338 re-gates the pilot
  * with, and what a reviewer runs before a corpus pull request. `--structural`
@@ -624,7 +610,7 @@ function selectSlugs(recordsDir, slugs) {
 async function check(recordsDir, imagesDir, slugs, judged) {
   const seen = new Map();
   let failed = 0;
-  const all = selectSlugs(recordsDir, slugs);
+  const all = recordSlugs(recordsDir, slugs);
   for (const slug of all) {
     const recipe = JSON.parse(readFileSync(join(recordsDir, slug, 'recipe.json'), 'utf8'));
     const failures = [

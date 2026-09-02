@@ -87,6 +87,17 @@ jobs:
       # judges — no network, no tokens spent.
       - name: Check gate layers
         run: npm run check:gate-layers
+      # Offline self-check for the corpus pipeline's tally gate (#337): the
+      # grading, and above all the split between a defect in a Recipe and a
+      # fact about store 1101. Injected probe — nothing reaches Woolworths,
+      # Railway or production Redis, which is what keeps CI off the shared
+      # politeness budget.
+      - name: Check tally gate
+        run: npm run check:tally-gate
+      # Offline self-check for the corpus pipeline's human layer (#337): the
+      # stratified 10% sample and the one-failure / two-failure rules.
+      - name: Check human gate
+        run: npm run check:human-gate
 
   contract-tests:
     name: Contract Tests
