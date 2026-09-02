@@ -350,20 +350,17 @@ async function measure(encoded) {
     },
   });
 
-  // Read per Recipe rather than once at the end: the Matcher rewrites this key
+  // Read per Recipe rather than once at the end: the Matcher writes this key
   // the moment production is served another store, so each Recipe reports the
   // store it was actually measured at rather than the one the run ended on.
   //
-  // No fallback to `config.woolworths.defaultStoreId`: it is 1101 as well, so
-  // substituting it would report the reference store on no evidence at all — a
-  // fresh keyspace, or a re-run inside the price cache's Freshness Window where
-  // nothing cold-fetched — and TALLY_WRONG_STORE could never fire. The gate
-  // refuses an answer that did not come from store 1101, and an answer that
-  // cannot say where it came from did not come from store 1101.
-  const storeId = async () => {
-    const stored = Number(await redis.get('woolworths:store'));
-    return Number.isFinite(stored) && stored ? stored : null;
-  };
+  // The Matcher writes the key *only* on drift, so an unwritten key is its own
+  // word that every cold fetch it ever made was served the default store — and
+  // it keys every cache read on that same default, so a warm answer came from
+  // there too. Reading the key the way the Matcher reads it is the evidence;
+  // refusing on an unwritten key would refuse every healthy run.
+  const storeId = async () =>
+    Number(await redis.get('woolworths:store')) || config.woolworths.defaultStoreId;
 
   try {
     for (const { slug, ingredients } of JSON.parse(Buffer.from(encoded, 'base64').toString())) {

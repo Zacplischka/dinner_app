@@ -432,7 +432,7 @@ test('a Recipe that will not come good throws by name rather than vanishing', as
 test('a slug behind --structural is a slug, not the flag’s value', () => {
   // The whole point of naming slugs is to gate those records; swallowing one
   // as a flag value widens a one-record run into the whole corpus silently —
-  // the mirror image of the typo `selectSlugs` refuses.
+  // the mirror image of the typo `recordSlugs` refuses.
   assert.deepEqual(positionalArgs(['backend/recipes', '--structural', 'black-bean-tacos']), [
     'backend/recipes',
     'black-bean-tacos',
