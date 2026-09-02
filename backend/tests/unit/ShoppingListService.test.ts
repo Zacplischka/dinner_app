@@ -458,6 +458,27 @@ describe('ShoppingListService.mint', () => {
     expect(list?.sourceUrl).toBe('https://example.test/aglio');
     expect(list?.recipeName).toBe('Aglio e Olio');
     expect(list?.mintedAt).toBe('2026-08-01T10:00:00.000Z');
+    // Absent provenance is Sourced, and the Cook View reads it as Spoonacular.
+    expect(list?.provenance).toBeUndefined();
+  });
+
+  it('marks a list minted from an Owned Recipe as owned, so nothing credits a source', async () => {
+    // An Owned Recipe names no source and the absence is correct (ADR 0012) —
+    // but a Sourced Recipe that lost its name still owes the vendor a credit,
+    // so the Cook View is told outright rather than left to infer it (#314).
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        placeId: 'owned:aglio-e-olio',
+        sourceName: undefined,
+        sourceUrl: undefined,
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', 'owned:aglio-e-olio'))!);
+
+    expect(list?.provenance).toBe('owned');
+    expect(list?.sourceName).toBeUndefined();
   });
 
   it('writes the list under a fixed 7-day TTL', async () => {

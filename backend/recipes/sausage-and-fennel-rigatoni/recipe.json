@@ -1,0 +1,79 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:sausage-and-fennel-rigatoni",
+  "name": "Sausage and Fennel Rigatoni",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "italian",
+  "diets": [],
+  "ingredients": [
+    {
+      "name": "Italian pork sausages",
+      "amount": 500,
+      "unit": "g",
+      "original": "500 g Italian pork sausages, casings removed"
+    },
+    {
+      "name": "olive oil",
+      "amount": 1,
+      "unit": "tbsp",
+      "original": "1 tbsp olive oil"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "cloves",
+      "original": "3 garlic cloves, crushed"
+    },
+    {
+      "name": "fennel seeds",
+      "amount": 3,
+      "unit": "g",
+      "original": "3 g fennel seeds, lightly crushed"
+    },
+    {
+      "name": "dry white wine",
+      "amount": 125,
+      "unit": "ml",
+      "original": "125 ml dry white wine"
+    },
+    {
+      "name": "thickened cream",
+      "amount": 200,
+      "unit": "ml",
+      "original": "200 ml thickened cream"
+    },
+    {
+      "name": "rigatoni",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g rigatoni"
+    },
+    {
+      "name": "parmesan",
+      "amount": 50,
+      "unit": "g",
+      "original": "50 g parmesan, finely grated"
+    },
+    {
+      "name": "flat-leaf parsley",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch flat-leaf parsley, chopped"
+    }
+  ],
+  "steps": [
+    "Heat the oil in a wide frying pan and fry the sausage meat over high heat, breaking it into rough chunks, until deeply browned — about 8 minutes. Leave some pieces whole.",
+    "Turn the heat down, add the onion, garlic and fennel seeds and cook for 5 minutes until soft.",
+    "Pour in the wine and let it bubble away to almost nothing, scraping the base of the pan.",
+    "Stir in the cream and simmer gently for 5 minutes while you cook the rigatoni in well-salted boiling water until al dente.",
+    "Drain the pasta, keeping a cup of the water, and toss it through the sauce with the parmesan, loosening with pasta water until it coats every tube.",
+    "Season, fold through the parsley and serve straight away."
+  ]
+}

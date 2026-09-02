@@ -1,0 +1,97 @@
+{
+  "kind": "recipe",
+  "placeId": "owned:pumpkin-and-chickpea-curry",
+  "name": "Pumpkin and Chickpea Curry",
+  "servings": 4,
+  "mealType": "main course",
+  "cuisine": "indian",
+  "diets": ["vegan", "gluten free"],
+  "ingredients": [
+    {
+      "name": "jap pumpkin",
+      "amount": 1,
+      "unit": "kg",
+      "original": "1 kg jap pumpkin, peeled and cut into 3 cm pieces"
+    },
+    {
+      "name": "chickpeas",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g tin chickpeas, drained and rinsed"
+    },
+    {
+      "name": "coconut milk",
+      "amount": 400,
+      "unit": "ml",
+      "original": "400 ml tin coconut milk"
+    },
+    {
+      "name": "diced tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "original": "400 g tin diced tomatoes"
+    },
+    {
+      "name": "brown onion",
+      "amount": 1,
+      "unit": "",
+      "original": "1 brown onion, finely diced"
+    },
+    {
+      "name": "garlic",
+      "amount": 3,
+      "unit": "cloves",
+      "original": "3 garlic cloves, crushed"
+    },
+    {
+      "name": "ginger",
+      "amount": 20,
+      "unit": "g",
+      "original": "20 g ginger, finely grated"
+    },
+    {
+      "name": "curry powder",
+      "amount": 12,
+      "unit": "g",
+      "original": "12 g curry powder"
+    },
+    {
+      "name": "ground turmeric",
+      "amount": 3,
+      "unit": "g",
+      "original": "3 g ground turmeric"
+    },
+    {
+      "name": "vegetable oil",
+      "amount": 30,
+      "unit": "ml",
+      "original": "30 ml vegetable oil"
+    },
+    {
+      "name": "baby spinach",
+      "amount": 100,
+      "unit": "g",
+      "original": "100 g baby spinach"
+    },
+    {
+      "name": "coriander",
+      "amount": 0.5,
+      "unit": "bunch",
+      "original": "1/2 bunch coriander, leaves picked"
+    },
+    {
+      "name": "basmati rice",
+      "amount": 300,
+      "unit": "g",
+      "original": "300 g basmati rice"
+    }
+  ],
+  "steps": [
+    "Heat the oil in a large saucepan and cook the onion over medium heat for 8 minutes, until soft and golden.",
+    "Add the garlic, ginger, curry powder and turmeric and stir for a minute, until the spices smell toasted.",
+    "Add the tomatoes and cook for 5 minutes, until the mixture darkens and thickens, then pour in the coconut milk.",
+    "Add the pumpkin, bring to a simmer and cook covered for 20 minutes, until a knife slides into the pumpkin with no resistance.",
+    "Stir in the chickpeas and cook uncovered for another 5 minutes to thicken. Meanwhile cook the rice by the absorption method.",
+    "Fold the spinach through until it wilts, season, and serve over the rice scattered with coriander."
+  ]
+}

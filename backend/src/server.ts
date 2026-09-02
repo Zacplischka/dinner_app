@@ -18,6 +18,7 @@ import { createListsRouter } from './api/lists.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createRecipePoolService } from './services/RecipePoolService.js';
+import { createOwnedRecipeStore, loadOwnedCorpus } from './services/ownedRecipeStore.js';
 import { createSpoonacularClient, guardDailyPoints } from './services/spoonacularClient.js';
 import { createProductMatchService } from './services/ProductMatchService.js';
 import { createQuantityLadder } from './services/quantityLadder.js';
@@ -64,7 +65,13 @@ const sessionStore = createSessionStore(redis);
 const spoonacularClient = createSpoonacularClient(
   guardDailyPoints(redis, (...args) => fetch(...args))
 );
-const recipePoolService = createRecipePoolService({ redis, client: spoonacularClient });
+// The corpus is read off disk once, here: reference data ships with the deploy
+// and changes by redeploy, so there is nothing to reload (ADR 0011).
+const recipePoolService = createRecipePoolService({
+  redis,
+  client: spoonacularClient,
+  owned: createOwnedRecipeStore(loadOwnedCorpus()),
+});
 const productMatchService = createProductMatchService({
   redis,
   client: createWoolworthsClient((...args) => fetch(...args)),

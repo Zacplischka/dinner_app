@@ -172,6 +172,32 @@ describe('CookViewPage', () => {
     expect(screen.queryByText(/Method from/)).not.toBeInTheDocument();
   });
 
+  it('renders no credit at all for an Owned Recipe, in either path', async () => {
+    // Dinder authored it, so there is no source to name and the absence is
+    // correct (ADR 0012). Only the explicit provenance buys that silence — an
+    // absent source name alone still reads as Spoonacular.
+    const owned = {
+      ...list,
+      provenance: 'owned' as const,
+      sourceName: undefined,
+      sourceUrl: undefined,
+    };
+    serviceMocks.getShoppingList.mockResolvedValue(owned);
+    const view = renderPage();
+
+    await screen.findByText(steps[0]);
+    expect(screen.queryByText(/Method from/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Spoonacular/)).not.toBeInTheDocument();
+
+    // The degrade path is silent too — it is a credit line, not a method.
+    view.unmount();
+    serviceMocks.getShoppingList.mockResolvedValue({ ...owned, steps: [] });
+    renderPage();
+
+    await waitFor(() => expect(serviceMocks.getShoppingList).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/The full method is at/)).not.toBeInTheDocument();
+  });
+
   it('credits a source that left no link without pretending it is one', async () => {
     serviceMocks.getShoppingList.mockResolvedValue({ ...list, sourceUrl: undefined });
     renderPage();

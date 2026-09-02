@@ -5,6 +5,18 @@ dotenv.config();
 
 export const config = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  // The Owned Recipe corpus on disk (ADR 0011): `<dir>/<frozen-slug>/recipe.json`,
+  // one level under the package root from `src/` and from `dist/` alike, so the
+  // built server and `tsx` read the same directory. Overridable so a test can
+  // point the app at a fixed fixture corpus rather than assert against whatever
+  // the shipped seed holds this week (#331) — an absolute path wins outright,
+  // a relative one resolves from here.
+  ownedRecipesDir: new URL(
+    // The trailing slash is what makes `<dir>/<slug>/recipe.json` resolve, so
+    // it is added rather than demanded of whoever sets the variable.
+    process.env.OWNED_RECIPES_DIR?.replace(/\/?$/, '/') ?? '../../recipes/',
+    import.meta.url
+  ),
   googlePlaces: {
     apiKey: process.env.GOOGLE_PLACES_API_KEY,
   },

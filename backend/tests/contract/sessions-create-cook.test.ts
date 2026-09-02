@@ -1,6 +1,12 @@
 // Contract Test: POST /api/sessions in the Cook Branch (#259).
 // Drives the real app over HTTP with Spoonacular faked at the fetch boundary —
 // the seam #253 names, and the only new external source in this flow.
+//
+// The second supply is substituted at its own seam: `OWNED_RECIPES_DIR` (set
+// for this project in vitest.workspace.ts) points the app's corpus at three
+// italian vegetarian mains under tests/fixtures/owned-recipes/. Every count
+// below is therefore about the blend, and a PR that grows the shipped seed
+// cannot turn these red (#331).
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../../src/server.js';
@@ -12,6 +18,16 @@ const craving = {
   cuisines: ['italian', 'thai'],
   diets: ['vegetarian'],
 };
+
+/**
+ * A Craving the fixture corpus has no answer for — it is all italian — so the
+ * Deck is purely Sourced and the vendor's supply is the whole supply. Every
+ * test about what the vendor alone does uses it.
+ */
+const unownedCraving = { ...craving, cuisines: ['korean'] };
+
+/** The fixture corpus, all of it answering `craving`: the floor, exactly. */
+const OWNED_IN_FIXTURE = 3;
 
 /** Points the app's late-bound fetch at the Spoonacular fake. */
 function fakeSpoonacular(hits = recipeHits(60), failWith?: number) {
@@ -74,12 +90,43 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
         kind: 'recipe',
         placeId: expect.any(String),
         name: expect.any(String),
-        photoUrl: expect.any(String),
       });
+      // The photo is optional on the union, and the blend is why: a Sourced
+      // Recipe carries the vendor's, while a seed Owned Recipe carries none
+      // until its image is generated and published (#355). A card with no
+      // photo renders without one — a dead URL would render broken.
+      if (!card.placeId.startsWith('owned:')) expect(card.photoUrl).toEqual(expect.any(String));
       // Ingredients and steps ride the pool payload, never the Deck.
       expect(card).not.toHaveProperty('ingredients');
       expect(card).not.toHaveProperty('steps');
     }
+  });
+
+  // The blend (#316): Owned Recipes are dealt into the Deck alongside the
+  // vendor's, with nothing on the wire saying which is which.
+  it('blends Owned Recipes into the Deck the vendor filled', async () => {
+    fakeSpoonacular();
+
+    const { body: session } = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(201);
+    const { body: options } = await request(app)
+      .get(`/api/options/${session.sessionCode}`)
+      .expect(200);
+
+    expect(options.restaurants).toHaveLength(15);
+    const owned = options.restaurants.filter((card: { placeId: string }) =>
+      card.placeId.startsWith('owned:')
+    );
+    // The floor (#316), and with a pinned corpus it is an equality: a healthy
+    // vendor fills the other twelve.
+    expect(owned).toHaveLength(OWNED_IN_FIXTURE);
+    // The pool stays purely Sourced — the union happens at deal time only.
+    const pooled = JSON.parse(
+      (await redis.get(`recipes:pool:main course|italian,thai|vegetarian`)) ?? '[]'
+    ) as Array<{ placeId: string }>;
+    expect(pooled.some((recipe) => recipe.placeId.startsWith('owned:'))).toBe(false);
   });
 
   it('serves a second Session the same Craving pool with no second lookup', async () => {
@@ -141,12 +188,14 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
 
   // Zero is the only refusal the Cook Branch has, and it lives at setup (#260):
   // the Host relaxes their own chips, the app never relaxes them for anyone.
-  it('refuses a Craving that matches nothing, and creates no Session', async () => {
+  // Since the blend it is a statement about the *union* — both supplies empty,
+  // not just the vendor's (#316).
+  it('refuses a Craving neither supply matches, and creates no Session', async () => {
     fakeSpoonacular(recipeHits(0));
 
     const response = await request(app)
       .post('/api/sessions')
-      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
       .expect(404);
 
     expect(response.body).toMatchObject({ code: 'NO_RECIPES_FOUND' });
@@ -154,16 +203,27 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
     await expect(testKeys(redis, 'session:*')).resolves.toEqual([]);
   });
 
+  it('deals owned alone rather than refusing a Craving the vendor has nothing for', async () => {
+    fakeSpoonacular(recipeHits(0));
+
+    const { body: session } = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .expect(201);
+
+    expect(session.restaurantCount).toBe(OWNED_IN_FIXTURE);
+  });
+
   it('serves the clean miss from cache — fiddling with chips is one lookup', async () => {
     const spoonacular = fakeSpoonacular(recipeHits(0));
 
     await request(app)
       .post('/api/sessions')
-      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
       .expect(404);
     await request(app)
       .post('/api/sessions')
-      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
       .expect(404);
 
     expect(spoonacular.recipeSearches()).toHaveLength(1);
@@ -184,12 +244,12 @@ describe('Contract Test: POST /api/sessions (Cook Branch)', () => {
     await expect(testKeys(redis, 'recipes:pool:*')).resolves.toEqual([]);
   });
 
-  it('deals the whole thin pool with no floor and no warning', async () => {
+  it('deals the whole thin pool with no warning when owned cannot top it up', async () => {
     fakeSpoonacular(recipeHits(7));
 
     const { body: session } = await request(app)
       .post('/api/sessions')
-      .send({ hostName: 'Alice', branch: 'cook', craving, headcount: 2 })
+      .send({ hostName: 'Alice', branch: 'cook', craving: unownedCraving, headcount: 2 })
       .expect(201);
 
     expect(session.restaurantCount).toBe(7);

@@ -4,16 +4,20 @@ import RedisMock from 'ioredis-mock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Craving } from '@dinder/shared/types';
 import {
+  blendDeck,
   createRecipePoolService,
+  cravingFromPoolKey,
   cravingPoolKey,
   cutDeck,
 } from '../../src/services/RecipePoolService.js';
+import { createOwnedRecipeStore, type OwnedRecipe } from '../../src/services/ownedRecipeStore.js';
 import type { PooledRecipe } from '../../src/services/spoonacularClient.js';
 import {
   createSpoonacularClient,
   guardDailyPoints,
   pointsKey,
 } from '../../src/services/spoonacularClient.js';
+import { ownedRecipes } from '../helpers/ownedCorpusFake.js';
 import { recipeHits, spoonacularFetchFake } from '../helpers/spoonacularFetchFake.js';
 
 const HOUR_MS = 3_600_000;
@@ -33,6 +37,11 @@ function service(
     failWith?: number;
     /** Set to put the #261 points guard between the client and the fake. */
     pointCeiling?: number;
+    /** The Owned Recipe Store's corpus — empty unless a test blends (#331). */
+    owned?: OwnedRecipe[];
+    ownedFloor?: number;
+    /** Deterministic by default: no shuffle, so assertions are about the cut. */
+    shuffle?: <T>(entries: T[]) => T[];
   } = {}
 ) {
   const redis = overrides.redis ?? new RedisMock();
@@ -47,12 +56,14 @@ function service(
   const created = createRecipePoolService({
     redis,
     client: createSpoonacularClient(guarded, 'test-key'),
+    owned: createOwnedRecipeStore(overrides.owned ?? []),
     poolTtlMs: overrides.poolTtlMs ?? 24 * HOUR_MS,
     emptyPoolTtlMs: overrides.emptyPoolTtlMs ?? HOUR_MS,
     poolSize: 60,
     deckSize: 15,
+    ownedFloor: overrides.ownedFloor ?? 3,
     // Deterministic deal: no shuffle, so assertions are about the cut, not luck.
-    shuffle: (entries) => entries,
+    shuffle: overrides.shuffle ?? ((entries) => entries),
   });
   const searches = () => requests.filter((r) => r.url.pathname === '/recipes/complexSearch');
   return { redis, service: created, searches };
@@ -256,6 +267,7 @@ describe('createRecipePoolService', () => {
     const pool = createRecipePoolService({
       redis,
       client: createSpoonacularClient(fetchImpl, 'test-key'),
+      owned: createOwnedRecipeStore([]),
       poolTtlMs: HOUR_MS,
       poolSize: 60,
       deckSize: 15,
@@ -391,5 +403,193 @@ describe('the two seams the deal is split into (#327)', () => {
 
     expect(deck).toHaveLength(15);
     expect(searches()).toHaveLength(1);
+  });
+});
+
+describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+  });
+
+  const key = cravingPoolKey(pasta);
+  /** The corpus the fake store is built over, all of it answering `pasta`. */
+  const corpus = ownedRecipes(12, { cuisine: 'italian', diets: ['vegetarian'] });
+  const isOwned = (entry: { placeId: string }) => entry.placeId.startsWith('owned:');
+
+  it('deals 3 owned and 12 sourced from a healthy vendor', async () => {
+    const { service: pool } = service(recipeHits(60), { owned: corpus });
+
+    const deck = await pool.dealDeck(pasta);
+
+    expect(deck).toHaveLength(15);
+    expect(deck.filter(isOwned)).toHaveLength(3);
+  });
+
+  it('tops the Deck up from owned when the vendor is thin', async () => {
+    // Five Sourced Recipes for the Craving: owned covers the other ten rather
+    // than letting the Deck come out a third full.
+    const { service: pool } = service(recipeHits(5), { owned: corpus });
+
+    const deck = await pool.dealDeck(pasta);
+
+    expect(deck).toHaveLength(15);
+    expect(deck.filter(isOwned)).toHaveLength(10);
+  });
+
+  it('deals the vendor alone when the corpus has nothing for the Craving', async () => {
+    // A Craving the corpus does not answer is the pre-blend world exactly.
+    const { service: pool } = service(recipeHits(60), {
+      owned: ownedRecipes(12, { cuisine: 'thai' }),
+    });
+
+    const deck = await pool.dealDeck(pasta);
+
+    expect(deck).toHaveLength(15);
+    expect(deck.filter(isOwned)).toEqual([]);
+  });
+
+  it('shuffles owned among sourced rather than reserving them positions', async () => {
+    // Reversing is a shuffle the test can predict: owned leads the merge, so
+    // if the merged Deck is shuffled they come out at the back. A blend that
+    // concatenated the two cuts would leave them at the front.
+    const { service: pool } = service(recipeHits(60), {
+      owned: corpus,
+      shuffle: (entries) => [...entries].reverse(),
+    });
+
+    const deck = await pool.dealDeck(pasta);
+
+    expect(deck.slice(-3).every(isOwned)).toBe(true);
+  });
+
+  it('holds the floor on a Restart, with fresh cards first within each source', async () => {
+    const { service: pool } = service(recipeHits(60), { owned: corpus });
+    const wiped = await pool.dealDeck(pasta);
+
+    const next = await pool.redeal(key, wiped);
+
+    expect(next).toHaveLength(15);
+    expect(next.filter(isOwned)).toHaveLength(3);
+    // Fresh first is computed per source, so the three owned cards are three
+    // the last Deck did not show — never quietly dropping below the floor to
+    // find them.
+    const wipedIds = new Set(wiped.map((entry) => entry.placeId));
+    expect(next.filter((entry) => wipedIds.has(entry.placeId))).toEqual([]);
+  });
+
+  it('holds the floor with a corpus thinner than the floor, rather than dealing short', async () => {
+    const { service: pool } = service(recipeHits(60), { owned: corpus.slice(0, 2) });
+
+    const deck = await pool.dealDeck(pasta);
+
+    expect(deck).toHaveLength(15);
+    expect(deck.filter(isOwned)).toHaveLength(2);
+  });
+
+  it('blends the corpus into a Restart of a Craving the vendor answered nothing for', async () => {
+    // `[]` is a cached clean miss, not a cold pool (the distinction
+    // `sourcedSupply` draws): the corpus is the whole supply and is still
+    // there, so a Restart deals its unshown cards rather than reshuffling the
+    // same fifteen back at the Session.
+    const { service: pool } = service(recipeHits(0), {
+      owned: ownedRecipes(20, { cuisine: 'italian', diets: ['vegetarian'] }),
+    });
+    const wiped = await pool.dealDeck(pasta);
+
+    const next = await pool.redeal(key, wiped);
+
+    expect(next).toHaveLength(15);
+    const wipedIds = new Set(wiped.map((entry) => entry.placeId));
+    expect(next.slice(0, 5).some((entry) => wipedIds.has(entry.placeId))).toBe(false);
+  });
+
+  it('reshuffles the wiped Deck when the owned-only supply has gone too', async () => {
+    // The corpus ships with the deploy, so "gone" is a redeploy that dropped
+    // this Craving's Recipes under a live Session dealt owned-only. Blending
+    // would deal nothing; the Restart still deals a Deck.
+    const { redis, service: pool } = service(recipeHits(0), { owned: corpus });
+    const wiped = await pool.dealDeck(pasta);
+
+    const next = await service(recipeHits(0), { redis, owned: [] }).service.redeal(key, wiped);
+
+    expect(next.map((entry) => entry.placeId).sort()).toEqual(
+      wiped.map((entry) => entry.placeId).sort()
+    );
+  });
+
+  it('reads a crowned Owned Recipe whole from the corpus, with no pool at all', async () => {
+    // What the Shopping List is minted from (#262). The corpus copy is the
+    // only one — nothing owned is ever written to the pool — and it outlives
+    // the pool the Sourced cards on the same Deck came from.
+    const { redis, service: pool } = service(recipeHits(60), { owned: corpus });
+    const deck = await pool.dealDeck(pasta);
+    const crowned = deck.find(isOwned)!;
+    const sourced = deck.find((entry) => !isOwned(entry))!;
+    await redis.del(key);
+
+    const recipe = await pool.readRecipe(key, crowned.placeId);
+
+    expect(recipe).toMatchObject({ placeId: crowned.placeId, servings: 4 });
+    expect(recipe?.ingredients.length).toBeGreaterThan(0);
+    expect(recipe?.steps.length).toBeGreaterThan(0);
+    // A Sourced Recipe is still the pool's, and still ages out with it.
+    await expect(pool.readRecipe(key, sourced.placeId)).resolves.toBeNull();
+  });
+
+  it('reads the Craving back out of the pool key a Restart names', () => {
+    // The Restart path carries the pool key, not the Craving — and the key is
+    // the canonical Craving, which is exactly what the corpus filters on.
+    expect(cravingFromPoolKey(cravingPoolKey(pasta))).toEqual(pasta);
+    expect(
+      cravingFromPoolKey(
+        cravingPoolKey({ mealType: 'dessert', cuisines: ['thai', 'italian'], diets: [] })
+      )
+    ).toEqual({ mealType: 'dessert', cuisines: ['italian', 'thai'], diets: [] });
+  });
+});
+
+describe('blendDeck — the union rule (#316)', () => {
+  const inOrder = <T>(entries: T[]): T[] => entries;
+  const supply = (count: number, prefix: string): PooledRecipe[] =>
+    Array.from({ length: count }, (_, i) => ({
+      kind: 'recipe' as const,
+      placeId: `${prefix}-${i + 1}`,
+      name: `${prefix} ${i + 1}`,
+      ingredients: [],
+      steps: [],
+    }));
+
+  it('takes the floor from owned and the rest from sourced', () => {
+    const deck = blendDeck(supply(10, 'owned'), supply(60, 'sourced'), 15, 3, [], inOrder);
+
+    expect(deck.map((entry) => entry.placeId).slice(0, 4)).toEqual([
+      'owned-1',
+      'owned-2',
+      'owned-3',
+      'sourced-1',
+    ]);
+    expect(deck).toHaveLength(15);
+  });
+
+  it('never asks either supply for more than it holds', () => {
+    expect(blendDeck(supply(2, 'owned'), supply(4, 'sourced'), 15, 3, [], inOrder)).toHaveLength(6);
+    expect(blendDeck([], supply(60, 'sourced'), 15, 3, [], inOrder)).toHaveLength(15);
+    expect(blendDeck(supply(20, 'owned'), [], 15, 3, [], inOrder)).toHaveLength(15);
+  });
+
+  it('computes fresh-first within each source, not across the merged Deck', () => {
+    const owned = supply(6, 'owned');
+    const sourced = supply(60, 'sourced');
+    const current = blendDeck(owned, sourced, 15, 3, [], inOrder);
+
+    const next = blendDeck(owned, sourced, 15, 3, current, inOrder);
+
+    // Owned's own fresh cards lead its cut even though the merged Deck holds
+    // 60 unshown Sourced Recipes that a single pile would have reached for.
+    expect(next.map((entry) => entry.placeId).slice(0, 3)).toEqual([
+      'owned-4',
+      'owned-5',
+      'owned-6',
+    ]);
   });
 });
