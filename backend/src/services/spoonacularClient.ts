@@ -27,6 +27,15 @@ export interface PooledIngredient {
   unit: string;
   /** The recipe's own wording — an Unmatched line falls back to it (#262). */
   original: string;
+  /**
+   * What the Retailer is asked for, when the name itself cannot be (#332).
+   * Only an Owned Recipe ever authors one: its name and `original` are held to
+   * a diet-qualified, cook-honest standard ("gluten-free vegetable stock")
+   * that Woolworths has no product for, so the search gets a matchable term
+   * beside them. Absent — every Sourced Recipe — the term is derived from the
+   * name exactly as it always was.
+   */
+  searchTerm?: string;
 }
 
 /**

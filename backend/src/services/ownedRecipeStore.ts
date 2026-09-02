@@ -37,6 +37,12 @@ const ownedRecipeSchema = z
           amount: z.number(),
           unit: z.string(),
           original: z.string().min(1),
+          /** The Retailer term, where the cook-honest name is not one (#332):
+           *  "gluten-free vegetable stock" is what the culinary gate demands
+           *  and what the cook reads; "vegetable stock" is what Woolworths can
+           *  answer, and the tally gate needs. Optional — most lines need no
+           *  such split, and their term is derived from the name as ever. */
+          searchTerm: z.string().min(1).optional(),
         })
       )
       .min(1),
