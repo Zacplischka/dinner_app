@@ -13,6 +13,7 @@ is not re-checkable; these files are.
 | `culinary-2026-09-02-regate.json`  | both judges over the 26 records the rewrites touched                                                                                             |
 | `culinary-2026-09-02-regate2.json` | both judges over the one record the re-gate sent back again                                                                                      |
 | `culinary-2026-09-02-regate3.json` | both judges over the two records the re-gate's Google calls dropped                                                                              |
+| `structural-2026-09-03.txt`        | `gate.mjs check --structural` over all 50, with `photoUrl` stamped and the 50 images in `.corpus-images/`                                        |
 
 ## Tally at store 1101
 
