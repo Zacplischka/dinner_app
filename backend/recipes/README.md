@@ -28,16 +28,41 @@ had been through no gate layer at all and is gone.
 
 ## Where the batch stands against the four-layer gate
 
-| Layer | State |
-| --- | --- |
-| Structural — shape | **50/50 pass.** `node scripts/corpus/gate.mjs check backend/recipes --structural` |
-| Structural — image | **Not passing.** No record carries a `photoUrl`; the R2 bucket does not exist ([#355](https://github.com/Zacplischka/dinner_app/issues/355), a human ticket) and a committed URL that 404s reads worse on a card than no photo. `check` reports the gap on all 50 until then. |
-| Culinary | **Half-run.** The Google judge read all 50 and the batch answers it; the OpenAI judge has not run — no `OPENAI_API_KEY` exists in this environment, and `gate.mjs` refuses a one-family pair by design. One family is not this layer. |
-| Tally at store 1101 | **Not run.** `tally.mjs check` measures inside the production container over `railway ssh`, and the Railway CLI here is unauthenticated (`railway login` is a browser flow). |
-| Human | **Not run.** `node scripts/corpus/human.mjs sample backend/recipes` names the 12 Recipes to read. |
+| Layer               | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Structural          | **0/50 pass.** `node scripts/corpus/gate.mjs check backend/recipes --structural` prints `0/50 pass structural`. Every one of the 100 failure lines is the image sub-check, so the rest of the layer — the record shape, the AU vocabulary, the authoring amendments — is clean on all 50; but the layer is one gate and it does not pass.                                                                                                                                                                                             |
+| Images              | **Neither generated nor served.** No record carries a `photoUrl` and there is no `.corpus-images/<slug>.webp` to stamp one from: `images.mjs generate` has not run, and the R2 bucket behind `img.dinder.it.com` does not exist ([#355](https://github.com/Zacplischka/dinner_app/issues/355), a human ticket). A committed URL that 404s reads worse on a card than no photo, so the field stays absent until both happen — and landing #355 plus one `generate`/`collect` pass is the whole distance from 0/50 to 50/50 structural. |
+| Culinary            | **Half-run.** The Google judge read all 50 and the batch answers it; the OpenAI judge has not run — no `OPENAI_API_KEY` exists in this environment, and `gate.mjs` refuses a one-family pair by design. One family is not this layer.                                                                                                                                                                                                                                                                                                 |
+| Tally at store 1101 | **Not run.** `tally.mjs check` measures inside the production container over `railway ssh`, and the Railway CLI here is unauthenticated (`railway login` is a browser flow).                                                                                                                                                                                                                                                                                                                                                          |
+| Human               | **Not run.** `node scripts/corpus/human.mjs sample backend/recipes` names the 12 Recipes to read.                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
-Only the first line is a pass. The batch ships because it is strictly better
-than the ungated seed it replaces, not because it has cleared the gate.
+**No layer passes, so #338 does not close on this branch.** The batch ships
+because it is strictly better than the ungated seed it replaces, not because it
+has cleared the gate. Against #338's six acceptance criteria:
+
+| #   | Criterion                                                                                  |                                                                                    |
+| --- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| 1   | All 50 through the four-layer gate, tally at 1101                                          | **Open** — see the table above                                                     |
+| 2   | The final record shape, with per-ingredient search terms                                   | **Shape done, terms carried forward** — below                                      |
+| 3   | Images generated and served from R2                                                        | **Open** — blocked on [#355](https://github.com/Zacplischka/dinner_app/issues/355) |
+| 4   | The blend ticket's provisional seed gone, unreferenced                                     | **Done**                                                                           |
+| 5   | A matching Craving deals these, one crowned and cooked with a fully in-tally Shopping List | **Dealt, crowned and cooked; "in tally" open** — below                             |
+| 6   | Every failure rewritten or dropped, and which recorded                                     | **Done** — "What the re-gate changed"                                              |
+
+Every open half sits behind a credential or a bucket that is not an agent's to
+mint: an `OPENAI_API_KEY`, an authenticated `railway`, and the R2 bucket. Closing
+#338 wants those runs; committing this batch does not.
+
+### What is carried forward rather than measured
+
+The 52 `searchTerm`s across 37 records, and the `g`/`ml` pack forms the re-gate
+restated, are the pilot's — measured against **store 3221**, which is the store
+[#338](https://github.com/Zacplischka/dinner_app/issues/338) exists to move off,
+because the two stores stock differently. They are in the right shape and they
+route (`tests/unit/shippedCorpus.test.ts`), but no run has established that
+these are the terms 1101 answers. When the tally layer does run, let it name the
+lines that miss and correct `searchTerm` from that run — do not read the present
+set as a 1101 measurement.
 
 ## What the re-gate changed, Recipe by Recipe
 
@@ -81,6 +106,28 @@ treated bay leaves as a Staple; `staples.ts` does not, so the line is listed.
 `readyInMinutes` and the pilot's local `image` path are gone: neither is a field
 of the shipped record.
 
+## The batch dealt and cooked
+
+`tests/unit/shippedCorpus.test.ts` is the only test that reads _these_ records:
+every suite that boots the app is pointed at `tests/fixtures/owned-recipes/` by
+`OWNED_RECIPES_DIR`, deliberately, so those tests state what the blend does
+rather than what ships this week. It deals a Deck for a plain `main course`
+Craving — plain because 18 of the 50 now carry no cuisine and a cuisine-named
+Craving cannot reach them — crowns the first Owned card on it, and mints its
+Shopping List through the real service off the corpus.
+
+With the shuffle stubbed for a repeatable run, the Deck of 15 carries the blend's
+floor of three: bangers-and-mash, beef-and-black-bean-stir-fry, beef-casserole.
+Crowning the first mints **Bangers and Mash with Onion Gravy**, stated for 4 and
+scaled to a Headcount of 6: 9 Ingredient Lines, 1 Staple out of the tally, and 8
+Retailer lookups — one per shoppable line, `potatoes` searched as the
+`potatoes 2kg` the record authored rather than by the name on the card.
+
+What that does **not** show is the Retailer's own answer. The stub matches every
+term, so "8 of 8 priced" is a fact about the routing and the scale, not about
+whether store 1101 stocks these — "fully in-tally" is the tally layer's
+measurement and nothing offline can stand in for it.
+
 ## Running the remaining layers
 
 ```bash
@@ -95,8 +142,11 @@ Spoonacular points, so it must not run while anyone is using the app — it
 refuses to start while a Session is live. See `AGENTS.md` for where each
 credential lives.
 
-Growing or replacing this batch cannot break a test: `OWNED_RECIPES_DIR`
+Growing or replacing this batch cannot break a blend test: `OWNED_RECIPES_DIR`
 overrides the directory the store loads (`config.ownedRecipesDir`), and the
 integration and contract suites — every suite that boots the app — point it at
 `tests/fixtures/owned-recipes/` so their counts are about the blend rather than
-about what ships here.
+about what ships here. It can break `tests/unit/ownedRecipeStore.test.ts` and
+`tests/unit/shippedCorpus.test.ts`, which is the point of them: those two read
+the shipped directory, and a batch that will not load, will not deal, or will
+not mint should say so here rather than in production.
