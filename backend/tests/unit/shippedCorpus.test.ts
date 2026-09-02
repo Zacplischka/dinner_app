@@ -10,10 +10,12 @@
 // this file proves the shipped records reach a Deck, crown, and mint a list
 // whose lines route by the term each record authored. It does not prove, and
 // must not be read as proving, that the batch is in tally.
+import { readFileSync } from 'node:fs';
 import RedisMock from 'ioredis-mock';
 import { describe, expect, it, vi } from 'vitest';
 import type { Craving, ProductMatchOutcome, QuantityResolution } from '@dinder/shared/types';
-import { shoppingListTotal } from '@dinder/shared/types';
+import { CUISINES, shoppingListTotal } from '@dinder/shared/types';
+import { config } from '../../src/config/index.js';
 import { createRecipePoolService } from '../../src/services/RecipePoolService.js';
 import { createShoppingListService } from '../../src/services/ShoppingListService.js';
 import {
@@ -165,6 +167,43 @@ describe('the shipped batch deals and cooks', () => {
     for (const ingredient of authored) {
       expect(searched).toContain(ingredient.searchTerm);
       expect(searched).not.toContain(ingredient.name);
+    }
+  });
+});
+
+describe('the cuisine tags the batch had to withhold', () => {
+  // `pending-cuisine.json` is the machine-readable half of the README's "Cuisine
+  // tag dropped" note: the tags these records were authored with, held back
+  // because `CUISINES` does not carry the value yet (#339, #340). Re-tagging is
+  // then a lookup rather than a re-derivation from a paragraph — and these
+  // assertions are what stop the list from rotting into a lie.
+  const pending: Record<string, string[]> = JSON.parse(
+    readFileSync(new URL('pending-cuisine.json', config.ownedRecipesDir), 'utf8')
+  );
+  const entries = Object.entries(pending);
+
+  it('names a value the chip vocabulary has not shipped yet', () => {
+    expect(entries.length).toBeGreaterThan(0);
+    // The self-destruct: the day `modern australian` joins CUISINES this fails,
+    // which is the reminder to stamp the slugs and delete the entry.
+    for (const [cuisine] of entries) expect(CUISINES).not.toContain(cuisine);
+  });
+
+  it('names shipped records that are still untagged', () => {
+    for (const [, slugs] of entries) {
+      for (const slug of slugs) {
+        const recipe = store.byPlaceId(`owned:${slug}`);
+        expect(
+          recipe,
+          `pending-cuisine.json lists ${slug}, which is not in the corpus`
+        ).toBeDefined();
+        // Listed *and* tagged means the re-tag happened and the list was not
+        // pruned — a stale entry reads as work still outstanding.
+        expect(
+          recipe!.cuisine,
+          `${slug} is tagged; drop it from pending-cuisine.json`
+        ).toBeUndefined();
+      }
     }
   });
 });

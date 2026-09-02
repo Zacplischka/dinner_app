@@ -85,19 +85,22 @@ thyme in `tbsp`; #241's static herb table owns `bunch` end to end.
 
 **AU vocabulary (1).** beef-pho said "broth" in two steps; Australia says stock.
 
-**Cuisine tag dropped (15).** The pilot tagged these `modern australian`, which
+**Cuisine tag withheld (15).** The pilot tagged these `modern australian`, which
 is not a value `shared/types/cook.ts` carries — the chip is
 [#340](https://github.com/Zacplischka/dinner_app/issues/340) and the bucket is
 [#339](https://github.com/Zacplischka/dinner_app/issues/339). An Owned Recipe
 with no cuisine answers only a Craving that names none, so until the chip ships
-these deal on a plain meal-type Craving and nowhere else: bangers-and-mash,
-beef-casserole, chicken-parmigiana, chicken-schnitzel-with-salad,
-chocolate-self-saucing-pudding, fish-and-chips,
-grilled-steak-with-chips-and-salad, lamb-chops-with-mash-and-peas,
-pork-chops-with-apple-sauce, pumpkin-soup, rissoles-with-gravy,
-roast-chicken-and-vegetables, shepherds-pie, tuna-mornay, zucchini-slice.
-caesar-salad, garlic-butter-steak-with-creamed-spinach and
-paleo-chicken-tray-bake carried no cuisine in the pilot either.
+these deal on a plain meal-type Craving and nowhere else — 18 of the 50 now
+carry no cuisine, and the largest bucket in AU dinner is unreachable from any
+cuisine-named Craving in this batch.
+
+**The 15 slugs are in [`pending-cuisine.json`](pending-cuisine.json), not in
+this paragraph**, so #339 re-tags by lookup rather than by parsing prose.
+Nothing at runtime reads it; `tests/unit/shippedCorpus.test.ts` holds it honest,
+and fails the day `modern australian` joins `CUISINES` — stamp the slugs then
+and delete the entry. caesar-salad, garlic-butter-steak-with-creamed-spinach and
+paleo-chicken-tray-bake are the other three untagged records: they carried no
+cuisine in the pilot either, and are not pending anything.
 
 **Culinary rewrites (1).** beef-casserole cooked with two bay leaves that no
 Ingredient Line carried — a hole a shopper would find at the stove. The pilot
