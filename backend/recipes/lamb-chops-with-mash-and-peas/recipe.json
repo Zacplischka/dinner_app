@@ -12,7 +12,8 @@
       "name": "lamb loin chops",
       "amount": 1,
       "unit": "kg",
-      "original": "1 kg lamb loin chops (about 8 chops)"
+      "original": "1 kg lamb loin chops (about 8 chops)",
+      "searchTerm": "lamb chops"
     },
     {
       "name": "potatoes",
@@ -55,7 +56,8 @@
       "name": "lemon",
       "amount": 1,
       "unit": "",
-      "original": "1 lemon"
+      "original": "1 lemon",
+      "searchTerm": "lemon loose"
     }
   ],
   "steps": [

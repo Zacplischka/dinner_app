@@ -94,7 +94,8 @@
       "name": "lemon",
       "amount": 1,
       "unit": "",
-      "original": "1 lemon, juiced"
+      "original": "1 lemon, juiced",
+      "searchTerm": "lemon loose"
     },
     {
       "name": "fresh coriander",

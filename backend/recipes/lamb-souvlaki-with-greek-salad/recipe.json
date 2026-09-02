@@ -18,7 +18,8 @@
       "name": "lemon",
       "amount": 2,
       "unit": "",
-      "original": "2 lemons"
+      "original": "2 lemons",
+      "searchTerm": "lemon loose"
     },
     {
       "name": "garlic",

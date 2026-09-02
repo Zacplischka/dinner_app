@@ -52,10 +52,11 @@
       "original": "3 spring onions, thinly sliced"
     },
     {
-      "name": "tamari",
+      "name": "gluten-free tamari",
       "amount": 40,
       "unit": "ml",
-      "original": "2 tbsp (40 ml) tamari"
+      "original": "2 tbsp (40 ml) gluten-free tamari",
+      "searchTerm": "tamari"
     },
     {
       "name": "gluten free oyster sauce",

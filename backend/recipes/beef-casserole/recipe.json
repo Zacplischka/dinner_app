@@ -78,9 +78,9 @@
     },
     {
       "name": "bay leaves",
-      "amount": 2,
-      "unit": "",
-      "original": "2 dried bay leaves"
+      "amount": 1,
+      "unit": "g",
+      "original": "2 dried bay leaves (1 g)"
     },
     {
       "name": "green beans",

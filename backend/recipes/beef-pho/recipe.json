@@ -5,7 +5,9 @@
   "servings": 4,
   "mealType": "main course",
   "cuisine": "vietnamese",
-  "diets": ["gluten free"],
+  "diets": [
+    "gluten free"
+  ],
   "ingredients": [
     {
       "name": "gluten-free beef stock",

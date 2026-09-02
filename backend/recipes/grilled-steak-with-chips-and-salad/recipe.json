@@ -48,7 +48,8 @@
       "name": "lemon",
       "amount": 1,
       "unit": "",
-      "original": "1 lemon, cut into wedges"
+      "original": "1 lemon, cut into wedges",
+      "searchTerm": "lemon loose"
     }
   ],
   "steps": [

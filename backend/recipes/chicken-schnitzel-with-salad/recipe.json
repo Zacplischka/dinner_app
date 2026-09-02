@@ -64,7 +64,8 @@
       "name": "lemon",
       "amount": 1,
       "unit": "",
-      "original": "1 lemon"
+      "original": "1 lemon",
+      "searchTerm": "lemon loose"
     },
     {
       "name": "dijon mustard",

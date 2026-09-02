@@ -36,7 +36,8 @@
       "name": "apple cider vinegar",
       "amount": 20,
       "unit": "ml",
-      "original": "1 tbsp (20 ml) apple cider vinegar"
+      "original": "1 tbsp (20 ml) apple cider vinegar",
+      "searchTerm": "cornwells apple cider vinegar"
     },
     {
       "name": "dijon mustard",

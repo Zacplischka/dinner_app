@@ -34,10 +34,11 @@
       "original": "4 garlic cloves"
     },
     {
-      "name": "fish sauce",
+      "name": "gluten-free fish sauce",
       "amount": 100,
       "unit": "ml",
-      "original": "100 ml fish sauce (2 tbsp for the marinade, 3 tbsp for the sauce)"
+      "original": "100 ml gluten-free fish sauce (2 tbsp for the marinade, 3 tbsp for the sauce)",
+      "searchTerm": "fish sauce"
     },
     {
       "name": "brown sugar",

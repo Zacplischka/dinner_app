@@ -17,9 +17,9 @@
     },
     {
       "name": "sweet potato",
-      "amount": 500,
-      "unit": "g",
-      "original": "500 g sweet potato (about 1 large)"
+      "amount": 2,
+      "unit": "",
+      "original": "2 sweet potatoes (about 500 g)"
     },
     {
       "name": "carrots",
@@ -61,7 +61,8 @@
       "name": "apple cider vinegar",
       "amount": 20,
       "unit": "ml",
-      "original": "1 tbsp (20 ml) apple cider vinegar"
+      "original": "1 tbsp (20 ml) apple cider vinegar",
+      "searchTerm": "cornwells apple cider vinegar"
     },
     {
       "name": "dried rosemary",

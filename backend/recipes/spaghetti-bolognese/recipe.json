@@ -70,8 +70,8 @@
     {
       "name": "bay leaves",
       "amount": 1,
-      "unit": "",
-      "original": "1 bay leaf"
+      "unit": "g",
+      "original": "1 bay leaf (about 1 g)"
     },
     {
       "name": "spaghetti",

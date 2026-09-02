@@ -51,7 +51,7 @@
     },
     {
       "name": "taco shells",
-      "searchTerm": "taco kit",
+      "searchTerm": "taco shells",
       "amount": 12,
       "unit": "",
       "original": "12 taco shells"
@@ -77,8 +77,8 @@
     {
       "name": "sour cream",
       "amount": 125,
-      "unit": "g",
-      "original": "125 g sour cream, to serve"
+      "unit": "ml",
+      "original": "125 ml sour cream, to serve"
     }
   ],
   "steps": [

@@ -12,7 +12,8 @@
       "name": "white fish fillets",
       "amount": 600,
       "unit": "g",
-      "original": "600 g firm white fish fillets"
+      "original": "600 g firm white fish fillets",
+      "searchTerm": "basa fillets"
     },
     {
       "name": "potatoes",
@@ -49,13 +50,14 @@
       "name": "lemon",
       "amount": 1,
       "unit": "",
-      "original": "1 lemon, cut into wedges"
+      "original": "1 lemon, cut into wedges",
+      "searchTerm": "lemon loose"
     },
     {
       "name": "tartare sauce",
-      "amount": 250,
-      "unit": "ml",
-      "original": "250 ml jar tartare sauce"
+      "amount": 220,
+      "unit": "g",
+      "original": "220 g jar tartare sauce"
     }
   ],
   "steps": [

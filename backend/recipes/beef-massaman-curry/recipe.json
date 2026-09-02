@@ -16,10 +16,11 @@
       "original": "1 kg beef chuck steak, cut into 4 cm chunks"
     },
     {
-      "name": "massaman curry paste",
+      "name": "gluten-free massaman curry paste",
       "amount": 100,
       "unit": "g",
-      "original": "100 g massaman curry paste (about 5 tbsp)"
+      "original": "100 g gluten-free massaman curry paste (about 5 tbsp)",
+      "searchTerm": "massaman curry paste"
     },
     {
       "name": "coconut milk",
@@ -46,10 +47,11 @@
       "original": "75 g roasted peanuts, roughly chopped (about 1/2 cup)"
     },
     {
-      "name": "fish sauce",
+      "name": "gluten-free fish sauce",
       "amount": 40,
       "unit": "ml",
-      "original": "2 tbsp (40 ml) fish sauce"
+      "original": "2 tbsp (40 ml) gluten-free fish sauce",
+      "searchTerm": "fish sauce"
     },
     {
       "name": "brown sugar",

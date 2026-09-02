@@ -10,9 +10,9 @@
   "ingredients": [
     {
       "name": "zucchini",
-      "amount": 400,
-      "unit": "g",
-      "original": "400 g zucchini (about 3), grated"
+      "amount": 3,
+      "unit": "",
+      "original": "3 zucchini (about 400 g), grated"
     },
     {
       "name": "carrot",
@@ -34,7 +34,7 @@
     },
     {
       "name": "corn kernels",
-      "searchTerm": "corn kernels can",
+      "searchTerm": "corn kernels",
       "amount": 125,
       "unit": "g",
       "original": "125 g can corn kernels, drained"
@@ -52,10 +52,11 @@
       "original": "150 g (1 cup) self-raising flour"
     },
     {
-      "name": "cheddar cheese",
+      "name": "cheddar cheese (vegetarian rennet)",
       "amount": 125,
       "unit": "g",
-      "original": "125 g cheddar cheese, grated"
+      "original": "125 g cheddar cheese made with vegetarian rennet, grated",
+      "searchTerm": "cheddar cheese"
     },
     {
       "name": "olive oil",
