@@ -167,6 +167,14 @@ export interface ShoppingList {
   /** The end-of-method credit, and the degrade path when `steps` is empty. */
   sourceName?: string;
   sourceUrl?: string;
+  /**
+   * Who authored the Recipe this was minted from. `'owned'` is Dinder's own
+   * (ADR 0012) and renders no credit line at all — an Owned Recipe names no
+   * source and the absence is correct. Absent means Sourced, and still reads
+   * as Spoonacular: the vendor credit is a licence obligation that must
+   * survive a data glitch (#314), so silence is only ever explicit.
+   */
+  provenance?: 'owned';
   /** ISO. The list's 7-day clock starts here and nothing extends it. */
   mintedAt: string;
 }

@@ -14,18 +14,26 @@ import { useWakeLock } from '../hooks/useWakeLock';
 /**
  * The one end-of-method credit, which doubles as the degrade path: a Recipe
  * whose snapshotted steps are empty shows this line in place of the method.
- * Spoonacular is the sole recipe source in v1, so a missing source name still
+ * Spoonacular is the sole recipe *vendor* in v1, so a missing source name still
  * has an honest thing to credit; a missing URL is simply not a link.
+ *
+ * An Owned Recipe is the one thing that renders nothing at all, in both paths:
+ * it names no source and the absence is correct (ADR 0012). Only the explicit
+ * `provenance` says so — a missing name alone is a data glitch, and the vendor
+ * credit is a licence obligation that must survive one (#314).
  */
 function SourceCredit({
   hasMethod,
   sourceName,
   sourceUrl,
+  provenance,
 }: {
   hasMethod: boolean;
   sourceName?: string;
   sourceUrl?: string;
+  provenance?: 'owned';
 }) {
+  if (provenance === 'owned') return null;
   const name = sourceName ?? 'Spoonacular';
   const source = sourceUrl ? (
     <a
@@ -122,6 +130,7 @@ export default function CookViewPage() {
               hasMethod={list.steps.length > 0}
               sourceName={list.sourceName}
               sourceUrl={list.sourceUrl}
+              provenance={list.provenance}
             />
           </div>
         )}

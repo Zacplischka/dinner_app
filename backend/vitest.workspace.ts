@@ -6,21 +6,18 @@ const unitEnv = {
   NODE_ENV: 'test',
 };
 
+// The corpus is reference data read at boot, so every suite that boots the app
+// is pointed at a fixed fixture corpus — three italian vegetarian mains —
+// instead of the seed that ships this week (#331). It is the same
+// substitutable seam the Spoonacular fake uses, one layer out: these tests
+// state what the blend does, not what the corpus happens to hold, so growing
+// or re-cuisining the shipped seed cannot turn them red.
 const serviceEnv = {
   ...unitEnv,
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
   REDIS_PORT: process.env.REDIS_PORT || '6379',
   SUPABASE_URL: process.env.SUPABASE_URL || 'http://localhost:54321',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role',
-};
-
-// The corpus is reference data read at boot, so the app the contract suite
-// drives over HTTP is pointed at a fixed fixture corpus — three italian
-// vegetarian mains — instead of the seed that ships this week (#331). It is
-// the same substitutable seam the Spoonacular fake uses, one layer out: these
-// tests state what the blend does, not what the corpus happens to hold.
-const contractEnv = {
-  ...serviceEnv,
   OWNED_RECIPES_DIR: fileURLToPath(new URL('tests/fixtures/owned-recipes/', import.meta.url)),
 };
 
@@ -52,7 +49,7 @@ export default defineWorkspace([
       include: ['tests/contract/**/*.test.ts'],
       poolOptions: { threads: { singleThread: true } },
       testTimeout: 10000,
-      env: contractEnv,
+      env: serviceEnv,
     },
   },
 ]);

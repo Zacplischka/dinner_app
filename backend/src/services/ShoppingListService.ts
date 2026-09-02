@@ -461,6 +461,11 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       steps: recipe.steps,
       sourceName: recipe.sourceName,
       sourceUrl: recipe.sourceUrl,
+      // An Owned Recipe has no source to credit, and the Cook View must be
+      // told so rather than inferring it from the absent name — absence is a
+      // data glitch on a Sourced Recipe, and the vendor credit is a licence
+      // obligation (ADR 0012, #314). The `owned:` identity is the fact.
+      provenance: recipe.placeId.startsWith('owned:') ? 'owned' : undefined,
       mintedAt: new Date(now()).toISOString(),
     };
     await deps.redis.set(

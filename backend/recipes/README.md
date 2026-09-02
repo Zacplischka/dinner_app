@@ -17,8 +17,9 @@ nothing has measured their ingredient lines against the Tally at store 1101.
 
 Growing or replacing this seed cannot break a test: `OWNED_RECIPES_DIR`
 overrides the directory the store loads (`config.ownedRecipesDir`), and the
-contract suite points it at `tests/fixtures/owned-recipes/` so its counts are
-about the blend rather than about what ships here this week.
+integration and contract suites — every suite that boots the app — point it at
+`tests/fixtures/owned-recipes/` so their counts are about the blend rather than
+about what ships here this week.
 
 No record carries a `photoUrl`: the R2 bucket does not exist yet
 ([#355](https://github.com/Zacplischka/dinner_app/issues/355)), and a committed
