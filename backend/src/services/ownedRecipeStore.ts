@@ -8,8 +8,10 @@
 // a frozen `owned:<slug>` identity authored with the record, mandatory
 // servings, one meal type, at most one cuisine, declared diets — and no
 // `aggregateLikes` and no source credit, because there is no source. The
-// schema is the structural gate: `.strict()` is what keeps a backfilled
-// `aggregateLikes` from ever landing in a record.
+// schema is the last structural gate: `.strict()` is what keeps a backfilled
+// `aggregateLikes` from ever landing in a record. The corpus pipeline's own
+// structural layer (`scripts/corpus/gate.mjs`, #336) checks the same shape
+// before a record is ever committed — change one and change the other.
 import { readFileSync, readdirSync } from 'node:fs';
 import { z } from 'zod';
 import { CUISINES, DIETS, MEAL_TYPES, type Craving, type Diet } from '@dinder/shared/types';
@@ -34,6 +36,11 @@ const ownedRecipeSchema = z
       .array(
         z.object({
           name: z.string().min(1),
+          /** The matchable Woolworths term, when `name` has to stay
+           *  cook-honest to clear the corpus's culinary gate: "gluten free
+           *  vegetable stock" reads right on the card and searches like
+           *  nothing, so the Product Match gets "vegetable stock" here. */
+          searchTerm: z.string().min(1).optional(),
           amount: z.number(),
           unit: z.string(),
           original: z.string().min(1),
