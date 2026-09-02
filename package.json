@@ -26,6 +26,8 @@
     "check:authoring-stage": "node --test scripts/corpus/author-dish.test.mjs",
     "check:corpus-images": "node --test scripts/corpus/images.test.mjs",
     "check:gate-layers": "node --test scripts/corpus/gate.test.mjs",
+    "check:tally-gate": "node --test scripts/corpus/tally.test.mjs",
+    "check:human-gate": "node --test scripts/corpus/human.test.mjs",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",
