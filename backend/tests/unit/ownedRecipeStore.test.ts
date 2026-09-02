@@ -1,10 +1,11 @@
 // The Owned Recipe Store (#331): which Owned Recipes answer a Craving, and the
 // shipped corpus the store is built over.
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Craving } from '@dinder/shared/types';
+import { config } from '../../src/config/index.js';
 import {
   createOwnedRecipeStore,
   loadOwnedCorpus,
@@ -127,8 +128,8 @@ describe('loadOwnedCorpus — the record shape', () => {
 describe('the shipped corpus', () => {
   const corpus = loadOwnedCorpus();
 
-  it('ships a seed big enough to deal the floor on a real Craving', () => {
-    expect(corpus.length).toBeGreaterThanOrEqual(10);
+  it('ships the re-gated pilot batch, not the blend ticket’s provisional seed', () => {
+    expect(corpus.length).toBeGreaterThanOrEqual(50);
   });
 
   it('carries a frozen owned: identity and mandatory servings on every record', () => {
@@ -148,5 +149,20 @@ describe('the shipped corpus', () => {
 
   it('can fill the owned floor of a plain main-course Craving', () => {
     expect(createOwnedRecipeStore(corpus).forCraving(craving()).length).toBeGreaterThanOrEqual(3);
+  });
+
+  // ADR 0012: the Fact Record is the only persistent artefact of reading, and
+  // it commits beside the Recipe it produced as that Recipe's audit trail. The
+  // store never reads one, so nothing else would notice it going missing.
+  it('commits a Fact Record beside every Recipe, naming its publishers', () => {
+    for (const recipe of corpus) {
+      const slug = recipe.placeId.replace(/^owned:/, '');
+      const fact = JSON.parse(
+        readFileSync(new URL(`${slug}/fact.json`, config.ownedRecipesDir), 'utf8')
+      ) as { sources?: { url?: string; robots_ok?: boolean }[] };
+
+      expect(fact.sources?.length ?? 0).toBeGreaterThanOrEqual(3);
+      expect(fact.sources?.every((source) => source.url && source.robots_ok)).toBe(true);
+    }
   });
 });
