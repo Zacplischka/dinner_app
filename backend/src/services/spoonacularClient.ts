@@ -186,11 +186,25 @@ export function guardDailyPoints(
     if (used >= ceiling) {
       throw new SpoonacularRefusal(`Spoonacular daily point ceiling reached (${used}/${ceiling})`);
     }
-    const response = await fetchImpl(input, init);
     // A response the source didn't count is still one it charged for. Leaving
     // the counter frozen on a header that stopped arriving is the guard
     // quietly ceasing to guard — the silent bill it exists to prevent — so an
     // uncounted response costs the cheapest a call can be, loudly.
+    let response: Response;
+    try {
+      response = await fetchImpl(input, init);
+    } catch (error) {
+      // A call that never came back is the same invariant, and the case that
+      // needs it most: the deal-time budget (#333) aborts the calls the source
+      // is slowest to answer — the ones it has already received and will bill.
+      await redis.set(key, String(used + 1), 'PX', POINTS_TTL_MS);
+      logger.warn(
+        // The path only — the query string carries the API key.
+        { used, path: new URL(String(input)).pathname, err: error },
+        'Spoonacular call failed before any quota header'
+      );
+      throw error;
+    }
     const reported = Number(response.headers.get('X-API-Quota-Used') ?? NaN);
     if (Number.isNaN(reported)) {
       // The path only — the query string carries the API key.
