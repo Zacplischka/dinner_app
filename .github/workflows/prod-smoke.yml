@@ -19,7 +19,9 @@ jobs:
       # Supabase pauses a free-tier project after a week without API requests, and this
       # one only sees traffic when someone signs in or opens Friends. A daily read keeps it
       # awake; a paused project fails DNS and turns this job red, which is the alert.
+      # always(): a Places or Railway hiccup in the step above must not skip the ping.
       - name: Keep the Supabase project awake
+        if: always()
         env:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
