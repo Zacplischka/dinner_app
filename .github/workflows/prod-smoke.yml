@@ -15,3 +15,17 @@ jobs:
 
       - name: Smoke test production backend
         run: bash scripts/smoke-prod.sh
+
+      # Supabase pauses a free-tier project after a week without API requests, and this
+      # one only sees traffic when someone signs in or opens Friends. A daily read keeps it
+      # awake; a paused project fails DNS and turns this job red, which is the alert.
+      # always(): a Places or Railway hiccup in the step above must not skip the ping.
+      - name: Keep the Supabase project awake
+        if: always()
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          code=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 \
+            -H "apikey: ${SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            'https://hcjuqvicwuszwqkreklc.supabase.co/rest/v1/profiles?select=id&limit=1') || code=000
+          [ "$code" = "200" ] && echo "OK: Supabase answered 200" || { echo "FAIL: Supabase answered ${code} (000 = paused, DNS gone)"; exit 1; }
