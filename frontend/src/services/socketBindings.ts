@@ -372,4 +372,7 @@ export async function leaveSession(sessionCode: string): Promise<Ack<null>> {
 export function disconnectSocket(): void {
   socketService.disconnectSocket();
   useSessionStore.getState().setConnectionStatus(false);
+  // An intentional teardown is not a lost connection: the next connect is a
+  // fresh Session, not a reconnect, so it must not toast "Reconnected".
+  hadPreviousConnection = false;
 }
