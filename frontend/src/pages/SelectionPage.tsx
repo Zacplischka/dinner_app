@@ -348,7 +348,7 @@ export default function SelectionPage() {
                 </svg>
               </div>
               <h2 className="text-3xl font-display font-black text-text mb-3">All Done!</h2>
-              <p className="text-muted mb-8 text-lg">Waiting for other diners...</p>
+              <p className="text-muted mb-8 text-lg">Waiting for the others…</p>
 
               <div className="mb-6">
                 <div className="flex justify-center gap-2 mb-3">
@@ -677,7 +677,7 @@ export default function SelectionPage() {
             <h2 id="full-house-title" className="text-2xl font-display font-black text-lime mb-3">
               EVERYONE LIKED THIS
             </h2>
-            <p className="text-3xl font-display font-black text-text mb-3 truncate">
+            <p className="text-3xl font-display font-black text-text mb-3 line-clamp-2">
               {fullHouseName}
             </p>
             <p className="text-muted mb-6">Lock it in now, or keep going for more.</p>

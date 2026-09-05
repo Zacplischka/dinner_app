@@ -83,8 +83,7 @@ export default function WatchSetupPage() {
           <fieldset>
             <legend className="label">Genres</legend>
             <p className="mb-3 text-xs text-muted">
-              Pick any, or none for anything. More chips in a row means more to swipe, not fewer;
-              genres and decades combine.
+              Pick any, or none for anything. More chips means more to swipe, not fewer.
             </p>
             <div className="flex flex-wrap gap-2">
               {GENRES.map((genre) => {

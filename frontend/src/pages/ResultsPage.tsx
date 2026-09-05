@@ -80,9 +80,11 @@ function RecipeCrown({
 }
 
 // The Watch ending (#369): the crowned Movie, outright — no other-matches list,
-// nothing to order or compare. The trailer is the one continuation, and the
-// critics score is a 0-100 figure, never the Restaurant's stars.
+// nothing to order or compare. The trailer is the one continuation — a YouTube
+// search when the corpus has no trailer id, so every crown has a next step —
+// and the critics score is a 0-100 figure, never the Restaurant's stars.
 // ponytail: MovieCrown beside RecipeCrown; fold both into one EntryCrown on a fourth kind.
+// ponytail: JustWatch has no public API; a search link is the whole integration.
 function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
   const meta = [
     movie.year,
@@ -91,6 +93,12 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
   ]
     .filter(Boolean)
     .join(' · ');
+  const trailerHref =
+    movie.trailerUrl ??
+    `https://www.youtube.com/results?search_query=${encodeURIComponent(
+      [movie.name, movie.year, 'trailer'].filter(Boolean).join(' ')
+    )}`;
+  const whereToWatchHref = `https://www.justwatch.com/au/search?q=${encodeURIComponent(movie.name)}`;
   return (
     <div
       data-match-card
@@ -109,20 +117,31 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
       </p>
       <p className="text-lg font-semibold text-text">{movie.name}</p>
       {meta && <p className="text-sm text-muted mt-1">{meta}</p>}
-      <p className="text-sm text-muted mt-1">{reason}</p>
-      <WikipediaCredit placeId={movie.placeId} />
-
-      {movie.trailerUrl && (
-        <a
-          href={movie.trailerUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          // An anchor is inline; .btn assumes a button's box, so give it one.
-          className="btn btn-primary mt-3 flex min-h-[48px] w-full items-center justify-center"
-        >
-          Watch trailer
-        </a>
+      {movie.overview && (
+        <>
+          <p className="text-sm text-muted mt-2 line-clamp-3">{movie.overview}</p>
+          <WikipediaCredit placeId={movie.placeId} />
+        </>
       )}
+      <p className="text-sm text-muted mt-2">{reason}</p>
+
+      <a
+        href={trailerHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        // An anchor is inline; .btn assumes a button's box, so give it one.
+        className="btn btn-primary mt-3 flex min-h-[48px] w-full items-center justify-center"
+      >
+        Watch trailer
+      </a>
+      <a
+        href={whereToWatchHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 block py-2 text-center text-sm text-cyan underline"
+      >
+        Where to watch
+      </a>
     </div>
   );
 }

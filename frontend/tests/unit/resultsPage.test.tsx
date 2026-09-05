@@ -793,6 +793,7 @@ describe('ResultsPage', () => {
       runtimeMinutes: 117,
       genres: ['Horror', 'Sci-Fi'],
       rating: 93,
+      overview: 'Alien is a 1979 science fiction horror film directed by Ridley Scott.',
       trailerUrl: 'https://www.youtube.com/watch?v=is2EMy3u0xc',
     };
     const heat = {
@@ -827,6 +828,8 @@ describe('ResultsPage', () => {
       expect(crown.textContent).toContain('1979 · 117 min · 93% critics');
       expect(crown.textContent).toContain('Everyone swiped yes on this one.');
       expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
+      // The crown is where the overview can actually be read, credited where it appears.
+      expect(within(crown as HTMLElement).getByText(alien.overview)).toHaveClass('line-clamp-3');
       expect(within(crown as HTMLElement).getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
         'href',
         'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q103569'
@@ -863,7 +866,9 @@ describe('ResultsPage', () => {
       expect(trailer.getAttribute('rel')).toContain('noopener');
     });
 
-    it('offers no trailer link when the source has none', () => {
+    // 118 of the corpus's 300 Movies carry no trailer id; the crown still ends
+    // in a next step, so the same button searches YouTube for one.
+    it('searches YouTube for the trailer when the source has none', () => {
       seedWatch({
         overlappingOptions: [heat],
         allSelections: { Alice: [heat.placeId], Bob: [heat.placeId] },
@@ -871,7 +876,25 @@ describe('ResultsPage', () => {
       });
       renderResults();
 
-      expect(screen.queryByRole('link', { name: 'Watch trailer' })).not.toBeInTheDocument();
+      const trailer = screen.getByRole('link', { name: 'Watch trailer' });
+      expect(trailer).toHaveAttribute(
+        'href',
+        'https://www.youtube.com/results?search_query=Heat%201995%20trailer'
+      );
+      expect(trailer).toHaveAttribute('target', '_blank');
+      expect(trailer.getAttribute('rel')).toContain('noopener');
+      // No overview, so nothing to credit.
+      expect(screen.queryByRole('link', { name: 'Wikipedia' })).not.toBeInTheDocument();
+    });
+
+    it('links where to watch on JustWatch Australia in a new tab', () => {
+      seedWatch();
+      renderResults();
+
+      const where = screen.getByRole('link', { name: 'Where to watch' });
+      expect(where).toHaveAttribute('href', 'https://www.justwatch.com/au/search?q=Alien');
+      expect(where).toHaveAttribute('target', '_blank');
+      expect(where.getAttribute('rel')).toContain('noopener');
     });
 
     it('offers Select Again on a crowned Movie', () => {
