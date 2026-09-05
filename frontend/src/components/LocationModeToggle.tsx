@@ -1,7 +1,7 @@
 // Shared "Current location / Suburb or postcode" selector for the two
 // location-entry flows (Create Session and Venue discovery).
 
-export type LocationMode = 'current' | 'manual';
+type LocationMode = 'current' | 'manual';
 
 interface LocationModeToggleProps {
   mode: LocationMode;

@@ -31,9 +31,9 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const MIN_PUBLISHERS = 3;
+const MIN_PUBLISHERS = 3;
 
-export const USER_AGENT = 'DinderCorpusBot/1.0 (+https://github.com/Zacplischka/dinner_app)';
+const USER_AGENT = 'DinderCorpusBot/1.0 (+https://github.com/Zacplischka/dinner_app)';
 
 // The tokens whose disallow binds us. Ours first, then the AI-agent family:
 // ADR 0012 honours an AI-agent disallow absolutely, so a group aimed at any
@@ -147,7 +147,7 @@ export function htmlToText(html) {
     .join('\n');
 }
 
-export const slugify = (dish) =>
+const slugify = (dish) =>
   dish
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
