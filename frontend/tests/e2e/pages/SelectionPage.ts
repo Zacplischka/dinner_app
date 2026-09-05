@@ -2,11 +2,13 @@ import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
- * SelectionPage - Page object for Tinder-style restaurant selection
+ * SelectionPage - Page object for Tinder-style Deck selection (Restaurants or Recipes)
  *
  * Routes: /session/:sessionCode/select
  */
 export class SelectionPage extends BasePage {
+  readonly heading: Locator;
+  readonly swipeCard: Locator;
   readonly likeButton: Locator;
   readonly passButton: Locator;
   readonly submitButton: Locator;
@@ -16,6 +18,8 @@ export class SelectionPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
+    this.heading = page.locator('header').getByRole('heading').first();
+    this.swipeCard = page.locator('[data-swipe-card]');
     this.likeButton = page.getByRole('button', { name: /Like/i }).or(
       page.locator('button[aria-label="Like"]')
     );
@@ -24,7 +28,7 @@ export class SelectionPage extends BasePage {
     );
     this.submitButton = page.getByRole('button', { name: /Submit/i });
 
-    this.loadingState = page.getByText(/Finding restaurants/i);
+    this.loadingState = page.getByText(/Finding (restaurants|recipes)/i);
     this.waitingState = page.getByText(/Waiting for|other diners/i);
   }
 

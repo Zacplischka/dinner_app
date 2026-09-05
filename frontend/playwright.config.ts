@@ -89,28 +89,27 @@ export default defineConfig({
     },
   ],
 
-  // Web server configuration - start frontend before tests
-  // In CI, servers are started by the workflow, so webServer is disabled
-  // In local development, webServer starts preview on port 3000 to match BASE_URL
-  webServer: CI
-    ? undefined
-    : [
-        {
-          command: 'npm run build && npm run preview -- --port 3000',
-          url: BASE_URL,
-          reuseExistingServer: !LIVE_COMPARE,
-          timeout: 120_000,
-          stdout: 'pipe',
-          stderr: 'pipe',
-        },
-        // Also start backend for local E2E testing
-        {
-          command: 'cd ../backend && npm run build && npm start',
-          url: `${BACKEND_URL}/health`,
-          reuseExistingServer: !LIVE_COMPARE,
-          timeout: 120_000,
-          stdout: 'pipe',
-          stderr: 'pipe',
-        },
-      ],
+  // Web server configuration - start frontend and backend before tests.
+  // Same two entries locally and in CI; the CI e2e job only supplies Redis.
+  webServer: [
+    {
+      command: 'npm run build && npm run preview -- --port 3000',
+      // `vite build` reads .env.production, which points the bundle at the
+      // production backend; pin it to the backend started below instead.
+      env: { VITE_API_BASE_URL: `${BACKEND_URL}/api`, VITE_BACKEND_URL: BACKEND_URL },
+      url: BASE_URL,
+      reuseExistingServer: !LIVE_COMPARE,
+      timeout: 120_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: 'cd ../backend && npm run build && npm start',
+      url: `${BACKEND_URL}/health`,
+      reuseExistingServer: !LIVE_COMPARE,
+      timeout: 120_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  ],
 });
