@@ -386,7 +386,11 @@ export default function SelectionPage() {
   }
 
   if (hasSubmitted) {
-    const stillSwiping = participants.filter((p) => !p.hasSubmitted).map((p) => p.displayName);
+    // The submit ack lands before the participant:submitted echo, so for one
+    // render the roster still says I'm swiping; on this screen I never am.
+    const stillSwiping = participants
+      .filter((p) => !p.hasSubmitted && p.participantId !== currentUserId)
+      .map((p) => p.displayName);
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
