@@ -7,9 +7,10 @@
 //
 // Sources, both keyless behind a descriptive User-Agent: the en.wikipedia
 // Action API (poster thumbnail, intro extract, QID) and Wikidata SPARQL (year,
-// runtime, genres, IMDb rating, trailer id). Rating is the IMDb rating ONLY —
-// absent when Wikidata has none — so the Top Pick's middle rung compares like
-// with like; a Rotten Tomatoes % would sit on a different scale.
+// runtime, genres, critics score, trailer id). The rating is a critics score
+// on one 0–100 scale — the Rotten Tomatoes Tomatometer %, else Metacritic's
+// Metascore, else absent — so the Top Pick's middle rung compares like with
+// like; IMDb's 0–10 covered a third of the seeds and sat on a different scale.
 //
 // Operator vehicle, run by a human, occasionally (~30 s, sequential, 200 ms
 // apart, one retry on 429/5xx). The summary lists any seed that went missing or
@@ -84,14 +85,15 @@ async function wikiBatch(titles) {
 const sparql = (qids) => `
 SELECT ?film (MIN(?dur) AS ?runtime) (MIN(?y) AS ?year)
   (GROUP_CONCAT(DISTINCT ?gl; separator="|") AS ?genres) (GROUP_CONCAT(DISTINCT ?cl; separator="|") AS ?types)
-  (SAMPLE(?im) AS ?imdb) (SAMPLE(?yt) AS ?youtube)
+  (SAMPLE(?rt) AS ?tomatometer) (SAMPLE(?mc) AS ?metacritic) (MIN(?yt) AS ?youtube)
 WHERE {
   VALUES ?film { ${qids.map((q) => `wd:${q}`).join(' ')} }
   OPTIONAL { ?film wdt:P2047 ?dur . }
   OPTIONAL { ?film wdt:P577 ?d . BIND(YEAR(?d) AS ?y) }
   OPTIONAL { ?film wdt:P136 ?g . ?g rdfs:label ?gl FILTER(LANG(?gl) = "en") }
   OPTIONAL { ?film wdt:P31 ?c . ?c rdfs:label ?cl FILTER(LANG(?cl) = "en") }  # "animated feature film" lives here, not in P136
-  OPTIONAL { ?film p:P444 ?s . ?s ps:P444 ?im ; pq:P447 wd:Q37312 . }
+  OPTIONAL { ?film p:P444 ?s . ?s ps:P444 ?rt ; pq:P447 wd:Q105584 ; pq:P459 wd:Q108403393 . }  # Rotten Tomatoes, Tomatometer (not the 0–10 average of reviews)
+  OPTIONAL { ?film p:P444 ?t . ?t ps:P444 ?mc ; pq:P447 wd:Q150248 . }  # Metacritic
   OPTIONAL { ?film wdt:P1651 ?yt . }
 } GROUP BY ?film`;
 
@@ -140,10 +142,16 @@ export function bucketGenres(labels) {
     .map(([name]) => name);
 }
 
-/** P444 is a free string: "8.7/10", "8.7" → 0–10; anything else → null. */
-export function imdbRating(str) {
-  const m = /^(\d+(?:\.\d+)?)\s*(?:\/10)?$/.exec(str?.trim() ?? '');
-  return m ? Math.round(Number(m[1]) * 10) / 10 : null;
+/**
+ * P444 is a free string. The Tomatometer reads "94%", the Metascore "78/100";
+ * either → 0–100, Tomatometer first. Anything else (Metacritic's "7.9/10" user
+ * score, say) → null.
+ */
+export function criticsScore(tomatometer, metacritic) {
+  const rt = /^(\d{1,3})%$/.exec(tomatometer?.trim() ?? '');
+  if (rt) return Number(rt[1]);
+  const mc = /^(\d{1,3})\/100$/.exec(metacritic?.trim() ?? '');
+  return mc ? Number(mc[1]) : null;
 }
 
 const cleanTitle = (t) => t.replace(/\s*\((?:\d{4}\s+)?(?:[\w-]+\s+)?film\)$/i, '');
@@ -171,9 +179,9 @@ export function emitModule(movies, generatedOn) {
 // Wikipedia article, CC BY-SA 4.0 — the article for a card is
 // https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/<placeId>.
 // Posters are English Wikipedia's fair-use uploads, hot-linked at thumbnail
-// size from upload.wikimedia.org. Year, runtime, genres, IMDb rating and
-// trailer id are Wikidata (CC0); the rating is Wikidata's hand-entered
-// snapshot of IMDb, not live.
+// size from upload.wikimedia.org. Year, runtime, genres, critics score and
+// trailer id are Wikidata (CC0); the rating is Wikidata's hand-entered snapshot
+// of the Rotten Tomatoes Tomatometer (else Metacritic's Metascore), not live.
 import type { Movie } from '@dinder/shared/types';
 
 // prettier-ignore
@@ -238,9 +246,10 @@ async function main() {
       placeId: qid,
       name: cleanTitle(p.title),
       year: Number(w.year),
-      genres: bucketGenres(`${w.genres ?? ''}|${w.types ?? ''}`.split('|').filter(Boolean)),
+      // Sorted so GROUP_CONCAT's arbitrary order can't flip a tie in the 4-genre cut between rebuilds.
+      genres: bucketGenres(`${w.genres ?? ''}|${w.types ?? ''}`.split('|').filter(Boolean).sort()),
       runtimeMinutes: runtime && runtime > 1000 ? Math.round(runtime / 60) : runtime, // P2047 sometimes in seconds
-      rating: imdbRating(w.imdb),
+      rating: criticsScore(w.tomatometer, w.metacritic),
       overview: trimOverview(p.extract),
       photoUrl: p.thumbnail.source.split('?')[0],
       trailerUrl: w.youtube ? `https://www.youtube.com/watch?v=${w.youtube}` : null,
@@ -274,7 +283,7 @@ async function main() {
   console.log(`genres: ${hist((m) => (m.genres.length ? m.genres : ['(none)']))}`);
   console.log(`decades: ${hist((m) => [`${Math.floor(m.year / 10) * 10}s`])}`);
   console.log(
-    `imdb rating ${movies.filter((m) => m.rating != null).length}, trailer ${movies.filter((m) => m.trailerUrl).length}, runtime ${movies.filter((m) => m.runtimeMinutes).length}`
+    `critics score ${movies.filter((m) => m.rating != null).length}, trailer ${movies.filter((m) => m.trailerUrl).length}, runtime ${movies.filter((m) => m.runtimeMinutes).length}`
   );
 }
 

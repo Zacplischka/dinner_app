@@ -52,9 +52,10 @@ export interface Movie {
   /** Poster. */
   photoUrl?: string;
   /**
-   * The Top Pick's middle rung for a Movie: the IMDb rating, 0-10. Not a
-   * Restaurant's 0-5 — a Deck never mixes kinds, so the rung only ever
-   * compares Movie with Movie. Absent when the source has none.
+   * The Top Pick's middle rung for a Movie: a critics score on one 0–100
+   * scale — the Rotten Tomatoes Tomatometer %, else Metacritic's Metascore.
+   * Not a Restaurant's 0-5 — a Deck never mixes kinds, so the rung only ever
+   * compares Movie with Movie. Absent when the source has neither.
    */
   rating?: number;
   year?: number;

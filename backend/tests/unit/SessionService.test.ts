@@ -267,7 +267,7 @@ describe('SessionService', () => {
         kind: 'movie',
         placeId: 'Q1',
         name: 'Clueless',
-        rating: 6.9,
+        rating: 81,
         year: 1995,
         genres: ['Comedy'],
       },
@@ -312,12 +312,12 @@ describe('SessionService', () => {
   describe('restartSession in the Watch Branch', () => {
     const mood: Mood = { genres: ['Comedy'], decades: [] };
     const dealt: Movie[] = [
-      { kind: 'movie', placeId: 'Q1', name: 'Clueless', rating: 6.9 },
-      { kind: 'movie', placeId: 'Q2', name: 'The Castle', rating: 7.7 },
+      { kind: 'movie', placeId: 'Q1', name: 'Clueless', rating: 81 },
+      { kind: 'movie', placeId: 'Q2', name: 'The Castle', rating: 88 },
     ];
     const nextDeal: Movie[] = [
-      { kind: 'movie', placeId: 'Q7', name: 'Hot Fuzz', rating: 7.8 },
-      { kind: 'movie', placeId: 'Q8', name: 'Paddington 2', rating: 7.8 },
+      { kind: 'movie', placeId: 'Q7', name: 'Hot Fuzz', rating: 91 },
+      { kind: 'movie', placeId: 'Q8', name: 'Paddington 2', rating: 99 },
     ];
 
     /** A Watch Session decided once, so Restart has an outcome to wipe. */
@@ -1731,8 +1731,8 @@ describe('SessionService', () => {
 
       it('breaks a count tie by rating', async () => {
         const sessionCode = await createSessionWithMovieDeck([
-          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 4.2 },
-          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 4.6 },
+          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 93 },
+          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 94 },
         ]);
         await SessionService.submitSelections(sessionCode, 'p-alice', ['Q1']);
         const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['Q2']);
@@ -1749,8 +1749,8 @@ describe('SessionService', () => {
       // through to the Deck fallback rather than filing it as a closed venue.
       it('crowns the highest-rated Movie when every Submission is empty', async () => {
         const sessionCode = await createSessionWithMovieDeck([
-          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 4.2 },
-          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 4.6 },
+          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 93 },
+          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 94 },
         ]);
         await SessionService.submitSelections(sessionCode, 'p-alice', []);
         const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
