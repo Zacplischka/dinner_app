@@ -104,7 +104,6 @@ WHERE {
 export const GENRE_BUCKETS = [
   ['Animation', /animat|anime/],
   ['Documentary', /documentary/],
-  ['Western', /western/],
   ['War', /\bwar film|anti-war|military/],
   ['Musical', /musical/],
   ['Horror', /horror|slasher|zombie|ghost film|monster film|found footage/],
