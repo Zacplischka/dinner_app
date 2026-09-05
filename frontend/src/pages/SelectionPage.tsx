@@ -46,8 +46,15 @@ export const listNames = (names: string[]): string =>
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, removeSelection, participants, liveSelections, branch } =
-    useSessionStore();
+  const {
+    selections,
+    addSelection,
+    removeSelection,
+    participants,
+    liveSelections,
+    branch,
+    currentUserId,
+  } = useSessionStore();
   // The deck is shared with the restaurant branches, but its copy must not be:
   // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
   const isCook = branch === 'cook';
@@ -323,7 +330,11 @@ export default function SelectionPage() {
   }
 
   if (hasSubmitted) {
-    const stillSwiping = participants.filter((p) => !p.hasSubmitted).map((p) => p.displayName);
+    // The submit ack lands before the participant:submitted echo, so for one
+    // render the roster still says I'm swiping; on this screen I never am.
+    const stillSwiping = participants
+      .filter((p) => !p.hasSubmitted && p.participantId !== currentUserId)
+      .map((p) => p.displayName);
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
