@@ -2,6 +2,9 @@
 // Confirmation dialog before leaving a session
 // UX: "Stay" is the safe action, "Leave" is destructive.
 
+import { useRef } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+
 interface ConfirmLeaveModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,6 +24,9 @@ export default function ConfirmLeaveModal({
   context = 'lobby',
   selectionsCount = 0,
 }: ConfirmLeaveModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen);
+
   if (!isOpen) return null;
 
   // Context-aware messaging
@@ -87,6 +93,7 @@ export default function ConfirmLeaveModal({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 overflow-y-auto"
       role="dialog"
       aria-modal="true"
