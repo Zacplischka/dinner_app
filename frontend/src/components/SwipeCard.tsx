@@ -219,7 +219,12 @@ export default function SwipeCard({
           region's height, so the swipe-stack geometry #75 protects holds in
           every state — loading, retrying, or given up — and a transient photo
           error heals when the one retry lands. */}
-      <div data-photo-region className="relative h-[62%] flex-shrink-0 bg-surface">
+      <div
+        data-photo-region
+        // A Movie's text block (two-line title, genres, meta, three-line
+        // overview, credit) needs half the card; a Restaurant's fits under 62%.
+        className={`relative flex-shrink-0 bg-surface ${movie ? 'h-1/2' : 'h-[62%]'}`}
+      >
         {/* Same drawing as the old data-URI placeholder, inline so it can sit
             behind the photo; `slice` matches the old img's object-cover. */}
         <svg

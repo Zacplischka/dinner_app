@@ -27,9 +27,24 @@ const heat: Movie = {
   year: 1995,
   genres: ['Crime'],
 };
+// The corpus's longest name: a two-line title on the card, over the widest
+// genre row and a full-length overview.
+const pirates: Movie = {
+  kind: 'movie',
+  placeId: 'Q46717',
+  name: 'Pirates of the Caribbean: The Curse of the Black Pearl',
+  photoUrl: 'https://example.com/pirates.png',
+  year: 2003,
+  runtimeMinutes: 137,
+  genres: ['Adventure', 'Action', 'Comedy', 'Fantasy'],
+  rating: 79,
+  overview:
+    'Pirates of the Caribbean: The Curse of the Black Pearl is a 2003 American swashbuckler film directed by Gore Verbinski. Produced by Jerry Bruckheimer and distributed by Buena Vista Pictures via the Walt Disney Pictures label, the film is based on the Pirates of the Caribbean attraction at Disney…',
+};
 
+const deal = vi.fn(async (): Promise<Movie[]> => [alien, heat]);
 vi.mock('../../src/services/apiClient', () => ({
-  getRestaurants: vi.fn(async () => [alien, heat]),
+  getRestaurants: (...args: unknown[]) => deal(...args),
   getSession: vi.fn(async () => ({ shareableLink: 'http://localhost:3000/join?code=AB123' })),
 }));
 
@@ -55,6 +70,7 @@ const renderSelectionPage = () =>
 describe('Movie Deck', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    deal.mockResolvedValue([alien, heat]);
     useSessionStore.getState().resetSession();
     useSessionStore.setState({
       sessionCode: 'AB123',
@@ -86,6 +102,26 @@ describe('Movie Deck', () => {
     expect(screen.getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
       'href',
       'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q103569'
+    );
+  });
+
+  // jsdom lays nothing out, so the fit is asserted by construction: a Movie's
+  // poster frame yields to half the card (a Restaurant's keeps 62%), the info
+  // region clips rather than scrolls, and the credit still renders under the
+  // longest title in the corpus.
+  it('fits the longest title, four genres, a full overview and the credit on one card', async () => {
+    deal.mockResolvedValue([pirates]);
+    renderSelectionPage();
+
+    const card = (await screen.findByText(pirates.name)).closest('[data-swipe-card]')!;
+    expect(card.querySelector('[data-photo-region]')).toHaveClass('h-1/2');
+    expect(card.querySelector('[data-photo-region]')).not.toHaveClass('h-[62%]');
+    expect(screen.getByText(pirates.name)).toHaveClass('line-clamp-2');
+    expect(screen.getByText(/swashbuckler film/)).toHaveClass('line-clamp-3');
+    expect(screen.getByText(/swashbuckler film/).parentElement).toHaveClass('overflow-hidden');
+    expect(screen.getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
+      'href',
+      'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q46717'
     );
   });
 

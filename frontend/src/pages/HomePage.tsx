@@ -36,7 +36,7 @@ const BRANCH_CARDS = [
   },
   {
     title: 'Watching a movie',
-    description: 'Swipe movies until the group agrees.',
+    description: 'Swipe movies, then watch the trailer together.',
     icon: '🎬',
     accent: 'border-amber/40 hover:border-amber shadow-[0_0_18px_rgb(255_182_39_/_0.12)]',
     to: '/watch',
