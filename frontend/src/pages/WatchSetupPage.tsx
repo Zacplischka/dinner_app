@@ -133,7 +133,7 @@ export default function WatchSetupPage() {
           />
 
           {error && (
-            <div className="rounded-xl border border-coral/30 bg-coral/10 p-3">
+            <div role="alert" className="rounded-xl border border-coral/30 bg-coral/10 p-3">
               <p className="text-sm text-coral-soft">{error}</p>
             </div>
           )}
