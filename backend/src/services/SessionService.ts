@@ -206,7 +206,7 @@ export function createSessionService({
         logger.warn({ sessionCode, mood: watch.mood }, 'No movies found for Mood');
         throw new DomainError(
           'NO_MOVIES_FOUND',
-          'No movies match those choices. Try removing a filter.'
+          'No movies match those choices. Try removing a genre or decade.'
         );
       }
     } else if (location && searchRadiusMiles) {

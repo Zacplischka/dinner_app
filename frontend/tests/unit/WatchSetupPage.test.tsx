@@ -111,7 +111,7 @@ describe('WatchSetupPage', () => {
   // offered, and the chips stay exactly as the Host set them.
   it('shows the NO_MOVIES_FOUND refusal inline and leaves the Mood editable', async () => {
     serviceMocks.createSession.mockRejectedValue(
-      Object.assign(new Error('No movies match those choices. Try removing a filter.'), {
+      Object.assign(new Error('No movies match those choices. Try removing a genre or decade.'), {
         code: 'NO_MOVIES_FOUND',
       })
     );
@@ -121,8 +121,11 @@ describe('WatchSetupPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '1970s' }));
     await submitAs();
 
+    // Announced, like every other setup page's inline refusal.
     await waitFor(() =>
-      expect(screen.getByText(/No movies match those choices/)).toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'No movies match those choices. Try removing a genre or decade.'
+      )
     );
     expect(screen.getByRole('button', { name: 'Start swiping' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Documentary' })).toHaveAttribute(
