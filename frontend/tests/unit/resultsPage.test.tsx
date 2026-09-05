@@ -547,7 +547,7 @@ describe('ResultsPage', () => {
       });
       renderResults();
 
-      expect(screen.getByText("TONIGHT'S PICK")).toBeTruthy();
+      expect(screen.getByText("TOP PICK")).toBeTruthy();
       expect(screen.getByText('Everyone swiped yes on this one.')).toBeTruthy();
       expect(screen.queryByText(/other matches/i)).toBeNull();
     });
@@ -617,7 +617,7 @@ describe('ResultsPage', () => {
       renderResults();
 
       expect(screen.getByText('No Match Found')).toBeTruthy();
-      expect(screen.getByText(/no restaurants matched everyone's preferences/i)).toBeTruthy();
+      expect(screen.getByText(/no restaurants got a yes from everyone/i)).toBeTruthy();
       expect(screen.getByText(/no restaurants were selected by all participants/i)).toBeTruthy();
     });
   });
@@ -688,7 +688,7 @@ describe('ResultsPage', () => {
       expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
       expect(screen.queryByText('No Match Found')).not.toBeInTheDocument();
       expect(
-        screen.queryByText("No restaurants matched everyone's preferences")
+        screen.queryByText("No restaurants got a yes from everyone")
       ).not.toBeInTheDocument();
     });
 
