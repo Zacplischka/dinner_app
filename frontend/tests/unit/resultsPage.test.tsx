@@ -596,7 +596,7 @@ describe('ResultsPage', () => {
       });
       renderResults();
 
-      expect(screen.getByText("TOP PICK")).toBeTruthy();
+      expect(screen.getByText('TOP PICK')).toBeTruthy();
       expect(screen.getByText('Everyone swiped yes on this one.')).toBeTruthy();
       expect(screen.queryByText(/other matches/i)).toBeNull();
     });
@@ -736,9 +736,7 @@ describe('ResultsPage', () => {
 
       expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
       expect(screen.queryByText('No Match Found')).not.toBeInTheDocument();
-      expect(
-        screen.queryByText("No restaurants got a yes from everyone")
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('No restaurants got a yes from everyone')).not.toBeInTheDocument();
     });
 
     it('offers no dead button when nothing could be minted', () => {
@@ -944,6 +942,27 @@ describe('ResultsPage', () => {
       expect(where).toHaveAttribute('href', 'https://www.justwatch.com/au/search?q=Alien');
       expect(where).toHaveAttribute('target', '_blank');
       expect(where.getAttribute('rel')).toContain('noopener');
+    });
+
+    it('shares a crowned Movie by its name and reason, like any other Top Pick', async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+      try {
+        seedWatch();
+        renderResults();
+
+        await act(async () => {
+          fireEvent.click(screen.getAllByRole('button', { name: 'Share Top Pick' })[0]);
+        });
+
+        expect(share).toHaveBeenCalledWith({
+          title: 'Alien',
+          text: 'Everyone swiped yes on this one.',
+          url: window.location.href,
+        });
+      } finally {
+        delete (navigator as { share?: unknown }).share;
+      }
     });
 
     it('offers Select Again on a crowned Movie', () => {
