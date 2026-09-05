@@ -7,7 +7,7 @@ import type { DeckEntry } from '@dinder/shared/types';
 
 // The screens after the Match — Compare, the delivery links, the Group Order —
 // are the restaurant ending, and the Shopping List is the Cook ending, so they
-// narrow on these. The guards ship with the type (shared/CLAUDE.md) so both
+// narrow on these. The guards ship with the type (a shared/ rule) so both
 // sides classify a Deck Entry alike.
 export { isMovie, isRecipe, isRestaurant } from '@dinder/shared/types';
 
