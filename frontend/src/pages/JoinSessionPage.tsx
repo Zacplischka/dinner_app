@@ -161,7 +161,7 @@ export default function JoinSessionPage() {
               onChange={(e) => setSessionCode(cleanSessionCode(e.target.value))}
               placeholder="7K9M2"
               maxLength={SESSION_CODE_LENGTH}
-              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-[#050d19] px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan outline-none transition-all duration-150 placeholder:text-muted/50"
+              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-[#050d19] px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan outline-none transition-all duration-150 placeholder:text-muted/70"
               autoFocus={!searchParams.get('code')}
               disabled={isLoading}
             />

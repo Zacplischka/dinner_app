@@ -318,7 +318,7 @@ function SelectionsList({
                   })}
                 </ul>
               ) : (
-                <p className="text-sm text-muted/60 italic">No selections</p>
+                <p className="text-sm text-muted italic">No selections</p>
               )}
             </div>
           </div>

@@ -37,7 +37,7 @@ vi.mock('../../src/services/socketBindings', () => ({
   sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
 }));
 
-import SelectionPage, { liveReveal } from '../../src/pages/SelectionPage';
+import SelectionPage, { listNames, liveReveal } from '../../src/pages/SelectionPage';
 import { submitSelection } from '../../src/services/socketBindings';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
@@ -589,5 +589,30 @@ describe('Resume after submit', () => {
 
     expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
     expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
+  });
+});
+
+describe('waiting screen', () => {
+  it('names each dot and announces who is still swiping', async () => {
+    useSessionStore.getState().resetSession();
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      participants: [
+        { ...participant('p1', 'Alice'), hasSubmitted: true },
+        participant('p2', 'Bob'),
+        participant('p3', 'Carol'),
+      ],
+    });
+    renderSelectionPage();
+    await waitFor(() => screen.getByRole('button', { name: 'Pass' }));
+    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Selections' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Waiting for Bob and Carol')).toHaveAttribute('aria-live', 'polite')
+    );
+    expect(screen.getByRole('img', { name: 'Alice: submitted' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Bob: still swiping' })).toBeInTheDocument();
+    expect(listNames(['Sam', 'Priya', 'Lee'])).toBe('Sam, Priya and Lee');
   });
 });
