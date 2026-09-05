@@ -63,6 +63,20 @@ describe('SessionStore', () => {
       expect(session?.searchRadiusMiles).toBe(5);
     });
 
+    it('round-trips the Mood a Watch Session was dealt from, and only there', async () => {
+      const mood = { genres: ['Comedy' as const, 'Horror' as const], decades: ['1990s' as const] };
+      await store.createSession(sessionCode, {
+        hostId: 'host-1',
+        hostName: 'Alice',
+        branch: 'watch',
+        mood,
+      });
+      await store.createSession('TEST2', { hostId: 'host-2', hostName: 'Bob', branch: 'eatout' });
+
+      expect((await store.readSession(sessionCode))?.mood).toEqual(mood);
+      expect((await store.readSession('TEST2'))?.mood).toBeUndefined();
+    });
+
     it('omits location when not provided', async () => {
       await createTestSession(false);
       const session = await store.readSession(sessionCode);
