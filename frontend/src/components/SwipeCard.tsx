@@ -239,6 +239,12 @@ export default function SwipeCard({
             alt={entry.name}
             className="absolute inset-0 w-full h-full object-cover"
             draggable={false}
+            // Only the top card shows; the two beneath it sit inside the
+            // viewport too, so `lazy` does not skip their fetch - it defers it
+            // past layout and behind the top card's eager request, which is
+            // what puts the visible photo first on a phone's radio.
+            loading={stackPosition === 0 ? 'eager' : 'lazy'}
+            decoding={stackPosition === 0 ? undefined : 'async'}
           />
         )}
         {/* Gradient overlay for text legibility */}
