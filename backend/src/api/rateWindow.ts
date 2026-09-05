@@ -6,7 +6,7 @@ import type { Request } from 'express';
 // shared store (same ceiling as the ComparisonService in-flight dedupe).
 export type RequestWindow = { count: number; resetAt: number };
 
-function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: number): void {
+export function pruneExpiredRequests(requests: Map<string, RequestWindow>, now: number): void {
   // ponytail: O(active IPs) per request; use an expiring cache if traffic makes this costly.
   for (const [ip, request] of requests) {
     if (request.resetAt <= now) requests.delete(ip);
