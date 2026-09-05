@@ -62,11 +62,16 @@ export interface CookSetup {
 }
 
 /**
- * Generate a random uppercase alphanumeric session code. Uniqueness is NOT
- * guaranteed here — createSession's collision-retry loop owns that.
+ * Generate a random Session Code. Uniqueness is NOT guaranteed here —
+ * createSession's collision-retry loop owns that.
+ *
+ * The alphabet omits the characters that look or sound alike when a code is
+ * read aloud at the table (0/O, 1/I, 5/S, 8/B, 2/Z): 29 symbols, ~20.5M codes.
+ * Only minting narrows; SESSION_CODE_PATTERN stays [A-Z0-9] so codes minted
+ * before this change still join.
  */
 export function generateSessionCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ34679';
   let code = '';
   for (let i = 0; i < SESSION_CODE_LENGTH; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
