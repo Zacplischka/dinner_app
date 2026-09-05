@@ -369,4 +369,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 // Instances exported for contract/integration tests, which must exercise
 // (and spy on) the same objects the routes and handlers close over.
-export { app, io, httpServer, sessionStore, sessionService, shoppingListService };
+export { app, httpServer, sessionStore, sessionService };

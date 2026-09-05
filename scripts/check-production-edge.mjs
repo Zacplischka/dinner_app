@@ -25,10 +25,10 @@ import { fileURLToPath } from 'node:url';
 
 export const CACHE_TAG = 'dinder-route-html';
 export const PURGE_BODY = `{"tags":["${CACHE_TAG}"]}`;
-export const FRONTEND_HOSTS = ['dinder.it.com', 'www.dinder.it.com'];
+const FRONTEND_HOSTS = ['dinder.it.com', 'www.dinder.it.com'];
 // Railway's servable domain for the frontend service, which never traverses Cloudflare.
-export const DIRECT_ORIGIN = 'https://frontend-production-bdfc.up.railway.app';
-export const ROLLOUT_STATES = {
+const DIRECT_ORIGIN = 'https://frontend-production-bdfc.up.railway.app';
+const ROLLOUT_STATES = {
   bootstrap: [],
   'apex-only': [FRONTEND_HOSTS[0]],
   'both-hosts': FRONTEND_HOSTS,
@@ -43,7 +43,7 @@ export const ORIGIN_CLOUDFLARE_CACHE_CONTROL = 'public, max-age=60, must-revalid
 const BYPASS_STATUSES = new Set(['BYPASS', 'DYNAMIC', 'NONE/UNKNOWN']);
 
 // Identity variants that must all share one public document object.
-export const IDENTITY_VARIANTS = [
+const IDENTITY_VARIANTS = [
   { name: 'auth cookie', cookie: 'sb-access-token=representative-value' },
   { name: 'session cookie', cookie: 'dinder-session=ABCDE' },
   { name: 'invite query', query: '?invite=ABCDE' },
@@ -108,7 +108,7 @@ export function assertPurgeResponse(httpStatus, bodyText) {
   return `purged cache tag ${CACHE_TAG} (zone ${payload.result?.id ?? '<none>'})`;
 }
 
-export function popOf(cfRay) {
+function popOf(cfRay) {
   return String(cfRay ?? '').split('-')[1] || null;
 }
 

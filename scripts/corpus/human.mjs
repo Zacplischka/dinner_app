@@ -40,7 +40,7 @@ export const NO_CUISINE = '(no cuisine)';
 export const cuisineBucket = (recipe) => recipe.cuisine ?? NO_CUISINE;
 
 /** Bucket → its slugs, sorted, so arrival order is never a fact about a batch. */
-export function strata(recipes) {
+function strata(recipes) {
   const buckets = new Map();
   for (const recipe of recipes) {
     const bucket = cuisineBucket(recipe);
@@ -129,7 +129,7 @@ export function review(recipes, reviewed, fraction = REVIEW_FRACTION) {
 // ------------------------------------------------------- the CLI
 
 /** Every `<recordsDir>/<slug>/recipe.json`, as `{ slug, cuisine }`. */
-export function loadBatch(recordsDir) {
+function loadBatch(recordsDir) {
   return recordSlugs(recordsDir).map((slug) => ({
     slug,
     cuisine: JSON.parse(readFileSync(join(recordsDir, slug, 'recipe.json'), 'utf8')).cuisine,
