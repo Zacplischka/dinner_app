@@ -1012,7 +1012,10 @@ describe('ResultsPage', () => {
       seedWatch({ overlappingOptions: [], allSelections: {}, topPick: undefined });
       renderResults();
 
-      expect(screen.getByText('No movies got a yes from everyone')).toBeInTheDocument();
+      // #387 rewords the template; either wording proves the noun is "movies".
+      expect(
+        screen.getByText(/No movies (matched everyone's preferences|got a yes from everyone)/)
+      ).toBeInTheDocument();
     });
   });
 
