@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { bucketGenres, criticsScore, emitModule } from './build-movie-corpus.mjs';
+import { bucketGenres, criticsScore, emitModule, unsafeReason } from './build-movie-corpus.mjs';
 
 test('Wikidata labels bucket into the chip vocabulary, most-hit first, at most four', () => {
   assert.deepEqual(bucketGenres(['romantic comedy film', 'drama film']), [
@@ -67,4 +67,31 @@ test('the emitted module is the shared Movie shape, with absent facts omitted', 
   assert.deepEqual(movies[0], rated);
   const { rating: _r, trailerUrl: _t, ...heat } = unrated;
   assert.deepEqual(movies[1], heat);
+});
+
+test('a record is unsafe unless the poster is https on upload.wikimedia.org, the trailer id is 11 chars and the QID is Q\\d+', () => {
+  const ok = {
+    placeId: 'Q172241',
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/x.jpg/330px-x.jpg',
+    youtube: 'dQw4w9WgXcQ',
+  };
+  assert.equal(unsafeReason(ok), null);
+  assert.equal(unsafeReason({ ...ok, youtube: undefined }), null); // no P1651 is fine
+  assert.equal(unsafeReason({ ...ok, placeId: 'javascript:alert(1)' }), 'bad QID');
+  assert.equal(unsafeReason({ ...ok, placeId: undefined }), 'bad QID');
+  assert.equal(unsafeReason({ ...ok, photoUrl: 'not a url' }), 'poster not a URL');
+  assert.equal(
+    unsafeReason({ ...ok, photoUrl: 'http://upload.wikimedia.org/x.jpg' }),
+    'poster off upload.wikimedia.org'
+  );
+  assert.equal(
+    unsafeReason({ ...ok, photoUrl: 'https://upload.wikimedia.org.evil.example/x.jpg' }),
+    'poster off upload.wikimedia.org'
+  );
+  assert.equal(
+    unsafeReason({ ...ok, photoUrl: 'https://evil.example/x.jpg?upload.wikimedia.org' }),
+    'poster off upload.wikimedia.org'
+  );
+  assert.equal(unsafeReason({ ...ok, youtube: 'dQw4w9WgXcQ&list=PL1' }), 'bad trailer id');
+  assert.equal(unsafeReason({ ...ok, youtube: 'short' }), 'bad trailer id');
 });

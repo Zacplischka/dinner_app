@@ -153,6 +153,26 @@ export function criticsScore(tomatometer, metacritic) {
   return mc ? Number(mc[1]) : null;
 }
 
+/**
+ * Wikipedia and Wikidata are publicly editable and the render sites trust
+ * these three fields verbatim (`<img src>`, `<a href>`, a Wikidata link), so
+ * the builder is the trust boundary: the reason a record is unsafe, else null.
+ */
+export function unsafeReason({ placeId, photoUrl, youtube }) {
+  if (!/^Q\d+$/.test(placeId ?? '')) return 'bad QID';
+  let poster;
+  try {
+    poster = new URL(photoUrl);
+  } catch {
+    return 'poster not a URL';
+  }
+  if (poster.protocol !== 'https:' || poster.host !== 'upload.wikimedia.org') {
+    return 'poster off upload.wikimedia.org';
+  }
+  if (youtube != null && !/^[\w-]{11}$/.test(youtube)) return 'bad trailer id';
+  return null;
+}
+
 const cleanTitle = (t) => t.replace(/\s*\((?:\d{4}\s+)?(?:[\w-]+\s+)?film\)$/i, '');
 const trimOverview = (s = '') => {
   s = s.replace(/\s+/g, ' ').trim();
@@ -241,6 +261,12 @@ async function main() {
       drop('no year', p.title);
       continue;
     }
+    const photoUrl = p.thumbnail.source.split('?')[0];
+    const unsafe = unsafeReason({ placeId: qid, photoUrl, youtube: w.youtube });
+    if (unsafe) {
+      drop(unsafe, p.title);
+      continue;
+    }
     const runtime = Number(w.runtime) || null;
     movies.push({
       kind: 'movie',
@@ -252,7 +278,7 @@ async function main() {
       runtimeMinutes: runtime && runtime > 1000 ? Math.round(runtime / 60) : runtime, // P2047 sometimes in seconds
       rating: criticsScore(w.tomatometer, w.metacritic),
       overview: trimOverview(p.extract),
-      photoUrl: p.thumbnail.source.split('?')[0],
+      photoUrl,
       trailerUrl: w.youtube ? `https://www.youtube.com/watch?v=${w.youtube}` : null,
     });
   }
