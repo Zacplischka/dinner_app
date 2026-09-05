@@ -12,6 +12,7 @@ import ResultsPage from '../../src/pages/ResultsPage';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { useOrderStore } from '../../src/stores/orderStore';
+import { useToastStore } from '../../src/hooks/useToast';
 
 function participant(id: string, name: string) {
   return {
@@ -445,7 +446,7 @@ describe('ResultsPage', () => {
   });
 
   describe('Continuation action hierarchy (#85)', () => {
-    it('orders Select Again (primary), Share Results (secondary), New Session (ghost)', () => {
+    it('orders Select Again (primary), Share Top Pick (secondary), New Session (ghost)', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [pizza],
@@ -456,7 +457,7 @@ describe('ResultsPage', () => {
       const selectAgain = screen.getByRole('button', { name: /select again/i });
       // The header also exposes a share icon button; the continuation action is the secondary one
       const share = screen
-        .getAllByRole('button', { name: /share results/i })
+        .getAllByRole('button', { name: /share top pick/i })
         .find((button) => button.className.includes('btn-secondary'))!;
       const newSession = screen.getByRole('button', { name: /new session/i });
 
@@ -471,6 +472,54 @@ describe('ResultsPage', () => {
       expect(
         share.compareDocumentPosition(newSession) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
+    });
+  });
+
+  describe('Share the Top Pick', () => {
+    const seedCrown = () =>
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        topPick: { restaurant: pizza, likedBy: 2, of: 2 },
+      });
+
+    it('hands the native sheet the crowned name, its reason and this page', async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+      try {
+        seedCrown();
+        renderResults();
+
+        await act(async () => {
+          fireEvent.click(screen.getAllByRole('button', { name: 'Share Top Pick' })[0]);
+        });
+
+        expect(share).toHaveBeenCalledWith({
+          title: 'Pizza Palace',
+          text: 'Everyone swiped yes on this one.',
+          url: window.location.href,
+        });
+        expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+      } finally {
+        delete (navigator as { share?: unknown }).share;
+      }
+    });
+
+    it('falls back to copying this page and says so when there is no sheet', async () => {
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+      useToastStore.setState({ toasts: [] });
+      seedCrown();
+      renderResults();
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByRole('button', { name: 'Share Top Pick' })[0]);
+      });
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href);
+      expect(useToastStore.getState().toasts).toContainEqual(
+        expect.objectContaining({ message: 'Top Pick link copied!' })
+      );
     });
   });
 

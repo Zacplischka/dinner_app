@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import NavigationHeader from '../../src/components/NavigationHeader';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { useToastStore } from '../../src/hooks/useToast';
 
 /**
  * NavigationHeader mobile-safety specs (#78)
@@ -97,6 +98,31 @@ describe('NavigationHeader', () => {
     const code = screen.getByText('7K9M2');
     const badge = code.closest('span')!.parentElement as HTMLElement;
     expect(badge.className).not.toContain('shadow-glow-cyan');
+  });
+
+  it('copies the Session Code from the badge and flashes it copied for 1.5s', async () => {
+    vi.useFakeTimers();
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    useToastStore.setState({ toasts: [] });
+    try {
+      render(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
+      const code = screen.getByText('7K9M2');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Copy Session Code' }));
+      });
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('7K9M2');
+      expect(useToastStore.getState().toasts).toContainEqual(
+        expect.objectContaining({ message: 'Session code copied!' })
+      );
+      expect(code.className).toContain('text-lime');
+
+      act(() => vi.advanceTimersByTime(1500));
+      expect(code.className).toContain('text-cyan');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps page-specific actions in the title row right edge', () => {
