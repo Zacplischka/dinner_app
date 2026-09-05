@@ -5,7 +5,7 @@ import { BasePage } from './BasePage';
  * HomePage - Page object for the entry fork (#255)
  *
  * Routes: /
- * `/` asks "Tonight you're…" with three Branch cards; Join-with-code and
+ * `/` asks "Tonight you're…" with four Branch cards; Join-with-code and
  * Compare are a demoted text row.
  */
 export class HomePage extends BasePage {
@@ -13,6 +13,7 @@ export class HomePage extends BasePage {
   readonly eatOutCard: Locator;
   readonly takeawayCard: Locator;
   readonly cookCard: Locator;
+  readonly watchCard: Locator;
   readonly joinLink: Locator;
   readonly compareLink: Locator;
   readonly eatOutDescription: Locator;
@@ -25,6 +26,7 @@ export class HomePage extends BasePage {
     this.eatOutCard = page.getByRole('button', { name: /Eating out/i });
     this.takeawayCard = page.getByRole('button', { name: /Getting takeaway/i });
     this.cookCard = page.getByRole('button', { name: /Cooking/i });
+    this.watchCard = page.getByRole('button', { name: /Watching a movie/i });
     this.joinLink = page.getByRole('button', { name: /Join with a code/i });
     this.compareLink = page.getByRole('button', { name: 'Compare delivery prices', exact: true });
     this.eatOutDescription = page.getByText('Swipe nearby restaurants until the group agrees.');
@@ -45,6 +47,14 @@ export class HomePage extends BasePage {
   }
 
   /**
+   * Pick the Watch Branch card and land on the Mood setup (#369)
+   */
+  async clickWatch(): Promise<void> {
+    await this.watchCard.click();
+    await this.page.waitForURL(/\/watch/);
+  }
+
+  /**
    * Open Join with a code from the text row
    */
   async clickJoinSession(): Promise<void> {
@@ -60,6 +70,7 @@ export class HomePage extends BasePage {
     await expect(this.eatOutCard).toBeVisible();
     await expect(this.takeawayCard).toBeVisible();
     await expect(this.cookCard).toBeVisible();
+    await expect(this.watchCard).toBeVisible();
     await expect(this.joinLink).toBeVisible();
     await expect(this.compareLink).toBeVisible();
     await expect(this.guestModeText).toBeVisible();
@@ -72,6 +83,7 @@ export class HomePage extends BasePage {
     await expect(this.eatOutCard).toBeEnabled();
     await expect(this.takeawayCard).toBeEnabled();
     await expect(this.cookCard).toBeEnabled();
+    await expect(this.watchCard).toBeEnabled();
     await expect(this.joinLink).toBeEnabled();
   }
 }

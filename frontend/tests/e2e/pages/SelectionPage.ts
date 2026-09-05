@@ -2,13 +2,14 @@ import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
- * SelectionPage - Page object for Tinder-style Deck selection (Restaurants or Recipes)
+ * SelectionPage - Page object for Tinder-style Deck selection (Restaurants, Recipes or Movies)
  *
  * Routes: /session/:sessionCode/select
  */
 export class SelectionPage extends BasePage {
   readonly heading: Locator;
   readonly swipeCard: Locator;
+  readonly criticsBadge: Locator;
   readonly likeButton: Locator;
   readonly passButton: Locator;
   readonly submitButton: Locator;
@@ -22,6 +23,7 @@ export class SelectionPage extends BasePage {
 
     this.heading = page.locator('header').getByRole('heading').first();
     this.swipeCard = page.locator('[data-swipe-card]');
+    this.criticsBadge = this.swipeCard.getByText(/\d+% critics/);
     this.likeButton = page.getByRole('button', { name: /Like/i }).or(
       page.locator('button[aria-label="Like"]')
     );
@@ -30,7 +32,7 @@ export class SelectionPage extends BasePage {
     );
     this.submitButton = page.getByRole('button', { name: /Submit/i });
 
-    this.loadingState = page.getByText(/Finding (restaurants|recipes)/i);
+    this.loadingState = page.getByText(/Finding (restaurants|recipes|movies)/i);
     // The waiting screen's heading, not a /Waiting for/ text match: any other
     // sentence starting "Waiting for" would make that locator ambiguous.
     this.waitingState = page.getByRole('heading', { name: 'All Done!' });
