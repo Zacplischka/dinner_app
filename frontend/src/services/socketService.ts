@@ -44,8 +44,11 @@ let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
  * Includes an auth token and event handlers when the config provides them.
  */
 export function initializeSocket(config: SocketConfig = {}): void {
-  if (socket?.connected) {
-    console.log('Socket already connected');
+  // Guard on existence, not on connected: a call mid-reconnect used to open a
+  // second io() and orphan the one still retrying (and holding the handlers).
+  // disconnectSocket() is the one way to want a fresh socket; it nulls this.
+  if (socket) {
+    console.log('Socket already initialized');
     return;
   }
 
