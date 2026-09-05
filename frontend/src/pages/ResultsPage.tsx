@@ -452,13 +452,13 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
       <NavigationHeader
-        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : "Tonight's Pick") : 'No Match Found'}
+        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : 'Top Pick') : 'No Match Found'}
         subtitle={
           crownPlaceId
             ? hasOverlap
-              ? "Tonight's pick is locked in"
+              ? 'The Top Pick is locked in'
               : "No unanimous Match — here's the closest one"
-            : `No ${isCookDeck ? 'recipes' : 'restaurants'} matched everyone's preferences`
+            : `No ${isCookDeck ? 'recipes' : 'restaurants'} got a yes from everyone`
         }
         sessionCode={sessionCode}
         showBackButton
@@ -511,7 +511,7 @@ export default function ResultsPage() {
                 competing with it. Warm glow is reflected light from the celebration. */}
             <MatchCard
               restaurant={pick.restaurant}
-              eyebrow="TONIGHT'S PICK"
+              eyebrow="TOP PICK"
               reason={crownReason(pick, restaurantWords)}
               isCrown
               showContinuation={showContinuation}
