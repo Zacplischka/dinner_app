@@ -119,7 +119,27 @@ describe('socketService', () => {
     // Second initialize while connected is a no-op
     socketService.initializeSocket();
     expect(socketMocks.io).toHaveBeenCalledTimes(1);
-    expect(logSpy).toHaveBeenCalledWith('Socket already connected');
+    expect(logSpy).toHaveBeenCalledWith('Socket already initialized');
+  });
+
+  it('never orphans a socket that is mid-reconnect', () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const retrying = setupSocket(false);
+    socketService.initializeSocket();
+
+    // A join page calling waitForConnection while the Manager is still
+    // retrying must attach to that socket, not open a second io().
+    socketService.initializeSocket();
+    void socketService.waitForConnection(50).catch(() => undefined);
+    expect(socketMocks.io).toHaveBeenCalledTimes(1);
+    expect(retrying.disconnect).not.toHaveBeenCalled();
+    expect(retrying.onceHandlers.get('connect')).toHaveLength(1);
+
+    // A fresh socket is wanted only after an explicit disconnect.
+    socketService.disconnectSocket();
+    setupSocket();
+    socketService.initializeSocket();
+    expect(socketMocks.io).toHaveBeenCalledTimes(2);
   });
 
   it('retries for the life of the Session: no reconnection cap', () => {
