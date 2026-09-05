@@ -512,4 +512,25 @@ describe('Resume after submit', () => {
     expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
     expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
   });
+
+  it('deals the Deck again when a Restart flips my roster flag back to false', async () => {
+    seedParticipants('Alice', 'Bob');
+    act(() => {
+      useSessionStore.setState((s) => ({
+        currentUserId: 'p1',
+        participants: s.participants.map((p) =>
+          p.participantId === 'p1' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    renderSelectionPage();
+    expect(await screen.findByText('All Done!')).toBeInTheDocument();
+
+    act(() => {
+      useSessionStore.getState().resetSelections();
+    });
+
+    expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
+    expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
+  });
 });

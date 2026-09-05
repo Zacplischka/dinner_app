@@ -134,12 +134,12 @@ export default function SelectionPage() {
   // A Submission survives a reload: the join ack's roster carries hasSubmitted
   // per Participant (#284) and "me" is the entry keyed by this socket's id.
   // Latched rather than derived so the one round-trip between reconnect (new
-  // id set) and the ack (new roster) can't flash the Deck. A Restart clears the
-  // flags in resetSelections and remounts this page, so the latch never
-  // outlives one.
+  // id set) and the ack (new roster) can't flash the Deck. A Restart's
+  // resetSelections clears the flags, so the roster can also take the latch
+  // back off.
   const meSubmitted = participants.find((p) => p.participantId === currentUserId)?.hasSubmitted;
   useEffect(() => {
-    if (meSubmitted) setHasSubmitted(true);
+    if (meSubmitted !== undefined) setHasSubmitted(meSubmitted);
   }, [meSubmitted]);
 
   // A Live Selection is revealed only for Restaurants strictly BEHIND the cursor —
