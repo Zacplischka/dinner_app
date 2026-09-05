@@ -18,7 +18,10 @@ export interface Participant {
   joinedAt: number;
   hasSubmitted: boolean;
   isHost: boolean;
-  /** Client-only presence. undefined = online; only ever set false by participant:disconnected. */
+  /**
+   * Presence. undefined = online. Seeded from the join ack's roster (server
+   * truth), then kept current by participant:disconnected / participant:joined.
+   */
   isOnline?: boolean;
 }
 

@@ -70,6 +70,8 @@ export interface Participant {
   joinedAt: number;
   hasSubmitted: boolean;
   isHost: boolean;
+  /** false after a Disconnect. A rejoin re-keys the Participant to a fresh hash, so it reads true again. */
+  isOnline: boolean;
   rejoinToken?: string;
 }
 
@@ -86,7 +88,7 @@ export interface Participant {
 //                                         about the wire and these never leave here)
 // session:{code}:order              hash: the Group Order's fixed metadata + Pinned Menu
 // session:{code}:order:lines        hash: "{index}:{displayName}" -> qty
-// participant:{pid}                 hash: participant metadata
+// participant:{pid}                 hash: participant metadata (isOnline '0' after a Disconnect)
 
 const sessionKey = (code: string) => `session:${code}`;
 const participantsKey = (code: string) => `session:${code}:participants`;
@@ -127,6 +129,14 @@ return 1
 const RELEASE_DISPLAY_NAME_LUA = `
 if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return 0 end
 return redis.call('HDEL', KEYS[1], ARGV[1])
+`;
+
+// A Disconnect flags the Participant offline in place. EXISTS-guarded: a rejoin
+// landing inside the disconnect handler's window has already DELed this hash,
+// and a bare HSET would resurrect it with no TTL.
+const MARK_DISCONNECTED_LUA = `
+if redis.call('EXISTS', KEYS[1]) == 0 then return 0 end
+return redis.call('HSET', KEYS[1], 'isOnline', '0')
 `;
 
 function calculateExpireAt(): number {
@@ -386,6 +396,7 @@ export function createSessionStore(redis: Redis) {
       joinedAt: now,
       isHost: isHost ? '1' : '0',
       hasSubmitted: '0',
+      isOnline: '1',
     };
     if (rejoinToken) participantData.rejoinToken = rejoinToken;
     pipeline.hset(participantKey(participantId), participantData);
@@ -417,6 +428,15 @@ export function createSessionStore(redis: Redis) {
     return await redis.scard(participantsKey(sessionCode));
   }
 
+  /**
+   * Records a Disconnect: the Participant stays current (the Match still waits
+   * on them) but reads isOnline false until a rejoin re-keys them. Leaves the
+   * Session clock alone — a dropped connection is not activity.
+   */
+  async function markDisconnected(participantId: string): Promise<void> {
+    await redis.eval(MARK_DISCONNECTED_LUA, 1, participantKey(participantId));
+  }
+
   async function getParticipant(participantId: string): Promise<Participant | null> {
     const data = await redis.hgetall(participantKey(participantId));
     if (!data || Object.keys(data).length === 0) {
@@ -429,6 +449,8 @@ export function createSessionStore(redis: Redis) {
       joinedAt: parseInt(data.joinedAt, 10),
       hasSubmitted: data.hasSubmitted === '1',
       isHost: data.isHost === '1',
+      // Absent on a hash written before the flag existed: online, as it always read.
+      isOnline: data.isOnline !== '0',
       rejoinToken: data.rejoinToken || undefined,
     };
   }
@@ -773,6 +795,7 @@ export function createSessionStore(redis: Redis) {
     claimDisplayName,
     addParticipant,
     removeParticipant,
+    markDisconnected,
     getParticipant,
     listParticipants,
     isParticipant,
