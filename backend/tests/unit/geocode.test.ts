@@ -64,7 +64,10 @@ describe('GET /api/geocode', () => {
       .get('/api/geocode?query=a')
       .expect(400);
 
-    expect(response.body.code).toBe('VALIDATION_ERROR');
+    expect(response.body).toEqual({
+      code: 'VALIDATION_ERROR',
+      message: 'Enter a suburb or postcode to search for.',
+    });
     expect(geocodeArea).not.toHaveBeenCalled();
   });
 
@@ -106,8 +109,11 @@ describe('GET /api/geocode', () => {
     }
     const response = await request(app).get('/api/geocode?query=Richmond').expect(429);
 
-    expect(response.body.code).toBe('RATE_LIMITED');
-    expect(response.headers['retry-after']).toBeDefined();
+    expect(response.body).toEqual({
+      code: 'RATE_LIMITED',
+      message: 'Too many location lookups. Please try again shortly.',
+    });
+    expect(response.headers['retry-after']).toBe('60');
   });
 
   it('surfaces geocoding provider failures as 500', async () => {

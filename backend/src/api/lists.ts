@@ -5,6 +5,7 @@
 // the same resource, so a client that just changed something needs no second
 // request to see what it changed.
 import { Router } from 'express';
+import { z } from 'zod';
 import { MAX_SHOPPER_NAME } from '@dinder/shared/types';
 import type {
   ClaimLineRequest,
@@ -32,6 +33,12 @@ const LIST_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  */
 const notFound = () =>
   new DomainError('SHOPPING_LIST_NOT_FOUND', 'This shopping list has expired or does not exist');
+
+// Annotated destructures below check these against the shared request types.
+const claimLineRequestSchema = z.object({
+  displayName: z.string().trim().min(1).max(MAX_SHOPPER_NAME),
+});
+const swapLineRequestSchema = z.object({ stockcode: z.number().int().nullable() });
 
 export function createListsRouter(service: ShoppingListService) {
   const router = Router();
@@ -61,11 +68,11 @@ export function createListsRouter(service: ShoppingListService) {
       // whitespace, short enough to render beside a line. Uniqueness is
       // deliberately not checked — there is no Session to check it against, and
       // two housemates who both type "Sam" have a problem the app cannot see.
-      const { displayName } = (req.body ?? {}) as Partial<ClaimLineRequest>;
-      const name = typeof displayName === 'string' ? displayName.trim() : '';
-      if (!name || name.length > MAX_SHOPPER_NAME) {
+      const parsed = claimLineRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
         throw new DomainError('VALIDATION_ERROR', 'A claim needs a display name');
       }
+      const { displayName: name }: ClaimLineRequest = parsed.data;
 
       const list = LIST_ID.test(listId) ? await service.claimLine(listId, lineId, name) : null;
       if (!list) throw notFound();
@@ -100,10 +107,11 @@ export function createListsRouter(service: ShoppingListService) {
       // null is "none of these". Nothing else is a swap: a free-form product id
       // would be a Retailer lookup asking to be let in through this door, and
       // whether *this* line offered *this* Stockcode is the service's to say.
-      const { stockcode } = (req.body ?? {}) as Partial<SwapLineRequest>;
-      if (stockcode !== null && !(typeof stockcode === 'number' && Number.isInteger(stockcode))) {
+      const parsed = swapLineRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
         throw new DomainError('VALIDATION_ERROR', 'A swap needs a Stockcode, or null for none');
       }
+      const { stockcode }: SwapLineRequest = parsed.data;
 
       const list = LIST_ID.test(listId) ? await service.swapLine(listId, lineId, stockcode) : null;
       if (!list) throw notFound();
