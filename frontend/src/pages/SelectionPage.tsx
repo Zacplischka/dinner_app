@@ -41,13 +41,24 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, removeSelection, participants, liveSelections, branch } =
-    useSessionStore();
+  const {
+    selections,
+    addSelection,
+    removeSelection,
+    participants,
+    liveSelections,
+    branch,
+    currentUserId,
+  } = useSessionStore();
   // The deck is shared with the restaurant branches, but its copy must not be:
   // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
   const isCook = branch === 'cook';
   const deckNoun = isCook ? 'recipe' : 'restaurant';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
+  // ponytail: a reload deals the Deck from 0 again. The store persists only the
+  // Selections (yes-swipes), never the passes, so the cursor can't be rebuilt
+  // from what it holds; re-liking a persisted Selection is a no-op. Upgrade:
+  // persist the swiped-through count per sessionCode alongside selections.
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,6 +130,17 @@ export default function SelectionPage() {
     const count = participants.filter((p) => p.hasSubmitted).length;
     setSubmittedCount(count);
   }, [participants]);
+
+  // A Submission survives a reload: the join ack's roster carries hasSubmitted
+  // per Participant (#284) and "me" is the entry keyed by this socket's id.
+  // Latched rather than derived so the one round-trip between reconnect (new
+  // id set) and the ack (new roster) can't flash the Deck. A Restart clears the
+  // flags in resetSelections and remounts this page, so the latch never
+  // outlives one.
+  const meSubmitted = participants.find((p) => p.participantId === currentUserId)?.hasSubmitted;
+  useEffect(() => {
+    if (meSubmitted) setHasSubmitted(true);
+  }, [meSubmitted]);
 
   // A Live Selection is revealed only for Restaurants strictly BEHIND the cursor —
   // never the one being decided (anti-conformity, spec kill-risk (b)), and never a

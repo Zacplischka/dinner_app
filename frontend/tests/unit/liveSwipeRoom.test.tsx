@@ -473,3 +473,43 @@ describe('Full House takeover', () => {
     expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
   });
 });
+
+// A Participant who submitted and then reloaded (or whose socket rejoined) must
+// land on the waiting screen, not back on the Deck at 0: the join ack's roster
+// carries hasSubmitted per Participant (#284), and "me" is the entry whose
+// participantId is the store's currentUserId.
+describe('Resume after submit', () => {
+  it('shows the waiting screen and no Deck when the roster says I already submitted', async () => {
+    seedParticipants('Alice', 'Bob');
+    act(() => {
+      useSessionStore.setState((s) => ({
+        currentUserId: 'p1',
+        participants: s.participants.map((p) =>
+          p.participantId === 'p1' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    renderSelectionPage();
+
+    expect(await screen.findByText('All Done!')).toBeInTheDocument();
+    expect(screen.queryByText('Ramen Ichiban')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Like' })).not.toBeInTheDocument();
+    expect(screen.getByText(/have swiped/)).toHaveTextContent('1 of 2 have swiped');
+  });
+
+  it('still deals the Deck when only someone else has submitted', async () => {
+    seedParticipants('Alice', 'Bob');
+    act(() => {
+      useSessionStore.setState((s) => ({
+        currentUserId: 'p1',
+        participants: s.participants.map((p) =>
+          p.participantId === 'p2' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    renderSelectionPage();
+
+    expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
+    expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
+  });
+});
