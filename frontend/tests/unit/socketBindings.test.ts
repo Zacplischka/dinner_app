@@ -26,9 +26,14 @@ class FakeSocket {
     return this.on(event, handler);
   }
 
+  timeout(_ms: number) {
+    return this;
+  }
+
+  // After timeout(), socket.io hands the callback (err, ack) — mirrored here.
   emit(event: string, _payload?: unknown, callback?: Handler) {
     if (callback) {
-      callback(this.acks.get(event) ?? { success: true });
+      callback(null, this.acks.get(event) ?? { success: true });
     }
     return this;
   }

@@ -26,10 +26,26 @@ class FakeSocket {
     return this;
   }
 
+  // Events in here never answer; like socket.io, the ack then errors once the
+  // timeout() window closes.
+  silent = new Set<string>();
+  timeoutMs?: number;
+
+  timeout(ms: number) {
+    this.timeoutMs = ms;
+    return this;
+  }
+
+  // After timeout(), socket.io hands the callback (err, ack) — mirrored here.
   emit(event: string, _payload?: unknown, callback?: Handler) {
     if (callback) {
-      callback(this.acks.get(event) ?? { success: true });
+      if (this.silent.has(event)) {
+        setTimeout(() => callback(new Error('operation has timed out')), this.timeoutMs);
+      } else {
+        callback(null, this.acks.get(event) ?? { success: true });
+      }
     }
+    this.timeoutMs = undefined;
     return this;
   }
 
@@ -175,6 +191,32 @@ describe('socketService', () => {
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'bad input' },
       });
+    }
+  });
+
+  it('fails a command whose ack never arrives instead of hanging forever', async () => {
+    vi.useFakeTimers();
+    try {
+      const socket = setupSocket();
+      socketService.initializeSocket();
+      socket.silent.add('selection:submit');
+
+      const settled = vi.fn();
+      void socketService.submitSelection('AB123', ['place-1']).then(settled);
+
+      // Still in flight just short of the window...
+      await vi.advanceTimersByTimeAsync(9_999);
+      expect(settled).not.toHaveBeenCalled();
+      expect(socket.timeoutMs).toBeUndefined(); // the flag is per-emit, as in socket.io
+
+      // ...and a failure Ack, in the shape every caller already handles, once it closes.
+      await vi.advanceTimersByTimeAsync(1);
+      expect(settled).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'UNKNOWN', message: 'No response from server' },
+      });
+    } finally {
+      vi.useRealTimers();
     }
   });
 
