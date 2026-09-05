@@ -7,6 +7,7 @@ import { SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import { createComparisonRouter } from '../../src/api/comparison.js';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
 import { logger } from '../../src/logger.js';
+import { errorHandler } from '../../src/middleware/errorHandler.js';
 import { captureLogs } from '../helpers/logCapture.js';
 
 describe('GET /api/comparison/:placeId/stream', () => {
@@ -120,6 +121,7 @@ describe('Comparison subscribe source tag', () => {
         comparisonService,
       })
     );
+    app.use(errorHandler);
     return app;
   }
 
@@ -203,6 +205,7 @@ describe('per-IP rate limit on cold Comparisons', () => {
         comparisonService,
       })
     );
+    app.use(errorHandler);
     return { app, snapshots, snapshotStore, runActor };
   }
 
