@@ -5,6 +5,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
 import { isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -45,8 +46,7 @@ export default function SwipeCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const deltaX = dragState.currentX - dragState.startX;
-  const prefersReducedMotion =
-    window.matchMedia('(prefers-reduced-motion: reduce)')?.matches ?? false;
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { rotation, likeIntensity, nopeIntensity } = swipeVisuals(deltaX, prefersReducedMotion);
 
   const handleTouchStart = useCallback(
