@@ -1,5 +1,5 @@
 // The entry fork (#255): `/` asks the only question that matters — "Tonight
-// you're…" — with three Branch cards, and demotes Join/Compare to a text row.
+// you're…" — with four Branch cards, and demotes Join/Compare to a text row.
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -21,6 +21,7 @@ function renderFork(initialEntry = '/') {
         <Route path="/join" element={<div>Join route</div>} />
         <Route path="/compare" element={<div>Compare route</div>} />
         <Route path="/cook" element={<div>Cook setup route</div>} />
+        <Route path="/watch" element={<div>Watch setup route</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -32,12 +33,13 @@ describe('HomePage entry fork', () => {
     useFriendsStore.getState().reset();
   });
 
-  it('asks "Tonight you\'re…" with the three Branch cards', () => {
+  it('asks "Tonight you\'re…" with the four Branch cards', () => {
     renderFork();
     expect(screen.getByRole('heading', { name: /tonight you.re/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /eating out/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /getting takeaway/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cooking/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /watching a movie/i })).toBeInTheDocument();
   });
 
   it('routes the Eat Out card into the existing create flow with its branch', () => {
@@ -56,6 +58,12 @@ describe('HomePage entry fork', () => {
     renderFork();
     fireEvent.click(screen.getByRole('button', { name: /cooking/i }));
     expect(screen.getByText('Cook setup route')).toBeInTheDocument();
+  });
+
+  it('routes the Watch card into Watch setup (#369)', () => {
+    renderFork();
+    fireEvent.click(screen.getByRole('button', { name: /watching a movie/i }));
+    expect(screen.getByText('Watch setup route')).toBeInTheDocument();
   });
 
   it('keeps Join with a code reachable from the text row', () => {

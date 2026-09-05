@@ -1,8 +1,8 @@
 // Results page - Show overlapping selections and all participants' choices
 
 import { useNavigate, useParams } from 'react-router-dom';
-import type { Restaurant } from '@dinder/shared/types';
-import { isRestaurant, type Participant } from '../types';
+import type { Movie, Restaurant } from '@dinder/shared/types';
+import { isRecipe, isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
@@ -73,6 +73,53 @@ function RecipeCrown({
             Priced at Woolworths, scaled for everyone eating
           </p>
         </div>
+      )}
+    </div>
+  );
+}
+
+// The Watch ending (#369): the crowned Movie, outright — no other-matches list,
+// nothing to order or compare. The trailer is the one continuation, and the
+// critics score is a 0-100 figure, never the Restaurant's stars.
+// ponytail: MovieCrown beside RecipeCrown; fold both into one EntryCrown on a fourth kind.
+function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
+  const meta = [
+    movie.year,
+    movie.runtimeMinutes && `${movie.runtimeMinutes} min`,
+    movie.rating !== undefined && `${movie.rating}% critics`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <div
+      data-match-card
+      data-movie-crown
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+    >
+      {/* A poster is portrait, so it gets a 2:3 frame rather than the landscape hero strip. */}
+      {movie.photoUrl && (
+        <RetryingPhoto
+          url={movie.photoUrl}
+          className="mx-auto mb-3 h-48 w-32 rounded-market-md object-cover"
+        />
+      )}
+      <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">
+        TONIGHT&rsquo;S MOVIE
+      </p>
+      <p className="text-lg font-semibold text-text">{movie.name}</p>
+      {meta && <p className="text-sm text-muted mt-1">{meta}</p>}
+      <p className="text-sm text-muted mt-1">{reason}</p>
+
+      {movie.trailerUrl && (
+        <a
+          href={movie.trailerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          // An anchor is inline; .btn assumes a button's box, so give it one.
+          className="btn btn-primary mt-3 flex min-h-[48px] w-full items-center justify-center"
+        >
+          Watch trailer
+        </a>
       )}
     </div>
   );
@@ -279,8 +326,9 @@ export default function ResultsPage() {
   const toast = useToast();
 
   // Everything below the crown — other matches, Near Misses, delivery links —
-  // is restaurant chrome, so Recipes are filtered out of it. The crown itself
-  // renders either kind: a Cook Session ends at the crowned Recipe (#259).
+  // is restaurant chrome, so Recipes and Movies are filtered out of it. The
+  // crown itself renders every kind: a Cook Session ends at the crowned Recipe
+  // (#259), a Watch Session at the crowned Movie (#369).
   const overlappingOptions = matchedEntries.filter(isRestaurant);
   const restaurants = deckEntries.filter(isRestaurant);
   const topPick =
@@ -288,19 +336,26 @@ export default function ResultsPage() {
       ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
       : undefined;
   const crownedRecipe =
-    crownedEntry && !isRestaurant(crownedEntry.restaurant)
+    crownedEntry && isRecipe(crownedEntry.restaurant)
       ? { ...crownedEntry, recipe: crownedEntry.restaurant }
       : undefined;
+  const crownedMovie =
+    crownedEntry && crownedEntry.restaurant.kind === 'movie'
+      ? { ...crownedEntry, movie: crownedEntry.restaurant }
+      : undefined;
 
-  // A Deck never mixes kinds, so either signal answers "is this a Cook
-  // Session?" — the crown covers a Participant whose local Deck is empty.
-  const isCookDeck = Boolean(crownedRecipe) || deckEntries.some((entry) => !isRestaurant(entry));
+  // A Deck never mixes kinds, so one entry names the Deck's kind — the crown's,
+  // which covers a Participant whose local Deck is empty, else the first dealt.
+  // No `kind` is a Restaurant (every pre-Cook producer).
+  const deckKind = crownedEntry?.restaurant.kind ?? deckEntries[0]?.kind ?? 'restaurant';
+  const deckNoun = { restaurant: 'restaurants', recipe: 'recipes', movie: 'movies' }[deckKind];
 
   // Where the night ends (#258). Eat Out stops at the Top Pick — the decision is
   // the destination, not an upsell into Comparison or a Group Order — and a dish
-  // you cook has nothing to order either. Takeaway keeps the continuation, and so
-  // does a Session created before the entry fork (no Branch).
-  const showContinuation = branch !== 'eatout' && !isCookDeck;
+  // you cook or a movie you watch has nothing to order either. Takeaway keeps
+  // the continuation, and so does a Session created before the entry fork (no
+  // Branch).
+  const showContinuation = branch !== 'eatout' && deckKind === 'restaurant';
 
   // Kind-agnostic: for a restaurant Deck this is exactly overlappingOptions,
   // and for a Recipe Deck it is the Match the celebration should fire on.
@@ -342,14 +397,15 @@ export default function ResultsPage() {
   });
 
   // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
-  // and the tier's counts read off the same "of" the crown does.
-  const crownPlaceId = pick?.restaurant.placeId ?? crownedRecipe?.recipe.placeId;
-  const crownOf = pick?.of ?? crownedRecipe?.of ?? participants.length;
+  // the tier's counts read off the same "of" the crown does, and Select Again
+  // is offered on any crown, not only a Restaurant's.
+  const crownPlaceId = pick?.restaurant.placeId ?? crownedEntry?.restaurant.placeId;
+  const crownOf = pick?.of ?? crownedEntry?.of ?? participants.length;
 
   // Near Misses (#72): the all-but-one tier, reduced client-side from the
   // Selections already in the results payload. Empty Match, 3+ Participants
-  // only. A Recipe can be a Near Miss too (CONTEXT.md) — only the delivery
-  // actions on the card are restaurant chrome.
+  // only. A Recipe or Movie can be a Near Miss too (CONTEXT.md), shown as name
+  // and count — only the rating and delivery actions are restaurant chrome.
   const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
   if (!hasOverlap && participants.length >= 3) {
     const selectionCounts = new Map<string, number>();
@@ -447,6 +503,10 @@ export default function ResultsPage() {
     bestOfMany: 'the most popular',
     noneSelected: "Nobody swiped yes, so here's the most popular one.",
   };
+  const movieWords = {
+    bestOfMany: 'best rated',
+    noneSelected: "Nobody swiped yes, so here's the highest rated.",
+  };
 
   return (
     <main className="min-h-screen bg-ink">
@@ -458,7 +518,7 @@ export default function ResultsPage() {
             ? hasOverlap
               ? "Tonight's pick is locked in"
               : "No unanimous Match — here's the closest one"
-            : `No ${isCookDeck ? 'recipes' : 'restaurants'} matched everyone's preferences`
+            : `No ${deckNoun} matched everyone's preferences`
         }
         sessionCode={sessionCode}
         showBackButton
@@ -504,6 +564,10 @@ export default function ResultsPage() {
               reason={crownReason(crownedRecipe, recipeWords)}
               shoppingListId={shoppingListId}
             />
+          </div>
+        ) : crownedMovie ? (
+          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+            <MovieCrown movie={crownedMovie.movie} reason={crownReason(crownedMovie, movieWords)} />
           </div>
         ) : pick ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
@@ -583,7 +647,7 @@ export default function ResultsPage() {
                 />
               </svg>
             </div>
-            <p className="text-muted mb-6">No restaurants were selected by all participants</p>
+            <p className="text-muted mb-6">No {deckNoun} were selected by all participants</p>
             <button
               onClick={handleRestart}
               disabled={isRestarting}
@@ -693,7 +757,7 @@ export default function ResultsPage() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {pick && (
+          {crownPlaceId && (
             <button
               onClick={handleRestart}
               disabled={isRestarting}

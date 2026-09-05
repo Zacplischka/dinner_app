@@ -699,6 +699,15 @@ describe('ResultsPage', () => {
       expect(screen.queryByRole('button', { name: 'Shopping list' })).not.toBeInTheDocument();
     });
 
+    // Select Again was gated on the Restaurant-only pick, so a crowned Recipe
+    // had no Restart (#369).
+    it('offers Select Again on a crowned Recipe', () => {
+      seedCook();
+      renderResults();
+
+      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+    });
+
     it('celebrates a Recipe Match the same as a Restaurant one', () => {
       seedCook();
       renderResults();
@@ -769,6 +778,146 @@ describe('ResultsPage', () => {
       expect(nearMissCards[0].textContent).toContain('Laksa');
       expect(nearMissCards[0].textContent).toContain('2 of 3 liked this');
       expect(nearMissCards[0].querySelector('a')).toBeNull();
+    });
+  });
+
+  // The Watch ending (#369): the crowned Movie, its trailer, and none of the
+  // delivery or shopping chrome the other crowns carry.
+  describe('the crowned Movie', () => {
+    const alien = {
+      kind: 'movie' as const,
+      placeId: 'Q103569',
+      name: 'Alien',
+      photoUrl: 'https://img.test/alien.jpg',
+      year: 1979,
+      runtimeMinutes: 117,
+      genres: ['Horror', 'Sci-Fi'],
+      rating: 93,
+      trailerUrl: 'https://www.youtube.com/watch?v=is2EMy3u0xc',
+    };
+    const heat = {
+      kind: 'movie' as const,
+      placeId: 'Q188652',
+      name: 'Heat',
+      year: 1995,
+      rating: 88,
+    };
+
+    function seedWatch(overrides: Parameters<typeof seedStore>[0] = {}) {
+      seedStore({
+        branch: 'watch',
+        restaurants: [alien, heat],
+        restaurantNames: { [alien.placeId]: alien.name, [heat.placeId]: heat.name },
+        participants: [alice, bob],
+        overlappingOptions: [alien],
+        allSelections: { Alice: [alien.placeId], Bob: [alien.placeId] },
+        topPick: { restaurant: alien, likedBy: 2, of: 2 },
+        ...overrides,
+      });
+    }
+
+    it('crowns the Movie with its title, poster, facts and reason', () => {
+      seedWatch();
+      const { container } = renderResults();
+
+      const crown = container.querySelector('[data-movie-crown]')!;
+      expect(crown).not.toBeNull();
+      expect(crown.textContent).toContain('TONIGHT’S MOVIE');
+      expect(crown.textContent).toContain('Alien');
+      expect(crown.textContent).toContain('1979 · 117 min · 93% critics');
+      expect(crown.textContent).toContain('Everyone swiped yes on this one.');
+      expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
+      // A Movie is not a Recipe: the Cook ending must not claim it.
+      expect(container.querySelector('[data-recipe-crown]')).toBeNull();
+    });
+
+    it('titles a crowned Movie as a Match and celebrates it', () => {
+      seedWatch();
+      renderResults();
+
+      expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
+      expect(screen.getByText('MATCH!')).toBeInTheDocument();
+    });
+
+    it('offers no delivery, compare, order or shopping-list actions on a movie', () => {
+      seedWatch();
+      const { container } = renderResults();
+
+      expect(screen.queryByRole('button', { name: 'Order together' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Shopping list' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /uber eats|doordash/i })).not.toBeInTheDocument();
+      expect(container.querySelector('a[href*="/compare/"]')).toBeNull();
+    });
+
+    it('links the trailer in a new tab when the source has one', () => {
+      seedWatch();
+      renderResults();
+
+      const trailer = screen.getByRole('link', { name: 'Watch trailer' });
+      expect(trailer).toHaveAttribute('href', alien.trailerUrl);
+      expect(trailer).toHaveAttribute('target', '_blank');
+      expect(trailer.getAttribute('rel')).toContain('noopener');
+    });
+
+    it('offers no trailer link when the source has none', () => {
+      seedWatch({
+        overlappingOptions: [heat],
+        allSelections: { Alice: [heat.placeId], Bob: [heat.placeId] },
+        topPick: { restaurant: heat, likedBy: 2, of: 2 },
+      });
+      renderResults();
+
+      expect(screen.queryByRole('link', { name: 'Watch trailer' })).not.toBeInTheDocument();
+    });
+
+    it('offers Select Again on a crowned Movie', () => {
+      seedWatch();
+      renderResults();
+
+      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+    });
+
+    it('crowns the highest-rated Movie with "Nobody swiped yes" when nobody selected anything', () => {
+      seedWatch({
+        overlappingOptions: [],
+        allSelections: { Alice: [], Bob: [] },
+        topPick: { restaurant: alien, likedBy: 0, of: 2 },
+      });
+      renderResults();
+
+      expect(
+        screen.getByText("Nobody swiped yes, so here's the highest rated.")
+      ).toBeInTheDocument();
+    });
+
+    // A Movie can be a Near Miss too (CONTEXT.md): name and count, with neither
+    // the Restaurant's stars nor anything to order or compare.
+    it('surfaces a Movie Near Miss as a name and count', () => {
+      seedWatch({
+        participants: [alice, bob, cara],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [alien.placeId, heat.placeId],
+          Bob: [alien.placeId, heat.placeId],
+          Cara: [],
+        },
+        topPick: { restaurant: alien, likedBy: 2, of: 3 },
+      });
+      const { container } = renderResults();
+
+      const nearMissCards = container.querySelectorAll('[data-near-miss-card]');
+      expect(nearMissCards).toHaveLength(1);
+      expect(nearMissCards[0].textContent).toContain('Heat');
+      expect(nearMissCards[0].textContent).toContain('2 of 3 liked this');
+      expect(nearMissCards[0].textContent).not.toContain('88');
+      expect(nearMissCards[0].querySelector('a')).toBeNull();
+    });
+
+    it('names the Deck kind when nothing was crowned', () => {
+      seedWatch({ overlappingOptions: [], allSelections: {}, topPick: undefined });
+      renderResults();
+
+      expect(screen.getByText("No movies matched everyone's preferences")).toBeInTheDocument();
     });
   });
 

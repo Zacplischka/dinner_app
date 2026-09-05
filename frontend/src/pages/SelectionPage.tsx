@@ -1,5 +1,6 @@
 // Selection page - Tinder-style swipeable selection of tonight's Deck, which
-// deals both Deck Entry kinds: Restaurants (Eat Out/Takeaway) and Recipes (Cook).
+// deals every Deck Entry kind: Restaurants (Eat Out/Takeaway), Recipes (Cook)
+// and Movies (Watch).
 // Swipe right to like, swipe left to pass
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -43,10 +44,9 @@ export default function SelectionPage() {
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const { selections, addSelection, removeSelection, participants, liveSelections, branch } =
     useSessionStore();
-  // The deck is shared with the restaurant branches, but its copy must not be:
-  // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
-  const isCook = branch === 'cook';
-  const deckNoun = isCook ? 'recipe' : 'restaurant';
+  // The Deck is shared with every Branch, but its copy must not be: a Cook
+  // Session deals Recipes and said "Choose Restaurants" over them (#253).
+  const deckNoun = branch === 'cook' ? 'recipe' : branch === 'watch' ? 'movie' : 'restaurant';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -457,7 +457,13 @@ export default function SelectionPage() {
     <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
-        title={isCook ? 'Choose Recipes' : 'Choose Restaurants'}
+        title={
+          branch === 'cook'
+            ? 'Choose Recipes'
+            : branch === 'watch'
+              ? 'Choose Movies'
+              : 'Choose Restaurants'
+        }
         sessionCode={sessionCode}
         showBackButton
         onBack={handleLeaveSession}
