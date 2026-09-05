@@ -38,6 +38,11 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
   };
 }
 
+// "Sam", "Sam and Priya", "Sam, Priya and Lee". Names are fine here: CONTEXT.md
+// forbids them only in Near Miss counts, and the lobby already shows the roster.
+export const listNames = (names: string[]): string =>
+  names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
@@ -318,6 +323,7 @@ export default function SelectionPage() {
   }
 
   if (hasSubmitted) {
+    const stillSwiping = participants.filter((p) => !p.hasSubmitted).map((p) => p.displayName);
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
@@ -352,18 +358,27 @@ export default function SelectionPage() {
 
               <div className="mb-6">
                 <div className="flex justify-center gap-2 mb-3">
-                  {participants.map((p, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                        p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
-                      }`}
-                    />
-                  ))}
+                  {participants.map((p) => {
+                    const label = `${p.displayName}: ${p.hasSubmitted ? 'submitted' : 'still swiping'}`;
+                    return (
+                      <div
+                        key={p.participantId}
+                        role="img"
+                        aria-label={label}
+                        title={label}
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                          p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
                 <p className="text-sm text-muted">
                   <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
                   <span className="text-cyan font-semibold">{participants.length}</span> have swiped
+                </p>
+                <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
+                  {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}
                 </p>
               </div>
             </div>
