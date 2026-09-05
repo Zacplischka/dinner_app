@@ -26,10 +26,26 @@ class FakeSocket {
     return this;
   }
 
+  // Events in here never answer; like socket.io, the ack then errors once the
+  // timeout() window closes.
+  silent = new Set<string>();
+  timeoutMs?: number;
+
+  timeout(ms: number) {
+    this.timeoutMs = ms;
+    return this;
+  }
+
+  // After timeout(), socket.io hands the callback (err, ack) — mirrored here.
   emit(event: string, _payload?: unknown, callback?: Handler) {
     if (callback) {
-      callback(this.acks.get(event) ?? { success: true });
+      if (this.silent.has(event)) {
+        setTimeout(() => callback(new Error('operation has timed out')), this.timeoutMs);
+      } else {
+        callback(null, this.acks.get(event) ?? { success: true });
+      }
     }
+    this.timeoutMs = undefined;
     return this;
   }
 
@@ -103,7 +119,40 @@ describe('socketService', () => {
     // Second initialize while connected is a no-op
     socketService.initializeSocket();
     expect(socketMocks.io).toHaveBeenCalledTimes(1);
-    expect(logSpy).toHaveBeenCalledWith('Socket already connected');
+    expect(logSpy).toHaveBeenCalledWith('Socket already initialized');
+  });
+
+  it('never orphans a socket that is mid-reconnect', () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const retrying = setupSocket(false);
+    socketService.initializeSocket();
+
+    // A join page calling waitForConnection while the Manager is still
+    // retrying must attach to that socket, not open a second io().
+    socketService.initializeSocket();
+    void socketService.waitForConnection(50).catch(() => undefined);
+    expect(socketMocks.io).toHaveBeenCalledTimes(1);
+    expect(retrying.disconnect).not.toHaveBeenCalled();
+    expect(retrying.onceHandlers.get('connect')).toHaveLength(1);
+
+    // A fresh socket is wanted only after an explicit disconnect.
+    socketService.disconnectSocket();
+    setupSocket();
+    socketService.initializeSocket();
+    expect(socketMocks.io).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries for the life of the Session: no reconnection cap', () => {
+    setupSocket();
+
+    socketService.initializeSocket();
+
+    // A finite cap left the Manager dead after ~15s of backoff while the
+    // header still read "Reconnecting..."; the Session's own TTL is the bound.
+    expect(socketMocks.io).toHaveBeenCalledWith(
+      'http://localhost:3001',
+      expect.objectContaining({ reconnection: true, reconnectionAttempts: Infinity })
+    );
   });
 
   it('connects without auth when no token provider is given', () => {
@@ -175,6 +224,32 @@ describe('socketService', () => {
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'bad input' },
       });
+    }
+  });
+
+  it('fails a command whose ack never arrives instead of hanging forever', async () => {
+    vi.useFakeTimers();
+    try {
+      const socket = setupSocket();
+      socketService.initializeSocket();
+      socket.silent.add('selection:submit');
+
+      const settled = vi.fn();
+      void socketService.submitSelection('AB123', ['place-1']).then(settled);
+
+      // Still in flight just short of the window...
+      await vi.advanceTimersByTimeAsync(9_999);
+      expect(settled).not.toHaveBeenCalled();
+      expect(socket.timeoutMs).toBeUndefined(); // the flag is per-emit, as in socket.io
+
+      // ...and a failure Ack, in the shape every caller already handles, once it closes.
+      await vi.advanceTimersByTimeAsync(1);
+      expect(settled).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'UNKNOWN', message: 'No response from server' },
+      });
+    } finally {
+      vi.useRealTimers();
     }
   });
 

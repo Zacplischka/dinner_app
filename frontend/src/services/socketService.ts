@@ -44,8 +44,11 @@ let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
  * Includes an auth token and event handlers when the config provides them.
  */
 export function initializeSocket(config: SocketConfig = {}): void {
-  if (socket?.connected) {
-    console.log('Socket already connected');
+  // Guard on existence, not on connected: a call mid-reconnect used to open a
+  // second io() and orphan the one still retrying (and holding the handlers).
+  // disconnectSocket() is the one way to want a fresh socket; it nulls this.
+  if (socket) {
+    console.log('Socket already initialized');
     return;
   }
 
@@ -53,7 +56,11 @@ export function initializeSocket(config: SocketConfig = {}): void {
 
   socket = io(BACKEND_URL, {
     reconnection: true,
-    reconnectionAttempts: 5,
+    // Never give up on our own: a cap of 5 stopped retrying ~15s into a
+    // 30-minute Session while the UI kept saying "Reconnecting...". The
+    // Session's TTL bounds the useful lifetime instead — once it expires,
+    // the rejoin on connect fails and the store resets.
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 10000,
@@ -67,10 +74,15 @@ export function initializeSocket(config: SocketConfig = {}): void {
   }
 }
 
+// ponytail: one round-trip budget, not a retry policy — the caller's existing
+// failure path ("try again") is the retry. Raise it before adding retries here.
+const ACK_TIMEOUT_MS = 10_000;
+
 // Every command's ack is a canonical Ack<T> from the backend (#116): a
 // discriminated { success: true; data } | { success: false; error: ApiError }.
-// The transport resolves it as-is; the only ack the client mints itself is the
-// not-connected failure below.
+// The transport resolves it as-is; the only acks the client mints itself are
+// the not-connected and timed-out failures below. Without the timeout a
+// command lost mid-flight never settles and its screen spins forever.
 function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promise<Ack<T>> {
   return new Promise((resolve) => {
     if (!socket?.connected) {
@@ -79,10 +91,18 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
     }
     // socket.io's typed `emit` can't infer through this generic wrapper; the
     // wire contract is enforced by each caller's declared Ack<T> return type.
-    (socket.emit as (e: string, p: unknown, cb: (ack: Ack<T>) => void) => void)(
-      event,
-      payload,
-      resolve
+    (
+      socket.timeout(ACK_TIMEOUT_MS).emit as (
+        e: string,
+        p: unknown,
+        cb: (err: Error | null, ack: Ack<T>) => void
+      ) => void
+    )(event, payload, (err, ack) =>
+      resolve(
+        err
+          ? { success: false, error: { code: 'UNKNOWN', message: 'No response from server' } }
+          : ack
+      )
     );
   });
 }

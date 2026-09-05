@@ -26,9 +26,14 @@ class FakeSocket {
     return this.on(event, handler);
   }
 
+  timeout(_ms: number) {
+    return this;
+  }
+
+  // After timeout(), socket.io hands the callback (err, ack) — mirrored here.
   emit(event: string, _payload?: unknown, callback?: Handler) {
     if (callback) {
-      callback(this.acks.get(event) ?? { success: true });
+      callback(null, this.acks.get(event) ?? { success: true });
     }
     return this;
   }
@@ -92,6 +97,7 @@ describe('socketBindings', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
     window.history.pushState({}, '', '/');
   });
 
@@ -275,6 +281,7 @@ describe('socketBindings', () => {
   });
 
   it('updates participants from server events', () => {
+    vi.useFakeTimers();
     const socket = setupSocket();
     socketBindings.initializeSocket();
 
@@ -315,6 +322,7 @@ describe('socketBindings', () => {
     expect(
       useSessionStore.getState().participants.find((p) => p.participantId === 'participant-1')
     ).toBeDefined();
+    vi.advanceTimersByTime(5000);
     expect(socketMocks.toast.warning).toHaveBeenCalledWith('Alice lost connection', {
       duration: 3000,
     });
@@ -338,6 +346,50 @@ describe('socketBindings', () => {
     // Submission flips hasSubmitted
     socket.trigger('participant:submitted', { participantId: 'participant-9' });
     expect(useSessionStore.getState().participants[0].hasSubmitted).toBe(true);
+  });
+
+  // A Disconnect is not a Leave (the server holds the place for two minutes),
+  // and most drops are a locked phone. The room hears about one only if it
+  // outlasts the grace period; a rejoin inside it is silent both ways.
+  it('does not toast the room about a Participant whose drop is over before the grace period', () => {
+    vi.useFakeTimers();
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+
+    socket.trigger('participant:disconnected', {
+      participantId: 'participant-1',
+      displayName: 'Alice',
+    });
+    // The badge is honest at once; the toast waits.
+    expect(useSessionStore.getState().participants[0].isOnline).toBe(false);
+    vi.advanceTimersByTime(4999);
+    expect(socketMocks.toast.warning).not.toHaveBeenCalled();
+
+    socket.trigger('participant:joined', {
+      participantId: 'participant-9',
+      displayName: 'Alice',
+      isRejoin: true,
+    });
+    vi.advanceTimersByTime(5000);
+    expect(socketMocks.toast.warning).not.toHaveBeenCalled();
+    expect(socketMocks.toast.info).not.toHaveBeenCalledWith('Alice reconnected');
+    expect(useSessionStore.getState().participants[0].isOnline).toBe(true);
+
+    // A drop that outlasts the window is announced, and so is its recovery.
+    socket.trigger('participant:disconnected', {
+      participantId: 'participant-9',
+      displayName: 'Alice',
+    });
+    vi.advanceTimersByTime(5000);
+    expect(socketMocks.toast.warning).toHaveBeenCalledWith('Alice lost connection', {
+      duration: 3000,
+    });
+    socket.trigger('participant:joined', {
+      participantId: 'participant-10',
+      displayName: 'Alice',
+      isRejoin: true,
+    });
+    expect(socketMocks.toast.info).toHaveBeenCalledWith('Alice reconnected');
   });
 
   // #283: a stale event from a Session this browser already left must not grow
