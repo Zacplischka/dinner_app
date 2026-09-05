@@ -83,6 +83,12 @@ export type DeckEntry = Restaurant | Recipe | Movie;
 export const isRestaurant = (entry: DeckEntry): entry is Restaurant =>
   entry.kind === undefined || entry.kind === 'restaurant';
 
+/**
+ * Narrows a Deck Entry to the Recipe arm. The Cook ending narrows on this, not
+ * on `!isRestaurant` — every later kind passes that test too.
+ */
+export const isRecipe = (entry: DeckEntry): entry is Recipe => entry.kind === 'recipe';
+
 export interface Venue {
   placeId: string;
   name: string;

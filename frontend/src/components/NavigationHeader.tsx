@@ -238,7 +238,7 @@ export default function NavigationHeader({
                 <div
                   className="flex items-center gap-2"
                   role="progressbar"
-                  aria-label="Restaurant progress"
+                  aria-label="Deck progress"
                   aria-valuemin={1}
                   aria-valuemax={progress.total}
                   aria-valuenow={progress.current}
