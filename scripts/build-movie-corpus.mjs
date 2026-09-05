@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The Watch Branch's movie corpus builder (#369). Turns the seed list in
 // movie-titles.json into backend/src/data/movies.generated.ts — the committed,
-// pre-enriched ~300-film corpus the Movie Deck is dealt from. Reference data
+// pre-enriched ~300-Movie corpus the Movie Deck is dealt from. Reference data
 // (ADR 0011): reviewed in a pull request, shipped with the deploy, read in
 // memory; nothing at runtime calls Wikipedia or Wikidata.
 //
@@ -163,8 +163,8 @@ const trimOverview = (s = '') => {
 /**
  * The TypeScript module the backend imports: `MOVIES` in the shared `Movie`
  * shape (placeId = QID, name = title, photoUrl = poster). Absent facts are
- * omitted, never `null` — every optional on `Movie` is `?:`. One film per
- * line, so a rebuild diffs film by film.
+ * omitted, never `null` — every optional on `Movie` is `?:`. One Movie per
+ * line, so a rebuild diffs Movie by Movie.
  */
 export function emitModule(movies, generatedOn) {
   const lines = movies.map((m) => `  ${JSON.stringify(m, (_k, v) => v ?? undefined)},`);
@@ -173,13 +173,15 @@ export function emitModule(movies, generatedOn) {
 //
 // The Watch Branch's movie corpus (#369): reference data (ADR 0011), committed
 // and shipped with the deploy, dealt in memory by MovieDeckService.
-// ponytail: a static ${movies.length}-film corpus; TMDB behind the same MovieSource seam when it runs thin.
+// ponytail: a static ${movies.length}-Movie corpus; TMDB behind the same MovieSource seam when it runs thin.
 //
-// Attribution. Overviews are the opening sentences of each film's English
-// Wikipedia article, CC BY-SA 4.0 — the article for a card is
+// Attribution. Overviews are the opening sentences of each Movie's English
+// Wikipedia article, CC BY-SA 4.0 — the article for a Movie is
 // https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/<placeId>.
 // Posters are English Wikipedia's fair-use uploads, hot-linked at thumbnail
-// size from upload.wikimedia.org. Year, runtime, genres, critics score and
+// size from upload.wikimedia.org — a fair-use call this app makes itself, not
+// one it inherits from the article (ADR 0013; TMDB grants poster use with
+// attribution when it takes the seam). Year, runtime, genres, critics score and
 // trailer id are Wikidata (CC0); the rating is Wikidata's hand-entered snapshot
 // of the Rotten Tomatoes Tomatometer (else Metacritic's Metascore), not live.
 import type { Movie } from '@dinder/shared/types';

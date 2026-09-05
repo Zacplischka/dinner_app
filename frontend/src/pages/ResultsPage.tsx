@@ -2,7 +2,7 @@
 
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Movie, Restaurant } from '@dinder/shared/types';
-import { isRecipe, isRestaurant, type Participant } from '../types';
+import { isMovie, isRecipe, isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
@@ -12,6 +12,8 @@ import { useEffect, useMemo, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { useShareLink } from '../hooks/useShareLink';
+import WikipediaCredit from '../components/WikipediaCredit';
+import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
 import {
   DeliveryActions,
@@ -109,6 +111,7 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
       <p className="text-lg font-semibold text-text">{movie.name}</p>
       {meta && <p className="text-sm text-muted mt-1">{meta}</p>}
       <p className="text-sm text-muted mt-1">{reason}</p>
+      <WikipediaCredit placeId={movie.placeId} />
 
       {movie.trailerUrl && (
         <a
@@ -339,7 +342,7 @@ export default function ResultsPage() {
       ? { ...crownedEntry, recipe: crownedEntry.restaurant }
       : undefined;
   const crownedMovie =
-    crownedEntry && crownedEntry.restaurant.kind === 'movie'
+    crownedEntry && isMovie(crownedEntry.restaurant)
       ? { ...crownedEntry, movie: crownedEntry.restaurant }
       : undefined;
 

@@ -7,7 +7,7 @@
 // rate-limited vendor call worth sharing between Sessions; a static corpus
 // costs nothing to filter again, so the Session stores its Mood and a Restart
 // simply re-deals from it. Pool it the day the source is TMDB.
-// ponytail: a static ~300-film corpus behind the MovieSource seam; TMDB
+// ponytail: a static ~300-Movie corpus behind the MovieSource seam; TMDB
 // replaces `corpusMovieSource` when it runs thin, and nothing above changes.
 import type { DeckEntry, Mood, Movie } from '@dinder/shared/types';
 import { MOVIES } from '../data/movies.generated.js';
@@ -50,7 +50,7 @@ export interface DealOptions {
 
 /**
  * A Restart's Deck: the Mood's Movies with the just-wiped ones dealt last, so
- * the group sees new films first and repeats only once the Mood runs out. A
+ * the group sees new Movies first and repeats only once the Mood runs out. A
  * Mood that has stopped matching anything (a redeploy shrank the corpus)
  * reshuffles `current` — a Restart never leaves a Session without a Deck.
  */

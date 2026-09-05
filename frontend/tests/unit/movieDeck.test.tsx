@@ -82,6 +82,11 @@ describe('Movie Deck', () => {
     expect(screen.getByText('Sci-Fi')).toBeInTheDocument();
     expect(screen.getByText('93% critics')).toBeInTheDocument();
     expect(screen.getByText(/commercial starship crew/)).toBeInTheDocument();
+    // The overview is CC BY-SA Wikipedia text, so the card credits the article.
+    expect(screen.getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
+      'href',
+      'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q103569'
+    );
   });
 
   it('renders none of the Restaurant-only meta for a Movie', async () => {

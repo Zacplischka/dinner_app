@@ -3,13 +3,15 @@
 //
 // The Watch Branch's movie corpus (#369): reference data (ADR 0011), committed
 // and shipped with the deploy, dealt in memory by MovieDeckService.
-// ponytail: a static 300-film corpus; TMDB behind the same MovieSource seam when it runs thin.
+// ponytail: a static 300-Movie corpus; TMDB behind the same MovieSource seam when it runs thin.
 //
-// Attribution. Overviews are the opening sentences of each film's English
-// Wikipedia article, CC BY-SA 4.0 — the article for a card is
+// Attribution. Overviews are the opening sentences of each Movie's English
+// Wikipedia article, CC BY-SA 4.0 — the article for a Movie is
 // https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/<placeId>.
 // Posters are English Wikipedia's fair-use uploads, hot-linked at thumbnail
-// size from upload.wikimedia.org. Year, runtime, genres, critics score and
+// size from upload.wikimedia.org — a fair-use call this app makes itself, not
+// one it inherits from the article (ADR 0013; TMDB grants poster use with
+// attribution when it takes the seam). Year, runtime, genres, critics score and
 // trailer id are Wikidata (CC0); the rating is Wikidata's hand-entered snapshot
 // of the Rotten Tomatoes Tomatometer (else Metacritic's Metascore), not live.
 import type { Movie } from '@dinder/shared/types';
