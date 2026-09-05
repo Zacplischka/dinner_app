@@ -530,36 +530,27 @@ export function createSessionStore(redis: Redis) {
         ? await redis.smembers(selectionKeys[0])
         : await redis.sinter(...selectionKeys);
 
-    const readEntry = async (placeId: string): Promise<DeckEntry | null> => {
-      const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
-      return raw ? (JSON.parse(raw) as DeckEntry) : null;
-    };
-
-    const overlappingOptions: DeckEntry[] = [];
-    for (const placeId of overlappingPlaceIds) {
-      const entry = await readEntry(placeId);
-      if (entry) {
-        overlappingOptions.push(entry);
-      }
-    }
+    const overlappingOptions = (await readEntries(sessionCode, overlappingPlaceIds)).filter(
+      (entry): entry is DeckEntry => entry !== null
+    );
 
     // displayName -> selected placeIds, for the results screen
+    const selections = await Promise.all(selectionKeys.map((key) => redis.smembers(key)));
     const allSelections: Record<string, string[]> = {};
-    for (const p of participants) {
-      allSelections[p.displayName] = await redis.smembers(
-        selectionsKey(sessionCode, p.participantId)
-      );
-    }
+    participants.forEach((p, i) => {
+      allSelections[p.displayName] = selections[i];
+    });
 
     // Names for every selected placeId (not just the Match)
     const restaurantNames: Record<string, string> = {};
-    const allPlaceIds = new Set(Object.values(allSelections).flat());
-    for (const placeId of allPlaceIds) {
-      const entry = await readEntry(placeId);
+    const allPlaceIds = [...new Set(Object.values(allSelections).flat())];
+    const namedEntries = await readEntries(sessionCode, allPlaceIds);
+    allPlaceIds.forEach((placeId, i) => {
+      const entry = namedEntries[i];
       if (entry) {
         restaurantNames[placeId] = entry.name;
       }
-    }
+    });
 
     // Store the Match; sentinel keeps the key alive under TTL when empty
     if (overlappingOptions.length > 0) {
