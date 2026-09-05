@@ -16,6 +16,8 @@ export type DomainErrorCode =
   // miss above, because "remove a filter" is the wrong instruction when the
   // source was merely down (#250).
   | 'RECIPE_SOURCE_UNAVAILABLE'
+  // The Watch Branch's counterpart: a Mood the corpus has no Movie for.
+  | 'NO_MOVIES_FOUND'
   // A Session that exists but holds no usable restaurants, distinct from a
   // search that found none (NO_RESTAURANTS_FOUND).
   | 'NO_RESTAURANTS'

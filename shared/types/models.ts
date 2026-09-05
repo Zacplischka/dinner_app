@@ -8,7 +8,7 @@ export const SESSION_CODE_PATTERN = /^[A-Z0-9]{5}$/;
  * the Session's life (#255). Carried additively in the create contract
  * (ADR 0007): a client that never sends one gets today's behavior.
  */
-export const BRANCHES = ['eatout', 'takeaway', 'cook'] as const;
+export const BRANCHES = ['eatout', 'takeaway', 'cook', 'watch'] as const;
 export type Branch = (typeof BRANCHES)[number];
 
 export interface Restaurant {
