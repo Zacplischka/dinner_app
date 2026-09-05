@@ -37,7 +37,7 @@ export class SelectionPage extends BasePage {
     // sentence starting "Waiting for" would make that locator ambiguous.
     this.waitingState = page.getByRole('heading', { name: 'All Done!' });
     // The header labels the bar for the Deck, whatever Branch dealt it (#369).
-    this.progress = page.getByRole('progressbar', { name: 'Deck progress' });
+    this.progress = page.getByRole('progressbar', { name: /Deck progress|Restaurant progress/ });
     // Full House takeover (#187): submits the like that completed it
     this.finishHereButton = page.getByRole('dialog').getByRole('button', { name: 'Finish here' });
   }
