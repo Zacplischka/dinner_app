@@ -92,10 +92,10 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
         const ip = requestIp(req);
         if (!admitRequest(redirectRequests, ip, REDIRECT_LIMIT, REDIRECT_WINDOW_MS)) {
           res.setHeader('Retry-After', retryAfterSeconds(redirectRequests, ip, REDIRECT_WINDOW_MS));
-          return res.status(429).json({
-            code: 'RATE_LIMITED',
-            message: 'Too many delivery links opened. Please try again later.',
-          });
+          throw new DomainError(
+            'TOO_MANY_REQUESTS',
+            'Too many delivery links opened. Please try again later.'
+          );
         }
 
         const venue = await fetchPlaceDetails(placeId);

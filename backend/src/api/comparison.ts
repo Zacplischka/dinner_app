@@ -3,7 +3,6 @@ import type { Redis } from 'ioredis';
 import {
   parseComparisonEntryRequest,
   parseVenueSearchRequest,
-  type ApiError,
   type Venue,
   type VenueSearchResponse,
 } from '@dinder/shared/types';
@@ -12,6 +11,7 @@ import type { ComparisonService } from '../services/ComparisonService.js';
 import { DomainError } from '../services/DomainError.js';
 import { asyncHandler } from './asyncHandler.js';
 import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
+import { toApiError } from './toApiError.js';
 
 interface ComparisonRouterDeps {
   searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<Venue[]>;
@@ -64,11 +64,13 @@ export function createComparisonRouter({
 
         const ip = requestIp(req);
         if (!admitRequest(photoRequests, ip, PHOTO_LIMIT, PHOTO_WINDOW_MS)) {
+          // Retry-After is transport state the mapping cannot know; set it here,
+          // errorHandler keeps it.
           res.setHeader('Retry-After', retryAfterSeconds(photoRequests, ip, PHOTO_WINDOW_MS));
-          return res.status(429).json({
-            code: 'RATE_LIMITED',
-            message: 'Too many photo requests. Please try again shortly.',
-          } satisfies ApiError);
+          throw new DomainError(
+            'TOO_MANY_REQUESTS',
+            'Too many photo requests. Please try again shortly.'
+          );
         }
 
         const photoUrl = await fetchPlacePhoto(photoName);
@@ -109,10 +111,14 @@ export function createComparisonRouter({
             if (event.type === 'error' && event.code === 'RATE_LIMITED') {
               const retryAfter = retryAfterSeconds(coldCompareRequests, ip, COLD_COMPARE_WINDOW_MS);
               res.setHeader('Retry-After', retryAfter);
-              res.status(429).json({
-                code: 'RATE_LIMITED',
-                message: `Limit of ${COLD_COMPARE_LIMIT} new comparisons per hour reached. Try again in about ${Math.ceil(retryAfter / 60)} minute(s).`,
-              } satisfies ApiError);
+              // Off the handler's stack, so a throw would never reach errorHandler.
+              const { status, body } = toApiError(
+                new DomainError(
+                  'TOO_MANY_REQUESTS',
+                  `Limit of ${COLD_COMPARE_LIMIT} new comparisons per hour reached. Try again in about ${Math.ceil(retryAfter / 60)} minute(s).`
+                )
+              );
+              res.status(status).json(body);
               return;
             }
             res.status(200).set({
@@ -151,10 +157,10 @@ export function createComparisonRouter({
       const ip = requestIp(req);
       if (!admitRequest(venueRequests, ip, VENUE_LIMIT, VENUE_WINDOW_MS)) {
         res.setHeader('Retry-After', retryAfterSeconds(venueRequests, ip, VENUE_WINDOW_MS));
-        return res.status(429).json({
-          code: 'RATE_LIMITED',
-          message: 'Too many venue searches. Please try again shortly.',
-        } satisfies ApiError);
+        throw new DomainError(
+          'TOO_MANY_REQUESTS',
+          'Too many venue searches. Please try again shortly.'
+        );
       }
 
       const [venues, suburb] = await Promise.all([

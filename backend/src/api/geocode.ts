@@ -2,7 +2,7 @@
 // location for Session creation, so browser geolocation is never required.
 
 import { Router } from 'express';
-import type { ApiError, GeocodedArea } from '@dinder/shared/types';
+import type { GeocodedArea } from '@dinder/shared/types';
 import { DomainError } from '../services/DomainError.js';
 import { asyncHandler } from './asyncHandler.js';
 import {
@@ -50,10 +50,10 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
       const ip = requestIp(req);
       if (!admitRequest(geocodeRequests, ip, GEOCODE_LIMIT, GEOCODE_WINDOW_MS)) {
         res.setHeader('Retry-After', retryAfterSeconds(geocodeRequests, ip, GEOCODE_WINDOW_MS));
-        return res.status(429).json({
-          code: 'RATE_LIMITED',
-          message: 'Too many location lookups. Please try again shortly.',
-        } satisfies ApiError);
+        throw new DomainError(
+          'TOO_MANY_REQUESTS',
+          'Too many location lookups. Please try again shortly.'
+        );
       }
 
       if (hasCoords) {

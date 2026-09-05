@@ -111,7 +111,10 @@ describe('GET /api/redirect', () => {
     );
 
     expect(limited.status).toBe(429);
-    expect(limited.body.code).toBe('RATE_LIMITED');
+    expect(limited.body).toEqual({
+      code: 'RATE_LIMITED',
+      message: 'Too many delivery links opened. Please try again later.',
+    });
     expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
   });
 
