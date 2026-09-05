@@ -14,7 +14,7 @@ import {
   MAX_PARTICIPANTS,
 } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
-import type { Recipe } from '@dinder/shared/types';
+import { SESSION_CODE_PATTERN, type Recipe } from '@dinder/shared/types';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST1';
@@ -255,8 +255,13 @@ describe('SessionService', () => {
   });
 
   describe('createSession code generation', () => {
-    it('generates five-character uppercase alphanumeric codes', () => {
-      expect(generateSessionCode()).toMatch(/^[A-Z0-9]{5}$/);
+    it('generates five-character codes from the read-aloud-safe alphabet', () => {
+      // No 0/O, 1/I, 5/S, 8/B or 2/Z — and still within the wire pattern.
+      for (let i = 0; i < 500; i++) {
+        const code = generateSessionCode();
+        expect(code).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ34679]{5}$/);
+        expect(code).toMatch(SESSION_CODE_PATTERN);
+      }
     });
 
     it('should log created sessions with operational context', async () => {
@@ -288,7 +293,7 @@ describe('SessionService', () => {
       let calls = 0;
       const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
         calls++;
-        return calls <= 5 ? 0 : 0.03;
+        return calls <= 5 ? 0 : 0.04; // index 1 → B in the 29-symbol alphabet
       });
 
       const result = await SessionService.createSession('Alice');
