@@ -180,7 +180,7 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
     // The crowned Top Pick appears on every participant's screen in real time
     // (the crown supersedes the bare Near Miss card on an empty Match).
     for (const p of all) {
-      await expect(p.page.getByText("TONIGHT'S PICK").first()).toBeVisible({
+      await expect(p.page.getByText("TOP PICK").first()).toBeVisible({
         timeout: 10_000,
       });
       await expect(

@@ -455,7 +455,7 @@ export default function SelectionPage() {
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
-          title="Submit Your Picks"
+          title="Submit Your Selections"
           sessionCode={sessionCode}
           showBackButton
           onBack={handleLeaveSession}

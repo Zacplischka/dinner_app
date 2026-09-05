@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { Friend, FriendRequest, SessionInvite, UserProfile } from '@dinder/shared/types';
 import * as apiClient from '../services/apiClient';
+import { useAuthStore } from './authStore';
 
 interface FriendsState {
   // Data
@@ -252,3 +253,12 @@ export const useFriendsStore = create<FriendsState>()(
     { name: 'FriendsStore' }
   )
 );
+
+// Signing out must not hand the next Profile the previous one's Friends and
+// invites. Every sign-out path — signOut(), a SIGNED_OUT auth event from another
+// tab, an expired token — lands here as isAuthenticated flipping true → false.
+// Subscribed from this side because authStore importing this store would close
+// the cycle authStore → friendsStore → apiClient → authStore.
+useAuthStore.subscribe((state, prev) => {
+  if (prev.isAuthenticated && !state.isAuthenticated) useFriendsStore.getState().reset();
+});
