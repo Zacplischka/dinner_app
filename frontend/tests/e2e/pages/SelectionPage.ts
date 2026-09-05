@@ -15,6 +15,7 @@ export class SelectionPage extends BasePage {
   readonly submitButton: Locator;
   readonly loadingState: Locator;
   readonly waitingState: Locator;
+  readonly finishHereButton: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -32,6 +33,8 @@ export class SelectionPage extends BasePage {
 
     this.loadingState = page.getByText(/Finding (restaurants|recipes|movies)/i);
     this.waitingState = page.getByText(/Waiting for|other diners/i);
+    // Full House takeover (#187): submits the like that completed it
+    this.finishHereButton = page.getByRole('dialog').getByRole('button', { name: 'Finish here' });
   }
 
   /**
