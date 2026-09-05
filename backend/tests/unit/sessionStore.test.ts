@@ -63,6 +63,20 @@ describe('SessionStore', () => {
       expect(session?.searchRadiusMiles).toBe(5);
     });
 
+    it('round-trips the Mood a Watch Session was dealt from, and only there', async () => {
+      const mood = { genres: ['Comedy' as const, 'Horror' as const], decades: ['1990s' as const] };
+      await store.createSession(sessionCode, {
+        hostId: 'host-1',
+        hostName: 'Alice',
+        branch: 'watch',
+        mood,
+      });
+      await store.createSession('TEST2', { hostId: 'host-2', hostName: 'Bob', branch: 'eatout' });
+
+      expect((await store.readSession(sessionCode))?.mood).toEqual(mood);
+      expect((await store.readSession('TEST2'))?.mood).toBeUndefined();
+    });
+
     it('omits location when not provided', async () => {
       await createTestSession(false);
       const session = await store.readSession(sessionCode);
@@ -370,6 +384,28 @@ describe('SessionStore', () => {
       const { entries, missingCount } = await store.getDeck(sessionCode);
       expect(entries.map((e) => e.placeId).sort()).toEqual(['place1', 'place2', 'place3']);
       expect(missingCount).toBe(0);
+    });
+
+    it('round-trips a Movie Deck, overview and all', async () => {
+      const movie = {
+        kind: 'movie' as const,
+        placeId: 'Q103474',
+        name: 'Alien',
+        photoUrl: 'https://example.test/alien.jpg',
+        rating: 4.2,
+        year: 1979,
+        genres: ['Horror', 'Sci-Fi'],
+        runtimeMinutes: 117,
+        overview: 'The crew of a commercial starship answer a distress call.',
+        trailerUrl: 'https://example.test/alien-trailer',
+      };
+      await store.createSession(sessionCode, {
+        hostId: 'host-1',
+        hostName: 'Alice',
+        entries: [movie],
+      });
+
+      expect((await store.getDeck(sessionCode)).entries).toEqual([movie]);
     });
 
     it('replaceDeck leaves nothing of the old Deck behind', async () => {

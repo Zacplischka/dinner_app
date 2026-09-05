@@ -1,5 +1,5 @@
 import { test as base, expect } from '@playwright/test';
-import { HomePage, CreateSessionPage, JoinSessionPage } from '../pages';
+import { HomePage, CreateSessionPage, JoinSessionPage, WatchSetupPage } from '../pages';
 
 /**
  * Custom Playwright Test Fixtures
@@ -10,6 +10,7 @@ type PageObjects = {
   homePage: HomePage;
   createPage: CreateSessionPage;
   joinPage: JoinSessionPage;
+  watchPage: WatchSetupPage;
 };
 
 export const test = base.extend<PageObjects>({
@@ -23,6 +24,10 @@ export const test = base.extend<PageObjects>({
 
   joinPage: async ({ page }, use) => {
     await use(new JoinSessionPage(page));
+  },
+
+  watchPage: async ({ page }, use) => {
+    await use(new WatchSetupPage(page));
   },
 });
 

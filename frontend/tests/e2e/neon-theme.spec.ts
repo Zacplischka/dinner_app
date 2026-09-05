@@ -83,7 +83,9 @@ test('renders the Neon entry fork at mobile width', async ({ page }) => {
   expect((await takeaway.boundingBox())?.height).toBeGreaterThanOrEqual(48);
   expect((await cook.boundingBox())?.height).toBeGreaterThanOrEqual(48);
   await expect(page.getByRole('button', { name: /join with a code/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Compare delivery prices' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Compare delivery prices', exact: true })
+  ).toBeVisible();
 });
 
 test('uses the five-character Neon join field', async ({ page }) => {

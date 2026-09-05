@@ -24,6 +24,7 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   // Upstream recipe source down or out of quota: nothing the Craving can fix,
   // so 503 alongside the Places counterpart below.
   RECIPE_SOURCE_UNAVAILABLE: { code: 'RECIPE_SOURCE_UNAVAILABLE', status: 503 },
+  NO_MOVIES_FOUND: { code: 'NO_MOVIES_FOUND', status: 404 },
   NO_RESTAURANTS: { code: 'NO_RESTAURANTS', status: 404 },
   VALIDATION_ERROR: { code: 'VALIDATION_ERROR', status: 400 },
   ALREADY_SUBMITTED: { code: 'ALREADY_SUBMITTED', status: 409 },

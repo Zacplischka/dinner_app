@@ -8,12 +8,22 @@ import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import {
   BRANCHES,
+  DECADES,
+  GENRES,
   MAX_HEADCOUNT,
   SESSION_CODE_PATTERN,
   type CreateSessionRequest,
   type CreateSessionResponse,
   type SessionResponse,
 } from '@dinder/shared/types';
+
+// The Mood as a request shape (#369): closed vocabularies capped like the
+// Craving's, so only chips the setup screen offers reach the corpus filter.
+// One consumer, so it lives here rather than beside cravingSchema.
+const moodSchema = z.object({
+  genres: z.array(z.enum(GENRES)).max(GENRES.length),
+  decades: z.array(z.enum(DECADES)).max(DECADES.length),
+});
 
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
@@ -33,20 +43,23 @@ export function createSessionsRouter(sessionService: SessionService) {
       branch: z.enum(BRANCHES).optional(),
       craving: cravingSchema.optional(),
       headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
+      mood: moodSchema.optional(),
     })
     // A Cook Session has nothing to deal without its setup. This narrows what
     // the endpoint accepts, which ADR 0007 would normally stage over two
     // deployments — safe here only because no shipped client can send
     // branch=cook: until this ticket the fork's Cook card routed to a
-    // placeholder screen that never created a Session.
+    // placeholder screen that never created a Session. The Watch narrowing
+    // (#369) is safe for the same reason: no client sends branch=watch until
+    // its setup screen exists.
     .superRefine((body, ctx) => {
-      if (body.branch !== 'cook') return;
-      if (!body.craving) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['craving'], message: 'required' });
+      const required = (field: string) =>
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: 'required' });
+      if (body.branch === 'cook') {
+        if (!body.craving) required('craving');
+        if (body.headcount === undefined) required('headcount');
       }
-      if (body.headcount === undefined) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['headcount'], message: 'required' });
-      }
+      if (body.branch === 'watch' && !body.mood) required('mood');
     });
 
   function validationFields(error: z.ZodError): string[] {
@@ -88,6 +101,7 @@ export function createSessionsRouter(sessionService: SessionService) {
         branch,
         craving,
         headcount,
+        mood,
       }: CreateSessionRequest = validation.data;
 
       // Default searchRadiusMiles to 5 if location is provided but radius is not
@@ -98,20 +112,23 @@ export function createSessionsRouter(sessionService: SessionService) {
         branch === 'cook' && craving && headcount !== undefined
           ? { craving, headcount }
           : undefined;
+      const watch = branch === 'watch' && mood ? { mood } : undefined;
       const createContext = {
         hasLocation: Boolean(location),
         searchRadiusMiles: radius ?? null,
       };
 
-      // The expected empty outcomes — an empty area, and its Cook counterpart
-      // an empty Craving — are logged with the request context that explains
-      // them; every other failure is the global handler's to log.
+      // The expected empty outcomes — an empty area, and its Cook and Watch
+      // counterparts an empty Craving or Mood — are logged with the request
+      // context that explains them; every other failure is the global
+      // handler's to log.
       const expectedEmpty: Partial<Record<string, string>> = {
         NO_RESTAURANTS_FOUND: 'no_restaurants_found',
         NO_RECIPES_FOUND: 'no_recipes_found',
+        NO_MOVIES_FOUND: 'no_movies_found',
       };
       const session = await sessionService
-        .createSession(hostName, location, radius, branch, cook)
+        .createSession(hostName, location, radius, branch, cook, watch)
         .catch((error: unknown) => {
           const reason = error instanceof DomainError ? expectedEmpty[error.code] : undefined;
           if (reason) {

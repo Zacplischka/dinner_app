@@ -8,7 +8,7 @@
 
 import type { ChainableCommander, Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
-import { SESSION_CODE_LENGTH, type Branch, type DeckEntry } from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type Branch, type DeckEntry, type Mood } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
 
@@ -35,6 +35,12 @@ export interface Session {
    */
   headcount?: number;
   cravingKey?: string;
+  /**
+   * Watch Branch only (#369). The Mood this Deck was dealt from — the whole
+   * Mood, not a pool key, because there is no pool: a Restart re-deals from
+   * the corpus with it.
+   */
+  mood?: Mood;
   /**
    * Cook Branch only (#333). This Session's Deck came up short because the
    * recipe source was dark when it was dealt — the one plain line every
@@ -208,6 +214,7 @@ export function createSessionStore(redis: Redis) {
       branch?: Branch;
       headcount?: number;
       cravingKey?: string;
+      mood?: Mood;
       recipeSourceDown?: boolean;
       location?: { latitude: number; longitude: number; address?: string };
       searchRadiusMiles?: number;
@@ -228,6 +235,7 @@ export function createSessionStore(redis: Redis) {
       branch: opts.branch,
       headcount: opts.headcount,
       cravingKey: opts.cravingKey,
+      mood: opts.mood,
       recipeSourceDown: opts.recipeSourceDown || undefined,
       location: opts.location,
       searchRadiusMiles: opts.searchRadiusMiles,
@@ -244,6 +252,7 @@ export function createSessionStore(redis: Redis) {
     if (opts.branch) sessionData.branch = opts.branch;
     if (opts.headcount !== undefined) sessionData.headcount = opts.headcount;
     if (opts.cravingKey) sessionData.cravingKey = opts.cravingKey;
+    if (opts.mood) sessionData.mood = JSON.stringify(opts.mood);
     if (opts.recipeSourceDown) sessionData.recipeSourceDown = '1';
     if (opts.location) {
       sessionData.locationLat = opts.location.latitude;
@@ -284,6 +293,7 @@ export function createSessionStore(redis: Redis) {
       branch: data.branch as Branch | undefined,
       headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,
       cravingKey: data.cravingKey,
+      mood: data.mood ? (JSON.parse(data.mood) as Mood) : undefined,
       recipeSourceDown: data.recipeSourceDown === '1' ? true : undefined,
       shoppingListId: data.shoppingListId,
     };

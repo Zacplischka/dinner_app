@@ -20,6 +20,7 @@ const GroupOrderPage = lazy(() => import('./pages/GroupOrderPage'));
 
 const FriendsPage = lazy(() => import('./pages/FriendsPage'));
 const CookSetupPage = lazy(() => import('./pages/CookSetupPage'));
+const WatchSetupPage = lazy(() => import('./pages/WatchSetupPage'));
 const ShoppingListPage = lazy(() => import('./pages/ShoppingListPage'));
 const CookViewPage = lazy(() => import('./pages/CookViewPage'));
 
@@ -47,6 +48,9 @@ function AnimatedRoutes() {
 
         {/* Cook setup: the Craving and Headcount behind the fork's Cook card */}
         <Route path="/cook" element={<CookSetupPage />} />
+
+        {/* Watch setup: the Mood behind the fork's Watch card (#369) */}
+        <Route path="/watch" element={<WatchSetupPage />} />
 
         {/* Standalone delivery price comparison */}
         <Route path="/compare" element={<ComparePage />} />

@@ -87,6 +87,30 @@ describe('apiClient', () => {
       );
     });
 
+    it('carries the Mood on the wire for a Watch Session (#369)', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          sessionCode: 'AB123',
+          hostName: 'Alice',
+          restaurantCount: 15,
+          branch: 'watch',
+        }),
+      });
+      global.fetch = mockFetch;
+      const mood = { genres: ['Comedy' as const], decades: ['1990s' as const] };
+
+      await apiClient.createSession('Alice', { branch: 'watch', mood });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/sessions'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ hostName: 'Alice', branch: 'watch', mood }),
+        })
+      );
+    });
+
     it('should allow creating session without location (backward compatibility)', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
