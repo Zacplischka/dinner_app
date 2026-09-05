@@ -8,6 +8,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/
 /**
  * Handle socket disconnect
  * Note: the participant is NOT removed from the session — they may reconnect.
+ * Only their presence flag flips, so a later joiner sees them offline.
  * Session stays in waiting state until reconnect or expire
  */
 export async function handleDisconnect(
@@ -35,6 +36,10 @@ export async function handleDisconnect(
     }
 
     const { sessionCode, displayName } = participant;
+
+    // Server truth for presence: still a current Participant, but anyone who
+    // joins or rejoins from here on sees them offline instead of live.
+    await store.markDisconnected(socket.id);
 
     // Get current participant count (unchanged — a disconnect removes nobody)
     const participantCount = await store.countParticipants(sessionCode);
