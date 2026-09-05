@@ -1,6 +1,7 @@
 // useFocusTrap, driven through the real leave confirmation: Tab and Shift+Tab
-// wrap among the dialog's own buttons, and the element that had focus before
-// the dialog opened gets it back when the dialog closes.
+// wrap among the dialog's own buttons, Tab stays put while every button is
+// disabled, and the element that had focus before the dialog opened gets it
+// back when the dialog closes.
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import ConfirmLeaveModal from '../../src/components/ConfirmLeaveModal';
@@ -27,5 +28,15 @@ describe('useFocusTrap', () => {
     rerender(<ConfirmLeaveModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} />);
     expect(document.activeElement).toBe(opener);
     opener.remove();
+  });
+
+  it('holds Tab while every button is disabled', () => {
+    render(<ConfirmLeaveModal isOpen isLoading onClose={vi.fn()} onConfirm={vi.fn()} />);
+    // jsdom has no focus-fixup; mimic the browser dropping focus to <body>
+    // once the focused Stay button goes disabled.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    // false = preventDefault ran, so the page behind the dialog never gets Tab
+    expect(fireEvent.keyDown(document.body, { key: 'Tab' })).toBe(false);
   });
 });
