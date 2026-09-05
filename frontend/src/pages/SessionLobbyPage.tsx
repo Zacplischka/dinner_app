@@ -6,7 +6,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import { getSession } from '../services/apiClient';
 import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
-import { useShareInviteLink } from '../hooks/useShareInviteLink';
+import { useShareLink } from '../hooks/useShareLink';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
@@ -46,7 +46,7 @@ export default function SessionLobbyPage() {
     }
   }, [navigate, sessionCode, sessionStatus]);
 
-  const handleShareLink = useShareInviteLink(shareableLink, 'Link copied to clipboard!');
+  const handleShareLink = useShareLink(shareableLink, 'Link copied to clipboard!');
 
   const handleStartSelecting = async () => {
     if (!sessionCode) return;

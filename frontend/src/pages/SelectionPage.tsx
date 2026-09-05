@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
-import { useShareInviteLink } from '../hooks/useShareInviteLink';
+import { useShareLink } from '../hooks/useShareLink';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -252,7 +252,7 @@ export default function SelectionPage() {
 
   const handleLeaveSession = useLeaveSession(sessionCode);
 
-  const handleShareInvite = useShareInviteLink(shareableLink, 'Invite link copied!');
+  const handleShareInvite = useShareLink(shareableLink, 'Invite link copied!');
 
   // Reachable invite mid-Deck (#284): the header's right-hand action slot, so
   // no route back to the lobby and no "Leave Session?" detour.

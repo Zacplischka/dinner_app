@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { useShareInviteLink } from '../../src/hooks/useShareInviteLink';
+import { useShareLink } from '../../src/hooks/useShareLink';
 import { useToastStore } from '../../src/hooks/useToast';
 
 const LINK = 'http://localhost:3000/join?code=AB123';
 
-describe('useShareInviteLink (#350)', () => {
+describe('useShareLink (#350)', () => {
   beforeEach(() => {
     // The global afterEach's vi.restoreAllMocks() drops setup.ts's mockResolvedValue — re-arm it.
     vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
@@ -19,7 +19,7 @@ describe('useShareInviteLink (#350)', () => {
   it('opens the native share sheet when the browser has one and leaves the clipboard alone', async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { value: share, configurable: true });
-    const { result } = renderHook(() => useShareInviteLink(LINK, 'Invite link copied!'));
+    const { result } = renderHook(() => useShareLink(LINK, 'Invite link copied!'));
 
     await act(() => result.current());
 
@@ -29,7 +29,7 @@ describe('useShareInviteLink (#350)', () => {
   });
 
   it('copies to the clipboard and toasts the given message when there is no share sheet', async () => {
-    const { result } = renderHook(() => useShareInviteLink(LINK, 'Invite link copied!'));
+    const { result } = renderHook(() => useShareLink(LINK, 'Invite link copied!'));
 
     await act(() => result.current());
 
@@ -39,10 +39,29 @@ describe('useShareInviteLink (#350)', () => {
     );
   });
 
+  it('heads the sheet with the given title and text, and still copies only the URL', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    const { result } = renderHook(() =>
+      useShareLink(LINK, 'Top Pick link copied!', {
+        title: 'Pizza Palace',
+        text: 'Everyone said yes.',
+      })
+    );
+
+    await act(() => result.current());
+
+    expect(share).toHaveBeenCalledWith({
+      title: 'Pizza Palace',
+      text: 'Everyone said yes.',
+      url: LINK,
+    });
+  });
+
   it('stays silent when the sheet is dismissed (AbortError)', async () => {
     const share = vi.fn().mockRejectedValue(new DOMException('', 'AbortError'));
     Object.defineProperty(navigator, 'share', { value: share, configurable: true });
-    const { result } = renderHook(() => useShareInviteLink(LINK, 'Invite link copied!'));
+    const { result } = renderHook(() => useShareLink(LINK, 'Invite link copied!'));
 
     await act(() => result.current());
 
