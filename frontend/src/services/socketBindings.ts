@@ -24,6 +24,12 @@ import { useAuthStore } from '../stores/authStore';
 import { useOrderStore } from '../stores/orderStore';
 import { toast } from '../hooks/useToast';
 
+// Socket payloads carry display names; keep the chatter out of production
+// consoles. console.error stays unconditional.
+const log = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log(...args);
+};
+
 // Track if we had a previous connection (for showing "Reconnected" toast)
 let hadPreviousConnection = false;
 
@@ -39,7 +45,7 @@ const socketConfig: SocketConfig = {
           participant.participantId === store.currentUserId &&
           participant.sessionCode === store.sessionCode
       );
-      console.log('Socket connected:', socketId);
+      log('Socket connected:', socketId);
       store.setConnectionStatus(true);
       if (socketId) {
         store.setCurrentUserId(socketId);
@@ -85,7 +91,7 @@ const socketConfig: SocketConfig = {
     },
 
     disconnect: (reason: string) => {
-      console.log('Socket disconnected:', reason);
+      log('Socket disconnected:', reason);
       useSessionStore.getState().setConnectionStatus(false);
 
       // Only show toast for unexpected disconnects, not intentional ones
@@ -103,7 +109,7 @@ const socketConfig: SocketConfig = {
     // The server decides whether this is a rejoin (isRejoin); the client just
     // applies it. Fall back to add if the rejoiner isn't in our local list.
     'participant:joined': (event: ParticipantJoinedEvent) => {
-      console.log('Participant joined:', event);
+      log('Participant joined:', event);
       const store = useSessionStore.getState();
 
       // #283: drop events for a Session this client is no longer in — a stale
@@ -124,7 +130,7 @@ const socketConfig: SocketConfig = {
           isOnline: true,
         };
         store.updateParticipants(updatedParticipants);
-        console.log('Updated existing participant socket ID:', event.displayName);
+        log('Updated existing participant socket ID:', event.displayName);
 
         // Show reconnected toast for rejoin
         toast.info(`${event.displayName} reconnected`);
@@ -147,7 +153,7 @@ const socketConfig: SocketConfig = {
     // participant:left - A participant INTENTIONALLY left the session (session:leave)
     // This removes the participant from the session permanently.
     'participant:left': (event: ParticipantLeftEvent) => {
-      console.log('Participant left:', event);
+      log('Participant left:', event);
       const store = useSessionStore.getState();
 
       // Find participant name before removing
@@ -172,7 +178,7 @@ const socketConfig: SocketConfig = {
     // This is INFORMATIONAL only - the participant is NOT removed from the session.
     // They can reconnect and will be re-registered with a new socket.id.
     'participant:disconnected': (event: ParticipantDisconnectedEvent) => {
-      console.log('Participant disconnected:', event);
+      log('Participant disconnected:', event);
       const store = useSessionStore.getState();
 
       // Find participant to get their name
@@ -192,7 +198,7 @@ const socketConfig: SocketConfig = {
 
     // participant:submitted - A participant submitted their selections
     'participant:submitted': (event: ParticipantSubmittedEvent) => {
-      console.log('Participant submitted:', event);
+      log('Participant submitted:', event);
       // Update participant's hasSubmitted status
       const store = useSessionStore.getState();
       const updatedParticipants = store.participants.map((p) =>
@@ -211,7 +217,7 @@ const socketConfig: SocketConfig = {
 
     // session:results - All participants submitted, results revealed
     'session:results': (event: SessionResultsEvent) => {
-      console.log('Session results:', event);
+      log('Session results:', event);
       useSessionStore.getState().setResults({
         sessionCode: event.sessionCode,
         overlappingOptions: resolvePhotoUrls(event.overlappingOptions),
@@ -246,7 +252,7 @@ const socketConfig: SocketConfig = {
     // event; the server's message says which (#289), so log that, not a
     // hardcoded "Session restarted" that makes real Restarts unspottable.
     'session:restarted': (event: SessionRestartedEvent) => {
-      console.log(event.message, event);
+      log(event.message, event);
       useSessionStore.getState().resetSelections();
       // resetSelections() also flips sessionStatus, but the lobby's
       // auto-navigate keys off this transition — keep it explicit here.
@@ -255,7 +261,7 @@ const socketConfig: SocketConfig = {
 
     // session:expired - Session expired due to inactivity
     'session:expired': (event: SessionExpiredEvent) => {
-      console.log('Session expired:', event);
+      log('Session expired:', event);
       useSessionStore.getState().setSessionStatus('expired');
     },
 
