@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { bucketGenres, emitModule, imdbRating } from './build-movie-corpus.mjs';
+import { bucketGenres, criticsScore, emitModule } from './build-movie-corpus.mjs';
 
 test('Wikidata labels bucket into the chip vocabulary, most-hit first, at most four', () => {
   assert.deepEqual(bucketGenres(['romantic comedy film', 'drama film']), [
@@ -32,14 +32,14 @@ test('Animation survives the four-genre cap, and live-action is not Action', () 
   assert.deepEqual(bucketGenres(['live-action film']), []);
 });
 
-test('the rating is IMDb only: "8.7/10" and "8.7" read, a percentage does not', () => {
-  assert.equal(imdbRating('8.7/10'), 8.7);
-  assert.equal(imdbRating('8.7'), 8.7);
-  assert.equal(imdbRating(' 7 '), 7);
-  // A Rotten Tomatoes score would inflate the middle rung; it must not parse.
-  assert.equal(imdbRating('94%'), null);
-  assert.equal(imdbRating('85/100'), null);
-  assert.equal(imdbRating(undefined), null);
+test('the critics score is the Tomatometer, else the Metascore, on one 0–100 scale', () => {
+  assert.equal(criticsScore('94%', '78/100'), 94);
+  assert.equal(criticsScore(undefined, '78/100'), 78);
+  assert.equal(criticsScore(' 100% ', undefined), 100);
+  // A 0–10 figure would sit on a different scale from the rest of the rung; it must not parse.
+  assert.equal(criticsScore('9.1/10', '7.9/10'), null);
+  assert.equal(criticsScore('8.7', undefined), null);
+  assert.equal(criticsScore(undefined, undefined), null);
 });
 
 test('the emitted module is the shared Movie shape, with absent facts omitted', () => {
@@ -50,7 +50,7 @@ test('the emitted module is the shared Movie shape, with absent facts omitted', 
     year: 1979,
     genres: ['Horror', 'Sci-Fi'],
     runtimeMinutes: 117,
-    rating: 8.5,
+    rating: 93,
     overview: 'In space…',
     photoUrl: 'https://upload.wikimedia.org/x.jpg',
     trailerUrl: 'https://www.youtube.com/watch?v=abc',
