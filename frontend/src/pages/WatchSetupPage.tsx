@@ -12,6 +12,7 @@ import { DECADES, GENRES, type Decade, type Genre } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
+import { validateDisplayName } from '../utils/displayName';
 
 /** Toggle membership of a chip set, preserving the rest. */
 function toggle<T>(values: T[], value: T): T[] {
@@ -31,8 +32,9 @@ export default function WatchSetupPage() {
     e.preventDefault();
     setError('');
 
-    if (hostName.trim().length < 1 || hostName.trim().length > 50) {
-      setError('Name must be between 1 and 50 characters');
+    const nameError = validateDisplayName(hostName);
+    if (nameError) {
+      setError(nameError);
       return;
     }
 
