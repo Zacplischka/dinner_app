@@ -27,6 +27,23 @@ import { toast } from '../hooks/useToast';
 // Track if we had a previous connection (for showing "Reconnected" toast)
 let hadPreviousConnection = false;
 
+// A Disconnect is not a Leave: the server holds the Participant's place for
+// two minutes of connection-state recovery, and most drops (a locked phone, a
+// lift) are back well inside that. So "lost connection" waits a grace period
+// and a rejoin inside it cancels the toast. Keyed by displayName because the
+// rejoin arrives under a new participantId.
+// ponytail: 5s, not the full two minutes — a real drop should still reach the
+// room quickly. Raise it if brief blips still toast.
+const DISCONNECT_TOAST_GRACE_MS = 5_000;
+const pendingDisconnectToasts = new Map<string, ReturnType<typeof setTimeout>>();
+
+// Returns whether a toast was still pending — i.e. the room never heard.
+function cancelDisconnectToast(displayName: string): boolean {
+  const timer = pendingDisconnectToasts.get(displayName);
+  clearTimeout(timer);
+  return pendingDisconnectToasts.delete(displayName);
+}
+
 const socketConfig: SocketConfig = {
   getAuthToken: () => useAuthStore.getState().session?.access_token,
 
@@ -114,6 +131,9 @@ const socketConfig: SocketConfig = {
       const existingIndex = event.isRejoin
         ? store.participants.findIndex((p) => p.displayName === event.displayName)
         : -1;
+      // Back inside the grace window: the room never heard about the drop, so
+      // it hears nothing about the recovery either.
+      const dropUnannounced = cancelDisconnectToast(event.displayName);
 
       if (existingIndex >= 0) {
         // Rejoin: update existing participant's socket ID
@@ -127,7 +147,7 @@ const socketConfig: SocketConfig = {
         console.log('Updated existing participant socket ID:', event.displayName);
 
         // Show reconnected toast for rejoin
-        toast.info(`${event.displayName} reconnected`);
+        if (!dropUnannounced) toast.info(`${event.displayName} reconnected`);
       } else {
         // New participant: add to list
         store.addParticipant({
@@ -180,8 +200,15 @@ const socketConfig: SocketConfig = {
       const displayName = participant?.displayName || event.displayName;
 
       // Do NOT remove the participant - they may reconnect
-      // Just show an informational toast
-      toast.warning(`${displayName} lost connection`, { duration: 3000 });
+      // Just show an informational toast, once the grace period says it's real
+      cancelDisconnectToast(displayName);
+      pendingDisconnectToasts.set(
+        displayName,
+        setTimeout(() => {
+          pendingDisconnectToasts.delete(displayName);
+          toast.warning(`${displayName} lost connection`, { duration: 3000 });
+        }, DISCONNECT_TOAST_GRACE_MS)
+      );
 
       store.updateParticipants(
         store.participants.map((p) =>
