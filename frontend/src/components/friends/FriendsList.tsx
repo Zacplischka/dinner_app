@@ -31,7 +31,7 @@ export default function FriendsList({
     return (
       <div className="text-center py-8 text-muted">
         <p className="text-lg">No friends yet</p>
-        <p className="text-sm mt-1 text-muted/60">Search for users by email to add friends</p>
+        <p className="text-sm mt-1 text-muted">Search for users by email to add friends</p>
       </div>
     );
   }

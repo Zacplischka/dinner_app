@@ -439,7 +439,7 @@ export default function SelectionPage() {
               </button>
 
               {selections.length === 0 && (
-                <p className="mt-4 text-sm text-muted/70">
+                <p className="mt-4 text-sm text-muted">
                   You didn&apos;t like any {deckNoun}s, but you can still submit!
                 </p>
               )}
