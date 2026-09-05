@@ -540,36 +540,27 @@ export function createSessionStore(redis: Redis) {
         ? await redis.smembers(selectionKeys[0])
         : await redis.sinter(...selectionKeys);
 
-    const readEntry = async (placeId: string): Promise<DeckEntry | null> => {
-      const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
-      return raw ? (JSON.parse(raw) as DeckEntry) : null;
-    };
-
-    const overlappingOptions: DeckEntry[] = [];
-    for (const placeId of overlappingPlaceIds) {
-      const entry = await readEntry(placeId);
-      if (entry) {
-        overlappingOptions.push(entry);
-      }
-    }
+    const overlappingOptions = (await readEntries(sessionCode, overlappingPlaceIds)).filter(
+      (entry): entry is DeckEntry => entry !== null
+    );
 
     // displayName -> selected placeIds, for the results screen
+    const selections = await Promise.all(selectionKeys.map((key) => redis.smembers(key)));
     const allSelections: Record<string, string[]> = {};
-    for (const p of participants) {
-      allSelections[p.displayName] = await redis.smembers(
-        selectionsKey(sessionCode, p.participantId)
-      );
-    }
+    participants.forEach((p, i) => {
+      allSelections[p.displayName] = selections[i];
+    });
 
     // Names for every selected placeId (not just the Match)
     const restaurantNames: Record<string, string> = {};
-    const allPlaceIds = new Set(Object.values(allSelections).flat());
-    for (const placeId of allPlaceIds) {
-      const entry = await readEntry(placeId);
+    const allPlaceIds = [...new Set(Object.values(allSelections).flat())];
+    const namedEntries = await readEntries(sessionCode, allPlaceIds);
+    allPlaceIds.forEach((placeId, i) => {
+      const entry = namedEntries[i];
       if (entry) {
         restaurantNames[placeId] = entry.name;
       }
-    }
+    });
 
     // Store the Match; sentinel keeps the key alive under TTL when empty
     if (overlappingOptions.length > 0) {
@@ -677,18 +668,28 @@ export function createSessionStore(redis: Redis) {
     await touch(sessionCode);
   }
 
+  /**
+   * The Deck Entries under `placeIds`, in the same order, in one HMGET; null
+   * where the entry data is absent. HMGET with no fields is an error, so the
+   * empty case answers without a round trip.
+   */
+  async function readEntries(
+    sessionCode: string,
+    placeIds: string[]
+  ): Promise<(DeckEntry | null)[]> {
+    if (placeIds.length === 0) return [];
+    const raws = await redis.hmget(restaurantsKey(sessionCode), ...placeIds);
+    return raws.map((raw) => (raw ? (JSON.parse(raw) as DeckEntry) : null));
+  }
+
   /** missingCount = place ids whose entry data is absent (data loss signal). */
   async function getDeck(
     sessionCode: string
   ): Promise<{ entries: DeckEntry[]; missingCount: number }> {
     const placeIds = await redis.smembers(restaurantIdsKey(sessionCode));
-    const entries: DeckEntry[] = [];
-    for (const placeId of placeIds) {
-      const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
-      if (raw) {
-        entries.push(JSON.parse(raw) as DeckEntry);
-      }
-    }
+    const entries = (await readEntries(sessionCode, placeIds)).filter(
+      (entry): entry is DeckEntry => entry !== null
+    );
     return { entries, missingCount: placeIds.length - entries.length };
   }
 
