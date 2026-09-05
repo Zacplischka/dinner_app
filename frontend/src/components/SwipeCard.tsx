@@ -6,6 +6,7 @@ import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
 import WikipediaCredit from './WikipediaCredit';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -46,8 +47,7 @@ export default function SwipeCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const deltaX = dragState.currentX - dragState.startX;
-  const prefersReducedMotion =
-    window.matchMedia('(prefers-reduced-motion: reduce)')?.matches ?? false;
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { rotation, likeIntensity, nopeIntensity } = swipeVisuals(deltaX, prefersReducedMotion);
 
   const handleTouchStart = useCallback(
@@ -252,6 +252,12 @@ export default function SwipeCard({
             // imagery sits, and let the credits block crop.
             className={`absolute inset-0 w-full h-full object-cover ${movie ? 'object-top' : ''}`}
             draggable={false}
+            // Only the top card shows; the two beneath it sit inside the
+            // viewport too, so `lazy` does not skip their fetch - it defers it
+            // past layout and behind the top card's eager request, which is
+            // what puts the visible photo first on a phone's radio.
+            loading={stackPosition === 0 ? 'eager' : 'lazy'}
+            decoding={stackPosition === 0 ? undefined : 'async'}
           />
         )}
         {/* Gradient overlay for text legibility */}

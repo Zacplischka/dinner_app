@@ -9,6 +9,7 @@ import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useShareLink } from '../hooks/useShareLink';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -81,6 +82,8 @@ export default function SelectionPage() {
   const fullHouseShownRef = useRef<Set<string>>(new Set());
   const rosterSizeRef = useRef(0);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const fullHouseRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(fullHouseRef, fullHousePlaceId !== null);
 
   useEffect(() => {
     if (participants.length > rosterSizeRef.current) fullHouseArmedRef.current = true;
@@ -696,6 +699,7 @@ export default function SelectionPage() {
       {/* Full House takeover */}
       {fullHousePlaceId && (
         <div
+          ref={fullHouseRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 backdrop-blur-[10px] p-4"
           role="dialog"
           aria-modal="true"

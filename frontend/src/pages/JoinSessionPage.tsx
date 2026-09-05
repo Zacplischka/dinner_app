@@ -6,6 +6,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
+import { validateDisplayName } from '../utils/displayName';
 
 const cleanSessionCode = (value: string) =>
   value
@@ -54,8 +55,9 @@ export default function JoinSessionPage() {
       return;
     }
 
-    if (participantName.trim().length < 1 || participantName.trim().length > 50) {
-      setError('Name must be between 1 and 50 characters');
+    const nameError = validateDisplayName(participantName);
+    if (nameError) {
+      setError(nameError);
       return;
     }
 

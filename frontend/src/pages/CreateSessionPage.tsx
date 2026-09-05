@@ -11,6 +11,7 @@ import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { reverseGeocode } from '../services/apiClient';
 import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
+import { validateDisplayName } from '../utils/displayName';
 
 interface Location {
   latitude: number;
@@ -111,8 +112,9 @@ export default function CreateSessionPage() {
     setError('');
 
     // Validate host name
-    if (hostName.trim().length < 1 || hostName.trim().length > 50) {
-      setError('Name must be between 1 and 50 characters');
+    const nameError = validateDisplayName(hostName);
+    if (nameError) {
+      setError(nameError);
       return;
     }
 
