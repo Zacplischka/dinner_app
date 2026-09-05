@@ -17,7 +17,7 @@ import { createSession } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
 
-export interface SessionSetup {
+interface SessionSetup {
   location?: SessionLocation;
   searchRadiusMiles?: number;
   branch?: Branch;

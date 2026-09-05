@@ -7,4 +7,3 @@
 export { test, expect } from './test-fixtures';
 
 export { multiParticipantTest } from './multi-participant.fixture';
-export type { Participant } from './multi-participant.fixture';

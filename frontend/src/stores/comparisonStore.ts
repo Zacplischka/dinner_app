@@ -2,12 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Venue } from '@dinder/shared/types';
 
-export interface ComparisonLocation {
+interface ComparisonLocation {
   latitude: number;
   longitude: number;
 }
 
-export type VenueSort = 'nearest' | 'rating';
+type VenueSort = 'nearest' | 'rating';
 
 // ponytail: fixed page size for progressive reveal; virtualize only if a
 // measured result set makes "Show more" batches feel slow.
