@@ -15,6 +15,7 @@ export class HomePage extends BasePage {
   readonly cookCard: Locator;
   readonly joinLink: Locator;
   readonly compareLink: Locator;
+  readonly eatOutDescription: Locator;
   readonly guestModeText: Locator;
 
   constructor(page: Page) {
@@ -25,7 +26,8 @@ export class HomePage extends BasePage {
     this.takeawayCard = page.getByRole('button', { name: /Getting takeaway/i });
     this.cookCard = page.getByRole('button', { name: /Cooking/i });
     this.joinLink = page.getByRole('button', { name: /Join with a code/i });
-    this.compareLink = page.getByRole('button', { name: /Compare delivery prices/i });
+    this.compareLink = page.getByRole('button', { name: 'Compare delivery prices', exact: true });
+    this.eatOutDescription = page.getByText('Swipe nearby restaurants until the group agrees.');
     this.guestModeText = page.getByText(/Sign in to save history & invite friends/i);
   }
 
