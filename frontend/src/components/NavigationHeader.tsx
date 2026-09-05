@@ -3,9 +3,15 @@
 // Title row: stable back target, centred title, page action.
 // Secondary region: session code, progress, connection state and subtitle.
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useSessionStore } from '../stores/sessionStore';
 import ConfirmLeaveModal from './ConfirmLeaveModal';
+
+/** "Expires in 27 min" — whole minutes, never negative, "under a minute" below one. */
+function expiryLabel(expiresAt: string): string {
+  const minutes = Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 60_000));
+  return minutes < 1 ? 'Expires in under a minute' : `Expires in ${minutes} min`;
+}
 
 export interface NavigationHeaderProps {
   /** Page title displayed in header */
@@ -56,7 +62,21 @@ export default function NavigationHeader({
 }: NavigationHeaderProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
-  const { isConnected } = useSessionStore();
+  const { isConnected, expiresAt } = useSessionStore();
+  // Only a Session screen (one that shows the code) carries the countdown; the
+  // store's expiresAt can linger after a Session ends and must not leak onto
+  // Join or Create.
+  const showExpiry = Boolean(sessionCode && expiresAt);
+
+  // Tick, don't decrement: the label re-reads expiresAt and Date.now() on every
+  // render, so a throttled background tab is right again the moment it wakes,
+  // and a store refresh after a TTL slide updates the line at once.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!showExpiry) return;
+    const id = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, [showExpiry]);
 
   const handleBackClick = () => {
     if (confirmOnBack) {
@@ -84,7 +104,7 @@ export default function NavigationHeader({
 
   const showSubtitle = Boolean(subtitle) && !compact;
   const hasSecondaryContent =
-    showSubtitle || Boolean(sessionCode) || Boolean(progress) || showConnectionStatus;
+    showSubtitle || Boolean(sessionCode) || Boolean(progress) || showConnectionStatus || showExpiry;
   const connectionStatus = isConnected
     ? { dot: 'bg-lime', text: 'text-lime', label: 'Connected' }
     : { dot: 'bg-amber animate-pulse', text: 'text-amber', label: 'Reconnecting…' };
@@ -177,6 +197,10 @@ export default function NavigationHeader({
               )}
 
               {showSubtitle && <p className="text-xs text-muted">{subtitle}</p>}
+
+              {sessionCode && expiresAt && (
+                <p className="text-xs text-muted">{expiryLabel(expiresAt)}</p>
+              )}
 
               {progress && (
                 <div
