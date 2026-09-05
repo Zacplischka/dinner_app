@@ -537,7 +537,9 @@ export default function ResultsPage() {
     'Top Pick link copied!',
     crownedRecipe
       ? { title: crownedRecipe.recipe.name, text: crownReason(crownedRecipe, recipeWords) }
-      : pick && { title: pick.restaurant.name, text: crownReason(pick, restaurantWords) }
+      : crownedMovie
+        ? { title: crownedMovie.movie.name, text: crownReason(crownedMovie, movieWords) }
+        : pick && { title: pick.restaurant.name, text: crownReason(pick, restaurantWords) }
   );
 
   return (
