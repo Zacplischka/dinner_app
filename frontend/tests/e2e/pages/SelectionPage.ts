@@ -29,7 +29,7 @@ export class SelectionPage extends BasePage {
     // The waiting screen's heading, not a /Waiting for/ text match: any other
     // sentence starting "Waiting for" would make that locator ambiguous.
     this.waitingState = page.getByRole('heading', { name: 'All Done!' });
-    this.progress = page.getByRole('progressbar', { name: 'Restaurant progress' });
+    this.progress = page.getByRole('progressbar', { name: /Deck progress|Restaurant progress/ });
   }
 
   /**
