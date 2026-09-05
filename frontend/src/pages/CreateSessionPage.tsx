@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BRANCHES, type Branch } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
-import LocationModeToggle from '../components/LocationModeToggle';
+import LocationModeToggle, { type LocationMode } from '../components/LocationModeToggle';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { reverseGeocode } from '../services/apiClient';
@@ -32,7 +32,7 @@ export default function CreateSessionPage() {
   const [isResolvingArea, setIsResolvingArea] = useState(false);
   const [error, setError] = useState('');
   const [location, setLocation] = useState<Location | null>(null);
-  const [locationMode, setLocationMode] = useState<'current' | 'manual'>('current');
+  const [locationMode, setLocationMode] = useState<LocationMode>('current');
   const [manualQuery, setManualQuery] = useState('');
   const [searchRadiusKm, setSearchRadiusKm] = useState<number>(8);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
