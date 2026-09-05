@@ -247,6 +247,11 @@
   position: relative;
   isolation: isolate;
   padding: 1.5rem 0;
+  /* The rotating rays' bounding box sweeps ~30px past the phone's edges; clip
+     (not hidden: no scroll container, so the sticky header keeps working) so
+     the Match screen never gains a sideways scroll. The mask already fades the
+     rays out well inside this box, so nothing visible is cut. */
+  overflow-x: clip;
 }
 
 .match-rays {
