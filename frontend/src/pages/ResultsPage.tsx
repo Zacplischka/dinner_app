@@ -8,7 +8,7 @@ import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { useToast } from '../hooks/useToast';
@@ -281,8 +281,8 @@ export default function ResultsPage() {
   // Everything below the crown — other matches, Near Misses, delivery links —
   // is restaurant chrome, so Recipes are filtered out of it. The crown itself
   // renders either kind: a Cook Session ends at the crowned Recipe (#259).
-  const overlappingOptions = matchedEntries.filter(isRestaurant);
-  const restaurants = deckEntries.filter(isRestaurant);
+  const overlappingOptions = useMemo(() => matchedEntries.filter(isRestaurant), [matchedEntries]);
+  const restaurants = useMemo(() => deckEntries.filter(isRestaurant), [deckEntries]);
   const topPick =
     crownedEntry && isRestaurant(crownedEntry.restaurant)
       ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
@@ -324,22 +324,27 @@ export default function ResultsPage() {
     }
   }, [sessionStatus, sessionCode, navigate]);
 
-  // Create a lookup map for restaurant names by placeId
-  const restaurantNameMap = new Map<string, string>();
-  // First, populate from restaurantNames received from backend (most complete source)
-  if (restaurantNames) {
-    Object.entries(restaurantNames).forEach(([placeId, name]) => {
-      restaurantNameMap.set(placeId, name);
+  // Create a lookup map for restaurant names by placeId. This, the Near Misses
+  // and the unanimity check below are memoised so a socket tick that touches
+  // none of their inputs doesn't rebuild them on the re-render.
+  const restaurantNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    // First, populate from restaurantNames received from backend (most complete source)
+    if (restaurantNames) {
+      Object.entries(restaurantNames).forEach(([placeId, name]) => {
+        map.set(placeId, name);
+      });
+    }
+    // Also add from local restaurants array (what current user searched)
+    restaurants.forEach((r) => {
+      map.set(r.placeId, r.name);
     });
-  }
-  // Also add from local restaurants array (what current user searched)
-  restaurants.forEach((r) => {
-    restaurantNameMap.set(r.placeId, r.name);
-  });
-  // Also add from overlappingOptions (in case restaurants array isn't populated)
-  overlappingOptions.forEach((o) => {
-    restaurantNameMap.set(o.placeId, o.name);
-  });
+    // Also add from overlappingOptions (in case restaurants array isn't populated)
+    overlappingOptions.forEach((o) => {
+      map.set(o.placeId, o.name);
+    });
+    return map;
+  }, [restaurantNames, restaurants, overlappingOptions]);
 
   // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
   // and the tier's counts read off the same "of" the crown does.
@@ -350,8 +355,9 @@ export default function ResultsPage() {
   // Selections already in the results payload. Empty Match, 3+ Participants
   // only. A Recipe can be a Near Miss too (CONTEXT.md) — only the delivery
   // actions on the card are restaurant chrome.
-  const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
-  if (!hasOverlap && participants.length >= 3) {
+  const nearMisses = useMemo(() => {
+    const misses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
+    if (hasOverlap || participants.length < 3) return misses;
     const selectionCounts = new Map<string, number>();
     participants.forEach((participant) => {
       (allSelections[participant.displayName] || []).forEach((placeId) => {
@@ -362,26 +368,30 @@ export default function ResultsPage() {
     selectionCounts.forEach((count, placeId) => {
       if (count !== participants.length - 1) return;
       if (placeId === crownPlaceId) return;
-      nearMisses.push(
+      misses.push(
         restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
       );
     });
-    nearMisses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
-  }
+    misses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    return misses;
+  }, [hasOverlap, participants, allSelections, restaurants, crownPlaceId, restaurantNameMap]);
 
   // Unanimous Selections (#85): when every Participant selected the same
   // non-empty set, the per-Participant copies are redundant — collapse them
   // behind a disclosure. Identical empty lists don't count: an empty Match
   // keeps its transparency lists visible.
-  const sameSelections = (a: string[], b: string[]) =>
-    a.length === b.length && a.every((placeId) => b.includes(placeId));
-  const firstSelections =
-    participants.length > 0 ? allSelections[participants[0].displayName] || [] : [];
-  const isUnanimous =
-    firstSelections.length > 0 &&
-    participants.every((participant) =>
-      sameSelections(allSelections[participant.displayName] || [], firstSelections)
+  const isUnanimous = useMemo(() => {
+    const sameSelections = (a: string[], b: string[]) =>
+      a.length === b.length && a.every((placeId) => b.includes(placeId));
+    const firstSelections =
+      participants.length > 0 ? allSelections[participants[0].displayName] || [] : [];
+    return (
+      firstSelections.length > 0 &&
+      participants.every((participant) =>
+        sameSelections(allSelections[participant.displayName] || [], firstSelections)
+      )
     );
+  }, [participants, allSelections]);
 
   const handleRestart = async () => {
     if (!sessionCode) return;
