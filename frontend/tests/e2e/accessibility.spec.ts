@@ -148,25 +148,19 @@ test.describe('Accessibility - Keyboard Navigation', () => {
 });
 
 test.describe('Accessibility - Screen Reader Support', () => {
-  test('page has proper heading structure', async ({ page, homePage }) => {
-    await homePage.goto();
+  // Home and every setup page, not just Home.
+  for (const path of ['/', '/create', '/join', '/cook']) {
+    test(`${path} has one main landmark, one h1, and passes the basic checks`, async ({ page }) => {
+      await page.goto(path);
 
-    // Should have h1 heading
-    const h1 = page.getByRole('heading', { level: 1 });
-    await expect(h1).toBeVisible();
+      // getByRole is strict: zero or two mains (or h1s) both fail.
+      await expect(page.getByRole('main')).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // Headings should be hierarchical
-    const headings = await page.getByRole('heading').all();
-    expect(headings.length).toBeGreaterThan(0);
-  });
-
-  test('main landmark is present', async ({ page, homePage }) => {
-    await homePage.goto();
-
-    // Exactly one <main> landmark holds the page content (getByRole is strict:
-    // zero or two mains both fail).
-    await expect(page.getByRole('main')).toBeVisible();
-  });
+      const result = await checkAccessibility(page);
+      expect(result.issues).toEqual([]);
+    });
+  }
 
   test('buttons have descriptive text', async ({ homePage }) => {
     await homePage.goto();
