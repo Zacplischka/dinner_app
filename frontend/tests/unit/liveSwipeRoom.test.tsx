@@ -473,3 +473,52 @@ describe('Full House takeover', () => {
     expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
   });
 });
+
+// Keyboard swipe on desktop: ← pass, → like, Backspace undo — the same three
+// handlers the buttons call, and a no-op while the Full House dialog holds the
+// deck inert or while focus is in a field.
+describe('Keyboard swipe', () => {
+  it('maps ArrowRight/ArrowLeft/Backspace to like/pass/undo and ignores keys while typing or inert', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); // like place-1
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+
+    fireEvent.keyDown(window, { key: 'ArrowLeft' }); // pass place-2
+    await waitFor(() => expect(screen.getByText('Pho Bar')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+
+    fireEvent.keyDown(window, { key: 'Backspace' }); // undo the pass
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    fireEvent.keyDown(window, { key: 'Backspace' }); // undo the like
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual([]);
+    fireEvent.keyDown(window, { key: 'Backspace' }); // nothing left to undo
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+
+    // Focus in a field: keys type, they never swipe.
+    const input = document.body.appendChild(document.createElement('input'));
+    fireEvent.keyDown(input, { key: 'ArrowRight' });
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+    input.remove();
+
+    // Full House holds the deck inert: the dialog owns the keyboard.
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); // like place-1 again
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-1', 'Carol');
+    });
+    await screen.findByRole('dialog');
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    fireEvent.keyDown(window, { key: 'Backspace' });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+    expect(screen.getByText('Taco Turno')).toBeInTheDocument();
+  });
+});

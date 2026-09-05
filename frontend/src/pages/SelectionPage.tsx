@@ -239,6 +239,21 @@ export default function SelectionPage() {
     setCurrentIndex((prev) => prev + 1);
   }, [currentIndex, entries, addSelection, sessionCode]);
 
+  const canUndo = currentIndex > 0;
+  const handleUndo = useCallback(() => {
+    if (!canUndo) return;
+    const previous = entries[currentIndex - 1];
+    if (previous) {
+      removeSelection(previous.placeId);
+    }
+    setCurrentIndex((prev) => prev - 1);
+    // Undo puts a revealed Restaurant back at/ahead of the cursor — a visible
+    // count while you re-decide is the exact herding setup the gate exists to
+    // prevent. The announced ref is never un-marked, so re-deciding it produces
+    // no second reveal.
+    setReveal(null);
+  }, [canUndo, currentIndex, entries, removeSelection]);
+
   const handleSubmit = async () => {
     if (!sessionCode) {
       setError('Session code not found');
@@ -317,6 +332,31 @@ export default function SelectionPage() {
 
   const fullHouseName = entries.find((e) => e.placeId === fullHousePlaceId)?.name;
   const deckInert = fullHousePlaceId !== null;
+
+  // Keyboard swipe on desktop: ← pass, → like, Backspace undo. Off while the
+  // deck is inert (the Full House dialog owns the keyboard, Escape included),
+  // off the deck (loading, end-of-deck, submitted), and never while typing.
+  const deckLive = !deckInert && !isLoading && !isDone && !hasSubmitted;
+  useEffect(() => {
+    if (!deckLive) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === 'ArrowLeft') handleSwipeLeft();
+      else if (e.key === 'ArrowRight') handleSwipeRight();
+      else if (e.key === 'Backspace' && canUndo) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [deckLive, canUndo, handleSwipeLeft, handleSwipeRight, handleUndo]);
 
   if (isLoading) {
     return (
@@ -612,20 +652,8 @@ export default function SelectionPage() {
 
           {/* Undo Button */}
           <button
-            onClick={() => {
-              if (currentIndex > 0) {
-                const previous = entries[currentIndex - 1];
-                if (previous) {
-                  removeSelection(previous.placeId);
-                }
-                setCurrentIndex((prev) => prev - 1);
-                setReveal(null); // Undo puts a revealed Restaurant back at/ahead of the cursor — a
-                // visible count while you re-decide is the exact herding setup the
-                // gate exists to prevent. The announced ref is never un-marked, so
-                // re-deciding it produces no second reveal.
-              }
-            }}
-            disabled={currentIndex === 0 || deckInert}
+            onClick={handleUndo}
+            disabled={!canUndo || deckInert}
             className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-cyan hover:text-cyan disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             aria-label="Undo"
           >
@@ -658,7 +686,13 @@ export default function SelectionPage() {
         </div>
 
         {/* Hint text */}
-        <p className="text-center text-xs text-muted mt-2">Swipe or use buttons to choose</p>
+        <p className="text-center text-xs text-muted mt-2">
+          <span>Swipe or use buttons to choose</span>
+          <span className="hidden [@media(pointer:fine)]:inline">
+            {' '}
+            · ← pass, → like, Backspace undo
+          </span>
+        </p>
       </div>
 
       {/* Full House takeover */}
