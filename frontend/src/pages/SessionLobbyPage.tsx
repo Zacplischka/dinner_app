@@ -46,15 +46,6 @@ export default function SessionLobbyPage() {
     }
   }, [navigate, sessionCode, sessionStatus]);
 
-  const handleCopyCode = () => {
-    if (sessionCode) {
-      navigator.clipboard
-        .writeText(sessionCode)
-        .then(() => toast.success('Session code copied!'))
-        .catch(() => toast.error('Could not copy code'));
-    }
-  };
-
   const handleShareLink = useShareInviteLink(shareableLink, 'Link copied to clipboard!');
 
   const handleStartSelecting = async () => {
@@ -103,25 +94,8 @@ export default function SessionLobbyPage() {
         {/* Session Code Card */}
         <div className="card mb-6">
           <h2 className="label text-center">Session Code</h2>
-          <div className="relative">
-            <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
-              {sessionCode}
-            </div>
-            <button
-              onClick={handleCopyCode}
-              className="absolute right-1 top-1 min-h-[44px] min-w-[44px] rounded-xl p-2.5 text-cyan hover:bg-cyan/10"
-              title="Copy code"
-              aria-label="Copy session code"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                />
-              </svg>
-            </button>
+          <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+            {sessionCode}
           </div>
 
           {shareableLink && (
