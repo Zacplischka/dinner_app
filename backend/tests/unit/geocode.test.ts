@@ -64,7 +64,10 @@ describe('GET /api/geocode', () => {
       .get('/api/geocode?query=a')
       .expect(400);
 
-    expect(response.body.code).toBe('VALIDATION_ERROR');
+    expect(response.body).toEqual({
+      code: 'VALIDATION_ERROR',
+      message: 'Enter a suburb or postcode to search for.',
+    });
     expect(geocodeArea).not.toHaveBeenCalled();
   });
 

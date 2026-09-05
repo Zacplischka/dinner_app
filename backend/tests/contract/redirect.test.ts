@@ -4,6 +4,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRedirectRouter } from '../../src/api/redirect.js';
 import { logger } from '../../src/logger.js';
+import { errorHandler } from '../../src/middleware/errorHandler.js';
 import { captureLogs } from '../helpers/logCapture.js';
 
 describe('GET /api/redirect', () => {
@@ -36,6 +37,7 @@ describe('GET /api/redirect', () => {
     const app = express();
     app.use(pinoHttp({ logger }));
     app.use('/api/redirect', createRedirectRouter({ fetchPlaceDetails, targetCache }));
+    app.use(errorHandler);
     return app;
   }
 
@@ -181,7 +183,11 @@ describe('GET /api/redirect', () => {
     for (const url of badRequests) {
       const response = await request(app).get(url);
       expect(response.status).toBe(400);
-      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body).toEqual({
+        code: 'VALIDATION_ERROR',
+        message:
+          'platform (ubereats|doordash), placeId, and source (match_card|near_miss) are required',
+      });
     }
   });
 });

@@ -95,6 +95,11 @@ describe('canonical error transport', () => {
       status: 404,
       code: 'NOT_FOUND',
     },
+    AREA_NOT_FOUND: {
+      domainMessage: "We couldn't find that area.",
+      status: 404,
+      code: 'AREA_NOT_FOUND',
+    },
     RATE_LIMITED: {
       domainMessage: 'Places quota exhausted',
       status: 503,

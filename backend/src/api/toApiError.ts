@@ -32,6 +32,7 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   // Expired and never-existed answer identically: the link is the capability,
   // so its absence must reveal nothing either way.
   SHOPPING_LIST_NOT_FOUND: { code: 'NOT_FOUND', status: 404 },
+  AREA_NOT_FOUND: { code: 'AREA_NOT_FOUND', status: 404 },
   // Upstream Places quota exhaustion: nothing the client can do, so 503.
   RATE_LIMITED: { code: 'RATE_LIMITED', status: 503 },
   not_found: { code: 'NOT_FOUND', status: 404 },

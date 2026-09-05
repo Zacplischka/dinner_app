@@ -3,6 +3,7 @@
 
 import { Router } from 'express';
 import type { ApiError, GeocodedArea } from '@dinder/shared/types';
+import { DomainError } from '../services/DomainError.js';
 import { asyncHandler } from './asyncHandler.js';
 import {
   admitRequest,
@@ -40,16 +41,10 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
       const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
 
       if (!hasCoords && (query.length < 2 || query.length > 100)) {
-        return res.status(400).json({
-          code: 'VALIDATION_ERROR',
-          message: 'Enter a suburb or postcode to search for.',
-        } satisfies ApiError);
+        throw new DomainError('VALIDATION_ERROR', 'Enter a suburb or postcode to search for.');
       }
       if (hasCoords && (Math.abs(latitude) > 90 || Math.abs(longitude) > 180)) {
-        return res.status(400).json({
-          code: 'VALIDATION_ERROR',
-          message: 'Coordinates are out of range.',
-        } satisfies ApiError);
+        throw new DomainError('VALIDATION_ERROR', 'Coordinates are out of range.');
       }
 
       const ip = requestIp(req);
@@ -71,11 +66,10 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
       const resolved = await geocodeArea(query);
       if (!resolved) {
         req.log.warn({ reason: 'area_not_found' }, 'Rejected geocode lookup');
-        return res.status(404).json({
-          code: 'AREA_NOT_FOUND',
-          message:
-            "We couldn't find that area. Check the spelling or try a nearby suburb or postcode.",
-        } satisfies ApiError);
+        throw new DomainError(
+          'AREA_NOT_FOUND',
+          "We couldn't find that area. Check the spelling or try a nearby suburb or postcode."
+        );
       }
 
       req.log.info({ hasArea: Boolean(resolved.area) }, 'Geocoded area query');

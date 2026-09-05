@@ -9,6 +9,7 @@ import {
 } from '@dinder/shared/types';
 import type { GooglePlacesSearchParams } from '../services/RestaurantSearchService.js';
 import type { ComparisonService } from '../services/ComparisonService.js';
+import { DomainError } from '../services/DomainError.js';
 import { asyncHandler } from './asyncHandler.js';
 import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
 
@@ -50,10 +51,7 @@ export function createComparisonRouter({
       asyncHandler(async (req, res) => {
         const photoName = typeof req.query.name === 'string' ? req.query.name : '';
         if (!/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(photoName)) {
-          return res.status(400).json({
-            code: 'VALIDATION_ERROR',
-            message: 'A valid Google Places photo name is required',
-          } satisfies ApiError);
+          throw new DomainError('VALIDATION_ERROR', 'A valid Google Places photo name is required');
         }
 
         const cacheKey = `comparison:photo:${photoName}`;
@@ -89,10 +87,10 @@ export function createComparisonRouter({
         source: req.query.source,
       });
       if (!input) {
-        return res.status(400).json({
-          code: 'VALIDATION_ERROR',
-          message: 'A valid placeId and optional Comparison source are required',
-        } satisfies ApiError);
+        throw new DomainError(
+          'VALIDATION_ERROR',
+          'A valid placeId and optional Comparison source are required'
+        );
       }
 
       const ip = requestIp(req);
@@ -144,10 +142,10 @@ export function createComparisonRouter({
     asyncHandler(async (req, res) => {
       const input = parseVenueSearchRequest(req.query);
       if (!input) {
-        return res.status(400).json({
-          code: 'VALIDATION_ERROR',
-          message: 'Valid latitude, longitude, and radiusMiles (1–15) are required',
-        } satisfies ApiError);
+        throw new DomainError(
+          'VALIDATION_ERROR',
+          'Valid latitude, longitude, and radiusMiles (1–15) are required'
+        );
       }
 
       const ip = requestIp(req);
