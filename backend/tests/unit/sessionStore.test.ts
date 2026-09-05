@@ -372,6 +372,28 @@ describe('SessionStore', () => {
       expect(missingCount).toBe(0);
     });
 
+    it('round-trips a Movie Deck, overview and all', async () => {
+      const movie = {
+        kind: 'movie' as const,
+        placeId: 'Q103474',
+        name: 'Alien',
+        photoUrl: 'https://example.test/alien.jpg',
+        rating: 4.2,
+        year: 1979,
+        genres: ['Horror', 'Sci-Fi'],
+        runtimeMinutes: 117,
+        overview: 'The crew of a commercial starship answer a distress call.',
+        trailerUrl: 'https://example.test/alien-trailer',
+      };
+      await store.createSession(sessionCode, {
+        hostId: 'host-1',
+        hostName: 'Alice',
+        entries: [movie],
+      });
+
+      expect((await store.getDeck(sessionCode)).entries).toEqual([movie]);
+    });
+
     it('replaceDeck leaves nothing of the old Deck behind', async () => {
       await createTestSession();
 

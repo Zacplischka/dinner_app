@@ -16,6 +16,7 @@ import {
   type Branch,
   type Craving,
   type DeckEntry,
+  isRestaurant,
 } from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot — the cap the join path enforces. */
@@ -23,8 +24,9 @@ export const MAX_PARTICIPANTS = 4;
 
 /**
  * The Top Pick's middle rung, per Deck Entry kind: a Restaurant's rating, a
- * Recipe's Spoonacular aggregate likes. An entry the source knows nothing about
- * sinks to the bottom of its own rung, as an unrated Restaurant always has.
+ * Recipe's Spoonacular aggregate likes. A Movie's rating shares the Restaurant
+ * arm. An entry the source knows nothing about sinks to the bottom of its own
+ * rung, as an unrated Restaurant always has.
  */
 function middleRung(entry: DeckEntry): number {
   return (entry.kind === 'recipe' ? entry.aggregateLikes : entry.rating) ?? -1;
@@ -624,8 +626,8 @@ export function createSessionService({
       const selected = deck.filter((e) => (tally.get(e.placeId) ?? 0) > 0);
       // Nobody selected anything: fall back to the Deck so the screen still answers,
       // but don't crown a venue Places says is shut when an open one exists. Only a
-      // Restaurant can be shut — a Recipe is always in the open pool.
-      const open = deck.filter((e) => e.kind === 'recipe' || e.openNow !== false);
+      // Restaurant can be shut — every other kind is always in the open pool.
+      const open = deck.filter((e) => !isRestaurant(e) || e.openNow !== false);
       pool = selected.length > 0 ? selected : open.length > 0 ? open : deck;
     }
     const crowned = [...pool].sort(

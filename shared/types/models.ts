@@ -42,14 +42,41 @@ export interface Recipe {
   aggregateLikes?: number;
 }
 
+/** A film a Watch-branch Session deals (#369). Restaurant's counterpart. */
+export interface Movie {
+  kind: 'movie';
+  /** The movie source's id. */
+  placeId: string;
+  /** The movie title. */
+  name: string;
+  /** Poster. */
+  photoUrl?: string;
+  /** The Top Pick's middle rung for a Movie, on the same 0-5 scale as a Restaurant's. */
+  rating?: number;
+  year?: number;
+  genres?: string[];
+  runtimeMinutes?: number;
+  overview?: string;
+  trailerUrl?: string;
+}
+
 /**
- * One entry of a Deck — the Restaurant or Recipe a Participant swipes on (see
- * CONTEXT.md). The whole Selection path (deal, swipe, Live Selection, Match,
- * Top Pick) keys on `placeId`, which is a Google place id for a Restaurant and
- * the recipe source's id for a Recipe; it keeps its original name because every
- * wire shape, Redis key, and store field already speaks it (ADR 0007).
+ * One entry of a Deck — the Restaurant, Recipe or Movie a Participant swipes on
+ * (see CONTEXT.md). The whole Selection path (deal, swipe, Live Selection,
+ * Match, Top Pick) keys on `placeId`, which is a Google place id for a
+ * Restaurant and the source's id for a Recipe or Movie; it keeps its original
+ * name because every wire shape, Redis key, and store field already speaks it
+ * (ADR 0007).
  */
-export type DeckEntry = Restaurant | Recipe;
+export type DeckEntry = Restaurant | Recipe | Movie;
+
+/**
+ * Narrows a Deck Entry to the Restaurant arm. No `kind` reads as a Restaurant
+ * (every pre-Cook producer), so this is the one place that rule is spelled out
+ * — a `!== 'recipe'` check would misfile every later kind as a Restaurant.
+ */
+export const isRestaurant = (entry: DeckEntry): entry is Restaurant =>
+  entry.kind === undefined || entry.kind === 'restaurant';
 
 export interface Venue {
   placeId: string;

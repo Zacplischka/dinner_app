@@ -14,7 +14,7 @@ import {
   MAX_PARTICIPANTS,
 } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
-import type { Recipe } from '@dinder/shared/types';
+import type { Movie, Recipe } from '@dinder/shared/types';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST1';
@@ -1588,6 +1588,53 @@ describe('SessionService', () => {
 
         expect(results?.topPick?.restaurant.placeId).toBe('rec1');
         expect(results?.shoppingListId).toBeUndefined();
+      });
+    });
+
+    describe('Movie Deck', () => {
+      async function createSessionWithMovieDeck(entries: Movie[]): Promise<string> {
+        const sessionCode = 'WATCH';
+        await store.createSession(sessionCode, {
+          hostId: 'p-alice',
+          hostName: 'Alice',
+          entries,
+        });
+        await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+        await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+        return sessionCode;
+      }
+
+      it('breaks a count tie by rating', async () => {
+        const sessionCode = await createSessionWithMovieDeck([
+          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 4.2 },
+          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 4.6 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', ['Q1']);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['Q2']);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'Q2' }),
+          likedBy: 1,
+          of: 2,
+        });
+        expect(mintShoppingList).not.toHaveBeenCalled();
+      });
+
+      // A Movie has no hours to be shut, so the open-now sink must let it
+      // through to the Deck fallback rather than filing it as a closed venue.
+      it('crowns the highest-rated Movie when every Submission is empty', async () => {
+        const sessionCode = await createSessionWithMovieDeck([
+          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 4.2 },
+          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 4.6 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', []);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'Q2' }),
+          likedBy: 0,
+          of: 2,
+        });
       });
     });
 
