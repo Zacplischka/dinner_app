@@ -41,8 +41,15 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, removeSelection, participants, liveSelections, branch } =
-    useSessionStore();
+  const {
+    selections,
+    addSelection,
+    removeSelection,
+    participants,
+    liveSelections,
+    branch,
+    setExpiresAt,
+  } = useSessionStore();
   // The deck is shared with the restaurant branches, but its copy must not be:
   // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
   const isCook = branch === 'cook';
@@ -100,19 +107,24 @@ export default function SelectionPage() {
     };
 
     void loadDeck();
-
-    // The Deck's invite affordance (#284): a Session admits joiners while it
-    // lives, so the canonical minted Invite Link belongs here too. Losing it
-    // costs only the header button — the code badge still shows.
-    if (sessionCode) {
-      void getSession(sessionCode)
-        .then((session) => {
-          setShareableLink(session.shareableLink);
-          setRecipeSourceDown(session.recipeSourceDown === true);
-        })
-        .catch(() => {});
-    }
   }, [sessionCode]);
+
+  // The Deck's invite affordance (#284): a Session admits joiners while it
+  // lives, so the canonical minted Invite Link belongs here too. Losing it
+  // costs only the header button — the code badge still shows.
+  // `participants` is a deliberate extra dep: a join or a submission slides
+  // the Session's TTL forward server-side and no socket event carries the new
+  // expiresAt, so the header's countdown is re-read on every roster change.
+  useEffect(() => {
+    if (!sessionCode) return;
+    void getSession(sessionCode)
+      .then((session) => {
+        setShareableLink(session.shareableLink);
+        setRecipeSourceDown(session.recipeSourceDown === true);
+        setExpiresAt(session.expiresAt);
+      })
+      .catch(() => {});
+  }, [sessionCode, participants, setExpiresAt]);
 
   // Listen for participant submissions
   useEffect(() => {
