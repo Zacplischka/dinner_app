@@ -25,7 +25,13 @@ export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
       const stops = dialog.querySelectorAll<HTMLElement>(FOCUSABLE);
-      if (stops.length === 0) return;
+      // Every stop disabled (leave in flight) or focus already dropped to
+      // <body>: hold Tab here rather than let it walk into the page behind.
+      if (stops.length === 0 || !dialog.contains(document.activeElement)) {
+        e.preventDefault();
+        if (stops.length > 0) stops[0].focus();
+        return;
+      }
       const first = stops[0];
       const last = stops[stops.length - 1];
       if (e.shiftKey && document.activeElement === first) {
@@ -37,8 +43,9 @@ export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void
       }
     };
 
-    dialog.addEventListener('keydown', onKeyDown);
-    return () => dialog.removeEventListener('keydown', onKeyDown);
+    // Listen above the dialog so a Tab from <body> is still ours.
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [ref, active]);
 
   // Restore on the close transition rather than in the listener's cleanup:
