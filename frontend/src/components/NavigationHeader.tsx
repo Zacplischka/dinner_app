@@ -3,9 +3,16 @@
 // Title row: stable back target, centred title, page action.
 // Secondary region: session code, progress, connection state and subtitle.
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useSessionStore } from '../stores/sessionStore';
+import { toast } from '../hooks/useToast';
 import ConfirmLeaveModal from './ConfirmLeaveModal';
+
+/** "Expires in 27 min" — whole minutes, never negative, "under a minute" below one. */
+function expiryLabel(expiresAt: string): string {
+  const minutes = Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 60_000));
+  return minutes < 1 ? 'Expires in under a minute' : `Expires in ${minutes} min`;
+}
 
 export interface NavigationHeaderProps {
   /** Page title displayed in header */
@@ -56,7 +63,37 @@ export default function NavigationHeader({
 }: NavigationHeaderProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
-  const { isConnected } = useSessionStore();
+  const [copied, setCopied] = useState(false);
+  const { isConnected, expiresAt } = useSessionStore();
+  // Only a Session screen (one that shows the code) carries the countdown; the
+  // store's expiresAt can linger after a Session ends and must not leak onto
+  // Join or Create.
+  const showExpiry = Boolean(sessionCode && expiresAt);
+
+  // Tick, don't decrement: the label re-reads expiresAt and Date.now() on every
+  // render, so a throttled background tab is right again the moment it wakes,
+  // and a store refresh after a TTL slide updates the line at once.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!showExpiry) return;
+    const id = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, [showExpiry]);
+
+  // Tap-to-copy Session Code, on every in-Session screen — the lobby's copy
+  // button used to be the only one. The badge flashes lime for 1.5s as the
+  // pressed cue; the toast says what happened.
+  const handleCopyCode = () => {
+    if (!sessionCode) return;
+    navigator.clipboard
+      .writeText(sessionCode)
+      .then(() => {
+        toast.success('Session code copied!');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => toast.error('Could not copy code'));
+  };
 
   const handleBackClick = () => {
     if (confirmOnBack) {
@@ -84,7 +121,7 @@ export default function NavigationHeader({
 
   const showSubtitle = Boolean(subtitle) && !compact;
   const hasSecondaryContent =
-    showSubtitle || Boolean(sessionCode) || Boolean(progress) || showConnectionStatus;
+    showSubtitle || Boolean(sessionCode) || Boolean(progress) || showConnectionStatus || showExpiry;
   const connectionStatus = isConnected
     ? { dot: 'bg-lime', text: 'text-lime', label: 'Connected' }
     : { dot: 'bg-amber animate-pulse', text: 'text-amber', label: 'Reconnecting…' };
@@ -169,20 +206,39 @@ export default function NavigationHeader({
               )}
 
               {sessionCode && (
-                <span className="inline-flex items-center px-2 py-0.5 bg-cyan/10 border border-cyan/30 rounded-full">
-                  <span className="text-xs font-mono font-medium text-cyan tracking-wider">
-                    {sessionCode}
+                // 44px tap target without growing the row: the button overhangs the pill.
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="-my-3 inline-flex min-h-[44px] items-center"
+                  aria-label="Copy Session Code"
+                  title="Copy Session Code"
+                >
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 border rounded-full transition-colors ${
+                      copied ? 'bg-lime/10 border-lime/30' : 'bg-cyan/10 border-cyan/30'
+                    }`}
+                  >
+                    <span
+                      className={`text-xs font-mono font-medium tracking-wider ${copied ? 'text-lime' : 'text-cyan'}`}
+                    >
+                      {sessionCode}
+                    </span>
                   </span>
-                </span>
+                </button>
               )}
 
               {showSubtitle && <p className="text-xs text-muted">{subtitle}</p>}
+
+              {sessionCode && expiresAt && (
+                <p className="text-xs text-muted">{expiryLabel(expiresAt)}</p>
+              )}
 
               {progress && (
                 <div
                   className="flex items-center gap-2"
                   role="progressbar"
-                  aria-label="Restaurant progress"
+                  aria-label="Deck progress"
                   aria-valuemin={1}
                   aria-valuemax={progress.total}
                   aria-valuenow={progress.current}

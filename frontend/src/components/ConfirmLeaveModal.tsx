@@ -2,6 +2,9 @@
 // Confirmation dialog before leaving a session
 // UX: "Stay" is the safe action, "Leave" is destructive.
 
+import { useRef } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+
 interface ConfirmLeaveModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,6 +24,9 @@ export default function ConfirmLeaveModal({
   context = 'lobby',
   selectionsCount = 0,
 }: ConfirmLeaveModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen);
+
   if (!isOpen) return null;
 
   // Context-aware messaging
@@ -44,14 +50,14 @@ export default function ConfirmLeaveModal({
         return 'Return to the home screen? You can always start a new session.';
       case 'selecting':
         if (selectionsCount > 0) {
-          return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the results.`;
+          return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the Match.`;
         }
-        return "You'll leave without submitting any preferences.";
+        return "You'll leave without submitting any selections.";
       case 'ordering':
         return "Your items stay in the basket and still count — whoever taps I'll order still buys them.";
       case 'lobby':
       default:
-        return "You'll leave the session and others won't see you in the lobby anymore.";
+        return "You'll leave the Session and the others won't see you in it anymore.";
     }
   };
 
@@ -87,6 +93,7 @@ export default function ConfirmLeaveModal({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-50 overflow-y-auto"
       role="dialog"
       aria-modal="true"

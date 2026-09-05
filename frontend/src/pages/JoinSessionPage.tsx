@@ -6,6 +6,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
+import { validateDisplayName } from '../utils/displayName';
 
 const cleanSessionCode = (value: string) =>
   value
@@ -54,8 +55,9 @@ export default function JoinSessionPage() {
       return;
     }
 
-    if (participantName.trim().length < 1 || participantName.trim().length > 50) {
-      setError('Name must be between 1 and 50 characters');
+    const nameError = validateDisplayName(participantName);
+    if (nameError) {
+      setError(nameError);
       return;
     }
 
@@ -159,7 +161,7 @@ export default function JoinSessionPage() {
               onChange={(e) => setSessionCode(cleanSessionCode(e.target.value))}
               placeholder="7K9M2"
               maxLength={SESSION_CODE_LENGTH}
-              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-[#050d19] px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan outline-none transition-all duration-150 placeholder:text-muted/50"
+              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-[#050d19] px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan outline-none transition-all duration-150 placeholder:text-muted/70"
               autoFocus={!searchParams.get('code')}
               disabled={isLoading}
             />

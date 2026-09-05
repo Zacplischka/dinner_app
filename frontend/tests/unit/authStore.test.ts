@@ -19,6 +19,7 @@ vi.mock('../../src/services/supabase', () => ({
 }));
 
 import { useAuthStore } from '../../src/stores/authStore';
+import { useFriendsStore } from '../../src/stores/friendsStore';
 
 const user = {
   id: 'user-1',
@@ -48,14 +49,18 @@ describe('authStore', () => {
 
   it('should initialize from the current Supabase session and auth change events', async () => {
     let authStateCallback: ((_event: string, session: typeof session | null) => void) | undefined;
+    const unsubscribe = vi.fn();
     authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
     authMocks.onAuthStateChange.mockImplementationOnce((callback) => {
       authStateCallback = callback;
       callback('SIGNED_IN', session);
-      return { data: { subscription: { unsubscribe: vi.fn() } } };
+      return { data: { subscription: { unsubscribe } } };
     });
 
-    await useAuthStore.getState().initialize();
+    // #351: the subscription comes back so App can unsubscribe on unmount.
+    const subscription = await useAuthStore.getState().initialize();
+    subscription?.unsubscribe();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
 
     expect(useAuthStore.getState()).toMatchObject({
       user,
@@ -77,7 +82,7 @@ describe('authStore', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     authMocks.getSession.mockRejectedValueOnce(error);
 
-    await useAuthStore.getState().initialize();
+    await expect(useAuthStore.getState().initialize()).resolves.toBeUndefined();
 
     expect(useAuthStore.getState().isLoading).toBe(false);
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
@@ -136,5 +141,33 @@ describe('authStore', () => {
       session: null,
       isAuthenticated: false,
     });
+  });
+
+  it("forgets the previous Profile's Friends on sign-out", async () => {
+    const seeded = {
+      friends: [{ id: 'user-2' }],
+      friendRequests: [{ id: 'request-1' }],
+      sessionInvites: [{ id: 'invite-1' }],
+    } as any;
+    const empty = { friends: [], friendRequests: [], sessionInvites: [] };
+    let authStateCallback: ((_event: string, session: typeof session | null) => void) | undefined;
+    authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
+    authMocks.onAuthStateChange.mockImplementationOnce((callback) => {
+      authStateCallback = callback;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+    await useAuthStore.getState().initialize();
+
+    // Explicit sign-out
+    useFriendsStore.setState(seeded);
+    authMocks.signOut.mockResolvedValueOnce(undefined);
+    await useAuthStore.getState().signOut();
+    expect(useFriendsStore.getState()).toMatchObject(empty);
+
+    // SIGNED_OUT arriving from Supabase (another tab, an expired token)
+    useAuthStore.getState().setSession(session as any);
+    useFriendsStore.setState(seeded);
+    authStateCallback?.('SIGNED_OUT', null);
+    expect(useFriendsStore.getState()).toMatchObject(empty);
   });
 });

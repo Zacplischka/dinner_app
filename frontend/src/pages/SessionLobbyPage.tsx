@@ -6,6 +6,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import { getSession } from '../services/apiClient';
 import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
+import { useShareLink } from '../hooks/useShareLink';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
@@ -13,7 +14,7 @@ import { participantRingClass } from '../utils/participantStyles';
 export default function SessionLobbyPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { participants, isConnected, sessionStatus } = useSessionStore();
+  const { participants, isConnected, sessionStatus, setExpiresAt } = useSessionStore();
   const [shareableLink, setShareableLink] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
@@ -29,6 +30,7 @@ export default function SessionLobbyPage() {
       try {
         const session = await getSession(sessionCode);
         setShareableLink(session.shareableLink);
+        setExpiresAt(session.expiresAt);
       } catch (err) {
         console.error('Failed to load session:', err);
       } finally {
@@ -37,7 +39,10 @@ export default function SessionLobbyPage() {
     };
 
     void loadSession();
-  }, [sessionCode]);
+    // `participants` is a deliberate extra dep: a join slides the Session's TTL
+    // forward server-side and no socket event carries the new expiresAt, so the
+    // header's countdown is re-read from the Session on every roster change.
+  }, [sessionCode, participants, setExpiresAt]);
 
   useEffect(() => {
     if (sessionStatus === 'selecting' && sessionCode) {
@@ -45,37 +50,7 @@ export default function SessionLobbyPage() {
     }
   }, [navigate, sessionCode, sessionStatus]);
 
-  const handleCopyCode = () => {
-    if (sessionCode) {
-      navigator.clipboard
-        .writeText(sessionCode)
-        .then(() => toast.success('Session code copied!'))
-        .catch(() => toast.error('Could not copy code'));
-    }
-  };
-
-  const handleShareLink = async () => {
-    if (!shareableLink) return;
-
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: 'Dinder', url: shareableLink });
-        return;
-      } catch (err) {
-        // ponytail: dismissing the sheet is not a failure — no toast, no clipboard write.
-        // Any other rejection (NotAllowedError, insecure context, no handler) falls
-        // through so the Host still ends up with the link somewhere.
-        // navigator.share rejects with a DOMException, which is not `instanceof Error`
-        // in every environment (jsdom included) — match on `.name` alone.
-        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
-      }
-    }
-
-    navigator.clipboard
-      .writeText(shareableLink)
-      .then(() => toast.success('Link copied to clipboard!'))
-      .catch(() => toast.error('Could not copy link'));
-  };
+  const handleShareLink = useShareLink(shareableLink, 'Link copied to clipboard!');
 
   const handleStartSelecting = async () => {
     if (!sessionCode) return;
@@ -123,25 +98,8 @@ export default function SessionLobbyPage() {
         {/* Session Code Card */}
         <div className="card mb-6">
           <h2 className="label text-center">Session Code</h2>
-          <div className="relative">
-            <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
-              {sessionCode}
-            </div>
-            <button
-              onClick={handleCopyCode}
-              className="absolute right-1 top-1 min-h-[44px] min-w-[44px] rounded-xl p-2.5 text-cyan hover:bg-cyan/10"
-              title="Copy code"
-              aria-label="Copy session code"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                />
-              </svg>
-            </button>
+          <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+            {sessionCode}
           </div>
 
           {shareableLink && (
@@ -232,10 +190,9 @@ export default function SessionLobbyPage() {
         </button>
 
         {/* Info */}
-        <div className="mt-6 text-center text-sm text-muted space-y-1">
-          <p>Share the code with friends to invite them</p>
-          <p className="text-muted/60">Sessions expire after 30 minutes of inactivity</p>
-        </div>
+        <p className="mt-6 text-center text-sm text-muted">
+          Share the code with friends to invite them
+        </p>
       </div>
     </main>
   );

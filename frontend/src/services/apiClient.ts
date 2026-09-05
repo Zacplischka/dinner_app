@@ -17,6 +17,7 @@ import type {
   GeocodedArea,
   GetProfileResponse,
   LoadRestaurantsResponse,
+  Mood,
   NearestCraving,
   NearestCravingResponse,
   SearchUsersResponse,
@@ -40,7 +41,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 /**
  * Create a new session. Everything past the host's name is setup the chosen
  * Branch decides: a location and radius for Eat Out and Takeaway, a Craving and
- * Headcount for Cook. Absent fields are simply left off the wire (ADR 0007).
+ * Headcount for Cook, a Mood for Watch. Absent fields are simply left off the
+ * wire (ADR 0007).
  */
 export async function createSession(
   hostName: string,
@@ -50,6 +52,7 @@ export async function createSession(
     branch?: Branch;
     craving?: Craving;
     headcount?: number;
+    mood?: Mood;
   } = {}
 ): Promise<CreateSessionResponse> {
   const body: CreateSessionRequest = { hostName };
@@ -72,6 +75,10 @@ export async function createSession(
 
   if (setup.headcount !== undefined) {
     body.headcount = setup.headcount;
+  }
+
+  if (setup.mood) {
+    body.mood = setup.mood;
   }
 
   return request<CreateSessionResponse>('/sessions', {

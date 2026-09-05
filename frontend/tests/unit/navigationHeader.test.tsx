@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NavigationHeader from '../../src/components/NavigationHeader';
 import { useSessionStore } from '../../src/stores/sessionStore';
+import { useToastStore } from '../../src/hooks/useToast';
 
 /**
  * NavigationHeader mobile-safety specs (#78)
@@ -12,7 +13,11 @@ import { useSessionStore } from '../../src/stores/sessionStore';
  */
 describe('NavigationHeader', () => {
   beforeEach(() => {
-    useSessionStore.setState({ isConnected: true });
+    useSessionStore.setState({ isConnected: true, expiresAt: null });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('keeps a stable 44px back target that does not shrink for long titles', () => {
@@ -99,6 +104,31 @@ describe('NavigationHeader', () => {
     expect(badge.className).not.toContain('shadow-glow-cyan');
   });
 
+  it('copies the Session Code from the badge and flashes it copied for 1.5s', async () => {
+    vi.useFakeTimers();
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    useToastStore.setState({ toasts: [] });
+    try {
+      render(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
+      const code = screen.getByText('7K9M2');
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Copy Session Code' }));
+      });
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('7K9M2');
+      expect(useToastStore.getState().toasts).toContainEqual(
+        expect.objectContaining({ message: 'Session code copied!' })
+      );
+      expect(code.className).toContain('text-lime');
+
+      act(() => vi.advanceTimersByTime(1500));
+      expect(code.className).toContain('text-cyan');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps page-specific actions in the title row right edge', () => {
     render(
       <NavigationHeader
@@ -111,5 +141,37 @@ describe('NavigationHeader', () => {
     const title = screen.getByRole('heading', { name: 'Match' });
     const titleRow = title.parentElement!.parentElement!;
     expect(titleRow.contains(share)).toBe(true);
+  });
+
+  it('counts the Session lifetime down from the store, re-reads a refreshed expiresAt, and never goes negative', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-06T10:00:00Z'));
+    useSessionStore.setState({ expiresAt: '2026-09-06T10:27:30Z' });
+
+    render(<NavigationHeader title="Make the Call" sessionCode="7K9M2" />);
+    expect(screen.getByText('Expires in 27 min')).toBeInTheDocument();
+
+    // One 30s tick.
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText('Expires in 27 min')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText('Expires in 26 min')).toBeInTheDocument();
+
+    // A join slid the TTL forward server-side and the page re-read the Session.
+    act(() => useSessionStore.setState({ expiresAt: '2026-09-06T10:31:00Z' }));
+    expect(screen.getByText('Expires in 30 min')).toBeInTheDocument();
+
+    // Past the last full minute, then past expiry itself: floors, never negative.
+    act(() => vi.advanceTimersByTime(29 * 60_000 + 30_000));
+    expect(screen.getByText('Expires in under a minute')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(5 * 60_000));
+    expect(screen.getByText('Expires in under a minute')).toBeInTheDocument();
+    expect(screen.queryByText(/Expires in -/)).toBeNull();
+  });
+
+  it('shows no countdown without a session code, even when the store still holds an expiresAt', () => {
+    useSessionStore.setState({ expiresAt: '2099-01-01T00:00:00Z' });
+    render(<NavigationHeader title="Join Session" showBackButton />);
+    expect(screen.queryByText(/Expires in/)).toBeNull();
   });
 });

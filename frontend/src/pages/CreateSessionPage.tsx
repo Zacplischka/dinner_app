@@ -5,12 +5,13 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BRANCHES, type Branch } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
-import LocationModeToggle from '../components/LocationModeToggle';
+import LocationModeToggle, { type LocationMode } from '../components/LocationModeToggle';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { reverseGeocode } from '../services/apiClient';
 import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
+import { validateDisplayName } from '../utils/displayName';
 
 interface Location {
   latitude: number;
@@ -32,7 +33,7 @@ export default function CreateSessionPage() {
   const [isResolvingArea, setIsResolvingArea] = useState(false);
   const [error, setError] = useState('');
   const [location, setLocation] = useState<Location | null>(null);
-  const [locationMode, setLocationMode] = useState<'current' | 'manual'>('current');
+  const [locationMode, setLocationMode] = useState<LocationMode>('current');
   const [manualQuery, setManualQuery] = useState('');
   const [searchRadiusKm, setSearchRadiusKm] = useState<number>(8);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
@@ -111,8 +112,9 @@ export default function CreateSessionPage() {
     setError('');
 
     // Validate host name
-    if (hostName.trim().length < 1 || hostName.trim().length > 50) {
-      setError('Name must be between 1 and 50 characters');
+    const nameError = validateDisplayName(hostName);
+    if (nameError) {
+      setError(nameError);
       return;
     }
 

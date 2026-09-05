@@ -8,7 +8,7 @@
 
 import type { ChainableCommander, Redis } from 'ioredis';
 import { DomainError } from '../services/DomainError.js';
-import { SESSION_CODE_LENGTH, type Branch, type DeckEntry } from '@dinder/shared/types';
+import { SESSION_CODE_LENGTH, type Branch, type DeckEntry, type Mood } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
 
@@ -35,6 +35,12 @@ export interface Session {
    */
   headcount?: number;
   cravingKey?: string;
+  /**
+   * Watch Branch only (#369). The Mood this Deck was dealt from — the whole
+   * Mood, not a pool key, because there is no pool: a Restart re-deals from
+   * the corpus with it.
+   */
+  mood?: Mood;
   /**
    * Cook Branch only (#333). This Session's Deck came up short because the
    * recipe source was dark when it was dealt — the one plain line every
@@ -64,6 +70,8 @@ export interface Participant {
   joinedAt: number;
   hasSubmitted: boolean;
   isHost: boolean;
+  /** false after a Disconnect. A rejoin re-keys the Participant to a fresh hash, so it reads true again. */
+  isOnline: boolean;
   rejoinToken?: string;
 }
 
@@ -80,7 +88,7 @@ export interface Participant {
 //                                         about the wire and these never leave here)
 // session:{code}:order              hash: the Group Order's fixed metadata + Pinned Menu
 // session:{code}:order:lines        hash: "{index}:{displayName}" -> qty
-// participant:{pid}                 hash: participant metadata
+// participant:{pid}                 hash: participant metadata (isOnline '0' after a Disconnect)
 
 const sessionKey = (code: string) => `session:${code}`;
 const participantsKey = (code: string) => `session:${code}:participants`;
@@ -121,6 +129,14 @@ return 1
 const RELEASE_DISPLAY_NAME_LUA = `
 if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return 0 end
 return redis.call('HDEL', KEYS[1], ARGV[1])
+`;
+
+// A Disconnect flags the Participant offline in place. EXISTS-guarded: a rejoin
+// landing inside the disconnect handler's window has already DELed this hash,
+// and a bare HSET would resurrect it with no TTL.
+const MARK_DISCONNECTED_LUA = `
+if redis.call('EXISTS', KEYS[1]) == 0 then return 0 end
+return redis.call('HSET', KEYS[1], 'isOnline', '0')
 `;
 
 function calculateExpireAt(): number {
@@ -208,6 +224,7 @@ export function createSessionStore(redis: Redis) {
       branch?: Branch;
       headcount?: number;
       cravingKey?: string;
+      mood?: Mood;
       recipeSourceDown?: boolean;
       location?: { latitude: number; longitude: number; address?: string };
       searchRadiusMiles?: number;
@@ -228,6 +245,7 @@ export function createSessionStore(redis: Redis) {
       branch: opts.branch,
       headcount: opts.headcount,
       cravingKey: opts.cravingKey,
+      mood: opts.mood,
       recipeSourceDown: opts.recipeSourceDown || undefined,
       location: opts.location,
       searchRadiusMiles: opts.searchRadiusMiles,
@@ -244,6 +262,7 @@ export function createSessionStore(redis: Redis) {
     if (opts.branch) sessionData.branch = opts.branch;
     if (opts.headcount !== undefined) sessionData.headcount = opts.headcount;
     if (opts.cravingKey) sessionData.cravingKey = opts.cravingKey;
+    if (opts.mood) sessionData.mood = JSON.stringify(opts.mood);
     if (opts.recipeSourceDown) sessionData.recipeSourceDown = '1';
     if (opts.location) {
       sessionData.locationLat = opts.location.latitude;
@@ -284,6 +303,7 @@ export function createSessionStore(redis: Redis) {
       branch: data.branch as Branch | undefined,
       headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,
       cravingKey: data.cravingKey,
+      mood: data.mood ? (JSON.parse(data.mood) as Mood) : undefined,
       recipeSourceDown: data.recipeSourceDown === '1' ? true : undefined,
       shoppingListId: data.shoppingListId,
     };
@@ -376,6 +396,7 @@ export function createSessionStore(redis: Redis) {
       joinedAt: now,
       isHost: isHost ? '1' : '0',
       hasSubmitted: '0',
+      isOnline: '1',
     };
     if (rejoinToken) participantData.rejoinToken = rejoinToken;
     pipeline.hset(participantKey(participantId), participantData);
@@ -407,6 +428,15 @@ export function createSessionStore(redis: Redis) {
     return await redis.scard(participantsKey(sessionCode));
   }
 
+  /**
+   * Records a Disconnect: the Participant stays current (the Match still waits
+   * on them) but reads isOnline false until a rejoin re-keys them. Leaves the
+   * Session clock alone — a dropped connection is not activity.
+   */
+  async function markDisconnected(participantId: string): Promise<void> {
+    await redis.eval(MARK_DISCONNECTED_LUA, 1, participantKey(participantId));
+  }
+
   async function getParticipant(participantId: string): Promise<Participant | null> {
     const data = await redis.hgetall(participantKey(participantId));
     if (!data || Object.keys(data).length === 0) {
@@ -419,6 +449,8 @@ export function createSessionStore(redis: Redis) {
       joinedAt: parseInt(data.joinedAt, 10),
       hasSubmitted: data.hasSubmitted === '1',
       isHost: data.isHost === '1',
+      // Absent on a hash written before the flag existed: online, as it always read.
+      isOnline: data.isOnline !== '0',
       rejoinToken: data.rejoinToken || undefined,
     };
   }
@@ -530,36 +562,27 @@ export function createSessionStore(redis: Redis) {
         ? await redis.smembers(selectionKeys[0])
         : await redis.sinter(...selectionKeys);
 
-    const readEntry = async (placeId: string): Promise<DeckEntry | null> => {
-      const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
-      return raw ? (JSON.parse(raw) as DeckEntry) : null;
-    };
-
-    const overlappingOptions: DeckEntry[] = [];
-    for (const placeId of overlappingPlaceIds) {
-      const entry = await readEntry(placeId);
-      if (entry) {
-        overlappingOptions.push(entry);
-      }
-    }
+    const overlappingOptions = (await readEntries(sessionCode, overlappingPlaceIds)).filter(
+      (entry): entry is DeckEntry => entry !== null
+    );
 
     // displayName -> selected placeIds, for the results screen
+    const selections = await Promise.all(selectionKeys.map((key) => redis.smembers(key)));
     const allSelections: Record<string, string[]> = {};
-    for (const p of participants) {
-      allSelections[p.displayName] = await redis.smembers(
-        selectionsKey(sessionCode, p.participantId)
-      );
-    }
+    participants.forEach((p, i) => {
+      allSelections[p.displayName] = selections[i];
+    });
 
     // Names for every selected placeId (not just the Match)
     const restaurantNames: Record<string, string> = {};
-    const allPlaceIds = new Set(Object.values(allSelections).flat());
-    for (const placeId of allPlaceIds) {
-      const entry = await readEntry(placeId);
+    const allPlaceIds = [...new Set(Object.values(allSelections).flat())];
+    const namedEntries = await readEntries(sessionCode, allPlaceIds);
+    allPlaceIds.forEach((placeId, i) => {
+      const entry = namedEntries[i];
       if (entry) {
         restaurantNames[placeId] = entry.name;
       }
-    }
+    });
 
     // Store the Match; sentinel keeps the key alive under TTL when empty
     if (overlappingOptions.length > 0) {
@@ -667,18 +690,28 @@ export function createSessionStore(redis: Redis) {
     await touch(sessionCode);
   }
 
+  /**
+   * The Deck Entries under `placeIds`, in the same order, in one HMGET; null
+   * where the entry data is absent. HMGET with no fields is an error, so the
+   * empty case answers without a round trip.
+   */
+  async function readEntries(
+    sessionCode: string,
+    placeIds: string[]
+  ): Promise<(DeckEntry | null)[]> {
+    if (placeIds.length === 0) return [];
+    const raws = await redis.hmget(restaurantsKey(sessionCode), ...placeIds);
+    return raws.map((raw) => (raw ? (JSON.parse(raw) as DeckEntry) : null));
+  }
+
   /** missingCount = place ids whose entry data is absent (data loss signal). */
   async function getDeck(
     sessionCode: string
   ): Promise<{ entries: DeckEntry[]; missingCount: number }> {
     const placeIds = await redis.smembers(restaurantIdsKey(sessionCode));
-    const entries: DeckEntry[] = [];
-    for (const placeId of placeIds) {
-      const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
-      if (raw) {
-        entries.push(JSON.parse(raw) as DeckEntry);
-      }
-    }
+    const entries = (await readEntries(sessionCode, placeIds)).filter(
+      (entry): entry is DeckEntry => entry !== null
+    );
     return { entries, missingCount: placeIds.length - entries.length };
   }
 
@@ -762,6 +795,7 @@ export function createSessionStore(redis: Redis) {
     claimDisplayName,
     addParticipant,
     removeParticipant,
+    markDisconnected,
     getParticipant,
     listParticipants,
     isParticipant,

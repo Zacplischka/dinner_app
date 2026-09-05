@@ -1,8 +1,8 @@
 // Creating a Session is the same sequence whatever Branch you picked: create
 // it, connect, join as host, invite anyone you selected, then land in the
 // lobby. Only the setup differs — a location and radius for Eat Out and
-// Takeaway, a Craving and Headcount for Cook — so the pages own their forms
-// and share this.
+// Takeaway, a Craving and Headcount for Cook, a Mood for Watch — so the pages
+// own their forms and share this.
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,18 +11,20 @@ import {
   type ApiError,
   type Branch,
   type Craving,
+  type Mood,
   type SessionLocation,
 } from '@dinder/shared/types';
 import { createSession } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
 
-export interface SessionSetup {
+interface SessionSetup {
   location?: SessionLocation;
   searchRadiusMiles?: number;
   branch?: Branch;
   craving?: Craving;
   headcount?: number;
+  mood?: Mood;
 }
 
 export function useCreateAndJoinSession() {

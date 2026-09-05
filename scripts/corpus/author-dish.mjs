@@ -36,14 +36,14 @@ import { pathToFileURL } from 'node:url';
 import { readDish } from './read-dish.mjs';
 
 /** Shingle width, and the count of shared shingles that flags one source. */
-export const SHINGLE_SIZE = 5;
-export const SHINGLE_THRESHOLD = 8;
+const SHINGLE_SIZE = 5;
+const SHINGLE_THRESHOLD = 8;
 
 /** A contiguous run this long, shared with a source, is a verbatim lift. */
-export const VERBATIM_RUN_WORDS = 12;
+const VERBATIM_RUN_WORDS = 12;
 
 /** Below this many shared ingredients a "matching" quantity set means nothing. */
-export const MIN_QUANTITY_SET = 3;
+const MIN_QUANTITY_SET = 3;
 
 /** The pilot's budget: two rewrites, then the dish is dropped rather than shipped. */
 export const MAX_REWRITES = 2;

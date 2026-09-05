@@ -37,7 +37,7 @@ vi.mock('../../src/services/socketBindings', () => ({
   sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
 }));
 
-import SelectionPage, { liveReveal } from '../../src/pages/SelectionPage';
+import SelectionPage, { listNames, liveReveal } from '../../src/pages/SelectionPage';
 import { submitSelection } from '../../src/services/socketBindings';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
@@ -471,5 +471,182 @@ describe('Full House takeover', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('EVERYONE LIKED THIS')).toBeInTheDocument();
     expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
+  });
+});
+
+// Keyboard swipe on desktop: ← pass, → like, Backspace undo — the same three
+// handlers the buttons call, and a no-op while the Full House dialog holds the
+// deck inert or while focus is in a field.
+describe('Keyboard swipe', () => {
+  it('maps ArrowRight/ArrowLeft/Backspace to like/pass/undo and ignores keys while typing or inert', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); // like place-1
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+
+    fireEvent.keyDown(window, { key: 'ArrowLeft' }); // pass place-2
+    await waitFor(() => expect(screen.getByText('Pho Bar')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+
+    fireEvent.keyDown(window, { key: 'Backspace' }); // undo the pass
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    fireEvent.keyDown(window, { key: 'Backspace' }); // undo the like
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual([]);
+    fireEvent.keyDown(window, { key: 'Backspace' }); // nothing left to undo
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+
+    // Focus in a field: keys type, they never swipe.
+    const input = document.body.appendChild(document.createElement('input'));
+    fireEvent.keyDown(input, { key: 'ArrowRight' });
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+    input.remove();
+
+    // Full House holds the deck inert: the dialog owns the keyboard.
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); // like place-1 again
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-1', 'Carol');
+    });
+    await screen.findByRole('dialog');
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    fireEvent.keyDown(window, { key: 'Backspace' });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+    expect(screen.getByText('Taco Turno')).toBeInTheDocument();
+  });
+
+  it('ignores keys while the Leave Session dialog is open, on auto-repeat, and with a modifier held', async () => {
+    seedParticipants('Alice', 'Bob');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: 'ArrowRight', repeat: true }); // held key
+    fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true }); // browser Back on Win/Linux
+    fireEvent.keyDown(window, { key: 'ArrowRight', ctrlKey: true });
+    fireEvent.keyDown(window, { key: 'ArrowRight', metaKey: true });
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+
+    // Leave Session? is state inside the header, not deckInert — the deck
+    // underneath must still not swipe (or broadcast) behind it.
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Leave Session?')).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep Swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); // deck is live again
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+  });
+});
+
+// A Participant who submitted and then reloaded (or whose socket rejoined) must
+// land on the waiting screen, not back on the Deck at 0: the join ack's roster
+// carries hasSubmitted per Participant (#284), and "me" is the entry whose
+// participantId is the store's currentUserId.
+describe('Resume after submit', () => {
+  it('shows the waiting screen and no Deck when the roster says I already submitted', async () => {
+    seedParticipants('Alice', 'Bob');
+    act(() => {
+      useSessionStore.setState((s) => ({
+        currentUserId: 'p1',
+        participants: s.participants.map((p) =>
+          p.participantId === 'p1' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    renderSelectionPage();
+
+    expect(await screen.findByText('All Done!')).toBeInTheDocument();
+    expect(screen.queryByText('Ramen Ichiban')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Like' })).not.toBeInTheDocument();
+    expect(screen.getByText(/have swiped/)).toHaveTextContent('1 of 2 have swiped');
+  });
+
+  it('still deals the Deck when only someone else has submitted', async () => {
+    seedParticipants('Alice', 'Bob');
+    act(() => {
+      useSessionStore.setState((s) => ({
+        currentUserId: 'p1',
+        participants: s.participants.map((p) =>
+          p.participantId === 'p2' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    renderSelectionPage();
+
+    expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
+    expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
+  });
+
+  it('deals the Deck again when a Restart flips my roster flag back to false', async () => {
+    seedParticipants('Alice', 'Bob');
+    act(() => {
+      useSessionStore.setState((s) => ({
+        currentUserId: 'p1',
+        participants: s.participants.map((p) =>
+          p.participantId === 'p1' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    renderSelectionPage();
+    expect(await screen.findByText('All Done!')).toBeInTheDocument();
+
+    act(() => {
+      useSessionStore.getState().resetSelections();
+    });
+
+    expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
+    expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
+  });
+});
+
+describe('waiting screen', () => {
+  it('names each dot and announces who is still swiping, never yourself', async () => {
+    useSessionStore.getState().resetSession();
+    // The roster still says Alice (me) is swiping: the submit ack arrives
+    // before the participant:submitted echo flips it.
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: 'p1',
+      participants: [
+        participant('p1', 'Alice'),
+        participant('p2', 'Bob'),
+        participant('p3', 'Carol'),
+      ],
+    });
+    renderSelectionPage();
+    await waitFor(() => screen.getByRole('button', { name: 'Pass' }));
+    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Selections' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Waiting for Bob and Carol')).toHaveAttribute('aria-live', 'polite')
+    );
+    expect(screen.getByRole('img', { name: 'Bob: still swiping' })).toBeInTheDocument();
+
+    // The echo lands: my dot lights up, the line is unchanged.
+    act(() => {
+      useSessionStore.setState((s) => ({
+        participants: s.participants.map((p) =>
+          p.participantId === 'p1' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    expect(screen.getByRole('img', { name: 'Alice: submitted' })).toBeInTheDocument();
+    expect(screen.getByText('Waiting for Bob and Carol')).toBeInTheDocument();
+    expect(listNames(['Sam', 'Priya', 'Lee'])).toBe('Sam, Priya and Lee');
   });
 });

@@ -1,10 +1,12 @@
-// Tinder-style swipeable card rendering one Deck Entry - a Restaurant or a Recipe.
+// Tinder-style swipeable card rendering one Deck Entry - a Restaurant, a Recipe or a Movie.
 // Supports touch swipe gestures and button interactions
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
-import { isRestaurant } from '../types';
+import { isMovie, isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
+import WikipediaCredit from './WikipediaCredit';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -45,8 +47,7 @@ export default function SwipeCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const deltaX = dragState.currentX - dragState.startX;
-  const prefersReducedMotion =
-    window.matchMedia('(prefers-reduced-motion: reduce)')?.matches ?? false;
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { rotation, likeIntensity, nopeIntensity } = swipeVisuals(deltaX, prefersReducedMotion);
 
   const handleTouchStart = useCallback(
@@ -189,9 +190,14 @@ export default function SwipeCard({
   };
 
   // Title and image are all a Recipe carries; rating, price, hours and address
-  // exist only on a Restaurant.
+  // exist only on a Restaurant. A Movie adds year, runtime, genres, a critics
+  // score (0-100, never the Restaurant's stars) and an overview.
   const restaurant = isRestaurant(entry) ? entry : undefined;
+  const movie = isMovie(entry) ? entry : undefined;
   const priceDisplay = '$'.repeat(restaurant?.priceLevel || 0);
+  const movieMeta = [movie?.year, movie?.runtimeMinutes && `${movie.runtimeMinutes} min`]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div
@@ -213,7 +219,12 @@ export default function SwipeCard({
           region's height, so the swipe-stack geometry #75 protects holds in
           every state — loading, retrying, or given up — and a transient photo
           error heals when the one retry lands. */}
-      <div data-photo-region className="relative h-[62%] flex-shrink-0 bg-surface">
+      <div
+        data-photo-region
+        // A Movie's text block (two-line title, genres, meta, three-line
+        // overview, credit) needs half the card; a Restaurant's fits under 62%.
+        className={`relative flex-shrink-0 bg-surface ${movie ? 'h-1/2' : 'h-[62%]'}`}
+      >
         {/* Same drawing as the old data-URI placeholder, inline so it can sit
             behind the photo; `slice` matches the old img's object-cover. */}
         <svg
@@ -237,8 +248,16 @@ export default function SwipeCard({
           <RetryingPhoto
             url={entry.photoUrl}
             alt={entry.name}
-            className="absolute inset-0 w-full h-full object-cover"
+            // A poster is portrait in a landscape frame: keep its top, where the
+            // imagery sits, and let the credits block crop.
+            className={`absolute inset-0 w-full h-full object-cover ${movie ? 'object-top' : ''}`}
             draggable={false}
+            // Only the top card shows; the two beneath it sit inside the
+            // viewport too, so `lazy` does not skip their fetch - it defers it
+            // past layout and behind the top card's eager request, which is
+            // what puts the visible photo first on a phone's radio.
+            loading={stackPosition === 0 ? 'eager' : 'lazy'}
+            decoding={stackPosition === 0 ? undefined : 'async'}
           />
         )}
         {/* Gradient overlay for text legibility */}
@@ -293,7 +312,28 @@ export default function SwipeCard({
           <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
         )}
 
+        {movie?.genres && movie.genres.length > 0 && (
+          <ul className="mb-3 flex flex-wrap gap-1.5" aria-label="Genres">
+            {movie.genres.map((genre) => (
+              <li
+                key={genre}
+                className="rounded-full border border-amber/40 px-2 py-0.5 text-xs font-bold text-amber"
+              >
+                {genre}
+              </li>
+            ))}
+          </ul>
+        )}
+
         <div className="flex flex-wrap items-center gap-4 text-sm text-text/80">
+          {movie?.rating !== undefined && (
+            <span className="rounded-full bg-amber/15 px-2 py-0.5 text-xs font-bold text-amber">
+              {movie.rating}% critics
+            </span>
+          )}
+
+          {movieMeta && <span className="text-muted">{movieMeta}</span>}
+
           {restaurant?.rating && (
             <div
               aria-label={`Rating ${restaurant.rating.toFixed(1)}`}
@@ -316,6 +356,13 @@ export default function SwipeCard({
             </span>
           )}
         </div>
+
+        {movie?.overview && (
+          <>
+            <p className="mt-3 text-sm text-muted line-clamp-3">{movie.overview}</p>
+            <WikipediaCredit placeId={movie.placeId} />
+          </>
+        )}
 
         {restaurant?.address && (
           <p className="mt-3 text-sm text-muted flex items-center gap-1.5">

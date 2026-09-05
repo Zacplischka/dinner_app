@@ -23,7 +23,7 @@ function FailureCard({ label, onRetry }: { label: string; onRetry: () => void })
   return (
     <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
       <p className="text-lg text-text">Couldn&apos;t load {label}</p>
-      <p className="text-sm mt-1 text-muted/60">Check your connection and try again.</p>
+      <p className="text-sm mt-1 text-muted">Friends are unavailable right now.</p>
       <button
         onClick={onRetry}
         className="mt-4 min-h-[44px] px-6 py-2 font-medium text-ink bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
@@ -187,7 +187,7 @@ export default function FriendsPage() {
           ) : friends.length === 0 ? (
             <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
               <p className="text-lg text-text">No friends yet</p>
-              <p className="text-sm mt-1 text-muted/60">
+              <p className="text-sm mt-1 text-muted">
                 Friends can be invited straight into your Sessions — no code sharing needed.
               </p>
               <button
@@ -213,7 +213,7 @@ export default function FriendsPage() {
             ) : friendRequests.length === 0 ? (
               <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No pending requests</p>
-                <p className="text-sm mt-1 text-muted/60">
+                <p className="text-sm mt-1 text-muted">
                   Friend requests you receive will appear here
                 </p>
               </div>
@@ -235,7 +235,7 @@ export default function FriendsPage() {
             ) : sessionInvites.length === 0 ? (
               <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
                 <p className="text-lg">No session invites</p>
-                <p className="text-sm mt-1 text-muted/60">
+                <p className="text-sm mt-1 text-muted">
                   When friends invite you to sessions, they&apos;ll appear here
                 </p>
               </div>

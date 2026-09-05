@@ -6,5 +6,6 @@ export * from './websocket-events.js';
 export * from './friends.js';
 export * from './comparison.js';
 export * from './cook.js';
+export * from './watch.js';
 export * from './comparison-contract.js';
 export * from './grocery.js';

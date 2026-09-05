@@ -99,8 +99,7 @@ function sumQtyByIndex(lines: OrderLine[]): Map<number, number> {
   return totals;
 }
 
-// The clipboard-only pattern of ResultsPage's handleShareResults, reused
-// verbatim by both handoff branches' copy buttons.
+// Clipboard-only copy, reused verbatim by both handoff branches' copy buttons.
 function copyToClipboard(text: string) {
   navigator.clipboard
     .writeText(text)
@@ -217,7 +216,7 @@ export default function GroupOrderPage() {
   const handleBack = () => navigate(`/session/${sessionCode}/results`);
 
   // Header back button: this page means leaving the Session, not returning
-  // to results (the failure-screen "Back to results" button above keeps that
+  // to results (the failure-screen "Back to the Match" button above keeps that
   // behaviour via handleBack). leaveSession already calls resetSession(),
   // which now clears orderStore too.
   const handleHeaderBack = useLeaveSession(sessionCode);
@@ -274,7 +273,7 @@ export default function GroupOrderPage() {
       <FailureScreen {...FAILURE_COPY.not_in_session}>
         <div className="flex gap-3">
           <button className="btn btn-secondary min-h-[48px] px-6" onClick={handleBack}>
-            Back to results
+            Back to the Match
           </button>
           <button className="btn btn-primary min-h-[48px] px-6" onClick={() => navigate('/')}>
             Start over

@@ -137,7 +137,6 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
   test('empty match with three participants crowns the closest pick on every screen', async ({
     setupSession,
   }) => {
-    test.setTimeout(120_000); // three full decks of swiping
     const { host, participants, all } = await setupSession(2); // host + 2 guests = 3
 
     await host.lobbyPage.startSession();
@@ -181,7 +180,7 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
     // The crowned Top Pick appears on every participant's screen in real time
     // (the crown supersedes the bare Near Miss card on an empty Match).
     for (const p of all) {
-      await expect(p.page.getByText("TONIGHT'S PICK").first()).toBeVisible({
+      await expect(p.page.getByText("TOP PICK").first()).toBeVisible({
         timeout: 10_000,
       });
       await expect(
@@ -195,7 +194,6 @@ test.describe('Live Swipe Room (#183-#187)', () => {
   test('unanimous like raises the Full House takeover on every phone and Finish here completes the Session', async ({
     setupSession,
   }) => {
-    test.setTimeout(120_000);
     const { host, all } = await setupSession(2); // host + 2 guests = 3
 
     await host.lobbyPage.startSession();
@@ -237,7 +235,6 @@ test.describe('Live Swipe Room (#183-#187)', () => {
   test('a Live Selection is revealed in the deck strip once you have decided that card', async ({
     setupSession,
   }) => {
-    test.setTimeout(120_000);
     const { host, participants, all } = await setupSession(2);
 
     await host.lobbyPage.startSession();

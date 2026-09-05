@@ -190,7 +190,7 @@
   }
 
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 
   /* Full visible height on mobile: dvh tracks the dynamic browser chrome,
@@ -247,6 +247,12 @@
   position: relative;
   isolation: isolate;
   padding: 1.5rem 0;
+  /* The rotating rays' bounding box sweeps ~30px past the phone's edges, so
+     the Match screen gained a sideways scroll. `clip`, not `hidden`: hidden on
+     one axis turns the other's `visible` into `auto` (a scroll container) and
+     would clip the rays' vertical bleed; clip leaves overflow-y alone. The mask
+     already fades the rays out well inside this box, so nothing visible is cut. */
+  overflow-x: clip;
 }
 
 .match-rays {

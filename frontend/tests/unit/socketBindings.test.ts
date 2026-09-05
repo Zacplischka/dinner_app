@@ -602,6 +602,33 @@ describe('socketBindings', () => {
     ]);
   });
 
+  it('seeds presence from the join ack roster, so a Participant who dropped before the join starts offline', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participants: [
+          { participantId: 'p1', displayName: 'Alice', isHost: true, isOnline: false },
+          { participantId: 'p2', displayName: 'Bob', isHost: false, isOnline: true },
+          // Older backend: no flag reads as live.
+          { participantId: 'p3', displayName: 'Cy', isHost: false },
+        ],
+        rejoinToken: 'rejoin-token',
+      },
+    });
+
+    await socketBindings.joinSession('NEW99', 'Cy');
+
+    expect(
+      useSessionStore.getState().participants.map((p) => [p.displayName, p.isOnline === false])
+    ).toEqual([
+      ['Alice', true],
+      ['Bob', false],
+      ['Cy', false],
+    ]);
+  });
+
   it('leaves sessionStatus untouched when a same-session ack carries no state (older backend)', async () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
@@ -624,5 +651,23 @@ describe('socketBindings', () => {
     socketBindings.disconnectSocket();
 
     expect(useSessionStore.getState().isConnected).toBe(false);
+  });
+
+  // The "had a connection" flag is module-level. Left set across an intentional
+  // teardown, the first connect of the NEXT Session announced "Reconnected".
+  it('does not toast "Reconnected" on the first connect after leaving a Session and disconnecting', async () => {
+    const first = setupSocket();
+    socketBindings.initializeSocket();
+    first.trigger('connect');
+    first.acks.set('session:leave', { success: true, data: null });
+    await socketBindings.leaveSession('OLD11');
+    socketBindings.disconnectSocket();
+
+    const next = setupSocket();
+    socketBindings.initializeSocket();
+    next.trigger('connect');
+
+    expect(useSessionStore.getState().isConnected).toBe(true);
+    expect(socketMocks.toast.success).not.toHaveBeenCalled();
   });
 });

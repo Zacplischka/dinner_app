@@ -44,6 +44,13 @@ interface SessionState {
   // Session status
   sessionStatus: 'waiting' | 'selecting' | 'complete' | 'expired';
   isConnected: boolean;
+  /**
+   * ISO timestamp of the Session's expiry, as last read from GET /api/sessions.
+   * The backend slides the TTL forward on a join, a submission, a Restart and
+   * the Group Order writes, and no socket event carries the new value — so the
+   * pages that fetch the Session re-read it on every roster change.
+   */
+  expiresAt: string | null;
 
   // Actions
   setSessionCode: (code: string) => void;
@@ -73,6 +80,7 @@ interface SessionState {
   // Status actions
   setSessionStatus: (status: 'waiting' | 'selecting' | 'complete' | 'expired') => void;
   setConnectionStatus: (isConnected: boolean) => void;
+  setExpiresAt: (expiresAt: string) => void;
 
   // Reset action
   resetSession: () => void;
@@ -97,6 +105,7 @@ const initialState = {
   orderPlaceId: null,
   sessionStatus: 'waiting' as const,
   isConnected: false,
+  expiresAt: null,
 };
 
 export const useSessionStore = create<SessionState>()(
@@ -178,6 +187,8 @@ export const useSessionStore = create<SessionState>()(
 
         setConnectionStatus: (isConnected) => set({ isConnected }),
 
+        setExpiresAt: (expiresAt) => set({ expiresAt }),
+
         // Reset actions
         resetSession: () => {
           useOrderStore.getState().clear();
@@ -188,7 +199,11 @@ export const useSessionStore = create<SessionState>()(
           // A Restart voids the Match, and the server DELs both order keys in
           // the same resetForRestart pipeline — never render last venue's basket.
           useOrderStore.getState().clear();
-          set({
+          set((state) => ({
+            // The server's resetForRestart clears every Participant's
+            // Submission; a stale true here would re-seed a fresh Deck as
+            // already submitted and mis-count "x of y have swiped".
+            participants: state.participants.map((p) => ({ ...p, hasSubmitted: false })),
             selections: [],
             allSelections: {},
             liveSelections: {},
@@ -198,7 +213,7 @@ export const useSessionStore = create<SessionState>()(
             shoppingListId: undefined,
             orderPlaceId: null,
             sessionStatus: 'selecting',
-          });
+          }));
         },
       }),
       {

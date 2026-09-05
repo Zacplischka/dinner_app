@@ -91,7 +91,7 @@ export default function InviteFriendsSection({
           ) : friends.length === 0 ? (
             <div className="py-4 text-center text-muted">
               <p className="text-sm">No friends yet</p>
-              <p className="text-xs mt-1 text-muted/60">
+              <p className="text-xs mt-1 text-muted">
                 Add friends from the Friends page to invite them here
               </p>
             </div>

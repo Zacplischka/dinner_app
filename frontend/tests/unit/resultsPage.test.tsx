@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -12,6 +12,7 @@ import ResultsPage from '../../src/pages/ResultsPage';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { useOrderStore } from '../../src/stores/orderStore';
+import { useToastStore } from '../../src/hooks/useToast';
 
 function participant(id: string, name: string) {
   return {
@@ -445,7 +446,7 @@ describe('ResultsPage', () => {
   });
 
   describe('Continuation action hierarchy (#85)', () => {
-    it('orders Select Again (primary), Share Results (secondary), New Session (ghost)', () => {
+    it('orders Select Again (primary), Share Top Pick (secondary), New Session (ghost)', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [pizza],
@@ -456,7 +457,7 @@ describe('ResultsPage', () => {
       const selectAgain = screen.getByRole('button', { name: /select again/i });
       // The header also exposes a share icon button; the continuation action is the secondary one
       const share = screen
-        .getAllByRole('button', { name: /share results/i })
+        .getAllByRole('button', { name: /share top pick/i })
         .find((button) => button.className.includes('btn-secondary'))!;
       const newSession = screen.getByRole('button', { name: /new session/i });
 
@@ -471,6 +472,54 @@ describe('ResultsPage', () => {
       expect(
         share.compareDocumentPosition(newSession) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
+    });
+  });
+
+  describe('Share the Top Pick', () => {
+    const seedCrown = () =>
+      seedStore({
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        topPick: { restaurant: pizza, likedBy: 2, of: 2 },
+      });
+
+    it('hands the native sheet the crowned name, its reason and this page', async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+      try {
+        seedCrown();
+        renderResults();
+
+        await act(async () => {
+          fireEvent.click(screen.getAllByRole('button', { name: 'Share Top Pick' })[0]);
+        });
+
+        expect(share).toHaveBeenCalledWith({
+          title: 'Pizza Palace',
+          text: 'Everyone swiped yes on this one.',
+          url: window.location.href,
+        });
+        expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+      } finally {
+        delete (navigator as { share?: unknown }).share;
+      }
+    });
+
+    it('falls back to copying this page and says so when there is no sheet', async () => {
+      vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+      useToastStore.setState({ toasts: [] });
+      seedCrown();
+      renderResults();
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByRole('button', { name: 'Share Top Pick' })[0]);
+      });
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href);
+      expect(useToastStore.getState().toasts).toContainEqual(
+        expect.objectContaining({ message: 'Top Pick link copied!' })
+      );
     });
   });
 
@@ -547,7 +596,7 @@ describe('ResultsPage', () => {
       });
       renderResults();
 
-      expect(screen.getByText("TONIGHT'S PICK")).toBeTruthy();
+      expect(screen.getByText('TOP PICK')).toBeTruthy();
       expect(screen.getByText('Everyone swiped yes on this one.')).toBeTruthy();
       expect(screen.queryByText(/other matches/i)).toBeNull();
     });
@@ -617,7 +666,7 @@ describe('ResultsPage', () => {
       renderResults();
 
       expect(screen.getByText('No Match Found')).toBeTruthy();
-      expect(screen.getByText(/no restaurants matched everyone's preferences/i)).toBeTruthy();
+      expect(screen.getByText(/no restaurants got a yes from everyone/i)).toBeTruthy();
       expect(screen.getByText(/no restaurants were selected by all participants/i)).toBeTruthy();
     });
   });
@@ -687,9 +736,7 @@ describe('ResultsPage', () => {
 
       expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
       expect(screen.queryByText('No Match Found')).not.toBeInTheDocument();
-      expect(
-        screen.queryByText("No restaurants matched everyone's preferences")
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('No restaurants got a yes from everyone')).not.toBeInTheDocument();
     });
 
     it('offers no dead button when nothing could be minted', () => {
@@ -697,6 +744,15 @@ describe('ResultsPage', () => {
       renderResults();
 
       expect(screen.queryByRole('button', { name: 'Shopping list' })).not.toBeInTheDocument();
+    });
+
+    // Select Again was gated on the Restaurant-only pick, so a crowned Recipe
+    // had no Restart (#369).
+    it('offers Select Again on a crowned Recipe', () => {
+      seedCook();
+      renderResults();
+
+      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
     });
 
     it('celebrates a Recipe Match the same as a Restaurant one', () => {
@@ -769,6 +825,197 @@ describe('ResultsPage', () => {
       expect(nearMissCards[0].textContent).toContain('Laksa');
       expect(nearMissCards[0].textContent).toContain('2 of 3 liked this');
       expect(nearMissCards[0].querySelector('a')).toBeNull();
+    });
+  });
+
+  // The Watch ending (#369): the crowned Movie, its trailer, and none of the
+  // delivery or shopping chrome the other crowns carry.
+  describe('the crowned Movie', () => {
+    const alien = {
+      kind: 'movie' as const,
+      placeId: 'Q103569',
+      name: 'Alien',
+      photoUrl: 'https://img.test/alien.jpg',
+      year: 1979,
+      runtimeMinutes: 117,
+      genres: ['Horror', 'Sci-Fi'],
+      rating: 93,
+      overview: 'Alien is a 1979 science fiction horror film directed by Ridley Scott.',
+      trailerUrl: 'https://www.youtube.com/watch?v=is2EMy3u0xc',
+    };
+    const heat = {
+      kind: 'movie' as const,
+      placeId: 'Q188652',
+      name: 'Heat',
+      year: 1995,
+      rating: 88,
+    };
+
+    function seedWatch(overrides: Parameters<typeof seedStore>[0] = {}) {
+      seedStore({
+        branch: 'watch',
+        restaurants: [alien, heat],
+        restaurantNames: { [alien.placeId]: alien.name, [heat.placeId]: heat.name },
+        participants: [alice, bob],
+        overlappingOptions: [alien],
+        allSelections: { Alice: [alien.placeId], Bob: [alien.placeId] },
+        topPick: { restaurant: alien, likedBy: 2, of: 2 },
+        ...overrides,
+      });
+    }
+
+    it('crowns the Movie with its title, poster, facts and reason', () => {
+      seedWatch();
+      const { container } = renderResults();
+
+      const crown = container.querySelector('[data-movie-crown]')!;
+      expect(crown).not.toBeNull();
+      expect(crown.textContent).toContain('TONIGHT’S MOVIE');
+      expect(crown.textContent).toContain('Alien');
+      expect(crown.textContent).toContain('1979 · 117 min · 93% critics');
+      expect(crown.textContent).toContain('Everyone swiped yes on this one.');
+      expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
+      // The crown is where the overview can actually be read, credited where it appears.
+      expect(within(crown as HTMLElement).getByText(alien.overview)).toHaveClass('line-clamp-3');
+      expect(within(crown as HTMLElement).getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
+        'href',
+        'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q103569'
+      );
+      // A Movie is not a Recipe: the Cook ending must not claim it.
+      expect(container.querySelector('[data-recipe-crown]')).toBeNull();
+    });
+
+    it('titles a crowned Movie as a Match and celebrates it', () => {
+      seedWatch();
+      renderResults();
+
+      expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
+      expect(screen.getByText('MATCH!')).toBeInTheDocument();
+    });
+
+    it('offers no delivery, compare, order or shopping-list actions on a movie', () => {
+      seedWatch();
+      const { container } = renderResults();
+
+      expect(screen.queryByRole('button', { name: 'Order together' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Shopping list' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /uber eats|doordash/i })).not.toBeInTheDocument();
+      expect(container.querySelector('a[href*="/compare/"]')).toBeNull();
+    });
+
+    it('links the trailer in a new tab when the source has one', () => {
+      seedWatch();
+      renderResults();
+
+      const trailer = screen.getByRole('link', { name: 'Watch trailer' });
+      expect(trailer).toHaveAttribute('href', alien.trailerUrl);
+      expect(trailer).toHaveAttribute('target', '_blank');
+      expect(trailer.getAttribute('rel')).toContain('noopener');
+    });
+
+    // 118 of the corpus's 300 Movies carry no trailer id; the crown still ends
+    // in a next step, so the same button searches YouTube for one.
+    it('searches YouTube for the trailer when the source has none', () => {
+      seedWatch({
+        overlappingOptions: [heat],
+        allSelections: { Alice: [heat.placeId], Bob: [heat.placeId] },
+        topPick: { restaurant: heat, likedBy: 2, of: 2 },
+      });
+      renderResults();
+
+      const trailer = screen.getByRole('link', { name: 'Watch trailer' });
+      expect(trailer).toHaveAttribute(
+        'href',
+        'https://www.youtube.com/results?search_query=Heat%201995%20trailer'
+      );
+      expect(trailer).toHaveAttribute('target', '_blank');
+      expect(trailer.getAttribute('rel')).toContain('noopener');
+      // No overview, so nothing to credit.
+      expect(screen.queryByRole('link', { name: 'Wikipedia' })).not.toBeInTheDocument();
+    });
+
+    it('links where to watch on JustWatch Australia in a new tab', () => {
+      seedWatch();
+      renderResults();
+
+      const where = screen.getByRole('link', { name: 'Where to watch' });
+      expect(where).toHaveAttribute('href', 'https://www.justwatch.com/au/search?q=Alien');
+      expect(where).toHaveAttribute('target', '_blank');
+      expect(where.getAttribute('rel')).toContain('noopener');
+    });
+
+    it('shares a crowned Movie by its name and reason, like any other Top Pick', async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+      try {
+        seedWatch();
+        renderResults();
+
+        await act(async () => {
+          fireEvent.click(screen.getAllByRole('button', { name: 'Share Top Pick' })[0]);
+        });
+
+        expect(share).toHaveBeenCalledWith({
+          title: 'Alien',
+          text: 'Everyone swiped yes on this one.',
+          url: window.location.href,
+        });
+      } finally {
+        delete (navigator as { share?: unknown }).share;
+      }
+    });
+
+    it('offers Select Again on a crowned Movie', () => {
+      seedWatch();
+      renderResults();
+
+      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+    });
+
+    it('crowns the highest-rated Movie with "Nobody swiped yes" when nobody selected anything', () => {
+      seedWatch({
+        overlappingOptions: [],
+        allSelections: { Alice: [], Bob: [] },
+        topPick: { restaurant: alien, likedBy: 0, of: 2 },
+      });
+      renderResults();
+
+      expect(
+        screen.getByText("Nobody swiped yes, so here's the highest rated.")
+      ).toBeInTheDocument();
+    });
+
+    // A Movie can be a Near Miss too (CONTEXT.md): name and count, with neither
+    // the Restaurant's stars nor anything to order or compare.
+    it('surfaces a Movie Near Miss as a name and count', () => {
+      seedWatch({
+        participants: [alice, bob, cara],
+        overlappingOptions: [],
+        allSelections: {
+          Alice: [alien.placeId, heat.placeId],
+          Bob: [alien.placeId, heat.placeId],
+          Cara: [],
+        },
+        topPick: { restaurant: alien, likedBy: 2, of: 3 },
+      });
+      const { container } = renderResults();
+
+      const nearMissCards = container.querySelectorAll('[data-near-miss-card]');
+      expect(nearMissCards).toHaveLength(1);
+      expect(nearMissCards[0].textContent).toContain('Heat');
+      expect(nearMissCards[0].textContent).toContain('2 of 3 liked this');
+      expect(nearMissCards[0].textContent).not.toContain('88');
+      expect(nearMissCards[0].querySelector('a')).toBeNull();
+    });
+
+    it('names the Deck kind when nothing was crowned', () => {
+      seedWatch({ overlappingOptions: [], allSelections: {}, topPick: undefined });
+      renderResults();
+
+      // #387 rewords the template; either wording proves the noun is "movies".
+      expect(
+        screen.getByText(/No movies (matched everyone's preferences|got a yes from everyone)/)
+      ).toBeInTheDocument();
     });
   });
 

@@ -16,6 +16,8 @@ import {
   type Branch,
   type Craving,
   type DeckEntry,
+  type Mood,
+  isRestaurant,
 } from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot — the cap the join path enforces. */
@@ -23,8 +25,9 @@ export const MAX_PARTICIPANTS = 4;
 
 /**
  * The Top Pick's middle rung, per Deck Entry kind: a Restaurant's rating, a
- * Recipe's Spoonacular aggregate likes. An entry the source knows nothing about
- * sinks to the bottom of its own rung, as an unrated Restaurant always has.
+ * Recipe's Spoonacular aggregate likes. A Movie's rating shares the Restaurant
+ * arm. An entry the source knows nothing about sinks to the bottom of its own
+ * rung, as an unrated Restaurant always has.
  */
 function middleRung(entry: DeckEntry): number {
   return (entry.kind === 'recipe' ? entry.aggregateLikes : entry.rating) ?? -1;
@@ -48,6 +51,13 @@ interface SessionServiceDeps {
    */
   redealRecipeDeck: (poolKey: string, current: DeckEntry[]) => Promise<DeckEntry[]>;
   /**
+   * The Watch Branch's Deck supply (#369): the corpus Movies matching a Mood,
+   * cut to a Deck. Synchronous and never rejects — the corpus is in memory.
+   */
+  dealMovieDeck: (mood: Mood) => DeckEntry[];
+  /** A Watch Restart's Deck: the same Mood again, the just-wiped Movies dealt last. */
+  redealMovieDeck: (mood: Mood, current: DeckEntry[]) => DeckEntry[];
+  /**
    * Mints the Shopping List a completed Cook Session's crowned Recipe calls
    * for (#262), returning its id — or undefined when there is nothing to mint.
    * Returns before the list is priced: the Match must not wait on Woolworths.
@@ -61,12 +71,22 @@ export interface CookSetup {
   headcount: number;
 }
 
+/** What Watch setup captured: the Mood to deal from. */
+export interface WatchSetup {
+  mood: Mood;
+}
+
 /**
- * Generate a random uppercase alphanumeric session code. Uniqueness is NOT
- * guaranteed here — createSession's collision-retry loop owns that.
+ * Generate a random Session Code. Uniqueness is NOT guaranteed here —
+ * createSession's collision-retry loop owns that.
+ *
+ * The alphabet omits the characters that look or sound alike when a code is
+ * read aloud at the table (0/O, 1/I, 5/S, 8/B, 2/Z): 29 symbols, ~20.5M codes.
+ * Only minting narrows; SESSION_CODE_PATTERN stays [A-Z0-9] so codes minted
+ * before this change still join.
  */
 export function generateSessionCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ34679';
   let code = '';
   for (let i = 0; i < SESSION_CODE_LENGTH; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -79,6 +99,8 @@ export function createSessionService({
   searchNearbyRestaurants,
   dealRecipeDeck,
   redealRecipeDeck,
+  dealMovieDeck,
+  redealMovieDeck,
   mintShoppingList,
 }: SessionServiceDeps) {
   /**
@@ -94,7 +116,8 @@ export function createSessionService({
     },
     searchRadiusMiles?: number,
     branch?: Branch,
-    cook?: CookSetup
+    cook?: CookSetup,
+    watch?: WatchSetup
   ): Promise<{
     sessionCode: string;
     hostName: string;
@@ -142,7 +165,8 @@ export function createSessionService({
     }
 
     // Deal the Session's Deck. A Cook Session deals Recipes from the shared
-    // Craving pool; every other Branch searches nearby Restaurants as before.
+    // Craving pool, a Watch Session deals Movies from the corpus; every other
+    // Branch searches nearby Restaurants as before.
     let deckEntries: DeckEntry[] = [];
     let recipeSourceDown = false;
     if (cook) {
@@ -175,6 +199,19 @@ export function createSessionService({
         throw new DomainError(
           'NO_RECIPES_FOUND',
           'No recipes match those choices. Try removing a filter.'
+        );
+      }
+    } else if (watch) {
+      // The corpus is in memory, so a deal cannot fail — only come up empty,
+      // which like the Cook refusal lands at setup with the chips still
+      // editable, never on a Session (#369).
+      deckEntries = dealMovieDeck(watch.mood);
+
+      if (deckEntries.length === 0) {
+        logger.warn({ sessionCode, mood: watch.mood }, 'No movies found for Mood');
+        throw new DomainError(
+          'NO_MOVIES_FOUND',
+          'No movies match those choices. Try removing a genre or decade.'
         );
       }
     } else if (location && searchRadiusMiles) {
@@ -215,6 +252,7 @@ export function createSessionService({
       branch,
       headcount: cook?.headcount,
       cravingKey: cook && cravingPoolKey(cook.craving),
+      mood: watch?.mood,
       recipeSourceDown,
       entries: deckEntries,
     });
@@ -331,6 +369,7 @@ export function createSessionService({
       displayName: string;
       isHost: boolean;
       hasSubmitted: boolean;
+      isOnline: boolean;
     }[];
     branch?: Branch;
     state: string;
@@ -575,6 +614,9 @@ export function createSessionService({
         // A late joiner must see who has already submitted, or "x of y have
         // swiped" starts at zero in a room where it isn't (#284).
         hasSubmitted: p.hasSubmitted,
+        // ...and who has dropped, so presence starts from server truth rather
+        // than a client's guess that everyone is live.
+        isOnline: p.isOnline,
       })),
       branch: session.branch,
       state: session.state,
@@ -624,8 +666,8 @@ export function createSessionService({
       const selected = deck.filter((e) => (tally.get(e.placeId) ?? 0) > 0);
       // Nobody selected anything: fall back to the Deck so the screen still answers,
       // but don't crown a venue Places says is shut when an open one exists. Only a
-      // Restaurant can be shut — a Recipe is always in the open pool.
-      const open = deck.filter((e) => e.kind === 'recipe' || e.openNow !== false);
+      // Restaurant can be shut — every other kind is always in the open pool.
+      const open = deck.filter((e) => !isRestaurant(e) || e.openNow !== false);
       pool = selected.length > 0 ? selected : open.length > 0 ? open : deck;
     }
     const crowned = [...pool].sort(
@@ -766,7 +808,8 @@ export function createSessionService({
    *
    * A Cook Session also deals again (#246, #260): Recipe supply is a shared pool
    * with nothing geographic about it, so "show me different ones" is honest
-   * here — and only here. A Restaurant Session keeps its Deck, as it always has.
+   * here — and only here. A Watch Session deals again for the same reason
+   * (#369). A Restaurant Session keeps its Deck, as it always has.
    */
   async function restartSession(
     sessionCode: string,
@@ -796,6 +839,11 @@ export function createSessionService({
     if (session.cravingKey && restarted) {
       const { entries } = await store.getDeck(sessionCode);
       await store.replaceDeck(sessionCode, await redealRecipeDeck(session.cravingKey, entries));
+    } else if (session.mood && restarted) {
+      // The Watch twin (#369): the Mood itself is the handle, and the redeal
+      // filters the in-memory corpus again — no pool, no lookup, cannot fail.
+      const { entries } = await store.getDeck(sessionCode);
+      await store.replaceDeck(sessionCode, redealMovieDeck(session.mood, entries));
     }
 
     await store.resetForRestart(sessionCode);

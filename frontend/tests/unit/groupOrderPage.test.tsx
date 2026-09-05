@@ -272,7 +272,7 @@ describe('GroupOrderPage', () => {
     expect(openOrderMock).toHaveBeenCalledTimes(2);
   });
 
-  it('shows the not-in-session screen with Back to results and Start over', async () => {
+  it('shows the not-in-session screen with Back to the Match and Start over', async () => {
     openOrderMock.mockResolvedValue({
       success: false,
       error: { code: 'NOT_IN_SESSION', message: 'gone' },
@@ -286,7 +286,7 @@ describe('GroupOrderPage', () => {
       screen.getByText('Someone may have restarted it, or you were away too long.')
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Back to results' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the Match' }));
     expect(screen.getByText('RESULTS SCREEN')).toBeInTheDocument();
   });
 

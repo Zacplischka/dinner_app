@@ -11,6 +11,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // One long-cached vendor chunk: react + router change only on a dependency
+        // bump, so a deploy that touches app code no longer re-downloads them.
+        // Rollup's object form pulls each package's dependencies in with it.
+        manualChunks: { vendor: ['react', 'react-dom', 'react-router-dom'] },
+      },
+    },
   },
   test: {
     environment: 'jsdom',

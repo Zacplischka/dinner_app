@@ -19,6 +19,7 @@ import { createListsRouter } from './api/lists.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createRecipePoolService } from './services/RecipePoolService.js';
+import { dealMovieDeck, redealMovieDeck } from './services/MovieDeckService.js';
 import { createOwnedRecipeStore, loadOwnedCorpus } from './services/ownedRecipeStore.js';
 import { createSpoonacularClient, guardDailyPoints } from './services/spoonacularClient.js';
 import { createProductMatchService } from './services/ProductMatchService.js';
@@ -94,6 +95,9 @@ const sessionService = createSessionService({
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
   dealRecipeDeck: (craving) => recipePoolService.dealDeck(craving),
   redealRecipeDeck: (poolKey, current) => recipePoolService.redeal(poolKey, current),
+  // Pure over the committed corpus: no service to construct (#369).
+  dealMovieDeck,
+  redealMovieDeck,
   mintShoppingList: (sessionCode, placeId) => shoppingListService.mint(sessionCode, placeId),
 });
 const friendsService = createFriendsService({ store: friendsStore });
@@ -369,4 +373,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 // Instances exported for contract/integration tests, which must exercise
 // (and spy on) the same objects the routes and handlers close over.
-export { app, io, httpServer, sessionStore, sessionService, shoppingListService };
+export { app, httpServer, sessionStore, sessionService };

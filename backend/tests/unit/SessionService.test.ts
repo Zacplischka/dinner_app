@@ -14,7 +14,7 @@ import {
   MAX_PARTICIPANTS,
 } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
-import type { Recipe } from '@dinder/shared/types';
+import { SESSION_CODE_PATTERN, type Mood, type Movie, type Recipe } from '@dinder/shared/types';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST1';
@@ -25,6 +25,8 @@ describe('SessionService', () => {
   let searchNearbyRestaurants: ReturnType<typeof vi.fn>;
   let dealRecipeDeck: ReturnType<typeof vi.fn>;
   let redealRecipeDeck: ReturnType<typeof vi.fn>;
+  let dealMovieDeck: ReturnType<typeof vi.fn>;
+  let redealMovieDeck: ReturnType<typeof vi.fn>;
   let mintShoppingList: ReturnType<typeof vi.fn>;
   let SessionService: ReturnType<typeof createSessionService>;
 
@@ -36,12 +38,16 @@ describe('SessionService', () => {
     searchNearbyRestaurants = vi.fn();
     dealRecipeDeck = vi.fn();
     redealRecipeDeck = vi.fn();
+    dealMovieDeck = vi.fn();
+    redealMovieDeck = vi.fn();
     mintShoppingList = vi.fn(async () => undefined);
     SessionService = createSessionService({
       store,
       searchNearbyRestaurants,
       dealRecipeDeck,
       redealRecipeDeck,
+      dealMovieDeck,
+      redealMovieDeck,
       mintShoppingList,
     });
 
@@ -254,9 +260,125 @@ describe('SessionService', () => {
     });
   });
 
+  describe('createSession in the Watch Branch', () => {
+    const mood: Mood = { genres: ['Comedy'], decades: ['1990s'] };
+    const deck: Movie[] = [
+      {
+        kind: 'movie',
+        placeId: 'Q1',
+        name: 'Clueless',
+        rating: 81,
+        year: 1995,
+        genres: ['Comedy'],
+      },
+      { kind: 'movie', placeId: 'Q2', name: 'The Castle', year: 1997, genres: ['Comedy'] },
+    ];
+
+    it('deals the Deck from the corpus, not from a restaurant search, and stores the Mood', async () => {
+      dealMovieDeck.mockReturnValue(deck);
+
+      const session = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'watch',
+        undefined,
+        { mood }
+      );
+
+      expect(dealMovieDeck).toHaveBeenCalledWith(mood);
+      expect(searchNearbyRestaurants).not.toHaveBeenCalled();
+      expect(dealRecipeDeck).not.toHaveBeenCalled();
+      expect(session.restaurantCount).toBe(2);
+      expect((await store.getDeck(session.sessionCode)).entries).toEqual(
+        expect.arrayContaining(deck)
+      );
+      // The Mood itself is what a Restart re-deals from — there is no pool key.
+      const stored = await store.readSession(session.sessionCode);
+      expect(stored?.branch).toBe('watch');
+      expect(stored?.mood).toEqual(mood);
+      expect(stored?.cravingKey).toBeUndefined();
+    });
+
+    it('refuses a Mood that deals no Movies rather than opening an unswipeable Deck', async () => {
+      dealMovieDeck.mockReturnValue([]);
+
+      await expect(
+        SessionService.createSession('Alice', undefined, undefined, 'watch', undefined, { mood })
+      ).rejects.toMatchObject({ code: 'NO_MOVIES_FOUND' });
+    });
+  });
+
+  describe('restartSession in the Watch Branch', () => {
+    const mood: Mood = { genres: ['Comedy'], decades: [] };
+    const dealt: Movie[] = [
+      { kind: 'movie', placeId: 'Q1', name: 'Clueless', rating: 81 },
+      { kind: 'movie', placeId: 'Q2', name: 'The Castle', rating: 88 },
+    ];
+    const nextDeal: Movie[] = [
+      { kind: 'movie', placeId: 'Q7', name: 'Hot Fuzz', rating: 91 },
+      { kind: 'movie', placeId: 'Q8', name: 'Paddington 2', rating: 99 },
+    ];
+
+    /** A Watch Session decided once, so Restart has an outcome to wipe. */
+    async function decidedWatchSession(): Promise<string> {
+      dealMovieDeck.mockReturnValue(dealt);
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'watch',
+        undefined,
+        { mood }
+      );
+      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
+      await SessionService.submitSelections(sessionCode, 'alice', ['Q1']);
+      return sessionCode;
+    }
+
+    it('deals a fresh Deck from the same Mood, handing over the wiped one', async () => {
+      redealMovieDeck.mockReturnValue(nextDeal);
+      const sessionCode = await decidedWatchSession();
+
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      const [redealtMood, wiped] = redealMovieDeck.mock.calls[0];
+      expect(redealtMood).toEqual(mood);
+      expect((wiped as Movie[]).map((e) => e.placeId).sort()).toEqual(['Q1', 'Q2']);
+      expect((await store.getDeck(sessionCode)).entries).toEqual(expect.arrayContaining(nextDeal));
+      expect(redealRecipeDeck).not.toHaveBeenCalled();
+    });
+
+    it('keeps the setup deal when the lobby starts selecting — nobody has seen it yet', async () => {
+      dealMovieDeck.mockReturnValue(dealt);
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'watch',
+        undefined,
+        { mood }
+      );
+      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
+
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      expect(redealMovieDeck).not.toHaveBeenCalled();
+      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual([
+        'Q1',
+        'Q2',
+      ]);
+    });
+  });
+
   describe('createSession code generation', () => {
-    it('generates five-character uppercase alphanumeric codes', () => {
-      expect(generateSessionCode()).toMatch(/^[A-Z0-9]{5}$/);
+    it('generates five-character codes from the read-aloud-safe alphabet', () => {
+      // No 0/O, 1/I, 5/S, 8/B or 2/Z — and still within the wire pattern.
+      for (let i = 0; i < 500; i++) {
+        const code = generateSessionCode();
+        expect(code).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ34679]{5}$/);
+        expect(code).toMatch(SESSION_CODE_PATTERN);
+      }
     });
 
     it('should log created sessions with operational context', async () => {
@@ -288,7 +410,7 @@ describe('SessionService', () => {
       let calls = 0;
       const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
         calls++;
-        return calls <= 5 ? 0 : 0.03;
+        return calls <= 5 ? 0 : 0.04; // index 1 → B in the 29-symbol alphabet
       });
 
       const result = await SessionService.createSession('Alice');
@@ -656,6 +778,23 @@ describe('SessionService', () => {
       );
     });
 
+    it('should tell a joiner who has dropped from the ack participants', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await store.markDisconnected('socket-alice');
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-cara', 'Cara');
+
+      expect(result.participants).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ displayName: 'Alice', isOnline: false }),
+          expect.objectContaining({ displayName: 'Bob', isOnline: true }),
+          expect.objectContaining({ displayName: 'Cara', isOnline: true }),
+        ])
+      );
+    });
+
     it('should still refuse a fifth participant when the session is selecting', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
@@ -811,6 +950,8 @@ describe('SessionService', () => {
         searchNearbyRestaurants,
         dealRecipeDeck,
         redealRecipeDeck,
+        dealMovieDeck,
+        redealMovieDeck,
         mintShoppingList,
       });
 
@@ -878,6 +1019,8 @@ describe('SessionService', () => {
         searchNearbyRestaurants,
         dealRecipeDeck,
         redealRecipeDeck,
+        dealMovieDeck,
+        redealMovieDeck,
         mintShoppingList,
       });
 
@@ -963,6 +1106,8 @@ describe('SessionService', () => {
         searchNearbyRestaurants,
         dealRecipeDeck,
         redealRecipeDeck,
+        dealMovieDeck,
+        redealMovieDeck,
       });
       const session = await racyService.createSession('Alice');
 
@@ -996,6 +1141,8 @@ describe('SessionService', () => {
         searchNearbyRestaurants,
         dealRecipeDeck,
         redealRecipeDeck,
+        dealMovieDeck,
+        redealMovieDeck,
       });
       const session = await racyService.createSession('Alice');
 
@@ -1588,6 +1735,53 @@ describe('SessionService', () => {
 
         expect(results?.topPick?.restaurant.placeId).toBe('rec1');
         expect(results?.shoppingListId).toBeUndefined();
+      });
+    });
+
+    describe('Movie Deck', () => {
+      async function createSessionWithMovieDeck(entries: Movie[]): Promise<string> {
+        const sessionCode = 'WATCH';
+        await store.createSession(sessionCode, {
+          hostId: 'p-alice',
+          hostName: 'Alice',
+          entries,
+        });
+        await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+        await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+        return sessionCode;
+      }
+
+      it('breaks a count tie by rating', async () => {
+        const sessionCode = await createSessionWithMovieDeck([
+          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 93 },
+          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 94 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', ['Q1']);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', ['Q2']);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'Q2' }),
+          likedBy: 1,
+          of: 2,
+        });
+        expect(mintShoppingList).not.toHaveBeenCalled();
+      });
+
+      // A Movie has no hours to be shut, so every Movie is in the open pool and
+      // the Deck fallback crowns by critics score alone.
+      it('crowns the highest-rated Movie when every Submission is empty', async () => {
+        const sessionCode = await createSessionWithMovieDeck([
+          { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 93 },
+          { kind: 'movie', placeId: 'Q2', name: 'Heat', rating: 94 },
+        ]);
+        await SessionService.submitSelections(sessionCode, 'p-alice', []);
+        const { results } = await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+        expect(results?.topPick).toMatchObject({
+          restaurant: expect.objectContaining({ placeId: 'Q2' }),
+          likedBy: 0,
+          of: 2,
+        });
       });
     });
 

@@ -19,6 +19,9 @@ export const API_ERROR_CODES = [
   // filter" — the second is the wrong instruction when nothing was wrong with
   // the Craving (#250).
   'RECIPE_SOURCE_UNAVAILABLE',
+  // The Watch Branch's counterpart: a Mood the corpus has no Movie for. No
+  // source-unavailable twin — the corpus ships with the deploy (ADR 0011).
+  'NO_MOVIES_FOUND',
   'VALIDATION_ERROR',
   'ALREADY_SUBMITTED',
   'NOT_IN_SESSION',

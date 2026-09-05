@@ -24,6 +24,7 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   // Upstream recipe source down or out of quota: nothing the Craving can fix,
   // so 503 alongside the Places counterpart below.
   RECIPE_SOURCE_UNAVAILABLE: { code: 'RECIPE_SOURCE_UNAVAILABLE', status: 503 },
+  NO_MOVIES_FOUND: { code: 'NO_MOVIES_FOUND', status: 404 },
   NO_RESTAURANTS: { code: 'NO_RESTAURANTS', status: 404 },
   VALIDATION_ERROR: { code: 'VALIDATION_ERROR', status: 400 },
   ALREADY_SUBMITTED: { code: 'ALREADY_SUBMITTED', status: 409 },
@@ -32,8 +33,13 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   // Expired and never-existed answer identically: the link is the capability,
   // so its absence must reveal nothing either way.
   SHOPPING_LIST_NOT_FOUND: { code: 'NOT_FOUND', status: 404 },
-  // Upstream Places quota exhaustion: nothing the client can do, so 503.
+  AREA_NOT_FOUND: { code: 'AREA_NOT_FOUND', status: 404 },
+  // Upstream Places quota exhaustion: nothing the client can do, so 503 —
+  // unlike TOO_MANY_REQUESTS below.
   RATE_LIMITED: { code: 'RATE_LIMITED', status: 503 },
+  // This caller is over its per-IP window: same public code, but a 429 the
+  // client can wait out (the router sets Retry-After before throwing).
+  TOO_MANY_REQUESTS: { code: 'RATE_LIMITED', status: 429 },
   not_found: { code: 'NOT_FOUND', status: 404 },
   already_friends: { code: 'ALREADY_FRIENDS', status: 409 },
   request_pending: { code: 'REQUEST_PENDING', status: 409 },

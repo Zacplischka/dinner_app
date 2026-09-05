@@ -1,17 +1,18 @@
 // Results page - Show overlapping selections and all participants' choices
 
 import { useNavigate, useParams } from 'react-router-dom';
-import type { Restaurant } from '@dinder/shared/types';
-import { isRestaurant, type Participant } from '../types';
+import type { Movie, Restaurant } from '@dinder/shared/types';
+import { isMovie, isRecipe, isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
-import { useToast } from '../hooks/useToast';
+import WikipediaCredit from '../components/WikipediaCredit';
+import { useShareLink } from '../hooks/useShareLink';
 import { participantRingClass } from '../utils/participantStyles';
 import {
   DeliveryActions,
@@ -74,6 +75,73 @@ function RecipeCrown({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// The Watch ending (#369): the crowned Movie, outright — no other-matches list,
+// nothing to order or compare. The trailer is the one continuation — a YouTube
+// search when the corpus has no trailer id, so every crown has a next step —
+// and the critics score is a 0-100 figure, never the Restaurant's stars.
+// ponytail: MovieCrown beside RecipeCrown; fold both into one EntryCrown on a fourth kind.
+// ponytail: JustWatch has no public API; a search link is the whole integration.
+function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
+  const meta = [
+    movie.year,
+    movie.runtimeMinutes && `${movie.runtimeMinutes} min`,
+    movie.rating !== undefined && `${movie.rating}% critics`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const trailerHref =
+    movie.trailerUrl ??
+    `https://www.youtube.com/results?search_query=${encodeURIComponent(
+      [movie.name, movie.year, 'trailer'].filter(Boolean).join(' ')
+    )}`;
+  const whereToWatchHref = `https://www.justwatch.com/au/search?q=${encodeURIComponent(movie.name)}`;
+  return (
+    <div
+      data-match-card
+      data-movie-crown
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+    >
+      {/* A poster is portrait, so it gets a 2:3 frame rather than the landscape hero strip. */}
+      {movie.photoUrl && (
+        <RetryingPhoto
+          url={movie.photoUrl}
+          className="mx-auto mb-3 h-48 w-32 rounded-market-md object-cover"
+        />
+      )}
+      <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">
+        TONIGHT&rsquo;S MOVIE
+      </p>
+      <p className="text-lg font-semibold text-text">{movie.name}</p>
+      {meta && <p className="text-sm text-muted mt-1">{meta}</p>}
+      {movie.overview && (
+        <>
+          <p className="text-sm text-muted mt-2 line-clamp-3">{movie.overview}</p>
+          <WikipediaCredit placeId={movie.placeId} />
+        </>
+      )}
+      <p className="text-sm text-muted mt-2">{reason}</p>
+
+      <a
+        href={trailerHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        // An anchor is inline; .btn assumes a button's box, so give it one.
+        className="btn btn-primary mt-3 flex min-h-[48px] w-full items-center justify-center"
+      >
+        Watch trailer
+      </a>
+      <a
+        href={whereToWatchHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 block py-2 text-center text-sm text-cyan underline"
+      >
+        Where to watch
+      </a>
     </div>
   );
 }
@@ -250,7 +318,7 @@ function SelectionsList({
                   })}
                 </ul>
               ) : (
-                <p className="text-sm text-muted/60 italic">No selections</p>
+                <p className="text-sm text-muted italic">No selections</p>
               )}
             </div>
           </div>
@@ -276,31 +344,38 @@ export default function ResultsPage() {
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
-  const toast = useToast();
 
   // Everything below the crown — other matches, Near Misses, delivery links —
-  // is restaurant chrome, so Recipes are filtered out of it. The crown itself
-  // renders either kind: a Cook Session ends at the crowned Recipe (#259).
-  const overlappingOptions = matchedEntries.filter(isRestaurant);
-  const restaurants = deckEntries.filter(isRestaurant);
+  // is restaurant chrome, so Recipes and Movies are filtered out of it. The
+  // crown itself renders every kind: a Cook Session ends at the crowned Recipe
+  // (#259), a Watch Session at the crowned Movie (#369).
+  const overlappingOptions = useMemo(() => matchedEntries.filter(isRestaurant), [matchedEntries]);
+  const restaurants = useMemo(() => deckEntries.filter(isRestaurant), [deckEntries]);
   const topPick =
     crownedEntry && isRestaurant(crownedEntry.restaurant)
       ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
       : undefined;
   const crownedRecipe =
-    crownedEntry && !isRestaurant(crownedEntry.restaurant)
+    crownedEntry && isRecipe(crownedEntry.restaurant)
       ? { ...crownedEntry, recipe: crownedEntry.restaurant }
       : undefined;
+  const crownedMovie =
+    crownedEntry && isMovie(crownedEntry.restaurant)
+      ? { ...crownedEntry, movie: crownedEntry.restaurant }
+      : undefined;
 
-  // A Deck never mixes kinds, so either signal answers "is this a Cook
-  // Session?" — the crown covers a Participant whose local Deck is empty.
-  const isCookDeck = Boolean(crownedRecipe) || deckEntries.some((entry) => !isRestaurant(entry));
+  // A Deck never mixes kinds, so one entry names the Deck's kind — the crown's,
+  // which covers a Participant whose local Deck is empty, else the first dealt.
+  // No `kind` is a Restaurant (every pre-Cook producer).
+  const deckKind = crownedEntry?.restaurant.kind ?? deckEntries[0]?.kind ?? 'restaurant';
+  const deckNoun = { restaurant: 'restaurants', recipe: 'recipes', movie: 'movies' }[deckKind];
 
   // Where the night ends (#258). Eat Out stops at the Top Pick — the decision is
   // the destination, not an upsell into Comparison or a Group Order — and a dish
-  // you cook has nothing to order either. Takeaway keeps the continuation, and so
-  // does a Session created before the entry fork (no Branch).
-  const showContinuation = branch !== 'eatout' && !isCookDeck;
+  // you cook or a movie you watch has nothing to order either. Takeaway keeps
+  // the continuation, and so does a Session created before the entry fork (no
+  // Branch).
+  const showContinuation = branch !== 'eatout' && deckKind === 'restaurant';
 
   // Kind-agnostic: for a restaurant Deck this is exactly overlappingOptions,
   // and for a Recipe Deck it is the Match the celebration should fire on.
@@ -324,34 +399,41 @@ export default function ResultsPage() {
     }
   }, [sessionStatus, sessionCode, navigate]);
 
-  // Create a lookup map for restaurant names by placeId
-  const restaurantNameMap = new Map<string, string>();
-  // First, populate from restaurantNames received from backend (most complete source)
-  if (restaurantNames) {
-    Object.entries(restaurantNames).forEach(([placeId, name]) => {
-      restaurantNameMap.set(placeId, name);
+  // Create a lookup map for restaurant names by placeId. This, the Near Misses
+  // and the unanimity check below are memoised so a socket tick that touches
+  // none of their inputs doesn't rebuild them on the re-render.
+  const restaurantNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    // First, populate from restaurantNames received from backend (most complete source)
+    if (restaurantNames) {
+      Object.entries(restaurantNames).forEach(([placeId, name]) => {
+        map.set(placeId, name);
+      });
+    }
+    // Also add from local restaurants array (what current user searched)
+    restaurants.forEach((r) => {
+      map.set(r.placeId, r.name);
     });
-  }
-  // Also add from local restaurants array (what current user searched)
-  restaurants.forEach((r) => {
-    restaurantNameMap.set(r.placeId, r.name);
-  });
-  // Also add from overlappingOptions (in case restaurants array isn't populated)
-  overlappingOptions.forEach((o) => {
-    restaurantNameMap.set(o.placeId, o.name);
-  });
+    // Also add from overlappingOptions (in case restaurants array isn't populated)
+    overlappingOptions.forEach((o) => {
+      map.set(o.placeId, o.name);
+    });
+    return map;
+  }, [restaurantNames, restaurants, overlappingOptions]);
 
   // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
-  // and the tier's counts read off the same "of" the crown does.
-  const crownPlaceId = pick?.restaurant.placeId ?? crownedRecipe?.recipe.placeId;
-  const crownOf = pick?.of ?? crownedRecipe?.of ?? participants.length;
+  // the tier's counts read off the same "of" the crown does, and Select Again
+  // is offered on any crown, not only a Restaurant's.
+  const crownPlaceId = pick?.restaurant.placeId ?? crownedEntry?.restaurant.placeId;
+  const crownOf = pick?.of ?? crownedEntry?.of ?? participants.length;
 
   // Near Misses (#72): the all-but-one tier, reduced client-side from the
   // Selections already in the results payload. Empty Match, 3+ Participants
-  // only. A Recipe can be a Near Miss too (CONTEXT.md) — only the delivery
-  // actions on the card are restaurant chrome.
-  const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
-  if (!hasOverlap && participants.length >= 3) {
+  // only. A Recipe or Movie can be a Near Miss too (CONTEXT.md), shown as name
+  // and count — only the rating and delivery actions are restaurant chrome.
+  const nearMisses = useMemo(() => {
+    const misses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
+    if (hasOverlap || participants.length < 3) return misses;
     const selectionCounts = new Map<string, number>();
     participants.forEach((participant) => {
       (allSelections[participant.displayName] || []).forEach((placeId) => {
@@ -362,26 +444,30 @@ export default function ResultsPage() {
     selectionCounts.forEach((count, placeId) => {
       if (count !== participants.length - 1) return;
       if (placeId === crownPlaceId) return;
-      nearMisses.push(
+      misses.push(
         restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
       );
     });
-    nearMisses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
-  }
+    misses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    return misses;
+  }, [hasOverlap, participants, allSelections, restaurants, crownPlaceId, restaurantNameMap]);
 
   // Unanimous Selections (#85): when every Participant selected the same
   // non-empty set, the per-Participant copies are redundant — collapse them
   // behind a disclosure. Identical empty lists don't count: an empty Match
   // keeps its transparency lists visible.
-  const sameSelections = (a: string[], b: string[]) =>
-    a.length === b.length && a.every((placeId) => b.includes(placeId));
-  const firstSelections =
-    participants.length > 0 ? allSelections[participants[0].displayName] || [] : [];
-  const isUnanimous =
-    firstSelections.length > 0 &&
-    participants.every((participant) =>
-      sameSelections(allSelections[participant.displayName] || [], firstSelections)
+  const isUnanimous = useMemo(() => {
+    const sameSelections = (a: string[], b: string[]) =>
+      a.length === b.length && a.every((placeId) => b.includes(placeId));
+    const firstSelections =
+      participants.length > 0 ? allSelections[participants[0].displayName] || [] : [];
+    return (
+      firstSelections.length > 0 &&
+      participants.every((participant) =>
+        sameSelections(allSelections[participant.displayName] || [], firstSelections)
+      )
     );
+  }, [participants, allSelections]);
 
   const handleRestart = async () => {
     if (!sessionCode) return;
@@ -412,14 +498,6 @@ export default function ResultsPage() {
 
   const handleLeaveSession = useLeaveSession(sessionCode);
 
-  const handleShareResults = () => {
-    const url = window.location.href;
-    navigator.clipboard
-      .writeText(url)
-      .then(() => toast.success('Results link copied!'))
-      .catch(() => toast.error('Could not copy link'));
-  };
-
   // The crown's one-line reason. One cascade for
   // both kinds — only the two rungs that name the middle tiebreak differ, and
   // there is nothing "nearby" about a dish you cook.
@@ -447,18 +525,34 @@ export default function ResultsPage() {
     bestOfMany: 'the most popular',
     noneSelected: "Nobody swiped yes, so here's the most popular one.",
   };
+  const movieWords = {
+    bestOfMany: 'best rated',
+    noneSelected: "Nobody swiped yes, so here's the highest rated.",
+  };
+
+  // Share the Top Pick: phones get the native sheet headed by the crowned name
+  // and its one-line reason; desktop copies this page's URL.
+  const handleShareTopPick = useShareLink(
+    window.location.href,
+    'Top Pick link copied!',
+    crownedRecipe
+      ? { title: crownedRecipe.recipe.name, text: crownReason(crownedRecipe, recipeWords) }
+      : crownedMovie
+        ? { title: crownedMovie.movie.name, text: crownReason(crownedMovie, movieWords) }
+        : pick && { title: pick.restaurant.name, text: crownReason(pick, restaurantWords) }
+  );
 
   return (
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
       <NavigationHeader
-        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : "Tonight's Pick") : 'No Match Found'}
+        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : 'Top Pick') : 'No Match Found'}
         subtitle={
           crownPlaceId
             ? hasOverlap
-              ? "Tonight's pick is locked in"
+              ? 'The Top Pick is locked in'
               : "No unanimous Match — here's the closest one"
-            : `No ${isCookDeck ? 'recipes' : 'restaurants'} matched everyone's preferences`
+            : `No ${deckNoun} got a yes from everyone`
         }
         sessionCode={sessionCode}
         showBackButton
@@ -467,10 +561,10 @@ export default function ResultsPage() {
         confirmContext="results"
         rightAction={
           <button
-            onClick={handleShareResults}
+            onClick={() => void handleShareTopPick()}
             className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-cyan transition-colors"
-            title="Share results"
-            aria-label="Share results"
+            title="Share Top Pick"
+            aria-label="Share Top Pick"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -505,13 +599,17 @@ export default function ResultsPage() {
               shoppingListId={shoppingListId}
             />
           </div>
+        ) : crownedMovie ? (
+          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+            <MovieCrown movie={crownedMovie.movie} reason={crownReason(crownedMovie, movieWords)} />
+          </div>
         ) : pick ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
             {/* The crowned Restaurant is the dominant surface — no wrapper card
                 competing with it. Warm glow is reflected light from the celebration. */}
             <MatchCard
               restaurant={pick.restaurant}
-              eyebrow="TONIGHT'S PICK"
+              eyebrow="TOP PICK"
               reason={crownReason(pick, restaurantWords)}
               isCrown
               showContinuation={showContinuation}
@@ -583,7 +681,7 @@ export default function ResultsPage() {
                 />
               </svg>
             </div>
-            <p className="text-muted mb-6">No restaurants were selected by all participants</p>
+            <p className="text-muted mb-6">No {deckNoun} were selected by all participants</p>
             <button
               onClick={handleRestart}
               disabled={isRestarting}
@@ -693,7 +791,7 @@ export default function ResultsPage() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {pick && (
+          {crownPlaceId && (
             <button
               onClick={handleRestart}
               disabled={isRestarting}
@@ -703,8 +801,8 @@ export default function ResultsPage() {
             </button>
           )}
 
-          <button onClick={handleShareResults} className="btn btn-secondary w-full">
-            Share Results
+          <button onClick={() => void handleShareTopPick()} className="btn btn-secondary w-full">
+            Share Top Pick
           </button>
 
           {/* Leaves for the entry fork — a new Session, not a Restart. The

@@ -1,5 +1,6 @@
 // Selection page - Tinder-style swipeable selection of tonight's Deck, which
-// deals both Deck Entry kinds: Restaurants (Eat Out/Takeaway) and Recipes (Cook).
+// deals every Deck Entry kind: Restaurants (Eat Out/Takeaway), Recipes (Cook)
+// and Movies (Watch).
 // Swipe right to like, swipe left to pass
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -7,7 +8,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
-import { useToast } from '../hooks/useToast';
+import { useShareLink } from '../hooks/useShareLink';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -38,16 +40,32 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
   };
 }
 
+// "Sam", "Sam and Priya", "Sam, Priya and Lee". Names are fine here: CONTEXT.md
+// forbids them only in Near Miss counts, and the lobby already shows the roster.
+export const listNames = (names: string[]): string =>
+  names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, removeSelection, participants, liveSelections, branch } =
-    useSessionStore();
-  // The deck is shared with the restaurant branches, but its copy must not be:
-  // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
-  const isCook = branch === 'cook';
-  const deckNoun = isCook ? 'recipe' : 'restaurant';
+  const {
+    selections,
+    addSelection,
+    removeSelection,
+    participants,
+    liveSelections,
+    branch,
+    setExpiresAt,
+    currentUserId,
+  } = useSessionStore();
+  // The Deck is shared with every Branch, but its copy must not be: a Cook
+  // Session deals Recipes and said "Choose Restaurants" over them (#253).
+  const deckNoun = branch === 'cook' ? 'recipe' : branch === 'watch' ? 'movie' : 'restaurant';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
+  // ponytail: a reload deals the Deck from 0 again. The store persists only the
+  // Selections (yes-swipes), never the passes, so the cursor can't be rebuilt
+  // from what it holds; re-liking a persisted Selection is a no-op. Upgrade:
+  // persist the swiped-through count per sessionCode alongside selections.
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,7 +80,6 @@ export default function SelectionPage() {
   // (#333). It rides the Session, so every Participant's page reads the same
   // fact, and a full Deck says nothing at all.
   const [recipeSourceDown, setRecipeSourceDown] = useState(false);
-  const toast = useToast();
   // Count-keyed, not boolean: stores the buffer length last announced per placeId so
   // a card re-reveals when its like count GROWS (the room is audible: "1 of 3" then
   // "2 of 3" then the takeover). An unchanged count never re-fires.
@@ -75,6 +92,8 @@ export default function SelectionPage() {
   const fullHouseShownRef = useRef<Set<string>>(new Set());
   const rosterSizeRef = useRef(0);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const fullHouseRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(fullHouseRef, fullHousePlaceId !== null);
 
   useEffect(() => {
     if (participants.length > rosterSizeRef.current) fullHouseArmedRef.current = true;
@@ -100,25 +119,41 @@ export default function SelectionPage() {
     };
 
     void loadDeck();
-
-    // The Deck's invite affordance (#284): a Session admits joiners while it
-    // lives, so the canonical minted Invite Link belongs here too. Losing it
-    // costs only the header button — the code badge still shows.
-    if (sessionCode) {
-      void getSession(sessionCode)
-        .then((session) => {
-          setShareableLink(session.shareableLink);
-          setRecipeSourceDown(session.recipeSourceDown === true);
-        })
-        .catch(() => {});
-    }
   }, [sessionCode]);
+
+  // The Deck's invite affordance (#284): a Session admits joiners while it
+  // lives, so the canonical minted Invite Link belongs here too. Losing it
+  // costs only the header button — the code badge still shows.
+  // `participants` is a deliberate extra dep: a join or a submission slides
+  // the Session's TTL forward server-side and no socket event carries the new
+  // expiresAt, so the header's countdown is re-read on every roster change.
+  useEffect(() => {
+    if (!sessionCode) return;
+    void getSession(sessionCode)
+      .then((session) => {
+        setShareableLink(session.shareableLink);
+        setRecipeSourceDown(session.recipeSourceDown === true);
+        setExpiresAt(session.expiresAt);
+      })
+      .catch(() => {});
+  }, [sessionCode, participants, setExpiresAt]);
 
   // Listen for participant submissions
   useEffect(() => {
     const count = participants.filter((p) => p.hasSubmitted).length;
     setSubmittedCount(count);
   }, [participants]);
+
+  // A Submission survives a reload: the join ack's roster carries hasSubmitted
+  // per Participant (#284) and "me" is the entry keyed by this socket's id.
+  // Latched rather than derived so the one round-trip between reconnect (new
+  // id set) and the ack (new roster) can't flash the Deck. A Restart's
+  // resetSelections clears the flags, so the roster can also take the latch
+  // back off.
+  const meSubmitted = participants.find((p) => p.participantId === currentUserId)?.hasSubmitted;
+  useEffect(() => {
+    if (meSubmitted !== undefined) setHasSubmitted(meSubmitted);
+  }, [meSubmitted]);
 
   // A Live Selection is revealed only for Restaurants strictly BEHIND the cursor —
   // never the one being decided (anti-conformity, spec kill-risk (b)), and never a
@@ -227,6 +262,21 @@ export default function SelectionPage() {
     setCurrentIndex((prev) => prev + 1);
   }, [currentIndex, entries, addSelection, sessionCode]);
 
+  const canUndo = currentIndex > 0;
+  const handleUndo = useCallback(() => {
+    if (!canUndo) return;
+    const previous = entries[currentIndex - 1];
+    if (previous) {
+      removeSelection(previous.placeId);
+    }
+    setCurrentIndex((prev) => prev - 1);
+    // Undo puts a revealed Restaurant back at/ahead of the cursor — a visible
+    // count while you re-decide is the exact herding setup the gate exists to
+    // prevent. The announced ref is never un-marked, so re-deciding it produces
+    // no second reveal.
+    setReveal(null);
+  }, [canUndo, currentIndex, entries, removeSelection]);
+
   const handleSubmit = async () => {
     if (!sessionCode) {
       setError('Session code not found');
@@ -253,26 +303,7 @@ export default function SelectionPage() {
 
   const handleLeaveSession = useLeaveSession(sessionCode);
 
-  // Same share-or-copy fallback as the lobby's invite button.
-  const handleShareInvite = async () => {
-    if (!shareableLink) return;
-
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: 'Dinder', url: shareableLink });
-        return;
-      } catch (err) {
-        // Dismissing the sheet is not a failure; anything else falls through
-        // to the clipboard. DOMException matching by name (jsdom-safe).
-        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
-      }
-    }
-
-    navigator.clipboard
-      .writeText(shareableLink)
-      .then(() => toast.success('Invite link copied!'))
-      .catch(() => toast.error('Could not copy link'));
-  };
+  const handleShareInvite = useShareLink(shareableLink, 'Invite link copied!');
 
   // Reachable invite mid-Deck (#284): the header's right-hand action slot, so
   // no route back to the lobby and no "Leave Session?" detour.
@@ -306,6 +337,43 @@ export default function SelectionPage() {
   const fullHouseName = entries.find((e) => e.placeId === fullHousePlaceId)?.name;
   const deckInert = fullHousePlaceId !== null;
 
+  // Keyboard swipe on desktop: ← pass, → like, Backspace undo. Off while the
+  // deck is inert (the Full House dialog owns the keyboard, Escape included),
+  // off the deck (loading, end-of-deck, submitted), and never while typing.
+  const deckLive = !deckInert && !isLoading && !isDone && !hasSubmitted;
+  useEffect(() => {
+    if (!deckLive) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      // A held key must not rip through the Deck, Alt/Ctrl/Meta+Arrow are
+      // browser chords, and any open modal (Leave Session? lives in the
+      // header, not in deckInert) owns the keyboard.
+      if (
+        e.repeat ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        document.querySelector('[role="dialog"][aria-modal="true"]')
+      ) {
+        return;
+      }
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === 'ArrowLeft') handleSwipeLeft();
+      else if (e.key === 'ArrowRight') handleSwipeRight();
+      else if (e.key === 'Backspace' && canUndo) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [deckLive, canUndo, handleSwipeLeft, handleSwipeRight, handleUndo]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-ink">
@@ -318,6 +386,11 @@ export default function SelectionPage() {
   }
 
   if (hasSubmitted) {
+    // The submit ack lands before the participant:submitted echo, so for one
+    // render the roster still says I'm swiping; on this screen I never am.
+    const stillSwiping = participants
+      .filter((p) => !p.hasSubmitted && p.participantId !== currentUserId)
+      .map((p) => p.displayName);
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
@@ -348,22 +421,31 @@ export default function SelectionPage() {
                 </svg>
               </div>
               <h2 className="text-3xl font-display font-black text-text mb-3">All Done!</h2>
-              <p className="text-muted mb-8 text-lg">Waiting for other diners...</p>
+              <p className="text-muted mb-8 text-lg">Waiting for the others…</p>
 
               <div className="mb-6">
                 <div className="flex justify-center gap-2 mb-3">
-                  {participants.map((p, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                        p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
-                      }`}
-                    />
-                  ))}
+                  {participants.map((p) => {
+                    const label = `${p.displayName}: ${p.hasSubmitted ? 'submitted' : 'still swiping'}`;
+                    return (
+                      <div
+                        key={p.participantId}
+                        role="img"
+                        aria-label={label}
+                        title={label}
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                          p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
                 <p className="text-sm text-muted">
                   <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
                   <span className="text-cyan font-semibold">{participants.length}</span> have swiped
+                </p>
+                <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
+                  {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}
                 </p>
               </div>
             </div>
@@ -377,7 +459,7 @@ export default function SelectionPage() {
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
-          title="Submit Your Picks"
+          title="Submit Your Selections"
           sessionCode={sessionCode}
           showBackButton
           onBack={handleLeaveSession}
@@ -439,7 +521,7 @@ export default function SelectionPage() {
               </button>
 
               {selections.length === 0 && (
-                <p className="mt-4 text-sm text-muted/70">
+                <p className="mt-4 text-sm text-muted">
                   You didn&apos;t like any {deckNoun}s, but you can still submit!
                 </p>
               )}
@@ -457,7 +539,13 @@ export default function SelectionPage() {
     <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
-        title={isCook ? 'Choose Recipes' : 'Choose Restaurants'}
+        title={
+          branch === 'cook'
+            ? 'Choose Recipes'
+            : branch === 'watch'
+              ? 'Choose Movies'
+              : 'Choose Restaurants'
+        }
         sessionCode={sessionCode}
         showBackButton
         onBack={handleLeaveSession}
@@ -600,20 +688,8 @@ export default function SelectionPage() {
 
           {/* Undo Button */}
           <button
-            onClick={() => {
-              if (currentIndex > 0) {
-                const previous = entries[currentIndex - 1];
-                if (previous) {
-                  removeSelection(previous.placeId);
-                }
-                setCurrentIndex((prev) => prev - 1);
-                setReveal(null); // Undo puts a revealed Restaurant back at/ahead of the cursor — a
-                // visible count while you re-decide is the exact herding setup the
-                // gate exists to prevent. The announced ref is never un-marked, so
-                // re-deciding it produces no second reveal.
-              }
-            }}
-            disabled={currentIndex === 0 || deckInert}
+            onClick={handleUndo}
+            disabled={!canUndo || deckInert}
             className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-cyan hover:text-cyan disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             aria-label="Undo"
           >
@@ -646,12 +722,19 @@ export default function SelectionPage() {
         </div>
 
         {/* Hint text */}
-        <p className="text-center text-xs text-muted mt-2">Swipe or use buttons to choose</p>
+        <p className="text-center text-xs text-muted mt-2">
+          <span>Swipe or use buttons to choose</span>
+          <span className="hidden [@media(pointer:fine)]:inline">
+            {' '}
+            · ← pass, → like, Backspace undo
+          </span>
+        </p>
       </div>
 
       {/* Full House takeover */}
       {fullHousePlaceId && (
         <div
+          ref={fullHouseRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 backdrop-blur-[10px] p-4"
           role="dialog"
           aria-modal="true"
@@ -671,7 +754,7 @@ export default function SelectionPage() {
             <h2 id="full-house-title" className="text-2xl font-display font-black text-lime mb-3">
               EVERYONE LIKED THIS
             </h2>
-            <p className="text-3xl font-display font-black text-text mb-3 truncate">
+            <p className="text-3xl font-display font-black text-text mb-3 line-clamp-2">
               {fullHouseName}
             </p>
             <p className="text-muted mb-6">Lock it in now, or keep going for more.</p>
