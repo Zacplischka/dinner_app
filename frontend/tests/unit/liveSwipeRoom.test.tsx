@@ -521,4 +521,33 @@ describe('Keyboard swipe', () => {
     expect(useSessionStore.getState().selections).toEqual(['place-1']);
     expect(screen.getByText('Taco Turno')).toBeInTheDocument();
   });
+
+  it('ignores keys while the Leave Session dialog is open, on auto-repeat, and with a modifier held', async () => {
+    seedParticipants('Alice', 'Bob');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: 'ArrowRight', repeat: true }); // held key
+    fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true }); // browser Back on Win/Linux
+    fireEvent.keyDown(window, { key: 'ArrowRight', ctrlKey: true });
+    fireEvent.keyDown(window, { key: 'ArrowRight', metaKey: true });
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+
+    // Leave Session? is state inside the header, not deckInert — the deck
+    // underneath must still not swipe (or broadcast) behind it.
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Leave Session?')).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep Swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); // deck is live again
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual(['place-1']);
+  });
 });

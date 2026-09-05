@@ -340,6 +340,18 @@ export default function SelectionPage() {
   useEffect(() => {
     if (!deckLive) return;
     const onKeyDown = (e: KeyboardEvent) => {
+      // A held key must not rip through the Deck, Alt/Ctrl/Meta+Arrow are
+      // browser chords, and any open modal (Leave Session? lives in the
+      // header, not in deckInert) owns the keyboard.
+      if (
+        e.repeat ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        document.querySelector('[role="dialog"][aria-modal="true"]')
+      ) {
+        return;
+      }
       const target = e.target as HTMLElement | null;
       if (
         target &&
