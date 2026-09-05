@@ -667,18 +667,28 @@ export function createSessionStore(redis: Redis) {
     await touch(sessionCode);
   }
 
+  /**
+   * The Deck Entries under `placeIds`, in the same order, in one HMGET; null
+   * where the entry data is absent. HMGET with no fields is an error, so the
+   * empty case answers without a round trip.
+   */
+  async function readEntries(
+    sessionCode: string,
+    placeIds: string[]
+  ): Promise<(DeckEntry | null)[]> {
+    if (placeIds.length === 0) return [];
+    const raws = await redis.hmget(restaurantsKey(sessionCode), ...placeIds);
+    return raws.map((raw) => (raw ? (JSON.parse(raw) as DeckEntry) : null));
+  }
+
   /** missingCount = place ids whose entry data is absent (data loss signal). */
   async function getDeck(
     sessionCode: string
   ): Promise<{ entries: DeckEntry[]; missingCount: number }> {
     const placeIds = await redis.smembers(restaurantIdsKey(sessionCode));
-    const entries: DeckEntry[] = [];
-    for (const placeId of placeIds) {
-      const raw = await redis.hget(restaurantsKey(sessionCode), placeId);
-      if (raw) {
-        entries.push(JSON.parse(raw) as DeckEntry);
-      }
-    }
+    const entries = (await readEntries(sessionCode, placeIds)).filter(
+      (entry): entry is DeckEntry => entry !== null
+    );
     return { entries, missingCount: placeIds.length - entries.length };
   }
 
