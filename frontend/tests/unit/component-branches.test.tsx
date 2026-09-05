@@ -423,6 +423,31 @@ describe('component and hook branch coverage', () => {
     expect(screen.getByText('B')).toBeInTheDocument();
   });
 
+  it('loads a buried card\'s photo lazily and the top card\'s eagerly', () => {
+    const withPhoto = { ...restaurant, photoUrl: 'https://example.com/bistro.jpg' };
+    const { container, rerender } = render(
+      <SwipeCard
+        entry={withPhoto as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop={false}
+        stackPosition={1}
+      />
+    );
+    expect(container.querySelector('img')).toHaveAttribute('loading', 'lazy');
+
+    rerender(
+      <SwipeCard
+        entry={withPhoto as any}
+        onSwipeLeft={vi.fn()}
+        onSwipeRight={vi.fn()}
+        isTop
+        stackPosition={0}
+      />
+    );
+    expect(container.querySelector('img')).toHaveAttribute('loading', 'eager');
+  });
+
   it('covers friend modal, list, invite card, and toast singleton branches', async () => {
     useFriendsStore.setState({ isSearching: true });
     render(<AddFriendModal isOpen onClose={vi.fn()} />);
