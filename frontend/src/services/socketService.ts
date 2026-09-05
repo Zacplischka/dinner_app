@@ -53,7 +53,11 @@ export function initializeSocket(config: SocketConfig = {}): void {
 
   socket = io(BACKEND_URL, {
     reconnection: true,
-    reconnectionAttempts: 5,
+    // Never give up on our own: a cap of 5 stopped retrying ~15s into a
+    // 30-minute Session while the UI kept saying "Reconnecting...". The
+    // Session's TTL bounds the useful lifetime instead — once it expires,
+    // the rejoin on connect fails and the store resets.
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 10000,
