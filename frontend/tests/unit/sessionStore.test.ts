@@ -296,6 +296,40 @@ describe('sessionStore', () => {
       expect(useSessionStore.getState().sessionStatus).toBe('selecting');
     });
 
+    // A Restart clears every Submission server-side (resetForRestart); the
+    // roster here must agree, or a fresh Deck re-seeds as already submitted.
+    it('clears every Participant hasSubmitted flag on resetSelections', () => {
+      useSessionStore.getState().updateParticipants([
+        {
+          participantId: 'p1',
+          displayName: 'Alice',
+          sessionCode: 'AB123',
+          joinedAt: 1,
+          hasSubmitted: true,
+          isHost: true,
+        },
+        {
+          participantId: 'p2',
+          displayName: 'Bob',
+          sessionCode: 'AB123',
+          joinedAt: 2,
+          hasSubmitted: false,
+          isHost: false,
+        },
+      ]);
+
+      useSessionStore.getState().resetSelections();
+
+      expect(useSessionStore.getState().participants.map((p) => p.hasSubmitted)).toEqual([
+        false,
+        false,
+      ]);
+      expect(useSessionStore.getState().participants.map((p) => p.displayName)).toEqual([
+        'Alice',
+        'Bob',
+      ]);
+    });
+
     // Issue #180 — a Restart or a leave must never let a re-mounted
     // /order page render the previous venue's basket. The server DELs both
     // order keys in the same pipeline; this is the client-side half.

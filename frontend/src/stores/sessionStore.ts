@@ -199,7 +199,11 @@ export const useSessionStore = create<SessionState>()(
           // A Restart voids the Match, and the server DELs both order keys in
           // the same resetForRestart pipeline — never render last venue's basket.
           useOrderStore.getState().clear();
-          set({
+          set((state) => ({
+            // The server's resetForRestart clears every Participant's
+            // Submission; a stale true here would re-seed a fresh Deck as
+            // already submitted and mis-count "x of y have swiped".
+            participants: state.participants.map((p) => ({ ...p, hasSubmitted: false })),
             selections: [],
             allSelections: {},
             liveSelections: {},
@@ -209,7 +213,7 @@ export const useSessionStore = create<SessionState>()(
             shoppingListId: undefined,
             orderPlaceId: null,
             sessionStatus: 'selecting',
-          });
+          }));
         },
       }),
       {
