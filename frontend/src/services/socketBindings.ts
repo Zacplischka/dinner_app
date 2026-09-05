@@ -160,14 +160,6 @@ const socketConfig: SocketConfig = {
       toast.info(`${displayName} left the session`);
     },
 
-    // ponytail: client-only presence, no server truth. Two holes: (i) a Participant who
-    // dropped before you joined shows as Live to you; (ii) your OWN reconnect resets every
-    // badge to Live, because the connect handler re-joins and joinSession replaces
-    // the list from SessionJoinData.participants, which is { participantId, displayName,
-    // isHost } only. Badges are honest again from the next participant:disconnected.
-    // Upgrade that fixes both at once: hset an offline flag on participant:{pid} in
-    // disconnectHandler and widen SessionJoinData.participants with isOnline?: boolean
-    // (additive, ADR 0007).
     // participant:disconnected - A participant lost connection (network issue, browser close, etc.)
     // This is INFORMATIONAL only - the participant is NOT removed from the session.
     // They can reconnect and will be re-registered with a new socket.id.
@@ -319,7 +311,10 @@ export async function joinSession(
     store.setSessionStatus(state);
   }
 
-  // Update store with session data
+  // Update store with session data. The roster is server truth for presence
+  // too: `...p` carries isOnline, so a Participant who dropped before this join
+  // — or before my own rejoin replaced the list — starts offline, not live.
+  // Absent on an older backend, which reads as live (ADR 0007).
   store.setSessionCode(sessionCode);
   store.setBranch(ack.data.branch);
   store.updateParticipants(

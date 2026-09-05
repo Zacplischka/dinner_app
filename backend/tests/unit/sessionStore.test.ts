@@ -146,6 +146,25 @@ describe('SessionStore', () => {
       expect(participants.find((p) => p.participantId === 'p2')?.hasSubmitted).toBe(false);
     });
 
+    it('flags a Disconnect in place and reads a re-keyed Participant as online again', async () => {
+      await createTestSession();
+      await store.addParticipant(sessionCode, { participantId: 'p1', displayName: 'Alice' });
+      expect((await store.getParticipant('p1'))?.isOnline).toBe(true);
+
+      await store.markDisconnected('p1');
+      expect((await store.getParticipant('p1'))?.isOnline).toBe(false);
+      expect(await store.countParticipants(sessionCode)).toBe(1);
+
+      // A rejoin re-keys the Participant; the replacement hash starts online.
+      await store.removeParticipant(sessionCode, 'p1');
+      await store.addParticipant(sessionCode, { participantId: 'p1b', displayName: 'Alice' });
+      expect((await store.getParticipant('p1b'))?.isOnline).toBe(true);
+
+      // A Disconnect for a hash the rejoin already DELed must not resurrect it TTL-less.
+      await store.markDisconnected('p1');
+      expect(await store.getParticipant('p1')).toBeNull();
+    });
+
     it('removes a participant along with their selections', async () => {
       await createTestSession();
       await store.addParticipant(sessionCode, { participantId: 'p1', displayName: 'Alice' });

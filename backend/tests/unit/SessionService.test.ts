@@ -656,6 +656,23 @@ describe('SessionService', () => {
       );
     });
 
+    it('should tell a joiner who has dropped from the ack participants', async () => {
+      const session = await SessionService.createSession('Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
+      await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
+      await store.markDisconnected('socket-alice');
+
+      const result = await SessionService.joinSession(session.sessionCode, 'socket-cara', 'Cara');
+
+      expect(result.participants).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ displayName: 'Alice', isOnline: false }),
+          expect.objectContaining({ displayName: 'Bob', isOnline: true }),
+          expect.objectContaining({ displayName: 'Cara', isOnline: true }),
+        ])
+      );
+    });
+
     it('should still refuse a fifth participant when the session is selecting', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
