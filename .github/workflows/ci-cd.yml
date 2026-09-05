@@ -177,11 +177,13 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       # Only the specs that never create an Eat Out Session: those need a real
-      # Google Places key, and the workflow-level key is a placeholder. The
-      # playwright webServer entries build and start frontend + backend here.
+      # Google Places key, and the workflow-level key is a placeholder. Cook is
+      # in because a Craving the Owned Recipe Store answers deals with no
+      # Spoonacular key (the dark source is dealt around, #333). The playwright
+      # webServer entries build and start frontend + backend here.
       # Next spec to include: watch.spec.ts once #370 lands.
       - name: Run mobile e2e subset
-        run: npm run test:e2e:mobile --workspace=@dinder/frontend -- home.spec.ts accessibility.spec.ts neon-theme.spec.ts
+        run: npm run test:e2e:mobile --workspace=@dinder/frontend -- home.spec.ts accessibility.spec.ts neon-theme.spec.ts cook.spec.ts
         env:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
