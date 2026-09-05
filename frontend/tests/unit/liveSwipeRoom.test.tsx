@@ -614,12 +614,15 @@ describe('Resume after submit', () => {
 });
 
 describe('waiting screen', () => {
-  it('names each dot and announces who is still swiping', async () => {
+  it('names each dot and announces who is still swiping, never yourself', async () => {
     useSessionStore.getState().resetSession();
+    // The roster still says Alice (me) is swiping: the submit ack arrives
+    // before the participant:submitted echo flips it.
     useSessionStore.setState({
       sessionCode: 'AB123',
+      currentUserId: 'p1',
       participants: [
-        { ...participant('p1', 'Alice'), hasSubmitted: true },
+        participant('p1', 'Alice'),
         participant('p2', 'Bob'),
         participant('p3', 'Carol'),
       ],
@@ -632,8 +635,18 @@ describe('waiting screen', () => {
     await waitFor(() =>
       expect(screen.getByText('Waiting for Bob and Carol')).toHaveAttribute('aria-live', 'polite')
     );
-    expect(screen.getByRole('img', { name: 'Alice: submitted' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Bob: still swiping' })).toBeInTheDocument();
+
+    // The echo lands: my dot lights up, the line is unchanged.
+    act(() => {
+      useSessionStore.setState((s) => ({
+        participants: s.participants.map((p) =>
+          p.participantId === 'p1' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    expect(screen.getByRole('img', { name: 'Alice: submitted' })).toBeInTheDocument();
+    expect(screen.getByText('Waiting for Bob and Carol')).toBeInTheDocument();
     expect(listNames(['Sam', 'Priya', 'Lee'])).toBe('Sam, Priya and Lee');
   });
 });
