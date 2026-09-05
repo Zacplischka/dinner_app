@@ -6,6 +6,7 @@
 
 export { HomePage } from './HomePage';
 export { CreateSessionPage } from './CreateSessionPage';
+export { WatchSetupPage } from './WatchSetupPage';
 export { JoinSessionPage } from './JoinSessionPage';
 export { SessionLobbyPage } from './SessionLobbyPage';
 export { SelectionPage } from './SelectionPage';

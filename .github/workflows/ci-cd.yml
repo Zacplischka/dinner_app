@@ -98,6 +98,11 @@ jobs:
       # stratified 10% sample and the one-failure / two-failure rules.
       - name: Check human gate
         run: npm run check:human-gate
+      # Offline self-check for the movie corpus builder's pure parts (#369):
+      # genre bucketing, the critics score, the emitted module's shape.
+      # Does not touch Wikipedia or Wikidata.
+      - name: Check movie corpus builder
+        run: npm run check:movie-corpus
 
   contract-tests:
     name: Contract Tests

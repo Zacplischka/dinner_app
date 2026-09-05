@@ -7,6 +7,7 @@
 
 import type { Craving } from './cook.js';
 import type { Branch, DeckEntry } from './models.js';
+import type { Mood } from './watch.js';
 
 export interface SessionLocation {
   latitude: number;
@@ -24,6 +25,8 @@ export interface CreateSessionRequest {
   craving?: Craving;
   /** Cook setup: who's eating. Stored on the Session, never part of the Craving. */
   headcount?: number;
+  /** Watch setup: what the Movie Deck is dealt from. Ignored outside the Watch Branch. */
+  mood?: Mood;
 }
 
 // GET /api/sessions/:sessionCode
