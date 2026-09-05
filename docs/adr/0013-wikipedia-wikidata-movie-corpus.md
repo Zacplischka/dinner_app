@@ -8,7 +8,7 @@ The Watch Branch deals Movies ([#369](https://github.com/Zacplischka/dinner_app/
 
 **The rating is a critics score** on one 0–100 scale: Wikidata's hand-entered snapshot of the Rotten Tomatoes Tomatometer, else Metacritic's Metascore, else absent. IMDb's 0–10 covered a third of the seeds and sits on a different scale; mixing it in would have had the Top Pick's middle rung comparing unlike with unlike.
 
-**Posters are hot-linked** from `upload.wikimedia.org`, which Commons permits (CORS open; any browser User-Agent gets a 200). They are English Wikipedia's fair-use uploads — identifying a film by its poster is the posture every movie app takes, and the app makes that call itself rather than inheriting a licence. Overviews are CC BY-SA 4.0; the generated module records the attribution route to each article.
+**Posters are hot-linked** from `upload.wikimedia.org`, which Commons permits (CORS open; any browser User-Agent gets a 200). They are English Wikipedia's fair-use uploads — identifying a film by its poster is the posture every movie app takes, and the app makes that call itself rather than inheriting a licence. Wikipedia's non-free rationale covers the article, not this Deck — an exposure accepted knowingly; TMDB grants poster use with attribution, behind the same seam. Overviews are CC BY-SA 4.0; every Movie surface credits the article, and the generated module records the route to it.
 
 **`MovieSource` is the seam.** One function from a Mood to Movies, with the corpus as its only implementation. TMDB replaces it when the corpus runs thin — a key, higher-res posters, a live score, watch providers — and nothing above the seam changes.
 

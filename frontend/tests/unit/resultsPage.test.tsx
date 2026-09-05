@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -827,6 +827,10 @@ describe('ResultsPage', () => {
       expect(crown.textContent).toContain('1979 · 117 min · 93% critics');
       expect(crown.textContent).toContain('Everyone swiped yes on this one.');
       expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
+      expect(within(crown as HTMLElement).getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
+        'href',
+        'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q103569'
+      );
       // A Movie is not a Recipe: the Cook ending must not claim it.
       expect(container.querySelector('[data-recipe-crown]')).toBeNull();
     });

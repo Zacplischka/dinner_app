@@ -3,8 +3,9 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
-import { isRestaurant } from '../types';
+import { isMovie, isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
+import WikipediaCredit from './WikipediaCredit';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -192,7 +193,7 @@ export default function SwipeCard({
   // exist only on a Restaurant. A Movie adds year, runtime, genres, a critics
   // score (0-100, never the Restaurant's stars) and an overview.
   const restaurant = isRestaurant(entry) ? entry : undefined;
-  const movie = entry.kind === 'movie' ? entry : undefined;
+  const movie = isMovie(entry) ? entry : undefined;
   const priceDisplay = '$'.repeat(restaurant?.priceLevel || 0);
   const movieMeta = [movie?.year, movie?.runtimeMinutes && `${movie.runtimeMinutes} min`]
     .filter(Boolean)
@@ -346,7 +347,10 @@ export default function SwipeCard({
         </div>
 
         {movie?.overview && (
-          <p className="mt-3 text-sm text-muted line-clamp-3">{movie.overview}</p>
+          <>
+            <p className="mt-3 text-sm text-muted line-clamp-3">{movie.overview}</p>
+            <WikipediaCredit placeId={movie.placeId} />
+          </>
         )}
 
         {restaurant?.address && (

@@ -1745,8 +1745,8 @@ describe('SessionService', () => {
         expect(mintShoppingList).not.toHaveBeenCalled();
       });
 
-      // A Movie has no hours to be shut, so the open-now sink must let it
-      // through to the Deck fallback rather than filing it as a closed venue.
+      // A Movie has no hours to be shut, so every Movie is in the open pool and
+      // the Deck fallback crowns by critics score alone.
       it('crowns the highest-rated Movie when every Submission is empty', async () => {
         const sessionCode = await createSessionWithMovieDeck([
           { kind: 'movie', placeId: 'Q1', name: 'Alien', rating: 93 },

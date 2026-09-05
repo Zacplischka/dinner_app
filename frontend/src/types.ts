@@ -9,7 +9,7 @@ import type { DeckEntry } from '@dinder/shared/types';
 // are the restaurant ending, and the Shopping List is the Cook ending, so they
 // narrow on these. The guards ship with the type (shared/CLAUDE.md) so both
 // sides classify a Deck Entry alike.
-export { isRecipe, isRestaurant } from '@dinder/shared/types';
+export { isMovie, isRecipe, isRestaurant } from '@dinder/shared/types';
 
 export interface Participant {
   participantId: string;

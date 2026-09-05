@@ -42,12 +42,12 @@ export interface Recipe {
   aggregateLikes?: number;
 }
 
-/** A film a Watch-branch Session deals (#369). Restaurant's counterpart. */
+/** A Movie a Watch-branch Session deals (#369). Restaurant's counterpart. */
 export interface Movie {
   kind: 'movie';
   /** The movie source's id. */
   placeId: string;
-  /** The movie title. */
+  /** The Movie's name. */
   name: string;
   /** Poster. */
   photoUrl?: string;
@@ -88,6 +88,9 @@ export const isRestaurant = (entry: DeckEntry): entry is Restaurant =>
  * on `!isRestaurant` — every later kind passes that test too.
  */
 export const isRecipe = (entry: DeckEntry): entry is Recipe => entry.kind === 'recipe';
+
+/** Narrows a Deck Entry to the Movie arm; the Watch ending narrows on this. */
+export const isMovie = (entry: DeckEntry): entry is Movie => entry.kind === 'movie';
 
 export interface Venue {
   placeId: string;
