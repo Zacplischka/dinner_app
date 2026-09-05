@@ -122,6 +122,19 @@ describe('socketService', () => {
     expect(logSpy).toHaveBeenCalledWith('Socket already connected');
   });
 
+  it('retries for the life of the Session: no reconnection cap', () => {
+    setupSocket();
+
+    socketService.initializeSocket();
+
+    // A finite cap left the Manager dead after ~15s of backoff while the
+    // header still read "Reconnecting..."; the Session's own TTL is the bound.
+    expect(socketMocks.io).toHaveBeenCalledWith(
+      'http://localhost:3001',
+      expect.objectContaining({ reconnection: true, reconnectionAttempts: Infinity })
+    );
+  });
+
   it('connects without auth when no token provider is given', () => {
     setupSocket();
 
