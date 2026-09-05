@@ -136,4 +136,30 @@ describe('Contract Test: POST /api/sessions', () => {
 
     expect(uniqueCodes.size).toBe(5); // All codes should be unique
   });
+
+  it('rate-limits creates per Railway X-Real-IP so one visitor cannot run up Places spend', async () => {
+    for (let createNumber = 1; createNumber <= 20; createNumber++) {
+      await request(app)
+        .post('/api/sessions')
+        .set('X-Real-IP', '203.0.113.40')
+        .send({ hostName: 'Alice' })
+        .expect(201);
+    }
+    const limited = await request(app)
+      .post('/api/sessions')
+      .set('X-Real-IP', '203.0.113.40')
+      .send({ hostName: 'Alice' })
+      .expect(429);
+    await request(app)
+      .post('/api/sessions')
+      .set('X-Real-IP', '203.0.113.41')
+      .send({ hostName: 'Bob' })
+      .expect(201);
+
+    expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
+    expect(limited.body).toEqual({
+      code: 'RATE_LIMITED',
+      message: 'Too many Sessions created. Please try again shortly.',
+    });
+  });
 });
