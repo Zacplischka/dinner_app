@@ -11,11 +11,11 @@ A short-lived shared decision room identified by a Session Code, holding at most
 _Avoid_: room, game, lobby — and never "cook Session" as a term of its own; a Session in the Cook Branch is just a Session
 
 **Branch**:
-The top-level choice a Session is created into — Eat Out, Takeaway, or Cook — picked up front on the entry screen and fixed for the Session's life.
+The top-level choice a Session is created into — Eat Out, Takeaway, Cook, or Watch — picked up front on the entry screen and fixed for the Session's life.
 _Avoid_: mode, flow, journey, path
 
 **Deck**:
-The stack of Restaurants or Recipes a Session deals its Participants to swipe.
+The stack of Restaurants, Recipes or Movies a Session deals its Participants to swipe.
 _Avoid_: stack, feed, queue
 
 **Session Code**:
@@ -35,27 +35,27 @@ The Participant who created the Session.
 _Avoid_: owner, creator
 
 **Restaurant**:
-A nearby dining option fetched for an Eat Out or Takeaway Session that Participants swipe on. The Cook Branch's counterpart is a Recipe.
+A nearby dining option fetched for an Eat Out or Takeaway Session that Participants swipe on. The Cook Branch's counterpart is a Recipe; the Watch Branch's is a Movie.
 _Avoid_: option, card, place (except in external-API contexts)
 
 **Recipe**:
-A cookable dish fetched for a Cook-branch Session that Participants swipe on, carrying title, image, ingredients, and instructions. The swiped card, the crowned Top Pick, and the thing you cook are all the same Recipe — there is no separate "Meal".
+A cookable dish fetched for a Cook-branch Session that Participants swipe on, carrying title, image, ingredients, and instructions. The swiped card, the crowned Top Pick, and the thing you cook are all the same Recipe — there is no separate "Meal". The Watch Branch's counterpart is a Movie.
 _Avoid_: meal (except in "meal type", a Craving criterion), dish, card
 
 **Deck Entry**:
-One entry of a Deck — the Restaurant or Recipe a Participant swipes on, and the unit the whole Selection path moves: dealt, swiped, live-selected, matched, crowned. Restaurant and Recipe are its only kinds; a Session's Branch decides which kind its Deck holds, and a Deck never mixes them. The name exists so code that must handle either kind has an honest word for it.
+One entry of a Deck — the Restaurant, Recipe or Movie a Participant swipes on, and the unit the whole Selection path moves: dealt, swiped, live-selected, matched, crowned. Its kinds are Restaurant, Recipe and Movie; a Session's Branch decides which kind its Deck holds, and a Deck never mixes them. The name exists so code that must handle any kind has an honest word for it.
 _Avoid_: card — the swipe UI draws an entry as a card, which is the rendering and not the thing — option, item
 
 **Selection**:
-A single Restaurant or Recipe a Participant swiped yes on.
+A single Restaurant, Recipe or Movie a Participant swiped yes on.
 _Avoid_: like, vote, pick (except in **Top Pick**)
 
 **Live Selection**:
-A Selection broadcast to the other Participants at the moment it is made, and shown to each of them only once they have swiped that Restaurant or Recipe themselves. Ephemeral chrome: it is never written to Redis and never affects the Match. Receivers hold it client-side, keyed by the sender's display name, so it survives the sender's reconnect.
+A Selection broadcast to the other Participants at the moment it is made, and shown to each of them only once they have swiped that Restaurant, Recipe or Movie themselves. Ephemeral chrome: it is never written to Redis and never affects the Match. Receivers hold it client-side, keyed by the sender's display name, so it survives the sender's reconnect.
 _Avoid_: vote, live vote, real-time like
 
 **Full House**:
-A Restaurant or Recipe every current Participant has made a Live Selection on, seen mid-Deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it. When the Participant list grows mid-Deck, a Full House can fire again for the larger group — but never twice for the same Deck Entry, and an already-shown one is never retracted.
+A Restaurant, Recipe or Movie every current Participant has made a Live Selection on, seen mid-Deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it. When the Participant list grows mid-Deck, a Full House can fire again for the larger group — but never twice for the same Deck Entry, and an already-shown one is never retracted.
 _Avoid_: early match, instant match, mid-deck match
 
 **Submission**:
@@ -63,15 +63,15 @@ A Participant's declaration that they are done selecting. A Submission may conta
 _Avoid_: inferring "submitted" from a non-empty Selection set
 
 **Match**:
-The set of Restaurants or Recipes every current Participant selected, computed once all current Participants have a Submission — including when the last unsubmitted Participant leaves. May be empty.
+The set of Restaurants, Recipes or Movies every current Participant selected, computed once all current Participants have a Submission — including when the last unsubmitted Participant leaves. May be empty.
 _Avoid_: results, overlap, winners
 
 **Top Pick**:
-The single Restaurant or Recipe a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then the Deck Entry kind's own middle rung — a Restaurant's rating, a Recipe's aggregate likes — then name A-Z, from the Match when the Match is non-empty, from everything anyone selected when it is empty, and from the Session's open Deck when nobody selected anything. Only the middle rung differs by kind; the rule is otherwise one rule. Every completed Session with a non-empty Deck has exactly one Top Pick; a Session whose Deck is empty has none.
+The single Restaurant, Recipe or Movie a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then the Deck Entry kind's own middle rung — a Restaurant's rating, a Recipe's aggregate likes, a Movie's critics score — then name A-Z, from the Match when the Match is non-empty, from everything anyone selected when it is empty, and from the Session's open Deck when nobody selected anything. Only the middle rung differs by kind; the rule is otherwise one rule. Every completed Session with a non-empty Deck has exactly one Top Pick; a Session whose Deck is empty has none.
 _Avoid_: winner, best match, recommendation, top result, the answer
 
 **Near Miss**:
-A Restaurant or Recipe selected by every current Participant except one. Surfaced only when the Match is empty and the Session has three or more Participants, always as a count ("2 of 3 liked this"), never with names. A Session with two Participants has no Near Misses — one person's Selections are not a near-Match.
+A Restaurant, Recipe or Movie selected by every current Participant except one. Surfaced only when the Match is empty and the Session has three or more Participants, always as a count ("2 of 3 liked this"), never with names. A Session with two Participants has no Near Misses — one person's Selections are not a near-Match.
 _Avoid_: almost match, runner-up, partial match
 
 **SessionStore**:
@@ -79,7 +79,7 @@ The sole keeper of everything a live Session remembers — Participants, Selecti
 _Avoid_: models, repository, DAO
 
 **Restart**:
-Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again. A Restaurant Deck is kept — restaurant supply is bound to where you are — while a Recipe Deck is dealt again from its Craving's pool, avoiding the just-wiped deal as far as the pool allows. A Restart never fails and never leaves a Session without a Deck.
+Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again. A Restaurant Deck is kept — restaurant supply is bound to where you are — while a Recipe Deck is dealt again from its Craving's pool and a Movie Deck from its Mood, avoiding the just-wiped deal as far as the pool allows. A Restart never fails and never leaves a Session without a Deck.
 _Avoid_: reset, replay
 
 **Leave**:
@@ -249,3 +249,17 @@ _Avoid_: notes, extract, research summary
 **Nearest Craving**:
 The neighbouring Craving offered inline when a Craving's deal comes up empty: cuisine widened or dropped — never diet, never meal type — shown with the Recipe count it can actually deal. Accepting mints it as a genuinely new Craving with its own pool; the original Craving is never silently widened.
 _Avoid_: relaxed craving, suggestion, fallback
+
+### Watch
+
+**Movie**:
+A film a Watch-branch Session deals for Participants to swipe on, carrying name, poster, year, genres, runtime, critics score, overview and trailer link. Its identity is its Wikidata id, carried in `placeId` like every Deck Entry's (ADR 0013). The swiped card and the crowned Top Pick are the same Movie.
+_Avoid_: film, title, card, show
+
+**Mood**:
+The Host's genre and decade choices a Watch Session's Movie Deck is dealt from — a Movie matches when it carries any chosen genre and was released in any chosen decade; an empty axis is no filter, so no choices at all deals from the whole corpus. The Craving's twin for the Watch Branch, fixed at setup like it; unlike it there is no shared pool and no Nearest Mood — the corpus is small and static enough that dropping a chip is the whole fix.
+_Avoid_: filters, preferences, criteria, Craving, vibe
+
+**Critics score**:
+A Movie's 0–100 score — the Rotten Tomatoes Tomatometer, else Metacritic's Metascore, else absent — as Wikidata last recorded it, and the Top Pick's middle rung for a Movie. One scale, so the rung only ever compares like with like; never a Restaurant's 0–5 stars.
+_Avoid_: rating (when the kind matters — the wire field is still `rating`), stars, IMDb score
