@@ -234,7 +234,7 @@ export default function SessionLobbyPage() {
         {/* Info */}
         <div className="mt-6 text-center text-sm text-muted space-y-1">
           <p>Share the code with friends to invite them</p>
-          <p className="text-muted/60">Sessions expire after 30 minutes of inactivity</p>
+          <p className="text-muted">Sessions expire after 30 minutes of inactivity</p>
         </div>
       </div>
     </main>

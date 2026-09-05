@@ -58,7 +58,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
           {fromUser.email && (
             <p className="text-sm text-muted">{fromUser.email}</p>
           )}
-          <p className="text-xs text-muted/60">
+          <p className="text-xs text-muted">
             {new Date(request.createdAt).toLocaleDateString()}
           </p>
         </div>

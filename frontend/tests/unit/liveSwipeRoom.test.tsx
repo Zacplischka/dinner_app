@@ -37,7 +37,7 @@ vi.mock('../../src/services/socketBindings', () => ({
   sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
 }));
 
-import SelectionPage, { liveReveal } from '../../src/pages/SelectionPage';
+import SelectionPage, { listNames, liveReveal } from '../../src/pages/SelectionPage';
 import { submitSelection } from '../../src/services/socketBindings';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
@@ -471,5 +471,43 @@ describe('Full House takeover', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('EVERYONE LIKED THIS')).toBeInTheDocument();
     expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
+  });
+});
+
+describe('waiting screen', () => {
+  it('names each dot and announces who is still swiping, never yourself', async () => {
+    useSessionStore.getState().resetSession();
+    // The roster still says Alice (me) is swiping: the submit ack arrives
+    // before the participant:submitted echo flips it.
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: 'p1',
+      participants: [
+        participant('p1', 'Alice'),
+        participant('p2', 'Bob'),
+        participant('p3', 'Carol'),
+      ],
+    });
+    renderSelectionPage();
+    await waitFor(() => screen.getByRole('button', { name: 'Pass' }));
+    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Selections' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Waiting for Bob and Carol')).toHaveAttribute('aria-live', 'polite')
+    );
+    expect(screen.getByRole('img', { name: 'Bob: still swiping' })).toBeInTheDocument();
+
+    // The echo lands: my dot lights up, the line is unchanged.
+    act(() => {
+      useSessionStore.setState((s) => ({
+        participants: s.participants.map((p) =>
+          p.participantId === 'p1' ? { ...p, hasSubmitted: true } : p
+        ),
+      }));
+    });
+    expect(screen.getByRole('img', { name: 'Alice: submitted' })).toBeInTheDocument();
+    expect(screen.getByText('Waiting for Bob and Carol')).toBeInTheDocument();
+    expect(listNames(['Sam', 'Priya', 'Lee'])).toBe('Sam, Priya and Lee');
   });
 });

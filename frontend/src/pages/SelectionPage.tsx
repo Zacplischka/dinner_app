@@ -38,11 +38,23 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
   };
 }
 
+// "Sam", "Sam and Priya", "Sam, Priya and Lee". Names are fine here: CONTEXT.md
+// forbids them only in Near Miss counts, and the lobby already shows the roster.
+export const listNames = (names: string[]): string =>
+  names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
 export default function SelectionPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { selections, addSelection, removeSelection, participants, liveSelections, branch } =
-    useSessionStore();
+  const {
+    selections,
+    addSelection,
+    removeSelection,
+    participants,
+    liveSelections,
+    branch,
+    currentUserId,
+  } = useSessionStore();
   // The deck is shared with the restaurant branches, but its copy must not be:
   // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
   const isCook = branch === 'cook';
@@ -318,6 +330,11 @@ export default function SelectionPage() {
   }
 
   if (hasSubmitted) {
+    // The submit ack lands before the participant:submitted echo, so for one
+    // render the roster still says I'm swiping; on this screen I never am.
+    const stillSwiping = participants
+      .filter((p) => !p.hasSubmitted && p.participantId !== currentUserId)
+      .map((p) => p.displayName);
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
@@ -352,18 +369,27 @@ export default function SelectionPage() {
 
               <div className="mb-6">
                 <div className="flex justify-center gap-2 mb-3">
-                  {participants.map((p, i) => (
-                    <div
-                      key={i}
-                      className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                        p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
-                      }`}
-                    />
-                  ))}
+                  {participants.map((p) => {
+                    const label = `${p.displayName}: ${p.hasSubmitted ? 'submitted' : 'still swiping'}`;
+                    return (
+                      <div
+                        key={p.participantId}
+                        role="img"
+                        aria-label={label}
+                        title={label}
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                          p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
                 <p className="text-sm text-muted">
                   <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
                   <span className="text-cyan font-semibold">{participants.length}</span> have swiped
+                </p>
+                <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
+                  {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}
                 </p>
               </div>
             </div>
@@ -439,7 +465,7 @@ export default function SelectionPage() {
               </button>
 
               {selections.length === 0 && (
-                <p className="mt-4 text-sm text-muted/70">
+                <p className="mt-4 text-sm text-muted">
                   You didn&apos;t like any {deckNoun}s, but you can still submit!
                 </p>
               )}
