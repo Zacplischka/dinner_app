@@ -109,6 +109,8 @@ describe('Movie Deck', () => {
 
     expect(await screen.findByText('Alien')).toBeInTheDocument();
     expect(screen.getByAltText('Alien')).toHaveAttribute('src', 'https://example.com/alien.jpg');
+    // A portrait poster is shown whole, not cropped to the landscape frame.
+    expect(screen.getByAltText('Alien')).toHaveClass('object-contain');
     expect(screen.getByText('1979 · 117 min')).toBeInTheDocument();
     expect(screen.getByText('Horror')).toBeInTheDocument();
     expect(screen.getByText('Sci-Fi')).toBeInTheDocument();
