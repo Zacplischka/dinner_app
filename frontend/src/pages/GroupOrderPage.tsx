@@ -620,6 +620,7 @@ export default function GroupOrderPage() {
         onBack={handleHeaderBack}
         confirmOnBack
         confirmContext="ordering"
+        showConnectionStatus
         compact
       />
       {content}

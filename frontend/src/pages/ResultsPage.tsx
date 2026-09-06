@@ -579,6 +579,7 @@ export default function ResultsPage() {
         onBack={handleLeaveSession}
         confirmOnBack
         confirmContext="results"
+        showConnectionStatus
         rightAction={
           <button
             onClick={() => void handleShareTopPick()}

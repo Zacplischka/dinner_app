@@ -1,6 +1,6 @@
 // Toast Component
-// Individual toast notification with auto-dismiss and a close button
-// (no swipe/touch handling)
+// Individual toast notification with auto-dismiss (paused on hover, focus or
+// touch) and a close button. No swipe-to-dismiss.
 
 import { useCallback, useEffect, useState, useRef } from 'react';
 import type { Toast as ToastType, ToastType as ToastVariant } from '../../hooks/useToast';
@@ -112,6 +112,11 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
   }, [handleDismiss, isPaused, toast.duration]);
 
   const colors = colorClasses[toast.type];
+  // Only a failure earns the right to interrupt a screen reader mid-sentence
+  // (WCAG 4.1.3). role="alert" is the one role assistive tech announces on
+  // insertion, which is why it works on a card minted with its text; the rest
+  // are announced by the provider's standing live region instead.
+  const isError = toast.type === 'error';
 
   return (
     <div
@@ -128,12 +133,16 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
             : 'pointer-events-auto opacity-100 translate-y-0 scale-100'
         }
       `}
-      role="alert"
-      aria-live="polite"
+      role={isError ? 'alert' : undefined}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
       onBlur={() => setIsPaused(false)}
+      // A phone has no hover: holding the card is the only way to keep a toast
+      // around long enough to read it.
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
+      onTouchCancel={() => setIsPaused(false)}
     >
       {/* Icon */}
       <div className={`flex-shrink-0 ${colors.icon}`}>{icons[toast.type]}</div>

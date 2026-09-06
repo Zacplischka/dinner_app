@@ -185,7 +185,7 @@ describe('component and hook branch coverage', () => {
 
     // The card is tappable; the full-width band it sits in is not — that band
     // spans the viewport's bottom edge and used to swallow chip taps there.
-    const card = screen.getByRole('alert');
+    const card = screen.getByLabelText('Dismiss notification').closest('div')!;
     expect(card.className).toContain('pointer-events-auto');
     expect(card.parentElement!.className).not.toContain('pointer-events-auto');
 
@@ -498,6 +498,11 @@ describe('component and hook branch coverage', () => {
     singletonToast.error('error', { duration: 2, action: { label: 'Stop', onClick: action } });
     singletonToast.warning('warning', { duration: 3, action: { label: 'Wait', onClick: action } });
     singletonToast.info('info', { duration: 4, action: { label: 'Read', onClick: action } });
-    expect(useToastStore.getState().toasts).toHaveLength(4);
+    // The stack is capped at three, so the oldest ('success') is already gone (#409).
+    expect(useToastStore.getState().toasts.map((t) => t.type)).toEqual([
+      'error',
+      'warning',
+      'info',
+    ]);
   });
 });
