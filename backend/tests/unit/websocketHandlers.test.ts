@@ -28,9 +28,17 @@ import {
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
+// The Deck supplies these handlers never reach, stubbed inert: the suite drives
+// the Eat Out Branch, and a Restart there searches Restaurants. Wiring every
+// declared dependency is what keeps the suite honest when the shape changes.
 const service = createSessionService({
   store,
   searchNearbyRestaurants: vi.fn(async () => []),
+  dealRecipeDeck: vi.fn(async () => ({ entries: [], recipeSourceDown: false })),
+  redealRecipeDeck: vi.fn(async (_poolKey, current) => current),
+  dealMovieDeck: vi.fn(() => []),
+  redealMovieDeck: vi.fn((_mood, current) => current),
+  mintShoppingList: vi.fn(async () => undefined),
 });
 const rejoinToken = '00000000-0000-4000-8000-000000000001';
 

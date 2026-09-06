@@ -3,7 +3,7 @@
 // search fn. No real Redis, no network, no module mocks.
 
 import { logger } from '../../src/logger.js';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockedFunction } from 'vitest';
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
 import { config } from '../../src/config/index.js';
@@ -12,6 +12,7 @@ import {
   createSessionService,
   generateSessionCode,
   MAX_PARTICIPANTS,
+  type SessionServiceDeps,
 } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
 import { SESSION_CODE_PATTERN, type Mood, type Movie, type Recipe } from '@dinder/shared/types';
@@ -22,12 +23,14 @@ describe('SessionService', () => {
 
   let redis: Redis;
   let store: ReturnType<typeof createSessionStore>;
-  let searchNearbyRestaurants: ReturnType<typeof vi.fn>;
-  let dealRecipeDeck: ReturnType<typeof vi.fn>;
-  let redealRecipeDeck: ReturnType<typeof vi.fn>;
-  let dealMovieDeck: ReturnType<typeof vi.fn>;
-  let redealMovieDeck: ReturnType<typeof vi.fn>;
-  let mintShoppingList: ReturnType<typeof vi.fn>;
+  // Typed against the deps they stand in for, so a dependency that changes
+  // shape fails here instead of passing wired wrong (#397).
+  let searchNearbyRestaurants: MockedFunction<SessionServiceDeps['searchNearbyRestaurants']>;
+  let dealRecipeDeck: MockedFunction<SessionServiceDeps['dealRecipeDeck']>;
+  let redealRecipeDeck: MockedFunction<SessionServiceDeps['redealRecipeDeck']>;
+  let dealMovieDeck: MockedFunction<SessionServiceDeps['dealMovieDeck']>;
+  let redealMovieDeck: MockedFunction<SessionServiceDeps['redealMovieDeck']>;
+  let mintShoppingList: MockedFunction<SessionServiceDeps['mintShoppingList']>;
   let SessionService: ReturnType<typeof createSessionService>;
 
   beforeEach(async () => {
@@ -40,7 +43,9 @@ describe('SessionService', () => {
     redealRecipeDeck = vi.fn();
     dealMovieDeck = vi.fn();
     redealMovieDeck = vi.fn();
-    mintShoppingList = vi.fn(async () => undefined);
+    mintShoppingList = vi.fn(
+      async (_sessionCode: string, _placeId: string): Promise<string | undefined> => undefined
+    );
     SessionService = createSessionService({
       store,
       searchNearbyRestaurants,
@@ -205,7 +210,7 @@ describe('SessionService', () => {
     it('keeps the wiped Deck when the redeal hands the same Recipes back', async () => {
       // A cold pool degrades to a reshuffle, which is still a whole Deck —
       // Restart must land on something swipeable either way.
-      redealRecipeDeck.mockImplementation(async (_key: string, current: Recipe[]) => current);
+      redealRecipeDeck.mockImplementation(async (_key, current) => current);
       const sessionCode = await decidedCookSession();
 
       await SessionService.restartSession(sessionCode, 'alice');
@@ -1108,6 +1113,7 @@ describe('SessionService', () => {
         redealRecipeDeck,
         dealMovieDeck,
         redealMovieDeck,
+        mintShoppingList,
       });
       const session = await racyService.createSession('Alice');
 
@@ -1143,6 +1149,7 @@ describe('SessionService', () => {
         redealRecipeDeck,
         dealMovieDeck,
         redealMovieDeck,
+        mintShoppingList,
       });
       const session = await racyService.createSession('Alice');
 
