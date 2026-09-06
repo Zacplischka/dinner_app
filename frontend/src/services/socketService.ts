@@ -83,10 +83,18 @@ const ACK_TIMEOUT_MS = 10_000;
 // The transport resolves it as-is; the only acks the client mints itself are
 // the not-connected and timed-out failures below. Without the timeout a
 // command lost mid-flight never settles and its screen spins forever.
+// Both messages land in a toast or an inline error verbatim, so they are
+// written as sentences that tell the user what to do (#409).
 function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promise<Ack<T>> {
   return new Promise((resolve) => {
     if (!socket?.connected) {
-      resolve({ success: false, error: { code: 'UNKNOWN', message: 'Socket not connected' } });
+      resolve({
+        success: false,
+        error: {
+          code: 'UNKNOWN',
+          message: "You're offline. Check your connection and try again.",
+        },
+      });
       return;
     }
     // socket.io's typed `emit` can't infer through this generic wrapper; the
@@ -100,7 +108,13 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
     )(event, payload, (err, ack) =>
       resolve(
         err
-          ? { success: false, error: { code: 'UNKNOWN', message: 'No response from server' } }
+          ? {
+              success: false,
+              error: {
+                code: 'UNKNOWN',
+                message: "The server didn't respond. Check your connection and try again.",
+              },
+            }
           : ack
       )
     );

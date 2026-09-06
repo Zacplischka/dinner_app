@@ -246,7 +246,10 @@ describe('socketService', () => {
       await vi.advanceTimersByTimeAsync(1);
       expect(settled).toHaveBeenCalledWith({
         success: false,
-        error: { code: 'UNKNOWN', message: 'No response from server' },
+        error: {
+          code: 'UNKNOWN',
+          message: "The server didn't respond. Check your connection and try again.",
+        },
       });
     } finally {
       vi.useRealTimers();
@@ -259,7 +262,7 @@ describe('socketService', () => {
 
     const notConnected = {
       success: false,
-      error: { code: 'UNKNOWN', message: 'Socket not connected' },
+      error: { code: 'UNKNOWN', message: "You're offline. Check your connection and try again." },
     };
     await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual(notConnected);
     await expect(socketService.submitSelection('AB123', [])).resolves.toEqual(notConnected);
