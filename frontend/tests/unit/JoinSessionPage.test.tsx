@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -21,6 +21,7 @@ vi.mock('../../src/services/socketBindings', () => socketMocks);
 
 import { ApiClientError } from '../../src/services/apiClient';
 import JoinSessionPage from '../../src/pages/JoinSessionPage';
+import { useAuthStore } from '../../src/stores/authStore';
 
 function renderPage(initialEntry: string) {
   return render(
@@ -132,5 +133,34 @@ describe('JoinSessionPage late-join landing', () => {
     fillAndSubmit();
 
     expect(await screen.findByText('This session has finished')).toBeTruthy();
+  });
+});
+
+// #412 — a signed-in joiner doesn't retype the name their Profile carries.
+describe('JoinSessionPage identity', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useAuthStore.setState({ user: null, session: null, isAuthenticated: false, isLoading: false });
+  });
+
+  it('prefills the name field from the signed-in Profile', async () => {
+    renderPage('/join');
+    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
+
+    act(() => {
+      useAuthStore.setState({
+        user: { user_metadata: { full_name: 'Alice Nguyen' } } as never,
+        isAuthenticated: true,
+      });
+    });
+
+    await waitFor(() =>
+      expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Alice Nguyen')
+    );
+  });
+
+  it('leaves a guest with an empty name field', () => {
+    renderPage('/join');
+    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
   });
 });

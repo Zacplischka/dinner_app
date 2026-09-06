@@ -8,10 +8,21 @@ import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle, { type LocationMode } from '../components/LocationModeToggle';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
+import { useProfileName } from '../hooks/useProfileName';
 import { reverseGeocode } from '../services/apiClient';
 import { MAX_RADIUS_KM, MIN_RADIUS_KM, toBackendRadiusMiles } from '../services/radius';
 import { resolveArea } from '../services/resolveArea';
 import { validateDisplayName } from '../utils/displayName';
+
+// The header echoes the Branch card tapped at the entry fork (#412), so the
+// screen names the night you picked. Only Eat Out and Takeaway route here.
+const BRANCH_TITLE: Record<Branch | 'none', string> = {
+  eatout: 'Eating out',
+  takeaway: 'Getting takeaway',
+  cook: 'Cooking',
+  watch: 'Watching a movie',
+  none: 'New session',
+};
 
 interface Location {
   latitude: number;
@@ -28,7 +39,7 @@ export default function CreateSessionPage() {
   const branch = (BRANCHES as readonly string[]).includes(branchParam ?? '')
     ? (branchParam as Branch)
     : undefined;
-  const [hostName, setHostName] = useState('');
+  const [hostName, setHostName] = useProfileName();
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isResolvingArea, setIsResolvingArea] = useState(false);
   const [error, setError] = useState('');
@@ -137,7 +148,7 @@ export default function CreateSessionPage() {
   return (
     <main className="min-h-screen bg-ink">
       <NavigationHeader
-        title="Create Session"
+        title={BRANCH_TITLE[branch ?? 'none']}
         subtitle="Start a new dinner decision session"
         showBackButton
         onBack={() => navigate('/')}
@@ -212,7 +223,7 @@ export default function CreateSessionPage() {
                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                    {isGettingLocation ? 'Getting location...' : 'Use My Current Location'}
+                    {isGettingLocation ? 'Getting location…' : 'Use My Current Location'}
                   </button>
                 ) : (
                   <div className="flex gap-2">
@@ -240,7 +251,7 @@ export default function CreateSessionPage() {
                       disabled={busy || manualQuery.trim().length < 2}
                       className="btn border border-cyan/60 bg-cyan/10 text-cyan whitespace-nowrap"
                     >
-                      {isResolvingArea ? 'Finding...' : 'Find area'}
+                      {isResolvingArea ? 'Finding…' : 'Find area'}
                     </button>
                   </div>
                 )}
@@ -332,7 +343,7 @@ export default function CreateSessionPage() {
               disabled={busy || !hostName.trim() || !location}
               className="btn btn-primary w-full min-h-[48px] text-lg"
             >
-              {isLoading ? 'Creating...' : 'Create Session'}
+              {isLoading ? 'Creating…' : 'Create Session'}
             </button>
           </div>
         </form>
