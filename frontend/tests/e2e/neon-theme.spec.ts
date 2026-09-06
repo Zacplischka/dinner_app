@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { CookSetupPage } from './pages';
 
 const contrastRatio = (foreground: number[], background: number[]) => {
@@ -16,6 +16,16 @@ const contrastRatio = (foreground: number[], background: number[]) => {
     (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
     (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
   );
+};
+
+// Every rgb() in one computed CSS property, as [r, g, b] — a gradient yields
+// each of its stops.
+const rgbStops = async (locator: Locator, property: string): Promise<number[][]> => {
+  const value = await locator.evaluate(
+    (el, prop) => getComputedStyle(el).getPropertyValue(prop),
+    property
+  );
+  return [...value.matchAll(/rgba?\((\d+), (\d+), (\d+)/g)].map((m) => m.slice(1, 4).map(Number));
 };
 
 test('uses the Neon Night Market foundation', async ({ page }) => {
@@ -48,13 +58,24 @@ test('keeps representative Neon text pairs WCAG AA readable', async ({ page }) =
 
   const body = page.locator('body');
   const primary = cook.startButton;
+  const label = page.locator('label[for="hostName"]');
   await expect(body).toHaveCSS('color', 'rgb(248, 250, 252)');
   await expect(primary).toHaveCSS('color', 'rgb(3, 7, 18)');
 
-  expect(contrastRatio([248, 250, 252], [3, 7, 18])).toBeGreaterThanOrEqual(4.5);
-  expect(contrastRatio([3, 7, 18], [255, 56, 88])).toBeGreaterThanOrEqual(4.5);
-  expect(contrastRatio([3, 7, 18], [255, 107, 126])).toBeGreaterThanOrEqual(4.5);
-  expect(contrastRatio([53, 231, 255], [3, 7, 18])).toBeGreaterThanOrEqual(4.5);
+  // Ratios over the rendered theme, not restated literals: an edit to
+  // tailwind.config.ts or index.css that breaks AA has to fail here.
+  const [ink] = await rgbStops(body, 'background-color');
+  const [bodyText] = await rgbStops(body, 'color');
+  const [primaryText] = await rgbStops(primary, 'color');
+  const [labelText] = await rgbStops(label, 'color');
+  const primaryStops = await rgbStops(primary, 'background-image');
+
+  expect(contrastRatio(bodyText, ink)).toBeGreaterThanOrEqual(4.5);
+  expect(primaryStops.length).toBeGreaterThanOrEqual(2); // both ends of the coral gradient
+  for (const stop of primaryStops) {
+    expect(contrastRatio(primaryText, stop)).toBeGreaterThanOrEqual(4.5);
+  }
+  expect(contrastRatio(labelText, ink)).toBeGreaterThanOrEqual(4.5);
 });
 
 test('uses the Neon card and field treatments', async ({ page }) => {
