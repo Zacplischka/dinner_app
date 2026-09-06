@@ -7,6 +7,7 @@ import { isMovie, isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import TmdbCredit from './TmdbCredit';
+import { hasDetails } from './DeckEntryDetails';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -14,10 +15,13 @@ interface SwipeCardProps {
   onSwipeRight: () => void;
   isTop: boolean;
   stackPosition: number;
+  /** Open this entry's details (#424). Omitted where there are none to open. */
+  onOpenDetails?: () => void;
 }
 
-const SWIPE_THRESHOLD = 100; // pixels needed to trigger a swipe
+export const SWIPE_THRESHOLD = 100; // pixels needed to trigger a swipe
 const ROTATION_FACTOR = 0.1; // degrees per pixel of drag
+export const TAP_SLOP = 10; // pixels of wobble a finger is allowed and still be a tap
 
 // Pure drag-visual math: gentle tilt plus progressive decision feedback that
 // ramps from 0 to 1 at the swipe threshold. Reduced motion drops the tilt
@@ -31,12 +35,22 @@ export function swipeVisuals(deltaX: number, reducedMotion: boolean) {
   };
 }
 
+// Pure release decision: past the threshold either way it is a swipe, inside a
+// small slop it is a tap (open the details), and anything between just settles.
+// A swipe therefore never opens the sheet and a tap never swipes.
+export function releaseAction(deltaX: number): 'like' | 'pass' | 'tap' | 'settle' {
+  if (deltaX > SWIPE_THRESHOLD) return 'like';
+  if (deltaX < -SWIPE_THRESHOLD) return 'pass';
+  return Math.abs(deltaX) <= TAP_SLOP ? 'tap' : 'settle';
+}
+
 export default function SwipeCard({
   entry,
   onSwipeLeft,
   onSwipeRight,
   isTop,
   stackPosition,
+  onOpenDetails,
 }: SwipeCardProps) {
   const [dragState, setDragState] = useState({
     isDragging: false,
@@ -45,6 +59,9 @@ export default function SwipeCard({
   });
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  // Only the top card is interactive at all, and only an entry with something
+  // to read has details to open — a tap on a Recipe does nothing.
+  const openDetails = isTop && hasDetails(entry) ? onOpenDetails : undefined;
 
   const deltaX = dragState.currentX - dragState.startX;
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -77,15 +94,16 @@ export default function SwipeCard({
 
   const handleTouchEnd = useCallback(() => {
     if (!dragState.isDragging) return;
+    const action = releaseAction(deltaX);
 
-    if (deltaX > SWIPE_THRESHOLD) {
+    if (action === 'like') {
       setSwipeDirection('right');
       setTimeout(onSwipeRight, 300);
       // Keep the release offset so the fly-off animation starts from the lift point.
       setDragState((prev) => ({ ...prev, isDragging: false }));
       return;
     }
-    if (deltaX < -SWIPE_THRESHOLD) {
+    if (action === 'pass') {
       setSwipeDirection('left');
       setTimeout(onSwipeLeft, 300);
       setDragState((prev) => ({ ...prev, isDragging: false }));
@@ -98,7 +116,19 @@ export default function SwipeCard({
       startX: 0,
       currentX: 0,
     });
-  }, [dragState.isDragging, deltaX, onSwipeLeft, onSwipeRight]);
+    // A mouse release runs this twice — React's onMouseUp and the window
+    // listener share one stale isDragging — so the open must be idempotent. It
+    // is: the caller only stores this entry as the open one, and storing the
+    // same entry twice is one open.
+    if (action === 'tap') openDetails?.();
+  }, [dragState.isDragging, deltaX, onSwipeLeft, onSwipeRight, openDetails]);
+
+  // A cancelled touch (a system gesture taking over, a call arriving) never
+  // delivers touchend, so without this the card stays stuck mid-drag and the
+  // next release reads as a tap on a gesture that was abandoned.
+  const handleTouchCancel = useCallback(() => {
+    setDragState({ isDragging: false, startX: 0, currentX: 0 });
+  }, []);
 
   // Mouse event handlers for desktop
   const handleMouseDown = useCallback(
@@ -216,6 +246,7 @@ export default function SwipeCard({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -276,6 +307,23 @@ export default function SwipeCard({
         )}
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
+
+        {/* The keyboard and screen-reader route into the details a tap opens.
+            It sits on the photo's bottom corner — clear of the LIKE and PASS
+            badges, and leaving the info region's geometry (#75) untouched — and
+            it swallows its own pointer events so pressing it never starts a
+            drag. */}
+        {openDetails && (
+          <button
+            type="button"
+            onClick={openDetails}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute bottom-3 right-3 z-20 flex min-h-[44px] items-center rounded-full border border-line bg-ink/70 px-4 text-sm font-bold text-text backdrop-blur-sm"
+          >
+            Details
+          </button>
+        )}
       </div>
 
       {/* Swipe feedback: edge lights and badges strengthen with the drag */}

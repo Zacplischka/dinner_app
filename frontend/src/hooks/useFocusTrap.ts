@@ -10,7 +10,8 @@ const FOCUSABLE =
  * inside `ref` instead of walking off into the page behind it, and whatever
  * had focus before the dialog opened gets it back once `active` drops.
  * `autoFocus` on the dialog's primary still decides the first stop. Used by
- * the leave confirmation and the Full House takeover.
+ * the leave confirmation, the Full House takeover and the Deck Entry details
+ * sheet.
  */
 export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void {
   // Captured during render, not in an effect: React honours `autoFocus` in

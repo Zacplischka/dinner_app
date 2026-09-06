@@ -1,0 +1,347 @@
+// Issue #424 — tapping the top Deck card opens a details sheet: a Movie's whole
+// overview, a Restaurant's full address and a map link. The card's text region
+// is clipped so the swipe-stack geometry (#75) holds, so the details go over the
+// Deck rather than growing in place.
+
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DeckEntry, Movie, Recipe, Restaurant } from '@dinder/shared/types';
+
+const alien: Movie = {
+  kind: 'movie',
+  placeId: 'tmdb:movie:348',
+  mediaType: 'movie',
+  name: 'Alien',
+  photoUrl: 'https://example.com/alien.jpg',
+  year: 1979,
+  runtimeMinutes: 117,
+  genres: ['Horror', 'Sci-Fi'],
+  rating: 93,
+  imdbId: 'tt0078748',
+  trailerUrl: 'https://www.youtube.com/watch?v=LjLamj-b0I8',
+  overview:
+    'A commercial starship crew investigate a derelict vessel and bring aboard a lifeform that will not stop until every one of them is dead.',
+};
+const heat: Movie = { kind: 'movie', placeId: 'tmdb:movie:949', name: 'Heat', year: 1995 };
+const ramen: Restaurant = {
+  placeId: 'ChIJ-ramen',
+  name: 'Ramen Ichiban',
+  address: '1 Market Lane, A Very Long Suburb Name, Far Away State 90210',
+  cuisineType: 'Japanese ramen',
+  rating: 4.6,
+  priceLevel: 2,
+  openNow: true,
+  photoUrl: 'https://example.com/ramen.jpg',
+};
+const carbonara: Recipe = { kind: 'recipe', placeId: 'spoon:1', name: 'Carbonara' };
+
+const deal = vi.fn(async (): Promise<DeckEntry[]> => [alien, heat]);
+vi.mock('../../src/services/apiClient', () => ({
+  getRestaurants: (...args: unknown[]) => deal(...args),
+  getSession: vi.fn(async () => ({ shareableLink: 'http://localhost:3000/join?code=AB123' })),
+}));
+
+vi.mock('../../src/services/socketBindings', () => ({
+  submitSelection: vi.fn(async () => ({ success: true, data: null })),
+  leaveSession: vi.fn(async () => ({ success: true, data: null })),
+  sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
+}));
+
+import SelectionPage from '../../src/pages/SelectionPage';
+import { releaseAction, SWIPE_THRESHOLD, TAP_SLOP } from '../../src/components/SwipeCard';
+import { useSessionStore } from '../../src/stores/sessionStore';
+
+const renderSelectionPage = () =>
+  render(
+    <MemoryRouter initialEntries={['/session/AB123/select']}>
+      <Routes>
+        <Route path="/session/:sessionCode/select" element={<SelectionPage />} />
+      </Routes>
+    </MemoryRouter>
+  );
+
+const seed = (branch: 'watch' | 'eatout' | 'cook', ...names: string[]) => {
+  useSessionStore.getState().resetSession();
+  useSessionStore.setState({
+    sessionCode: 'AB123',
+    branch,
+    participants: names.map((displayName, i) => ({
+      participantId: `p${i}`,
+      displayName,
+      sessionCode: 'AB123',
+      joinedAt: i,
+      hasSubmitted: false,
+      isHost: i === 0,
+    })),
+  });
+};
+
+// Scoped to the stack: the open sheet shows the same name, so an unscoped
+// query is ambiguous the moment the details are up.
+const cardFor = (name: string) =>
+  within(screen.getByTestId('card-stack'))
+    .getByText(name)
+    .closest('[data-swipe-card]') as HTMLElement;
+
+// A keyboard user's route in: Tab to the pill, then press it. fireEvent.click
+// does not move focus the way a real pointer does, so focus it by hand — the
+// sheet must hand focus back to exactly this control on close.
+const pressDetails = async () => {
+  const pill = await screen.findByRole('button', { name: 'Details' });
+  pill.focus();
+  fireEvent.click(pill);
+  return { pill, dialog: await screen.findByRole('dialog') };
+};
+
+describe('releaseAction', () => {
+  it('reads a release as a swipe past the threshold, a tap inside the slop, or a spring-back', () => {
+    expect(releaseAction(SWIPE_THRESHOLD + 1)).toBe('like');
+    expect(releaseAction(-SWIPE_THRESHOLD - 1)).toBe('pass');
+    expect(releaseAction(0)).toBe('tap');
+    expect(releaseAction(TAP_SLOP)).toBe('tap');
+    expect(releaseAction(-TAP_SLOP)).toBe('tap');
+    // Between the slop and the threshold is neither: the card just settles.
+    expect(releaseAction(TAP_SLOP + 1)).toBe('settle');
+    expect(releaseAction(-SWIPE_THRESHOLD)).toBe('settle');
+    expect(releaseAction(SWIPE_THRESHOLD)).toBe('settle');
+  });
+});
+
+describe('Deck Entry details sheet — Movie', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    deal.mockResolvedValue([alien, heat]);
+    seed('watch', 'Alice');
+  });
+
+  it('opens on a tap and shows the whole overview, unclamped', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+
+    fireEvent.mouseDown(cardFor('Alien'), { clientX: 120 });
+    fireEvent.mouseUp(cardFor('Alien'), { clientX: 120 });
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    const overview = within(dialog).getByText(/commercial starship crew/);
+    expect(overview).not.toHaveClass('line-clamp-3');
+    expect(within(dialog).getByRole('heading', { name: 'Alien' })).toBeInTheDocument();
+  });
+
+  it('opens exactly one sheet when a mouse release runs the end handler twice', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+
+    // mouseup bubbles: React's onMouseUp and the window listener both fire on
+    // the same stale isDragging, so the open has to be idempotent.
+    fireEvent.mouseDown(cardFor('Alien'), { clientX: 120 });
+    fireEvent.mouseUp(cardFor('Alien'), { clientX: 120 });
+
+    await screen.findByRole('dialog');
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  it('swipes on a drag past the threshold and opens nothing', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+
+    fireEvent.mouseDown(cardFor('Alien'), { clientX: 10 });
+    fireEvent.mouseMove(cardFor('Alien'), { clientX: 160 });
+    fireEvent.mouseUp(cardFor('Alien'), { clientX: 160 });
+
+    await waitFor(() => expect(useSessionStore.getState().selections).toEqual(['tmdb:movie:348']));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('resets without opening when the touch is cancelled', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+
+    fireEvent.touchStart(cardFor('Alien'), { touches: [{ clientX: 120 }] });
+    fireEvent.touchCancel(cardFor('Alien'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // The gesture is over, so the touchend the browser may still deliver is a
+    // no-op rather than a late tap.
+    fireEvent.touchEnd(cardFor('Alien'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(cardFor('Alien').style.transform).not.toContain('translateX');
+  });
+
+  it('opens from the Details control without starting a drag', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+
+    const { pill } = await pressDetails();
+    // Pressing the pill must not leave the card mid-drag behind the sheet.
+    expect(cardFor('Alien').style.cursor).not.toBe('grabbing');
+    expect(pill.closest('[data-swipe-card]')).toBe(cardFor('Alien'));
+  });
+
+  it('closes on Escape and hands focus back to the Details control', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    const { pill, dialog } = await pressDetails();
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(pill));
+  });
+
+  it('closes on a backdrop click and on hardware back', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    const { dialog } = await pressDetails();
+
+    fireEvent.click(within(dialog).getByTestId('details-backdrop'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await pressDetails();
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('leaves the Deck keys dead while it is open', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    await pressDetails();
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    fireEvent.keyDown(window, { key: 'Backspace' });
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(cardFor('Alien')).toBeInTheDocument();
+  });
+
+  it('shows the trailer, IMDb and TMDB credit links', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    const { dialog } = await pressDetails();
+
+    expect(within(dialog).getByRole('link', { name: 'Watch trailer' })).toHaveAttribute(
+      'href',
+      alien.trailerUrl
+    );
+    expect(within(dialog).getByRole('link', { name: 'IMDb' })).toHaveAttribute(
+      'href',
+      'https://www.imdb.com/title/tt0078748/'
+    );
+    expect(within(dialog).getByRole('link', { name: 'TMDB' })).toHaveAttribute(
+      'href',
+      'https://www.themoviedb.org/movie/348'
+    );
+  });
+
+  it('falls back to a YouTube search when the corpus has no trailer', async () => {
+    deal.mockResolvedValue([{ ...alien, trailerUrl: undefined }]);
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    const { dialog } = await pressDetails();
+
+    expect(within(dialog).getByRole('link', { name: 'Watch trailer' })).toHaveAttribute(
+      'href',
+      'https://www.youtube.com/results?search_query=Alien%201979%20trailer'
+    );
+  });
+
+  it('drops the slide-in under prefers-reduced-motion', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (media: string) =>
+        ({
+          matches: true,
+          media,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }) as unknown as MediaQueryList
+    );
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    const { dialog } = await pressDetails();
+
+    expect(within(dialog).getByTestId('details-panel')).not.toHaveClass('animate-slide-up');
+  });
+});
+
+describe('Deck Entry details sheet — Full House interrupt', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    deal.mockResolvedValue([alien, heat]);
+    seed('watch', 'Alice', 'Bob', 'Carol');
+  });
+
+  it('closes the sheet, shows the takeover, and leaves one history entry behind', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
+    renderSelectionPage();
+    await screen.findByText('Alien');
+
+    // Like Alien so it sits behind the cursor, then open the details of Heat.
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    await screen.findByText('Heat');
+    await pressDetails();
+    expect(pushState).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('tmdb:movie:348', 'Bob');
+      useSessionStore.getState().recordLiveSelection('tmdb:movie:348', 'Carol');
+    });
+
+    const takeover = await screen.findByRole('dialog');
+    expect(within(takeover).getByText('EVERYONE LIKED THIS')).toBeInTheDocument();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    // The sheet's entry is reused rather than stacked on top of.
+    expect(pushState).toHaveBeenCalledTimes(1);
+
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('Heat')).toBeInTheDocument();
+  });
+});
+
+describe('Deck Entry details sheet — Restaurant', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    deal.mockResolvedValue([ramen]);
+    seed('eatout', 'Alice');
+  });
+
+  it('shows the full address and a Google Maps link that opens safely in a new tab', async () => {
+    renderSelectionPage();
+    await screen.findByText('Ramen Ichiban');
+    const { dialog } = await pressDetails();
+
+    const address = within(dialog).getByText(ramen.address!);
+    expect(address).not.toHaveClass('truncate');
+    expect(within(dialog).getByText('Japanese ramen')).toBeInTheDocument();
+    expect(within(dialog).getByText('Open now')).toBeInTheDocument();
+
+    const maps = within(dialog).getByRole('link', { name: 'Open in Google Maps' });
+    expect(maps).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/search/?api=1&query=Ramen%20Ichiban&query_place_id=ChIJ-ramen'
+    );
+    expect(maps).toHaveAttribute('target', '_blank');
+    expect(maps).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+});
+
+describe('Deck Entry details sheet — Recipe', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    deal.mockResolvedValue([carbonara]);
+    seed('cook', 'Alice');
+  });
+
+  it('offers no Details control, and a tap does nothing', async () => {
+    renderSelectionPage();
+    await screen.findByText('Carbonara');
+
+    expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
+
+    fireEvent.mouseDown(cardFor('Carbonara'), { clientX: 120 });
+    fireEvent.mouseUp(cardFor('Carbonara'), { clientX: 120 });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
