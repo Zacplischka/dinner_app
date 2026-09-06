@@ -53,6 +53,7 @@ export async function createSession(
     craving?: Craving;
     headcount?: number;
     mood?: Mood;
+    deckSize?: number;
   } = {}
 ): Promise<CreateSessionResponse> {
   const body: CreateSessionRequest = { hostName };
@@ -79,6 +80,10 @@ export async function createSession(
 
   if (setup.mood) {
     body.mood = setup.mood;
+  }
+
+  if (setup.deckSize !== undefined) {
+    body.deckSize = setup.deckSize;
   }
 
   return request<CreateSessionResponse>('/sessions', {

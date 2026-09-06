@@ -8,7 +8,9 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CUISINES,
+  DEFAULT_DECK_SIZE,
   DIETS,
+  MAX_DECK_SIZE,
   MAX_HEADCOUNT,
   MEAL_TYPES,
   type Craving,
@@ -18,6 +20,7 @@ import {
   type NearestCraving,
 } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
+import DeckSizeStepper from '../components/DeckSizeStepper';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { fetchNearestCraving } from '../services/apiClient';
@@ -36,6 +39,7 @@ export default function CookSetupPage() {
   const [cuisines, setCuisines] = useState<Cuisine[]>([]);
   const [diets, setDiets] = useState<Diet[]>([]);
   const [headcount, setHeadcount] = useState(2);
+  const [deckSize, setDeckSize] = useState(DEFAULT_DECK_SIZE);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [offer, setOffer] = useState<NearestCraving | null>(null);
@@ -63,7 +67,7 @@ export default function CookSetupPage() {
 
     const failure = await createAndJoin(
       hostName.trim(),
-      { branch: 'cook', craving, headcount },
+      { branch: 'cook', craving, headcount, deckSize },
       selectedFriendIds
     );
     setError(failure?.message ?? '');
@@ -238,6 +242,14 @@ export default function CookSetupPage() {
               </button>
             </div>
           </div>
+
+          <DeckSizeStepper
+            value={deckSize}
+            onChange={setDeckSize}
+            max={MAX_DECK_SIZE}
+            unit="recipes"
+            disabled={isLoading}
+          />
 
           <InviteFriendsSection
             selectedFriendIds={selectedFriendIds}

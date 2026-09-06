@@ -80,8 +80,19 @@ describe('WatchSetupPage', () => {
     expect(setup).toEqual({
       branch: 'watch',
       mood: { genres: ['Comedy', 'Horror'], decades: ['1990s'], mediaTypes: [] },
+      deckSize: 15,
     });
     await waitFor(() => expect(screen.getByText('Lobby route')).toBeInTheDocument());
+  });
+
+  it('sends the Deck size the Host chose (#415)', async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bigger Deck' }));
+    expect(screen.getByText('20 movies')).toBeTruthy();
+
+    const [, setup] = await submitAs();
+    expect(setup.deckSize).toBe(20);
   });
 
   it('narrows the Mood to series when the Series chip is picked', async () => {

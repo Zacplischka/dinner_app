@@ -113,6 +113,7 @@ describe('CreateSessionPage location flows', () => {
       },
       searchRadiusMiles: 5, // 8 km converted to miles for the backend contract
       branch: undefined, // no branch in the URL → today's contract, untouched (ADR 0007)
+      deckSize: 20, // untouched stepper — one Places page, exactly as before (#415)
     });
   });
 
@@ -139,6 +140,7 @@ describe('CreateSessionPage location flows', () => {
       location: expect.any(Object),
       searchRadiusMiles: 5,
       branch: 'takeaway',
+      deckSize: 20,
     });
   });
 
@@ -165,7 +167,36 @@ describe('CreateSessionPage location flows', () => {
       location: expect.any(Object),
       searchRadiusMiles: 5,
       branch: undefined,
+      deckSize: 20,
     });
+  });
+
+  it('sends the Deck size the Host stepped down to, and stops at one Places page (#415)', async () => {
+    serviceMocks.geocodeArea.mockResolvedValue(richmond);
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
+    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
+      target: { value: 'Richmond' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
+    await waitFor(() => {
+      expect(screen.getByText('Location set')).toBeTruthy();
+    });
+
+    // Eat Out and Takeaway top out at one Places page, so the stepper is
+    // already at its ceiling — the only way is down.
+    expect(screen.getByRole('button', { name: 'Bigger Deck' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Smaller Deck' }));
+    expect(screen.getByText('15 restaurants')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Lobby route')).toBeTruthy();
+    });
+    expect(serviceMocks.createSession.mock.calls[0][1]).toMatchObject({ deckSize: 15 });
   });
 
   it('recovers from a denied permission by switching to manual entry with inputs intact', async () => {

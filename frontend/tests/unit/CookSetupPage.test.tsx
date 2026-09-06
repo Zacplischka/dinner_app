@@ -84,8 +84,19 @@ describe('CookSetupPage', () => {
       branch: 'cook',
       craving: { mealType: 'main course', cuisines: ['italian', 'thai'], diets: ['vegetarian'] },
       headcount: 3,
+      deckSize: 15,
     });
     await waitFor(() => expect(screen.getByText('Lobby route')).toBeInTheDocument());
+  });
+
+  it('sends the Deck size the Host chose (#415)', async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Smaller Deck' }));
+    expect(screen.getByText('10 recipes')).toBeTruthy();
+
+    const [, setup] = await submitAs();
+    expect(setup.deckSize).toBe(10);
   });
 
   it('sends the chosen meal type', async () => {
@@ -222,6 +233,7 @@ describe('CookSetupPage — the Nearest Craving', () => {
       branch: 'cook',
       craving: { mealType: 'main course', cuisines: ASIAN, diets: ['vegan'] },
       headcount: 2,
+      deckSize: 15,
     });
     await waitFor(() => expect(screen.getByText('Lobby route')).toBeInTheDocument());
   });
