@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { CookSetupPage } from './pages';
 
 const contrastRatio = (foreground: number[], background: number[]) => {
   const luminance = ([red, green, blue]: number[]) => {
@@ -27,9 +28,12 @@ test('uses the Neon Night Market foundation', async ({ page }) => {
   await expect(body).toHaveCSS('color', 'rgb(248, 250, 252)');
   await expect(body).toHaveCSS('background-color', 'rgb(3, 7, 18)');
 
-  // The fork has no primary CTA; the Cook screen carries an enabled btn-primary.
-  await page.goto('/cook');
-  const primary = page.getByRole('button', { name: /back to tonight/i });
+  // The fork has no primary CTA; the Cook setup's `Start swiping` is an
+  // enabled btn-primary once a name is entered.
+  const cook = new CookSetupPage(page);
+  await cook.goto();
+  await cook.nameInput.fill('Zac');
+  const primary = cook.startButton;
   await expect(primary).toHaveCSS('background-image', /rgb\(255, 56, 88\)/);
 
   await primary.focus();
@@ -38,10 +42,12 @@ test('uses the Neon Night Market foundation', async ({ page }) => {
 });
 
 test('keeps representative Neon text pairs WCAG AA readable', async ({ page }) => {
-  await page.goto('/cook');
+  const cook = new CookSetupPage(page);
+  await cook.goto();
+  await cook.nameInput.fill('Zac');
 
   const body = page.locator('body');
-  const primary = page.getByRole('button', { name: /back to tonight/i });
+  const primary = cook.startButton;
   await expect(body).toHaveCSS('color', 'rgb(248, 250, 252)');
   await expect(primary).toHaveCSS('color', 'rgb(3, 7, 18)');
 
@@ -83,7 +89,9 @@ test('renders the Neon entry fork at mobile width', async ({ page }) => {
   expect((await takeaway.boundingBox())?.height).toBeGreaterThanOrEqual(48);
   expect((await cook.boundingBox())?.height).toBeGreaterThanOrEqual(48);
   await expect(page.getByRole('button', { name: /join with a code/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Compare delivery prices' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Compare delivery prices', exact: true })
+  ).toBeVisible();
 });
 
 test('uses the five-character Neon join field', async ({ page }) => {

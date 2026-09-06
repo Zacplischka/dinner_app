@@ -39,17 +39,15 @@ test.describe('Mobile Layout - Home Page', () => {
     expect(joinButtonBox?.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('text is readable on mobile (min 14px)', async ({ page, homePage }) => {
+  test('text is readable on mobile (min 14px)', async ({ homePage }) => {
     await homePage.goto();
 
-    // Check that body text is at least 14px (browsers zoom small text)
-    const bodyFontSize = await page.evaluate(() => {
-      const body = document.querySelector('p');
-      if (body) {
-        return parseFloat(getComputedStyle(body).fontSize);
-      }
-      return 16;
-    });
+    // Body copy (a Branch card's description) is at least 14px. The sign-in
+    // footnote below the cards is a 12px micro-label like the rest of the
+    // Neon theme's, not body text.
+    const bodyFontSize = await homePage.eatOutDescription.evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize)
+    );
 
     expect(bodyFontSize).toBeGreaterThanOrEqual(14);
   });

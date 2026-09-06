@@ -109,18 +109,15 @@ test.describe('Mobile-safe focused-flow header (#78)', () => {
     await expect(host.page.getByTestId('nav-header-secondary')).toBeVisible();
     await host.page.screenshot({ path: `${SCREENSHOT_DIR}/selection.png` });
 
-    // Both like the first restaurant to force a Match, then finish the deck
-    await Promise.all(
-      all.map(async (p) => {
-        if (await p.selectionPage.likeButton.isVisible()) {
-          await p.selectionPage.likeRestaurant();
-        }
-        await p.selectionPage.passAllRemaining();
-        if (await p.selectionPage.submitButton.isVisible()) {
-          await p.selectionPage.submitSelections();
-        }
-      })
-    );
+    // Both like the first restaurant. The second like completes a Full House
+    // (#187), whose takeover replaces the deck on every phone; a unanimous
+    // `Finish here` submits that one like, so the Match is guaranteed.
+    for (const p of all) {
+      await p.selectionPage.likeRestaurant();
+    }
+    for (const p of all) {
+      await p.selectionPage.finishHereButton.click();
+    }
     await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
 
     // Match screen
