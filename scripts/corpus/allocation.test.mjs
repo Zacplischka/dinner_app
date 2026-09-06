@@ -7,11 +7,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   DECK_FLOOR,
+  DIET_TARGETS,
   MAIN_ALLOCATION,
   NON_MAIN_ALLOCATION,
   TOP_CUISINES,
   shortfalls,
 } from './allocation.mjs';
+import { CUISINES, DIETS, MEAL_TYPES } from './gate.mjs';
 
 const sum = (counts) => Object.values(counts).reduce((total, count) => total + count, 0);
 
@@ -33,7 +35,27 @@ const reported = (recipes) => shortfalls(recipes).map((entry) => entry.what);
 test('the allocation is the numbers #312 resolved on', () => {
   assert.equal(sum(MAIN_ALLOCATION), 915);
   assert.equal(sum(NON_MAIN_ALLOCATION), 245);
-  assert.equal(Object.keys(MAIN_ALLOCATION).length, 15);
+});
+
+test('every bucket is a chip, and every chip has a bucket', () => {
+  // The counts are #312's judgement and have to be written down, but the keys
+  // they hang off are the chip vocabularies gate.mjs already reads out of
+  // shared/types/cook.ts. Asserted rather than copied: a chip added there, or a
+  // bucket misspelled here, fails this instead of reporting `spainsh: 0/30`
+  // forever. `modern australian` is the exception until #340 ships the chip.
+  const sorted = (names) => [...names].sort();
+  assert.deepEqual(
+    sorted(Object.keys(MAIN_ALLOCATION)),
+    sorted(new Set([...CUISINES, 'modern australian']))
+  );
+  assert.deepEqual(
+    sorted(Object.keys(NON_MAIN_ALLOCATION)),
+    sorted(MEAL_TYPES.filter((mealType) => mealType !== 'main course'))
+  );
+  // Pescetarian is the one chip with no target: `vegan ⊆ vegetarian ⊆
+  // pescetarian` means it is answered by dishes authored anyway, and the Deck
+  // floor below is what holds it honest.
+  assert.deepEqual(sorted([...Object.keys(DIET_TARGETS), 'pescetarian']), sorted(DIETS));
 });
 
 test('an empty corpus is short of everything, bucket by bucket', () => {

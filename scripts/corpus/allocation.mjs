@@ -23,7 +23,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { recordSlugs } from './records.mjs';
 import { cuisineBucket } from './human.mjs';
 
-/** 915 mains, cuisine bucket → count. `modern australian` is the chip #340
+/** 915 mains, cuisine bucket → count. The counts are #312's judgement, but the
+ *  keys are the chip vocabulary — allocation.test.mjs asserts them against the
+ *  `CUISINES` gate.mjs reads out of `shared/types/cook.ts`, so a chip added
+ *  there fails until it has a number here. `modern australian` is the chip #340
  *  ships; until it does, its records carry no cuisine and are named in the
  *  corpus's own `pending-cuisine.json`, which the CLI below folds in. */
 export const MAIN_ALLOCATION = {
