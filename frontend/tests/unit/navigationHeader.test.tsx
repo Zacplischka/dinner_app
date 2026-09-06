@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NavigationHeader from '../../src/components/NavigationHeader';
 import { useSessionStore } from '../../src/stores/sessionStore';
@@ -13,7 +13,7 @@ import { useToastStore } from '../../src/hooks/useToast';
  */
 describe('NavigationHeader', () => {
   beforeEach(() => {
-    useSessionStore.setState({ isConnected: true, expiresAt: null });
+    useSessionStore.setState({ isConnected: true, expiresAt: null, sessionStatus: 'selecting' });
   });
 
   afterEach(() => {
@@ -173,5 +173,23 @@ describe('NavigationHeader', () => {
     useSessionStore.setState({ expiresAt: '2099-01-01T00:00:00Z' });
     render(<NavigationHeader title="Join Session" showBackButton />);
     expect(screen.queryByText(/Expires in/)).toBeNull();
+  });
+
+  // #402 — visibility of system status: an expired Session says so on every
+  // Session screen, not just the Group Order.
+  it('replaces the countdown with an expired banner and a way home once the Session expires', () => {
+    useSessionStore.setState({ expiresAt: '2099-01-01T00:00:00Z', sessionStatus: 'expired' });
+    render(<NavigationHeader title="Choose Restaurants" sessionCode="7K9M2" />);
+
+    const banner = screen.getByRole('alert');
+    expect(banner).toHaveTextContent('This Session has expired');
+    expect(within(banner).getByRole('link', { name: /start over/i })).toHaveAttribute('href', '/');
+    expect(screen.queryByText(/Expires in/)).toBeNull();
+  });
+
+  it('shows no expired banner off a Session screen, even when the store still says expired', () => {
+    useSessionStore.setState({ sessionStatus: 'expired' });
+    render(<NavigationHeader title="Join Session" showBackButton />);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

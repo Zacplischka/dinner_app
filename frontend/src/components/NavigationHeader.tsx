@@ -64,11 +64,14 @@ export default function NavigationHeader({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { isConnected, expiresAt } = useSessionStore();
-  // Only a Session screen (one that shows the code) carries the countdown; the
-  // store's expiresAt can linger after a Session ends and must not leak onto
-  // Join or Create.
-  const showExpiry = Boolean(sessionCode && expiresAt);
+  const { isConnected, expiresAt, sessionStatus } = useSessionStore();
+  // Only a Session screen (one that shows the code) carries the countdown or
+  // the expired banner; the store's expiresAt and status can linger after a
+  // Session ends and must not leak onto Join or Create.
+  const expired = Boolean(sessionCode) && sessionStatus === 'expired';
+  // #402: once it has expired there is nothing left to count down to — every
+  // Session screen says so here, instead of sticking on "under a minute".
+  const showExpiry = Boolean(sessionCode && expiresAt) && !expired;
 
   // Tick, don't decrement: the label re-reads expiresAt and Date.now() on every
   // render, so a throttled background tab is right again the moment it wakes,
@@ -186,6 +189,18 @@ export default function NavigationHeader({
             </div>
           </div>
 
+          {expired && (
+            <div
+              role="alert"
+              className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-lg border border-coral/30 bg-coral/10 px-3 py-2 text-center"
+            >
+              <span className="text-sm font-semibold text-coral">This Session has expired</span>
+              <a href="/" className="text-sm font-medium text-cyan underline underline-offset-2">
+                Start over
+              </a>
+            </div>
+          )}
+
           {/* Secondary region - metadata that must not compete with the title row */}
           {hasSecondaryContent && (
             <div
@@ -230,7 +245,7 @@ export default function NavigationHeader({
 
               {showSubtitle && <p className="text-xs text-muted">{subtitle}</p>}
 
-              {sessionCode && expiresAt && (
+              {showExpiry && expiresAt && (
                 <p className="text-xs text-muted">{expiryLabel(expiresAt)}</p>
               )}
 
