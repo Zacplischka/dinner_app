@@ -19,6 +19,8 @@ export interface Toast {
 
 interface ToastStore {
   toasts: Toast[];
+  /** Bumps on every polite (non-error) emission, so a repeat still mutates the live region. */
+  politeSeq: number;
   addToast: (toast: Omit<Toast, 'id'>) => string;
   removeToast: (id: string) => void;
   clearAll: () => void;
@@ -35,9 +37,11 @@ const MAX_TOASTS = 3;
 // Zustand store for global toast state
 export const useToastStore = create<ToastStore>((set, get) => ({
   toasts: [],
+  politeSeq: 0,
 
   addToast: (toast) => {
     const id = generateId();
+    const politeSeq = get().politeSeq + (toast.type === 'error' ? 0 : 1);
 
     // A repeat of what's already on top doesn't stack — it replaces it, so the
     // timer restarts. Returning the old id instead left a second tap with
@@ -45,12 +49,13 @@ export const useToastStore = create<ToastStore>((set, get) => ({
     // repeat landed inside its 200ms exit animation.
     const last = get().toasts.at(-1);
     if (last && last.type === toast.type && last.message === toast.message) {
-      set((state) => ({ toasts: [...state.toasts.slice(0, -1), { ...toast, id }] }));
+      set((state) => ({ toasts: [...state.toasts.slice(0, -1), { ...toast, id }], politeSeq }));
       return id;
     }
 
     set((state) => ({
       toasts: [...state.toasts, { ...toast, id }].slice(-MAX_TOASTS),
+      politeSeq,
     }));
     return id;
   },

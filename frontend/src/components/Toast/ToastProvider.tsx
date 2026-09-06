@@ -10,13 +10,17 @@ interface ToastProviderProps {
 }
 
 export default function ToastProvider({ children }: ToastProviderProps) {
-  const { toasts, removeToast } = useToastStore();
+  const { toasts, removeToast, politeSeq } = useToastStore();
 
   // A polite live region is only announced when text changes inside a node
   // that was already in the tree — a region minted with its card stays silent.
   // So one region outlives every toast and carries the newest non-error
   // message; errors interrupt through their own role="alert" on the card.
-  const politeMessage = toasts.filter((t) => t.type !== 'error').at(-1)?.message ?? '';
+  // A repeat replaces the top toast with the same text, and identical text is
+  // no DOM mutation, so nothing is re-announced. Alternating an invisible
+  // zero-width space per emission makes every repeat a change the reader sees.
+  const polite = toasts.filter((t) => t.type !== 'error').at(-1);
+  const politeMessage = polite ? polite.message + (politeSeq % 2 ? '\u200B' : '') : '';
 
   return (
     <>

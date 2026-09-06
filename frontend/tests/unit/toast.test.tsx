@@ -89,6 +89,20 @@ describe('Toast announcement role (#409)', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('re-announces a repeated polite message', () => {
+    render(<ToastProvider>{null}</ToastProvider>);
+    const region = screen.getByRole('status');
+
+    act(() => void toast.warning('Connection lost', { duration: 10_000 }));
+    const first = region.textContent;
+    act(() => void toast.warning('Connection lost', { duration: 10_000 }));
+
+    // The repeat replaced the toast in place; only a text change is announced.
+    expect(region).toHaveTextContent('Connection lost');
+    expect(region.textContent).not.toBe(first);
+    expect(useToastStore.getState().toasts).toHaveLength(1);
+  });
+
   it('leaves the polite region alone for an error', () => {
     render(<ToastProvider>{null}</ToastProvider>);
     act(() => void toast.error('Boom', { duration: 10_000 }));
