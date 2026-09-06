@@ -10,7 +10,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DECADES,
+  DEFAULT_DECK_SIZE,
   GENRES,
+  MAX_DECK_SIZE,
   MEDIA_TYPES,
   type Decade,
   type Genre,
@@ -18,6 +20,7 @@ import {
 } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import TmdbCredit from '../components/TmdbCredit';
+import DeckSizeStepper from '../components/DeckSizeStepper';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { validateDisplayName } from '../utils/displayName';
@@ -37,6 +40,7 @@ export default function WatchSetupPage() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [decades, setDecades] = useState<Decade[]>([]);
   const [mediaTypes, setMediaTypes] = useState<MediaType[]>([]);
+  const [deckSize, setDeckSize] = useState(DEFAULT_DECK_SIZE);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
@@ -53,7 +57,7 @@ export default function WatchSetupPage() {
 
     const failure = await createAndJoin(
       hostName.trim(),
-      { branch: 'watch', mood: { genres, decades, mediaTypes } },
+      { branch: 'watch', mood: { genres, decades, mediaTypes }, deckSize },
       selectedFriendIds
     );
     setError(failure?.message ?? '');
@@ -162,6 +166,14 @@ export default function WatchSetupPage() {
               })}
             </div>
           </fieldset>
+
+          <DeckSizeStepper
+            value={deckSize}
+            onChange={setDeckSize}
+            max={MAX_DECK_SIZE}
+            unit="movies"
+            disabled={isLoading}
+          />
 
           <InviteFriendsSection
             selectedFriendIds={selectedFriendIds}

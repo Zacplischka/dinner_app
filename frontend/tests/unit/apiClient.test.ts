@@ -111,6 +111,23 @@ describe('apiClient', () => {
       );
     });
 
+    it('carries the Host-chosen Deck size, and leaves it off when there is none (#415)', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ sessionCode: 'AB123', hostName: 'Alice' }),
+      });
+      global.fetch = mockFetch;
+
+      await apiClient.createSession('Alice', { deckSize: 8 });
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+        hostName: 'Alice',
+        deckSize: 8,
+      });
+
+      await apiClient.createSession('Alice', {});
+      expect(JSON.parse(mockFetch.mock.calls[1][1].body)).not.toHaveProperty('deckSize');
+    });
+
     it('should allow creating session without location (backward compatibility)', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,

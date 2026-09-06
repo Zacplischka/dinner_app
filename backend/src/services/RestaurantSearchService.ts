@@ -1,5 +1,10 @@
 import { logger } from '../logger.js';
-import type { GeocodedArea, Restaurant, Venue } from '@dinder/shared/types';
+import {
+  MAX_RESTAURANT_DECK_SIZE,
+  type GeocodedArea,
+  type Restaurant,
+  type Venue,
+} from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { DomainError } from './DomainError.js';
 import { distanceMeters } from './storefrontResolution.js';
@@ -489,7 +494,10 @@ export async function searchNearbyRestaurants(
       Number(a.openNow === false) - Number(b.openNow === false) || (b.rating || 0) - (a.rating || 0)
   );
 
-  return restaurants;
+  // The Host's chosen Deck size (#415), applied after the sort so a short Deck
+  // is the best of what one page held. One Places page is 20 results and is
+  // never paged (#97), so the default is the whole page.
+  return restaurants.slice(0, params.maxResults ?? MAX_RESTAURANT_DECK_SIZE);
 }
 
 export async function searchNearbyVenues(params: GooglePlacesSearchParams): Promise<Venue[]> {

@@ -12,11 +12,13 @@ import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
 import { cravingPoolKey } from './RecipePoolService.js';
 import {
+  MAX_RESTAURANT_DECK_SIZE,
   SESSION_CODE_LENGTH,
   type Branch,
   type Craving,
   type DeckEntry,
   type Mood,
+  type SessionLocation,
   isRestaurant,
 } from '@dinder/shared/types';
 
@@ -42,21 +44,26 @@ export interface SessionServiceDeps {
    * short (#333). Rejects only when neither supply could answer.
    */
   dealRecipeDeck: (
-    craving: Craving
+    craving: Craving,
+    deckSize?: number
   ) => Promise<{ entries: DeckEntry[]; recipeSourceDown: boolean }>;
   /**
    * A Cook Restart's Deck: another cut of the same pool, avoiding the just-wiped
    * deal where it can. Best-effort by contract — it degrades to reshuffling what
    * it was handed rather than failing, which is what lets Restart never fail.
    */
-  redealRecipeDeck: (poolKey: string, current: DeckEntry[]) => Promise<DeckEntry[]>;
+  redealRecipeDeck: (
+    poolKey: string,
+    current: DeckEntry[],
+    deckSize?: number
+  ) => Promise<DeckEntry[]>;
   /**
    * The Watch Branch's Deck supply (#369): the corpus Movies matching a Mood,
    * cut to a Deck. Synchronous and never rejects — the corpus is in memory.
    */
-  dealMovieDeck: (mood: Mood) => DeckEntry[];
+  dealMovieDeck: (mood: Mood, deckSize?: number) => DeckEntry[];
   /** A Watch Restart's Deck: the same Mood again, the just-wiped Movies dealt last. */
-  redealMovieDeck: (mood: Mood, current: DeckEntry[]) => DeckEntry[];
+  redealMovieDeck: (mood: Mood, current: DeckEntry[], deckSize?: number) => DeckEntry[];
   /**
    * Mints the Shopping List a completed Cook Session's crowned Recipe calls
    * for (#262), returning its id — or undefined when there is nothing to mint.
@@ -106,18 +113,26 @@ export function createSessionService({
   /**
    * Create a new session with the given host
    * Returns session data including code and shareable link
+   *
+   * Everything past the host's name is setup the chosen Branch decides, in one
+   * object — the same shape apiClient.createSession takes on the other side of
+   * the wire, so the next optional field is one line on each side.
    */
   async function createSession(
     hostName: string,
-    location?: {
-      latitude: number;
-      longitude: number;
-      address?: string;
-    },
-    searchRadiusMiles?: number,
-    branch?: Branch,
-    cook?: CookSetup,
-    watch?: WatchSetup
+    setup: {
+      location?: SessionLocation;
+      searchRadiusMiles?: number;
+      branch?: Branch;
+      cook?: CookSetup;
+      watch?: WatchSetup;
+      /**
+       * How many cards the Host asked to swipe (#415), already range-checked
+       * by the router. Undefined means the Branch's own default. Every Branch
+       * reads it as a ceiling: a thin supply still deals what it has.
+       */
+      deckSize?: number;
+    } = {}
   ): Promise<{
     sessionCode: string;
     hostName: string;
@@ -135,6 +150,8 @@ export function createSessionService({
     restaurantCount?: number;
     headcount?: number;
   }> {
+    const { location, searchRadiusMiles, branch, cook, watch, deckSize } = setup;
+
     // Generate unique session code
     let sessionCode = generateSessionCode();
     let attempts = 0;
@@ -179,7 +196,7 @@ export function createSessionService({
       // when the Owned Recipe Store had nothing to deal either. A deal that
       // ever learns to reject for a reason of its own must say so with a
       // DomainError and be let through here, or it will be mislabelled.
-      const dealt = await dealRecipeDeck(cook.craving).catch((error: unknown) => {
+      const dealt = await dealRecipeDeck(cook.craving, deckSize).catch((error: unknown) => {
         logger.error({ err: error, sessionCode }, 'Recipe source failed dealing a Deck');
         throw new DomainError(
           'RECIPE_SOURCE_UNAVAILABLE',
@@ -205,7 +222,7 @@ export function createSessionService({
       // The corpus is in memory, so a deal cannot fail — only come up empty,
       // which like the Cook refusal lands at setup with the chips still
       // editable, never on a Session (#369).
-      deckEntries = dealMovieDeck(watch.mood);
+      deckEntries = dealMovieDeck(watch.mood, deckSize);
 
       if (deckEntries.length === 0) {
         logger.warn({ sessionCode, mood: watch.mood }, 'No movies found for Mood');
@@ -222,8 +239,10 @@ export function createSessionService({
         latitude: location.latitude,
         longitude: location.longitude,
         radiusMeters,
-        maxResults: 20, // a local post-search cap — RestaurantSearchService
-        // slices its merged results to this; nothing is sent to the Places API
+        // A local post-search cap — RestaurantSearchService slices its merged
+        // results to this; nothing is sent to the Places API. One page is 20
+        // and is never paged (#97), so that is also the Host's ceiling here.
+        maxResults: deckSize ?? MAX_RESTAURANT_DECK_SIZE,
       });
 
       // Throw error if no restaurants found
@@ -251,6 +270,7 @@ export function createSessionService({
       searchRadiusMiles,
       branch,
       headcount: cook?.headcount,
+      deckSize,
       cravingKey: cook && cravingPoolKey(cook.craving),
       mood: watch?.mood,
       recipeSourceDown,
@@ -859,12 +879,18 @@ export function createSessionService({
     // deal for a disjoint one.
     if (session.cravingKey && restarted) {
       const { entries } = await store.getDeck(sessionCode);
-      await store.replaceDeck(sessionCode, await redealRecipeDeck(session.cravingKey, entries));
+      await store.replaceDeck(
+        sessionCode,
+        await redealRecipeDeck(session.cravingKey, entries, session.deckSize)
+      );
     } else if (session.mood && restarted) {
       // The Watch twin (#369): the Mood itself is the handle, and the redeal
       // filters the in-memory corpus again — no pool, no lookup, cannot fail.
       const { entries } = await store.getDeck(sessionCode);
-      await store.replaceDeck(sessionCode, redealMovieDeck(session.mood, entries));
+      await store.replaceDeck(
+        sessionCode,
+        redealMovieDeck(session.mood, entries, session.deckSize)
+      );
     }
 
     await store.resetForRestart(sessionCode);

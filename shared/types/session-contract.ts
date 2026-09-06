@@ -9,6 +9,18 @@ import type { Craving } from './cook.js';
 import type { Branch, DeckEntry } from './models.js';
 import type { Mood } from './watch.js';
 
+/**
+ * The Deck size a Host may ask for at setup (#415). 5-50 on the wire for every
+ * Branch; Eat Out and Takeaway stop their stepper at MAX_RESTAURANT_DECK_SIZE
+ * because one Places page is 20 results and a second page is a second
+ * full-price Enterprise Text Search per Session (#97).
+ */
+export const MIN_DECK_SIZE = 5;
+export const MAX_DECK_SIZE = 50;
+export const MAX_RESTAURANT_DECK_SIZE = 20;
+/** What a setup screen preselects, so an untouched form deals what it always did. */
+export const DEFAULT_DECK_SIZE = 15;
+
 export interface SessionLocation {
   latitude: number;
   longitude: number;
@@ -16,6 +28,11 @@ export interface SessionLocation {
 }
 
 // POST /api/sessions
+/** Public setup defaults; read before the Host chooses a Deck size. */
+export interface SessionDefaultsResponse {
+  cookDeckSize: number;
+}
+
 export interface CreateSessionRequest {
   hostName: string;
   location?: SessionLocation;
@@ -27,6 +44,12 @@ export interface CreateSessionRequest {
   headcount?: number;
   /** Watch setup: what the Movie Deck is dealt from. Ignored outside the Watch Branch. */
   mood?: Mood;
+  /**
+   * How many cards the Host wants to swipe (#415), MIN_DECK_SIZE-MAX_DECK_SIZE.
+   * Absent means the Branch's own default. A Deck never exceeds supply, so this
+   * is a ceiling, not a promise.
+   */
+  deckSize?: number;
 }
 
 // GET /api/sessions/:sessionCode

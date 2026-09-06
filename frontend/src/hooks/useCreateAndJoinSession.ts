@@ -26,6 +26,8 @@ interface SessionSetup {
   craving?: Craving;
   headcount?: number;
   mood?: Mood;
+  /** How many cards the Host asked to swipe (#415); the Branch's default when absent. */
+  deckSize?: number;
 }
 
 export function useCreateAndJoinSession() {

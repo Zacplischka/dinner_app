@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const serviceMocks = vi.hoisted(() => ({
   createSession: vi.fn(),
+  getSessionDefaults: vi.fn(async () => ({ cookDeckSize: 15 })),
   fetchNearestCraving: vi.fn(async () => null),
   waitForConnection: vi.fn(async () => undefined),
   joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
@@ -14,6 +15,7 @@ const serviceMocks = vi.hoisted(() => ({
 
 vi.mock('../../src/services/apiClient', () => ({
   createSession: serviceMocks.createSession,
+  getSessionDefaults: serviceMocks.getSessionDefaults,
   fetchNearestCraving: serviceMocks.fetchNearestCraving,
 }));
 
@@ -56,6 +58,7 @@ async function submitAs(name = 'Alice') {
 describe('CookSetupPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    serviceMocks.getSessionDefaults.mockResolvedValue({ cookDeckSize: 15 });
     serviceMocks.createSession.mockResolvedValue({
       sessionCode: 'AB123',
       hostName: 'Alice',
@@ -69,8 +72,42 @@ describe('CookSetupPage', () => {
     });
   });
 
-  it('creates a Cook Session from the Craving and Headcount, then lands in the lobby', async () => {
+  it('preselects the configured Cook default instead of overriding it with 15', async () => {
+    serviceMocks.getSessionDefaults.mockResolvedValue({ cookDeckSize: 25 });
     renderPage();
+    await screen.findByText('25 recipes');
+    const [, setup] = await submitAs();
+    expect(setup.deckSize).toBe(25);
+  });
+
+  it('preserves the backend default if the defaults read fails during rollout', async () => {
+    serviceMocks.getSessionDefaults.mockRejectedValue(new Error('Not found'));
+    renderPage();
+    const [, setup] = await submitAs();
+    expect(setup.deckSize).toBeUndefined();
+  });
+
+  it('never overwrites a size the Host chose while defaults were loading', async () => {
+    let finish!: (value: { cookDeckSize: number }) => void;
+    serviceMocks.getSessionDefaults.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Bigger Deck' }));
+    await act(async () => {
+      finish({ cookDeckSize: 25 });
+    });
+    expect(screen.getByText('20 recipes')).toBeInTheDocument();
+    const [, setup] = await submitAs();
+    expect(setup.deckSize).toBe(20);
+  });
+
+  it('creates a Cook Session from the Craving and Headcount, then lands in the lobby', async () => {
+    await act(async () => {
+      renderPage();
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'italian' }));
     fireEvent.click(screen.getByRole('button', { name: 'thai' }));
@@ -84,8 +121,19 @@ describe('CookSetupPage', () => {
       branch: 'cook',
       craving: { mealType: 'main course', cuisines: ['italian', 'thai'], diets: ['vegetarian'] },
       headcount: 3,
+      deckSize: 15,
     });
     await waitFor(() => expect(screen.getByText('Lobby route')).toBeInTheDocument());
+  });
+
+  it('sends the Deck size the Host chose (#415)', async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Smaller Deck' }));
+    expect(screen.getByText('10 recipes')).toBeTruthy();
+
+    const [, setup] = await submitAs();
+    expect(setup.deckSize).toBe(10);
   });
 
   it('sends the chosen meal type', async () => {
@@ -168,6 +216,7 @@ describe('CookSetupPage — the Nearest Craving', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    serviceMocks.getSessionDefaults.mockResolvedValue({ cookDeckSize: 15 });
     serviceMocks.createSession.mockRejectedValue(refusal());
     serviceMocks.fetchNearestCraving.mockResolvedValue({
       craving: { mealType: 'main course', cuisines: ASIAN, diets: ['vegan'] },
@@ -222,6 +271,7 @@ describe('CookSetupPage — the Nearest Craving', () => {
       branch: 'cook',
       craving: { mealType: 'main course', cuisines: ASIAN, diets: ['vegan'] },
       headcount: 2,
+      deckSize: 15,
     });
     await waitFor(() => expect(screen.getByText('Lobby route')).toBeInTheDocument());
   });

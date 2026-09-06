@@ -128,6 +128,7 @@ interface RecipePoolServiceDeps {
   /** How long a Craving that matched nothing stays a clean miss (#260). */
   emptyPoolTtlMs?: number;
   poolSize?: number;
+  /** The Deck size a deal falls back to when the Host chose none (#415). */
   deckSize?: number;
   /** How many Owned Recipes a full Deck holds at least (#316). */
   ownedFloor?: number;
@@ -163,7 +164,7 @@ export interface RecipePoolService {
    * supplies. The vendor half is best-effort — its failure is swallowed while
    * the corpus can still deal, and propagates only when owned is empty too.
    */
-  dealDeck(craving: Craving): Promise<DealtDeck>;
+  dealDeck(craving: Craving, deckSize?: number): Promise<DealtDeck>;
   /**
    * The Nearest Craving to offer a Craving that dealt nothing (#334), or null
    * when even the widest step of the ladder is empty. Priced from the corpus in
@@ -180,7 +181,7 @@ export interface RecipePoolService {
    * Restaurant Restart never comes here: restaurant supply is geography-bound
    * and recipe supply is not, which is the whole reason for the divergence.
    */
-  redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]>;
+  redeal(poolKey: string, current: DeckEntry[], deckSize?: number): Promise<DeckEntry[]>;
   /**
    * The whole Recipe behind a dealt card — ingredients, steps, servings,
    * credit — which is what the Shopping List is minted from (#262). Both
@@ -268,7 +269,9 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   const poolTtlMs = deps.poolTtlMs ?? config.spoonacular.poolTtlMs;
   const emptyPoolTtlMs = deps.emptyPoolTtlMs ?? config.spoonacular.emptyPoolTtlMs;
   const poolSize = deps.poolSize ?? config.spoonacular.poolSize;
-  const deckSize = deps.deckSize ?? config.spoonacular.deckSize;
+  // The Branch default. A Host who chose a size at setup (#415) passes it per
+  // deal instead — the pool is shared, the cut is not.
+  const defaultDeckSize = deps.deckSize ?? config.spoonacular.deckSize;
   const ownedFloor = deps.ownedFloor ?? OWNED_FLOOR;
   const vendorDarkTtlMs = deps.vendorDarkTtlMs ?? VENDOR_DARK_TTL_MS;
   const dealBudgetMs = deps.dealBudgetMs ?? config.spoonacular.dealBudgetMs;
@@ -377,7 +380,7 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   return {
     sourcedSupply,
 
-    async dealDeck(craving: Craving): Promise<DealtDeck> {
+    async dealDeck(craving: Craving, deckSize = defaultDeckSize): Promise<DealtDeck> {
       const owned = deps.owned.forCraving(craving);
       // Best-effort (#333): the Cook Branch keeps dealing while the vendor is
       // dark, owned-only. The failure propagates only when owned is empty too
@@ -409,7 +412,11 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
       return null;
     },
 
-    async redeal(poolKey: string, current: DeckEntry[]): Promise<DeckEntry[]> {
+    async redeal(
+      poolKey: string,
+      current: DeckEntry[],
+      deckSize = defaultDeckSize
+    ): Promise<DeckEntry[]> {
       const pool = await readPool(poolKey);
       // `null` and `[]` part company here, the same way they do in
       // `sourcedSupply`. An aged-out pool (`null`) has nothing left to name

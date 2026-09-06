@@ -100,11 +100,13 @@ const shoppingListService = createShoppingListService({
 const sessionService = createSessionService({
   store: sessionStore,
   searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
-  dealRecipeDeck: (craving) => recipePoolService.dealDeck(craving),
-  redealRecipeDeck: (poolKey, current) => recipePoolService.redeal(poolKey, current),
+  dealRecipeDeck: (craving, deckSize) => recipePoolService.dealDeck(craving, deckSize),
+  redealRecipeDeck: (poolKey, current, deckSize) =>
+    recipePoolService.redeal(poolKey, current, deckSize),
   // Pure over the committed corpus: no service to construct (#369).
-  dealMovieDeck: (mood) => dealMovieDeck(mood, { source: movieSource }),
-  redealMovieDeck: (mood, current) => redealMovieDeck(mood, current, { source: movieSource }),
+  dealMovieDeck: (mood, deckSize) => dealMovieDeck(mood, { source: movieSource, deckSize }),
+  redealMovieDeck: (mood, current, deckSize) =>
+    redealMovieDeck(mood, current, { source: movieSource, deckSize }),
   mintShoppingList: (sessionCode, placeId) => shoppingListService.mint(sessionCode, placeId),
 });
 const friendsService = createFriendsService({ store: friendsStore });

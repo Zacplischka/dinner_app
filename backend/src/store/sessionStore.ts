@@ -36,6 +36,12 @@ export interface Session {
   headcount?: number;
   cravingKey?: string;
   /**
+   * How many cards the Host asked to swipe (#415), on every Branch. Absent when
+   * they took the Branch's default, and a ceiling either way — a Restart deals
+   * to it again, and a thin supply deals under it.
+   */
+  deckSize?: number;
+  /**
    * Watch Branch only (#369). The Mood this Deck was dealt from — the whole
    * Mood, not a pool key, because there is no pool: a Restart re-deals from
    * the corpus with it.
@@ -223,6 +229,7 @@ export function createSessionStore(redis: Redis) {
       hostName?: string;
       branch?: Branch;
       headcount?: number;
+      deckSize?: number;
       cravingKey?: string;
       mood?: Mood;
       recipeSourceDown?: boolean;
@@ -244,6 +251,7 @@ export function createSessionStore(redis: Redis) {
       hostName: opts.hostName,
       branch: opts.branch,
       headcount: opts.headcount,
+      deckSize: opts.deckSize,
       cravingKey: opts.cravingKey,
       mood: opts.mood,
       recipeSourceDown: opts.recipeSourceDown || undefined,
@@ -261,6 +269,7 @@ export function createSessionStore(redis: Redis) {
     if (opts.hostName) sessionData.hostName = opts.hostName;
     if (opts.branch) sessionData.branch = opts.branch;
     if (opts.headcount !== undefined) sessionData.headcount = opts.headcount;
+    if (opts.deckSize !== undefined) sessionData.deckSize = opts.deckSize;
     if (opts.cravingKey) sessionData.cravingKey = opts.cravingKey;
     if (opts.mood) sessionData.mood = JSON.stringify(opts.mood);
     if (opts.recipeSourceDown) sessionData.recipeSourceDown = '1';
@@ -302,6 +311,7 @@ export function createSessionStore(redis: Redis) {
       hostName: data.hostName,
       branch: data.branch as Branch | undefined,
       headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,
+      deckSize: data.deckSize ? parseInt(data.deckSize, 10) : undefined,
       cravingKey: data.cravingKey,
       mood: data.mood ? (JSON.parse(data.mood) as Mood) : undefined,
       recipeSourceDown: data.recipeSourceDown === '1' ? true : undefined,

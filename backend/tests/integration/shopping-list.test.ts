@@ -151,16 +151,13 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
    * deals alongside it (#331).
    */
   async function decided(headcount: number, crowned = '11') {
-    const { sessionCode } = await sessionService.createSession(
-      'Alice',
-      undefined,
-      undefined,
-      'cook',
-      {
+    const { sessionCode } = await sessionService.createSession('Alice', {
+      branch: 'cook',
+      cook: {
         craving,
         headcount,
-      }
-    );
+      },
+    });
     await sessionService.joinSession(sessionCode, 'alice', 'Alice');
     const { results } = await sessionService.submitSelections(sessionCode, 'alice', [crowned]);
     return { sessionCode, results };

@@ -3,9 +3,10 @@
 
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BRANCHES, type Branch } from '@dinder/shared/types';
+import { BRANCHES, MAX_RESTAURANT_DECK_SIZE, type Branch } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle, { type LocationMode } from '../components/LocationModeToggle';
+import DeckSizeStepper from '../components/DeckSizeStepper';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { useProfileName } from '../hooks/useProfileName';
@@ -47,6 +48,10 @@ export default function CreateSessionPage() {
   const [locationMode, setLocationMode] = useState<LocationMode>('current');
   const [manualQuery, setManualQuery] = useState('');
   const [searchRadiusKm, setSearchRadiusKm] = useState<number>(8);
+  // One Places page is 20 results and is never paged (#97), so the Eat Out and
+  // Takeaway ceiling is also their default — an untouched form deals what it
+  // always did.
+  const [deckSize, setDeckSize] = useState(MAX_RESTAURANT_DECK_SIZE);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
 
@@ -139,7 +144,7 @@ export default function CreateSessionPage() {
 
     const failure = await createAndJoin(
       hostName.trim(),
-      { location, searchRadiusMiles, branch },
+      { location, searchRadiusMiles, branch, deckSize },
       selectedFriendIds
     );
     setError(failure?.message ?? '');
@@ -322,6 +327,14 @@ export default function CreateSessionPage() {
               </p>
             </div>
           )}
+
+          <DeckSizeStepper
+            value={deckSize}
+            onChange={setDeckSize}
+            max={MAX_RESTAURANT_DECK_SIZE}
+            unit="restaurants"
+            disabled={busy}
+          />
 
           <InviteFriendsSection
             selectedFriendIds={selectedFriendIds}
