@@ -153,7 +153,7 @@ export default function JoinSessionPage() {
           {/* Session Code */}
           <div>
             <label htmlFor="sessionCode" className="label">
-              Session Code
+              Session code
             </label>
             <input
               id="sessionCode"
@@ -205,7 +205,7 @@ export default function JoinSessionPage() {
               disabled={isLoading || !sessionCode.trim() || !participantName.trim()}
               className="btn btn-primary w-full min-h-[48px] text-lg"
             >
-              {isLoading ? 'Joining…' : 'Join Session'}
+              {isLoading ? 'Joining…' : 'Join session'}
             </button>
           </div>
         </form>

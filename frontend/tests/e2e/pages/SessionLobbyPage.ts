@@ -59,7 +59,7 @@ export class SessionLobbyPage extends BasePage {
     await this.leaveButton.click();
 
     // Handle confirmation modal if present
-    const confirmButton = this.page.getByRole('button', { name: /^Leave Session$/i });
+    const confirmButton = this.page.getByRole('button', { name: /^Leave session$/i });
     if (await confirmButton.isVisible()) {
       await confirmButton.click();
     }

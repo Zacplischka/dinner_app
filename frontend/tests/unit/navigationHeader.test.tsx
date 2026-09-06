@@ -113,7 +113,7 @@ describe('NavigationHeader', () => {
       const code = screen.getByText('7K9M2');
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Copy Session Code' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Copy session code' }));
       });
 
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('7K9M2');

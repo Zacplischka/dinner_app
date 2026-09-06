@@ -20,7 +20,7 @@ export class ResultsPage extends BasePage {
       /No restaurants were selected|No matches|No overlaps|Try again/i
     );
     this.startNewSessionButton = page.getByRole('button', {
-      name: /New Session|Start Over|Start Fresh/i,
+      name: /New session|Start Over|Start Fresh/i,
     });
     this.goHomeButton = page.getByRole('button', { name: /Home|Done/i });
   }

@@ -97,7 +97,7 @@ export default function SessionLobbyPage() {
       <div className="max-w-md mx-auto px-4 py-6 animate-fade-in">
         {/* Session Code Card */}
         <div className="card mb-6">
-          <h2 className="label text-center">Session Code</h2>
+          <h2 className="label text-center">Session code</h2>
           <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
             {sessionCode}
           </div>

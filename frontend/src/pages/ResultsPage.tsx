@@ -828,7 +828,7 @@ export default function ResultsPage() {
           {/* Leaves for the entry fork — a new Session, not a Restart. The
               Restart lives above as "Select Again" (#289). */}
           <button onClick={handleNewSession} className="btn btn-ghost w-full">
-            New Session
+            New session
           </button>
         </div>
 

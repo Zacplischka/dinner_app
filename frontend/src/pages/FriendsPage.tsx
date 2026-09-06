@@ -188,7 +188,7 @@ export default function FriendsPage() {
             <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
               <p className="text-lg text-text">No friends yet</p>
               <p className="text-sm mt-1 text-muted">
-                Friends can be invited straight into your Sessions — no code sharing needed.
+                Friends can be invited straight into your sessions — no code sharing needed.
               </p>
               <button
                 onClick={() => setIsAddModalOpen(true)}

@@ -196,14 +196,14 @@ describe('page branch coverage', () => {
     const noCode = renderApp('/lobby');
     await waitFor(() => expect(screen.queryByText('Loading session…')).not.toBeInTheDocument());
     fireEvent.click(screen.getByLabelText('Back'));
-    fireEvent.click(await screen.findByText('Leave Session'));
+    fireEvent.click(await screen.findByText('Leave session'));
     expect(await screen.findByText('Dinder')).toBeInTheDocument();
     noCode.unmount();
 
     renderApp('/session/AB123');
     expect(await screen.findByText('Copy shareable link')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Back'));
-    fireEvent.click(await screen.findByText('Leave Session'));
+    fireEvent.click(await screen.findByText('Leave session'));
     await waitFor(() => expect(serviceMocks.leaveSession).toHaveBeenCalledWith('AB123'));
     expect(await screen.findByText('Dinder')).toBeInTheDocument();
   });

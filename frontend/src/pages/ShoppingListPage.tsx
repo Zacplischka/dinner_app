@@ -302,7 +302,7 @@ export default function ShoppingListPage() {
   return (
     <main className="min-h-screen bg-ink">
       <NavigationHeader
-        title="Shopping List"
+        title="Shopping list"
         subtitle={list ? list.recipeName : 'Everything for tonight'}
         showBackButton
         onBack={() => navigate('/')}

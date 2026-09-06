@@ -20,7 +20,7 @@ export class CreateSessionPage extends BasePage {
     this.heading = page.getByRole('heading', { name: /New session|Eating out|Getting takeaway/i });
     this.nameInput = page.getByLabel(/Your Name/i);
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
-    this.createButton = page.getByRole('button', { name: /Create Session/i });
+    this.createButton = page.getByRole('button', { name: /Create session/i });
     this.backButton = page.getByRole('button', { name: /Back/i });
     this.useMyLocationButton = page.getByRole('button', { name: /Use My Current Location/i });
   }

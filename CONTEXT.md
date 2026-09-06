@@ -4,6 +4,8 @@ Ephemeral group dinner decision-making: a host opens a short-lived Session, frie
 
 ## Language
 
+These are the names in code, docs and conversation. On screen they are ordinary English: headers in sentence case and the noun lowercased mid-sentence — "join a session", "nearby venues", "choose restaurants". The exceptions are the two outcomes the app crowns by name, **Match** and **Top Pick**, which stay capitalised wherever they appear.
+
 ### Session flow
 
 **Session**:
@@ -47,12 +49,12 @@ One entry of a Deck — the Restaurant, Recipe or Movie a Participant swipes on,
 _Avoid_: card — the swipe UI draws an entry as a card, which is the rendering and not the thing — option, item
 
 **Selection**:
-A single Restaurant, Recipe or Movie a Participant swiped yes on.
-_Avoid_: like, vote, pick (except in **Top Pick**)
+A single Restaurant, Recipe or Movie a Participant swiped yes on. On screen the act is **Like** and its opposite is **Pass** — the badge, the button and the Match copy all say so; Selection stays the domain noun for the thing kept.
+_Avoid_: vote, pick (except in **Top Pick**) — and "like" as the domain noun; on screen it is the verb, in code and docs a Selection
 
 **Live Selection**:
 A Selection broadcast to the other Participants at the moment it is made, and shown to each of them only once they have swiped that Restaurant, Recipe or Movie themselves. Ephemeral chrome: it is never written to Redis and never affects the Match. Receivers hold it client-side, keyed by the sender's display name, so it survives the sender's reconnect.
-_Avoid_: vote, live vote, real-time like
+_Avoid_: vote, live vote — and "live like" as a term, though the Live Selection is drawn on screen with the same Like wording
 
 **Full House**:
 A Restaurant, Recipe or Movie every current Participant has made a Live Selection on, seen mid-Deck before anyone has submitted. A Full House is a preview, not a Match — the Match is still computed at Submission and may not contain it. When the Participant list grows mid-Deck, a Full House can fire again for the larger group — but never twice for the same Deck Entry, and an already-shown one is never retracted.

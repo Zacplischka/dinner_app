@@ -256,7 +256,7 @@ describe('Deck invite affordance', () => {
       )
     );
     // No confirm-leave modal, and the deck is still interactive.
-    expect(screen.queryByText('Leave Session?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Leave session?')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Like' })).toBeEnabled();
   });
 });
@@ -599,7 +599,7 @@ describe('Keyboard swipe', () => {
     // underneath must still not swipe (or broadcast) behind it.
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Leave Session?')).toBeInTheDocument();
+    expect(within(dialog).getByText('Leave session?')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
     expect(useSessionStore.getState().selections).toEqual([]);

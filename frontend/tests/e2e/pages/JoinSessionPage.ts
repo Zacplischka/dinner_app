@@ -17,9 +17,9 @@ export class JoinSessionPage extends BasePage {
     super(page);
 
     this.heading = page.getByRole('heading', { name: /Join a session/i });
-    this.sessionCodeInput = page.getByLabel(/Session Code/i);
+    this.sessionCodeInput = page.getByLabel(/Session code/i);
     this.nameInput = page.getByLabel(/Your Name/i);
-    this.joinButton = page.getByRole('button', { name: /Join Session/i });
+    this.joinButton = page.getByRole('button', { name: /Join session/i });
     this.backButton = page.getByRole('button', { name: /Back/i });
   }
 

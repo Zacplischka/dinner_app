@@ -100,7 +100,7 @@ describe('CreateSessionPage location flows', () => {
     // Radius surfaced in kilometres before submission
     expect(screen.getByText('8 km')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
 
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
@@ -130,7 +130,7 @@ describe('CreateSessionPage location flows', () => {
       expect(screen.getByText('Location set')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
 
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
@@ -156,7 +156,7 @@ describe('CreateSessionPage location flows', () => {
       expect(screen.getByText('Location set')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
 
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();

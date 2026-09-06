@@ -151,8 +151,8 @@ describe('Neon Night Market components', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to the Basket' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Leave Session' })).toBeInTheDocument();
-    expect(screen.queryByText('Leave Session?')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Leave session' })).toBeInTheDocument();
+    expect(screen.queryByText('Leave session?')).not.toBeInTheDocument();
   });
 
   it('presents the Session Code in a cyan invite box', async () => {

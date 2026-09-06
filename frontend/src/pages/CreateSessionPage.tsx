@@ -343,7 +343,7 @@ export default function CreateSessionPage() {
               disabled={busy || !hostName.trim() || !location}
               className="btn btn-primary w-full min-h-[48px] text-lg"
             >
-              {isLoading ? 'Creating…' : 'Create Session'}
+              {isLoading ? 'Creating…' : 'Create session'}
             </button>
           </div>
         </form>

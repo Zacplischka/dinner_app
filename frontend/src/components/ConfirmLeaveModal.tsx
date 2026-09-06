@@ -33,14 +33,14 @@ export default function ConfirmLeaveModal({
   const getTitle = () => {
     switch (context) {
       case 'results':
-        return 'Leave Session?';
+        return 'Leave session?';
       case 'selecting':
-        return 'Leave Session?';
+        return 'Leave session?';
       case 'ordering':
         return 'Leave the basket?';
       case 'lobby':
       default:
-        return 'Leave Session?';
+        return 'Leave session?';
     }
   };
 
@@ -57,7 +57,7 @@ export default function ConfirmLeaveModal({
         return "Your items stay in the basket and still count — whoever taps I'll order still buys them.";
       case 'lobby':
       default:
-        return "You'll leave the Session and the others won't see you in it anymore.";
+        return "You'll leave the session and the others won't see you in it anymore.";
     }
   };
 
@@ -71,7 +71,7 @@ export default function ConfirmLeaveModal({
         return 'Back to the Basket';
       case 'lobby':
       default:
-        return 'Stay in Session';
+        return 'Stay in session';
     }
   };
 
@@ -80,7 +80,7 @@ export default function ConfirmLeaveModal({
       case 'results':
         return 'Go Home';
       default:
-        return 'Leave Session';
+        return 'Leave session';
     }
   };
 

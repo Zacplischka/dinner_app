@@ -124,7 +124,7 @@ describe('GroupOrderPage', () => {
       )
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Leave Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
 
     expect(await screen.findByText('HOME SCREEN')).toBeInTheDocument();
     expect(leaveSessionMock).toHaveBeenCalledWith('AB123');
@@ -344,7 +344,9 @@ describe('GroupOrderPage', () => {
 
     expect(screen.getByText('This session has expired.')).toBeInTheDocument();
     expect(
-      screen.getByText('A session closes once everyone stops using it. Start a new one to swipe again.')
+      screen.getByText(
+        'A session closes once everyone stops using it. Start a new one to swipe again.'
+      )
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
