@@ -13,7 +13,6 @@ import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { useShareLink } from '../hooks/useShareLink';
 import WikipediaCredit from '../components/WikipediaCredit';
-import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
 import {
   DeliveryActions,
