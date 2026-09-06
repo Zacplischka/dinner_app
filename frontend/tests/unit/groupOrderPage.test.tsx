@@ -272,6 +272,20 @@ describe('GroupOrderPage', () => {
     expect(openOrderMock).toHaveBeenCalledTimes(2);
   });
 
+  it('offers a way back to the Match while the cold menu fetch runs (#412)', async () => {
+    subscribeToComparisonMock.mockReturnValue(vi.fn());
+    openOrderMock.mockResolvedValue({
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'stale', reason: 'stale' },
+    });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Getting tonight's menu…")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the Match' }));
+    expect(screen.getByText('RESULTS SCREEN')).toBeInTheDocument();
+  });
+
   it('shows the not-in-session screen with Back to the Match and Start over', async () => {
     openOrderMock.mockResolvedValue({
       success: false,
@@ -330,7 +344,7 @@ describe('GroupOrderPage', () => {
 
     expect(screen.getByText('This session has expired.')).toBeInTheDocument();
     expect(
-      screen.getByText('Sessions last 30 minutes. Start a new one to swipe again.')
+      screen.getByText('A session closes once everyone stops using it. Start a new one to swipe again.')
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
