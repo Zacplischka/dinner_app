@@ -247,10 +247,11 @@ export default function GroupOrderPage() {
 
   let content: React.ReactNode;
 
-  // #402: a Session that expires while this page is open is announced once, by
-  // the header's shared banner — this screen is only for the cold path, where
-  // order:open acks SESSION_NOT_FOUND and no socket event ever set the status.
-  if (failure === 'expired') {
+  // Two ways in: the socket event sets sessionStatus while the basket is open,
+  // or a cold open acks SESSION_NOT_FOUND (#402 — that path used to render
+  // nothing). Either way the page goes inert; the header banner alone would
+  // leave every add/remove tap a silent no-op.
+  if (failure === 'expired' || sessionStatus === 'expired') {
     content = (
       <FailureScreen {...FAILURE_COPY.expired}>
         <button className="btn btn-primary min-h-[48px] px-6" onClick={() => navigate('/')}>

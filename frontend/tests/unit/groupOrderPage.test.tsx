@@ -355,18 +355,20 @@ describe('GroupOrderPage', () => {
     expect(screen.getByText('HOME SCREEN')).toBeInTheDocument();
   });
 
-  // #402: expiring mid-order is announced once, by the shared header banner —
-  // this page no longer stacks its own full-screen copy of the same message.
-  it('leaves a mid-order expiry to the header banner alone', async () => {
+  // #402: the header banner announces it, but the basket must also go inert —
+  // add/remove are fire-and-forget, so a live basket after expiry is a screen
+  // full of buttons that silently do nothing.
+  it('replaces a live basket when the Session expires mid-order', async () => {
     openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
     renderPage();
     await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
 
     act(() => useSessionStore.getState().setSessionStatus('expired'));
 
+    expect(screen.getByText('This Session has expired.')).toBeInTheDocument();
+    expect(screen.queryByText('In the basket')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Add Margherita/ })).toBeNull();
     expect(screen.getByRole('alert')).toHaveTextContent('This Session has expired');
-    expect(screen.queryByText('This Session has expired.')).toBeNull();
-    expect(screen.getAllByRole('button', { name: 'Start over' })).toHaveLength(1);
   });
 
   const twoParticipants = [
