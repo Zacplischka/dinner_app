@@ -6,17 +6,28 @@ import { asyncHandler } from './asyncHandler.js';
 import { cravingSchema } from './cravingSchema.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
+import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
 import {
   BRANCHES,
   MAX_HEADCOUNT,
   SESSION_CODE_PATTERN,
+  type ApiError,
   type CreateSessionRequest,
   type CreateSessionResponse,
   type SessionResponse,
 } from '@dinder/shared/types';
 
+// Every located create spends a Google-billed Places search; cap per-visitor
+// spend like /geocode does. A table of 4 makes one Session, so 20 a minute
+// leaves room for retries and a shared NAT while matching the geocode window
+// a Host clears first.
+const CREATE_LIMIT = 20;
+const CREATE_WINDOW_MS = 60_000;
+
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
+  // ponytail: per-instance in-memory rate window, same ceiling as rateWindow.ts notes.
+  const createRequests = new Map<string, RequestWindow>();
 
   // Zod schemas for validation
   const createSessionRequestSchema = z
@@ -76,6 +87,15 @@ export function createSessionsRouter(sessionService: SessionService) {
           'VALIDATION_ERROR',
           'hostName is required and must be 1-50 characters'
         );
+      }
+
+      const ip = requestIp(req);
+      if (!admitRequest(createRequests, ip, CREATE_LIMIT, CREATE_WINDOW_MS)) {
+        res.setHeader('Retry-After', retryAfterSeconds(createRequests, ip, CREATE_WINDOW_MS));
+        return res.status(429).json({
+          code: 'RATE_LIMITED',
+          message: 'Too many Sessions created. Please try again shortly.',
+        } satisfies ApiError);
       }
 
       // Annotated, not cast: this is what checks the Zod schema still agrees
