@@ -116,8 +116,9 @@ export default function SelectionPage() {
   // a stale Full House must never take the screen over on arrival.
   const hydratedRef = useRef(false);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const fullHouseRef = useRef<HTMLDivElement>(null);
-  useFocusTrap(fullHouseRef, fullHousePlaceId !== null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const overlayOpen = fullHousePlaceId !== null || detailsEntry !== null;
+  useFocusTrap(overlayRef, overlayOpen);
 
   useEffect(() => {
     if (participants.length > rosterSizeRef.current) fullHouseArmedRef.current = true;
@@ -283,7 +284,6 @@ export default function SelectionPage() {
   // leaving the deck. The dep is the boolean, not which one: a Full House
   // arriving over an open sheet swaps them without pushing a second entry, so
   // one back gesture always lands on the Deck and never on a stale entry.
-  const overlayOpen = fullHousePlaceId !== null || detailsEntry !== null;
   useEffect(() => {
     if (!overlayOpen) return;
     window.history.pushState({ dinderOverlay: true }, '');
@@ -851,12 +851,12 @@ export default function SelectionPage() {
 
       {/* Deck Entry details (#424) — a sibling of the takeover, never inside
           the deck region, and never up at the same time as it. */}
-      <DeckEntryDetails entry={detailsEntry} onClose={dismissOverlay} />
+      <DeckEntryDetails entry={detailsEntry} onClose={dismissOverlay} dialogRef={overlayRef} />
 
       {/* Full House takeover */}
       {fullHousePlaceId && (
         <div
-          ref={fullHouseRef}
+          ref={overlayRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 backdrop-blur-[10px] p-4"
           role="dialog"
           aria-modal="true"

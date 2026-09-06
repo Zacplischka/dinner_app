@@ -137,6 +137,31 @@ describe('Deck Entry details sheet — Movie', () => {
     expect(within(dialog).getByRole('heading', { name: 'Alien' })).toBeInTheDocument();
   });
 
+  it('returns focus to Details after a card tap and dismissal', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    fireEvent.mouseDown(cardFor('Alien'), { clientX: 120 });
+    fireEvent.mouseUp(cardFor('Alien'), { clientX: 120 });
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Details' }));
+  });
+
+  it('leaves touch and mouse gestures on the card credit to its link', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+    const credit = within(cardFor('Alien')).getByRole('link', { name: 'TMDB' });
+    fireEvent.touchStart(credit, { touches: [{ clientX: 120 }] });
+    const end = createEvent.touchEnd(credit, { changedTouches: [{ clientX: 120 }] });
+    fireEvent(credit, end);
+    expect(end.defaultPrevented).toBe(false);
+    fireEvent.mouseDown(credit, { clientX: 120 });
+    fireEvent.mouseUp(credit, { clientX: 120 });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(useSessionStore.getState().selections).toEqual([]);
+  });
+
   it('opens exactly one sheet when a mouse release runs the end handler twice', async () => {
     renderSelectionPage();
     await screen.findByText('Alien');
@@ -342,6 +367,7 @@ describe('Deck Entry details sheet — Full House interrupt', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByText('Heat')).toBeInTheDocument();
     expect(takeover).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Details' }));
   });
 
   // The sheet's focus restore must not out-run the takeover's autoFocus: focus
@@ -351,6 +377,10 @@ describe('Deck Entry details sheet — Full House interrupt', () => {
     const takeover = await openSheetThenFullHouse();
 
     await waitFor(() => expect(takeover.contains(document.activeElement)).toBe(true));
+    expect(document.activeElement).toHaveAccessibleName('Finish here');
+    const keep = within(takeover).getByRole('button', { name: 'Keep swiping' });
+    keep.focus();
+    fireEvent.keyDown(keep, { key: 'Tab' });
     expect(document.activeElement).toHaveAccessibleName('Finish here');
 
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' });

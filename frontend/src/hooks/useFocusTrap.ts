@@ -25,6 +25,9 @@ export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
+      // An overlay can replace another while this trap remains active.
+      const dialog = ref.current;
+      if (!dialog) return;
       const stops = dialog.querySelectorAll<HTMLElement>(FOCUSABLE);
       // Every stop disabled (leave in flight) or focus already dropped to
       // <body>: hold Tab here rather than let it walk into the page behind.

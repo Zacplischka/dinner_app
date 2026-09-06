@@ -62,6 +62,7 @@ export default function SwipeCard({
   });
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const detailsButtonRef = useRef<HTMLButtonElement>(null);
   // Only the top card is interactive at all, and only an entry with something
   // to read has details to open — a tap on a Recipe does nothing.
   const openDetails = isTop && hasDetails(entry) ? onOpenDetails : undefined;
@@ -72,7 +73,7 @@ export default function SwipeCard({
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
-      if (!isTop) return;
+      if (!isTop || (e.target as Element).closest('a, button')) return;
       const touch = e.touches[0];
       setDragState({
         isDragging: true,
@@ -130,6 +131,7 @@ export default function SwipeCard({
         // listener share one stale isDragging — so the open must be
         // idempotent. It is: the caller only stores this entry as the open
         // one, and storing the same entry twice is one open.
+        detailsButtonRef.current?.focus();
         openDetails?.();
       }
     },
@@ -146,7 +148,7 @@ export default function SwipeCard({
   // Mouse event handlers for desktop
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (!isTop) return;
+      if (!isTop || (e.target as Element).closest('a, button')) return;
       setDragState({
         isDragging: true,
         startX: e.clientX,
@@ -323,6 +325,7 @@ export default function SwipeCard({
         {openDetails && (
           <button
             type="button"
+            ref={detailsButtonRef}
             onClick={openDetails}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}

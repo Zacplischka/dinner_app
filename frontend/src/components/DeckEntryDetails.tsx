@@ -3,14 +3,12 @@
 // stops at three lines and a Restaurant's address at one; there is no room to
 // grow in place, and this sheet is where the whole of both lives.
 //
-// Mounted always, opened by a non-null `entry` — the same shape as
-// ConfirmLeaveModal, because useFocusTrap restores focus on the close
-// transition and never sees one if the dialog unmounts instead.
+// SelectionPage owns one focus trap across this sheet and Full House so an
+// interruption retains the original Details control as the focus destination.
 
-import { useRef } from 'react';
+import type { RefObject } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRestaurant } from '../types';
-import { useFocusTrap } from '../hooks/useFocusTrap';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import { movieMeta } from '../utils/tmdb';
@@ -30,12 +28,11 @@ interface DeckEntryDetailsProps {
   /** The Deck Entry to show, or null when the sheet is closed. */
   entry: DeckEntry | null;
   onClose: () => void;
+  dialogRef: RefObject<HTMLDivElement>;
 }
 
-export default function DeckEntryDetails({ entry, onClose }: DeckEntryDetailsProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
+export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntryDetailsProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  useFocusTrap(dialogRef, entry !== null);
 
   if (!entry) return null;
 
@@ -68,10 +65,10 @@ export default function DeckEntryDetails({ entry, onClose }: DeckEntryDetailsPro
         aria-hidden="true"
       />
 
-      <div className="flex min-h-full items-end justify-center p-4 sm:items-center">
+      <div className="pointer-events-none flex min-h-full items-end justify-center p-4 sm:items-center">
         <div
           data-testid="details-panel"
-          className={`card relative max-h-[85vh] w-full max-w-sm overflow-y-auto ${
+          className={`card pointer-events-auto relative max-h-[85vh] w-full max-w-sm overflow-y-auto ${
             prefersReducedMotion ? '' : 'animate-slide-up'
           }`}
         >
