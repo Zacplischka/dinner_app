@@ -28,8 +28,12 @@ import {
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
-// The Deck supplies these handlers never reach, stubbed inert: the suite drives
-// the Eat Out Branch, and a Restart there searches Restaurants. Wiring every
+// The Deck supplies these handlers never reach, stubbed inert. Every session
+// here is seeded straight through store.createSession, so service.createSession
+// — the only caller of searchNearbyRestaurants, dealRecipeDeck and dealMovieDeck
+// — never runs; none of them carries a Craving or a Mood, so neither redeal
+// branch of a Restart fires (both are covered in SessionService.test.ts); and no
+// Deck here holds a Recipe, so nothing mints a Shopping List. Wiring every
 // declared dependency is what keeps the suite honest when the shape changes.
 const service = createSessionService({
   store,
