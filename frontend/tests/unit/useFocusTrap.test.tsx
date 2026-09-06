@@ -36,7 +36,11 @@ describe('useFocusTrap', () => {
   it('leaves focus where it is when another dialog claimed it during the close', () => {
     const opener = document.createElement('button');
     const takeover = document.createElement('button');
-    document.body.append(opener, takeover);
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.append(takeover);
+    document.body.append(opener, dialog);
     opener.focus();
 
     const { rerender } = render(<ConfirmLeaveModal isOpen onClose={vi.fn()} onConfirm={vi.fn()} />);
@@ -45,7 +49,21 @@ describe('useFocusTrap', () => {
 
     expect(document.activeElement).toBe(takeover);
     opener.remove();
-    takeover.remove();
+    dialog.remove();
+  });
+
+  it('restores focus when a backdrop click focused the page wrapper', () => {
+    const opener = document.createElement('button');
+    const page = document.createElement('div');
+    page.tabIndex = -1;
+    document.body.append(opener, page);
+    opener.focus();
+    const { rerender } = render(<ConfirmLeaveModal isOpen onClose={vi.fn()} onConfirm={vi.fn()} />);
+    page.focus();
+    rerender(<ConfirmLeaveModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} />);
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+    page.remove();
   });
 
   it('holds Tab while every button is disabled', () => {
