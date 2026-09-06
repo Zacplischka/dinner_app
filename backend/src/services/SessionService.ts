@@ -824,6 +824,27 @@ export function createSessionService({
       throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
     }
 
+    // This command moves the whole room — into the Deck from the lobby, or back
+    // into it from a Match — so it is the Host's alone (#405). Guarded here, not
+    // in the handler, so every caller of the one command is covered.
+    //
+    // Only while a Host is actually in the room: nothing promotes a successor,
+    // so a Host who taps Leave would otherwise strand everyone else on "Waiting
+    // for the host" until the TTL. No Host present, anyone left may start.
+    //
+    // Present means online, not merely listed: a Disconnect keeps the Host a
+    // current Participant, and a Host who reopens the Invite Link in a new tab
+    // has no rejoin token, so they join as an ordinary Participant beside their
+    // own dead entry. Keying off the entry alone would freeze that room — the
+    // real Host refused, everyone else refused.
+    const roster = await store.listParticipants(sessionCode);
+    if (
+      roster.some((p) => p.isHost && p.isOnline) &&
+      !roster.find((p) => p.participantId === participantId)?.isHost
+    ) {
+      throw new DomainError('NOT_HOST', 'Only the host can start selecting');
+    }
+
     // The lobby's "Start Selecting" is this same command from 'waiting' — the
     // first start, not a Restart. The distinction is surfaced so "Session
     // restarted" in a log is always a real mid-flight Restart (#289).

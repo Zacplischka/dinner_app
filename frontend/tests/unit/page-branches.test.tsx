@@ -269,4 +269,76 @@ describe('page branch coverage', () => {
     act(() => useSessionStore.setState({ sessionStatus: 'selecting' }));
     expect(await screen.findByText('Select route')).toBeInTheDocument();
   });
+
+  // #405: the start moves the whole room, so a joiner is told to wait rather
+  // than handed a button the server would refuse.
+  it('offers the lobby start to the host only', async () => {
+    act(() =>
+      useSessionStore.setState({
+        currentUserId: 'participant-2',
+        participants: [
+          participant,
+          {
+            participantId: 'participant-2',
+            displayName: 'Bo',
+            sessionCode: 'AB123',
+            joinedAt: 2,
+            hasSubmitted: false,
+            isHost: false,
+          },
+        ],
+      })
+    );
+    renderApp('/session/AB123');
+
+    expect(await screen.findByText('Waiting for the host to start')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Selecting' })).toBeNull();
+  });
+
+  // #405: with the Host gone nobody is promoted, so the room would sit on
+  // "Waiting for the host" forever — whoever is left gets the button.
+  it('offers the lobby start to whoever is left once the host has gone', async () => {
+    act(() =>
+      useSessionStore.setState({
+        currentUserId: 'participant-2',
+        participants: [
+          {
+            participantId: 'participant-2',
+            displayName: 'Bo',
+            sessionCode: 'AB123',
+            joinedAt: 2,
+            hasSubmitted: false,
+            isHost: false,
+          },
+        ],
+      })
+    );
+    renderApp('/session/AB123');
+
+    expect(await screen.findByRole('button', { name: 'Start Selecting' })).toBeInTheDocument();
+  });
+
+  // #405: a Host whose tab dropped stays on the roster, so "is a Host listed"
+  // would hide the button from everyone while the server was handing it out.
+  it('offers the lobby start to whoever is left once the host has dropped', async () => {
+    act(() =>
+      useSessionStore.setState({
+        currentUserId: 'participant-2',
+        participants: [
+          { ...participant, isOnline: false },
+          {
+            participantId: 'participant-2',
+            displayName: 'Bo',
+            sessionCode: 'AB123',
+            joinedAt: 2,
+            hasSubmitted: false,
+            isHost: false,
+          },
+        ],
+      })
+    );
+    renderApp('/session/AB123');
+
+    expect(await screen.findByRole('button', { name: 'Start Selecting' })).toBeInTheDocument();
+  });
 });

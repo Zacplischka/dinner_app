@@ -25,6 +25,10 @@ export const API_ERROR_CODES = [
   'VALIDATION_ERROR',
   'ALREADY_SUBMITTED',
   'NOT_IN_SESSION',
+  // A Participant asked for something only the Host may do — starting the
+  // Deck, or a Restart (#405). Distinct from NOT_IN_SESSION: they are in the
+  // room, just not the one who opened it. Additive (ADR 0007).
+  'NOT_HOST',
   // Friends domain
   'NOT_FOUND',
   'ALREADY_FRIENDS',

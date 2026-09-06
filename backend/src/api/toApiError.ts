@@ -30,6 +30,7 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   ALREADY_SUBMITTED: { code: 'ALREADY_SUBMITTED', status: 409 },
   INVALID_RESTAURANTS: { code: 'VALIDATION_ERROR', status: 400 },
   NOT_IN_SESSION: { code: 'NOT_IN_SESSION', status: 403 },
+  NOT_HOST: { code: 'NOT_HOST', status: 403 },
   // Expired and never-existed answer identically: the link is the capability,
   // so its absence must reveal nothing either way.
   SHOPPING_LIST_NOT_FOUND: { code: 'NOT_FOUND', status: 404 },

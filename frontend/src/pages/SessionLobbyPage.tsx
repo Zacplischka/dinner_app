@@ -15,7 +15,8 @@ import Spinner from '../components/Spinner';
 export default function SessionLobbyPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { participants, isConnected, sessionStatus, setExpiresAt } = useSessionStore();
+  const { participants, isConnected, sessionStatus, setExpiresAt, currentUserId } =
+    useSessionStore();
   const [shareableLink, setShareableLink] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
@@ -69,6 +70,15 @@ export default function SessionLobbyPage() {
   };
 
   const handleLeaveSession = useLeaveSession(sessionCode);
+
+  // #405: starting moves the whole room into the Deck, so it is the Host's
+  // call — the server refuses it from anyone else. Everyone else waits, unless
+  // no Host is actually here: nothing promotes a successor, so the server lets
+  // whoever is still around start, and this mirrors that rule exactly. Left or
+  // dropped both count as gone — a Host who reopens the Invite Link in a new
+  // tab rejoins as an ordinary Participant beside their own stale entry.
+  const me = participants.find((p) => p.participantId === currentUserId);
+  const isHost = !!me && (me.isHost || !participants.some((p) => p.isHost && p.isOnline !== false));
 
   if (isLoading) {
     return (
@@ -181,14 +191,20 @@ export default function SessionLobbyPage() {
           </div>
         )}
 
-        {/* Start Button */}
-        <button
-          onClick={handleStartSelecting}
-          disabled={participants.length === 0}
-          className="btn btn-primary w-full min-h-[48px] text-lg"
-        >
-          Start Selecting
-        </button>
+        {/* Start Button — the Host's alone (#405) */}
+        {isHost ? (
+          <button
+            onClick={handleStartSelecting}
+            disabled={participants.length === 0}
+            className="btn btn-primary w-full min-h-[48px] text-lg"
+          >
+            Start Selecting
+          </button>
+        ) : (
+          <p className="rounded-market-md border border-dashed border-line py-4 text-center text-sm text-muted">
+            Waiting for the host to start
+          </p>
+        )}
 
         {/* Info */}
         <p className="mt-6 text-center text-sm text-muted">

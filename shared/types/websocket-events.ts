@@ -110,6 +110,13 @@ export interface ParticipantJoinedEvent {
   participantCount: number;
   /** Server-decided: this join replaced an existing participant's connection. */
   isRejoin: boolean;
+  /**
+   * Whether the server granted this joiner the Host role, so every roster
+   * agrees with the guard the server reads (#405) — a Host who rejoins is a
+   * Host on everyone's list, not just their own. Additive (ADR 0007): absent
+   * from an older backend, which leaves the local entry's flag alone.
+   */
+  isHost?: boolean;
 }
 
 export interface ParticipantSubmittedEvent {

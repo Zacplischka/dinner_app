@@ -25,6 +25,9 @@ export type DomainErrorCode =
   | 'ALREADY_SUBMITTED'
   | 'INVALID_RESTAURANTS'
   | 'NOT_IN_SESSION'
+  // In the Session, but not the Host — and the Host is the only one who may
+  // start selecting or Restart (#405).
+  | 'NOT_HOST'
   // A Shopping List URL that names nothing: expired, or never minted. Its own
   // code because the list is its own resource on its own clock, not a Session.
   | 'SHOPPING_LIST_NOT_FOUND'

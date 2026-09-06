@@ -356,6 +356,7 @@ export default function ResultsPage() {
     allSelections,
     restaurantNames,
     participants,
+    currentUserId,
     restaurants: deckEntries,
     sessionStatus,
     topPick: crownedEntry,
@@ -400,6 +401,17 @@ export default function ResultsPage() {
   // Kind-agnostic: for a restaurant Deck this is exactly overlappingOptions,
   // and for a Recipe Deck it is the Match the celebration should fire on.
   const hasOverlap = matchedEntries.length > 0;
+
+  // A Restart wipes the whole room's Match, so it is the Host's call and the
+  // server refuses it from anyone else (#405). Everyone else waits — unless no
+  // Host is actually here (left, or dropped), since nothing promotes a
+  // successor and the server lets whoever is still around restart rather than
+  // strand the room. Same rule as the Lobby's start, which is the same command.
+  const me = participants.find((p) => p.participantId === currentUserId);
+  const isHost = !!me && (me.isHost || !participants.some((p) => p.isHost && p.isOnline !== false));
+  const waitingForHost = (
+    <p className="text-center text-sm text-muted">Waiting for the host to start another round</p>
+  );
 
   // An older backend sends no topPick; crown the best-rated Match rather than branching the UI.
   const fallbackCrown = [...overlappingOptions].sort(
@@ -703,13 +715,17 @@ export default function ResultsPage() {
               </svg>
             </div>
             <p className="text-muted mb-6">No {deckNoun} everyone liked</p>
-            <button
-              onClick={handleRestart}
-              disabled={isRestarting}
-              className="btn btn-primary px-6 py-3"
-            >
-              Try again
-            </button>
+            {isHost ? (
+              <button
+                onClick={handleRestart}
+                disabled={isRestarting}
+                className="btn btn-primary px-6 py-3"
+              >
+                Try again
+              </button>
+            ) : (
+              waitingForHost
+            )}
           </div>
         )}
 
@@ -812,15 +828,18 @@ export default function ResultsPage() {
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {crownPlaceId && (
-            <button
-              onClick={handleRestart}
-              disabled={isRestarting}
-              className="btn btn-primary w-full min-h-[48px]"
-            >
-              Select again
-            </button>
-          )}
+          {crownPlaceId &&
+            (isHost ? (
+              <button
+                onClick={handleRestart}
+                disabled={isRestarting}
+                className="btn btn-primary w-full min-h-[48px]"
+              >
+                Select again
+              </button>
+            ) : (
+              waitingForHost
+            ))}
 
           <button onClick={() => void handleShareTopPick()} className="btn btn-secondary w-full">
             Share Top Pick

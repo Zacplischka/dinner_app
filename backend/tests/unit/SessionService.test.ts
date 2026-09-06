@@ -1822,5 +1822,63 @@ describe('SessionService', () => {
       const session = await SessionService.getSession(sessionCode);
       expect(session?.state).toBe('selecting');
     });
+
+    // #405: the lobby's Start Selecting is this command from 'waiting', and it
+    // moves the whole room — a joiner must not be able to push everyone into
+    // the Deck before the Host has finished inviting.
+    it('rejects a start from a Participant who is not the Host', async () => {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+
+      await expect(SessionService.restartSession(sessionCode, 'p-bob')).rejects.toMatchObject({
+        code: 'NOT_HOST',
+      });
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).toBe('waiting');
+    });
+
+    it('rejects a decided Session Restart from a Participant who is not the Host', async () => {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+      await SessionService.submitSelections(sessionCode, 'p-bob', []);
+
+      await expect(SessionService.restartSession(sessionCode, 'p-bob')).rejects.toMatchObject({
+        code: 'NOT_HOST',
+      });
+    });
+
+    // #405: nothing promotes a successor, so a Host who leaves would otherwise
+    // pin the room on "Waiting for the host" until the TTL ran out.
+    it('lets whoever is left start once the Host has gone', async () => {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      await SessionService.leaveSession(sessionCode, 'p-alice');
+
+      await SessionService.restartSession(sessionCode, 'p-bob');
+
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).toBe('selecting');
+    });
+
+    // #405: a Disconnect keeps the Host a current Participant, and a Host who
+    // reopens the Invite Link in a new tab has no rejoin token — they join
+    // beside their own dead entry as an ordinary Participant. Keying off the
+    // entry alone would refuse the real Host and everyone else, freezing the
+    // room until the TTL.
+    it('lets the room start when the Host is listed but offline', async () => {
+      const { sessionCode } = await SessionService.createSession('Alice');
+      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      await store.markDisconnected('p-alice');
+
+      await SessionService.restartSession(sessionCode, 'p-bob');
+
+      const session = await SessionService.getSession(sessionCode);
+      expect(session?.state).toBe('selecting');
+    });
   });
 });

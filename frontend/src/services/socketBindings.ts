@@ -148,6 +148,9 @@ const socketConfig: SocketConfig = {
           ...updatedParticipants[existingIndex],
           participantId: event.participantId,
           isOnline: true,
+          // Server truth (#405): a rejoin can re-grant the Host role. Absent
+          // from an older backend (ADR 0007) — keep what the roster has.
+          isHost: event.isHost ?? updatedParticipants[existingIndex].isHost,
         };
         store.updateParticipants(updatedParticipants);
         log('Updated existing participant socket ID:', event.displayName);
@@ -162,7 +165,10 @@ const socketConfig: SocketConfig = {
           sessionCode: '',
           joinedAt: Date.now(),
           hasSubmitted: false,
-          isHost: false,
+          // A Host who left and came back joins as a new entry here, and the
+          // start guard reads this flag — assuming false leaves every roster
+          // hostless and hands everyone a button the server refuses (#405).
+          isHost: event.isHost ?? false,
         });
 
         // Show joined toast for new participant
