@@ -188,7 +188,7 @@ describe('NavigationHeader', () => {
     renderHeader(<NavigationHeader title="Choose Restaurants" sessionCode="7K9M2" />);
 
     const banner = screen.getByRole('alert');
-    expect(banner).toHaveTextContent('This Session has expired');
+    expect(banner).toHaveTextContent('This session has expired');
     expect(within(banner).getByRole('button', { name: /start over/i })).toBeInTheDocument();
     expect(screen.queryByText(/Expires in/)).toBeNull();
   });

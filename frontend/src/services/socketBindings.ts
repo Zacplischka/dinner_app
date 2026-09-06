@@ -284,7 +284,7 @@ const socketConfig: SocketConfig = {
     'session:expired': (event: SessionExpiredEvent) => {
       log('Session expired:', event);
       useSessionStore.getState().setSessionStatus('expired');
-      toast.error('This Session has expired');
+      toast.error('This session has expired');
     },
 
     // error - Server-side error

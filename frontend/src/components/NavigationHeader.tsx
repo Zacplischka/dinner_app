@@ -199,7 +199,7 @@ export default function NavigationHeader({
               role="alert"
               className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-lg border border-coral/30 bg-coral/10 px-3 py-2 text-center"
             >
-              <span className="text-sm font-semibold text-coral">This Session has expired</span>
+              <span className="text-sm font-semibold text-coral">This session has expired</span>
               {/* -my-2 buys the 44px tap target without growing the banner. */}
               <button
                 type="button"

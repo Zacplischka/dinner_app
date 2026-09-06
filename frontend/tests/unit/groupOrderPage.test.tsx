@@ -344,7 +344,7 @@ describe('GroupOrderPage', () => {
     });
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('This Session has expired.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('This session has expired.')).toBeInTheDocument());
     expect(
       screen.getByText(
         'A session closes once everyone stops using it. Start a new one to swipe again.'
@@ -365,10 +365,10 @@ describe('GroupOrderPage', () => {
 
     act(() => useSessionStore.getState().setSessionStatus('expired'));
 
-    expect(screen.getByText('This Session has expired.')).toBeInTheDocument();
+    expect(screen.getByText('This session has expired.')).toBeInTheDocument();
     expect(screen.queryByText('In the basket')).toBeNull();
     expect(screen.queryByRole('button', { name: /^Add Margherita/ })).toBeNull();
-    expect(screen.getByRole('alert')).toHaveTextContent('This Session has expired');
+    expect(screen.getByRole('alert')).toHaveTextContent('This session has expired');
   });
 
   const twoParticipants = [

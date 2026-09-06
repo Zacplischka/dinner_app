@@ -102,7 +102,7 @@ describe('Session expiry on the Deck screen', () => {
     socket.trigger('session:expired', { sessionCode: 'AB123' });
 
     const banner = await screen.findByRole('alert');
-    expect(banner).toHaveTextContent('This Session has expired');
+    expect(banner).toHaveTextContent('This session has expired');
     await waitFor(() => expect(screen.queryByText(/Expires in/)).toBeNull());
 
     const expiryToasts = useToastStore
