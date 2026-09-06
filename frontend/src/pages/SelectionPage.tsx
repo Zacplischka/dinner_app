@@ -60,16 +60,19 @@ export default function SelectionPage() {
     branch,
     currentUserId,
     setExpiresAt,
+    deckCursor,
+    setDeckCursor,
   } = useSessionStore();
   // The Deck is shared with every Branch, but its copy must not be: a Cook
   // Session deals Recipes and said "Choose Restaurants" over them (#253).
   const deckNoun = branch === 'cook' ? 'recipe' : branch === 'watch' ? 'movie' : 'restaurant';
+  const deckTitle =
+    branch === 'cook'
+      ? 'Choose recipes'
+      : branch === 'watch'
+        ? 'Choose movies'
+        : 'Choose restaurants';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
-  // ponytail: a reload deals the Deck from 0 again. The store persists only the
-  // Selections (yes-swipes), never the passes, so the cursor can't be rebuilt
-  // from what it holds; re-liking a persisted Selection is a no-op. Upgrade:
-  // persist the swiped-through count per sessionCode alongside selections.
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -101,6 +104,12 @@ export default function SelectionPage() {
   const fullHouseArmedRef = useRef(true);
   const fullHouseShownRef = useRef<Set<string>>(new Set());
   const rosterSizeRef = useRef(0);
+  // A reload restores the cursor but not the refs above (#404). Everything
+  // behind a restored cursor was already announced before the reload, so the
+  // first deal seeds the announced map instead of replaying old reveals — and
+  // a stale Full House must never take the screen over on arrival.
+  const hydratedRef = useRef(false);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fullHouseRef = useRef<HTMLDivElement>(null);
   useFocusTrap(fullHouseRef, fullHousePlaceId !== null);
 
@@ -109,26 +118,30 @@ export default function SelectionPage() {
     rosterSizeRef.current = participants.length;
   }, [participants.length]);
 
-  useEffect(() => {
-    const loadDeck = async () => {
-      if (!sessionCode) {
-        setError('Session code not found');
-        setIsLoading(false);
-        return;
-      }
+  // Also the retry card's action (#404), so a Deck that failed or came back
+  // empty can be re-dealt without a reload.
+  const loadDeck = useCallback(async () => {
+    if (!sessionCode) {
+      setError('Session code not found');
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        const data = await getRestaurants(sessionCode);
-        setEntries(data);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Failed to load restaurants');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadDeck();
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await getRestaurants(sessionCode);
+      setEntries(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load the Deck');
+    } finally {
+      setIsLoading(false);
+    }
   }, [sessionCode]);
+
+  useEffect(() => {
+    void loadDeck();
+  }, [loadDeck]);
 
   // The Deck's invite affordance (#284): a Session admits joiners while it
   // lives, so the canonical minted Invite Link belongs here too. Losing it
@@ -168,6 +181,24 @@ export default function SelectionPage() {
   // never the one being decided (anti-conformity, spec kill-risk (b)), and never a
   // card ahead (which is also how a buffered event survives until you reach it).
   useEffect(() => {
+    if (!hydratedRef.current && entries.length > 0) {
+      hydratedRef.current = true;
+      const names = participants.map((p) => p.displayName);
+      entries.slice(0, deckCursor).forEach((r) => {
+        const selectorNames = liveSelections[r.placeId] ?? [];
+        announcedRef.current.set(r.placeId, selectorNames.length);
+        // A Full House that took the screen over before the reload is never
+        // celebrated twice — a bigger roster liking it later is the same house.
+        const likedByMe = selections.includes(r.placeId);
+        if (
+          liveReveal({ placeId: r.placeId, selectorNames, likedByMe, participantNames: names })
+            .fullHouse
+        ) {
+          fullHouseShownRef.current.add(r.placeId);
+        }
+      });
+    }
+
     // A retraction (#410) lowers the live count, so the announced high-water mark
     // has to come down with it — otherwise the next like from someone else never
     // clears the gate and that reveal is swallowed for good. And if the strip is
@@ -180,7 +211,7 @@ export default function SelectionPage() {
       setReveal((shown) => (shown?.placeId === placeId ? null : shown));
     });
     const unlocked = entries
-      .slice(0, currentIndex)
+      .slice(0, deckCursor)
       .filter(
         (r) => (liveSelections[r.placeId]?.length ?? 0) > (announcedRef.current.get(r.placeId) ?? 0)
       );
@@ -224,7 +255,9 @@ export default function SelectionPage() {
       fullHouseShownRef.current.add(latest.restaurant.placeId);
       setFullHousePlaceId(latest.restaurant.placeId);
     }
-  }, [liveSelections, currentIndex, entries, participants, selections]);
+
+    return () => clearTimeout(revealTimerRef.current);
+  }, [liveSelections, deckCursor, entries, participants, selections]);
 
   // The 4s auto-dismiss hangs off `reveal`, not off the effect above: that one
   // re-runs on every swipe and every buffer change, and a cleanup there cancelled
@@ -271,11 +304,11 @@ export default function SelectionPage() {
   const handleSwipeLeft = useCallback(() => {
     setLastAction('nope');
     setTimeout(() => setLastAction(null), 600);
-    setCurrentIndex((prev) => prev + 1);
-  }, []);
+    setDeckCursor(deckCursor + 1);
+  }, [deckCursor, setDeckCursor]);
 
   const handleSwipeRight = useCallback(() => {
-    const entry = entries[currentIndex];
+    const entry = entries[deckCursor];
     if (entry) {
       addSelection(entry.placeId);
       // ponytail: fire-and-forget — nothing branches on the ack, and a failed
@@ -286,13 +319,13 @@ export default function SelectionPage() {
     }
     setLastAction('like');
     setTimeout(() => setLastAction(null), 600);
-    setCurrentIndex((prev) => prev + 1);
-  }, [currentIndex, entries, addSelection, sessionCode]);
+    setDeckCursor(deckCursor + 1);
+  }, [deckCursor, entries, addSelection, sessionCode, setDeckCursor]);
 
-  const canUndo = currentIndex > 0;
+  const canUndo = deckCursor > 0;
   const handleUndo = useCallback(() => {
     if (!canUndo) return;
-    const previous = entries[currentIndex - 1];
+    const previous = entries[deckCursor - 1];
     if (previous) {
       // Retract the Live Selection this Undo takes back (#410), so the other
       // phones stop counting a like that no longer exists. Only a liked card
@@ -302,14 +335,14 @@ export default function SelectionPage() {
       }
       removeSelection(previous.placeId);
     }
-    setCurrentIndex((prev) => prev - 1);
+    setDeckCursor(deckCursor - 1);
     // Undo puts a revealed Restaurant back at/ahead of the cursor — a visible
     // count while you re-decide is the exact herding setup the gate exists to
     // prevent. Undo alone never un-marks the announced ref (my own like was never
     // in my own buffer), so re-deciding the same card produces no second reveal;
     // only an incoming retraction lowers the mark, in the reveal effect.
     setReveal(null);
-  }, [canUndo, currentIndex, entries, removeSelection, selections, sessionCode]);
+  }, [canUndo, deckCursor, entries, removeSelection, selections, sessionCode, setDeckCursor]);
 
   const handleSubmit = async () => {
     if (!sessionCode) {
@@ -366,7 +399,7 @@ export default function SelectionPage() {
   ) : null;
 
   // Check if we've gone through the whole Deck
-  const isDone = currentIndex >= entries.length;
+  const isDone = deckCursor >= entries.length;
 
   const fullHouseName = entries.find((e) => e.placeId === fullHousePlaceId)?.name;
   const deckInert = fullHousePlaceId !== null;
@@ -489,6 +522,48 @@ export default function SelectionPage() {
     );
   }
 
+  // A Deck that failed or came back empty is not a Deck you have seen — the
+  // end-of-deck screen would offer to submit zero Selections as if it were
+  // (#404). Retry is the only honest action.
+  if (entries.length === 0) {
+    return (
+      <div className="min-h-screen bg-ink">
+        <NavigationHeader
+          title={deckTitle}
+          sessionCode={sessionCode}
+          showBackButton
+          onBack={handleLeaveSession}
+          confirmOnBack
+          confirmContext="selecting"
+          selectionsCount={selections.length}
+          showConnectionStatus
+          compact
+          rightAction={inviteAction}
+        />
+
+        <div className="flex flex-col items-center justify-center px-4 py-8">
+          <div className="max-w-md w-full text-center animate-fade-in">
+            <div className="card p-8">
+              <h2 className="text-3xl font-display font-black text-text mb-3">
+                Couldn&apos;t load the Deck
+              </h2>
+              <p role="alert" className="text-muted mb-8">
+                {error || `No ${deckNoun}s came back this time.`}
+              </p>
+
+              <button
+                onClick={() => void loadDeck()}
+                className="btn btn-primary w-full min-h-[56px] px-8 py-4 text-xl"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isDone) {
     return (
       <div className="min-h-screen bg-ink">
@@ -567,19 +642,13 @@ export default function SelectionPage() {
   }
 
   // Get the visible entries (current + next 2 for stack effect)
-  const visibleEntries = entries.slice(currentIndex, currentIndex + 3);
+  const visibleEntries = entries.slice(deckCursor, deckCursor + 3);
 
   return (
     <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
-        title={
-          branch === 'cook'
-            ? 'Choose recipes'
-            : branch === 'watch'
-              ? 'Choose movies'
-              : 'Choose restaurants'
-        }
+        title={deckTitle}
         sessionCode={sessionCode}
         showBackButton
         onBack={handleLeaveSession}
@@ -589,7 +658,7 @@ export default function SelectionPage() {
         showConnectionStatus
         compact
         progress={{
-          current: currentIndex + 1,
+          current: deckCursor + 1,
           total: entries.length,
         }}
         rightAction={

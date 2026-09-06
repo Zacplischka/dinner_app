@@ -99,9 +99,6 @@ function AnimatedRoutes() {
 }
 
 function App() {
-  const sessionCode = useSessionStore((state) => state.sessionCode);
-  const sessionStatus = useSessionStore((state) => state.sessionStatus);
-
   // #351: unsubscribe the auth listener on unmount. `active` matters — under
   // StrictMode the cleanup runs before the dynamic import resolves, so a
   // subscription that lands afterwards must be dropped here, not kept.
@@ -137,22 +134,6 @@ function App() {
       disconnect?.();
     };
   }, []);
-
-  // Browser navigation guard - warn before closing/refreshing during active session
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only warn if user is in an active session (not expired or complete)
-      if (sessionCode && sessionStatus !== 'expired' && sessionStatus !== 'complete') {
-        e.preventDefault();
-        // Modern browsers require setting returnValue
-        e.returnValue = '';
-        return '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [sessionCode, sessionStatus]);
 
   return (
     <ErrorBoundary>
