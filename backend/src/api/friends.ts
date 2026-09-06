@@ -5,9 +5,9 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
+import { DomainError } from '../services/DomainError.js';
 import type { FriendsService } from '../services/FriendsService.js';
 import type {
-  ApiError,
   GetProfileResponse,
   SendFriendRequestPayload,
   SearchUsersResponse,
@@ -63,11 +63,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
       const { email } = req.query;
 
       if (!email || typeof email !== 'string') {
-        const error: ApiError = {
-          code: 'VALIDATION_ERROR',
-          message: 'Email query parameter is required',
-        };
-        return res.status(400).json(error);
+        throw new DomainError('VALIDATION_ERROR', 'Email query parameter is required');
       }
 
       const users = await friendsService.searchUsers(email, req.user!.id);
@@ -116,11 +112,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
       const validation = sendFriendRequestSchema.safeParse(req.body);
 
       if (!validation.success) {
-        const error: ApiError = {
-          code: 'VALIDATION_ERROR',
-          message: 'Email is required',
-        };
-        return res.status(400).json(error);
+        throw new DomainError('VALIDATION_ERROR', 'Email is required');
       }
 
       const { email }: SendFriendRequestPayload = validation.data;
@@ -182,11 +174,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       const validation = sendSessionInviteSchema.safeParse(req.body);
       if (!validation.success) {
-        const error: ApiError = {
-          code: 'VALIDATION_ERROR',
-          message: 'At least one friend ID is required',
-        };
-        return res.status(400).json(error);
+        throw new DomainError('VALIDATION_ERROR', 'At least one friend ID is required');
       }
 
       const { friendIds }: SendSessionInviteRequest = validation.data;

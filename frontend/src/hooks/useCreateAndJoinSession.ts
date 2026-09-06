@@ -6,26 +6,10 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  isApiError,
-  type ApiError,
-  type Branch,
-  type Craving,
-  type Mood,
-  type SessionLocation,
-} from '@dinder/shared/types';
+import { isApiError, type ApiError, type CreateSessionRequest } from '@dinder/shared/types';
 import { createSession } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
-
-interface SessionSetup {
-  location?: SessionLocation;
-  searchRadiusMiles?: number;
-  branch?: Branch;
-  craving?: Craving;
-  headcount?: number;
-  mood?: Mood;
-}
 
 export function useCreateAndJoinSession() {
   const navigate = useNavigate();
@@ -49,7 +33,7 @@ export function useCreateAndJoinSession() {
    */
   async function createAndJoin(
     hostName: string,
-    setup: SessionSetup,
+    setup: Omit<CreateSessionRequest, 'hostName'>,
     friendIds: Set<string>
   ): Promise<ApiError | null> {
     setIsCreating(true);

@@ -3,7 +3,6 @@
 
 import type { SessionInvite } from '@dinder/shared/types';
 import { useFriendsStore } from '../../stores/friendsStore';
-import { useSessionStore } from '../../stores/sessionStore';
 import { joinSession } from '../../services/socketBindings';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +14,6 @@ interface SessionInviteCardProps {
 export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
   const navigate = useNavigate();
   const { acceptSessionInvite, declineSessionInvite, currentUserProfile } = useFriendsStore();
-  const { setSessionCode } = useSessionStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,9 +32,6 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           setError(ack.error.message);
           return;
         }
-
-        // Store session code
-        setSessionCode(result.sessionCode);
 
         // Navigate to the session lobby
         navigate(`/session/${result.sessionCode}`);

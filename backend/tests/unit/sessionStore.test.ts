@@ -36,7 +36,6 @@ beforeEach(async () => {
 
 async function createTestSession(withRestaurants = true) {
   return await store.createSession(sessionCode, {
-    hostId: 'host-1',
     hostName: 'Alice',
     entries: withRestaurants ? restaurants : undefined,
   });
@@ -47,7 +46,6 @@ describe('SessionStore', () => {
     it('round-trips session metadata', async () => {
       const location = { latitude: 37.7749, longitude: -122.4194, address: 'San Francisco, CA' };
       await store.createSession(sessionCode, {
-        hostId: 'host-1',
         hostName: 'Alice',
         location,
         searchRadiusMiles: 5,
@@ -55,7 +53,6 @@ describe('SessionStore', () => {
 
       const session = await store.readSession(sessionCode);
       expect(session?.sessionCode).toBe(sessionCode);
-      expect(session?.hostId).toBe('host-1');
       expect(session?.hostName).toBe('Alice');
       expect(session?.state).toBe('waiting');
       expect(session?.participantCount).toBe(1);
@@ -66,12 +63,11 @@ describe('SessionStore', () => {
     it('round-trips the Mood a Watch Session was dealt from, and only there', async () => {
       const mood = { genres: ['Comedy' as const, 'Horror' as const], decades: ['1990s' as const] };
       await store.createSession(sessionCode, {
-        hostId: 'host-1',
         hostName: 'Alice',
         branch: 'watch',
         mood,
       });
-      await store.createSession('TEST2', { hostId: 'host-2', hostName: 'Bob', branch: 'eatout' });
+      await store.createSession('TEST2', { hostName: 'Bob', branch: 'eatout' });
 
       expect((await store.readSession(sessionCode))?.mood).toEqual(mood);
       expect((await store.readSession('TEST2'))?.mood).toBeUndefined();
@@ -419,7 +415,6 @@ describe('SessionStore', () => {
         trailerUrl: 'https://example.test/alien-trailer',
       };
       await store.createSession(sessionCode, {
-        hostId: 'host-1',
         hostName: 'Alice',
         entries: [movie],
       });
@@ -488,7 +483,6 @@ describe('SessionStore', () => {
   describe('typed round-trip', () => {
     it('round-trips a fully-typed Session, Participants, Selections, Submissions, Restaurants, and the Match', async () => {
       const { session } = await store.createSession(sessionCode, {
-        hostId: 'host-1',
         hostName: 'Alice',
         location: { latitude: 1, longitude: 2, address: 'Somewhere' },
         searchRadiusMiles: 3,

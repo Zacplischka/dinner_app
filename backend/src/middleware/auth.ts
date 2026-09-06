@@ -11,7 +11,6 @@ import { supabase } from '../services/supabase.js';
 export interface AuthenticatedUser {
   id: string;
   email?: string;
-  role?: string;
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -21,8 +20,6 @@ export interface AuthenticatedRequest extends Request {
 type SupabaseAuthUser = {
   id: string;
   email?: string | null;
-  role?: string | null;
-  app_metadata?: Record<string, unknown> | null;
 };
 
 // Two arms: a user, or the reason there isn't one. Callers that care whether the
@@ -58,13 +55,11 @@ async function verifyTokenInternal(token: string): Promise<TokenVerification> {
     if (!data.user) return { user: null, message: 'No user returned for token' };
 
     const authUser = data.user as SupabaseAuthUser;
-    const appMetadataRole = authUser.app_metadata?.role;
 
     return {
       user: {
         id: authUser.id,
         email: authUser.email || undefined,
-        role: authUser.role || (typeof appMetadataRole === 'string' ? appMetadataRole : undefined),
       },
     };
   } catch (error) {

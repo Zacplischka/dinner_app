@@ -1,7 +1,7 @@
 // Zustand store for session state management
 
 import { create } from 'zustand';
-import { createJSONStorage, devtools, persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Branch, DeckEntry } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
 import { useOrderStore } from './orderStore';
@@ -109,134 +109,131 @@ const initialState = {
 };
 
 export const useSessionStore = create<SessionState>()(
-  devtools(
-    persist(
-      (set) => ({
-        ...initialState,
+  persist(
+    (set) => ({
+      ...initialState,
 
-        // Session actions
-        setSessionCode: (code) => set({ sessionCode: code }),
+      // Session actions
+      setSessionCode: (code) => set({ sessionCode: code }),
 
-        setBranch: (branch) => set({ branch }),
+      setBranch: (branch) => set({ branch }),
 
-        setCurrentUserId: (userId) => set({ currentUserId: userId }),
+      setCurrentUserId: (userId) => set({ currentUserId: userId }),
 
-        addParticipant: (participant) =>
-          set((state) => ({
-            participants: [...state.participants, participant],
-          })),
+      addParticipant: (participant) =>
+        set((state) => ({
+          participants: [...state.participants, participant],
+        })),
 
-        removeParticipant: (participantId) =>
-          set((state) => ({
-            participants: state.participants.filter((p) => p.participantId !== participantId),
-          })),
+      removeParticipant: (participantId) =>
+        set((state) => ({
+          participants: state.participants.filter((p) => p.participantId !== participantId),
+        })),
 
-        updateParticipants: (participants) => set({ participants }),
+      updateParticipants: (participants) => set({ participants }),
 
-        // Location actions
-        setLocation: (location) => set({ location }),
+      // Location actions
+      setLocation: (location) => set({ location }),
 
-        setSearchRadiusMiles: (miles) => set({ searchRadiusMiles: miles }),
+      setSearchRadiusMiles: (miles) => set({ searchRadiusMiles: miles }),
 
-        setRestaurants: (restaurants) => set({ restaurants }),
+      setRestaurants: (restaurants) => set({ restaurants }),
 
-        // Selection actions
-        setSelections: (placeIds) => set({ selections: placeIds }),
+      // Selection actions
+      setSelections: (placeIds) => set({ selections: placeIds }),
 
-        addSelection: (placeId) =>
-          set((state) => {
-            if (state.selections.includes(placeId)) {
-              return state; // Already selected, no change
-            }
-            return { selections: [...state.selections, placeId] };
-          }),
-
-        removeSelection: (placeId) =>
-          set((state) => ({
-            selections: state.selections.filter((id) => id !== placeId),
-          })),
-
-        // Keyed by displayName, not participantId: participantId IS socket.id and
-        // is re-minted on every reconnect, so a reloaded Participant replaying
-        // their whole deck would otherwise be counted as several humans.
-        // See ADR 0009.
-        recordLiveSelection: (placeId, displayName) =>
-          set((state) => {
-            const names = state.liveSelections[placeId] ?? [];
-            if (names.includes(displayName)) return state;
-            return {
-              liveSelections: { ...state.liveSelections, [placeId]: [...names, displayName] },
-            };
-          }),
-
-        // Results actions
-        setResults: (results) =>
-          set({
-            allSelections: results.allSelections,
-            restaurantNames: results.restaurantNames || {},
-            overlappingOptions: results.overlappingOptions,
-            topPick: results.topPick,
-            shoppingListId: results.shoppingListId,
-            sessionStatus: 'complete',
-          }),
-
-        setOrderPlaceId: (placeId) => set({ orderPlaceId: placeId }),
-
-        // Status actions
-        setSessionStatus: (status) => set({ sessionStatus: status }),
-
-        setConnectionStatus: (isConnected) => set({ isConnected }),
-
-        setExpiresAt: (expiresAt) => set({ expiresAt }),
-
-        // Reset actions
-        resetSession: () => {
-          useOrderStore.getState().clear();
-          set(initialState);
-        },
-
-        resetSelections: () => {
-          // A Restart voids the Match, and the server DELs both order keys in
-          // the same resetForRestart pipeline — never render last venue's basket.
-          useOrderStore.getState().clear();
-          set((state) => ({
-            // The server's resetForRestart clears every Participant's
-            // Submission; a stale true here would re-seed a fresh Deck as
-            // already submitted and mis-count "x of y have swiped".
-            participants: state.participants.map((p) => ({ ...p, hasSubmitted: false })),
-            selections: [],
-            allSelections: {},
-            liveSelections: {},
-            restaurantNames: {},
-            overlappingOptions: [],
-            topPick: undefined,
-            shoppingListId: undefined,
-            orderPlaceId: null,
-            sessionStatus: 'selecting',
-          }));
-        },
-      }),
-      {
-        name: 'dinner-session-storage',
-        version: 1,
-        // #304: identity is per-tab. localStorage is origin-wide, so a second
-        // tab of the same browser rehydrated the first tab's Participant and
-        // its auto-rejoin evicted the host. sessionStorage is scoped to the
-        // tab and survives reload (and iOS background-and-return), which is
-        // exactly the case this persistence exists for.
-        storage: createJSONStorage(() => sessionStorage),
-        // isConnected is live socket state; rehydrating it as true would lie.
-        partialize: ({ isConnected: _isConnected, ...rest }: SessionState): Partial<SessionState> =>
-          rest,
-        // Pre-v1 blobs have unversioned, possibly stale shapes — discard them.
-        migrate: () => ({ ...initialState }),
-        merge: (persisted, current) => ({
-          ...current,
-          ...((persisted ?? {}) as Partial<SessionState>),
-          isConnected: false,
+      addSelection: (placeId) =>
+        set((state) => {
+          if (state.selections.includes(placeId)) {
+            return state; // Already selected, no change
+          }
+          return { selections: [...state.selections, placeId] };
         }),
-      }
-    ),
-    { name: 'DinnerSession' }
+
+      removeSelection: (placeId) =>
+        set((state) => ({
+          selections: state.selections.filter((id) => id !== placeId),
+        })),
+
+      // Keyed by displayName, not participantId: participantId IS socket.id and
+      // is re-minted on every reconnect, so a reloaded Participant replaying
+      // their whole deck would otherwise be counted as several humans.
+      // See ADR 0009.
+      recordLiveSelection: (placeId, displayName) =>
+        set((state) => {
+          const names = state.liveSelections[placeId] ?? [];
+          if (names.includes(displayName)) return state;
+          return {
+            liveSelections: { ...state.liveSelections, [placeId]: [...names, displayName] },
+          };
+        }),
+
+      // Results actions
+      setResults: (results) =>
+        set({
+          allSelections: results.allSelections,
+          restaurantNames: results.restaurantNames || {},
+          overlappingOptions: results.overlappingOptions,
+          topPick: results.topPick,
+          shoppingListId: results.shoppingListId,
+          sessionStatus: 'complete',
+        }),
+
+      setOrderPlaceId: (placeId) => set({ orderPlaceId: placeId }),
+
+      // Status actions
+      setSessionStatus: (status) => set({ sessionStatus: status }),
+
+      setConnectionStatus: (isConnected) => set({ isConnected }),
+
+      setExpiresAt: (expiresAt) => set({ expiresAt }),
+
+      // Reset actions
+      resetSession: () => {
+        useOrderStore.getState().clear();
+        set(initialState);
+      },
+
+      resetSelections: () => {
+        // A Restart voids the Match, and the server DELs both order keys in
+        // the same resetForRestart pipeline — never render last venue's basket.
+        useOrderStore.getState().clear();
+        set((state) => ({
+          // The server's resetForRestart clears every Participant's
+          // Submission; a stale true here would re-seed a fresh Deck as
+          // already submitted and mis-count "x of y have swiped".
+          participants: state.participants.map((p) => ({ ...p, hasSubmitted: false })),
+          selections: [],
+          allSelections: {},
+          liveSelections: {},
+          restaurantNames: {},
+          overlappingOptions: [],
+          topPick: undefined,
+          shoppingListId: undefined,
+          orderPlaceId: null,
+          sessionStatus: 'selecting',
+        }));
+      },
+    }),
+    {
+      name: 'dinner-session-storage',
+      version: 1,
+      // #304: identity is per-tab. localStorage is origin-wide, so a second
+      // tab of the same browser rehydrated the first tab's Participant and
+      // its auto-rejoin evicted the host. sessionStorage is scoped to the
+      // tab and survives reload (and iOS background-and-return), which is
+      // exactly the case this persistence exists for.
+      storage: createJSONStorage(() => sessionStorage),
+      // isConnected is live socket state; rehydrating it as true would lie.
+      partialize: ({ isConnected: _isConnected, ...rest }: SessionState): Partial<SessionState> =>
+        rest,
+      // Pre-v1 blobs have unversioned, possibly stale shapes — discard them.
+      migrate: () => ({ ...initialState }),
+      merge: (persisted, current) => ({
+        ...current,
+        ...((persisted ?? {}) as Partial<SessionState>),
+        isConnected: false,
+      }),
+    }
   )
 );

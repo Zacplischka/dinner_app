@@ -33,7 +33,6 @@ describe('Contract Test: session-outcome metrics log line', () => {
 
   async function seedSession(participantIds: string[]) {
     await store.createSession(sessionCode, {
-      hostId: participantIds[0],
       hostName: participantIds[0],
       entries: restaurants,
     });

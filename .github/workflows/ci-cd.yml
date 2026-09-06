@@ -56,53 +56,13 @@ jobs:
       - name: Run frontend unit tests
         run: npm run test:unit --workspace=@dinder/frontend
 
-      # Offline validator for the production-edge purge/cache assertions.
-      # Does not touch the network.
-      - name: Run delivery-infrastructure checks
-        run: npm run check:production-edge
-
-      # Offline validator: no source comment may cite a repository path that
-      # does not exist (#295). Does not touch the network.
-      - name: Check comment path references
-        run: npm run check:comment-paths
-
-      # Offline self-check for the corpus pipeline's reading stage (#329):
-      # robots.txt refusal and the three-publisher floor. Injected search,
-      # HTTP and extraction — no network, no tokens spent.
-      - name: Check reading stage
-        run: npm run check:reading-stage
-      # Offline self-check for the corpus pipeline's authoring stage (#335):
-      # the sources-closed boundary, the overlap checker fed a deliberate lift,
-      # and the rewrite loop. Injected author — no network, no tokens spent.
-      - name: Check authoring stage
-        run: npm run check:authoring-stage
-      # Offline self-check for the Owned Recipe image pipeline's pure parts
-      # (#330) — crop geometry, batch request shape, image URL, cost maths.
-      # Does not touch the network and does not need cwebp.
-      - name: Check corpus image pipeline
-        run: npm run check:corpus-images
-      # Offline self-checks for the corpus pipeline's structural and culinary
-      # gate layers (#336): the record shape, the AU lint, the authoring
-      # amendments, the 4:3 image, and the two-family judge rule. Injected
-      # judges — no network, no tokens spent.
-      - name: Check gate layers
-        run: npm run check:gate-layers
-      # Offline self-check for the corpus pipeline's tally gate (#337): the
-      # grading, and above all the split between a defect in a Recipe and a
-      # fact about store 1101. Injected probe — nothing reaches Woolworths,
-      # Railway or production Redis, which is what keeps CI off the shared
-      # politeness budget.
-      - name: Check tally gate
-        run: npm run check:tally-gate
-      # Offline self-check for the corpus pipeline's human layer (#337): the
-      # stratified 10% sample and the one-failure / two-failure rules.
-      - name: Check human gate
-        run: npm run check:human-gate
-      # Offline self-check for the movie corpus builder's pure parts (#369):
-      # genre bucketing, the critics score, the emitted module's shape.
-      # Does not touch Wikipedia or Wikidata.
-      - name: Check movie corpus builder
-        run: npm run check:movie-corpus
+      # Offline self-checks for every repo-level script (`scripts/*.test.mjs`
+      # and `scripts/corpus/*.test.mjs`): the production-edge purge/cache
+      # assertions, the comment-path validator (#295), the corpus pipeline's
+      # stages and gates (#329, #330, #335, #336, #337) and the movie corpus
+      # builder (#369). Everything is injected — no network, no tokens spent.
+      - name: Check repo scripts
+        run: npm run check:scripts
 
   contract-tests:
     name: Contract Tests

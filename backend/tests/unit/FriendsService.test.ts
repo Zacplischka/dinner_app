@@ -92,11 +92,6 @@ const fakeStore = {
       .filter((f) => f.status === 'accepted' && (f.user_id === userId || f.friend_id === userId))
       .map(({ id, user_id, friend_id }) => ({ id, userId: user_id, friendId: friend_id })),
 
-  listAcceptedFriendPairs: async (userId: string) =>
-    [...db.friendships.values()]
-      .filter((f) => f.status === 'accepted' && (f.user_id === userId || f.friend_id === userId))
-      .map(({ user_id, friend_id }) => ({ user_id, friend_id })),
-
   listPendingRequestsForRecipient: async (userId: string) =>
     [...db.friendships.values()]
       .filter((f) => f.status === 'pending' && f.friend_id === userId)

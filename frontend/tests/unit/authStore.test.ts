@@ -105,7 +105,7 @@ describe('authStore', () => {
   });
 
   it('should sign out and surface sign-out errors', async () => {
-    useAuthStore.getState().setSession(session as any);
+    useAuthStore.setState({ session: session as any, user: user as any, isAuthenticated: true });
     authMocks.signOut.mockResolvedValueOnce(undefined);
 
     await useAuthStore.getState().signOut();
@@ -124,23 +124,6 @@ describe('authStore', () => {
     await expect(useAuthStore.getState().signOut()).rejects.toThrow('logout failed');
     expect(useAuthStore.getState().isLoading).toBe(false);
     expect(errorSpy).toHaveBeenCalledWith('Sign out error:', error);
-  });
-
-  it('should set and clear sessions directly', () => {
-    useAuthStore.getState().setSession(session as any);
-
-    expect(useAuthStore.getState()).toMatchObject({
-      user,
-      isAuthenticated: true,
-    });
-
-    useAuthStore.getState().setSession(null);
-
-    expect(useAuthStore.getState()).toMatchObject({
-      user: null,
-      session: null,
-      isAuthenticated: false,
-    });
   });
 
   it("forgets the previous Profile's Friends on sign-out", async () => {
@@ -165,7 +148,7 @@ describe('authStore', () => {
     expect(useFriendsStore.getState()).toMatchObject(empty);
 
     // SIGNED_OUT arriving from Supabase (another tab, an expired token)
-    useAuthStore.getState().setSession(session as any);
+    useAuthStore.setState({ session: session as any, user: user as any, isAuthenticated: true });
     useFriendsStore.setState(seeded);
     authStateCallback?.('SIGNED_OUT', null);
     expect(useFriendsStore.getState()).toMatchObject(empty);

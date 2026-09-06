@@ -2,7 +2,7 @@ import { logger } from '../../src/logger.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // Mock ioredis so this suite never opens a real connection; the mock keeps
-// EventEmitter semantics because client.ts wires lifecycle logging via .on().
+// EventEmitter semantics because client.ts wires its error logging via .on().
 vi.mock('ioredis', async () => {
   const { EventEmitter } = await import('node:events');
   class MockRedis extends EventEmitter {
@@ -32,13 +32,10 @@ describe('redis client helpers', () => {
   });
 
   it('should expose retry delay strategy capped at 2 seconds', () => {
-    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     const retryStrategy = (redis as any).options.retryStrategy;
 
     expect(retryStrategy(1)).toBe(50);
     expect(retryStrategy(100)).toBe(2000);
-    expect(logSpy).toHaveBeenCalledWith({ delayMs: 50, attempt: 1 }, 'Redis reconnecting');
-    expect(logSpy).toHaveBeenCalledWith({ delayMs: 2000, attempt: 100 }, 'Redis reconnecting');
   });
 
   it('should report healthy Redis pings', async () => {
@@ -56,22 +53,13 @@ describe('redis client helpers', () => {
     expect(errorSpy).toHaveBeenCalledWith({ err: error }, 'Redis ping failed');
   });
 
-  it('should log Redis client lifecycle events', () => {
-    const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+  it('should log Redis client errors', () => {
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
 
-    expect(() => redis.emit('connect')).not.toThrow();
-    expect(() => redis.emit('ready')).not.toThrow();
     const eventError = new Error('event error');
     expect(() => redis.emit('error', eventError)).not.toThrow();
-    expect(() => redis.emit('close')).not.toThrow();
-    expect(() => redis.emit('reconnecting')).not.toThrow();
 
-    expect(logSpy).toHaveBeenCalledWith('✓ Redis connected');
-    expect(logSpy).toHaveBeenCalledWith('✓ Redis ready');
     expect(errorSpy).toHaveBeenCalledWith({ err: eventError }, 'Redis error');
-    expect(logSpy).toHaveBeenCalledWith('Redis connection closed');
-    expect(logSpy).toHaveBeenCalledWith('Redis reconnecting...');
   });
 
   it('should initialize Redis with default connection options when env is missing', async () => {

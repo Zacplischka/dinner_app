@@ -2,7 +2,6 @@
 // `persist`: the ~4 KB Pinned Menu must never land in localStorage.
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
 import type { MenuItemCapture, OrderState } from '@dinder/shared/types';
 
 type OrderChange = { by: string; name: string; delta: 1 | -1 };
@@ -28,24 +27,19 @@ const initialState = {
   noMenuPlaceIds: [],
 };
 
-export const useOrderStore = create<OrderStoreState>()(
-  devtools(
-    (set) => ({
-      ...initialState,
+export const useOrderStore = create<OrderStoreState>()((set) => ({
+  ...initialState,
 
-      setOrder: (order, menu) => set((state) => ({ order, menu: menu ?? state.menu })),
+  setOrder: (order, menu) => set((state) => ({ order, menu: menu ?? state.menu })),
 
-      setChange: (change) => set({ change }),
+  setChange: (change) => set({ change }),
 
-      markNoMenu: (placeId) =>
-        set((state) =>
-          state.noMenuPlaceIds.includes(placeId)
-            ? state
-            : { noMenuPlaceIds: [...state.noMenuPlaceIds, placeId] }
-        ),
+  markNoMenu: (placeId) =>
+    set((state) =>
+      state.noMenuPlaceIds.includes(placeId)
+        ? state
+        : { noMenuPlaceIds: [...state.noMenuPlaceIds, placeId] }
+    ),
 
-      clear: () => set(initialState),
-    }),
-    { name: 'OrderStore' }
-  )
-);
+  clear: () => set(initialState),
+}));

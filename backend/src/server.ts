@@ -35,12 +35,6 @@ import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import {
-  getSocketAuthToken,
-  getSocketUser,
-  setSocketUser,
-  type SocketData,
-} from './websocket/socketAuth.js';
 
 // Import shared types
 import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
@@ -237,7 +231,16 @@ import { handleDisconnect } from './websocket/disconnectHandler.js';
 import { handleLiveSelection } from './websocket/liveSelectionHandler.js';
 
 // Import auth middleware
-import { verifyToken, type AuthenticatedRequest } from './middleware/auth.js';
+import {
+  verifyToken,
+  type AuthenticatedRequest,
+  type AuthenticatedUser,
+} from './middleware/auth.js';
+
+/** What the socket auth middleware below hangs on `socket.data`. */
+interface SocketData {
+  user?: AuthenticatedUser;
+}
 
 // Import session expiry notifier
 import {
@@ -247,7 +250,11 @@ import {
 
 // Socket.IO authentication middleware (optional - doesn't reject unauthenticated)
 io.use((socket, next) => {
-  const token = getSocketAuthToken(socket.handshake.auth);
+  const auth: unknown = socket.handshake.auth;
+  const token =
+    auth && typeof auth === 'object' && 'token' in auth && typeof auth.token === 'string'
+      ? auth.token
+      : undefined;
 
   if (!token) {
     // Always allow connection (auth is optional for now)
@@ -259,7 +266,7 @@ io.use((socket, next) => {
     const user = await verifyToken(token);
     if (user) {
       // Attach user info to socket for later use
-      setSocketUser(socket, user);
+      socket.data.user = user;
       logger.info({ socketId: socket.id, userId: user.id }, 'Socket authenticated');
     }
 
@@ -270,7 +277,7 @@ io.use((socket, next) => {
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  const user = getSocketUser(socket);
+  const user = socket.data.user;
   const socketLog = logger.child({ socketId: socket.id });
   socketLog.info({ userId: user?.id }, 'Socket connected');
 

@@ -15,8 +15,11 @@ import {
   SESSION_CODE_LENGTH,
   type Branch,
   type Craving,
+  type CreateSessionResponse,
   type DeckEntry,
   type Mood,
+  type SessionResponse,
+  type TopPick,
   isRestaurant,
 } from '@dinder/shared/types';
 
@@ -76,6 +79,20 @@ export interface WatchSetup {
   mood: Mood;
 }
 
+/** What a completion hands back: the Match, the Top Pick, and a Cook Session's Shopping List. */
+export type SessionOutcome = Awaited<ReturnType<SessionStore['computeAndStoreResults']>> & {
+  topPick?: TopPick;
+  shoppingListId?: string;
+};
+
+/** The old-Session departure a join commits, success or not (#284). */
+export interface LeftSession {
+  sessionCode: string;
+  displayName: string;
+  participantCount: number;
+  results?: SessionOutcome;
+}
+
 /**
  * Generate a random Session Code. Uniqueness is NOT guaranteed here —
  * createSession's collision-retry loop owns that.
@@ -118,23 +135,7 @@ export function createSessionService({
     branch?: Branch,
     cook?: CookSetup,
     watch?: WatchSetup
-  ): Promise<{
-    sessionCode: string;
-    hostName: string;
-    participantCount: number;
-    state: string;
-    expiresAt: string;
-    shareableLink: string;
-    branch?: Branch;
-    location?: {
-      latitude: number;
-      longitude: number;
-      address?: string;
-    };
-    searchRadiusMiles?: number;
-    restaurantCount?: number;
-    headcount?: number;
-  }> {
+  ): Promise<CreateSessionResponse> {
     // Generate unique session code
     let sessionCode = generateSessionCode();
     let attempts = 0;
@@ -222,8 +223,6 @@ export function createSessionService({
         latitude: location.latitude,
         longitude: location.longitude,
         radiusMeters,
-        maxResults: 20, // a local post-search cap — RestaurantSearchService
-        // slices its merged results to this; nothing is sent to the Places API
       });
 
       // Throw error if no restaurants found
@@ -243,9 +242,7 @@ export function createSessionService({
     }
 
     // Create session (host will be added when they join via WebSocket)
-    // Note: hostId is temporary and not used since host joins via WebSocket
     const { session, expireAt } = await store.createSession(sessionCode, {
-      hostId: `temp-${Date.now()}`,
       hostName,
       location,
       searchRadiusMiles,
@@ -286,16 +283,7 @@ export function createSessionService({
   /**
    * Get session details
    */
-  async function getSession(sessionCode: string): Promise<{
-    sessionCode: string;
-    hostName: string;
-    participantCount: number;
-    state: string;
-    expiresAt: string;
-    shareableLink: string;
-    branch?: Branch;
-    recipeSourceDown?: boolean;
-  } | null> {
+  async function getSession(sessionCode: string): Promise<SessionResponse | null> {
     const session = await store.readSession(sessionCode);
 
     if (!session) {
@@ -374,12 +362,7 @@ export function createSessionService({
     branch?: Branch;
     state: string;
     /** The Session this join pulled the Participant out of, if any (#284). */
-    leftSession?: {
-      sessionCode: string;
-      displayName: string;
-      participantCount: number;
-      results?: Awaited<ReturnType<typeof completeSession>>;
-    };
+    leftSession?: LeftSession;
   }> {
     // Check session exists
     const session = await store.readSession(sessionCode);
@@ -478,14 +461,7 @@ export function createSessionService({
     // claim so the common refusals (full, name taken, finished) cost the
     // Participant nothing; only the post-add cap race can still strand them.
     const elsewhere = await store.getParticipant(participantId);
-    let leftSession:
-      | {
-          sessionCode: string;
-          displayName: string;
-          participantCount: number;
-          results?: Awaited<ReturnType<typeof completeSession>>;
-        }
-      | undefined;
+    let leftSession: LeftSession | undefined;
     if (elsewhere && elsewhere.sessionCode !== sessionCode) {
       try {
         leftSession = {
@@ -629,7 +605,7 @@ export function createSessionService({
    * complete, and emit the anonymous session-outcome metrics line (#68 kill
    * gates) — counts and the session code only, never names or ids.
    */
-  async function completeSession(sessionCode: string) {
+  async function completeSession(sessionCode: string): Promise<SessionOutcome | undefined> {
     // Complete once. Late joins (#284) made a second completion reachable — a
     // joiner slipping in beside the closing Submission would recompute a
     // narrower Match over the broadcast one and SADD more ids into the results
@@ -727,7 +703,7 @@ export function createSessionService({
   ): Promise<{
     submittedCount: number;
     participantCount: number;
-    results?: Awaited<ReturnType<typeof completeSession>>;
+    results?: SessionOutcome;
   }> {
     if (!(await store.readSession(sessionCode))) {
       throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
@@ -765,7 +741,7 @@ export function createSessionService({
   ): Promise<{
     displayName: string;
     participantCount: number;
-    results?: Awaited<ReturnType<typeof completeSession>>;
+    results?: SessionOutcome;
   }> {
     const session = await store.readSession(sessionCode);
     if (!session) {

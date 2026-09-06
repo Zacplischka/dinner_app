@@ -278,22 +278,6 @@ export async function deleteFriendshipBetween(userId: string, friendId: string):
   }
 }
 
-// Same rows as listAcceptedFriendships but only the pair columns; kept as
-// its own query so each caller's shape and failure handling stay exact.
-export async function listAcceptedFriendPairs(userId: string) {
-  const { data, error } = await supabase
-    .from('friendships')
-    .select('user_id, friend_id')
-    .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
-    .eq('status', 'accepted');
-
-  if (error) {
-    logger.error({ err: error }, 'Error verifying friendships');
-    throw new DomainError('database_error', 'Failed to verify friendships');
-  }
-  return data || [];
-}
-
 // --- Session Invites ---------------------------------------------------------
 
 const sessionInviteSelect = 'id, session_code, inviter_id, status, created_at';

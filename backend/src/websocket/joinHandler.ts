@@ -4,7 +4,7 @@
 import { logger } from '../logger.js';
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
-import type { SessionService } from '../services/SessionService.js';
+import type { LeftSession, SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import { toApiError } from '../api/toApiError.js';
 import {
@@ -36,9 +36,6 @@ const EXPECTED_JOIN_ERRORS = [
   'DISPLAY_NAME_TAKEN',
   'SESSION_ALREADY_STARTED',
 ];
-
-/** The old-Session departure a join commits, success or not (#284). */
-type LeftSession = NonNullable<Awaited<ReturnType<SessionService['joinSession']>>['leftSession']>;
 
 export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,

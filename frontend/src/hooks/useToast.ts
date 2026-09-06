@@ -11,10 +11,6 @@ export interface Toast {
   type: ToastType;
   message: string;
   duration: number;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
 }
 
 interface ToastStore {
@@ -59,52 +55,17 @@ const DEFAULT_DURATIONS: Record<ToastType, number> = {
   info: 3000,
 };
 
-interface ToastOptions {
-  duration?: number;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
+type Show = (message: string, options?: { duration?: number }) => string;
 
 // Export a singleton for use outside React components (e.g., in socket handlers)
-export const toast = {
-  success: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'success',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.success,
-      action: options?.action,
-    });
-  },
-  error: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'error',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.error,
-      action: options?.action,
-    });
-  },
-  warning: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'warning',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.warning,
-      action: options?.action,
-    });
-  },
-  info: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'info',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.info,
-      action: options?.action,
-    });
-  },
-  dismiss: (id: string) => useToastStore.getState().removeToast(id),
-  clearAll: () => useToastStore.getState().clearAll(),
-};
-
-export function useToast() {
-  return toast;
-}
+export const toast = Object.fromEntries(
+  (Object.keys(DEFAULT_DURATIONS) as ToastType[]).map((type): [ToastType, Show] => [
+    type,
+    (message, options) =>
+      useToastStore.getState().addToast({
+        type,
+        message,
+        duration: options?.duration ?? DEFAULT_DURATIONS[type],
+      }),
+  ])
+) as Record<ToastType, Show>;

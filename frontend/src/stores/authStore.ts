@@ -2,7 +2,6 @@
 // Manages user session and auth status
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
 import type { User, Session, Subscription } from '@supabase/supabase-js';
 import {
   supabase,
@@ -23,85 +22,71 @@ interface AuthState {
   initialize: () => Promise<Subscription | undefined>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  setSession: (session: Session | null) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  devtools(
-    (set, _get) => ({
-      user: null,
-      session: null,
-      isLoading: true,
-      isAuthenticated: false,
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  session: null,
+  isLoading: true,
+  isAuthenticated: false,
 
-      initialize: async () => {
-        try {
-          // Get initial session
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
+  initialize: async () => {
+    try {
+      // Get initial session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-          set({
-            session,
-            user: session?.user ?? null,
-            isAuthenticated: !!session,
-            isLoading: false,
-          });
+      set({
+        session,
+        user: session?.user ?? null,
+        isAuthenticated: !!session,
+        isLoading: false,
+      });
 
-          // Listen for auth state changes
-          const {
-            data: { subscription },
-          } = supabase.auth.onAuthStateChange((_event, session) => {
-            set({
-              session,
-              user: session?.user ?? null,
-              isAuthenticated: !!session,
-            });
-          });
-          return subscription;
-        } catch (error) {
-          console.error('Auth initialization error:', error);
-          set({ isLoading: false });
-          return undefined;
-        }
-      },
-
-      signInWithGoogle: async () => {
-        set({ isLoading: true });
-        try {
-          await googleSignIn();
-        } catch (error) {
-          console.error('Sign in error:', error);
-          set({ isLoading: false });
-          throw error;
-        }
-      },
-
-      signOut: async () => {
-        set({ isLoading: true });
-        try {
-          await supabaseSignOut();
-          set({
-            user: null,
-            session: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
-        } catch (error) {
-          console.error('Sign out error:', error);
-          set({ isLoading: false });
-          throw error;
-        }
-      },
-
-      setSession: (session) => {
+      // Listen for auth state changes
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
         set({
           session,
           user: session?.user ?? null,
           isAuthenticated: !!session,
         });
-      },
-    }),
-    { name: 'AuthStore' }
-  )
-);
+      });
+      return subscription;
+    } catch (error) {
+      console.error('Auth initialization error:', error);
+      set({ isLoading: false });
+      return undefined;
+    }
+  },
+
+  signInWithGoogle: async () => {
+    set({ isLoading: true });
+    try {
+      await googleSignIn();
+    } catch (error) {
+      console.error('Sign in error:', error);
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  signOut: async () => {
+    set({ isLoading: true });
+    try {
+      await supabaseSignOut();
+      set({
+        user: null,
+        session: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+}));

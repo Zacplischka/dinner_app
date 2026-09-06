@@ -165,9 +165,9 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
     sessionCode: string,
     friendIds: string[]
   ): Promise<number> {
-    const friendships = await store.listAcceptedFriendPairs(userId);
+    const friendships = await store.listAcceptedFriendships(userId);
     const actualFriendIds = new Set(
-      friendships.map((f) => (f.user_id === userId ? f.friend_id : f.user_id))
+      friendships.map((f) => (f.userId === userId ? f.friendId : f.userId))
     );
 
     const validFriendIds = friendIds.filter((id) => actualFriendIds.has(id));

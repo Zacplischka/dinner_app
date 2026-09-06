@@ -141,19 +141,6 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
       {/* Content */}
       <div className="flex-1 min-w-0 pt-0.5">
         <p className="text-sm text-text leading-snug">{toast.message}</p>
-
-        {/* Action button */}
-        {toast.action && (
-          <button
-            onClick={() => {
-              toast.action?.onClick();
-              handleDismiss();
-            }}
-            className="mt-2 text-sm font-medium text-cyan hover:text-text transition-colors"
-          >
-            {toast.action.label}
-          </button>
-        )}
       </div>
 
       {/* Close button */}

@@ -160,7 +160,6 @@ const socketConfig: SocketConfig = {
           participantId: event.participantId,
           displayName: event.displayName,
           sessionCode: '',
-          joinedAt: Date.now(),
           hasSubmitted: false,
           isHost: false,
         });
@@ -354,7 +353,6 @@ export async function joinSession(
     ack.data.participants.map((p) => ({
       ...p,
       sessionCode,
-      joinedAt: Date.now(),
       // The server says who already submitted (#284); absent on older backends.
       hasSubmitted: p.hasSubmitted ?? false,
     }))

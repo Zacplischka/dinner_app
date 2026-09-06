@@ -381,11 +381,11 @@ async function fetchTextSearchPage(
   latitude: number,
   longitude: number,
   radiusMeters: number
-): Promise<{ places: GooglePlaceResult[]; nextPageToken?: string }> {
+): Promise<{ places: GooglePlaceResult[] }> {
   const textSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
 
   const fieldMask =
-    'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken';
+    'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow';
 
   const requestBody: Record<string, unknown> = {
     textQuery: 'restaurants',
@@ -431,11 +431,8 @@ async function fetchTextSearchPage(
     throw new Error(`Places API error: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as { places?: GooglePlaceResult[]; nextPageToken?: string };
-  return {
-    places: data.places || [],
-    nextPageToken: data.nextPageToken,
-  };
+  const data = (await response.json()) as { places?: GooglePlaceResult[] };
+  return { places: data.places || [] };
 }
 
 async function fetchNearbyPlaces(params: GooglePlacesSearchParams): Promise<GooglePlaceResult[]> {

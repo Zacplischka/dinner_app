@@ -20,11 +20,8 @@ export const SESSION_TTL_SECONDS = 30 * 60;
 
 export interface Session {
   sessionCode: string;
-  hostId: string;
   state: 'waiting' | 'selecting' | 'complete' | 'expired';
   participantCount: number;
-  createdAt: number;
-  lastActivityAt: number;
   hostName?: string;
   /** Fixed at creation for the Session's life (#255); absent on pre-fork sessions. */
   branch?: Branch;
@@ -178,7 +175,7 @@ function queueDeckWrite(
 
 export function createSessionStore(redis: Redis) {
   /**
-   * Refresh TTL on every key belonging to a session and stamp lastActivityAt.
+   * Refresh TTL on every key belonging to a session.
    * Called by the flow mutations — create, join, submission, results, restart,
    * deck replace, and the Group Order writes. NOT by every mutating operation:
    * updateState, claimDisplayName, setParticipantCount, removeParticipant,
@@ -204,7 +201,6 @@ export function createSessionStore(redis: Redis) {
       keys.push(selectionsKey(sessionCode, pid));
     });
 
-    await redis.hset(sessionKey(sessionCode), 'lastActivityAt', Math.floor(Date.now() / 1000));
     await redis.eval(REFRESH_TTL_LUA, keys.length, ...keys, expireAt);
 
     return expireAt;
@@ -219,7 +215,6 @@ export function createSessionStore(redis: Redis) {
   async function createSession(
     sessionCode: string,
     opts: {
-      hostId: string;
       hostName?: string;
       branch?: Branch;
       headcount?: number;
@@ -232,15 +227,10 @@ export function createSessionStore(redis: Redis) {
       entries?: DeckEntry[];
     }
   ): Promise<{ session: Session; expireAt: number }> {
-    const now = Math.floor(Date.now() / 1000);
-
     const session: Session = {
       sessionCode,
-      hostId: opts.hostId,
       state: 'waiting',
       participantCount: 1,
-      createdAt: now,
-      lastActivityAt: now,
       hostName: opts.hostName,
       branch: opts.branch,
       headcount: opts.headcount,
@@ -252,11 +242,8 @@ export function createSessionStore(redis: Redis) {
     };
 
     const sessionData: Record<string, string | number> = {
-      createdAt: session.createdAt,
-      hostId: session.hostId,
       state: session.state,
       participantCount: session.participantCount,
-      lastActivityAt: session.lastActivityAt,
     };
     if (opts.hostName) sessionData.hostName = opts.hostName;
     if (opts.branch) sessionData.branch = opts.branch;
@@ -294,11 +281,8 @@ export function createSessionStore(redis: Redis) {
 
     const session: Session = {
       sessionCode,
-      hostId: data.hostId,
       state: data.state as Session['state'],
       participantCount: parseInt(data.participantCount, 10),
-      createdAt: parseInt(data.createdAt, 10),
-      lastActivityAt: parseInt(data.lastActivityAt, 10),
       hostName: data.hostName,
       branch: data.branch as Branch | undefined,
       headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,

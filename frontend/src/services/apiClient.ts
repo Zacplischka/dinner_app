@@ -3,7 +3,6 @@
 
 import type {
   AcceptSessionInviteResponse,
-  Branch,
   DeckEntry,
   Craving,
   ClaimLineRequest,
@@ -17,7 +16,6 @@ import type {
   GeocodedArea,
   GetProfileResponse,
   LoadRestaurantsResponse,
-  Mood,
   NearestCraving,
   NearestCravingResponse,
   SearchUsersResponse,
@@ -25,7 +23,6 @@ import type {
   SendSessionInviteRequest,
   SessionInvite,
   SessionInvitesResponse,
-  SessionLocation,
   SessionResponse,
   ShoppingListResponse,
   SwapLineRequest,
@@ -46,40 +43,10 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
  */
 export async function createSession(
   hostName: string,
-  setup: {
-    location?: SessionLocation;
-    searchRadiusMiles?: number;
-    branch?: Branch;
-    craving?: Craving;
-    headcount?: number;
-    mood?: Mood;
-  } = {}
+  setup: Omit<CreateSessionRequest, 'hostName'> = {}
 ): Promise<CreateSessionResponse> {
-  const body: CreateSessionRequest = { hostName };
-
-  if (setup.location) {
-    body.location = setup.location;
-  }
-
-  if (setup.searchRadiusMiles !== undefined) {
-    body.searchRadiusMiles = setup.searchRadiusMiles;
-  }
-
-  if (setup.branch) {
-    body.branch = setup.branch;
-  }
-
-  if (setup.craving) {
-    body.craving = setup.craving;
-  }
-
-  if (setup.headcount !== undefined) {
-    body.headcount = setup.headcount;
-  }
-
-  if (setup.mood) {
-    body.mood = setup.mood;
-  }
+  // JSON.stringify drops undefined values, so an unset field never reaches the wire.
+  const body: CreateSessionRequest = { hostName, ...setup };
 
   return request<CreateSessionResponse>('/sessions', {
     method: 'POST',

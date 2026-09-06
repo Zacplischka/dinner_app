@@ -27,11 +27,8 @@ const runnersUp = [
 
 const session: Session = {
   sessionCode: 'AB123',
-  hostId: 'host',
   state: 'complete',
   participantCount: 2,
-  createdAt: 0,
-  lastActivityAt: 0,
   branch: 'cook',
   headcount: 6,
   cravingKey: 'recipes:pool:main course||',

@@ -30,59 +30,24 @@ export default function ConfirmLeaveModal({
   if (!isOpen) return null;
 
   // Context-aware messaging
-  const getTitle = () => {
-    switch (context) {
-      case 'results':
-        return 'Leave Session?';
-      case 'selecting':
-        return 'Leave Session?';
-      case 'ordering':
-        return 'Leave the basket?';
-      case 'lobby':
-      default:
-        return 'Leave Session?';
-    }
-  };
-
-  const getMessage = () => {
-    switch (context) {
-      case 'results':
-        return 'Return to the home screen? You can always start a new session.';
-      case 'selecting':
-        if (selectionsCount > 0) {
-          return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the Match.`;
-        }
-        return "You'll leave without submitting any selections.";
-      case 'ordering':
-        return "Your items stay in the basket and still count — whoever taps I'll order still buys them.";
-      case 'lobby':
-      default:
-        return "You'll leave the Session and the others won't see you in it anymore.";
-    }
-  };
-
-  const getStayLabel = () => {
-    switch (context) {
-      case 'results':
-        return 'Stay Here';
-      case 'selecting':
-        return 'Keep Swiping';
-      case 'ordering':
-        return 'Back to the Basket';
-      case 'lobby':
-      default:
-        return 'Stay in Session';
-    }
-  };
-
-  const getLeaveLabel = () => {
-    switch (context) {
-      case 'results':
-        return 'Go Home';
-      default:
-        return 'Leave Session';
-    }
-  };
+  const title = context === 'ordering' ? 'Leave the basket?' : 'Leave Session?';
+  const message = {
+    results: 'Return to the home screen? You can always start a new session.',
+    selecting:
+      selectionsCount > 0
+        ? `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the Match.`
+        : "You'll leave without submitting any selections.",
+    ordering:
+      "Your items stay in the basket and still count — whoever taps I'll order still buys them.",
+    lobby: "You'll leave the Session and the others won't see you in it anymore.",
+  }[context];
+  const stayLabel = {
+    results: 'Stay Here',
+    selecting: 'Keep Swiping',
+    ordering: 'Back to the Basket',
+    lobby: 'Stay in Session',
+  }[context];
+  const leaveLabel = context === 'results' ? 'Go Home' : 'Leave Session';
 
   // Handle keyboard escape
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -116,9 +81,9 @@ export default function ConfirmLeaveModal({
                 id="confirm-leave-title"
                 className="text-2xl font-display font-black text-text mb-2"
               >
-                {getTitle()}
+                {title}
               </h2>
-              <p className="text-muted">{getMessage()}</p>
+              <p className="text-muted">{message}</p>
             </div>
             <button
               type="button"
@@ -138,7 +103,7 @@ export default function ConfirmLeaveModal({
               className="flex-1 min-h-[48px] rounded-xl bg-lime px-4 py-3 font-extrabold text-ink shadow-glow-lime transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
               autoFocus
             >
-              {getStayLabel()}
+              {stayLabel}
             </button>
             <button
               onClick={onConfirm}
@@ -151,7 +116,7 @@ export default function ConfirmLeaveModal({
                   Leaving...
                 </span>
               ) : (
-                getLeaveLabel()
+                leaveLabel
               )}
             </button>
           </div>

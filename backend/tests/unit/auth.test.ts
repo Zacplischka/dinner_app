@@ -107,7 +107,6 @@ describe('auth middleware', () => {
       expect(req.user).toEqual({
         id: 'user-1',
         email: 'alice@example.com',
-        role: 'authenticated',
       });
       expect(next).toHaveBeenCalledOnce();
     });
@@ -167,22 +166,8 @@ describe('auth middleware', () => {
       await expect(verifyToken('valid-token')).resolves.toEqual({
         id: 'user-1',
         email: 'alice@example.com',
-        role: 'authenticated',
       });
       expect(supabaseMocks.getUser).toHaveBeenCalledWith('valid-token');
-    });
-
-    it('should fall back to app metadata role when the auth user has no top-level role', async () => {
-      mockSupabaseUser({
-        role: undefined,
-        app_metadata: { role: 'admin' },
-      });
-
-      await expect(verifyToken('valid-token')).resolves.toEqual({
-        id: 'user-1',
-        email: 'alice@example.com',
-        role: 'admin',
-      });
     });
 
     it('should return null for an invalid token', async () => {

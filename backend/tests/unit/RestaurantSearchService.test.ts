@@ -531,7 +531,7 @@ describe('RestaurantSearchService', () => {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': expect.any(String),
           'X-Goog-FieldMask':
-            'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken',
+            'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow',
         },
         body: JSON.stringify({
           textQuery: 'restaurants',

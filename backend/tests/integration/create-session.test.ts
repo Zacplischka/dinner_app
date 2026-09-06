@@ -47,9 +47,6 @@ describe('Integration Test: Create Session Flow (FR-001, FR-002, FR-003)', () =>
       state: 'waiting',
       participantCount: '1',
     });
-    expect(sessionData.hostId).toMatch(/^temp-/);
-    expect(sessionData.createdAt).toBeTruthy();
-    expect(sessionData.lastActivityAt).toBeTruthy();
   });
 
   it('should set a 30-minute TTL on the session key', async () => {

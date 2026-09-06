@@ -18,35 +18,14 @@ export const redis = new Redis({
   password: REDIS_PASSWORD,
   keyPrefix: KEY_PREFIX,
   family: 0,
-  retryStrategy: (times: number) => {
-    const delay = Math.min(times * 50, 2000);
-    logger.info({ delayMs: delay, attempt: times }, 'Redis reconnecting');
-    return delay;
-  },
+  retryStrategy: (times: number) => Math.min(times * 50, 2000),
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
   lazyConnect: false,
 });
 
-// Event listeners for monitoring
-redis.on('connect', () => {
-  logger.info('✓ Redis connected');
-});
-
-redis.on('ready', () => {
-  logger.info('✓ Redis ready');
-});
-
 redis.on('error', (error) => {
   logger.error({ err: error }, 'Redis error');
-});
-
-redis.on('close', () => {
-  logger.info('Redis connection closed');
-});
-
-redis.on('reconnecting', () => {
-  logger.info('Redis reconnecting...');
 });
 
 // Health check utility

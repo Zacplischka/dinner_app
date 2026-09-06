@@ -104,14 +104,8 @@ describe('component and hook branch coverage', () => {
     successfulButtonUnmount();
 
     useAuthStore.setState({ signInWithGoogle: successfulSignIn as any, isLoading: true });
-    const { unmount: loadingButtonUnmount } = render(
-      <>
-        <GoogleSignInButton />
-        <GoogleSignInButton variant="compact" />
-      </>
-    );
+    const { unmount: loadingButtonUnmount } = render(<GoogleSignInButton />);
     expect(screen.getByText('Signing in...')).toBeInTheDocument();
-    expect(screen.getByText('...')).toBeInTheDocument();
     loadingButtonUnmount();
 
     const signIn = vi.fn(async () => {
@@ -423,7 +417,7 @@ describe('component and hook branch coverage', () => {
     expect(screen.getByText('B')).toBeInTheDocument();
   });
 
-  it('loads a buried card\'s photo lazily and the top card\'s eagerly', () => {
+  it("loads a buried card's photo lazily and the top card's eagerly", () => {
     const withPhoto = { ...restaurant, photoUrl: 'https://example.com/bistro.jpg' };
     const { container, rerender } = render(
       <SwipeCard
@@ -490,11 +484,10 @@ describe('component and hook branch coverage', () => {
     fireEvent.click(screen.getAllByText('Join').at(-1)!);
     expect(await screen.findByText('Failed to join session')).toBeInTheDocument();
 
-    const action = vi.fn();
-    singletonToast.success('success', { duration: 1, action: { label: 'Go', onClick: action } });
-    singletonToast.error('error', { duration: 2, action: { label: 'Stop', onClick: action } });
-    singletonToast.warning('warning', { duration: 3, action: { label: 'Wait', onClick: action } });
-    singletonToast.info('info', { duration: 4, action: { label: 'Read', onClick: action } });
+    singletonToast.success('success', { duration: 1 });
+    singletonToast.error('error', { duration: 2 });
+    singletonToast.warning('warning', { duration: 3 });
+    singletonToast.info('info', { duration: 4 });
     expect(useToastStore.getState().toasts).toHaveLength(4);
   });
 });

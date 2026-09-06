@@ -8,7 +8,7 @@ import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useShareLink } from '../hooks/useShareLink';
 import NavigationHeader from '../components/NavigationHeader';
-import { useToast } from '../hooks/useToast';
+import { toast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
 
 export default function SessionLobbyPage() {
@@ -17,7 +17,6 @@ export default function SessionLobbyPage() {
   const { participants, isConnected, sessionStatus, setExpiresAt } = useSessionStore();
   const [shareableLink, setShareableLink] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const toast = useToast();
 
   useEffect(() => {
     // Fetch session details to get shareable link

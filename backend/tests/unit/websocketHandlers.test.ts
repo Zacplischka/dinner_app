@@ -79,7 +79,7 @@ describe('websocket handlers', () => {
   }
 
   async function createSessionWithParticipant(participantId = 'socket-1') {
-    await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+    await store.createSession(sessionCode, { hostName: 'Alice' });
     await store.claimDisplayName(sessionCode, 'Alice', participantId, rejoinToken);
     await store.addParticipant(sessionCode, {
       participantId,
@@ -174,7 +174,7 @@ describe('websocket handlers', () => {
 
     it('should add a new participant and log the join', async () => {
       const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const testSocket = socket('socket-1');
       const callback = vi.fn();
 
@@ -222,7 +222,7 @@ describe('websocket handlers', () => {
     // by an earlier Session turns its broadcasts into phantom Participants on
     // this client, which inflates the roster and suppresses the Full House.
     it('should leave any previous Session room when joining a new one', async () => {
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const testSocket = socket('socket-1', ['OLD42']);
       const callback = vi.fn();
 
@@ -364,7 +364,7 @@ describe('websocket handlers', () => {
     // Redis too, and the old room hears about it.
     it('should broadcast participant:left to the old session when a socket joins a new one', async () => {
       await createSessionWithParticipant('socket-1');
-      await store.createSession('NEW42', { hostId: 'host2', hostName: 'Ava' });
+      await store.createSession('NEW42', { hostName: 'Ava' });
       const testSocket = socket('socket-1', [sessionCode]);
       const callback = vi.fn();
 
@@ -444,7 +444,7 @@ describe('websocket handlers', () => {
       await createSessionWithParticipant('socket-1');
       await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' });
       await store.recordSubmission(sessionCode, 'socket-2', []);
-      await store.createSession('NEW42', { hostId: 'host2', hostName: 'Ava' });
+      await store.createSession('NEW42', { hostName: 'Ava' });
       const testSocket = socket('socket-1', [sessionCode]);
       const callback = vi.fn();
 
@@ -469,7 +469,7 @@ describe('websocket handlers', () => {
 
     it('should reject full sessions before adding and log the rejection', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       await Promise.all([
         store.addParticipant(sessionCode, {
           participantId: 'socket-1',
@@ -577,7 +577,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionLeave(
@@ -787,7 +787,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionRestart(
@@ -915,7 +915,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSelectionSubmit(
@@ -1173,7 +1173,7 @@ describe('websocket handlers', () => {
     });
 
     it('join success is exactly { success, data } with no flattened fields', async () => {
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionJoin(

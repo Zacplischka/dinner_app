@@ -20,15 +20,7 @@
     "typecheck": "npm run build --workspace=shared && npx tsc --noEmit -p backend && npx tsc --noEmit -p frontend",
     "test:e2e:live": "npm run test:e2e:live --workspace=frontend --",
     "compare:smoke": "npm run compare:smoke --workspace=backend --",
-    "check:production-edge": "node --test scripts/check-production-edge.test.mjs",
-    "check:comment-paths": "node --test scripts/check-comment-paths.test.mjs",
-    "check:reading-stage": "node --test scripts/corpus/read-dish.test.mjs",
-    "check:authoring-stage": "node --test scripts/corpus/author-dish.test.mjs",
-    "check:corpus-images": "node --test scripts/corpus/images.test.mjs",
-    "check:gate-layers": "node --test scripts/corpus/gate.test.mjs",
-    "check:tally-gate": "node --test scripts/corpus/tally.test.mjs",
-    "check:human-gate": "node --test scripts/corpus/human.test.mjs",
-    "check:movie-corpus": "node --test scripts/build-movie-corpus.test.mjs",
+    "check:scripts": "node --test scripts/*.test.mjs scripts/corpus/*.test.mjs",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",
@@ -45,7 +37,6 @@
   "license": "MIT",
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
-    "@vitest/coverage-v8": "^1.0.4",
     "fallow": "^3.3.0"
   }
 }

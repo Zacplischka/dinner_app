@@ -10,10 +10,7 @@ describe('GET /api/options/:sessionCode', () => {
     // Set up test session with restaurants
     await redis.hset(`session:${sessionCode}`, {
       state: 'waiting',
-      hostId: 'host-123',
       participantCount: '1',
-      createdAt: Math.floor(Date.now() / 1000).toString(),
-      lastActivityAt: Math.floor(Date.now() / 1000).toString(),
     });
 
     const restaurant1 = {

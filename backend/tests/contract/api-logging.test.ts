@@ -31,12 +31,9 @@ describe('Contract Test: API logging', () => {
   async function createSessionRecord(code: string): Promise<void> {
     await redis.hset(`session:${code}`, {
       sessionCode: code,
-      hostId: 'host-1',
       hostName: 'Alice',
       state: 'waiting',
       participantCount: '1',
-      createdAt: Date.now().toString(),
-      lastActivityAt: Date.now().toString(),
     });
   }
 
