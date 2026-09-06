@@ -133,10 +133,13 @@ test('a series detail becomes a Movie of mediaType tv with its seasons and episo
   });
 });
 
-test('a title with no poster or no date is dropped with its reason', () => {
+test('a title with no poster, no date or no chip genre is dropped with its reason', () => {
   assert.deepEqual(toMovie({ ...film, poster_path: null }, 'movie'), { drop: 'no poster' });
   assert.deepEqual(toMovie({ ...film, release_date: '' }, 'movie'), { drop: 'no year' });
   assert.deepEqual(toMovie({ ...series, first_air_date: undefined }, 'tv'), { drop: 'no year' });
+  assert.deepEqual(toMovie({ ...film, genres: [{ name: 'Reality' }] }, 'movie'), {
+    drop: 'no genres',
+  });
 });
 
 test('an overview is one line, cut at 300 characters on a word', () => {

@@ -105,6 +105,9 @@ export function toMovie(detail, mediaType) {
   const year = Number(date?.slice(0, 4));
   if (!detail.poster_path) return { drop: 'no poster' };
   if (!year) return { drop: 'no year' };
+  // A title no genre chip can reach only ever deals into an any-genre Mood.
+  const genres = toGenres((detail.genres ?? []).map((g) => g.name));
+  if (genres.length === 0) return { drop: 'no genres' };
   const runtime = mediaType === 'tv' ? detail.episode_run_time?.[0] : detail.runtime;
   const rating = Math.round((detail.vote_average ?? 0) * 10);
   const imdbId = detail.external_ids?.imdb_id;
@@ -114,7 +117,7 @@ export function toMovie(detail, mediaType) {
     mediaType,
     name: mediaType === 'tv' ? detail.name : detail.title,
     year,
-    genres: toGenres((detail.genres ?? []).map((g) => g.name)),
+    genres,
     runtimeMinutes: runtime > 0 ? Math.round(runtime) : undefined,
     seasons:
       mediaType === 'tv' && detail.number_of_seasons > 0 ? detail.number_of_seasons : undefined,
