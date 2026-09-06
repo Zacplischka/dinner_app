@@ -1,5 +1,6 @@
 // Selection page - Tinder-style swipeable selection of tonight's Deck, which
-// deals both Deck Entry kinds: Restaurants (Eat Out/Takeaway) and Recipes (Cook).
+// deals every Deck Entry kind: Restaurants (Eat Out/Takeaway), Recipes (Cook)
+// and Movies (Watch).
 // Swipe right to like, swipe left to pass
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -57,10 +58,9 @@ export default function SelectionPage() {
     currentUserId,
     setExpiresAt,
   } = useSessionStore();
-  // The deck is shared with the restaurant branches, but its copy must not be:
-  // a Cook Session deals Recipes and said "Choose Restaurants" over them (#253).
-  const isCook = branch === 'cook';
-  const deckNoun = isCook ? 'recipe' : 'restaurant';
+  // The Deck is shared with every Branch, but its copy must not be: a Cook
+  // Session deals Recipes and said "Choose Restaurants" over them (#253).
+  const deckNoun = branch === 'cook' ? 'recipe' : branch === 'watch' ? 'movie' : 'restaurant';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
   // ponytail: a reload deals the Deck from 0 again. The store persists only the
   // Selections (yes-swipes), never the passes, so the cursor can't be rebuilt
@@ -421,7 +421,7 @@ export default function SelectionPage() {
                 </svg>
               </div>
               <h2 className="text-3xl font-display font-black text-text mb-3">All Done!</h2>
-              <p className="text-muted mb-8 text-lg">Waiting for other diners...</p>
+              <p className="text-muted mb-8 text-lg">Waiting for the others…</p>
 
               <div className="mb-6">
                 <div className="flex justify-center gap-2 mb-3">
@@ -539,7 +539,13 @@ export default function SelectionPage() {
     <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
-        title={isCook ? 'Choose Recipes' : 'Choose Restaurants'}
+        title={
+          branch === 'cook'
+            ? 'Choose Recipes'
+            : branch === 'watch'
+              ? 'Choose Movies'
+              : 'Choose Restaurants'
+        }
         sessionCode={sessionCode}
         showBackButton
         onBack={handleLeaveSession}
@@ -748,7 +754,7 @@ export default function SelectionPage() {
             <h2 id="full-house-title" className="text-2xl font-display font-black text-lime mb-3">
               EVERYONE LIKED THIS
             </h2>
-            <p className="text-3xl font-display font-black text-text mb-3 truncate">
+            <p className="text-3xl font-display font-black text-text mb-3 line-clamp-2">
               {fullHouseName}
             </p>
             <p className="text-muted mb-6">Lock it in now, or keep going for more.</p>

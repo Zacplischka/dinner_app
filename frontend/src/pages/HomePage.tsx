@@ -1,8 +1,8 @@
 // The entry fork (#255): `/` asks the only question that matters — "Tonight
 // you're…" — with a Branch card per kind of night. Eat Out and Takeaway route
-// into the existing create flow with their Branch; Cook routes to the Cook
-// setup screen (#260). Join-with-code and Compare
-// are demoted to a text row. There is no solo/group question: a Session starts
+// into the existing create flow with their Branch; Cook and Watch route to
+// their own setup screens (#260, #369). Join-with-code and Compare are demoted
+// to a text row. There is no solo/group question: a Session starts
 // as yours and becomes a group when you invite someone.
 
 import { useEffect } from 'react';
@@ -33,6 +33,13 @@ const BRANCH_CARDS = [
     icon: '🍳',
     accent: 'border-lime/40 hover:border-lime shadow-[0_0_18px_rgb(163_230_53_/_0.12)]',
     to: '/cook',
+  },
+  {
+    title: 'Watching a movie',
+    description: 'Swipe movies, then watch the trailer together.',
+    icon: '🎬',
+    accent: 'border-amber/40 hover:border-amber shadow-[0_0_18px_rgb(255_182_39_/_0.12)]',
+    to: '/watch',
   },
 ];
 

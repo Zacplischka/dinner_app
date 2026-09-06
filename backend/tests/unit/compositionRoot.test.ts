@@ -12,6 +12,7 @@ describe('composition root', () => {
   it('importing stores, services, and routers opens no Redis connection', async () => {
     await import('../../src/store/sessionStore.js');
     await import('../../src/services/SessionService.js');
+    await import('../../src/services/MovieDeckService.js');
     await import('../../src/services/FriendsService.js');
     await import('../../src/services/OrderService.js');
     await import('../../src/api/sessions.js');
