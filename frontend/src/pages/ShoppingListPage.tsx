@@ -289,13 +289,18 @@ export default function ShoppingListPage() {
     () => localStorage.getItem(SHOPPER_NAME_KEY) ?? sessionName ?? ''
   );
   const nameField = useRef<HTMLInputElement>(null);
-  /** Raised by a nameless Claim, and only by one: nothing nags up front. */
+  /**
+   * Raised by a nameless Claim, and only by one: nothing nags up front. It goes
+   * down when a Claim lands, never on the field's blur — the hint sits in the
+   * card above the lines, and dropping it mid-tap slides every Claim button up
+   * out from under the finger between mousedown and mouseup, so the browser
+   * lands the click on an ancestor and the Shopper has to tap twice.
+   */
   const [needsName, setNeedsName] = useState(false);
 
   function renameShopper(name: string) {
     setShopperName(name);
     localStorage.setItem(SHOPPER_NAME_KEY, name);
-    if (name) setNeedsName(false);
   }
 
   /** A Claim with nobody behind it: send the Shopper where the answer is. */
@@ -324,11 +329,11 @@ export default function ShoppingListPage() {
         key={line.id}
         line={line}
         shopperName={shopperName}
-        onClaim={() =>
-          shopperName
-            ? void applyChange(() => claimShoppingListLine(list.listId, line.id, shopperName))
-            : askForName()
-        }
+        onClaim={() => {
+          if (!shopperName) return askForName();
+          setNeedsName(false);
+          void applyChange(() => claimShoppingListLine(list.listId, line.id, shopperName));
+        }}
         onRelease={() => void applyChange(() => releaseShoppingListLine(list.listId, line.id))}
         onSwap={(stockcode) =>
           void applyChange(() => swapShoppingListLine(list.listId, line.id, stockcode))

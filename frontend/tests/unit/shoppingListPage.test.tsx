@@ -363,6 +363,22 @@ describe('ShoppingListPage claims', () => {
     expect(serviceMocks.claimShoppingListLine).toHaveBeenCalledWith('list-1', '0', 'Alice');
   });
 
+  // The tap that follows the typing starts by blurring the field. If the hint
+  // went away there, the lines below it would slide up between mousedown and
+  // mouseup and the Claim would land on nothing — so it stays until a Claim
+  // actually lands. jsdom can't hit-test; this holds the seam that decides it.
+  it('keeps the hint up across the name field losing focus, so nothing moves mid-tap', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    const field = screen.getByLabelText('Claiming as');
+    fireEvent.change(field, { target: { value: 'Alice' } });
+    fireEvent.blur(field);
+
+    expect(screen.getByText(/type your name/i)).toBeInTheDocument();
+  });
+
   it('remembers the Shopper, so a second visit does not ask again', async () => {
     localStorage.setItem('dinder.shopperName', 'Dana');
 
