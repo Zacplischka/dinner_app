@@ -833,7 +833,8 @@ describe('ResultsPage', () => {
   describe('the crowned Movie', () => {
     const alien = {
       kind: 'movie' as const,
-      placeId: 'Q103569',
+      placeId: 'tmdb:movie:348',
+      mediaType: 'movie' as const,
       name: 'Alien',
       photoUrl: 'https://img.test/alien.jpg',
       year: 1979,
@@ -842,13 +843,24 @@ describe('ResultsPage', () => {
       rating: 93,
       overview: 'Alien is a 1979 science fiction horror film directed by Ridley Scott.',
       trailerUrl: 'https://www.youtube.com/watch?v=is2EMy3u0xc',
+      imdbId: 'tt0078748',
     };
     const heat = {
       kind: 'movie' as const,
-      placeId: 'Q188652',
+      placeId: 'tmdb:movie:949',
       name: 'Heat',
       year: 1995,
       rating: 88,
+    };
+    const thrones = {
+      kind: 'movie' as const,
+      placeId: 'tmdb:tv:1399',
+      mediaType: 'tv' as const,
+      name: 'Game of Thrones',
+      year: 2011,
+      runtimeMinutes: 60,
+      seasons: 8,
+      rating: 85,
     };
 
     function seedWatch(overrides: Parameters<typeof seedStore>[0] = {}) {
@@ -872,17 +884,36 @@ describe('ResultsPage', () => {
       expect(crown).not.toBeNull();
       expect(crown.textContent).toContain('TONIGHT’S MOVIE');
       expect(crown.textContent).toContain('Alien');
-      expect(crown.textContent).toContain('1979 · 117 min · 93% critics');
+      expect(crown.textContent).toContain('1979 · 117 min · 93% on TMDB');
       expect(crown.textContent).toContain('Everyone swiped yes on this one.');
       expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
       // The crown is where the overview can actually be read, credited where it appears.
       expect(within(crown as HTMLElement).getByText(alien.overview)).toHaveClass('line-clamp-3');
-      expect(within(crown as HTMLElement).getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
+      expect(within(crown as HTMLElement).getByRole('link', { name: 'TMDB' })).toHaveAttribute(
         'href',
-        'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q103569'
+        'https://www.themoviedb.org/movie/348'
       );
       // A Movie is not a Recipe: the Cook ending must not claim it.
       expect(container.querySelector('[data-recipe-crown]')).toBeNull();
+    });
+
+    it('crowns a series as tonight’s series, with its seasons', () => {
+      seedWatch({
+        restaurants: [thrones, heat],
+        restaurantNames: { [thrones.placeId]: thrones.name, [heat.placeId]: heat.name },
+        overlappingOptions: [thrones],
+        allSelections: { Alice: [thrones.placeId], Bob: [thrones.placeId] },
+        topPick: { restaurant: thrones, likedBy: 2, of: 2 },
+      });
+      const { container } = renderResults();
+
+      const crown = container.querySelector('[data-movie-crown]')!;
+      expect(crown.textContent).toContain('TONIGHT’S SERIES');
+      expect(crown.textContent).toContain('2011 · 8 seasons · 85% on TMDB');
+      expect(screen.getByRole('link', { name: 'Where to watch' })).toHaveAttribute(
+        'href',
+        'https://www.themoviedb.org/tv/1399/watch?locale=AU'
+      );
     });
 
     it('titles a crowned Movie as a Match and celebrates it', () => {
@@ -913,8 +944,8 @@ describe('ResultsPage', () => {
       expect(trailer.getAttribute('rel')).toContain('noopener');
     });
 
-    // 118 of the corpus's 300 Movies carry no trailer id; the crown still ends
-    // in a next step, so the same button searches YouTube for one.
+    // Not every title in the corpus carries a trailer; the crown still ends in
+    // a next step, so the same button searches YouTube for one.
     it('searches YouTube for the trailer when the source has none', () => {
       seedWatch({
         overlappingOptions: [heat],
@@ -930,18 +961,29 @@ describe('ResultsPage', () => {
       );
       expect(trailer).toHaveAttribute('target', '_blank');
       expect(trailer.getAttribute('rel')).toContain('noopener');
-      // No overview, so nothing to credit.
-      expect(screen.queryByRole('link', { name: 'Wikipedia' })).not.toBeInTheDocument();
+      // No overview, so nothing to credit; no IMDb id, so no IMDb link.
+      expect(screen.queryByRole('link', { name: 'TMDB' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'IMDb' })).not.toBeInTheDocument();
     });
 
-    it('links where to watch on JustWatch Australia in a new tab', () => {
+    it('links where to watch on TMDB’s Australian page for the title, in a new tab', () => {
       seedWatch();
       renderResults();
 
       const where = screen.getByRole('link', { name: 'Where to watch' });
-      expect(where).toHaveAttribute('href', 'https://www.justwatch.com/au/search?q=Alien');
+      expect(where).toHaveAttribute('href', 'https://www.themoviedb.org/movie/348/watch?locale=AU');
       expect(where).toHaveAttribute('target', '_blank');
       expect(where.getAttribute('rel')).toContain('noopener');
+    });
+
+    it('links the title on IMDb when the corpus knows its id', () => {
+      seedWatch();
+      renderResults();
+
+      const imdb = screen.getByRole('link', { name: 'IMDb' });
+      expect(imdb).toHaveAttribute('href', 'https://www.imdb.com/title/tt0078748/');
+      expect(imdb).toHaveAttribute('target', '_blank');
+      expect(imdb.getAttribute('rel')).toContain('noopener');
     });
 
     it('shares a crowned Movie by its name and reason, like any other Top Pick', async () => {

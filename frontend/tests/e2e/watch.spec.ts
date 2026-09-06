@@ -25,6 +25,6 @@ test.describe('Watch Branch', () => {
     const selectionPage = new SelectionPage(page);
     await expect(selectionPage.heading).toHaveText('Choose Movies');
     await expect(selectionPage.swipeCard.first()).toBeVisible();
-    await expect(selectionPage.criticsBadge.first()).toBeVisible();
+    await expect(selectionPage.scoreBadge.first()).toBeVisible();
   });
 });

@@ -1,0 +1,65 @@
+name: Movie Corpus Rebuild
+
+# Quarterly rebuild of the Watch Branch's Movie corpus (ADR 0014). TMDB's terms
+# forbid caching its data for longer than six months, so the builder runs on a
+# cron well inside that and opens a pull request when the file changed. The
+# PR is reviewed like any other data batch: one title per line, so the diff
+# reads as what came and what went.
+#
+# A PR opened with GITHUB_TOKEN does not trigger the CI workflow; the reviewer
+# closes and reopens it (or pushes an empty commit) to get the checks. Cheaper
+# than running the suite in here.
+
+on:
+  schedule:
+    # 1st of Jan/Apr/Jul/Oct, 18:23 UTC — early morning in Sydney. Off-peak minute on purpose.
+    - cron: '23 18 1 */3 *'
+  workflow_dispatch:
+
+concurrency: movie-corpus
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # No npm ci: the builder is dependency-free Node.
+      - name: Rebuild the corpus from TMDB
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: node scripts/build-movie-corpus.mjs
+
+      - name: Open a pull request if the corpus changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- backend/movies; then
+            echo "::notice::corpus unchanged, nothing to open"
+            exit 0
+          fi
+          BRANCH="corpus/movies-$(date -u +%Y-%m-%d)"
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git switch -c "$BRANCH"
+          git add backend/movies
+          git commit -m "data: quarterly Movie corpus rebuild from TMDB"
+          git push -u origin "$BRANCH"
+          gh pr create --label needs-triage \
+            --title "data: quarterly Movie corpus rebuild from TMDB" \
+            --body "$(cat <<'EOF'
+          Scheduled rebuild of `backend/movies/movies.json` by `scripts/build-movie-corpus.mjs` (ADR 0014).
+
+          Review the diff as a list of titles that came and went; the unit test pins that every genre and decade chip still deals. CI does not run on a workflow-opened PR — close and reopen it to get the checks.
+          EOF
+          )"

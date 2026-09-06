@@ -1,6 +1,7 @@
 // Contract Test: POST /api/sessions in the Watch Branch (#369).
 // Drives the real app over HTTP. Nothing is faked at a boundary because there
-// is none: the Movie supply is the committed corpus, read in memory, so what a
+// is none: the Movie supply is a committed corpus, read in memory — here the
+// 24-title fixture MOVIES_FILE points at (vitest.workspace.ts), so what a
 // Mood can deal is a fact about the repository and deterministic run to run.
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import request from 'supertest';
@@ -45,11 +46,32 @@ describe('Contract Test: POST /api/sessions (Watch Branch)', () => {
     for (const card of options.restaurants) {
       expect(card).toMatchObject({
         kind: 'movie',
-        placeId: expect.stringMatching(/^Q\d+$/),
+        placeId: expect.stringMatching(/^tmdb:(movie|tv):\d+$/),
+        mediaType: expect.stringMatching(/^(movie|tv)$/),
         name: expect.any(String),
         photoUrl: expect.any(String),
         year: expect.any(Number),
         genres: expect.arrayContaining(['Comedy']),
+      });
+    }
+  });
+
+  it('deals only series when the Mood asks for them', async () => {
+    const { body: session } = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'watch', mood: { ...mood, mediaTypes: ['tv'] } })
+      .expect(201);
+
+    const { body: options } = await request(app)
+      .get(`/api/options/${session.sessionCode}`)
+      .expect(200);
+
+    expect(options.restaurants.length).toBeGreaterThan(0);
+    for (const card of options.restaurants) {
+      expect(card).toMatchObject({
+        placeId: expect.stringMatching(/^tmdb:tv:\d+$/),
+        mediaType: 'tv',
+        seasons: expect.any(Number),
       });
     }
   });
@@ -59,11 +81,11 @@ describe('Contract Test: POST /api/sessions (Watch Branch)', () => {
   it('refuses a Mood the corpus has no Movie for, and creates no Session', async () => {
     const response = await request(app)
       .post('/api/sessions')
-      // Both chips are offered; the corpus simply holds no 1970s documentary.
+      // The chip is offered; the fixture corpus simply holds no documentary.
       .send({
         hostName: 'Alice',
         branch: 'watch',
-        mood: { genres: ['Documentary'], decades: ['1970s'] },
+        mood: { genres: ['Documentary'], decades: [] },
       })
       .expect(404);
 
@@ -79,10 +101,14 @@ describe('Contract Test: POST /api/sessions (Watch Branch)', () => {
       .expect(400);
   });
 
-  it('rejects a genre outside the offered vocabulary', async () => {
+  it('rejects a genre or media type outside the offered vocabulary', async () => {
     await request(app)
       .post('/api/sessions')
-      .send({ hostName: 'Alice', branch: 'watch', mood: { ...mood, genres: ['Western'] } })
+      .send({ hostName: 'Alice', branch: 'watch', mood: { ...mood, genres: ['Reality'] } })
+      .expect(400);
+    await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'watch', mood: { ...mood, mediaTypes: ['podcast'] } })
       .expect(400);
   });
 

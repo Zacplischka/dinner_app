@@ -1,36 +1,102 @@
 // The Watch Branch's Deck supply (#369): a Mood filtered over the committed
-// movie corpus, shuffled, cut to a Deck. Pure — no store, no network, nothing
-// to await — because the corpus is reference data that ships with the deploy
-// (ADR 0011) and is read in memory.
+// Movie corpus, cut to the best-known titles, shuffled, cut to a Deck. Pure —
+// no store, no network, nothing to await — because the corpus is reference
+// data that ships with the deploy (ADR 0011, ADR 0014) and is read in memory.
 //
 // ponytail: no Redis pool. The Cook Branch pools because its supply is a paid,
 // rate-limited vendor call worth sharing between Sessions; a static corpus
 // costs nothing to filter again, so the Session stores its Mood and a Restart
-// simply re-deals from it. Pool it the day the source is TMDB.
-// ponytail: a static ~300-Movie corpus behind the MovieSource seam; TMDB
-// replaces `corpusMovieSource` when it runs thin, and nothing above changes.
-import type { DeckEntry, Mood, Movie } from '@dinder/shared/types';
-import { MOVIES } from '../data/movies.generated.js';
+// simply re-deals from it.
+import { readFileSync } from 'node:fs';
+import { z } from 'zod';
+import {
+  DECADES,
+  GENRES,
+  MEDIA_TYPES,
+  type DeckEntry,
+  type Mood,
+  type Movie,
+} from '@dinder/shared/types';
+import { config } from '../config/index.js';
 
 /** ponytail: one fixed Deck size, the same as a Cook Deck's. */
 export const DECK_SIZE = 15;
 
-/** What a Mood deals from. One implementation today; the seam TMDB would take. */
-export type MovieSource = (mood: Mood) => Movie[];
+/**
+ * How deep into a Mood's matches a deal reaches. The corpus is sorted by how
+ * many people have rated each title, so the first hundred-odd matches are the
+ * ones a table has heard of; a uniform draw over thousands would deal the
+ * obscure. A Restart still has 105 unshown titles before it repeats one.
+ * ponytail: one fixed cap; make it pool-relative (max(120, pool / 10), say)
+ * if broad Moods start repeating for regulars.
+ */
+export const POOL_CAP = 120;
 
 /** "1979" → "1970s", the Decade chips' spelling. */
 export const decadeOf = (year: number): string => `${Math.floor(year / 10) * 10}s`;
 
-/** Every corpus Movie carrying any chosen genre and released in any chosen decade. */
-export const corpusMovieSource: MovieSource = (mood) => {
-  const genres = new Set<string>(mood.genres);
-  const decades = new Set<string>(mood.decades);
-  return MOVIES.filter(
-    (movie) =>
-      (genres.size === 0 || (movie.genres ?? []).some((genre) => genres.has(genre))) &&
-      (decades.size === 0 || (movie.year !== undefined && decades.has(decadeOf(movie.year))))
-  );
-};
+/**
+ * One corpus record: the shared `Movie` shape made strict. The builder is the
+ * trust boundary for what the card renders verbatim (`<img src>`, `<a href>`),
+ * and this is the last gate on it — a batch that will not parse fails the
+ * boot, one revert from gone. `genres` against GENRES and `year` against
+ * DECADES are what keep the chips and the corpus one vocabulary in this
+ * direction; the unit test pins the other, that every chip can deal.
+ */
+const movieSchema = z
+  .object({
+    kind: z.literal('movie'),
+    placeId: z.string().regex(/^tmdb:(movie|tv):\d+$/),
+    mediaType: z.enum(MEDIA_TYPES),
+    name: z.string().min(1),
+    photoUrl: z.string().url().startsWith('https://image.tmdb.org/'),
+    rating: z.number().int().min(1).max(100).optional(),
+    year: z
+      .number()
+      .int()
+      .refine((year) => (DECADES as readonly string[]).includes(decadeOf(year))),
+    genres: z.array(z.enum(GENRES)).max(4),
+    runtimeMinutes: z.number().int().positive().optional(),
+    seasons: z.number().int().positive().optional(),
+    overview: z.string().min(1).optional(),
+    trailerUrl: z.string().url().startsWith('https://www.youtube.com/watch?v=').optional(),
+    imdbId: z
+      .string()
+      .regex(/^tt\d+$/)
+      .optional(),
+  })
+  .strict();
+
+/** Read at boot, once. */
+export function loadMovieCorpus(file: URL = config.moviesFile): Movie[] {
+  const parsed = z.array(movieSchema).safeParse(JSON.parse(readFileSync(file, 'utf8')));
+  if (!parsed.success) {
+    const [issue] = parsed.error.issues;
+    throw new Error(`${file.pathname}: ${issue?.path.join('.')}: ${issue?.message}`);
+  }
+  return parsed.data;
+}
+
+/** What a Mood deals from. One implementation, the corpus; the seam a live source would take. */
+export type MovieSource = (mood: Mood) => Movie[];
+
+/**
+ * Every corpus Movie carrying any chosen genre, released in any chosen decade
+ * and of any chosen media type — in corpus order, best-known first.
+ */
+export const corpusMovieSource =
+  (movies: readonly Movie[]): MovieSource =>
+  (mood) => {
+    const genres = new Set<string>(mood.genres);
+    const decades = new Set<string>(mood.decades);
+    const types = new Set<string>(mood.mediaTypes ?? []);
+    return movies.filter(
+      (movie) =>
+        (genres.size === 0 || (movie.genres ?? []).some((genre) => genres.has(genre))) &&
+        (decades.size === 0 || (movie.year !== undefined && decades.has(decadeOf(movie.year)))) &&
+        (types.size === 0 || types.has(movie.mediaType ?? 'movie'))
+    );
+  };
 
 function shuffled<T>(entries: readonly T[]): T[] {
   const copy = [...entries];
@@ -42,25 +108,27 @@ function shuffled<T>(entries: readonly T[]): T[] {
 }
 
 export interface DealOptions {
-  source?: MovieSource;
+  source: MovieSource;
   /** Injectable so tests can assert the cut rather than luck. */
   shuffle?: <T>(entries: readonly T[]) => T[];
   deckSize?: number;
+  poolCap?: number;
 }
 
 /**
- * A Restart's Deck: the Mood's Movies with the just-wiped ones dealt last, so
- * the group sees new Movies first and repeats only once the Mood runs out. A
- * Mood that has stopped matching anything (a redeploy shrank the corpus)
- * reshuffles `current` — a Restart never leaves a Session without a Deck.
+ * A Restart's Deck: the Mood's best-known Movies with the just-wiped ones
+ * dealt last, so the group sees new Movies first and repeats only once the
+ * Mood runs out. A Mood that has stopped matching anything (a redeploy shrank
+ * the corpus) reshuffles `current` — a Restart never leaves a Session without
+ * a Deck.
  */
 export function redealMovieDeck(
   mood: Mood,
   current: readonly DeckEntry[],
-  { source = corpusMovieSource, shuffle = shuffled, deckSize = DECK_SIZE }: DealOptions = {}
+  { source, shuffle = shuffled, deckSize = DECK_SIZE, poolCap = POOL_CAP }: DealOptions
 ): DeckEntry[] {
   const wiped = new Set(current.map((entry) => entry.placeId));
-  const pool = source(mood);
+  const pool = source(mood).slice(0, poolCap);
   const fresh = pool.filter((movie) => !wiped.has(movie.placeId));
   const repeats = pool.filter((movie) => wiped.has(movie.placeId));
   const dealt = [...shuffle(fresh), ...shuffle(repeats)].slice(0, deckSize);
@@ -68,6 +136,6 @@ export function redealMovieDeck(
 }
 
 /** A Session's first Deck: up to `deckSize` Movies matching the Mood, or none. */
-export function dealMovieDeck(mood: Mood, options?: DealOptions): DeckEntry[] {
+export function dealMovieDeck(mood: Mood, options: DealOptions): DeckEntry[] {
   return redealMovieDeck(mood, [], options);
 }

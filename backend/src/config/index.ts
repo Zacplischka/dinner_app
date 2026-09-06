@@ -17,6 +17,10 @@ export const config = {
     process.env.OWNED_RECIPES_DIR?.replace(/\/?$/, '/') ?? '../../recipes/',
     import.meta.url
   ),
+  // The Movie corpus on disk (ADR 0014): one JSON file beside the recipes,
+  // resolved the same way so `src/` and `dist/` read the same file and a test
+  // can point the app at a fixture instead of the batch that ships.
+  moviesFile: new URL(process.env.MOVIES_FILE ?? '../../movies/movies.json', import.meta.url),
   googlePlaces: {
     apiKey: process.env.GOOGLE_PLACES_API_KEY,
   },

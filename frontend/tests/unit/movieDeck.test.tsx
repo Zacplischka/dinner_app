@@ -1,8 +1,9 @@
 // The Watch Branch (#369) deals Movies through the same swipe mechanics as
 // Restaurants and Recipes. This drives the page with a hand-dealt Movie Deck (no
 // backend in a unit test): the card renders what a Movie carries — title,
-// poster, year and runtime, genres, critics score, overview — and none of the
-// Restaurant-only meta, and a swipe records a Selection with no fork anywhere.
+// poster, year and runtime (a series: its seasons), genres, score, overview —
+// and none of the Restaurant-only meta, and a swipe records a Selection with
+// no fork anywhere.
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -11,7 +12,8 @@ import type { Movie } from '@dinder/shared/types';
 
 const alien: Movie = {
   kind: 'movie',
-  placeId: 'Q103569',
+  placeId: 'tmdb:movie:348',
+  mediaType: 'movie',
   name: 'Alien',
   photoUrl: 'https://example.com/alien.jpg',
   year: 1979,
@@ -22,16 +24,30 @@ const alien: Movie = {
 };
 const heat: Movie = {
   kind: 'movie',
-  placeId: 'Q188652',
+  placeId: 'tmdb:movie:949',
   name: 'Heat',
   year: 1995,
   genres: ['Crime'],
 };
-// The corpus's longest name: a two-line title on the card, over the widest
-// genre row and a full-length overview.
+const thrones: Movie = {
+  kind: 'movie',
+  placeId: 'tmdb:tv:1399',
+  mediaType: 'tv',
+  name: 'Game of Thrones',
+  photoUrl: 'https://example.com/thrones.jpg',
+  year: 2011,
+  runtimeMinutes: 60,
+  seasons: 8,
+  genres: ['Fantasy', 'Drama'],
+  rating: 85,
+  overview: 'Seven noble families fight for control of the mythical land of Westeros.',
+};
+// A long name: a two-line title on the card, over the widest genre row and a
+// full-length overview.
 const pirates: Movie = {
   kind: 'movie',
-  placeId: 'Q46717',
+  placeId: 'tmdb:movie:22',
+  mediaType: 'movie',
   name: 'Pirates of the Caribbean: The Curse of the Black Pearl',
   photoUrl: 'https://example.com/pirates.png',
   year: 2003,
@@ -88,7 +104,7 @@ describe('Movie Deck', () => {
     });
   });
 
-  it('deals Movie cards with title, poster, year and runtime, genres, critics score and overview', async () => {
+  it('deals Movie cards with title, poster, year and runtime, genres, score and overview', async () => {
     renderSelectionPage();
 
     expect(await screen.findByText('Alien')).toBeInTheDocument();
@@ -96,20 +112,33 @@ describe('Movie Deck', () => {
     expect(screen.getByText('1979 · 117 min')).toBeInTheDocument();
     expect(screen.getByText('Horror')).toBeInTheDocument();
     expect(screen.getByText('Sci-Fi')).toBeInTheDocument();
-    expect(screen.getByText('93% critics')).toBeInTheDocument();
+    expect(screen.getByText('93% on TMDB')).toBeInTheDocument();
     expect(screen.getByText(/commercial starship crew/)).toBeInTheDocument();
-    // The overview is CC BY-SA Wikipedia text, so the card credits the article.
-    expect(screen.getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
+    // The data is TMDB's, so the card credits it and links the title's page.
+    expect(screen.getByRole('link', { name: 'TMDB' })).toHaveAttribute(
       'href',
-      'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q103569'
+      'https://www.themoviedb.org/movie/348'
+    );
+  });
+
+  it('deals a series with its seasons where a film shows its runtime', async () => {
+    deal.mockResolvedValue([thrones]);
+    renderSelectionPage();
+
+    expect(await screen.findByText('Game of Thrones')).toBeInTheDocument();
+    expect(screen.getByText('2011 · 8 seasons')).toBeInTheDocument();
+    expect(screen.queryByText(/60 min/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'TMDB' })).toHaveAttribute(
+      'href',
+      'https://www.themoviedb.org/tv/1399'
     );
   });
 
   // jsdom lays nothing out, so the fit is asserted by construction: a Movie's
   // poster frame yields to half the card (a Restaurant's keeps 62%), the info
-  // region clips rather than scrolls, and the credit still renders under the
-  // longest title in the corpus.
-  it('fits the longest title, four genres, a full overview and the credit on one card', async () => {
+  // region clips rather than scrolls, and the credit still renders under a
+  // two-line title.
+  it('fits a long title, four genres, a full overview and the credit on one card', async () => {
     deal.mockResolvedValue([pirates]);
     renderSelectionPage();
 
@@ -119,9 +148,9 @@ describe('Movie Deck', () => {
     expect(screen.getByText(pirates.name)).toHaveClass('line-clamp-2');
     expect(screen.getByText(/swashbuckler film/)).toHaveClass('line-clamp-3');
     expect(screen.getByText(/swashbuckler film/).parentElement).toHaveClass('overflow-hidden');
-    expect(screen.getByRole('link', { name: 'Wikipedia' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'TMDB' })).toHaveAttribute(
       'href',
-      'https://www.wikidata.org/wiki/Special:GoToLinkedPage/enwiki/Q46717'
+      'https://www.themoviedb.org/movie/22'
     );
   });
 
@@ -129,7 +158,7 @@ describe('Movie Deck', () => {
     renderSelectionPage();
     await screen.findByText('Alien');
 
-    // The critics score is a percentage badge, never the Restaurant's stars.
+    // The score is a percentage badge, never the Restaurant's stars.
     expect(screen.queryByLabelText(/^Rating/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Open now|Closed now/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^Price level/)).not.toBeInTheDocument();
@@ -142,9 +171,9 @@ describe('Movie Deck', () => {
     fireEvent.click(screen.getByLabelText('Like'));
 
     await waitFor(() => {
-      expect(useSessionStore.getState().selections).toEqual(['Q103569']);
+      expect(useSessionStore.getState().selections).toEqual(['tmdb:movie:348']);
     });
-    expect(sendLiveSelection).toHaveBeenCalledWith('AB123', 'Q103569');
+    expect(sendLiveSelection).toHaveBeenCalledWith('AB123', 'tmdb:movie:348');
     // The next card is dealt by the same cursor the restaurant deck uses.
     expect(screen.getByText('Heat')).toBeInTheDocument();
   });
