@@ -10,7 +10,8 @@ const FOCUSABLE =
  * inside `ref` instead of walking off into the page behind it, and whatever
  * had focus before the dialog opened gets it back once `active` drops.
  * `autoFocus` on the dialog's primary still decides the first stop. Used by
- * the leave confirmation and the Full House takeover.
+ * the leave confirmation, the Full House takeover and the Deck Entry details
+ * sheet.
  */
 export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void {
   // Captured during render, not in an effect: React honours `autoFocus` in
@@ -24,6 +25,9 @@ export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
+      // An overlay can replace another while this trap remains active.
+      const dialog = ref.current;
+      if (!dialog) return;
       const stops = dialog.querySelectorAll<HTMLElement>(FOCUSABLE);
       // Every stop disabled (leave in flight) or focus already dropped to
       // <body>: hold Tab here rather than let it walk into the page behind.
@@ -53,7 +57,11 @@ export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void
   // to the opener the instant the dialog opened, then forget the opener.
   useEffect(() => {
     if (active || !opener.current) return;
-    opener.current.focus();
+    // Backdrop clicks can focus the routed page's tabindex=-1 wrapper.
+    // Restore from there too, but never steal focus from a replacement dialog.
+    if (!document.activeElement?.closest('[role="dialog"][aria-modal="true"]')) {
+      opener.current.focus();
+    }
     opener.current = null;
   }, [active]);
 }

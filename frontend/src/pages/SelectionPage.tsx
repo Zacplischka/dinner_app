@@ -12,6 +12,7 @@ import { useShareLink } from '../hooks/useShareLink';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
+import DeckEntryDetails from '../components/DeckEntryDetails';
 import NavigationHeader from '../components/NavigationHeader';
 import type { DeckEntry } from '@dinder/shared/types';
 import { participantRingClass } from '../utils/participantStyles';
@@ -88,6 +89,11 @@ export default function SelectionPage() {
     name: string;
   } | null>(null);
   const [fullHousePlaceId, setFullHousePlaceId] = useState<string | null>(null);
+  // The Deck Entry whose details are open (#424), or null. It lives here rather
+  // than in SwipeCard because the deck region goes pointer-dead and aria-hidden
+  // under a Full House — a dialog mounted inside it would too, while still
+  // holding trapped focus.
+  const [detailsEntry, setDetailsEntry] = useState<DeckEntry | null>(null);
   const [shareableLink, setShareableLink] = useState('');
   // The one plain line a short deal carries when the recipe source was dark
   // (#333). It rides the Session, so every Participant's page reads the same
@@ -110,8 +116,9 @@ export default function SelectionPage() {
   // a stale Full House must never take the screen over on arrival.
   const hydratedRef = useRef(false);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const fullHouseRef = useRef<HTMLDivElement>(null);
-  useFocusTrap(fullHouseRef, fullHousePlaceId !== null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const overlayOpen = fullHousePlaceId !== null || detailsEntry !== null;
+  useFocusTrap(overlayRef, overlayOpen);
 
   useEffect(() => {
     if (participants.length > rosterSizeRef.current) fullHouseArmedRef.current = true;
@@ -253,6 +260,9 @@ export default function SelectionPage() {
     ) {
       fullHouseArmedRef.current = false;
       fullHouseShownRef.current.add(latest.restaurant.placeId);
+      // One dialog at a time: the sheet goes before the takeover arrives, and
+      // the shared history entry above carries straight over to it.
+      setDetailsEntry(null);
       setFullHousePlaceId(latest.restaurant.placeId);
     }
 
@@ -269,25 +279,29 @@ export default function SelectionPage() {
     return () => clearTimeout(timer);
   }, [reveal]);
 
-  // Full House takeover: push a history entry so the hardware back button dismisses
-  // the overlay instead of leaving the deck. Escape and Keep swiping both go through
-  // history.back() → popstate → clear.
+  // One history entry for whichever overlay is up — the Full House takeover or
+  // the details sheet — so the hardware back button dismisses it instead of
+  // leaving the deck. The dep is the boolean, not which one: a Full House
+  // arriving over an open sheet swaps them without pushing a second entry, so
+  // one back gesture always lands on the Deck and never on a stale entry.
   useEffect(() => {
-    if (!fullHousePlaceId) return;
-    window.history.pushState({ dinderFullHouse: true }, '');
-    // Dismissal chokepoint: Keep swiping, Escape and hardware back all route
-    // through history.back() -> popstate -> here. Clear a failed-submit error so
-    // it can't leak onto the end-of-deck screen.
+    if (!overlayOpen) return;
+    window.history.pushState({ dinderOverlay: true }, '');
+    // Dismissal chokepoint: Keep swiping, Close, Escape, the backdrop and
+    // hardware back all route through history.back() -> popstate -> here. Clear
+    // a failed-submit error so it can't leak onto the end-of-deck screen.
     const onPop = () => {
       setError('');
       setFullHousePlaceId(null);
+      setDetailsEntry(null);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [fullHousePlaceId]);
+  }, [overlayOpen]);
 
-  // Keep swiping, Escape and the hardware back button are all this.
-  const keepSwiping = () => window.history.back();
+  // Keep swiping, Close, Escape, the backdrop and the hardware back button are
+  // all this.
+  const dismissOverlay = () => window.history.back();
   // ponytail: a successful Finish here unmounts the overlay with the pushed entry
   // still on the stack, so one hardware back from "All done!" is swallowed (same
   // URL, nothing re-renders). Ceiling: one dead back-tap. Upgrade: history.back()
@@ -729,6 +743,7 @@ export default function SelectionPage() {
               onSwipeRight={handleSwipeRight}
               isTop={index === 0}
               stackPosition={index}
+              onOpenDetails={index === 0 ? () => setDetailsEntry(entry) : undefined}
             />
           ))}
 
@@ -834,16 +849,20 @@ export default function SelectionPage() {
         </p>
       </div>
 
+      {/* Deck Entry details (#424) — a sibling of the takeover, never inside
+          the deck region, and never up at the same time as it. */}
+      <DeckEntryDetails entry={detailsEntry} onClose={dismissOverlay} dialogRef={overlayRef} />
+
       {/* Full House takeover */}
       {fullHousePlaceId && (
         <div
-          ref={fullHouseRef}
+          ref={overlayRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 backdrop-blur-[10px] p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="full-house-title"
           onKeyDown={(e) => {
-            if (e.key === 'Escape') keepSwiping();
+            if (e.key === 'Escape') dismissOverlay();
           }}
         >
           <div className="card w-full max-w-sm text-center animate-fade-in">
@@ -884,7 +903,7 @@ export default function SelectionPage() {
               )}
             </button>
 
-            <button onClick={keepSwiping} className="btn btn-ghost w-full min-h-[48px] mt-3">
+            <button onClick={dismissOverlay} className="btn btn-ghost w-full min-h-[48px] mt-3">
               Keep swiping
             </button>
           </div>

@@ -162,6 +162,14 @@ describe('SwipeCard long content', () => {
     renderCard();
     expect(screen.getByLabelText('Price level 2 of 4')).toHaveTextContent('$$');
   });
+
+  // #85: 0 is free, not unknown — the card says so in the same word the Match
+  // card and the details sheet use, and needs no label to say it.
+  it('says "Free" for a price level of 0', () => {
+    renderCard({ priceLevel: 0 });
+    expect(screen.getByText('Free')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Price level/)).not.toBeInTheDocument();
+  });
 });
 
 describe('SelectionPage mobile geometry', () => {
