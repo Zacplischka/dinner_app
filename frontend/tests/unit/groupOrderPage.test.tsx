@@ -337,12 +337,14 @@ describe('GroupOrderPage', () => {
     expect(screen.getByText('SELECT SCREEN')).toBeInTheDocument();
   });
 
-  it('renders the expired screen with Start over instead of navigating', async () => {
-    seedStore({ sessionStatus: 'expired' });
-    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+  it('renders the expired screen with Start over when the Session is already gone', async () => {
+    openOrderMock.mockResolvedValue({
+      success: false,
+      error: { code: 'SESSION_NOT_FOUND', message: 'gone' },
+    });
     renderPage();
 
-    expect(screen.getByText('This session has expired.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('This Session has expired.')).toBeInTheDocument());
     expect(
       screen.getByText(
         'A session closes once everyone stops using it. Start a new one to swipe again.'
@@ -351,6 +353,20 @@ describe('GroupOrderPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
     expect(screen.getByText('HOME SCREEN')).toBeInTheDocument();
+  });
+
+  // #402: expiring mid-order is announced once, by the shared header banner —
+  // this page no longer stacks its own full-screen copy of the same message.
+  it('leaves a mid-order expiry to the header banner alone', async () => {
+    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+    renderPage();
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+
+    act(() => useSessionStore.getState().setSessionStatus('expired'));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('This Session has expired');
+    expect(screen.queryByText('This Session has expired.')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Start over' })).toHaveLength(1);
   });
 
   const twoParticipants = [

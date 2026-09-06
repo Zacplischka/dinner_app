@@ -140,13 +140,16 @@ describe('component and hook branch coverage', () => {
 
   it('covers navigation header default back, confirm close, and confirm fallback back branches', async () => {
     const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
-    const { unmount: directUnmount } = render(<NavigationHeader title="Direct" showBackButton />);
+    const { unmount: directUnmount } = render(<NavigationHeader title="Direct" showBackButton />, {
+      wrapper: MemoryRouter,
+    });
     fireEvent.click(screen.getByLabelText('Back'));
     expect(historyBack).toHaveBeenCalledTimes(1);
     directUnmount();
 
     render(
-      <NavigationHeader title="Confirm" showBackButton confirmOnBack confirmContext="results" />
+      <NavigationHeader title="Confirm" showBackButton confirmOnBack confirmContext="results" />,
+      { wrapper: MemoryRouter }
     );
     fireEvent.click(screen.getByLabelText('Back'));
     fireEvent.click(await screen.findByText('Stay here'));
@@ -423,7 +426,7 @@ describe('component and hook branch coverage', () => {
     expect(screen.getByText('B')).toBeInTheDocument();
   });
 
-  it('loads a buried card\'s photo lazily and the top card\'s eagerly', () => {
+  it("loads a buried card's photo lazily and the top card's eagerly", () => {
     const withPhoto = { ...restaurant, photoUrl: 'https://example.com/bistro.jpg' };
     const { container, rerender } = render(
       <SwipeCard

@@ -5,6 +5,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import { useSessionStore } from '../stores/sessionStore';
+import { useLeaveSession } from '../hooks/useLeaveSession';
 import { toast } from '../hooks/useToast';
 import ConfirmLeaveModal from './ConfirmLeaveModal';
 
@@ -72,6 +73,10 @@ export default function NavigationHeader({
   // #402: once it has expired there is nothing left to count down to — every
   // Session screen says so here, instead of sticking on "under a minute".
   const showExpiry = Boolean(sessionCode && expiresAt) && !expired;
+  // Start over is a leave, not a link: an <a href="/"> reloads the SPA, and the
+  // sessionStorage-persisted Session survives that reload long enough for the
+  // connect binding to auto-rejoin the dead Session and toast the failed ack.
+  const leaveSession = useLeaveSession(sessionCode);
 
   // Tick, don't decrement: the label re-reads expiresAt and Date.now() on every
   // render, so a throttled background tab is right again the moment it wakes,
@@ -195,9 +200,14 @@ export default function NavigationHeader({
               className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-lg border border-coral/30 bg-coral/10 px-3 py-2 text-center"
             >
               <span className="text-sm font-semibold text-coral">This Session has expired</span>
-              <a href="/" className="text-sm font-medium text-cyan underline underline-offset-2">
+              {/* -my-2 buys the 44px tap target without growing the banner. */}
+              <button
+                type="button"
+                onClick={() => void leaveSession()}
+                className="-my-2 inline-flex min-h-[44px] items-center text-sm font-medium text-cyan underline underline-offset-2"
+              >
                 Start over
-              </a>
+              </button>
             </div>
           )}
 

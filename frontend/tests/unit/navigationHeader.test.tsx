@@ -1,8 +1,14 @@
+import { ReactElement } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NavigationHeader from '../../src/components/NavigationHeader';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { useToastStore } from '../../src/hooks/useToast';
+
+// The header routes (its expired banner leaves the Session), so every render
+// needs a Router around it.
+const renderHeader = (ui: ReactElement) => render(ui, { wrapper: MemoryRouter });
 
 /**
  * NavigationHeader mobile-safety specs (#78)
@@ -21,7 +27,7 @@ describe('NavigationHeader', () => {
   });
 
   it('keeps a stable 44px back target that does not shrink for long titles', () => {
-    const { rerender } = render(<NavigationHeader title="Join Session" showBackButton />);
+    const { rerender } = renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     const back = screen.getByRole('button', { name: 'Back' });
     expect(back.className).toContain('min-h-[44px]');
     expect(back.className).toContain('min-w-[44px]');
@@ -38,7 +44,7 @@ describe('NavigationHeader', () => {
   });
 
   it('centres the title between equal-width edge regions and truncates overflow', () => {
-    render(<NavigationHeader title="Join Session" showBackButton />);
+    renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     const title = screen.getByRole('heading', { name: 'Join Session' });
     expect(title.className).toContain('truncate');
 
@@ -54,13 +60,13 @@ describe('NavigationHeader', () => {
   });
 
   it('shows no unrelated navigation actions on focused flows', () => {
-    render(<NavigationHeader title="Join Session" showBackButton />);
+    renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     expect(screen.queryByRole('link', { name: 'Compare' })).toBeNull();
     expect(screen.queryByRole('link')).toBeNull();
   });
 
   it('places session code, progress and subtitle in a separated secondary region', () => {
-    render(
+    renderHeader(
       <NavigationHeader
         title="Choose Restaurants"
         subtitle="Swipe to vote"
@@ -83,13 +89,13 @@ describe('NavigationHeader', () => {
   });
 
   it('omits the secondary region when there is no secondary content', () => {
-    render(<NavigationHeader title="Join Session" showBackButton />);
+    renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     expect(screen.queryByTestId('nav-header-secondary')).toBeNull();
   });
 
   it('expresses connection state with readable text, not a bare dot', () => {
     useSessionStore.setState({ isConnected: true });
-    const { rerender } = render(<NavigationHeader title="Lobby" showConnectionStatus />);
+    const { rerender } = renderHeader(<NavigationHeader title="Lobby" showConnectionStatus />);
     expect(screen.getByText('Connected')).toBeInTheDocument();
 
     useSessionStore.setState({ isConnected: false });
@@ -98,7 +104,7 @@ describe('NavigationHeader', () => {
   });
 
   it('renders the session code badge without decorative glow', () => {
-    render(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
+    renderHeader(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
     const code = screen.getByText('7K9M2');
     const badge = code.closest('span')!.parentElement as HTMLElement;
     expect(badge.className).not.toContain('shadow-glow-cyan');
@@ -109,7 +115,7 @@ describe('NavigationHeader', () => {
     vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
     useToastStore.setState({ toasts: [] });
     try {
-      render(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
+      renderHeader(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
       const code = screen.getByText('7K9M2');
 
       await act(async () => {
@@ -130,7 +136,7 @@ describe('NavigationHeader', () => {
   });
 
   it('keeps page-specific actions in the title row right edge', () => {
-    render(
+    renderHeader(
       <NavigationHeader
         title="Match"
         showBackButton
@@ -148,7 +154,7 @@ describe('NavigationHeader', () => {
     vi.setSystemTime(new Date('2026-09-06T10:00:00Z'));
     useSessionStore.setState({ expiresAt: '2026-09-06T10:27:30Z' });
 
-    render(<NavigationHeader title="Make the Call" sessionCode="7K9M2" />);
+    renderHeader(<NavigationHeader title="Make the Call" sessionCode="7K9M2" />);
     expect(screen.getByText('Expires in 27 min')).toBeInTheDocument();
 
     // One 30s tick.
@@ -171,7 +177,7 @@ describe('NavigationHeader', () => {
 
   it('shows no countdown without a session code, even when the store still holds an expiresAt', () => {
     useSessionStore.setState({ expiresAt: '2099-01-01T00:00:00Z' });
-    render(<NavigationHeader title="Join Session" showBackButton />);
+    renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     expect(screen.queryByText(/Expires in/)).toBeNull();
   });
 
@@ -179,17 +185,42 @@ describe('NavigationHeader', () => {
   // Session screen, not just the Group Order.
   it('replaces the countdown with an expired banner and a way home once the Session expires', () => {
     useSessionStore.setState({ expiresAt: '2099-01-01T00:00:00Z', sessionStatus: 'expired' });
-    render(<NavigationHeader title="Choose Restaurants" sessionCode="7K9M2" />);
+    renderHeader(<NavigationHeader title="Choose Restaurants" sessionCode="7K9M2" />);
 
     const banner = screen.getByRole('alert');
     expect(banner).toHaveTextContent('This Session has expired');
-    expect(within(banner).getByRole('link', { name: /start over/i })).toHaveAttribute('href', '/');
+    expect(within(banner).getByRole('button', { name: /start over/i })).toBeInTheDocument();
     expect(screen.queryByText(/Expires in/)).toBeNull();
+  });
+
+  // Start over must leave the Session, not hard-link to "/": a reload rehydrates
+  // the persisted Session from sessionStorage and auto-rejoins the dead one.
+  it('Start over resets the Session store and routes home without a reload', async () => {
+    useSessionStore.setState({ sessionCode: '7K9M2', sessionStatus: 'expired' });
+    render(
+      <MemoryRouter initialEntries={['/session/7K9M2/select']}>
+        <Routes>
+          <Route
+            path="/session/:sessionCode/select"
+            element={<NavigationHeader title="Choose Restaurants" sessionCode="7K9M2" />}
+          />
+          <Route path="/" element={<div>HOME SCREEN</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /start over/i }));
+    });
+
+    expect(await screen.findByText('HOME SCREEN')).toBeInTheDocument();
+    expect(useSessionStore.getState().sessionCode).toBeNull();
+    expect(useSessionStore.getState().sessionStatus).toBe('waiting');
   });
 
   it('shows no expired banner off a Session screen, even when the store still says expired', () => {
     useSessionStore.setState({ sessionStatus: 'expired' });
-    render(<NavigationHeader title="Join Session" showBackButton />);
+    renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });
