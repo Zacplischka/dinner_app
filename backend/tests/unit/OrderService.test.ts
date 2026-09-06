@@ -16,7 +16,7 @@ import {
   type StorefrontStatus,
 } from '@dinder/shared/types';
 import { createSessionStore } from '../../src/store/sessionStore.js';
-import { createOrderService } from '../../src/services/OrderService.js';
+import { createOrderService, type OrderServiceDeps } from '../../src/services/OrderService.js';
 import { DomainError } from '../../src/services/DomainError.js';
 
 const sessionCode = 'ORD12';
@@ -47,7 +47,7 @@ async function seedCompletedSession(crownPlaceId = placeId) {
   await store.addResultPlaceId(sessionCode, crownPlaceId);
 }
 
-function makeService(getLatest: ReturnType<typeof vi.fn>) {
+function makeService(getLatest: OrderServiceDeps['snapshotStore']['getLatest']) {
   return createOrderService({
     store,
     snapshotStore: { getLatest },

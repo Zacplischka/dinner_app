@@ -9,6 +9,7 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import type { ShoppingList } from '@dinder/shared/types';
 import { createListsRouter } from '../../src/api/lists.js';
+import type { ShoppingListService } from '../../src/services/ShoppingListService.js';
 import { errorHandler } from '../../src/middleware/errorHandler.js';
 import { logger } from '../../src/logger.js';
 
@@ -43,8 +44,8 @@ const claimed = (name: string): ShoppingList => ({
 
 function buildApp(
   overrides: {
-    claimLine?: ReturnType<typeof vi.fn>;
-    releaseLine?: ReturnType<typeof vi.fn>;
+    claimLine?: ShoppingListService['claimLine'];
+    releaseLine?: ShoppingListService['releaseLine'];
   } = {}
 ) {
   const claimLine = overrides.claimLine ?? vi.fn(async () => claimed('Alice'));
@@ -54,7 +55,13 @@ function buildApp(
   app.use(express.json());
   app.use(
     '/api/lists',
-    createListsRouter({ mint: vi.fn(), readList: vi.fn(async () => list), claimLine, releaseLine })
+    createListsRouter({
+      mint: vi.fn(),
+      readList: vi.fn(async () => list),
+      claimLine,
+      releaseLine,
+      swapLine: vi.fn(),
+    })
   );
   app.use(errorHandler);
   return { app, claimLine, releaseLine };

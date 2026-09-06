@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DomainError } from '../../src/services/DomainError.js';
 
 const mockState = vi.hoisted(() => ({
-  response: { data: null as unknown, error: null as unknown },
+  response: { data: null as Record<string, unknown> | null, error: null as unknown },
   calls: [] as Array<{ table: string; operation: string; args: unknown[] }>,
 }));
 
@@ -66,7 +66,7 @@ describe('comparisonSnapshotStore', () => {
       placeId: 'place-1',
       venueName: '11 Inch Pizza',
       fetchedAt: '2026-07-13T01:02:03.000Z',
-      payload: mockState.response.data.payload,
+      payload: mockState.response.data?.payload,
     });
     expect(mockState.calls).toEqual([
       {

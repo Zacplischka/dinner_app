@@ -87,7 +87,9 @@ describe('RestaurantSearchService', () => {
   });
 
   describe('fetchPlacePhoto', () => {
-    afterEach(() => vi.unstubAllGlobals());
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
 
     it('authenticates server-side and returns only a trusted Google image URL', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
@@ -442,13 +444,14 @@ describe('RestaurantSearchService', () => {
 
   describe('searchNearbyRestaurants', () => {
     let fetchMock: any;
-    let logSpy: ReturnType<typeof vi.spyOn>;
+    const spyOnInfo = () => vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    let logSpy: ReturnType<typeof spyOnInfo>;
 
     beforeEach(() => {
       // Mock global fetch
       fetchMock = vi.fn();
       global.fetch = fetchMock;
-      logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+      logSpy = spyOnInfo();
     });
 
     afterEach(() => {

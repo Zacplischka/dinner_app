@@ -43,6 +43,12 @@ describe('auth middleware', () => {
     } as AuthenticatedRequest;
   }
 
+  // Express's NextFunction is overloaded, so an inline `vi.fn()` is contextually
+  // typed to one overload and fails the other. A bare mock satisfies both.
+  function next() {
+    return vi.fn();
+  }
+
   async function flushAsyncAuth() {
     await new Promise((resolve) => setImmediate(resolve));
   }
@@ -67,7 +73,7 @@ describe('auth middleware', () => {
     it('should reject requests without a bearer token', () => {
       const res = response();
 
-      requireAuth(request(), res as any, vi.fn());
+      requireAuth(request(), res as any, next());
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
@@ -82,7 +88,7 @@ describe('auth middleware', () => {
       config.supabase.url = '';
       const res = response();
 
-      requireAuth(request('Bearer token'), res as any, vi.fn());
+      requireAuth(request('Bearer token'), res as any, next());
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
@@ -120,7 +126,7 @@ describe('auth middleware', () => {
       });
       const res = response();
 
-      requireAuth(request('Bearer expired-token'), res as any, vi.fn());
+      requireAuth(request('Bearer expired-token'), res as any, next());
       await flushAsyncAuth();
 
       expect(res.status).toHaveBeenCalledWith(401);
@@ -139,7 +145,7 @@ describe('auth middleware', () => {
       });
       const res = response();
 
-      requireAuth(request('Bearer invalid-token'), res as any, vi.fn());
+      requireAuth(request('Bearer invalid-token'), res as any, next());
       await flushAsyncAuth();
 
       expect(res.status).toHaveBeenCalledWith(401);

@@ -206,7 +206,9 @@ function build(
 }
 
 describe('ShoppingListService.mint', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('scales every Ingredient Line from the Recipe servings to the Headcount', async () => {
     const { service, resolveLine } = build();
@@ -764,7 +766,9 @@ describe('ShoppingListService.mint', () => {
 // which lines can be claimed, whose name comes back, and the clock the Claims
 // keep.
 describe('ShoppingListService claims', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   /** A minted list, ready to be claimed on. */
   async function minted() {
@@ -884,7 +888,9 @@ describe('ShoppingListService claims', () => {
 // costs no Retailer call — it re-prices through the ladder and writes to the
 // shared list, where every viewer of the URL sees it.
 describe('ShoppingListService swaps', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   /** A minted list whose priced line has runners-up behind it. */
   async function minted() {

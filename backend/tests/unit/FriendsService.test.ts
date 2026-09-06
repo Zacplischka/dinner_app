@@ -155,8 +155,12 @@ const fakeStore = {
     }
   },
 
+  // `status` is optional on the real store's row insert, so the fake has to
+  // accept it missing to stay substitutable.
   createSessionInvites: async (
-    invites: Array<Pick<InviteRow, 'session_code' | 'inviter_id' | 'invitee_id' | 'status'>>
+    invites: Array<
+      Pick<InviteRow, 'session_code' | 'inviter_id' | 'invitee_id'> & { status?: string }
+    >
   ) => {
     for (const invite of invites) {
       const duplicate = [...db.invites.values()].some(
@@ -167,7 +171,12 @@ const fakeStore = {
       );
       if (!duplicate) {
         const id = `invite-${db.nextId++}`;
-        db.invites.set(id, { ...invite, id, created_at: new Date().toISOString() });
+        db.invites.set(id, {
+          ...invite,
+          status: (invite.status ?? 'pending') as InviteRow['status'],
+          id,
+          created_at: new Date().toISOString(),
+        });
       }
     }
   },

@@ -9,7 +9,9 @@ import { app as productionApp } from '../../src/server.js';
 import { errorHandler } from '../../src/middleware/errorHandler.js';
 
 describe('GET /api/comparison/venues', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns nearby Venues to a guest using only Google Places', async () => {
     const fetchMock = vi.fn().mockResolvedValue({

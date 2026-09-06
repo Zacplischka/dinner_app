@@ -134,7 +134,7 @@ describe('comparisonSmoke helpers', () => {
 
   it('reads the latest run ID for every configured actor', async () => {
     const fetchImpl = vi.fn(
-      async (input: string | URL | Request) =>
+      async (input: string | URL | Request, _init?: RequestInit) =>
         ({
           ok: true,
           json: async () => ({

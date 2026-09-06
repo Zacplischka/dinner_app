@@ -10,6 +10,8 @@ const mockState = vi.hoisted(() => ({
     email: 'alice@example.com',
     role: 'authenticated',
   },
+  // Widened: the specs swap in alternate metadata fields and an empty user to
+  // cover the profile-creation fallbacks.
   authUserResponse: {
     data: {
       user: {
@@ -19,7 +21,7 @@ const mockState = vi.hoisted(() => ({
         },
       },
     },
-  },
+  } as { data: { user: Record<string, unknown> } },
 }));
 
 vi.mock('../../src/middleware/auth.js', () => ({

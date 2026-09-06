@@ -107,7 +107,7 @@ async function cook(recipe: OwnedRecipe, headcount = 6) {
     }),
     resolveLine: async (): Promise<QuantityResolution> => ({
       state: 'priced',
-      needs: { amount: 1, unit: 'kg' },
+      needs: { amount: 1000, unit: 'g' },
       packs: 1,
       priceCents: 500,
     }),
