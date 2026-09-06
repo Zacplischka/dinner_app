@@ -110,8 +110,8 @@ describe('component and hook branch coverage', () => {
         <GoogleSignInButton variant="compact" />
       </>
     );
-    expect(screen.getByText('Signing in...')).toBeInTheDocument();
-    expect(screen.getByText('...')).toBeInTheDocument();
+    expect(screen.getByText('Signing in…')).toBeInTheDocument();
+    expect(screen.getByText('…')).toBeInTheDocument();
     loadingButtonUnmount();
 
     const signIn = vi.fn(async () => {
@@ -149,10 +149,10 @@ describe('component and hook branch coverage', () => {
       <NavigationHeader title="Confirm" showBackButton confirmOnBack confirmContext="results" />
     );
     fireEvent.click(screen.getByLabelText('Back'));
-    fireEvent.click(await screen.findByText('Stay Here'));
-    expect(screen.queryByText('Go Home')).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByText('Stay here'));
+    expect(screen.queryByText('Go home')).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Back'));
-    fireEvent.click(await screen.findByText('Go Home'));
+    fireEvent.click(await screen.findByText('Go home'));
     expect(historyBack).toHaveBeenCalledTimes(2);
     historyBack.mockRestore();
   });
@@ -454,7 +454,7 @@ describe('component and hook branch coverage', () => {
     fireEvent.change(screen.getByLabelText('Search by email'), {
       target: { value: 'bob@example.com' },
     });
-    expect(screen.getByText('Searching...')).toBeInTheDocument();
+    expect(screen.getByText('Searching…')).toBeInTheDocument();
 
     render(<FriendsList friends={[friend]} />);
     expect(screen.getByAltText('Bob')).toHaveAttribute('src', friend.avatarUrl);

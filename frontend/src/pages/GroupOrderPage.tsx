@@ -38,7 +38,7 @@ const FAILURE_COPY: Record<Exclude<FailureKind, 'cold'>, { heading: string; body
   },
   expired: {
     heading: 'This session has expired.',
-    body: 'Sessions last 30 minutes. Start a new one to swipe again.',
+    body: 'A session closes once everyone stops using it. Start a new one to swipe again.',
   },
   internal: {
     heading: 'Something went wrong getting the menu.',
@@ -266,6 +266,12 @@ export default function GroupOrderPage() {
         <p className="text-sm text-muted">
           This can take up to a minute the first time. Everyone else is waiting on the same fetch.
         </p>
+        {/* The cold wait is the one screen with no way out (#412) — the header's
+            back leaves the Session entirely, which is not what "I'll wait
+            somewhere else" means. */}
+        <button className="btn btn-secondary min-h-[48px] px-6" onClick={handleBack}>
+          Back to the Match
+        </button>
       </div>
     );
   } else if (failure === 'not_in_session') {

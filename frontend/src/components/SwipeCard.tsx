@@ -304,7 +304,8 @@ export default function SwipeCard({
             <span className="text-lime font-display font-bold text-3xl tracking-wider">LIKE</span>
           </div>
 
-          {/* NOPE indicator */}
+          {/* PASS indicator — the badge names the same action as the button
+              and the keyboard hint below the Deck (#412). */}
           <div
             className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft rounded-lg ${
               prefersReducedMotion ? '' : 'transform rotate-12'
@@ -312,7 +313,7 @@ export default function SwipeCard({
             style={{ opacity: nopeIntensity }}
           >
             <span className="text-coral-soft font-display font-bold text-3xl tracking-wider">
-              NOPE
+              PASS
             </span>
           </div>
         </>

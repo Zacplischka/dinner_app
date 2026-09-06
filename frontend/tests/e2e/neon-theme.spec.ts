@@ -90,7 +90,7 @@ test('uses the Neon card and field treatments', async ({ page }) => {
   await expect(name).toHaveCSS('border-color', 'rgb(53, 231, 255)');
   await expect(page.locator('label[for="hostName"]')).toHaveCSS('color', 'rgb(53, 231, 255)');
 
-  const submit = page.getByRole('button', { name: 'Create Session' });
+  const submit = page.getByRole('button', { name: 'Create session' });
   await expect(submit).toBeDisabled();
   await expect(submit).toHaveCSS('background-image', 'none');
   await expect(submit).toHaveCSS('background-color', 'rgb(12, 23, 39)');
@@ -122,12 +122,12 @@ test('uses the five-character Neon join field', async ({ page }) => {
   await expect(label).toHaveCSS('color', 'rgb(53, 231, 255)');
   await expect(label).toHaveCSS('text-transform', 'uppercase');
 
-  const code = page.getByLabel('Session Code');
+  const code = page.getByLabel('Session code');
   await code.fill('abcdef');
   await expect(code).toHaveValue('ABCDE');
   await page.getByLabel('Your Name').fill('Zac');
 
-  const join = page.getByRole('button', { name: 'Join Session' });
+  const join = page.getByRole('button', { name: 'Join session' });
   await expect(join).toBeEnabled();
   await expect(join).toHaveCSS('background-image', /rgb\(255, 56, 88\)/);
 });
@@ -135,7 +135,7 @@ test('uses the five-character Neon join field', async ({ page }) => {
 test('uses Neon panels and micro-labels on secondary pages', async ({ page }) => {
   await page.goto('/compare');
 
-  const panel = page.getByRole('heading', { name: 'Find nearby Venues' }).locator('..');
+  const panel = page.getByRole('heading', { name: 'Find nearby venues' }).locator('..');
   await expect(panel).toHaveCSS('border-color', 'rgb(36, 48, 68)');
   await expect(page.locator('label[for="comparison-radius"]')).toHaveCSS(
     'color',

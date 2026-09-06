@@ -184,7 +184,7 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
         timeout: 10_000,
       });
       await expect(
-        p.page.getByText('2 of 3 swiped yes — the closest you got.').first()
+        p.page.getByText('2 of 3 liked it — the closest you got.').first()
       ).toBeVisible();
     }
   });
@@ -321,9 +321,9 @@ test.describe('Session Edge Cases', () => {
 
     try {
       await extraPage.goto('/join');
-      await extraPage.getByLabel(/Session Code/i).fill(sessionCode);
+      await extraPage.getByLabel(/Session code/i).fill(sessionCode);
       await extraPage.getByLabel(/Your Name/i).fill('ExtraGuest');
-      await extraPage.getByRole('button', { name: /Join Session/i }).click();
+      await extraPage.getByRole('button', { name: /Join session/i }).click();
 
       // Should show error about session being full
       await expect(extraPage.getByText(/full|maximum/i)).toBeVisible({
@@ -342,9 +342,9 @@ test.describe('Session Edge Cases', () => {
 
     try {
       await page.goto('/join');
-      await page.getByLabel(/Session Code/i).fill('INVALID');
+      await page.getByLabel(/Session code/i).fill('INVALID');
       await page.getByLabel(/Your Name/i).fill('TestUser');
-      await page.getByRole('button', { name: /Join Session/i }).click();
+      await page.getByRole('button', { name: /Join session/i }).click();
 
       // Should show error
       await expect(page.getByText(/not found|invalid|doesn't exist/i)).toBeVisible({

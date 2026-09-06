@@ -14,7 +14,7 @@ function LoadingCard({ label }: { label: string }) {
   return (
     <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
       <div className="inline-block w-6 h-6 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-2 text-muted">Loading {label}...</p>
+      <p className="mt-2 text-muted">Loading {label}…</p>
     </div>
   );
 }
@@ -78,7 +78,7 @@ export default function FriendsPage() {
       <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
           <div className="inline-block w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-muted">Loading...</p>
+          <p className="mt-4 text-muted">Loading…</p>
         </div>
       </div>
     );
@@ -188,7 +188,7 @@ export default function FriendsPage() {
             <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
               <p className="text-lg text-text">No friends yet</p>
               <p className="text-sm mt-1 text-muted">
-                Friends can be invited straight into your Sessions — no code sharing needed.
+                Friends can be invited straight into your sessions — no code sharing needed.
               </p>
               <button
                 onClick={() => setIsAddModalOpen(true)}
@@ -246,7 +246,7 @@ export default function FriendsPage() {
         )}
       </div>
 
-      {/* Add Friend Modal */}
+      {/* Add friend modal */}
       <AddFriendModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
     </main>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -34,6 +34,7 @@ vi.mock('../../src/services/supabase', () => ({
 }));
 
 import CreateSessionPage from '../../src/pages/CreateSessionPage';
+import { useAuthStore } from '../../src/stores/authStore';
 
 const richmond = {
   latitude: -37.8238936,
@@ -99,7 +100,7 @@ describe('CreateSessionPage location flows', () => {
     // Radius surfaced in kilometres before submission
     expect(screen.getByText('8 km')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
 
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
@@ -129,7 +130,7 @@ describe('CreateSessionPage location flows', () => {
       expect(screen.getByText('Location set')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
 
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
@@ -155,7 +156,7 @@ describe('CreateSessionPage location flows', () => {
       expect(screen.getByText('Location set')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
 
     await waitFor(() => {
       expect(screen.getByText('Lobby route')).toBeTruthy();
@@ -174,7 +175,7 @@ describe('CreateSessionPage location flows', () => {
     renderPage();
 
     fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     expect(await screen.findByText(/Location access is blocked/i)).toBeTruthy();
     // Manual entry offered as the recovery action; name input intact
@@ -188,11 +189,11 @@ describe('CreateSessionPage location flows', () => {
     });
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     expect(await screen.findByText(/couldn’t determine your location/i)).toBeTruthy();
     // Retry action still available
-    expect(screen.getByRole('button', { name: 'Use My Current Location' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Use my current location' })).toBeTruthy();
   });
 
   it('keeps the manual query after an unresolvable area and shows the specific message', async () => {
@@ -229,7 +230,7 @@ describe('CreateSessionPage location flows', () => {
     });
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     await waitFor(() => {
       expect(screen.getByText('Location set')).toBeTruthy();
@@ -247,7 +248,7 @@ describe('CreateSessionPage location flows', () => {
     serviceMocks.reverseGeocode.mockRejectedValue(new TypeError('Failed to fetch'));
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     await waitFor(() => {
       expect(screen.getByText('Location set')).toBeTruthy();
@@ -259,9 +260,63 @@ describe('CreateSessionPage location flows', () => {
     stubGeolocation(undefined);
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     expect(screen.getByText(/browser doesn’t support location/i)).toBeTruthy();
     expect(screen.getByLabelText('Suburb or postcode')).toBeTruthy();
+  });
+});
+
+// #412 — the page echoes the Branch chosen at the entry fork, and a signed-in
+// Host doesn't retype the name their Profile already carries.
+describe('CreateSessionPage identity and Branch copy', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    stubGeolocation();
+    useAuthStore.setState({ user: null, session: null, isAuthenticated: false, isLoading: false });
+  });
+
+  it.each([
+    ['/create?branch=eatout', 'Eating out'],
+    ['/create?branch=takeaway', 'Getting takeaway'],
+    ['/create', 'New session'],
+  ])('titles %s "%s"', (entry, title) => {
+    renderPage(entry);
+    expect(screen.getByRole('heading', { name: title })).toBeTruthy();
+  });
+
+  it('prefills the name field from the signed-in Profile', async () => {
+    renderPage();
+    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
+
+    act(() => {
+      useAuthStore.setState({
+        user: { user_metadata: { full_name: 'Alice Nguyen' } } as never,
+        isAuthenticated: true,
+      });
+    });
+
+    await waitFor(() =>
+      expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Alice Nguyen')
+    );
+  });
+
+  it('never overwrites a name the Host has already typed', async () => {
+    renderPage();
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Bo' } });
+
+    act(() => {
+      useAuthStore.setState({
+        user: { user_metadata: { full_name: 'Alice Nguyen' } } as never,
+        isAuthenticated: true,
+      });
+    });
+
+    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Bo');
+  });
+
+  it('leaves a guest with an empty name field', () => {
+    renderPage();
+    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
   });
 });

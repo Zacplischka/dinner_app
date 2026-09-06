@@ -74,7 +74,7 @@ export default function SessionLobbyPage() {
       <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
           <div className="inline-block w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-muted">Loading session...</p>
+          <p className="mt-4 text-muted">Loading session…</p>
         </div>
       </div>
     );
@@ -84,7 +84,7 @@ export default function SessionLobbyPage() {
     <main className="market-backdrop min-h-screen">
       {/* Navigation Header */}
       <NavigationHeader
-        title="Make the Call"
+        title="Make the call"
         subtitle="Invite friends, then start swiping"
         sessionCode={sessionCode}
         showBackButton
@@ -97,7 +97,7 @@ export default function SessionLobbyPage() {
       <div className="max-w-md mx-auto px-4 py-6 animate-fade-in">
         {/* Session Code Card */}
         <div className="card mb-6">
-          <h2 className="label text-center">Session Code</h2>
+          <h2 className="label text-center">Session code</h2>
           <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
             {sessionCode}
           </div>
@@ -166,7 +166,7 @@ export default function SessionLobbyPage() {
                 <div className="w-10 h-10 bg-surface border border-amber rounded-full flex items-center justify-center">
                   <span className="w-2 h-2 rounded-full bg-amber" />
                 </div>
-                <p className="text-muted italic">Waiting for participant...</p>
+                <p className="text-muted italic">Waiting for participant…</p>
               </div>
             ))}
           </div>

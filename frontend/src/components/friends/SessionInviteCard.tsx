@@ -101,7 +101,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           disabled={isLoading}
           className="min-h-[44px] px-4 py-2 text-sm font-semibold text-ink bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
         >
-          {isLoading ? 'Joining...' : 'Join'}
+          {isLoading ? 'Joining…' : 'Join'}
         </button>
         <button
           onClick={handleDecline}

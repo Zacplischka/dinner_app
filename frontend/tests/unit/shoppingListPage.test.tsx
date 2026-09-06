@@ -95,6 +95,13 @@ describe('ShoppingListPage', () => {
     serviceMocks.getShoppingList.mockResolvedValue(list);
   });
 
+  // Every NavigationHeader on the funnel is sentence case (#412); this one was
+  // the last "Shopping List" left shouting.
+  it('titles the header in sentence case', async () => {
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'Shopping list' })).toBeInTheDocument();
+  });
+
   it('says what the list was scaled to', async () => {
     renderPage();
     expect(await screen.findByText('SCALED FOR 4')).toBeInTheDocument();

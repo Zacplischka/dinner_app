@@ -33,14 +33,14 @@ export default function ConfirmLeaveModal({
   const getTitle = () => {
     switch (context) {
       case 'results':
-        return 'Leave Session?';
+        return 'Leave session?';
       case 'selecting':
-        return 'Leave Session?';
+        return 'Leave session?';
       case 'ordering':
         return 'Leave the basket?';
       case 'lobby':
       default:
-        return 'Leave Session?';
+        return 'Leave session?';
     }
   };
 
@@ -57,30 +57,30 @@ export default function ConfirmLeaveModal({
         return "Your items stay in the basket and still count — whoever taps I'll order still buys them.";
       case 'lobby':
       default:
-        return "You'll leave the Session and the others won't see you in it anymore.";
+        return "You'll leave the session and the others won't see you in it anymore.";
     }
   };
 
   const getStayLabel = () => {
     switch (context) {
       case 'results':
-        return 'Stay Here';
+        return 'Stay here';
       case 'selecting':
-        return 'Keep Swiping';
+        return 'Keep swiping';
       case 'ordering':
-        return 'Back to the Basket';
+        return 'Back to the basket';
       case 'lobby':
       default:
-        return 'Stay in Session';
+        return 'Stay in session';
     }
   };
 
   const getLeaveLabel = () => {
     switch (context) {
       case 'results':
-        return 'Go Home';
+        return 'Go home';
       default:
-        return 'Leave Session';
+        return 'Leave session';
     }
   };
 
@@ -148,7 +148,7 @@ export default function ConfirmLeaveModal({
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-coral border-t-transparent rounded-full animate-spin" />
-                  Leaving...
+                  Leaving…
                 </span>
               ) : (
                 getLeaveLabel()

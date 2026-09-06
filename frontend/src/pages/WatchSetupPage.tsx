@@ -21,6 +21,7 @@ import TmdbCredit from '../components/TmdbCredit';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { validateDisplayName } from '../utils/displayName';
+import { useProfileName } from '../hooks/useProfileName';
 
 /** The media-type chips' words: a `tv` Movie is a "Series" to a person. */
 const MEDIA_TYPE_LABELS: Record<MediaType, string> = { movie: 'Movies', tv: 'Series' };
@@ -32,7 +33,7 @@ function toggle<T>(values: T[], value: T): T[] {
 
 export default function WatchSetupPage() {
   const navigate = useNavigate();
-  const [hostName, setHostName] = useState('');
+  const [hostName, setHostName] = useProfileName();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [decades, setDecades] = useState<Decade[]>([]);
   const [mediaTypes, setMediaTypes] = useState<MediaType[]>([]);
@@ -180,7 +181,7 @@ export default function WatchSetupPage() {
               disabled={isLoading || !hostName.trim()}
               className="btn btn-primary min-h-[48px] w-full text-lg"
             >
-              {isLoading ? 'Dealing movies...' : 'Start swiping'}
+              {isLoading ? 'Dealing movies…' : 'Start swiping'}
             </button>
           </div>
         </form>

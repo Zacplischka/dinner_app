@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -21,6 +21,7 @@ vi.mock('../../src/services/socketBindings', () => socketMocks);
 
 import { ApiClientError } from '../../src/services/apiClient';
 import JoinSessionPage from '../../src/pages/JoinSessionPage';
+import { useAuthStore } from '../../src/stores/authStore';
 
 function renderPage(initialEntry: string) {
   return render(
@@ -35,6 +36,18 @@ function renderPage(initialEntry: string) {
   );
 }
 
+// #412: one case rule across the funnel — "session" is a plain noun on screen,
+// so the header and the button under it can't disagree about it.
+describe('JoinSessionPage copy', () => {
+  it('lowercases session in the header and the submit button alike', () => {
+    renderPage('/join');
+
+    expect(screen.getByRole('heading', { name: 'Join a session' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Join session' })).toBeInTheDocument();
+    expect(screen.queryByText(/Join Session/)).toBeNull();
+  });
+});
+
 describe('JoinSessionPage expired-link probe', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -47,11 +60,11 @@ describe('JoinSessionPage expired-link probe', () => {
     renderPage('/join?code=AB123');
 
     expect(await screen.findByText('This link has expired')).toBeTruthy();
-    expect(screen.queryByLabelText('Session Code')).toBeNull();
+    expect(screen.queryByLabelText('Session code')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Enter a code instead' }));
 
-    expect((screen.getByLabelText('Session Code') as HTMLInputElement).value).toBe('AB123');
+    expect((screen.getByLabelText('Session code') as HTMLInputElement).value).toBe('AB123');
   });
 
   it('keeps the prefilled form when the probe resolves a live session', async () => {
@@ -65,8 +78,8 @@ describe('JoinSessionPage expired-link probe', () => {
     });
     renderPage('/join?code=AB123');
 
-    expect((await screen.findByLabelText('Session Code')) as HTMLInputElement).toBeTruthy();
-    expect((screen.getByLabelText('Session Code') as HTMLInputElement).value).toBe('AB123');
+    expect((await screen.findByLabelText('Session code')) as HTMLInputElement).toBeTruthy();
+    expect((screen.getByLabelText('Session code') as HTMLInputElement).value).toBe('AB123');
     expect(screen.queryByText('This link has expired')).toBeNull();
   });
 
@@ -74,7 +87,7 @@ describe('JoinSessionPage expired-link probe', () => {
     serviceMocks.getSession.mockRejectedValue(new Error('network'));
     renderPage('/join?code=AB123');
 
-    expect((await screen.findByLabelText('Session Code')) as HTMLInputElement).toBeTruthy();
+    expect((await screen.findByLabelText('Session code')) as HTMLInputElement).toBeTruthy();
     expect(screen.queryByText('This link has expired')).toBeNull();
   });
 
@@ -93,9 +106,9 @@ describe('JoinSessionPage late-join landing', () => {
   });
 
   const fillAndSubmit = () => {
-    fireEvent.change(screen.getByLabelText('Session Code'), { target: { value: 'AB123' } });
+    fireEvent.change(screen.getByLabelText('Session code'), { target: { value: 'AB123' } });
     fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Bob' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Join Session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
   };
 
   it('lands a joiner on the Deck when the ack says the session is selecting', async () => {
@@ -132,5 +145,34 @@ describe('JoinSessionPage late-join landing', () => {
     fillAndSubmit();
 
     expect(await screen.findByText('This session has finished')).toBeTruthy();
+  });
+});
+
+// #412 — a signed-in joiner doesn't retype the name their Profile carries.
+describe('JoinSessionPage identity', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useAuthStore.setState({ user: null, session: null, isAuthenticated: false, isLoading: false });
+  });
+
+  it('prefills the name field from the signed-in Profile', async () => {
+    renderPage('/join');
+    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
+
+    act(() => {
+      useAuthStore.setState({
+        user: { user_metadata: { full_name: 'Alice Nguyen' } } as never,
+        isAuthenticated: true,
+      });
+    });
+
+    await waitFor(() =>
+      expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Alice Nguyen')
+    );
+  });
+
+  it('leaves a guest with an empty name field', () => {
+    renderPage('/join');
+    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
   });
 });

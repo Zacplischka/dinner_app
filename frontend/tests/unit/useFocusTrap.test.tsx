@@ -15,8 +15,8 @@ describe('useFocusTrap', () => {
 
     const { rerender } = render(<ConfirmLeaveModal isOpen onClose={vi.fn()} onConfirm={vi.fn()} />);
     const close = screen.getByRole('button', { name: 'Close' });
-    const leave = screen.getByRole('button', { name: 'Leave Session' });
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Stay in Session' }));
+    const leave = screen.getByRole('button', { name: 'Leave session' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Stay in session' }));
 
     leave.focus();
     fireEvent.keyDown(leave, { key: 'Tab' });

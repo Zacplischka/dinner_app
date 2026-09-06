@@ -252,16 +252,21 @@ describe('ComparePage', () => {
     fireEvent.click(pizzaChip);
     expect(pizzaChip).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Pizza Place')).toBeInTheDocument();
-    expect(screen.getByText('1 of 3 Venues · 8 km radius')).toBeInTheDocument();
+    expect(screen.getByText('1 of 3 venues · 8 km radius')).toBeInTheDocument();
     expect(screen.queryByText('Wok This Way')).not.toBeInTheDocument();
     expect(screen.queryByText('Mystery Venue')).not.toBeInTheDocument();
 
     fireEvent.click(pizzaChip);
     expect(screen.getByText('Wok This Way')).toBeInTheDocument();
-    expect(screen.getByText('3 Venues · 8 km radius')).toBeInTheDocument();
+    expect(screen.getByText('3 venues · 8 km radius')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '🥡 Asian Fusion' }));
     fireEvent.click(screen.getByRole('button', { name: '🍽️ All' }));
     expect(screen.getByText('Mystery Venue')).toBeInTheDocument();
+    // No reported Cuisine falls back to the plain noun, lowercase like the
+    // counts beside it (#412).
+    expect(screen.getByRole('button', { name: /Mystery Venue/ })).toHaveTextContent(
+      'venue · No rating'
+    );
   });
 
   it('sorts by distance by default and by rating on request, hiding Top rated without data', () => {
@@ -303,12 +308,12 @@ describe('ComparePage', () => {
     const { container } = renderPage();
 
     expect(container.querySelectorAll('[data-place-id]')).toHaveLength(24);
-    expect(screen.getByText('30 Venues · 8 km radius')).toBeInTheDocument();
+    expect(screen.getByText('30 venues · 8 km radius')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show 6 more Venues' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show 6 more venues' }));
     expect(container.querySelectorAll('[data-place-id]')).toHaveLength(30);
-    expect(screen.queryByRole('button', { name: /more Venues/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: 'Search Venues' })).toHaveValue('Venue');
+    expect(screen.queryByRole('button', { name: /more venues/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search venues' })).toHaveValue('Venue');
   });
 
   it('restores a Cuisine filter and offers one-tap clear when it matches no Venues', () => {
@@ -326,7 +331,7 @@ describe('ComparePage', () => {
     });
     renderPage();
 
-    expect(screen.getByText('No Venues match')).toBeInTheDocument();
+    expect(screen.getByText('No venues match')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
 
     expect(screen.getByText('Pizza Place')).toBeInTheDocument();
@@ -348,7 +353,7 @@ describe('ComparePage', () => {
       ],
     });
     renderPage();
-    const search = screen.getByRole('searchbox', { name: 'Search Venues' });
+    const search = screen.getByRole('searchbox', { name: 'Search venues' });
 
     fireEvent.change(search, { target: { value: 'NIGHT' } });
     expect(screen.getByText('Night Noodle')).toBeInTheDocument();
@@ -388,7 +393,7 @@ describe('ComparePage', () => {
     });
     renderPage();
 
-    const search = screen.getByRole('searchbox', { name: 'Search Venues' });
+    const search = screen.getByRole('searchbox', { name: 'Search venues' });
     expect(search).toHaveValue('night');
     expect(screen.getByRole('button', { name: '🍕 Pizza' })).toHaveAttribute(
       'aria-pressed',
@@ -447,9 +452,9 @@ describe('ComparePage', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
 
-    expect(await screen.findByText('No Venues within 8 km')).toBeInTheDocument();
+    expect(await screen.findByText('No venues within 8 km')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Change area' }));
-    expect(screen.getByRole('heading', { name: 'Find nearby Venues' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Find nearby venues' })).toBeInTheDocument();
   });
 
   it('restores cached Venues and scroll position without a Google refetch', async () => {

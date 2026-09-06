@@ -78,7 +78,7 @@ test.describe('Accessibility - Join Session Page', () => {
 
     // Verify labels exist
     const sessionCodeLabel = joinPage.page.locator('label', {
-      hasText: /Session Code/i,
+      hasText: /Session code/i,
     });
     const nameLabel = joinPage.page.locator('label', { hasText: /Your Name/i });
 

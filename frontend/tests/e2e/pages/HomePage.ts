@@ -30,7 +30,7 @@ export class HomePage extends BasePage {
     this.joinLink = page.getByRole('button', { name: /Join with a code/i });
     this.compareLink = page.getByRole('button', { name: 'Compare delivery prices', exact: true });
     this.eatOutDescription = page.getByText('Swipe nearby restaurants until the group agrees.');
-    this.guestModeText = page.getByText(/Sign in to save history & invite friends/i);
+    this.guestModeText = page.getByText(/Sign in to add friends/i);
   }
 
   async goto(): Promise<void> {

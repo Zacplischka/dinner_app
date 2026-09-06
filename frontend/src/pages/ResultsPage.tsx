@@ -278,7 +278,7 @@ function MatchCard({
 }
 
 // The per-Participant Selection lists, shared by the always-visible
-// "Everyone's Selections" section and the unanimous-vote disclosure (#85).
+// "Everyone's selections" section and the unanimous-vote disclosure (#85).
 function SelectionsList({
   participants,
   allSelections,
@@ -442,7 +442,7 @@ export default function ResultsPage() {
   }, [restaurantNames, restaurants, overlappingOptions]);
 
   // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
-  // the tier's counts read off the same "of" the crown does, and Select Again
+  // the tier's counts read off the same "of" the crown does, and Select again
   // is offered on any crown, not only a Restaurant's.
   const crownPlaceId = pick?.restaurant.placeId ?? crownedEntry?.restaurant.placeId;
   const crownOf = pick?.of ?? crownedEntry?.of ?? participants.length;
@@ -526,28 +526,28 @@ export default function ResultsPage() {
     words: { bestOfMany: string; noneSelected: string }
   ): string => {
     if (crowned.likedBy === crowned.of && matchedEntries.length === 1) {
-      return 'Everyone swiped yes on this one.';
+      return 'Everyone liked this one.';
     }
     if (crowned.likedBy === crowned.of && matchedEntries.length > 1) {
-      return `Everyone swiped yes — ${words.bestOfMany} of your ${matchedEntries.length} matches.`;
+      return `Everyone liked it — ${words.bestOfMany} of your ${matchedEntries.length} matches.`;
     }
     if (crowned.likedBy > 0 && crowned.likedBy < crowned.of) {
-      return `${crowned.likedBy} of ${crowned.of} swiped yes — the closest you got.`;
+      return `${crowned.likedBy} of ${crowned.of} liked it — the closest you got.`;
     }
     return words.noneSelected;
   };
 
   const restaurantWords = {
     bestOfMany: 'best rated',
-    noneSelected: "Nobody swiped yes, so here's the highest rated nearby.",
+    noneSelected: "Nobody liked anything, so here's the highest rated nearby.",
   };
   const recipeWords = {
     bestOfMany: 'the most popular',
-    noneSelected: "Nobody swiped yes, so here's the most popular one.",
+    noneSelected: "Nobody liked anything, so here's the most popular one.",
   };
   const movieWords = {
     bestOfMany: 'best rated',
-    noneSelected: "Nobody swiped yes, so here's the highest rated.",
+    noneSelected: "Nobody liked anything, so here's the highest rated.",
   };
 
   // Share the Top Pick: phones get the native sheet headed by the crowned name
@@ -566,13 +566,13 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
       <NavigationHeader
-        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : 'Top Pick') : 'No Match Found'}
+        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : 'Top Pick') : 'No Match'}
         subtitle={
           crownPlaceId
             ? hasOverlap
               ? 'The Top Pick is locked in'
               : "No unanimous Match — here's the closest one"
-            : `No ${deckNoun} got a yes from everyone`
+            : `No ${deckNoun} got a like from everyone`
         }
         sessionCode={sessionCode}
         showBackButton
@@ -701,13 +701,13 @@ export default function ResultsPage() {
                 />
               </svg>
             </div>
-            <p className="text-muted mb-6">No {deckNoun} were selected by all participants</p>
+            <p className="text-muted mb-6">No {deckNoun} everyone liked</p>
             <button
               onClick={handleRestart}
               disabled={isRestarting}
               className="btn btn-primary px-6 py-3"
             >
-              Try Again
+              Try again
             </button>
           </div>
         )}
@@ -716,7 +716,7 @@ export default function ResultsPage() {
             The crowned placeId is already excluded (see nearMisses above). */}
         {!hasOverlap && nearMisses.length > 0 && (
           <div className="card mb-6">
-            <h2 className="text-xl font-display font-semibold text-text mb-1">So Close</h2>
+            <h2 className="text-xl font-display font-semibold text-text mb-1">So close</h2>
             <p className="text-sm text-muted mb-4">
               All but one of you liked these — worth a second look?
             </p>
@@ -764,7 +764,7 @@ export default function ResultsPage() {
         {isUnanimous ? (
           <details data-unanimous-selections className="card group mb-6">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
-              See everyone&apos;s Selections
+              See everyone&apos;s selections
               <svg
                 className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
                 fill="none"
@@ -791,7 +791,7 @@ export default function ResultsPage() {
         ) : (
           <div className="card mb-6">
             <h2 className="text-xl font-display font-semibold text-text mb-4">
-              Everyone&apos;s Selections
+              Everyone&apos;s selections
             </h2>
             <SelectionsList
               participants={participants}
@@ -817,7 +817,7 @@ export default function ResultsPage() {
               disabled={isRestarting}
               className="btn btn-primary w-full min-h-[48px]"
             >
-              Select Again
+              Select again
             </button>
           )}
 
@@ -826,9 +826,9 @@ export default function ResultsPage() {
           </button>
 
           {/* Leaves for the entry fork — a new Session, not a Restart. The
-              Restart lives above as "Select Again" (#289). */}
+              Restart lives above as "Select again" (#289). */}
           <button onClick={handleNewSession} className="btn btn-ghost w-full">
-            New Session
+            New session
           </button>
         </div>
 

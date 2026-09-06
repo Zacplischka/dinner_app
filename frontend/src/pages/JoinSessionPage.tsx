@@ -7,6 +7,7 @@ import NavigationHeader from '../components/NavigationHeader';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
 import { validateDisplayName } from '../utils/displayName';
+import { useProfileName } from '../hooks/useProfileName';
 
 const cleanSessionCode = (value: string) =>
   value
@@ -18,7 +19,7 @@ export default function JoinSessionPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [sessionCode, setSessionCode] = useState('');
-  const [participantName, setParticipantName] = useState('');
+  const [participantName, setParticipantName] = useProfileName();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [linkDead, setLinkDead] = useState(false);
@@ -104,7 +105,7 @@ export default function JoinSessionPage() {
     return (
       <main className="min-h-screen bg-ink">
         <NavigationHeader
-          title="Join Session"
+          title="Join a session"
           subtitle="Enter the session code shared by your host"
           showBackButton
           onBack={() => navigate('/')}
@@ -116,7 +117,8 @@ export default function JoinSessionPage() {
             </p>
             <h2 className="text-lg font-display font-semibold text-text">This link has expired</h2>
             <p className="text-sm text-muted">
-              Dinder sessions last 30 minutes. This one is over — or the code was mistyped.
+              A session closes once everyone stops using it. This one is over — or the code was
+              mistyped.
             </p>
             <button
               className="btn btn-primary w-full min-h-[48px]"
@@ -139,7 +141,7 @@ export default function JoinSessionPage() {
   return (
     <main className="min-h-screen bg-ink">
       <NavigationHeader
-        title="Join Session"
+        title="Join a session"
         subtitle="Enter the session code shared by your host"
         showBackButton
         onBack={() => navigate('/')}
@@ -151,7 +153,7 @@ export default function JoinSessionPage() {
           {/* Session Code */}
           <div>
             <label htmlFor="sessionCode" className="label">
-              Session Code
+              Session code
             </label>
             <input
               id="sessionCode"
@@ -203,7 +205,7 @@ export default function JoinSessionPage() {
               disabled={isLoading || !sessionCode.trim() || !participantName.trim()}
               className="btn btn-primary w-full min-h-[48px] text-lg"
             >
-              {isLoading ? 'Joining...' : 'Join Session'}
+              {isLoading ? 'Joining…' : 'Join session'}
             </button>
           </div>
         </form>

@@ -22,6 +22,7 @@ import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { fetchNearestCraving } from '../services/apiClient';
 import { validateDisplayName } from '../utils/displayName';
+import { useProfileName } from '../hooks/useProfileName';
 
 /** Toggle membership of a chip set, preserving the rest. */
 function toggle<T>(values: T[], value: T): T[] {
@@ -30,7 +31,7 @@ function toggle<T>(values: T[], value: T): T[] {
 
 export default function CookSetupPage() {
   const navigate = useNavigate();
-  const [hostName, setHostName] = useState('');
+  const [hostName, setHostName] = useProfileName();
   const [mealType, setMealType] = useState<MealType>('main course');
   const [cuisines, setCuisines] = useState<Cuisine[]>([]);
   const [diets, setDiets] = useState<Diet[]>([]);
@@ -273,7 +274,7 @@ export default function CookSetupPage() {
               disabled={isLoading || !hostName.trim()}
               className="btn btn-primary min-h-[48px] w-full text-lg"
             >
-              {isLoading ? 'Dealing recipes...' : 'Start swiping'}
+              {isLoading ? 'Dealing recipes…' : 'Start swiping'}
             </button>
           </div>
         </form>

@@ -211,8 +211,8 @@ export default function NavigationHeader({
                   type="button"
                   onClick={handleCopyCode}
                   className="-my-3 inline-flex min-h-[44px] items-center"
-                  aria-label="Copy Session Code"
-                  title="Copy Session Code"
+                  aria-label="Copy session code"
+                  title="Copy session code"
                 >
                   <span
                     className={`inline-flex items-center px-2 py-0.5 border rounded-full transition-colors ${
