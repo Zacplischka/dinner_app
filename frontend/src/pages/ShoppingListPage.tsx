@@ -417,7 +417,11 @@ export default function ShoppingListPage() {
               </p>
               {/* Prices are read once, at mint, and never again — so date them
                   in the Shopper's words rather than the mint's ("as minted"),
-                  because a week-old total has to read as one. */}
+                  because a week-old total has to read as one. ADR 0010's
+                  "no price-age UI" was amended here for exactly this page: a
+                  list outlives the ≤24 h Freshness Window its truthfulness
+                  rested on. The date is the mint's, and the cache entry behind
+                  a line may be up to a day older — the skew the ADR accepts. */}
               <p className="mt-2 text-xs text-muted">
                 Prices from Woolworths on {day.format(new Date(list.mintedAt))}.
               </p>

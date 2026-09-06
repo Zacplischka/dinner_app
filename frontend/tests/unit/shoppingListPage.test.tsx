@@ -218,9 +218,13 @@ describe('ShoppingListPage', () => {
 
   // "As minted" is the mint's own vocabulary, not the Shopper's: what they
   // need is the day the tills were read, so a week-old total reads as one.
+  // ADR 0010 was amended for this page (#411) — a list outlives the ≤24 h
+  // window that made an undated "Prices from Woolworths" truthful — so the
+  // date is part of the record now, not just the copy.
   it('dates the prices to the day the list was minted', async () => {
     renderPage();
     expect(await screen.findByText(/Prices from Woolworths on Sat, 1 Aug/i)).toBeInTheDocument();
+    expect(screen.queryByText(/as minted/i)).not.toBeInTheDocument();
   });
 
   // The list is meant to be forwarded (#229), and the page is the only place
