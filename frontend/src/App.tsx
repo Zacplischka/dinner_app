@@ -1,9 +1,11 @@
 // React Router configuration and main App component
 
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import ToastProvider from './components/Toast/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
+import Spinner, { LoadingAnnouncer } from './components/Spinner';
+import { useRouteAnnouncement } from './hooks/useRouteAnnouncement';
 import { useSessionStore } from './stores/sessionStore';
 
 // Lazy load route components for code splitting
@@ -29,7 +31,7 @@ function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-ink">
       <div className="text-center">
-        <div className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"></div>
+        <Spinner size="xl" className="text-cyan" label="Loading…" />
         <p className="mt-4 text-muted font-body">Loading…</p>
       </div>
     </div>
@@ -39,9 +41,11 @@ function LoadingFallback() {
 // Routes wrapper - provides smooth page transitions
 function AnimatedRoutes() {
   const location = useLocation();
+  const pageRef = useRef<HTMLDivElement>(null);
+  useRouteAnnouncement(pageRef);
 
   return (
-    <div key={location.pathname} className="animate-slide-up">
+    <div key={location.pathname} ref={pageRef} className="animate-slide-up">
       <Routes location={location}>
         {/* Home with auth */}
         <Route path="/" element={<HomePage />} />
@@ -154,6 +158,9 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <ToastProvider>
+          {/* Above the router on purpose: it must outlive every spinner that
+              publishes into it, or the text arrives with the region. */}
+          <LoadingAnnouncer />
           <Suspense fallback={<LoadingFallback />}>
             <AnimatedRoutes />
           </Suspense>

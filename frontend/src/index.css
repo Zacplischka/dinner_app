@@ -115,7 +115,7 @@
     @apply bg-[#050d19] border border-[#28556b] rounded-xl;
     @apply placeholder:text-muted;
     @apply focus:border-cyan;
-    @apply outline-none transition-all duration-150;
+    @apply transition-all duration-150;
   }
 
   /* Label styling */

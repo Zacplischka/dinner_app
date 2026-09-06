@@ -15,6 +15,7 @@ import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
 import type { DeckEntry } from '@dinder/shared/types';
 import { participantRingClass } from '../utils/participantStyles';
+import Spinner from '../components/Spinner';
 
 interface LiveRevealInput {
   placeId: string;
@@ -378,7 +379,7 @@ export default function SelectionPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
-          <div className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"></div>
+          <Spinner size="xl" className="text-cyan" label={`Finding ${deckNoun}s…`} />
           <p className="mt-4 text-muted font-display text-lg">Finding {deckNoun}s…</p>
         </div>
       </div>
@@ -512,7 +513,7 @@ export default function SelectionPage() {
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <Spinner size="sm" label="Submitting…" />
                     Submitting…
                   </span>
                 ) : (
@@ -773,7 +774,7 @@ export default function SelectionPage() {
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <Spinner size="sm" label="Submitting…" />
                   Submitting…
                 </span>
               ) : (

@@ -92,7 +92,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
               <button
                 type="submit"
                 disabled={isSearching || !email.trim()}
-                className="min-h-[44px] px-4 py-2 bg-coral text-white font-semibold rounded-xl hover:brightness-110 disabled:bg-line disabled:text-muted disabled:cursor-not-allowed transition-all shadow-glow-coral disabled:shadow-none"
+                className="min-h-[44px] px-4 py-2 bg-coral text-ink font-semibold rounded-xl hover:brightness-110 disabled:bg-line disabled:text-muted disabled:cursor-not-allowed transition-all shadow-glow-coral disabled:shadow-none"
               >
                 {isSearching ? 'Searching…' : 'Search'}
               </button>

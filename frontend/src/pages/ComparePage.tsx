@@ -37,7 +37,7 @@ function cuisineEmoji(cuisine: string) {
 
 const sortChipClass = (active: boolean) =>
   `min-h-[44px] rounded-full border px-4 py-2 text-sm font-semibold ${
-    active ? 'border-coral bg-coral text-white' : 'border-line bg-raised text-text'
+    active ? 'border-coral bg-coral text-ink' : 'border-line bg-raised text-text'
   }`;
 
 export default function ComparePage() {

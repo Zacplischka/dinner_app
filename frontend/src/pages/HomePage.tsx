@@ -86,7 +86,7 @@ export default function HomePage() {
                 />
               </svg>
               {notificationCount > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-coral text-xs font-bold text-white">
+                <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-coral text-xs font-bold text-ink">
                   {notificationCount > 9 ? '9+' : notificationCount}
                 </span>
               )}

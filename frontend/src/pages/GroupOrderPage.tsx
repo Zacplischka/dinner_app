@@ -18,6 +18,7 @@ import {
 import { participantRingClass } from '../utils/participantStyles';
 import { formatPrice, parseDollarsToCents } from '../utils/money';
 import { toast } from '../hooks/useToast';
+import Spinner from '../components/Spinner';
 
 const PLATFORM_LABEL = { ubereats: 'Uber Eats', doordash: 'DoorDash' } as const;
 
@@ -257,11 +258,7 @@ export default function GroupOrderPage() {
   } else if (failure === 'cold') {
     content = (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <div
-          className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"
-          role="status"
-          aria-label="Loading"
-        />
+        <Spinner size="xl" className="text-cyan" label="Getting tonight's menu…" />
         <p className="text-lg font-semibold text-text">Getting tonight&apos;s menu…</p>
         <p className="text-sm text-muted">
           This can take up to a minute the first time. Everyone else is waiting on the same fetch.

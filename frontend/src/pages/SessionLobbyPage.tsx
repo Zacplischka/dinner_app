@@ -10,6 +10,7 @@ import { useShareLink } from '../hooks/useShareLink';
 import NavigationHeader from '../components/NavigationHeader';
 import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
+import Spinner from '../components/Spinner';
 
 export default function SessionLobbyPage() {
   const navigate = useNavigate();
@@ -73,7 +74,7 @@ export default function SessionLobbyPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
-          <div className="inline-block w-8 h-8 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
+          <Spinner size="lg" className="text-cyan" label="Loading session…" />
           <p className="mt-4 text-muted">Loading session…</p>
         </div>
       </div>

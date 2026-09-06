@@ -4,6 +4,7 @@
 
 import { useRef } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import Spinner from './Spinner';
 
 interface ConfirmLeaveModalProps {
   isOpen: boolean;
@@ -147,7 +148,7 @@ export default function ConfirmLeaveModal({
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-coral border-t-transparent rounded-full animate-spin" />
+                  <Spinner size="sm" label="Leaving…" />
                   Leaving…
                 </span>
               ) : (
