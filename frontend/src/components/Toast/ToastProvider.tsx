@@ -12,9 +12,19 @@ interface ToastProviderProps {
 export default function ToastProvider({ children }: ToastProviderProps) {
   const { toasts, removeToast } = useToastStore();
 
+  // A polite live region is only announced when text changes inside a node
+  // that was already in the tree — a region minted with its card stays silent.
+  // So one region outlives every toast and carries the newest non-error
+  // message; errors interrupt through their own role="alert" on the card.
+  const politeMessage = toasts.filter((t) => t.type !== 'error').at(-1)?.message ?? '';
+
   return (
     <>
       {children}
+
+      <p role="status" aria-live="polite" className="sr-only">
+        {politeMessage}
+      </p>
 
       {/* Toast Container */}
       <div

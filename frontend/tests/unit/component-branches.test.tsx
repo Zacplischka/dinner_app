@@ -185,7 +185,7 @@ describe('component and hook branch coverage', () => {
 
     // The card is tappable; the full-width band it sits in is not — that band
     // spans the viewport's bottom edge and used to swallow chip taps there.
-    const card = screen.getByRole('status');
+    const card = screen.getByLabelText('Dismiss notification').closest('div')!;
     expect(card.className).toContain('pointer-events-auto');
     expect(card.parentElement!.className).not.toContain('pointer-events-auto');
 
