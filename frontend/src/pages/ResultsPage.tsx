@@ -13,8 +13,8 @@ import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { useShareLink } from '../hooks/useShareLink';
 import TmdbCredit from '../components/TmdbCredit';
+import MovieLinks from '../components/MovieLinks';
 import { participantRingClass } from '../utils/participantStyles';
-import { tmdbPath } from '../utils/tmdb';
 import {
   DeliveryActions,
   generateUberEatsUrl,
@@ -98,13 +98,6 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
   ]
     .filter(Boolean)
     .join(' · ');
-  const trailerHref =
-    movie.trailerUrl ??
-    `https://www.youtube.com/results?search_query=${encodeURIComponent(
-      [movie.name, movie.year, 'trailer'].filter(Boolean).join(' ')
-    )}`;
-  const tmdb = tmdbPath(movie.placeId);
-  const whereToWatchHref = tmdb && `https://www.themoviedb.org/${tmdb}/watch?locale=AU`;
   return (
     <div
       data-match-card
@@ -131,37 +124,7 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
       )}
       <p className="text-sm text-muted mt-2">{reason}</p>
 
-      <a
-        href={trailerHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        // An anchor is inline; .btn assumes a button's box, so give it one.
-        className="btn btn-primary mt-3 flex min-h-[48px] w-full items-center justify-center"
-      >
-        Watch trailer
-      </a>
-      <div className="mt-2 flex justify-center gap-6">
-        {whereToWatchHref && (
-          <a
-            href={whereToWatchHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block py-2 text-center text-sm text-cyan underline"
-          >
-            Where to watch
-          </a>
-        )}
-        {movie.imdbId && (
-          <a
-            href={`https://www.imdb.com/title/${movie.imdbId}/`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block py-2 text-center text-sm text-cyan underline"
-          >
-            IMDb
-          </a>
-        )}
-      </div>
+      <MovieLinks movie={movie} />
     </div>
   );
 }
