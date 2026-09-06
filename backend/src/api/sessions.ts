@@ -11,8 +11,10 @@ import {
   BRANCHES,
   DECADES,
   GENRES,
+  MAX_DECK_SIZE,
   MAX_HEADCOUNT,
   MEDIA_TYPES,
+  MIN_DECK_SIZE,
   SESSION_CODE_PATTERN,
   type ApiError,
   type CreateSessionRequest,
@@ -57,6 +59,9 @@ export function createSessionsRouter(sessionService: SessionService) {
       craving: cravingSchema.optional(),
       headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
       mood: moodSchema.optional(),
+      // Rejected, never clamped (#415): a size outside the range is a client
+      // bug, and silently dealing a different Deck would hide it.
+      deckSize: z.number().int().min(MIN_DECK_SIZE).max(MAX_DECK_SIZE).optional(),
     })
     // A Cook Session has nothing to deal without its setup. This narrows what
     // the endpoint accepts, which ADR 0007 would normally stage over two
@@ -124,6 +129,7 @@ export function createSessionsRouter(sessionService: SessionService) {
         craving,
         headcount,
         mood,
+        deckSize,
       }: CreateSessionRequest = validation.data;
 
       // Default searchRadiusMiles to 5 if location is provided but radius is not
@@ -150,7 +156,7 @@ export function createSessionsRouter(sessionService: SessionService) {
         NO_MOVIES_FOUND: 'no_movies_found',
       };
       const session = await sessionService
-        .createSession(hostName, location, radius, branch, cook, watch)
+        .createSession(hostName, location, radius, branch, cook, watch, deckSize)
         .catch((error: unknown) => {
           const reason = error instanceof DomainError ? expectedEmpty[error.code] : undefined;
           if (reason) {

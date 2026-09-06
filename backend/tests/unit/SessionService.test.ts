@@ -85,7 +85,7 @@ describe('SessionService', () => {
         headcount: 4,
       });
 
-      expect(dealRecipeDeck).toHaveBeenCalledWith(craving);
+      expect(dealRecipeDeck).toHaveBeenCalledWith(craving, undefined);
       expect(searchNearbyRestaurants).not.toHaveBeenCalled();
       expect(session.restaurantCount).toBe(2);
       expect((await store.getDeck(session.sessionCode)).entries).toEqual(
@@ -265,6 +265,112 @@ describe('SessionService', () => {
     });
   });
 
+  describe('the Host-chosen Deck size', () => {
+    const craving = {
+      mealType: 'main course' as const,
+      cuisines: ['italian' as const],
+      diets: [],
+    };
+    const mood: Mood = { genres: ['Comedy'], decades: [] };
+    const recipes: Recipe[] = [
+      { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
+    ];
+    const movies: Movie[] = [{ kind: 'movie', placeId: 'Q1', name: 'Clueless', rating: 81 }];
+
+    it('deals a Cook Deck at the size the Host asked for, and again on Restart', async () => {
+      dealRecipeDeck.mockResolvedValue({ entries: recipes, recipeSourceDown: false });
+      redealRecipeDeck.mockResolvedValue(recipes);
+
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'cook',
+        { craving, headcount: 2 },
+        undefined,
+        8
+      );
+      expect(dealRecipeDeck).toHaveBeenCalledWith(craving, 8);
+
+      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
+      await SessionService.submitSelections(sessionCode, 'alice', ['rec1']);
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      expect(redealRecipeDeck.mock.calls[0][2]).toBe(8);
+    });
+
+    it('deals a Watch Deck at the size the Host asked for, and again on Restart', async () => {
+      dealMovieDeck.mockReturnValue(movies);
+      redealMovieDeck.mockReturnValue(movies);
+
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'watch',
+        undefined,
+        { mood },
+        8
+      );
+      expect(dealMovieDeck).toHaveBeenCalledWith(mood, 8);
+
+      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
+      await SessionService.submitSelections(sessionCode, 'alice', ['Q1']);
+      await SessionService.restartSession(sessionCode, 'alice');
+
+      expect(redealMovieDeck.mock.calls[0][2]).toBe(8);
+    });
+
+    it('caps a Restaurant search at the size the Host asked for', async () => {
+      searchNearbyRestaurants.mockResolvedValue([
+        { kind: 'restaurant', placeId: 'place1', name: 'Pizza Palace', rating: 4.5 },
+      ]);
+
+      await SessionService.createSession(
+        'Alice',
+        { latitude: 1, longitude: 2 },
+        5,
+        'eatout',
+        undefined,
+        undefined,
+        8
+      );
+
+      expect(searchNearbyRestaurants.mock.calls[0][0]).toMatchObject({ maxResults: 8 });
+    });
+
+    it('stores the size so a Restart deals the same Deck again', async () => {
+      dealMovieDeck.mockReturnValue(movies);
+
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'watch',
+        undefined,
+        { mood },
+        8
+      );
+
+      expect((await store.readSession(sessionCode))?.deckSize).toBe(8);
+    });
+
+    it('leaves the Branch default alone when the Host chose nothing', async () => {
+      dealRecipeDeck.mockResolvedValue({ entries: recipes, recipeSourceDown: false });
+
+      const { sessionCode } = await SessionService.createSession(
+        'Alice',
+        undefined,
+        undefined,
+        'cook',
+        { craving, headcount: 2 }
+      );
+
+      expect(dealRecipeDeck).toHaveBeenCalledWith(craving, undefined);
+      expect((await store.readSession(sessionCode))?.deckSize).toBeUndefined();
+    });
+  });
+
   describe('createSession in the Watch Branch', () => {
     const mood: Mood = { genres: ['Comedy'], decades: ['1990s'] };
     const deck: Movie[] = [
@@ -291,7 +397,7 @@ describe('SessionService', () => {
         { mood }
       );
 
-      expect(dealMovieDeck).toHaveBeenCalledWith(mood);
+      expect(dealMovieDeck).toHaveBeenCalledWith(mood, undefined);
       expect(searchNearbyRestaurants).not.toHaveBeenCalled();
       expect(dealRecipeDeck).not.toHaveBeenCalled();
       expect(session.restaurantCount).toBe(2);

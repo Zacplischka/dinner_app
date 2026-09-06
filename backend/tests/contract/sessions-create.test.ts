@@ -125,6 +125,15 @@ describe('Contract Test: POST /api/sessions', () => {
     expect(response.body.code).toBe('VALIDATION_ERROR');
   });
 
+  it.each([2, 51, 8.5, 'lots'])('rejects a deckSize of %p with 400 (#415)', async (deckSize) => {
+    const response = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', deckSize })
+      .expect(400);
+
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+  });
+
   it('should generate unique session codes for concurrent requests', async () => {
     const requests = Array.from({ length: 5 }, () =>
       request(app).post('/api/sessions').send({ hostName: 'TestUser' })

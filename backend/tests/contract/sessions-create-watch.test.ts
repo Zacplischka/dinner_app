@@ -32,6 +32,20 @@ describe('Contract Test: POST /api/sessions (Watch Branch)', () => {
     expect(response.body).not.toHaveProperty('headcount');
   });
 
+  it('deals the Deck size the Host chose, and the same again on Restart (#415)', async () => {
+    const { body: session } = await request(app)
+      .post('/api/sessions')
+      .send({ hostName: 'Alice', branch: 'watch', mood, deckSize: 8 })
+      .expect(201);
+
+    expect(session.restaurantCount).toBe(8);
+
+    const { body: options } = await request(app)
+      .get(`/api/options/${session.sessionCode}`)
+      .expect(200);
+    expect(options.restaurants).toHaveLength(8);
+  });
+
   it('deals Movies through the card union — title, poster and facts, kind movie', async () => {
     const { body: session } = await request(app)
       .post('/api/sessions')

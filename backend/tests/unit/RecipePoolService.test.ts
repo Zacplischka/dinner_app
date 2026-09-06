@@ -344,6 +344,39 @@ describe('redeal — the Restart deal (#260)', () => {
   });
 });
 
+describe('the Deck size the Host chose (#415)', () => {
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+  });
+
+  const key = cravingPoolKey(pasta);
+
+  it('deals the size the Host asked for instead of the configured default', async () => {
+    const { service: pool } = service(recipeHits(60));
+
+    await expect(pool.dealDeck(pasta, 8).then((d) => d.entries)).resolves.toHaveLength(8);
+  });
+
+  it('deals the same size again on Restart', async () => {
+    const { service: pool } = service(recipeHits(60));
+    const wiped = (await pool.dealDeck(pasta, 8)).entries;
+
+    await expect(pool.redeal(key, wiped, 8)).resolves.toHaveLength(8);
+  });
+
+  it('never exceeds supply — a thin pool deals what it has', async () => {
+    const { service: pool } = service(recipeHits(6));
+
+    await expect(pool.dealDeck(pasta, 40).then((d) => d.entries)).resolves.toHaveLength(6);
+  });
+
+  it('falls back to the configured default when the Host chose nothing', async () => {
+    const { service: pool } = service(recipeHits(60));
+
+    await expect(pool.dealDeck(pasta).then((d) => d.entries)).resolves.toHaveLength(15);
+  });
+});
+
 describe('the two seams the deal is split into (#327)', () => {
   beforeEach(async () => {
     await new RedisMock().flushall();

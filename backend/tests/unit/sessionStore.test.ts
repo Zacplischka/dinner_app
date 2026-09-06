@@ -77,6 +77,14 @@ describe('SessionStore', () => {
       expect((await store.readSession('TEST2'))?.mood).toBeUndefined();
     });
 
+    it('round-trips the Deck size the Host chose, and undefined when they chose none', async () => {
+      await store.createSession(sessionCode, { hostId: 'host-1', hostName: 'Alice', deckSize: 8 });
+      await store.createSession('TEST2', { hostId: 'host-2', hostName: 'Bob' });
+
+      expect((await store.readSession(sessionCode))?.deckSize).toBe(8);
+      expect((await store.readSession('TEST2'))?.deckSize).toBeUndefined();
+    });
+
     it('omits location when not provided', async () => {
       await createTestSession(false);
       const session = await store.readSession(sessionCode);

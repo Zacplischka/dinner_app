@@ -961,6 +961,77 @@ describe('RestaurantSearchService', () => {
     });
   });
 
+  describe('searchNearbyRestaurants deck size', () => {
+    let fetchMock: any;
+
+    beforeEach(() => {
+      fetchMock = vi.fn();
+      global.fetch = fetchMock;
+      vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function pageOf(count: number) {
+      return Array.from({ length: count }, (_, i) => ({
+        id: `place-${i}`,
+        displayName: { text: `Restaurant ${i}` },
+        rating: 5 - i / 100,
+        primaryType: 'restaurant',
+      }));
+    }
+
+    function answerWith(count: number) {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ places: pageOf(count) }),
+        headers: { get: () => null },
+      });
+    }
+
+    it('cuts the Deck to the size the Host asked for (#415)', async () => {
+      answerWith(20);
+
+      const result = await RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+        maxResults: 8,
+      });
+
+      expect(result).toHaveLength(8);
+      // The cut comes after the sort, so it keeps the best-rated eight.
+      expect(result[0].placeId).toBe('place-0');
+    });
+
+    it('deals what supply there is when it is thinner than the ask', async () => {
+      answerWith(3);
+
+      const result = await RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+        maxResults: 8,
+      });
+
+      expect(result).toHaveLength(3);
+    });
+
+    it('falls back to one Places page when the Host chose nothing', async () => {
+      answerWith(20);
+
+      const result = await RestaurantSearchService.searchNearbyRestaurants({
+        latitude: 37.7749,
+        longitude: -122.4194,
+        radiusMeters: 8046.72,
+      });
+
+      expect(result).toHaveLength(20);
+    });
+  });
+
   describe('searchNearbyVenues', () => {
     let fetchMock: any;
 
