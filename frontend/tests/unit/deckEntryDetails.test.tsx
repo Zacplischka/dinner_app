@@ -3,7 +3,15 @@
 // is clipped so the swipe-stack geometry (#75) holds, so the details go over the
 // Deck rather than growing in place.
 
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DeckEntry, Movie, Recipe, Restaurant } from '@dinder/shared/types';
@@ -140,6 +148,24 @@ describe('Deck Entry details sheet — Movie', () => {
 
     await screen.findByRole('dialog');
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  // On a phone the tap that opens the sheet is followed by the browser's
+  // compatibility click, hit-tested where the finger was — by then the sheet's
+  // full-screen backdrop is mounted there and its click closes the sheet in the
+  // same gesture. jsdom sends no compatibility click, so the seam asserted here
+  // is the suppression itself.
+  it('suppresses the compatibility click that would close the sheet on touch', async () => {
+    renderSelectionPage();
+    await screen.findByText('Alien');
+
+    const card = cardFor('Alien');
+    fireEvent.touchStart(card, { touches: [{ clientX: 120 }] });
+    const touchEnd = createEvent.touchEnd(card, { changedTouches: [{ clientX: 120 }] });
+    fireEvent(card, touchEnd);
+
+    await screen.findByRole('dialog');
+    expect(touchEnd.defaultPrevented).toBe(true);
   });
 
   it('swipes on a drag past the threshold and opens nothing', async () => {

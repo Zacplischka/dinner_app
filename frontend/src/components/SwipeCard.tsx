@@ -8,6 +8,8 @@ import RetryingPhoto from './RetryingPhoto';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import TmdbCredit from './TmdbCredit';
+import GenrePills from './GenrePills';
+import { movieMeta } from '../utils/tmdb';
 import { hasDetails } from './DeckEntryDetails';
 
 interface SwipeCardProps {
@@ -93,36 +95,46 @@ export default function SwipeCard({
     [dragState.isDragging]
   );
 
-  const handleTouchEnd = useCallback(() => {
-    if (!dragState.isDragging) return;
-    const action = releaseAction(deltaX);
+  const handleTouchEnd = useCallback(
+    (e?: React.TouchEvent) => {
+      if (!dragState.isDragging) return;
+      const action = releaseAction(deltaX);
 
-    if (action === 'like') {
-      setSwipeDirection('right');
-      setTimeout(onSwipeRight, 300);
-      // Keep the release offset so the fly-off animation starts from the lift point.
-      setDragState((prev) => ({ ...prev, isDragging: false }));
-      return;
-    }
-    if (action === 'pass') {
-      setSwipeDirection('left');
-      setTimeout(onSwipeLeft, 300);
-      setDragState((prev) => ({ ...prev, isDragging: false }));
-      return;
-    }
+      if (action === 'like') {
+        setSwipeDirection('right');
+        setTimeout(onSwipeRight, 300);
+        // Keep the release offset so the fly-off animation starts from the lift point.
+        setDragState((prev) => ({ ...prev, isDragging: false }));
+        return;
+      }
+      if (action === 'pass') {
+        setSwipeDirection('left');
+        setTimeout(onSwipeLeft, 300);
+        setDragState((prev) => ({ ...prev, isDragging: false }));
+        return;
+      }
 
-    // Below threshold: spring back to centre.
-    setDragState({
-      isDragging: false,
-      startX: 0,
-      currentX: 0,
-    });
-    // A mouse release runs this twice — React's onMouseUp and the window
-    // listener share one stale isDragging — so the open must be idempotent. It
-    // is: the caller only stores this entry as the open one, and storing the
-    // same entry twice is one open.
-    if (action === 'tap') openDetails?.();
-  }, [dragState.isDragging, deltaX, onSwipeLeft, onSwipeRight, openDetails]);
+      // Below threshold: spring back to centre.
+      setDragState({
+        isDragging: false,
+        startX: 0,
+        currentX: 0,
+      });
+      if (action === 'tap') {
+        // A touch tap is followed by the browser's compatibility click, which
+        // hit-tests where the finger was — by then the sheet's full-screen
+        // backdrop is mounted there, and its click closes what this tap just
+        // opened. React's touchend listener is not passive, so this takes.
+        e?.preventDefault();
+        // A mouse release runs this twice — React's onMouseUp and the window
+        // listener share one stale isDragging — so the open must be
+        // idempotent. It is: the caller only stores this entry as the open
+        // one, and storing the same entry twice is one open.
+        openDetails?.();
+      }
+    },
+    [dragState.isDragging, deltaX, onSwipeLeft, onSwipeRight, openDetails]
+  );
 
   // A cancelled touch (a system gesture taking over, a call arriving) never
   // delivers touchend, so without this the card stays stuck mid-drag and the
@@ -227,14 +239,8 @@ export default function SwipeCard({
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
   const priceLevel = restaurant?.priceLevel;
-  const movieMeta = [
-    movie?.year,
-    movie?.mediaType === 'tv'
-      ? movie.seasons && `${movie.seasons} season${movie.seasons === 1 ? '' : 's'}`
-      : movie?.runtimeMinutes && `${movie.runtimeMinutes} min`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  // Without the score: the card draws that as its own chip, below.
+  const meta = movie && movieMeta(movie, false);
 
   return (
     <div
@@ -376,18 +382,7 @@ export default function SwipeCard({
           <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
         )}
 
-        {movie?.genres && movie.genres.length > 0 && (
-          <ul className="mb-3 flex flex-wrap gap-1.5" aria-label="Genres">
-            {movie.genres.map((genre) => (
-              <li
-                key={genre}
-                className="rounded-full border border-amber/40 px-2 py-0.5 text-xs font-bold text-amber"
-              >
-                {genre}
-              </li>
-            ))}
-          </ul>
-        )}
+        {movie && <GenrePills genres={movie.genres} className="mb-3" />}
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-text/80">
           {movie?.rating !== undefined && (
@@ -396,7 +391,7 @@ export default function SwipeCard({
             </span>
           )}
 
-          {movieMeta && <span className="text-muted">{movieMeta}</span>}
+          {meta && <span className="text-muted">{meta}</span>}
 
           {restaurant?.rating && (
             <div

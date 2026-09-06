@@ -16,6 +16,7 @@ import TmdbCredit from '../components/TmdbCredit';
 import MovieLinks from '../components/MovieLinks';
 import { participantRingClass } from '../utils/participantStyles';
 import { formatPriceLevel } from '../utils/money';
+import { movieMeta } from '../utils/tmdb';
 import {
   DeliveryActions,
   generateUberEatsUrl,
@@ -90,15 +91,7 @@ function RecipeCrown({
 // ponytail: MovieCrown beside RecipeCrown; fold both into one EntryCrown on a fourth kind.
 function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
   const series = movie.mediaType === 'tv';
-  const meta = [
-    movie.year,
-    series
-      ? movie.seasons && `${movie.seasons} season${movie.seasons === 1 ? '' : 's'}`
-      : movie.runtimeMinutes && `${movie.runtimeMinutes} min`,
-    movie.rating !== undefined && `${movie.rating}% on TMDB`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = movieMeta(movie);
   return (
     <div
       data-match-card

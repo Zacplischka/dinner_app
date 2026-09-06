@@ -13,7 +13,9 @@ import { isMovie, isRestaurant } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { formatPriceLevel, priceLevelLabel } from '../utils/money';
+import { movieMeta } from '../utils/tmdb';
 import RetryingPhoto from './RetryingPhoto';
+import GenrePills from './GenrePills';
 import MovieLinks from './MovieLinks';
 import TmdbCredit from './TmdbCredit';
 
@@ -39,15 +41,7 @@ export default function DeckEntryDetails({ entry, onClose }: DeckEntryDetailsPro
 
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
-  const meta = [
-    movie?.year,
-    movie?.mediaType === 'tv'
-      ? movie.seasons && `${movie.seasons} season${movie.seasons === 1 ? '' : 's'}`
-      : movie?.runtimeMinutes && `${movie.runtimeMinutes} min`,
-    movie?.rating !== undefined && `${movie.rating}% on TMDB`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = movie && movieMeta(movie);
   // `query` is required beside the id, and it is what a viewer sees if the id
   // no longer resolves. Nothing new on the wire: both fields are already there.
   const mapsHref =
@@ -117,18 +111,7 @@ export default function DeckEntryDetails({ entry, onClose }: DeckEntryDetailsPro
             <p className="mt-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
           )}
 
-          {movie?.genres && movie.genres.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Genres">
-              {movie.genres.map((genre) => (
-                <li
-                  key={genre}
-                  className="rounded-full border border-amber/40 px-2 py-0.5 text-xs font-bold text-amber"
-                >
-                  {genre}
-                </li>
-              ))}
-            </ul>
-          )}
+          {movie && <GenrePills genres={movie.genres} className="mt-3" />}
 
           {meta && <p className="mt-2 text-sm text-muted">{meta}</p>}
 
