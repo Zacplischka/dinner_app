@@ -6,6 +6,7 @@ import ToastProvider from './components/Toast/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Spinner, { LoadingAnnouncer } from './components/Spinner';
 import { useRouteAnnouncement } from './hooks/useRouteAnnouncement';
+import RequireSession from './components/RequireSession';
 import { useSessionStore } from './stores/sessionStore';
 
 // Lazy load route components for code splitting
@@ -66,17 +67,21 @@ function AnimatedRoutes() {
         {/* Join existing session */}
         <Route path="/join" element={<JoinSessionPage />} />
 
-        {/* Session lobby (waiting room) */}
-        <Route path="/session/:sessionCode" element={<SessionLobbyPage />} />
+        {/* Every Session screen, behind the one guard that sends a URL with no
+            matching Session in the store to Join with the code prefilled (#403) */}
+        <Route path="/session/:sessionCode" element={<RequireSession />}>
+          {/* Session lobby (waiting room) */}
+          <Route index element={<SessionLobbyPage />} />
 
-        {/* Selection screen */}
-        <Route path="/session/:sessionCode/select" element={<SelectionPage />} />
+          {/* Selection screen */}
+          <Route path="select" element={<SelectionPage />} />
 
-        {/* Results screen */}
-        <Route path="/session/:sessionCode/results" element={<ResultsPage />} />
+          {/* Results screen */}
+          <Route path="results" element={<ResultsPage />} />
 
-        {/* Group Order screen */}
-        <Route path="/session/:sessionCode/order" element={<GroupOrderPage />} />
+          {/* Group Order screen */}
+          <Route path="order" element={<GroupOrderPage />} />
+        </Route>
 
         {/* The Shopping List: its own URL, outliving the Session that minted
             it. Deliberately not nested under /session — holding the link is

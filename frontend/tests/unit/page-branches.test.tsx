@@ -260,6 +260,44 @@ describe('page branch coverage', () => {
     }
   });
 
+  // #403: a fetch that fails leaves the lobby showing a stale code and no
+  // countdown — say so rather than log to a console nobody has open.
+  it('surfaces a failed session fetch once, not once per roster change', async () => {
+    useToastStore.setState({ toasts: [] });
+    serviceMocks.getSession
+      .mockRejectedValueOnce(new Error('Session not found'))
+      .mockRejectedValueOnce(new Error('Session not found'));
+
+    renderApp('/session/AB123');
+
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts).toContainEqual(
+        expect.objectContaining({ message: 'Session not found', type: 'error' })
+      )
+    );
+    const fetches = serviceMocks.getSession.mock.calls.length;
+
+    // A join re-reads the Session for its new expiry; a still-failing fetch
+    // must not stack a second toast.
+    act(() => {
+      useSessionStore.setState((state) => ({
+        participants: [
+          ...state.participants,
+          {
+            participantId: 'p-late',
+            displayName: 'Late',
+            sessionCode: 'AB123',
+            joinedAt: Date.now(),
+            hasSubmitted: false,
+            isHost: false,
+          },
+        ],
+      }));
+    });
+    await waitFor(() => expect(serviceMocks.getSession.mock.calls.length).toBeGreaterThan(fetches));
+    expect(useToastStore.getState().toasts).toHaveLength(1);
+  });
+
   it('starts selection through the shared session event and follows its state', async () => {
     renderApp('/session/AB123');
 
