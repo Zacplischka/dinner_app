@@ -337,12 +337,14 @@ describe('GroupOrderPage', () => {
     expect(screen.getByText('SELECT SCREEN')).toBeInTheDocument();
   });
 
-  it('renders the expired screen with Start over instead of navigating', async () => {
-    seedStore({ sessionStatus: 'expired' });
-    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+  it('renders the expired screen with Start over when the Session is already gone', async () => {
+    openOrderMock.mockResolvedValue({
+      success: false,
+      error: { code: 'SESSION_NOT_FOUND', message: 'gone' },
+    });
     renderPage();
 
-    expect(screen.getByText('This session has expired.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('This session has expired.')).toBeInTheDocument());
     expect(
       screen.getByText(
         'A session closes once everyone stops using it. Start a new one to swipe again.'
@@ -351,6 +353,22 @@ describe('GroupOrderPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
     expect(screen.getByText('HOME SCREEN')).toBeInTheDocument();
+  });
+
+  // #402: the header banner announces it, but the basket must also go inert —
+  // add/remove are fire-and-forget, so a live basket after expiry is a screen
+  // full of buttons that silently do nothing.
+  it('replaces a live basket when the Session expires mid-order', async () => {
+    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+    renderPage();
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+
+    act(() => useSessionStore.getState().setSessionStatus('expired'));
+
+    expect(screen.getByText('This session has expired.')).toBeInTheDocument();
+    expect(screen.queryByText('In the basket')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Add Margherita/ })).toBeNull();
+    expect(screen.getByRole('alert')).toHaveTextContent('This session has expired');
   });
 
   const twoParticipants = [

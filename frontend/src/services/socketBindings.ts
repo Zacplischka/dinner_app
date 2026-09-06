@@ -278,10 +278,13 @@ const socketConfig: SocketConfig = {
       useSessionStore.getState().setSessionStatus('selecting');
     },
 
-    // session:expired - Session expired due to inactivity
+    // session:expired - Session expired due to inactivity. The status drives
+    // the header's expired banner on every Session screen; the toast is the
+    // one interruption, fired here because the event arrives exactly once.
     'session:expired': (event: SessionExpiredEvent) => {
       log('Session expired:', event);
       useSessionStore.getState().setSessionStatus('expired');
+      toast.error('This session has expired');
     },
 
     // error - Server-side error
