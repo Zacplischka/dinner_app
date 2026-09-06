@@ -44,7 +44,9 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
 // "Sam", "Sam and Priya", "Sam, Priya and Lee". Names are fine here: CONTEXT.md
 // forbids them only in Near Miss counts, and the lobby already shows the roster.
 export const listNames = (names: string[]): string =>
-  names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  names.length <= 1
+    ? names.join('')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 
 export default function SelectionPage() {
   const navigate = useNavigate();
@@ -74,7 +76,14 @@ export default function SelectionPage() {
   const [error, setError] = useState('');
   const [submittedCount, setSubmittedCount] = useState(0);
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
-  const [reveal, setReveal] = useState<{ count: number; total: number; name: string } | null>(null);
+  // placeId rides along so a retraction (#410) can pull down the announcement it
+  // is taking back — the strip is showing a like that no longer exists.
+  const [reveal, setReveal] = useState<{
+    placeId: string;
+    count: number;
+    total: number;
+    name: string;
+  } | null>(null);
   const [fullHousePlaceId, setFullHousePlaceId] = useState<string | null>(null);
   const [shareableLink, setShareableLink] = useState('');
   // The one plain line a short deal carries when the recipe source was dark
@@ -92,7 +101,6 @@ export default function SelectionPage() {
   const fullHouseArmedRef = useRef(true);
   const fullHouseShownRef = useRef<Set<string>>(new Set());
   const rosterSizeRef = useRef(0);
-  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fullHouseRef = useRef<HTMLDivElement>(null);
   useFocusTrap(fullHouseRef, fullHousePlaceId !== null);
 
@@ -160,6 +168,17 @@ export default function SelectionPage() {
   // never the one being decided (anti-conformity, spec kill-risk (b)), and never a
   // card ahead (which is also how a buffered event survives until you reach it).
   useEffect(() => {
+    // A retraction (#410) lowers the live count, so the announced high-water mark
+    // has to come down with it — otherwise the next like from someone else never
+    // clears the gate and that reveal is swallowed for good. And if the strip is
+    // still announcing that card, pull the announcement too: the whole point of
+    // the retraction is that every screen stops counting a like that is gone.
+    announcedRef.current.forEach((announced, placeId) => {
+      const live = liveSelections[placeId]?.length ?? 0;
+      if (live >= announced) return;
+      announcedRef.current.set(placeId, live);
+      setReveal((shown) => (shown?.placeId === placeId ? null : shown));
+    });
     const unlocked = entries
       .slice(0, currentIndex)
       .filter(
@@ -189,13 +208,12 @@ export default function SelectionPage() {
       announcedRef.current.set(r.placeId, liveSelections[r.placeId]?.length ?? 0)
     );
 
-    clearTimeout(revealTimerRef.current);
     setReveal({
+      placeId: latest.restaurant.placeId,
       count: latest.result.count,
       total: participantNames.length,
       name: latest.restaurant.name,
     });
-    revealTimerRef.current = setTimeout(() => setReveal(null), 4000);
 
     if (
       latest.result.fullHouse &&
@@ -206,9 +224,17 @@ export default function SelectionPage() {
       fullHouseShownRef.current.add(latest.restaurant.placeId);
       setFullHousePlaceId(latest.restaurant.placeId);
     }
-
-    return () => clearTimeout(revealTimerRef.current);
   }, [liveSelections, currentIndex, entries, participants, selections]);
+
+  // The 4s auto-dismiss hangs off `reveal`, not off the effect above: that one
+  // re-runs on every swipe and every buffer change, and a cleanup there cancelled
+  // the pending dismissal whenever the re-run had nothing to announce — leaving
+  // the strip frozen on a stale count forever (#410).
+  useEffect(() => {
+    if (!reveal) return;
+    const timer = setTimeout(() => setReveal(null), 4000);
+    return () => clearTimeout(timer);
+  }, [reveal]);
 
   // Full House takeover: push a history entry so the hardware back button dismisses
   // the overlay instead of leaving the deck. Escape and Keep swiping both go through
@@ -268,15 +294,22 @@ export default function SelectionPage() {
     if (!canUndo) return;
     const previous = entries[currentIndex - 1];
     if (previous) {
+      // Retract the Live Selection this Undo takes back (#410), so the other
+      // phones stop counting a like that no longer exists. Only a liked card
+      // was ever broadcast; a passed one has nothing to retract.
+      if (sessionCode && selections.includes(previous.placeId)) {
+        void sendLiveSelection(sessionCode, previous.placeId, true);
+      }
       removeSelection(previous.placeId);
     }
     setCurrentIndex((prev) => prev - 1);
     // Undo puts a revealed Restaurant back at/ahead of the cursor — a visible
     // count while you re-decide is the exact herding setup the gate exists to
-    // prevent. The announced ref is never un-marked, so re-deciding it produces
-    // no second reveal.
+    // prevent. Undo alone never un-marks the announced ref (my own like was never
+    // in my own buffer), so re-deciding the same card produces no second reveal;
+    // only an incoming retraction lowers the mark, in the reveal effect.
     setReveal(null);
-  }, [canUndo, currentIndex, entries, removeSelection]);
+  }, [canUndo, currentIndex, entries, removeSelection, selections, sessionCode]);
 
   const handleSubmit = async () => {
     if (!sessionCode) {

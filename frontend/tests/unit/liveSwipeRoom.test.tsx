@@ -38,7 +38,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 }));
 
 import SelectionPage, { listNames, liveReveal } from '../../src/pages/SelectionPage';
-import { submitSelection } from '../../src/services/socketBindings';
+import { submitSelection, sendLiveSelection } from '../../src/services/socketBindings';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
 const participant = (id: string, displayName: string) => ({
@@ -648,5 +648,108 @@ describe('waiting screen', () => {
     expect(screen.getByRole('img', { name: 'Alice: submitted' })).toBeInTheDocument();
     expect(screen.getByText('Waiting for Bob and Carol')).toBeInTheDocument();
     expect(listNames(['Sam', 'Priya', 'Lee'])).toBe('Sam, Priya and Lee');
+  });
+});
+
+// Issue #410 — Undo retracts the Live Selection it takes back, so every other
+// phone's count drops with it instead of counting a like that no longer exists.
+describe('Undo retracts a Live Selection', () => {
+  beforeEach(() => {
+    vi.mocked(sendLiveSelection).mockClear();
+  });
+
+  it('emits a retraction for the card the undo un-likes', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    expect(sendLiveSelection).toHaveBeenCalledWith('AB123', 'place-1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+    expect(sendLiveSelection).toHaveBeenLastCalledWith('AB123', 'place-1', true);
+    expect(useSessionStore.getState().selections).toEqual([]);
+  });
+
+  it('emits nothing when the undone card was passed, not liked', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+    expect(sendLiveSelection).not.toHaveBeenCalled();
+  });
+
+  // The ticket's own symptom: the strip must stop announcing a like that is gone,
+  // on its own, with nothing else happening.
+  it('clears the strip the moment the like it is announcing is retracted', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Bob'));
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-1
+    await waitFor(() => expect(strip()).toHaveTextContent('1 of 3 liked Ramen Ichiban'));
+
+    act(() => useSessionStore.getState().retractLiveSelection('place-1', 'Bob'));
+
+    expect(strip()).toHaveTextContent('3 together');
+  });
+
+  // A retraction for some other card must not wipe the reveal on screen.
+  it('leaves a reveal for a different card alone', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    act(() => useSessionStore.getState().recordLiveSelection('place-2', 'Bob'));
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Bob'));
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-1
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-2
+    await waitFor(() => expect(strip()).toHaveTextContent('1 of 3 liked Taco Turno'));
+
+    act(() => useSessionStore.getState().retractLiveSelection('place-1', 'Bob'));
+
+    expect(strip()).toHaveTextContent('1 of 3 liked Taco Turno');
+  });
+
+  // The receiver's announced high-water mark has to fall with the retraction, or
+  // a later like that brings the count back to the same number never reveals.
+  it('reveals again after a retraction when another Participant likes that card', async () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Bob'));
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-1
+    await waitFor(() => expect(strip()).toHaveTextContent('1 of 3 liked Ramen Ichiban'));
+
+    act(() => useSessionStore.getState().retractLiveSelection('place-1', 'Bob'));
+
+    // Something else reveals in between, so the strip text below can only come
+    // from a fresh reveal for place-1.
+    act(() => useSessionStore.getState().recordLiveSelection('place-2', 'Carol'));
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' })); // past place-2
+    await waitFor(() => expect(strip()).toHaveTextContent('1 of 3 liked Taco Turno'));
+
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Carol'));
+    expect(strip()).toHaveTextContent('1 of 3 liked Ramen Ichiban');
+  });
+
+  it('drops only the retracted name from the buffer', () => {
+    seedParticipants('Alice', 'Bob', 'Carol');
+    const store = useSessionStore.getState();
+    store.recordLiveSelection('place-1', 'Bob');
+    store.recordLiveSelection('place-1', 'Carol');
+
+    store.retractLiveSelection('place-1', 'Carol');
+    expect(useSessionStore.getState().liveSelections['place-1']).toEqual(['Bob']);
+
+    // A retraction for a name that never selected it changes nothing.
+    store.retractLiveSelection('place-1', 'Dana');
+    expect(useSessionStore.getState().liveSelections['place-1']).toEqual(['Bob']);
   });
 });

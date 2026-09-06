@@ -236,8 +236,12 @@ const socketConfig: SocketConfig = {
     // Ephemeral chrome: never written to Redis, never affects the Match. The
     // buffer is keyed by displayName (ADR 0009) so a rejoin under a new
     // socket.id collapses onto the one entry that is already there.
+    // An Undo arrives as the same event with retract set (#410) — drop the
+    // sender's name instead of adding it, so the count corrects itself.
     'participant:selected': (event: ParticipantSelectedEvent) => {
-      useSessionStore.getState().recordLiveSelection(event.placeId, event.displayName);
+      const store = useSessionStore.getState();
+      if (event.retract) store.retractLiveSelection(event.placeId, event.displayName);
+      else store.recordLiveSelection(event.placeId, event.displayName);
     },
 
     // session:results - All participants submitted, results revealed

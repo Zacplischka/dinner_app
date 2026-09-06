@@ -91,6 +91,12 @@ export type SessionLeaveResponse = Ack<null>;
 export interface SelectionLivePayload {
   sessionCode: string;
   placeId: string;
+  /**
+   * True when this takes a Live Selection back (an Undo), so the other phones
+   * stop counting a like that no longer exists (#410). Additive (ADR 0007):
+   * absent reads as "selected", which is what every older client sends.
+   */
+  retract?: boolean;
 }
 
 /** No-data command: success acknowledges `data: null`. */
@@ -198,6 +204,12 @@ export interface ParticipantSelectedEvent {
   participantId: string;
   displayName: string;
   placeId: string;
+  /**
+   * True when the sender took this Live Selection back. Receivers drop the
+   * sender's name from their buffer instead of adding it (#410). Additive
+   * (ADR 0007): absent reads as "selected".
+   */
+  retract?: boolean;
 }
 
 // ============= Group Order =============

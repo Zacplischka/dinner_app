@@ -145,10 +145,15 @@ export function submitSelection(sessionCode: string, optionIds: string[]): Promi
 
 /**
  * Live Selection: fire-and-forget chrome. The Selection is NOT persisted here —
- * the Match is still computed from `selection:submit`.
+ * the Match is still computed from `selection:submit`. `retract` takes one back
+ * (an Undo), so the other phones stop counting it (#410).
  */
-export function sendLiveSelection(sessionCode: string, placeId: string): Promise<Ack<null>> {
-  const payload: SelectionLivePayload = { sessionCode, placeId };
+export function sendLiveSelection(
+  sessionCode: string,
+  placeId: string,
+  retract?: boolean
+): Promise<Ack<null>> {
+  const payload: SelectionLivePayload = { sessionCode, placeId, retract };
   return emitAck<null>('selection:live', payload);
 }
 

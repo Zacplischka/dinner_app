@@ -1133,6 +1133,33 @@ describe('websocket handlers', () => {
       );
     });
 
+    // #410 — an Undo rides the same command with retract set, and the flag has to
+    // survive the re-broadcast verbatim or the other phones keep counting the like.
+    it('should carry retract through to the re-broadcast', async () => {
+      await createSessionWithParticipant('socket-1');
+      const testSocket = socket('socket-1');
+      const callback = vi.fn();
+
+      await handleLiveSelection(
+        testSocket as any,
+        { sessionCode, placeId: 'place-1', retract: true },
+        callback,
+        store
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: null });
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:selected', {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        placeId: 'place-1',
+        retract: true,
+      });
+      // A retraction is transport too: it must not write, and must not delete.
+      await expect(redis.smembers(`session:${sessionCode}:socket-1:selections`)).resolves.toEqual(
+        []
+      );
+    });
+
     it('should reject a socket with no participant record', async () => {
       const testSocket = socket('stranger');
       const callback = vi.fn();
