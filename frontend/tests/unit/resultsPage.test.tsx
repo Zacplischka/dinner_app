@@ -397,7 +397,7 @@ describe('ResultsPage', () => {
       });
       renderResultsWithSelect();
 
-      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Select again' })).toBeInTheDocument();
     });
 
     // #405: a Host whose tab dropped stays on the roster, so "is a Host listed"
@@ -412,7 +412,7 @@ describe('ResultsPage', () => {
       });
       renderResultsWithSelect();
 
-      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Select again' })).toBeInTheDocument();
     });
 
     it('offers Try Again to the Host only when nothing matched', () => {
@@ -425,7 +425,7 @@ describe('ResultsPage', () => {
       });
       renderResultsWithSelect();
 
-      expect(screen.queryByRole('button', { name: 'Try Again' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
     });
   });
 
