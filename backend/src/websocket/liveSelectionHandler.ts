@@ -1,5 +1,6 @@
 // WebSocket handler for selection:live - a fire-and-forget re-broadcast of a
-// mid-deck Live Selection. Pure transport: no persistence.
+// mid-deck Live Selection, or of an Undo taking one back (#410).
+// Pure transport: no persistence, either way.
 // removeParticipant DELs session:{code}:{pid}:selections and joinSession calls
 // removeParticipant on every rejoin (SessionService.ts), so any mid-deck write
 // here would be silently destroyed by a reconnect.
@@ -20,6 +21,9 @@ import {
 const selectionLivePayloadSchema = z.object({
   sessionCode: z.string().regex(SESSION_CODE_PATTERN),
   placeId: z.string().min(1),
+  // An Undo taking a Live Selection back (#410). Same command, same membership
+  // check, same fire-and-forget re-broadcast — only the flag rides along.
+  retract: z.boolean().optional(),
 });
 
 export async function handleLiveSelection(
@@ -36,7 +40,7 @@ export async function handleLiveSelection(
       return callback({ success: false, error: { code: 'VALIDATION_ERROR', message: reason } });
     }
 
-    const { sessionCode, placeId } = validation.data;
+    const { sessionCode, placeId, retract } = validation.data;
 
     // One HGETALL both proves membership and yields displayName — the same
     // check SessionService.leaveSession makes. No second read.
@@ -65,6 +69,7 @@ export async function handleLiveSelection(
       participantId: socket.id,
       displayName: participant.displayName,
       placeId,
+      retract,
     });
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in selection:live handler');

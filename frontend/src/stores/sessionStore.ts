@@ -70,6 +70,7 @@ interface SessionState {
   addSelection: (placeId: string) => void;
   removeSelection: (placeId: string) => void;
   recordLiveSelection: (placeId: string, displayName: string) => void;
+  retractLiveSelection: (placeId: string, displayName: string) => void;
 
   // Results actions
   setResults: (results: Result) => void;
@@ -166,6 +167,21 @@ export const useSessionStore = create<SessionState>()(
             if (names.includes(displayName)) return state;
             return {
               liveSelections: { ...state.liveSelections, [placeId]: [...names, displayName] },
+            };
+          }),
+
+        // The Undo mirror (#410): the sender took the Live Selection back, so
+        // stop counting it. Same displayName key, so a retraction lands on the
+        // entry a rejoin collapsed onto.
+        retractLiveSelection: (placeId, displayName) =>
+          set((state) => {
+            const names = state.liveSelections[placeId] ?? [];
+            if (!names.includes(displayName)) return state;
+            return {
+              liveSelections: {
+                ...state.liveSelections,
+                [placeId]: names.filter((n) => n !== displayName),
+              },
             };
           }),
 
