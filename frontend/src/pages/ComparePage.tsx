@@ -423,7 +423,7 @@ export default function ComparePage() {
                       {venue.name}
                     </span>
                     <span className="mt-1 block text-sm text-muted">
-                      {venue.cuisineType ? cuisineLabel(venue.cuisineType) : 'Venue'} ·{' '}
+                      {venue.cuisineType ? cuisineLabel(venue.cuisineType) : 'venue'} ·{' '}
                       {venue.rating !== undefined ? `★ ${venue.rating.toFixed(1)}` : 'No rating'} ·{' '}
                       {(venue.distanceMiles * KM_PER_MILE).toFixed(1)} km
                     </span>

@@ -150,7 +150,7 @@ describe('Neon Night Market components', () => {
         "Your items stay in the basket and still count — whoever taps I'll order still buys them."
       )
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Back to the Basket' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to the basket' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Leave session' })).toBeInTheDocument();
     expect(screen.queryByText('Leave session?')).not.toBeInTheDocument();
   });

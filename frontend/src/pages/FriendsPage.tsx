@@ -246,7 +246,7 @@ export default function FriendsPage() {
         )}
       </div>
 
-      {/* Add Friend Modal */}
+      {/* Add friend modal */}
       <AddFriendModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
     </main>
   );

@@ -165,7 +165,7 @@ describe('page branch coverage', () => {
     // Empty Friends tab explains Friendship and offers the real add flow
     expect(screen.getByText('No friends yet')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Add a friend'));
-    expect(screen.getByRole('heading', { name: 'Add Friend' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Add friend' })).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Close'));
 
     // A failed friends fetch hides the count and offers Retry

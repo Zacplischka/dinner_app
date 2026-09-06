@@ -229,7 +229,7 @@ export default function SelectionPage() {
   // Keep swiping, Escape and the hardware back button are all this.
   const keepSwiping = () => window.history.back();
   // ponytail: a successful Finish here unmounts the overlay with the pushed entry
-  // still on the stack, so one hardware back from "All Done!" is swallowed (same
+  // still on the stack, so one hardware back from "All done!" is swallowed (same
   // URL, nothing re-renders). Ceiling: one dead back-tap. Upgrade: history.back()
   // in the effect cleanup when the entry was not consumed by popstate.
 
@@ -420,7 +420,7 @@ export default function SelectionPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-3xl font-display font-black text-text mb-3">All Done!</h2>
+              <h2 className="text-3xl font-display font-black text-text mb-3">All done!</h2>
               <p className="text-muted mb-8 text-lg">Waiting for the others…</p>
 
               <div className="mb-6">
@@ -516,7 +516,7 @@ export default function SelectionPage() {
                     Submitting…
                   </span>
                 ) : (
-                  'Submit Selections'
+                  'Submit selections'
                 )}
               </button>
 

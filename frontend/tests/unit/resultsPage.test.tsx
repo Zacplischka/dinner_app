@@ -752,7 +752,7 @@ describe('ResultsPage', () => {
       seedCook();
       renderResults();
 
-      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Select again' })).toBeInTheDocument();
     });
 
     it('celebrates a Recipe Match the same as a Restaurant one', () => {
@@ -1027,7 +1027,7 @@ describe('ResultsPage', () => {
       seedWatch();
       renderResults();
 
-      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Select again' })).toBeInTheDocument();
     });
 
     it('crowns the highest-rated Movie with "Nobody liked anything" when nobody selected anything', () => {

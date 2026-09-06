@@ -149,10 +149,10 @@ describe('component and hook branch coverage', () => {
       <NavigationHeader title="Confirm" showBackButton confirmOnBack confirmContext="results" />
     );
     fireEvent.click(screen.getByLabelText('Back'));
-    fireEvent.click(await screen.findByText('Stay Here'));
-    expect(screen.queryByText('Go Home')).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByText('Stay here'));
+    expect(screen.queryByText('Go home')).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Back'));
-    fireEvent.click(await screen.findByText('Go Home'));
+    fireEvent.click(await screen.findByText('Go home'));
     expect(historyBack).toHaveBeenCalledTimes(2);
     historyBack.mockRestore();
   });

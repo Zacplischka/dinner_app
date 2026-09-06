@@ -175,7 +175,7 @@ describe('CreateSessionPage location flows', () => {
     renderPage();
 
     fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     expect(await screen.findByText(/Location access is blocked/i)).toBeTruthy();
     // Manual entry offered as the recovery action; name input intact
@@ -189,11 +189,11 @@ describe('CreateSessionPage location flows', () => {
     });
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     expect(await screen.findByText(/couldn’t determine your location/i)).toBeTruthy();
     // Retry action still available
-    expect(screen.getByRole('button', { name: 'Use My Current Location' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Use my current location' })).toBeTruthy();
   });
 
   it('keeps the manual query after an unresolvable area and shows the specific message', async () => {
@@ -230,7 +230,7 @@ describe('CreateSessionPage location flows', () => {
     });
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     await waitFor(() => {
       expect(screen.getByText('Location set')).toBeTruthy();
@@ -248,7 +248,7 @@ describe('CreateSessionPage location flows', () => {
     serviceMocks.reverseGeocode.mockRejectedValue(new TypeError('Failed to fetch'));
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     await waitFor(() => {
       expect(screen.getByText('Location set')).toBeTruthy();
@@ -260,7 +260,7 @@ describe('CreateSessionPage location flows', () => {
     stubGeolocation(undefined);
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use My Current Location' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
 
     expect(screen.getByText(/browser doesn’t support location/i)).toBeTruthy();
     expect(screen.getByLabelText('Suburb or postcode')).toBeTruthy();

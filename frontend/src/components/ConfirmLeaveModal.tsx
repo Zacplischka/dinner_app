@@ -64,11 +64,11 @@ export default function ConfirmLeaveModal({
   const getStayLabel = () => {
     switch (context) {
       case 'results':
-        return 'Stay Here';
+        return 'Stay here';
       case 'selecting':
-        return 'Keep Swiping';
+        return 'Keep swiping';
       case 'ordering':
-        return 'Back to the Basket';
+        return 'Back to the basket';
       case 'lobby':
       default:
         return 'Stay in session';
@@ -78,7 +78,7 @@ export default function ConfirmLeaveModal({
   const getLeaveLabel = () => {
     switch (context) {
       case 'results':
-        return 'Go Home';
+        return 'Go home';
       default:
         return 'Leave session';
     }

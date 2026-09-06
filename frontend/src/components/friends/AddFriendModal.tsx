@@ -58,7 +58,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
         <div className="relative bg-raised rounded-2xl shadow-card border border-line/30 w-full max-w-md p-6 animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display font-semibold text-text">Add Friend</h2>
+            <h2 className="text-xl font-display font-semibold text-text">Add friend</h2>
             <button
               onClick={handleClose}
               aria-label="Close"
@@ -147,7 +147,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                       onClick={() => user.email && handleSendRequest(user.email)}
                       className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-white hover:bg-cyan/10 rounded-lg transition-colors"
                     >
-                      Add Friend
+                      Add friend
                     </button>
                   </li>
                 ))}

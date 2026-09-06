@@ -223,7 +223,7 @@ export default function CreateSessionPage() {
                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                    {isGettingLocation ? 'Getting location…' : 'Use My Current Location'}
+                    {isGettingLocation ? 'Getting location…' : 'Use my current location'}
                   </button>
                 ) : (
                   <div className="flex gap-2">

@@ -278,7 +278,7 @@ function MatchCard({
 }
 
 // The per-Participant Selection lists, shared by the always-visible
-// "Everyone's Selections" section and the unanimous-vote disclosure (#85).
+// "Everyone's selections" section and the unanimous-vote disclosure (#85).
 function SelectionsList({
   participants,
   allSelections,
@@ -442,7 +442,7 @@ export default function ResultsPage() {
   }, [restaurantNames, restaurants, overlappingOptions]);
 
   // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
-  // the tier's counts read off the same "of" the crown does, and Select Again
+  // the tier's counts read off the same "of" the crown does, and Select again
   // is offered on any crown, not only a Restaurant's.
   const crownPlaceId = pick?.restaurant.placeId ?? crownedEntry?.restaurant.placeId;
   const crownOf = pick?.of ?? crownedEntry?.of ?? participants.length;
@@ -707,7 +707,7 @@ export default function ResultsPage() {
               disabled={isRestarting}
               className="btn btn-primary px-6 py-3"
             >
-              Try Again
+              Try again
             </button>
           </div>
         )}
@@ -716,7 +716,7 @@ export default function ResultsPage() {
             The crowned placeId is already excluded (see nearMisses above). */}
         {!hasOverlap && nearMisses.length > 0 && (
           <div className="card mb-6">
-            <h2 className="text-xl font-display font-semibold text-text mb-1">So Close</h2>
+            <h2 className="text-xl font-display font-semibold text-text mb-1">So close</h2>
             <p className="text-sm text-muted mb-4">
               All but one of you liked these — worth a second look?
             </p>
@@ -764,7 +764,7 @@ export default function ResultsPage() {
         {isUnanimous ? (
           <details data-unanimous-selections className="card group mb-6">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
-              See everyone&apos;s Selections
+              See everyone&apos;s selections
               <svg
                 className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
                 fill="none"
@@ -791,7 +791,7 @@ export default function ResultsPage() {
         ) : (
           <div className="card mb-6">
             <h2 className="text-xl font-display font-semibold text-text mb-4">
-              Everyone&apos;s Selections
+              Everyone&apos;s selections
             </h2>
             <SelectionsList
               participants={participants}
@@ -817,7 +817,7 @@ export default function ResultsPage() {
               disabled={isRestarting}
               className="btn btn-primary w-full min-h-[48px]"
             >
-              Select Again
+              Select again
             </button>
           )}
 
@@ -826,7 +826,7 @@ export default function ResultsPage() {
           </button>
 
           {/* Leaves for the entry fork — a new Session, not a Restart. The
-              Restart lives above as "Select Again" (#289). */}
+              Restart lives above as "Select again" (#289). */}
           <button onClick={handleNewSession} className="btn btn-ghost w-full">
             New session
           </button>

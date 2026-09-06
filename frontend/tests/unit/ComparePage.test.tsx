@@ -262,6 +262,11 @@ describe('ComparePage', () => {
     fireEvent.click(screen.getByRole('button', { name: '🥡 Asian Fusion' }));
     fireEvent.click(screen.getByRole('button', { name: '🍽️ All' }));
     expect(screen.getByText('Mystery Venue')).toBeInTheDocument();
+    // No reported Cuisine falls back to the plain noun, lowercase like the
+    // counts beside it (#412).
+    expect(screen.getByRole('button', { name: /Mystery Venue/ })).toHaveTextContent(
+      'venue · No rating'
+    );
   });
 
   it('sorts by distance by default and by rating on request, hiding Top rated without data', () => {

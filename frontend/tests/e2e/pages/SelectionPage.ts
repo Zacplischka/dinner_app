@@ -35,7 +35,7 @@ export class SelectionPage extends BasePage {
     this.loadingState = page.getByText(/Finding (restaurants|recipes|movies)/i);
     // The waiting screen's heading, not a /Waiting for/ text match: any other
     // sentence starting "Waiting for" would make that locator ambiguous.
-    this.waitingState = page.getByRole('heading', { name: 'All Done!' });
+    this.waitingState = page.getByRole('heading', { name: 'All done!' });
     this.progress = page.getByRole('progressbar', { name: /Deck progress|Restaurant progress/ });
     // Full House takeover (#187): submits the like that completed it
     this.finishHereButton = page.getByRole('dialog').getByRole('button', { name: 'Finish here' });

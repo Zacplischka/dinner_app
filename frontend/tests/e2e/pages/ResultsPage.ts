@@ -16,9 +16,7 @@ export class ResultsPage extends BasePage {
     super(page);
 
     this.restaurantCards = page.locator('[data-match-card]');
-    this.noMatchesMessage = page.getByText(
-      /No restaurants were selected|No matches|No overlaps|Try again/i
-    );
+    this.noMatchesMessage = page.getByText(/everyone liked|No matches|No overlaps|Try again/i);
     this.startNewSessionButton = page.getByRole('button', {
       name: /New session|Start Over|Start Fresh/i,
     });

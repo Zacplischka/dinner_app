@@ -329,12 +329,12 @@ describe('Full House takeover', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('Finish here submits the current selections once and lands on All Done!', async () => {
+  it('Finish here submits the current selections once and lands on All done!', async () => {
     await raiseFullHouse();
 
     fireEvent.click(screen.getByRole('button', { name: 'Finish here' }));
 
-    await waitFor(() => expect(screen.getByText('All Done!')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('All done!')).toBeInTheDocument());
     expect(submitSelection).toHaveBeenCalledTimes(1);
     expect(submitSelection).toHaveBeenCalledWith('AB123', ['place-1']);
   });
@@ -491,7 +491,7 @@ describe('Resume after submit', () => {
     });
     renderSelectionPage();
 
-    expect(await screen.findByText('All Done!')).toBeInTheDocument();
+    expect(await screen.findByText('All done!')).toBeInTheDocument();
     expect(screen.queryByText('Ramen Ichiban')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Like' })).not.toBeInTheDocument();
     expect(screen.getByText(/have swiped/)).toHaveTextContent('1 of 2 have swiped');
@@ -510,7 +510,7 @@ describe('Resume after submit', () => {
     renderSelectionPage();
 
     expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
-    expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
+    expect(screen.queryByText('All done!')).not.toBeInTheDocument();
   });
 
   it('deals the Deck again when a Restart flips my roster flag back to false', async () => {
@@ -524,14 +524,14 @@ describe('Resume after submit', () => {
       }));
     });
     renderSelectionPage();
-    expect(await screen.findByText('All Done!')).toBeInTheDocument();
+    expect(await screen.findByText('All done!')).toBeInTheDocument();
 
     act(() => {
       useSessionStore.getState().resetSelections();
     });
 
     expect(await screen.findByText('Ramen Ichiban')).toBeInTheDocument();
-    expect(screen.queryByText('All Done!')).not.toBeInTheDocument();
+    expect(screen.queryByText('All done!')).not.toBeInTheDocument();
   });
 });
 
@@ -605,7 +605,7 @@ describe('Keyboard swipe', () => {
     expect(useSessionStore.getState().selections).toEqual([]);
     expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument();
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep Swiping' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep swiping' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     fireEvent.keyDown(window, { key: 'ArrowRight' }); // deck is live again
     await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
@@ -630,7 +630,7 @@ describe('waiting screen', () => {
     renderSelectionPage();
     await waitFor(() => screen.getByRole('button', { name: 'Pass' }));
     for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Submit Selections' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit selections' }));
 
     await waitFor(() =>
       expect(screen.getByText('Waiting for Bob and Carol')).toHaveAttribute('aria-live', 'polite')
