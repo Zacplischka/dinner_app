@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import NavigationHeader from '../components/NavigationHeader';
 import { useShoppingList } from '../hooks/useShoppingList';
 import { useWakeLock } from '../hooks/useWakeLock';
+import Spinner from '../components/Spinner';
 
 /**
  * The one end-of-method credit, which doubles as the degrade path: a Recipe
@@ -107,7 +108,7 @@ export default function CookViewPage() {
 
         {!list && !error && (
           <div className="card p-8 text-center">
-            <div className="mx-auto inline-block h-8 w-8 animate-spin rounded-full border-3 border-cyan border-t-transparent" />
+            <Spinner size="lg" className="text-cyan" label="Fetching the method…" />
             <p className="mt-4 text-muted">Fetching the method…</p>
           </div>
         )}

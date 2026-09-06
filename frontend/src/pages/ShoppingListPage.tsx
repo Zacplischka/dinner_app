@@ -23,6 +23,7 @@ import {
 } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { formatPrice } from '../utils/money';
+import Spinner from '../components/Spinner';
 
 /**
  * How often the list re-reads itself — its live-update channel (#263), a timer
@@ -327,7 +328,7 @@ export default function ShoppingListPage() {
 
         {!list && !error && (
           <div className="card p-8 text-center">
-            <div className="mx-auto inline-block h-8 w-8 animate-spin rounded-full border-3 border-cyan border-t-transparent" />
+            <Spinner size="lg" className="text-cyan" label="Pricing your list at Woolworths…" />
             <p className="mt-4 text-muted">Pricing your list at Woolworths…</p>
           </div>
         )}

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useFriendsStore } from '../../stores/friendsStore';
 import { useAuthStore } from '../../stores/authStore';
 import FriendsList from './FriendsList';
+import Spinner from '../Spinner';
 
 interface InviteFriendsSectionProps {
   selectedFriendIds: Set<string>;
@@ -85,7 +86,7 @@ export default function InviteFriendsSection({
         <div className="p-4 bg-raised/50 border-t border-line/30">
           {isLoadingFriends ? (
             <div className="py-4 text-center">
-              <div className="inline-block w-5 h-5 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
+              <Spinner size="sm" className="text-cyan" label="Loading friends…" />
               <p className="mt-2 text-sm text-muted">Loading friends…</p>
             </div>
           ) : friends.length === 0 ? (

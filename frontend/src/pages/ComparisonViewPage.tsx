@@ -37,7 +37,7 @@ function OutboundLink({ name, url }: { name: PlatformName; url: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-coral px-4 py-2 font-semibold text-white shadow-glow-coral transition-all duration-150 hover:brightness-110"
+      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-coral px-4 py-2 font-semibold text-ink shadow-glow-coral transition-all duration-150 hover:brightness-110"
     >
       Open in {name}
     </a>
