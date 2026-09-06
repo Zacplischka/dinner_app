@@ -18,6 +18,7 @@ import {
   type Craving,
   type DeckEntry,
   type Mood,
+  type SessionLocation,
   isRestaurant,
 } from '@dinder/shared/types';
 
@@ -112,24 +113,26 @@ export function createSessionService({
   /**
    * Create a new session with the given host
    * Returns session data including code and shareable link
+   *
+   * Everything past the host's name is setup the chosen Branch decides, in one
+   * object — the same shape apiClient.createSession takes on the other side of
+   * the wire, so the next optional field is one line on each side.
    */
   async function createSession(
     hostName: string,
-    location?: {
-      latitude: number;
-      longitude: number;
-      address?: string;
-    },
-    searchRadiusMiles?: number,
-    branch?: Branch,
-    cook?: CookSetup,
-    watch?: WatchSetup,
-    /**
-     * How many cards the Host asked to swipe (#415), already range-checked by
-     * the router. Undefined means the Branch's own default. Every Branch reads
-     * it as a ceiling: a thin supply still deals what it has.
-     */
-    deckSize?: number
+    setup: {
+      location?: SessionLocation;
+      searchRadiusMiles?: number;
+      branch?: Branch;
+      cook?: CookSetup;
+      watch?: WatchSetup;
+      /**
+       * How many cards the Host asked to swipe (#415), already range-checked
+       * by the router. Undefined means the Branch's own default. Every Branch
+       * reads it as a ceiling: a thin supply still deals what it has.
+       */
+      deckSize?: number;
+    } = {}
   ): Promise<{
     sessionCode: string;
     hostName: string;
@@ -147,6 +150,8 @@ export function createSessionService({
     restaurantCount?: number;
     headcount?: number;
   }> {
+    const { location, searchRadiusMiles, branch, cook, watch, deckSize } = setup;
+
     // Generate unique session code
     let sessionCode = generateSessionCode();
     let attempts = 0;

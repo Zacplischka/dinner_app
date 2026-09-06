@@ -54,9 +54,12 @@ describe('Integration Test: a Cook Session end to end', () => {
   });
 
   async function cookSession(hostName: string, headcount: number) {
-    const created = await sessionService.createSession(hostName, undefined, undefined, 'cook', {
-      craving,
-      headcount,
+    const created = await sessionService.createSession(hostName, {
+      branch: 'cook',
+      cook: {
+        craving,
+        headcount,
+      },
     });
     return created.sessionCode;
   }

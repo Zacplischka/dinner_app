@@ -156,7 +156,14 @@ export function createSessionsRouter(sessionService: SessionService) {
         NO_MOVIES_FOUND: 'no_movies_found',
       };
       const session = await sessionService
-        .createSession(hostName, location, radius, branch, cook, watch, deckSize)
+        .createSession(hostName, {
+          location,
+          searchRadiusMiles: radius,
+          branch,
+          cook,
+          watch,
+          deckSize,
+        })
         .catch((error: unknown) => {
           const reason = error instanceof DomainError ? expectedEmpty[error.code] : undefined;
           if (reason) {
