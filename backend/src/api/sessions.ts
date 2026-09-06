@@ -2,6 +2,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
+import { config } from '../config/index.js';
 import { asyncHandler } from './asyncHandler.js';
 import { cravingSchema } from './cravingSchema.js';
 import type { SessionService } from '../services/SessionService.js';
@@ -20,6 +21,7 @@ import {
   type CreateSessionRequest,
   type CreateSessionResponse,
   type SessionResponse,
+  type SessionDefaultsResponse,
 } from '@dinder/shared/types';
 
 // Every located create spends a Google-billed Places search; cap per-visitor
@@ -40,6 +42,9 @@ const moodSchema = z.object({
 
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
+  router.get('/defaults', (_req, res) => {
+    res.json({ cookDeckSize: config.spoonacular.deckSize } satisfies SessionDefaultsResponse);
+  });
   // ponytail: per-instance in-memory rate window, same ceiling as rateWindow.ts notes.
   const createRequests = new Map<string, RequestWindow>();
 

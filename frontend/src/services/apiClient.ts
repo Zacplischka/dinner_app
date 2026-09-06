@@ -27,6 +27,7 @@ import type {
   SessionInvitesResponse,
   SessionLocation,
   SessionResponse,
+  SessionDefaultsResponse,
   ShoppingListResponse,
   SwapLineRequest,
   SwapLineResponse,
@@ -125,6 +126,10 @@ export async function geocodeArea(query: string): Promise<GeocodedArea> {
  */
 export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodedArea> {
   return request<GeocodedArea>(`/geocode?latitude=${latitude}&longitude=${longitude}`);
+}
+
+export function getSessionDefaults(): Promise<SessionDefaultsResponse> {
+  return request<SessionDefaultsResponse>('/sessions/defaults');
 }
 
 /**

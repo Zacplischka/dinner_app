@@ -28,6 +28,11 @@ export interface SessionLocation {
 }
 
 // POST /api/sessions
+/** Public setup defaults; read before the Host chooses a Deck size. */
+export interface SessionDefaultsResponse {
+  cookDeckSize: number;
+}
+
 export interface CreateSessionRequest {
   hostName: string;
   location?: SessionLocation;

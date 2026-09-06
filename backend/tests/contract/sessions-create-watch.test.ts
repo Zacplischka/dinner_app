@@ -32,7 +32,7 @@ describe('Contract Test: POST /api/sessions (Watch Branch)', () => {
     expect(response.body).not.toHaveProperty('headcount');
   });
 
-  it('deals the Deck size the Host chose, and the same again on Restart (#415)', async () => {
+  it('deals the Deck size the Host chose (#415)', async () => {
     const { body: session } = await request(app)
       .post('/api/sessions')
       .send({ hostName: 'Alice', branch: 'watch', mood, deckSize: 8 })

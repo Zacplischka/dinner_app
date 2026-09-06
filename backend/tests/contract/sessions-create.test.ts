@@ -1,6 +1,7 @@
 import { captureLogs } from '../helpers/logCapture.js';
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import request from 'supertest';
+import { config } from '../../src/config/index.js';
 import { app } from '../../src/server.js';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 
@@ -20,6 +21,17 @@ describe('Contract Test: POST /api/sessions', () => {
 
   afterAll(async () => {
     // Note: Redis connection is shared and closed at process exit
+  });
+
+  it('reports the configured Cook default to setup without creating a Session', async () => {
+    const original = config.spoonacular.deckSize;
+    try {
+      config.spoonacular.deckSize = 25;
+      const { body } = await request(app).get('/api/sessions/defaults').expect(200);
+      expect(body).toEqual({ cookDeckSize: 25 });
+    } finally {
+      config.spoonacular.deckSize = original;
+    }
   });
 
   it('should return 201 with valid SessionResponse schema on successful session creation', async () => {
