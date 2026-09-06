@@ -112,6 +112,9 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
   }, [handleDismiss, isPaused, toast.duration]);
 
   const colors = colorClasses[toast.type];
+  // Only a failure earns the right to interrupt a screen reader mid-sentence
+  // (WCAG 4.1.3); everything else waits its turn.
+  const isError = toast.type === 'error';
 
   return (
     <div
@@ -128,12 +131,17 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
             : 'pointer-events-auto opacity-100 translate-y-0 scale-100'
         }
       `}
-      role="alert"
-      aria-live="polite"
+      role={isError ? 'alert' : 'status'}
+      aria-live={isError ? 'assertive' : 'polite'}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
       onBlur={() => setIsPaused(false)}
+      // A phone has no hover: holding the card is the only way to keep a toast
+      // around long enough to read it.
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
+      onTouchCancel={() => setIsPaused(false)}
     >
       {/* Icon */}
       <div className={`flex-shrink-0 ${colors.icon}`}>{icons[toast.type]}</div>

@@ -124,9 +124,9 @@ describe('Neon Night Market components', () => {
       </>
     );
 
-    expect(screen.getByText('Saved').closest('[role="alert"]')).toHaveClass('border-l-lime');
+    expect(screen.getByText('Saved').closest('[role="status"]')).toHaveClass('border-l-lime');
     expect(screen.getByText('Failed').closest('[role="alert"]')).toHaveClass('border-l-coral');
-    expect(screen.getByText('Connected').closest('[role="alert"]')).toHaveClass('border-l-cyan');
+    expect(screen.getByText('Connected').closest('[role="status"]')).toHaveClass('border-l-cyan');
   });
 
   it('presents leave confirmation as a Neon dialog', () => {

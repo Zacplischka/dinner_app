@@ -28,14 +28,23 @@ interface ToastStore {
 let toastId = 0;
 const generateId = () => `toast-${++toastId}-${Date.now()}`;
 
+// A flapping connection with four friends stacked toasts until they buried the
+// Submit button (#409). Three is what a phone shows without covering the CTA.
+const MAX_TOASTS = 3;
+
 // Zustand store for global toast state
-export const useToastStore = create<ToastStore>((set) => ({
+export const useToastStore = create<ToastStore>((set, get) => ({
   toasts: [],
 
   addToast: (toast) => {
+    // A repeat of what's already on top is noise, not news — reuse it so the
+    // caller's dismiss()/return value still points at a live toast.
+    const last = get().toasts.at(-1);
+    if (last && last.type === toast.type && last.message === toast.message) return last.id;
+
     const id = generateId();
     set((state) => ({
-      toasts: [...state.toasts, { ...toast, id }],
+      toasts: [...state.toasts, { ...toast, id }].slice(-MAX_TOASTS),
     }));
     return id;
   },
