@@ -8,7 +8,6 @@ import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useShareLink } from '../hooks/useShareLink';
-import { useToast } from '../hooks/useToast';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
