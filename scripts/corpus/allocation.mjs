@@ -73,22 +73,32 @@ export const TOP_CUISINES = Object.entries(MAIN_ALLOCATION)
  * Diet coverage, all of it measured over mains. Gluten free is the highest-
  * value convention in the corpus and pescetarian is free, so neither buys
  * dishes; vegetarian and vegan are floors on dishes authored anyway; only
- * ketogenic and paleo are blocks authored for the chip, deliberately capped
- * and cuisine-agnostic.
+ * ketogenic and paleo are blocks authored for the chip.
+ *
+ * Every number here is a floor, as is every number in the two allocations
+ * above. #312 also caps the keto and paleo blocks — "roughly 20, deliberately
+ * cuisine-agnostic, no more" — and that half is an authoring rule this report
+ * does not hold: nothing in the instrument is a ceiling, so 200 paleo mains,
+ * all of them thai, still reads `allocation met`.
  */
 export const DIET_TARGETS = {
-  'gluten free': { fractionOfMains: 0.45 },
+  'gluten free': { fractionOfMains: 0.45, floorInTopCuisines: DECK_FLOOR },
   vegetarian: { fractionOfMains: 0.25, floorInTopCuisines: DECK_FLOOR },
   vegan: { fractionOfMains: 0.1 },
   ketogenic: { mains: 20 },
   paleo: { mains: 20 },
+  /** No count of its own — `vegan ⊆ vegetarian ⊆ pescetarian` answers it off
+   *  dishes authored anyway — but #312's rule names it in the three crosses
+   *  that must deal, so the top six are scored for it. */
+  pescetarian: { floorInTopCuisines: DECK_FLOOR },
 };
 
 /** `vegan ⊆ vegetarian ⊆ pescetarian`, mirrored from the store's `IMPLIED` —
  *  the pipeline is plain Node with no build step, so it cannot import the
- *  TypeScript that owns it. Change one and change the other, as the structural
- *  layer already does for the record shape. */
-const IMPLIED = { vegan: ['vegetarian', 'pescetarian'], vegetarian: ['pescetarian'] };
+ *  TypeScript that owns it. Exported only so allocation.test.mjs can read the
+ *  store's copy off the source and fail when the two drift; a silent drift here
+ *  changes the diet numbers a whole authoring run is steered by. */
+export const IMPLIED = { vegan: ['vegetarian', 'pescetarian'], vegetarian: ['pescetarian'] };
 
 const satisfies = (diets) => new Set(diets.flatMap((diet) => [diet, ...(IMPLIED[diet] ?? [])]));
 
@@ -105,35 +115,46 @@ export function shortfalls(recipes) {
   const inBucket = (cuisine) => mains.filter((recipe) => cuisineBucket(recipe) === cuisine);
   const tagged = (pool, diet) => pool.filter((recipe) => satisfies(recipe.diets).has(diet)).length;
 
+  // A main whose bucket is in neither the allocation nor `pending-cuisine.json`
+  // raises every `fractionOfMains` target and the corpus total while counting
+  // towards no bucket, so it can satisfy no line in the report. Reported as a
+  // want of zero rather than a shortfall — it is the one gap you close by
+  // tagging records rather than by authoring them.
+  const unbucketed = mains.filter(
+    (recipe) => !Object.hasOwn(MAIN_ALLOCATION, cuisineBucket(recipe))
+  ).length;
+
   return [
     ...Object.entries(MAIN_ALLOCATION).flatMap(([cuisine, want]) =>
       shortfall(cuisine, inBucket(cuisine).length, want)
     ),
+    ...(unbucketed ? [{ what: 'unbucketed mains', have: unbucketed, want: 0 }] : []),
     ...Object.entries(NON_MAIN_ALLOCATION).flatMap(([mealType, want]) =>
       shortfall(mealType, recipes.filter((recipe) => recipe.mealType === mealType).length, want)
     ),
-    ...Object.entries(DIET_TARGETS).flatMap(([diet, target]) => [
-      ...shortfall(
-        diet,
-        tagged(mains, diet),
-        target.mains ?? Math.ceil(mains.length * target.fractionOfMains)
-      ),
-      ...(target.floorInTopCuisines === undefined
-        ? []
-        : TOP_CUISINES.flatMap((cuisine) =>
-            shortfall(
-              `${diet} in ${cuisine}`,
-              tagged(inBucket(cuisine), diet),
-              target.floorInTopCuisines
-            )
-          )),
-    ]),
+    ...Object.entries(DIET_TARGETS).flatMap(([diet, target]) => {
+      const overMains = target.mains ?? Math.ceil(mains.length * target.fractionOfMains);
+      return [
+        ...(Number.isFinite(overMains) ? shortfall(diet, tagged(mains, diet), overMains) : []),
+        ...(target.floorInTopCuisines === undefined
+          ? []
+          : TOP_CUISINES.flatMap((cuisine) =>
+              shortfall(
+                `${diet} in ${cuisine}`,
+                tagged(inBucket(cuisine), diet),
+                target.floorInTopCuisines
+              )
+            )),
+      ];
+    }),
     // "No Craving in the chip vocabulary deals fewer than 15 from owned alone",
-    // as #312 narrowed the promise: a chip on its own, never a cuisine crossed
-    // with a diet. A meal type alone and a cuisine alone are already floored by
-    // the two allocations above; the diet chips are the ones a bucket run can
-    // reach its own floor and still leave empty.
-    ...[...Object.keys(DIET_TARGETS), 'pescetarian'].flatMap((diet) =>
+    // as #312 narrowed the promise: every diet chip on its own, and crossed
+    // with a cuisine only for `gluten free`, `pescetarian` and `vegetarian` in
+    // the top six — those three crosses are the `floorInTopCuisines` above. A
+    // meal type alone and a cuisine alone are already floored by the two
+    // allocations; the diet chips are the ones a bucket run can reach its own
+    // floor and still leave empty.
+    ...Object.keys(DIET_TARGETS).flatMap((diet) =>
       shortfall(`${diet} deals alone`, tagged(mains, diet), DECK_FLOOR)
     ),
     ...shortfall(

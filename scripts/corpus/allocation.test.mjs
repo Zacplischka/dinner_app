@@ -4,10 +4,12 @@
 // than no report.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
   DECK_FLOOR,
   DIET_TARGETS,
+  IMPLIED,
   MAIN_ALLOCATION,
   NON_MAIN_ALLOCATION,
   TOP_CUISINES,
@@ -52,10 +54,30 @@ test('every bucket is a chip, and every chip has a bucket', () => {
     sorted(Object.keys(NON_MAIN_ALLOCATION)),
     sorted(MEAL_TYPES.filter((mealType) => mealType !== 'main course'))
   );
-  // Pescetarian is the one chip with no target: `vegan ⊆ vegetarian ⊆
-  // pescetarian` means it is answered by dishes authored anyway, and the Deck
-  // floor below is what holds it honest.
-  assert.deepEqual(sorted([...Object.keys(DIET_TARGETS), 'pescetarian']), sorted(DIETS));
+  // Pescetarian is the one chip with no count of its own: `vegan ⊆ vegetarian ⊆
+  // pescetarian` means it is answered by dishes authored anyway. It still
+  // carries a target, because the Deck floors are what hold it honest.
+  assert.deepEqual(sorted(Object.keys(DIET_TARGETS)), sorted(DIETS));
+});
+
+test('the diet implication agrees with the store that owns it', () => {
+  // `IMPLIED` is copied out of ownedRecipeStore.ts because plain Node cannot
+  // import the TypeScript. Read the store's copy back off the source — the
+  // trick gate.mjs already uses for STAPLES and the US→AU table — so a drift
+  // fails here instead of quietly moving every diet number in the report.
+  const store = readFileSync(
+    new URL('../../backend/src/services/ownedRecipeStore.ts', import.meta.url),
+    'utf8'
+  );
+  const literal = /const IMPLIED[^=]*=\s*\{([^}]*)\}/.exec(store);
+  assert.ok(literal, 'IMPLIED is no longer an object literal in ownedRecipeStore.ts');
+  const owned = Object.fromEntries(
+    [...literal[1].matchAll(/^\s*'?([\w ]+)'?\s*:\s*\[([^\]]*)\]/gm)].map(([, diet, list]) => [
+      diet,
+      [...list.matchAll(/'([^']+)'/g)].map((match) => match[1]),
+    ])
+  );
+  assert.deepEqual(owned, IMPLIED);
 });
 
 test('an empty corpus is short of everything, bucket by bucket', () => {
@@ -83,6 +105,37 @@ test('a bucket one Recipe short of its floor is reported, with both numbers', ()
 test('surplus above a target is not a shortfall', () => {
   const generous = [...allocated(), ...mains('spanish', 40)];
   assert.ok(!reported(generous).includes('spanish'));
+
+  // Deliberate, and the reason DIET_TARGETS says so: every number in the
+  // allocation is a floor. #312 also caps keto and paleo at "roughly 20, no
+  // more", and this report does not hold that half — 200 paleo mains, all in
+  // one cuisine, still reads `allocation met`.
+  const overshot = [...allocated(), ...mains('thai', 200, ['paleo'])];
+  assert.ok(!reported(overshot).includes('paleo'));
+});
+
+test('the three crosses #312 promises are scored, and no others', () => {
+  // "diet + cuisine deals a full Deck only for gluten free, pescetarian and
+  // vegetarian, and only in the top 6 cuisines" — so a corpus that meets every
+  // bucket and every corpus-wide diet count can still be short in a cross.
+  const crossed = (what) => what.filter((entry) => entry.includes(' in '));
+  assert.deepEqual(
+    new Set(crossed(reported([])).map((entry) => entry.split(' in ')[0])),
+    new Set(['gluten free', 'pescetarian', 'vegetarian'])
+  );
+
+  // Gluten free tagged everywhere but one top-six bucket: the corpus-wide 45%
+  // is met and the cross is not, which is the whole reason the cross is scored.
+  const lopsided = [
+    ...Object.entries(MAIN_ALLOCATION).flatMap(([cuisine, count]) =>
+      mains(cuisine, count, cuisine === 'mexican' ? [] : ['gluten free'])
+    ),
+    ...allocated().filter((recipe) => recipe.mealType !== 'main course'),
+  ];
+  const what = reported(lopsided);
+  assert.ok(!what.includes('gluten free'), '860 of 915 mains clear the 45%');
+  assert.ok(what.includes('gluten free in mexican'));
+  assert.ok(!what.includes('gluten free in italian'));
 });
 
 test('gluten free under 45% of mains is reported', () => {
@@ -141,10 +194,22 @@ test('a non-main meal type short of its target is reported', () => {
   assert.deepEqual(snack, { what: 'snack', have: 0, want: NON_MAIN_ALLOCATION.snack });
 });
 
-test('an untagged main counts towards no bucket', () => {
+test('an untagged main counts towards no bucket, and is named as such', () => {
   const stray = [
     ...allocated().filter((recipe) => recipe.cuisine !== 'spanish'),
     ...mains(undefined, MAIN_ALLOCATION.spanish),
   ];
-  assert.ok(reported(stray).includes('spanish'));
+  const what = reported(stray);
+  assert.ok(what.includes('spanish'));
+  // It raises every fractionOfMains target and the corpus total while filling
+  // no bucket, so the report has to name it or a run cannot find it.
+  assert.deepEqual(
+    shortfalls(stray).find((entry) => entry.what === 'unbucketed mains'),
+    {
+      what: 'unbucketed mains',
+      have: MAIN_ALLOCATION.spanish,
+      want: 0,
+    }
+  );
+  assert.ok(!reported(allocated()).includes('unbucketed mains'));
 });

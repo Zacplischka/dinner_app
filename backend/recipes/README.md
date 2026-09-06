@@ -184,13 +184,19 @@ and the diet targets measured over mains. `report` prints every gap:
 node scripts/corpus/allocation.mjs report backend/recipes
 ```
 
-Today it prints **38 short**, ending `corpus: 50/1160`. Every bucket is short —
+Today it prints **51 short**, ending `corpus: 50/1160`. Every bucket is short —
 the largest, `modern australian`, stands at 13 of 150, counted through
 [`pending-cuisine.json`](pending-cuisine.json) because the chip is still
 [#340](https://github.com/Zacplischka/dinner_app/issues/340). Only `gluten
 free` (19 of the 22 that 45% of 47 mains asks for) and `vegan` are anywhere
 near their conventions, and no diet chip yet deals a full Deck from owned
-alone.
+alone — bare, or crossed with a top-six cuisine, which #312 promises for
+`gluten free`, `pescetarian` and `vegetarian`.
+
+`unbucketed mains: 2/0` is the one line closed by tagging rather than
+authoring: two pilot mains carry no `cuisine` and are named in no pending
+list, so they raise every diet target and the corpus total while filling no
+bucket.
 
 That report reaching `allocation met` is what closes
 [#341](https://github.com/Zacplischka/dinner_app/issues/341): one bucket per
