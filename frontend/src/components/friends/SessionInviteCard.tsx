@@ -83,7 +83,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           <p className="text-sm text-muted">
             Session: <span className="font-mono font-semibold text-cyan">{invite.sessionCode}</span>
           </p>
-          <p className="text-xs text-muted/60">{new Date(invite.createdAt).toLocaleDateString()}</p>
+          <p className="text-xs text-muted">{new Date(invite.createdAt).toLocaleDateString()}</p>
         </div>
       </div>
 
