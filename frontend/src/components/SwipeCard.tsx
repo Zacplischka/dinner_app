@@ -250,13 +250,21 @@ export default function SwipeCard({
             {entry.name.charAt(0)}
           </text>
         </svg>
+        {/* A poster is portrait in a landscape frame. Cropping it to fit lost
+            the title art, so it is shown whole, and a blurred copy of itself
+            fills the frame around it in the poster's own colours. */}
+        {entry.photoUrl && movie && (
+          <div
+            aria-hidden
+            className="absolute inset-0 scale-110 bg-cover bg-center opacity-70 blur-xl"
+            style={{ backgroundImage: `url(${entry.photoUrl})` }}
+          />
+        )}
         {entry.photoUrl && (
           <RetryingPhoto
             url={entry.photoUrl}
             alt={entry.name}
-            // A poster is portrait in a landscape frame: keep its top, where the
-            // imagery sits, and let the credits block crop.
-            className={`absolute inset-0 w-full h-full object-cover ${movie ? 'object-top' : ''}`}
+            className={`absolute inset-0 w-full h-full ${movie ? 'object-contain' : 'object-cover'}`}
             draggable={false}
             // Only the top card shows; the two beneath it sit inside the
             // viewport too, so `lazy` does not skip their fetch - it defers it
