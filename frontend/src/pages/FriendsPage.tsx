@@ -23,7 +23,7 @@ function FailureCard({ label, onRetry }: { label: string; onRetry: () => void })
   return (
     <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
       <p className="text-lg text-text">Couldn&apos;t load {label}</p>
-      <p className="text-sm mt-1 text-muted/60">Check your connection and try again.</p>
+      <p className="text-sm mt-1 text-muted/60">Friends are unavailable right now.</p>
       <button
         onClick={onRetry}
         className="mt-4 min-h-[44px] px-6 py-2 font-medium text-ink bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"

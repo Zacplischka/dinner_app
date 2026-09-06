@@ -158,7 +158,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
           {/* No results message */}
           {searchResults.length === 0 && !isSearching && email && !error && !successMessage && (
             <div className="text-center py-4 text-muted text-sm">
-              No users found with that email
+              No one found with that email
             </div>
           )}
         </div>
