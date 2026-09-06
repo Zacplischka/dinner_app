@@ -26,7 +26,6 @@ export default function JoinSessionPage() {
   const {
     setSessionCode: storeSessionCode,
     setCurrentUserId,
-    setConnectionStatus,
     setSessionStatus,
     resetSelections,
   } = useSessionStore();
@@ -78,7 +77,6 @@ export default function JoinSessionPage() {
 
       if (ack.success) {
         setCurrentUserId(ack.data.participantId);
-        setConnectionStatus(true);
         // A Session already selecting admits late joiners (#284) — straight to
         // the Deck; the lobby is only for a Session that hasn't started.
         navigate(ack.data.state === 'selecting' ? `/session/${code}/select` : `/session/${code}`);

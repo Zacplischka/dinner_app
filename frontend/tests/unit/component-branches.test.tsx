@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/services/socketBindings', () => ({
+  waitForConnection: vi.fn(async () => undefined),
   joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
 }));
 
@@ -464,7 +465,7 @@ describe('component and hook branch coverage', () => {
 
     useFriendsStore.setState({
       currentUserProfile: null,
-      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'AB123' })) as any,
+      acceptSessionInvite: vi.fn(async () => true) as any,
       declineSessionInvite: vi.fn(async () => true) as any,
     });
     renderAt('/test', <SessionInviteCard invite={invite} />);
@@ -478,7 +479,7 @@ describe('component and hook branch coverage', () => {
         avatarUrl: null,
         email: 'alice@example.com',
       },
-      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'AB123' })) as any,
+      acceptSessionInvite: vi.fn(async () => true) as any,
     });
     renderAt('/test', <SessionInviteCard invite={{ ...invite, id: 'invite-profile' }} />);
     fireEvent.click(screen.getAllByText('Join').at(-1)!);

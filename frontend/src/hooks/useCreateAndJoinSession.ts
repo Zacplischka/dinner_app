@@ -17,6 +17,7 @@ import {
 import { createSession } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
+import { toast } from './useToast';
 
 interface SessionSetup {
   location?: SessionLocation;
@@ -35,7 +36,6 @@ export function useCreateAndJoinSession() {
     setLocation: setStoreLocation,
     setSearchRadiusMiles: setStoreRadius,
     setCurrentUserId,
-    setConnectionStatus,
     setSessionStatus,
     resetSelections,
   } = useSessionStore();
@@ -75,10 +75,16 @@ export function useCreateAndJoinSession() {
       }
 
       setCurrentUserId(ack.data.participantId);
-      setConnectionStatus(true);
 
-      if (friendIds.size > 0) {
-        await inviteFriendsToSession(response.sessionCode, Array.from(friendIds));
+      // The Session is already the Host's; failing invites only cost them the
+      // shortcut, so say so and point at the Session Code rather than blocking.
+      if (
+        friendIds.size > 0 &&
+        !(await inviteFriendsToSession(response.sessionCode, [...friendIds]))
+      ) {
+        toast.error(
+          `Couldn't invite your friends. Share the code ${response.sessionCode} so they can join.`
+        );
       }
 
       // Reset before navigating too: today navigate() unmounts the setup page

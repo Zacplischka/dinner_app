@@ -362,6 +362,11 @@ export async function joinSession(
   // — or before my own rejoin replaced the list — starts offline, not live.
   // Absent on an older backend, which reads as live (ADR 0007).
   store.setSessionCode(sessionCode);
+  // A successful ack proves the socket is up. Set it here, where all three join
+  // paths meet: the `connect` handler only fires on a socket that wasn't already
+  // connected, so a second join in the same tab — leaveSession resets the store
+  // without disconnecting — would otherwise sit on a false "Disconnected" banner.
+  store.setConnectionStatus(true);
   store.setBranch(ack.data.branch);
   store.updateParticipants(
     ack.data.participants.map((p) => ({

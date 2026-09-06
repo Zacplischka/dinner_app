@@ -122,7 +122,7 @@ describe('page branch coverage', () => {
       fetchFriends: vi.fn(async () => undefined) as any,
       fetchFriendRequests: vi.fn(async () => undefined) as any,
       fetchSessionInvites: vi.fn(async () => undefined) as any,
-      acceptSessionInvite: vi.fn(async () => ({ success: true, sessionCode: 'AB123' })) as any,
+      acceptSessionInvite: vi.fn(async () => true) as any,
       declineSessionInvite: vi.fn(async () => true) as any,
     });
   });
