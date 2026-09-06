@@ -287,6 +287,8 @@ describe('ShoppingListPage claims', () => {
     serviceMocks.getShoppingList.mockResolvedValue(list);
     serviceMocks.claimShoppingListLine.mockResolvedValue(list);
     serviceMocks.releaseShoppingListLine.mockResolvedValue(list);
+    // Freeing somebody else's line asks first; most of these tests say yes.
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   // Only the two live-channel tests fake the clock; the rest would rather not
@@ -382,6 +384,30 @@ describe('ShoppingListPage claims', () => {
 
     await tap(buttonOn('250 g canned tomatoes', 'Release'));
 
+    expect(serviceMocks.releaseShoppingListLine).toHaveBeenCalledWith('list-1', '0');
+  });
+
+  // Any Shopper may free any Claim (#229) — but one small tap that silently
+  // takes a line off somebody mid-aisle is not the way to offer it.
+  it("asks before freeing somebody else's Claim, and drops it on no", async () => {
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '0': 'Bob' }));
+    vi.mocked(window.confirm).mockReturnValue(false);
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Release'));
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Bob'));
+    expect(serviceMocks.releaseShoppingListLine).not.toHaveBeenCalled();
+    expect(screen.getByText('Claimed by Bob')).toBeInTheDocument();
+  });
+
+  it('frees your own Claim without asking', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '0': 'Alice' }));
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Release'));
+
+    expect(window.confirm).not.toHaveBeenCalled();
     expect(serviceMocks.releaseShoppingListLine).toHaveBeenCalledWith('list-1', '0');
   });
 

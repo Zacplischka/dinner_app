@@ -180,7 +180,12 @@ function Line({
 
         {/* Releasing is offered on every Claim, not only your own: a Shopper
             who goes dark leaves no live group to appeal to (#229). Taking the
-            freed line over is then a second, deliberate tap. */}
+            freed line over is then a second, deliberate tap. Somebody else's
+            Claim is asked about first — they may be holding it in the aisle,
+            and nothing here can undo the tap for them.
+            ponytail: the browser's own confirm, as the Friends list already
+            uses. Ceiling: unstyled and unbrandable. Upgrade path: the same
+            dialog the leave flow has, if a designed one is ever wanted. */}
         {line.claimedBy ? (
           <span className="flex shrink-0 items-center gap-2 text-sm">
             <span className="text-muted">
@@ -188,7 +193,15 @@ function Line({
             </span>
             <button
               type="button"
-              onClick={onRelease}
+              onClick={() => {
+                if (
+                  line.claimedBy !== shopperName &&
+                  !window.confirm(`Release ${line.claimedBy}'s claim on ${line.text}?`)
+                ) {
+                  return;
+                }
+                onRelease();
+              }}
               className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-muted hover:text-text"
             >
               Release
@@ -263,7 +276,7 @@ export default function ShoppingListPage() {
   // home and takes it with it. Rebuilt from the list id rather than read off
   // location, so no stray query or hash rides along.
   const shareList = useShareLink(
-    list && `${window.location.origin}/list/${list.listId}`,
+    list ? `${window.location.origin}/list/${list.listId}` : undefined,
     'List link copied!'
   );
 
