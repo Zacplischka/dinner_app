@@ -15,6 +15,7 @@ import { useShareLink } from '../hooks/useShareLink';
 import TmdbCredit from '../components/TmdbCredit';
 import MovieLinks from '../components/MovieLinks';
 import { participantRingClass } from '../utils/participantStyles';
+import { formatPriceLevel } from '../utils/money';
 import {
   DeliveryActions,
   generateUberEatsUrl,
@@ -128,12 +129,6 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
     </div>
   );
 }
-
-// priceLevel is omitted from the data when unknown; 0 means genuinely free.
-const formatPriceLevel = (level: number): string => {
-  if (level === 0) return 'Free';
-  return '$'.repeat(level);
-};
 
 // The Match card, extracted (#166) so the crowned Restaurant and the
 // collapsed "other matches" render from the same markup — same

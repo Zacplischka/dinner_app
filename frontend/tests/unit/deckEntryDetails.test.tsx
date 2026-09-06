@@ -247,6 +247,19 @@ describe('Deck Entry details sheet — Movie', () => {
     );
   });
 
+  // ADR 0014: every Movie surface credits TMDB, and an overview is optional.
+  it('credits TMDB even when the Movie has no overview', async () => {
+    deal.mockResolvedValue([heat]);
+    renderSelectionPage();
+    await screen.findByText('Heat');
+    const { dialog } = await pressDetails();
+
+    expect(within(dialog).getByRole('link', { name: 'TMDB' })).toHaveAttribute(
+      'href',
+      'https://www.themoviedb.org/movie/949'
+    );
+  });
+
   it('drops the slide-in under prefers-reduced-motion', async () => {
     vi.spyOn(window, 'matchMedia').mockImplementation(
       (media: string) =>
@@ -272,16 +285,14 @@ describe('Deck Entry details sheet — Full House interrupt', () => {
     seed('watch', 'Alice', 'Bob', 'Carol');
   });
 
-  it('closes the sheet, shows the takeover, and leaves one history entry behind', async () => {
-    const pushState = vi.spyOn(window.history, 'pushState');
+  // Like Alien so it sits behind the cursor, open the details of Heat, then
+  // let Bob and Carol complete the house on Alien behind the open sheet.
+  const openSheetThenFullHouse = async () => {
     renderSelectionPage();
     await screen.findByText('Alien');
-
-    // Like Alien so it sits behind the cursor, then open the details of Heat.
     fireEvent.click(screen.getByRole('button', { name: 'Like' }));
     await screen.findByText('Heat');
     await pressDetails();
-    expect(pushState).toHaveBeenCalledTimes(1);
 
     act(() => {
       useSessionStore.getState().recordLiveSelection('tmdb:movie:348', 'Bob');
@@ -290,11 +301,33 @@ describe('Deck Entry details sheet — Full House interrupt', () => {
 
     const takeover = await screen.findByRole('dialog');
     expect(within(takeover).getByText('EVERYONE LIKED THIS')).toBeInTheDocument();
+    return takeover;
+  };
+
+  it('closes the sheet, shows the takeover, and leaves one history entry behind', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
+    const takeover = await openSheetThenFullHouse();
+
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     // The sheet's entry is reused rather than stacked on top of.
     expect(pushState).toHaveBeenCalledTimes(1);
 
     act(() => window.history.back());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('Heat')).toBeInTheDocument();
+    expect(takeover).not.toBeInTheDocument();
+  });
+
+  // The sheet's focus restore must not out-run the takeover's autoFocus: focus
+  // behind the takeover would sit in the aria-hidden deck, and the takeover's
+  // Escape is a handler on the dialog, so it would stop dismissing it.
+  it('leaves focus inside the takeover, where Escape still dismisses it', async () => {
+    const takeover = await openSheetThenFullHouse();
+
+    await waitFor(() => expect(takeover.contains(document.activeElement)).toBe(true));
+    expect(document.activeElement).toHaveAccessibleName('Finish here');
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByText('Heat')).toBeInTheDocument();
   });
@@ -324,6 +357,18 @@ describe('Deck Entry details sheet — Restaurant', () => {
     );
     expect(maps).toHaveAttribute('target', '_blank');
     expect(maps).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  // #85 again: 0 is a genuinely free Restaurant, not an unknown one, and an
+  // empty run of '$' is a blank chip and a meaningless announcement.
+  it('says "Free" for a price level of 0, as the Match card does', async () => {
+    deal.mockResolvedValue([{ ...ramen, priceLevel: 0 }]);
+    renderSelectionPage();
+    await screen.findByText('Ramen Ichiban');
+    const { dialog } = await pressDetails();
+
+    expect(within(dialog).getByText('Free')).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText(/^Price level/)).not.toBeInTheDocument();
   });
 });
 

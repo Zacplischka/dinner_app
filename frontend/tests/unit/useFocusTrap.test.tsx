@@ -30,6 +30,24 @@ describe('useFocusTrap', () => {
     opener.remove();
   });
 
+  // A dialog that closes because another is taking over (#424) commits both in
+  // one pass, and the newcomer's autoFocus runs first: the restore must not
+  // drag focus back out of it.
+  it('leaves focus where it is when another dialog claimed it during the close', () => {
+    const opener = document.createElement('button');
+    const takeover = document.createElement('button');
+    document.body.append(opener, takeover);
+    opener.focus();
+
+    const { rerender } = render(<ConfirmLeaveModal isOpen onClose={vi.fn()} onConfirm={vi.fn()} />);
+    takeover.focus();
+    rerender(<ConfirmLeaveModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} />);
+
+    expect(document.activeElement).toBe(takeover);
+    opener.remove();
+    takeover.remove();
+  });
+
   it('holds Tab while every button is disabled', () => {
     render(<ConfirmLeaveModal isOpen isLoading onClose={vi.fn()} onConfirm={vi.fn()} />);
     // jsdom has no focus-fixup; mimic the browser dropping focus to <body>

@@ -6,6 +6,7 @@ import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import TmdbCredit from './TmdbCredit';
 import { hasDetails } from './DeckEntryDetails';
 
@@ -225,7 +226,7 @@ export default function SwipeCard({
   // overview.
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
-  const priceDisplay = '$'.repeat(restaurant?.priceLevel || 0);
+  const priceLevel = restaurant?.priceLevel;
   const movieMeta = [
     movie?.year,
     movie?.mediaType === 'tv'
@@ -409,8 +410,8 @@ export default function SwipeCard({
             </div>
           )}
 
-          {priceDisplay && (
-            <span aria-label={`Price level ${restaurant?.priceLevel} of 4`}>{priceDisplay}</span>
+          {priceLevel !== undefined && (
+            <span aria-label={priceLevelLabel(priceLevel)}>{formatPriceLevel(priceLevel)}</span>
           )}
 
           {restaurant?.openNow !== undefined && (

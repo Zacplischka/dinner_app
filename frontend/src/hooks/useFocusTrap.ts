@@ -54,7 +54,12 @@ export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void
   // to the opener the instant the dialog opened, then forget the opener.
   useEffect(() => {
     if (active || !opener.current) return;
-    opener.current.focus();
+    // Only when the close left focus nowhere. A dialog that closes because
+    // another one is taking over (a Full House over the details sheet, #424)
+    // commits both in one pass, and the newcomer's `autoFocus` has already run
+    // by the time this does — restoring here would drag focus back behind it.
+    const claimed = document.activeElement;
+    if (!claimed || claimed === document.body) opener.current.focus();
     opener.current = null;
   }, [active]);
 }

@@ -12,6 +12,7 @@ import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRestaurant } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import RetryingPhoto from './RetryingPhoto';
 import MovieLinks from './MovieLinks';
 import TmdbCredit from './TmdbCredit';
@@ -139,8 +140,8 @@ export default function DeckEntryDetails({ entry, onClose }: DeckEntryDetailsPro
                 </span>
               )}
               {restaurant.priceLevel !== undefined && (
-                <span aria-label={`Price level ${restaurant.priceLevel} of 4`}>
-                  {'$'.repeat(restaurant.priceLevel)}
+                <span aria-label={priceLevelLabel(restaurant.priceLevel)}>
+                  {formatPriceLevel(restaurant.priceLevel)}
                 </span>
               )}
               {restaurant.openNow !== undefined && (
@@ -153,12 +154,12 @@ export default function DeckEntryDetails({ entry, onClose }: DeckEntryDetailsPro
             </div>
           )}
 
-          {movie?.overview && (
-            <>
-              <p className="mt-3 text-sm text-muted">{movie.overview}</p>
-              <TmdbCredit placeId={movie.placeId} />
-            </>
-          )}
+          {movie?.overview && <p className="mt-3 text-sm text-muted">{movie.overview}</p>}
+
+          {/* Not under the overview, which is optional: ADR 0014 asks for the
+              credit wherever TMDB's data or images appear, and a Movie with no
+              overview still shows its poster, year, genres and score. */}
+          {movie && <TmdbCredit placeId={movie.placeId} />}
 
           {restaurant?.address && <p className="mt-3 text-sm text-muted">{restaurant.address}</p>}
 
