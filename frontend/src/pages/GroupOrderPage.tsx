@@ -99,8 +99,7 @@ function sumQtyByIndex(lines: OrderLine[]): Map<number, number> {
   return totals;
 }
 
-// The clipboard-only pattern of ResultsPage's handleShareResults, reused
-// verbatim by both handoff branches' copy buttons.
+// Clipboard-only copy, reused verbatim by both handoff branches' copy buttons.
 function copyToClipboard(text: string) {
   navigator.clipboard
     .writeText(text)

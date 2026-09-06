@@ -11,7 +11,7 @@ import { useOrderStore } from '../stores/orderStore';
 import { useEffect, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
-import { useToast } from '../hooks/useToast';
+import { useShareLink } from '../hooks/useShareLink';
 import { participantRingClass } from '../utils/participantStyles';
 import {
   DeliveryActions,
@@ -276,7 +276,6 @@ export default function ResultsPage() {
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
-  const toast = useToast();
 
   // Everything below the crown — other matches, Near Misses, delivery links —
   // is restaurant chrome, so Recipes are filtered out of it. The crown itself
@@ -412,14 +411,6 @@ export default function ResultsPage() {
 
   const handleLeaveSession = useLeaveSession(sessionCode);
 
-  const handleShareResults = () => {
-    const url = window.location.href;
-    navigator.clipboard
-      .writeText(url)
-      .then(() => toast.success('Results link copied!'))
-      .catch(() => toast.error('Could not copy link'));
-  };
-
   // The crown's one-line reason. One cascade for
   // both kinds — only the two rungs that name the middle tiebreak differ, and
   // there is nothing "nearby" about a dish you cook.
@@ -448,6 +439,16 @@ export default function ResultsPage() {
     noneSelected: "Nobody swiped yes, so here's the most popular one.",
   };
 
+  // Share the Top Pick: phones get the native sheet headed by the crowned name
+  // and its one-line reason; desktop copies this page's URL.
+  const handleShareTopPick = useShareLink(
+    window.location.href,
+    'Top Pick link copied!',
+    crownedRecipe
+      ? { title: crownedRecipe.recipe.name, text: crownReason(crownedRecipe, recipeWords) }
+      : pick && { title: pick.restaurant.name, text: crownReason(pick, restaurantWords) }
+  );
+
   return (
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
@@ -467,10 +468,10 @@ export default function ResultsPage() {
         confirmContext="results"
         rightAction={
           <button
-            onClick={handleShareResults}
+            onClick={() => void handleShareTopPick()}
             className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-cyan transition-colors"
-            title="Share results"
-            aria-label="Share results"
+            title="Share Top Pick"
+            aria-label="Share Top Pick"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -703,8 +704,8 @@ export default function ResultsPage() {
             </button>
           )}
 
-          <button onClick={handleShareResults} className="btn btn-secondary w-full">
-            Share Results
+          <button onClick={() => void handleShareTopPick()} className="btn btn-secondary w-full">
+            Share Top Pick
           </button>
 
           {/* Leaves for the entry fork — a new Session, not a Restart. The

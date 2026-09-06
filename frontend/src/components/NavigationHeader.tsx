@@ -5,6 +5,7 @@
 
 import { ReactNode, useState } from 'react';
 import { useSessionStore } from '../stores/sessionStore';
+import { toast } from '../hooks/useToast';
 import ConfirmLeaveModal from './ConfirmLeaveModal';
 
 export interface NavigationHeaderProps {
@@ -56,7 +57,23 @@ export default function NavigationHeader({
 }: NavigationHeaderProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { isConnected } = useSessionStore();
+
+  // Tap-to-copy Session Code, on every in-Session screen — the lobby's copy
+  // button used to be the only one. The badge flashes lime for 1.5s as the
+  // pressed cue; the toast says what happened.
+  const handleCopyCode = () => {
+    if (!sessionCode) return;
+    navigator.clipboard
+      .writeText(sessionCode)
+      .then(() => {
+        toast.success('Session code copied!');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => toast.error('Could not copy code'));
+  };
 
   const handleBackClick = () => {
     if (confirmOnBack) {
@@ -169,11 +186,26 @@ export default function NavigationHeader({
               )}
 
               {sessionCode && (
-                <span className="inline-flex items-center px-2 py-0.5 bg-cyan/10 border border-cyan/30 rounded-full">
-                  <span className="text-xs font-mono font-medium text-cyan tracking-wider">
-                    {sessionCode}
+                // 44px tap target without growing the row: the button overhangs the pill.
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="-my-3 inline-flex min-h-[44px] items-center"
+                  aria-label="Copy Session Code"
+                  title="Copy Session Code"
+                >
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 border rounded-full transition-colors ${
+                      copied ? 'bg-lime/10 border-lime/30' : 'bg-cyan/10 border-cyan/30'
+                    }`}
+                  >
+                    <span
+                      className={`text-xs font-mono font-medium tracking-wider ${copied ? 'text-lime' : 'text-cyan'}`}
+                    >
+                      {sessionCode}
+                    </span>
                   </span>
-                </span>
+                </button>
               )}
 
               {showSubtitle && <p className="text-xs text-muted">{subtitle}</p>}

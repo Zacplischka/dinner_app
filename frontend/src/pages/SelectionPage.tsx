@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
-import { useToast } from '../hooks/useToast';
+import { useShareLink } from '../hooks/useShareLink';
 import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import NavigationHeader from '../components/NavigationHeader';
@@ -62,7 +62,6 @@ export default function SelectionPage() {
   // (#333). It rides the Session, so every Participant's page reads the same
   // fact, and a full Deck says nothing at all.
   const [recipeSourceDown, setRecipeSourceDown] = useState(false);
-  const toast = useToast();
   // Count-keyed, not boolean: stores the buffer length last announced per placeId so
   // a card re-reveals when its like count GROWS (the room is audible: "1 of 3" then
   // "2 of 3" then the takeover). An unchanged count never re-fires.
@@ -253,26 +252,7 @@ export default function SelectionPage() {
 
   const handleLeaveSession = useLeaveSession(sessionCode);
 
-  // Same share-or-copy fallback as the lobby's invite button.
-  const handleShareInvite = async () => {
-    if (!shareableLink) return;
-
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: 'Dinder', url: shareableLink });
-        return;
-      } catch (err) {
-        // Dismissing the sheet is not a failure; anything else falls through
-        // to the clipboard. DOMException matching by name (jsdom-safe).
-        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
-      }
-    }
-
-    navigator.clipboard
-      .writeText(shareableLink)
-      .then(() => toast.success('Invite link copied!'))
-      .catch(() => toast.error('Could not copy link'));
-  };
+  const handleShareInvite = useShareLink(shareableLink, 'Invite link copied!');
 
   // Reachable invite mid-Deck (#284): the header's right-hand action slot, so
   // no route back to the lobby and no "Leave Session?" detour.
