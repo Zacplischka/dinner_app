@@ -1,6 +1,6 @@
 // Session Lobby page - Waiting room showing participants before selection starts
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { getSession } from '../services/apiClient';
@@ -20,6 +20,9 @@ export default function SessionLobbyPage() {
   const [shareableLink, setShareableLink] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
+  // The fetch re-runs on every roster change (below); a Session that keeps
+  // failing is toasted once, not once per join.
+  const fetchFailedRef = useRef(false);
 
   useEffect(() => {
     // Fetch session details to get shareable link
@@ -33,8 +36,15 @@ export default function SessionLobbyPage() {
         const session = await getSession(sessionCode);
         setShareableLink(session.shareableLink);
         setExpiresAt(session.expiresAt);
+        fetchFailedRef.current = false;
       } catch (err) {
+        // #403: a swallowed failure leaves a stale code and a dead countdown on
+        // screen with nothing to act on. The console is not a user surface.
         console.error('Failed to load session:', err);
+        if (!fetchFailedRef.current) {
+          toast.error(err instanceof Error ? err.message : 'Failed to load session');
+        }
+        fetchFailedRef.current = true;
       } finally {
         setIsLoading(false);
       }
@@ -44,7 +54,7 @@ export default function SessionLobbyPage() {
     // `participants` is a deliberate extra dep: a join slides the Session's TTL
     // forward server-side and no socket event carries the new expiresAt, so the
     // header's countdown is re-read from the Session on every roster change.
-  }, [sessionCode, participants, setExpiresAt]);
+  }, [sessionCode, participants, setExpiresAt, toast]);
 
   useEffect(() => {
     if (sessionStatus === 'selecting' && sessionCode) {
