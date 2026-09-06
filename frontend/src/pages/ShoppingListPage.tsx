@@ -5,7 +5,7 @@
 // a self-declared name, never a Participant check (#229). The cook view (#265)
 // is the same URL's other face; the swap picker is #264.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   MAX_SHOPPER_NAME,
@@ -195,11 +195,13 @@ function Line({
             </button>
           </span>
         ) : (
+          // Always tappable, even with no name yet: a Shopper who has never
+          // typed one here is the canonical link-holder (#229), and greying
+          // the button out tells them nothing. The tap answers instead.
           <button
             type="button"
             onClick={onClaim}
-            disabled={!shopperName}
-            className="shrink-0 rounded-full bg-cyan/15 px-3 py-1 text-xs font-semibold text-cyan disabled:opacity-40"
+            className="shrink-0 rounded-full bg-cyan/15 px-3 py-1 text-xs font-semibold text-cyan"
           >
             Claim
           </button>
@@ -273,10 +275,20 @@ export default function ShoppingListPage() {
   const [shopperName, setShopperName] = useState(
     () => localStorage.getItem(SHOPPER_NAME_KEY) ?? sessionName ?? ''
   );
+  const nameField = useRef<HTMLInputElement>(null);
+  /** Raised by a nameless Claim, and only by one: nothing nags up front. */
+  const [needsName, setNeedsName] = useState(false);
 
   function renameShopper(name: string) {
     setShopperName(name);
     localStorage.setItem(SHOPPER_NAME_KEY, name);
+    if (name) setNeedsName(false);
+  }
+
+  /** A Claim with nobody behind it: send the Shopper where the answer is. */
+  function askForName() {
+    setNeedsName(true);
+    nameField.current?.focus();
   }
 
   const lines = list?.lines ?? [];
@@ -300,7 +312,9 @@ export default function ShoppingListPage() {
         line={line}
         shopperName={shopperName}
         onClaim={() =>
-          void applyChange(() => claimShoppingListLine(list.listId, line.id, shopperName))
+          shopperName
+            ? void applyChange(() => claimShoppingListLine(list.listId, line.id, shopperName))
+            : askForName()
         }
         onRelease={() => void applyChange(() => releaseShoppingListLine(list.listId, line.id))}
         onSwap={(stockcode) =>
@@ -398,21 +412,30 @@ export default function ShoppingListPage() {
 
             {/* Identity is a label the Shopper types, never a check (#229) —
                 whoever holds the link is a Shopper, Participant or not. */}
-            <div className="card mb-6 flex items-center gap-3">
-              <label htmlFor="shopper-name" className="shrink-0 text-sm text-muted">
-                Claiming as
-              </label>
-              {/* Committed on the way out of the field, never per keystroke:
-                  a Claim matches on the whole name, so mid-edit every "Yours"
-                  and the Tally itself would blink out on the first letter. */}
-              <input
-                id="shopper-name"
-                defaultValue={shopperName}
-                onBlur={(event) => renameShopper(event.target.value.trim())}
-                placeholder="Your name"
-                maxLength={MAX_SHOPPER_NAME}
-                className="input flex-1"
-              />
+            <div className="card mb-6">
+              <div className="flex items-center gap-3">
+                <label htmlFor="shopper-name" className="shrink-0 text-sm text-muted">
+                  Claiming as
+                </label>
+                {/* Committed on the way out of the field, never per keystroke:
+                    a Claim matches on the whole name, so mid-edit every "Yours"
+                    and the Tally itself would blink out on the first letter. */}
+                <input
+                  id="shopper-name"
+                  ref={nameField}
+                  defaultValue={shopperName}
+                  onBlur={(event) => renameShopper(event.target.value.trim())}
+                  placeholder="Your name"
+                  maxLength={MAX_SHOPPER_NAME}
+                  aria-describedby={needsName ? 'shopper-name-hint' : undefined}
+                  className="input flex-1"
+                />
+              </div>
+              {needsName && (
+                <p id="shopper-name-hint" role="status" className="mt-2 text-sm text-amber">
+                  Type your name here first — a Claim is a name on a line.
+                </p>
+              )}
             </div>
 
             {/* A Tally is a preview of your own receipt, not a debt: it lights

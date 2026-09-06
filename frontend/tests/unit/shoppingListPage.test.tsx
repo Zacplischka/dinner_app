@@ -327,11 +327,34 @@ describe('ShoppingListPage claims', () => {
     expect(serviceMocks.claimShoppingListLine).toHaveBeenCalledWith('list-1', '0', 'Alice');
   });
 
-  it('will not claim without a name behind the Claim', async () => {
+  // A greyed-out Claim with nothing saying why is a dead end for the one
+  // Shopper who most needs the page — the housemate on a forwarded link, who
+  // has never typed a name here.
+  it('sends a nameless Claim to the name field instead of greying it out', async () => {
     renderPage();
     await screen.findByText('250 g canned tomatoes');
 
-    expect(buttonOn('250 g canned tomatoes', 'Claim')).toBeDisabled();
+    const claim = buttonOn('250 g canned tomatoes', 'Claim');
+    expect(claim).toBeEnabled();
+    await tap(claim);
+
+    expect(serviceMocks.claimShoppingListLine).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Claiming as')).toHaveFocus();
+    expect(screen.getByText(/type your name/i)).toBeInTheDocument();
+  });
+
+  it('drops the hint and claims once the Shopper has a name', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    const field = screen.getByLabelText('Claiming as');
+    fireEvent.change(field, { target: { value: 'Alice' } });
+    fireEvent.blur(field);
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    expect(screen.queryByText(/type your name/i)).not.toBeInTheDocument();
+    expect(serviceMocks.claimShoppingListLine).toHaveBeenCalledWith('list-1', '0', 'Alice');
   });
 
   it('remembers the Shopper, so a second visit does not ask again', async () => {
