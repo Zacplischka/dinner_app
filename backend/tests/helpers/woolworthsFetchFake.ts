@@ -4,7 +4,7 @@ export const coriander = JSON.parse(
   readFileSync(new URL('../fixtures/woolworths/search-coriander.json', import.meta.url), 'utf8')
 ) as Record<string, unknown>;
 
-export interface RecordedRequest {
+interface RecordedRequest {
   url: string;
   method: string;
   headers: Record<string, string>;

@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 // app under test (src/redis/client.ts applies it when VITEST is set) and by
 // this test client. Cleanup sweeps strictly inside it, so a shared dev Redis
 // can never lose real data to a test run.
-export const TEST_KEY_PREFIX = 'test:';
+const TEST_KEY_PREFIX = 'test:';
 
 let redisClient: Redis | null = null;
 

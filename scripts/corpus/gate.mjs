@@ -100,7 +100,7 @@ const INGREDIENT_FIELDS = ['name', 'searchTerm', 'amount', 'unit', 'original'];
 const CREDIT_FIELDS = ['sourceName', 'sourceUrl', 'creditUrl', 'provenance'];
 
 /** The units the authoring brief allows. `''` pairs with a countable name. */
-export const UNITS = ['g', 'kg', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'bunch', ''];
+const UNITS = ['g', 'kg', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'bunch', ''];
 
 // The amendments the pilot had to turn into gates. Both lists grow from gate
 // failures — a term arrives attached to the Recipe that got it wrong — never
@@ -361,7 +361,7 @@ function auTermFailures(ingredients, steps) {
  * a `cwebp` run can emit. Throws on anything that is not one of them, which is
  * what a truncated or half-written image looks like from here.
  */
-export function webpSize(bytes) {
+function webpSize(bytes) {
   if (
     bytes.length < 30 ||
     bytes.toString('ascii', 0, 4) !== 'RIFF' ||
@@ -427,7 +427,7 @@ export const AUTHOR_FAMILY = 'anthropic';
 const OPENAI_MODEL = 'gpt-5.5';
 const GEMINI_MODEL = 'gemini-pro-latest';
 
-export const JUDGE_RUBRIC = `You are an independent culinary reviewer for an Australian home-cooking
+const JUDGE_RUBRIC = `You are an independent culinary reviewer for an Australian home-cooking
 recipe corpus. Judge ONLY the recipe below, on these axes:
 
 1. quantities are sane for the stated servings;
@@ -549,7 +549,7 @@ export async function culinaryFailures(recipe, judges = DEFAULT_JUDGES) {
 
 // ------------------------------------------------------- the layers, in order
 /** The pilot's budget: two rewrites cleared every culinary failure it found. */
-export const MAX_REGATES = 2;
+const MAX_REGATES = 2;
 
 const REWRITE_INTRO =
   'A previous attempt failed the corpus gate. Fix every point below in a fresh draft — they ' +

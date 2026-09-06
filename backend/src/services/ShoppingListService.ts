@@ -259,7 +259,7 @@ function toLineState(
  * thigh", "2 garlic clove". An amount the source never stated leaves the line
  * as the ingredient alone rather than inventing a quantity for it.
  */
-export function lineText(amount: number, unit: string, name: string): string {
+function lineText(amount: number, unit: string, name: string): string {
   if (!(amount > 0)) return name;
   const shown = Number(amount.toFixed(2));
   // Spoonacular's metric rewrite states grams as "gr"; a human writes "g"
