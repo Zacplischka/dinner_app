@@ -211,6 +211,9 @@ describe('websocket handlers', () => {
         sessionCode,
         participantCount: 1,
         isRejoin: false,
+        // #405: the room needs to know who the Host is, or the start guard
+        // reads a roster that cannot represent one.
+        isHost: true,
       });
       expect(logSpy).toHaveBeenCalledWith(
         { socketId: 'socket-1', sessionCode, isRejoin: false, participantCount: 1 },
@@ -290,6 +293,7 @@ describe('websocket handlers', () => {
         sessionCode,
         participantCount: 1,
         isRejoin: true,
+        isHost: true,
       });
       expect(logSpy).toHaveBeenCalledWith(
         { socketId: 'new-socket', sessionCode, isRejoin: true, participantCount: 1 },
@@ -808,6 +812,34 @@ describe('websocket handlers', () => {
           sessionCode,
           reason: 'NOT_IN_SESSION',
         },
+        'Rejected session:restart'
+      );
+    });
+
+    // #405: a joiner pressing Start would push the whole room into the Deck
+    // before the Host had finished inviting. The ack has to say why.
+    it('should reject a start from a participant who is not the host', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      await createSessionWithParticipant('socket-1');
+      await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' });
+      const testIo = io();
+      const callback = vi.fn();
+
+      await handleSessionRestart(
+        socket('socket-2') as any,
+        testIo as any,
+        { sessionCode },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'NOT_HOST', message: expect.any(String) },
+      });
+      expect(testIo.roomEmitter.emit).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        { socketId: 'socket-2', sessionCode, reason: 'NOT_HOST' },
         'Rejected session:restart'
       );
     });

@@ -117,6 +117,10 @@ export async function handleSessionJoin(
       sessionCode,
       participantCount: result.participantCount,
       isRejoin: result.isRejoin,
+      // The room's copy of who the Host is, or a Host who rejoins reads as an
+      // ordinary Participant on every other client and the start guard fires
+      // for all of them (#405).
+      isHost: result.isHost,
     });
 
     if (result.leftSession) emitDeparture(result.leftSession);

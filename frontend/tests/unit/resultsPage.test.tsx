@@ -368,6 +368,65 @@ describe('ResultsPage', () => {
       expect(screen.queryByText('SELECTION SCREEN')).toBeNull();
       expect(screen.getAllByText('Pizza Palace').length).toBeGreaterThan(0);
     });
+
+    // #405: a Restart is the Host's, so a Participant is told who to wait on
+    // instead of a button the server would refuse.
+    it('offers Select Again to the Host only', () => {
+      seedStore({
+        currentUserId: 'p2',
+        participants: [alice, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        sessionStatus: 'complete',
+      });
+      renderResultsWithSelect();
+
+      expect(screen.queryByRole('button', { name: 'Select again' })).toBeNull();
+      expect(screen.getByText('Waiting for the host to start another round')).toBeInTheDocument();
+    });
+
+    // #405: nothing promotes a successor, so with the Host gone the room would
+    // wait on someone who is never coming back.
+    it('offers Select Again to whoever is left once the Host has gone', () => {
+      seedStore({
+        currentUserId: 'p2',
+        participants: [bob],
+        overlappingOptions: [pizza],
+        allSelections: { Bob: [pizza.placeId] },
+        sessionStatus: 'complete',
+      });
+      renderResultsWithSelect();
+
+      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+    });
+
+    // #405: a Host whose tab dropped stays on the roster, so "is a Host listed"
+    // would hide the button from everyone while the server was handing it out.
+    it('offers Select Again to whoever is left once the Host has dropped', () => {
+      seedStore({
+        currentUserId: 'p2',
+        participants: [{ ...alice, isOnline: false }, bob],
+        overlappingOptions: [pizza],
+        allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        sessionStatus: 'complete',
+      });
+      renderResultsWithSelect();
+
+      expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
+    });
+
+    it('offers Try Again to the Host only when nothing matched', () => {
+      seedStore({
+        currentUserId: 'p2',
+        participants: [alice, bob],
+        overlappingOptions: [],
+        allSelections: { Alice: [pizza.placeId], Bob: [noodle.placeId] },
+        sessionStatus: 'complete',
+      });
+      renderResultsWithSelect();
+
+      expect(screen.queryByRole('button', { name: 'Try Again' })).toBeNull();
+    });
   });
 
   describe('Unanimous Selections disclosure (#85)', () => {

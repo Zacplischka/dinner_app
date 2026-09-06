@@ -418,6 +418,35 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Bob');
   });
 
+  // #405: the start guard reads isHost off the roster, so a Host who left and
+  // rejoined has to arrive as a Host. Assuming false leaves every other client
+  // hostless and hands all of them a button the server refuses.
+  it('takes a joiner isHost from the server', () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+
+    socket.trigger('participant:joined', {
+      participantId: 'participant-2',
+      displayName: 'Bo',
+      isRejoin: false,
+      isHost: true,
+    });
+    expect(
+      useSessionStore.getState().participants.find((p) => p.displayName === 'Bo')?.isHost
+    ).toBe(true);
+
+    // Additive (ADR 0007): an older backend sends none, so the entry keeps the
+    // flag it already has rather than being demoted by a reconnect.
+    socket.trigger('participant:joined', {
+      participantId: 'participant-3',
+      displayName: 'Bo',
+      isRejoin: true,
+    });
+    expect(
+      useSessionStore.getState().participants.find((p) => p.displayName === 'Bo')?.isHost
+    ).toBe(true);
+  });
+
   it('handles session lifecycle events and server errors', () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();

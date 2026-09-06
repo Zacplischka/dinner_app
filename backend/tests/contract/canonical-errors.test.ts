@@ -88,6 +88,13 @@ describe('canonical error transport', () => {
       status: 403,
       code: 'NOT_IN_SESSION',
     },
+    // In the room, just not the one who opened it (#405) — its own code so the
+    // client can say "waiting for the host" rather than "you're not here".
+    NOT_HOST: {
+      domainMessage: 'Only the host can start selecting',
+      status: 403,
+      code: 'NOT_HOST',
+    },
     // Expired and never-existed answer identically — the public code is the
     // plain NOT_FOUND, so the wire reveals nothing about which it was.
     SHOPPING_LIST_NOT_FOUND: {
