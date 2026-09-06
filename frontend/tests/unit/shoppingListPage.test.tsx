@@ -22,6 +22,7 @@ vi.mock('../../src/services/apiClient', async () => {
 });
 
 import ShoppingListPage from '../../src/pages/ShoppingListPage';
+import { useToastStore } from '../../src/hooks/useToast';
 
 const tomatoes = { stockcode: 12345, name: 'Woolworths Diced Tomatoes', packageSize: '400g' };
 const beef = { stockcode: 777, name: 'Beef Chuck Steak', packageSize: 'per 1kg' };
@@ -93,6 +94,13 @@ describe('ShoppingListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     serviceMocks.getShoppingList.mockResolvedValue(list);
+    // The global afterEach's restoreAllMocks drops setup.ts's resolved value.
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    useToastStore.setState({ toasts: [] });
+  });
+
+  afterEach(() => {
+    delete (navigator as { share?: unknown }).share;
   });
 
   // Every NavigationHeader on the funnel is sentence case (#412); this one was
@@ -206,6 +214,41 @@ describe('ShoppingListPage', () => {
   it('names Woolworths as the source of the prices', async () => {
     renderPage();
     expect(await screen.findByText(/Prices from Woolworths/i)).toBeInTheDocument();
+  });
+
+  // "As minted" is the mint's own vocabulary, not the Shopper's: what they
+  // need is the day the tills were read, so a week-old total reads as one.
+  it('dates the prices to the day the list was minted', async () => {
+    renderPage();
+    expect(await screen.findByText(/Prices from Woolworths on Sat, 1 Aug/i)).toBeInTheDocument();
+  });
+
+  // The list is meant to be forwarded (#229), and the page is the only place
+  // the URL is on offer — back goes home and takes it with it.
+  it('shares the list URL from the header, copying it where there is no sheet', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+
+    await act(async () => void fireEvent.click(screen.getByRole('button', { name: /share/i })));
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('http://localhost:3000/list/list-1');
+    expect(useToastStore.getState().toasts).toContainEqual(
+      expect.objectContaining({ type: 'success', message: expect.stringMatching(/copied/i) })
+    );
+  });
+
+  it('hands the list URL to the native share sheet where there is one', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+
+    await act(async () => void fireEvent.click(screen.getByRole('button', { name: /share/i })));
+
+    expect(share).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'http://localhost:3000/list/list-1' })
+    );
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
   });
 
   it('waits while a fresh list is still being priced', () => {

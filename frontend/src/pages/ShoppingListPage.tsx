@@ -14,6 +14,7 @@ import {
   type ShoppingListLine,
 } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
+import { useShareLink } from '../hooks/useShareLink';
 import { useShoppingList } from '../hooks/useShoppingList';
 import {
   claimShoppingListLine,
@@ -53,16 +54,15 @@ function formatNeeds(needs: NeededAmount): string {
   return needs.unit === 'each' ? `needs ${needs.amount}` : `needs ${needs.amount}${needs.unit}`;
 }
 
+/** "Sat, 1 Aug" — the one date shape on this page, for both dates on it. */
+const day = new Intl.DateTimeFormat('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+
 /** The day the list goes, seven days after it was minted. */
 const LIST_LIFETIME_DAYS = 7;
 function formatExpiry(mintedAt: string): string {
   const expires = new Date(mintedAt);
   expires.setDate(expires.getDate() + LIST_LIFETIME_DAYS);
-  return new Intl.DateTimeFormat('en-AU', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  }).format(expires);
+  return day.format(expires);
 }
 
 // The list total and a Tally are the same arithmetic over different lines
@@ -256,6 +256,15 @@ export default function ShoppingListPage() {
   // and everyone holding the URL has to see them.
   const { list, error, applyChange } = useShoppingList(listId, LIVE_POLL_MS);
 
+  // The URL is the whole capability (#229), so forwarding it is the whole
+  // invite — and this page is the only place it is on offer, since back goes
+  // home and takes it with it. Rebuilt from the list id rather than read off
+  // location, so no stray query or hash rides along.
+  const shareList = useShareLink(
+    list && `${window.location.origin}/list/${list.listId}`,
+    'List link copied!'
+  );
+
   // Carried over from the Session if you arrived from one, remembered if you
   // have shopped before, typed fresh by a new link-holder (#229).
   const sessionName = useSessionStore(
@@ -309,12 +318,36 @@ export default function ShoppingListPage() {
         onBack={() => navigate('/')}
         rightAction={
           list ? (
-            <Link
-              to={`/list/${list.listId}/cook`}
-              className="text-sm font-semibold text-cyan hover:underline"
-            >
-              Cook
-            </Link>
+            <span className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void shareList()}
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center text-cyan hover:text-cyan/80"
+                aria-label="Share shopping list"
+                title="Share shopping list"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 12.632a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                  />
+                </svg>
+              </button>
+              <Link
+                to={`/list/${list.listId}/cook`}
+                className="text-sm font-semibold text-cyan hover:underline"
+              >
+                Cook
+              </Link>
+            </span>
           ) : undefined
         }
       />
@@ -355,7 +388,12 @@ export default function ShoppingListPage() {
                   ? 'All covered ✓'
                   : `${claimed} of ${shop.length} claimed`}
               </p>
-              <p className="mt-2 text-xs text-muted">Prices from Woolworths, as minted.</p>
+              {/* Prices are read once, at mint, and never again — so date them
+                  in the Shopper's words rather than the mint's ("as minted"),
+                  because a week-old total has to read as one. */}
+              <p className="mt-2 text-xs text-muted">
+                Prices from Woolworths on {day.format(new Date(list.mintedAt))}.
+              </p>
             </div>
 
             {/* Identity is a label the Shopper types, never a check (#229) —
