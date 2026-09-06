@@ -27,6 +27,10 @@ interface SessionState {
 
   // Selection data
   selections: string[]; // Current user's Place IDs
+  // How far through the Deck this Participant has swiped. Persisted alongside
+  // the Selections it was built from (#404) — a reload that restored the likes
+  // but restarted at card one made every already-decided card decidable again.
+  deckCursor: number;
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
   liveSelections: Record<string, string[]>; // placeId -> displayNames who live-selected it (remote only)
   restaurantNames: Record<string, string>; // placeId -> name mapping for display
@@ -71,6 +75,7 @@ interface SessionState {
   removeSelection: (placeId: string) => void;
   recordLiveSelection: (placeId: string, displayName: string) => void;
   retractLiveSelection: (placeId: string, displayName: string) => void;
+  setDeckCursor: (index: number) => void;
 
   // Results actions
   setResults: (results: Result) => void;
@@ -97,6 +102,7 @@ const initialState = {
   searchRadiusMiles: undefined,
   restaurants: [],
   selections: [],
+  deckCursor: 0,
   allSelections: {},
   liveSelections: {},
   restaurantNames: {},
@@ -184,6 +190,7 @@ export const useSessionStore = create<SessionState>()(
               },
             };
           }),
+        setDeckCursor: (index) => set({ deckCursor: index }),
 
         // Results actions
         setResults: (results) =>
@@ -221,6 +228,9 @@ export const useSessionStore = create<SessionState>()(
             // already submitted and mis-count "x of y have swiped".
             participants: state.participants.map((p) => ({ ...p, hasSubmitted: false })),
             selections: [],
+            // A Restart deals the Deck again; a surviving cursor would drop
+            // the Participant into the middle of a Deck they have not seen.
+            deckCursor: 0,
             allSelections: {},
             liveSelections: {},
             restaurantNames: {},
