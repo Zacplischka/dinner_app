@@ -4,7 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { extractComments, extractDocPaths, findDanglingDocPaths } from './check-comment-paths.mjs';
+import {
+  extractComments,
+  extractDocPaths,
+  extractMarkdownPaths,
+  findDanglingDocPaths,
+  findDanglingMarkdownPaths,
+} from './check-comment-paths.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -55,6 +61,39 @@ test('a dangling citation in a source tree is reported, a resolving one is not',
   }
 });
 
+test('markdown links resolve from the citing file, backticked cites from the repo root', () => {
+  const text = [
+    'See [branching](../branching.md), [adr](./0007-contracts.md#decision) and `docs/branching.md`.',
+    '[hosted](https://example.com/docs/guide.md) and [top](#top) are not repository paths.',
+    '```\n[fenced](specs/in-code.md) `specs/in-code.md`\n```',
+  ].join('\n');
+  assert.deepEqual(extractMarkdownPaths(text, 'docs/agents/domain.md'), [
+    { ref: '../branching.md', from: 'docs/agents' },
+    { ref: './0007-contracts.md', from: 'docs/agents' },
+    { ref: 'docs/branching.md', from: '.' },
+  ]);
+});
+
+test('a dangling markdown link or cite is reported, a resolving one is not', () => {
+  const root = mkdtempSync(join(tmpdir(), 'comment-paths-'));
+  try {
+    mkdirSync(join(root, 'docs'));
+    writeFileSync(join(root, 'docs', 'real.md'), 'exists');
+    writeFileSync(
+      join(root, 'docs', 'index.md'),
+      '[ok](real.md) [gone](./missing.md) `docs/real.md` `specs/gone.md` [web](https://x.y/z.md) [a](#a)\n'
+    );
+    assert.deepEqual(findDanglingMarkdownPaths(root, ['docs/index.md']), [
+      { file: join(root, 'docs', 'index.md'), ref: './missing.md' },
+      { file: join(root, 'docs', 'index.md'), ref: 'specs/gone.md' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+const listed = (dangling) => dangling.map(({ file, ref }) => `  ${file} -> ${ref}`).join('\n');
+
 // The check itself: the sweep (#295) removed every dangling documentation
 // reference from the source tree, and this keeps it that way. A commit that
 // deletes a doc file cited by a comment fails here, naming file and path.
@@ -63,8 +102,15 @@ test('no comment in backend, frontend or shared sources cites a missing reposito
   assert.deepEqual(
     dangling,
     [],
-    `comments cite repository paths that do not exist:\n${dangling
-      .map(({ file, ref }) => `  ${file} -> ${ref}`)
-      .join('\n')}`
+    `comments cite repository paths that do not exist:\n${listed(dangling)}`
+  );
+});
+
+test('no committed Markdown file links or cites a missing repository path', () => {
+  const dangling = findDanglingMarkdownPaths(repoRoot);
+  assert.deepEqual(
+    dangling,
+    [],
+    `Markdown cites repository paths that do not exist:\n${listed(dangling)}`
   );
 });
