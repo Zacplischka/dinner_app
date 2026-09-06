@@ -33,7 +33,7 @@ function middleRung(entry: DeckEntry): number {
   return (entry.kind === 'recipe' ? entry.aggregateLikes : entry.rating) ?? -1;
 }
 
-interface SessionServiceDeps {
+export interface SessionServiceDeps {
   store: SessionStore;
   searchNearbyRestaurants: typeof RestaurantSearchService.searchNearbyRestaurants;
   /**

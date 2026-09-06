@@ -288,9 +288,6 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
       });
 
       const proceedToSubmissions = () => {
-        // Track events received
-        let receivedResults = false;
-
         // Alice should receive participant:submitted but NOT session:results yet
         alice.on('participant:submitted', (data: any) => {
           if (data.participantId !== bob.id) {
@@ -334,7 +331,6 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
             expect(data.overlappingOptions).toBeDefined();
             expect(data.hasOverlap).toBe(true);
 
-            receivedResults = true;
             alice.close();
             bob.close();
             resolve();
@@ -426,7 +422,7 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
         });
 
         // Wait for results after all 3 submit
-        alice.on('session:results', (data: any) => {
+        alice.on('session:results', () => {
           try {
             expect(submittedCount).toBe(3); // Includes Alice's own submitted notification
             alice.close();

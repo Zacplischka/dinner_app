@@ -58,6 +58,11 @@ describe('canonical error transport', () => {
       status: 404,
       code: 'NO_RECIPES_FOUND',
     },
+    NO_MOVIES_FOUND: {
+      domainMessage: 'No movies matched that Mood',
+      status: 404,
+      code: 'NO_MOVIES_FOUND',
+    },
     RECIPE_SOURCE_UNAVAILABLE: {
       domainMessage: 'Could not reach the recipe source. Please try again.',
       status: 503,

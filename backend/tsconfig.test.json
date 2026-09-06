@@ -1,0 +1,16 @@
+{
+  // The typecheck-only view of the backend: sources plus tests. It widens
+  // `rootDir` to the workspace so `tests/` can be part of the program, which
+  // costs the build config's TS6059 tripwire — the one that stops a `src/`
+  // file importing something outside `src/` (a test helper, `scripts/`, the
+  // raw Supabase types the `src/db/database.types.d.ts` shim exists to dodge)
+  // and only failing in the Railway build on `main`. So `npm run typecheck`
+  // runs BOTH configs, not this one alone (#397).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

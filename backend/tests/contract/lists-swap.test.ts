@@ -9,6 +9,7 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import type { ShoppingList } from '@dinder/shared/types';
 import { createListsRouter } from '../../src/api/lists.js';
+import type { ShoppingListService } from '../../src/services/ShoppingListService.js';
 import { errorHandler } from '../../src/middleware/errorHandler.js';
 import { logger } from '../../src/logger.js';
 
@@ -58,7 +59,7 @@ const swapped: ShoppingList = {
   ],
 };
 
-function buildApp(overrides: { swapLine?: ReturnType<typeof vi.fn> } = {}) {
+function buildApp(overrides: { swapLine?: ShoppingListService['swapLine'] } = {}) {
   const swapLine = overrides.swapLine ?? vi.fn(async () => swapped as ShoppingList | null);
   const app = express();
   app.use(pinoHttp({ logger }));

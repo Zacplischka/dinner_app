@@ -7,6 +7,7 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import type { ShoppingList } from '@dinder/shared/types';
 import { createListsRouter } from '../../src/api/lists.js';
+import type { ShoppingListService } from '../../src/services/ShoppingListService.js';
 import { errorHandler } from '../../src/middleware/errorHandler.js';
 import { logger } from '../../src/logger.js';
 
@@ -35,10 +36,21 @@ const list: ShoppingList = {
   ],
 };
 
-function buildApp(readList = vi.fn(async () => list as ShoppingList | null)) {
+function buildApp(
+  readList: ShoppingListService['readList'] = vi.fn(async () => list as ShoppingList | null)
+) {
   const app = express();
   app.use(pinoHttp({ logger }));
-  app.use('/api/lists', createListsRouter({ mint: vi.fn(), readList }));
+  app.use(
+    '/api/lists',
+    createListsRouter({
+      mint: vi.fn(),
+      readList,
+      claimLine: vi.fn(),
+      releaseLine: vi.fn(),
+      swapLine: vi.fn(),
+    })
+  );
   app.use(errorHandler);
   return { app, readList };
 }
