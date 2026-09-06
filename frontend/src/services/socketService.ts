@@ -92,7 +92,9 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
         success: false,
         error: {
           code: 'UNKNOWN',
-          message: "You're offline. Check your connection and try again.",
+          // Not "You're offline": this is also true mid-reconnect, before
+          // initializeSocket() has run, and when the server is down.
+          message: 'Not connected. Check your connection and try again.',
         },
       });
       return;

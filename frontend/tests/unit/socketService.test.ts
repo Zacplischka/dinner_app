@@ -262,7 +262,9 @@ describe('socketService', () => {
 
     const notConnected = {
       success: false,
-      error: { code: 'UNKNOWN', message: "You're offline. Check your connection and try again." },
+      // Says only what the client knows: not connected covers mid-reconnect and
+      // a dead server too, so it must not claim the user is offline (#409).
+      error: { code: 'UNKNOWN', message: 'Not connected. Check your connection and try again.' },
     };
     await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual(notConnected);
     await expect(socketService.submitSelection('AB123', [])).resolves.toEqual(notConnected);

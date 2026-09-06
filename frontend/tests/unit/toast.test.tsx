@@ -19,12 +19,23 @@ describe('toast stack (#409)', () => {
     expect(useToastStore.getState().toasts.map((t) => t.message)).toEqual(['two', 'three', 'four']);
   });
 
-  it('does not re-add an identical consecutive message', () => {
+  it('does not stack an identical consecutive message, but refreshes it', () => {
     const first = toast.error('Reconnecting…');
     const again = toast.error('Reconnecting…');
 
-    expect(again).toBe(first);
+    // A new id means the card remounts and its 5s timer restarts — a second tap
+    // must not inherit whatever was left of the first toast's countdown.
+    expect(again).not.toBe(first);
     expect(useToastStore.getState().toasts).toHaveLength(1);
+    expect(useToastStore.getState().toasts[0].id).toBe(again);
+  });
+
+  it('keeps the older toasts when it refreshes a repeat', () => {
+    toast.info('one');
+    toast.error('Reconnecting…');
+    toast.error('Reconnecting…');
+
+    expect(useToastStore.getState().toasts.map((t) => t.message)).toEqual(['one', 'Reconnecting…']);
   });
 
   it('re-adds a repeat that is no longer consecutive', () => {

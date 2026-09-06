@@ -37,12 +37,18 @@ export const useToastStore = create<ToastStore>((set, get) => ({
   toasts: [],
 
   addToast: (toast) => {
-    // A repeat of what's already on top is noise, not news — reuse it so the
-    // caller's dismiss()/return value still points at a live toast.
-    const last = get().toasts.at(-1);
-    if (last && last.type === toast.type && last.message === toast.message) return last.id;
-
     const id = generateId();
+
+    // A repeat of what's already on top doesn't stack — it replaces it, so the
+    // timer restarts. Returning the old id instead left a second tap with
+    // whatever was left of the first toast's 5s, or nothing at all when the
+    // repeat landed inside its 200ms exit animation.
+    const last = get().toasts.at(-1);
+    if (last && last.type === toast.type && last.message === toast.message) {
+      set((state) => ({ toasts: [...state.toasts.slice(0, -1), { ...toast, id }] }));
+      return id;
+    }
+
     set((state) => ({
       toasts: [...state.toasts, { ...toast, id }].slice(-MAX_TOASTS),
     }));
