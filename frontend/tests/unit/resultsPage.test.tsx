@@ -976,6 +976,22 @@ describe('ResultsPage', () => {
       expect(where.getAttribute('rel')).toContain('noopener');
     });
 
+    // A Session dealt before the corpus moved to TMDB (ADR 0014) outlives the
+    // deploy; its Wikidata ids have no TMDB page, so no link rather than a dead one.
+    it('shows no TMDB links for a Movie dealt before the TMDB corpus', () => {
+      const legacy = { ...alien, placeId: 'Q103569' };
+      seedWatch({
+        overlappingOptions: [legacy],
+        allSelections: { Alice: [legacy.placeId], Bob: [legacy.placeId] },
+        topPick: { restaurant: legacy, likedBy: 2, of: 2 },
+      });
+      renderResults();
+
+      expect(screen.getByRole('link', { name: 'Watch trailer' })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Where to watch' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'TMDB' })).not.toBeInTheDocument();
+    });
+
     it('links the title on IMDb when the corpus knows its id', () => {
       seedWatch();
       renderResults();

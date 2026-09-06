@@ -228,12 +228,16 @@ async function main() {
   }
   // Best-known first — the deal reads the file in order — then A–Z so a tie
   // cannot reorder the diff between rebuilds. Discover pages can shift under a
-  // run, so the same id may arrive twice; the second copy is dropped.
+  // run, so the same id may arrive twice, and TMDB sometimes files a regional
+  // cut under a second id with the same poster; the lesser-known copy is
+  // dropped either way, so no two cards in a Deck wear the same art.
   kept.sort((a, b) => b.votes - a.votes || a.movie.name.localeCompare(b.movie.name, 'en'));
   const seen = new Set();
   const movies = kept
     .map((k) => k.movie)
-    .filter((m) => !seen.has(m.placeId) && seen.add(m.placeId));
+    .filter(
+      (m) => !seen.has(m.placeId) && !seen.has(m.photoUrl) && seen.add(m.placeId).add(m.photoUrl)
+    );
 
   writeFileSync(OUT, emitCorpus(movies));
   const count = (f) =>

@@ -8,11 +8,14 @@ import { tmdbPath } from '../utils/tmdb';
 const logo = <img src="/images/tmdb.svg" alt="TMDB" className="inline h-3 align-baseline" />;
 
 export default function TmdbCredit({ placeId }: { placeId?: string }) {
-  return placeId ? (
+  const path = placeId ? tmdbPath(placeId) : null;
+  // A record from before the TMDB corpus is not TMDB's data: nothing to credit.
+  if (placeId && !path) return null;
+  return path ? (
     <p className="mt-1 text-xs text-muted">
       {logo} Data from{' '}
       <a
-        href={`https://www.themoviedb.org/${tmdbPath(placeId)}`}
+        href={`https://www.themoviedb.org/${path}`}
         target="_blank"
         rel="noopener noreferrer"
         className="underline"

@@ -103,7 +103,8 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
     `https://www.youtube.com/results?search_query=${encodeURIComponent(
       [movie.name, movie.year, 'trailer'].filter(Boolean).join(' ')
     )}`;
-  const whereToWatchHref = `https://www.themoviedb.org/${tmdbPath(movie.placeId)}/watch?locale=AU`;
+  const tmdb = tmdbPath(movie.placeId);
+  const whereToWatchHref = tmdb && `https://www.themoviedb.org/${tmdb}/watch?locale=AU`;
   return (
     <div
       data-match-card
@@ -140,14 +141,16 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
         Watch trailer
       </a>
       <div className="mt-2 flex justify-center gap-6">
-        <a
-          href={whereToWatchHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block py-2 text-center text-sm text-cyan underline"
-        >
-          Where to watch
-        </a>
+        {whereToWatchHref && (
+          <a
+            href={whereToWatchHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block py-2 text-center text-sm text-cyan underline"
+          >
+            Where to watch
+          </a>
+        )}
         {movie.imdbId && (
           <a
             href={`https://www.imdb.com/title/${movie.imdbId}/`}
