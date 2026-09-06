@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavigationHeader from '../components/NavigationHeader';
-import LocationModeToggle from '../components/LocationModeToggle';
+import LocationModeToggle, { type LocationMode } from '../components/LocationModeToggle';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { getVenues } from '../services/apiClient';
 import {
@@ -55,7 +55,7 @@ export default function ComparePage() {
   } = useComparisonStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [locationMode, setLocationMode] = useState<'current' | 'manual'>('current');
+  const [locationMode, setLocationMode] = useState<LocationMode>('current');
   const [manualQuery, setManualQuery] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [isResolvingArea, setIsResolvingArea] = useState(false);

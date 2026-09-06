@@ -3,8 +3,12 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { User, Session } from '@supabase/supabase-js';
-import { supabase, signInWithGoogle as googleSignIn, signOut as supabaseSignOut } from '../services/supabase';
+import type { User, Session, Subscription } from '@supabase/supabase-js';
+import {
+  supabase,
+  signInWithGoogle as googleSignIn,
+  signOut as supabaseSignOut,
+} from '../services/supabase';
 
 interface AuthState {
   // Auth data
@@ -14,7 +18,9 @@ interface AuthState {
   isAuthenticated: boolean;
 
   // Actions
-  initialize: () => Promise<void>;
+  // Resolves to the auth-change subscription so the caller can unsubscribe
+  // on unmount (#351); undefined when initialization failed.
+  initialize: () => Promise<Subscription | undefined>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   setSession: (session: Session | null) => void;
@@ -31,7 +37,9 @@ export const useAuthStore = create<AuthState>()(
       initialize: async () => {
         try {
           // Get initial session
-          const { data: { session } } = await supabase.auth.getSession();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
 
           set({
             session,
@@ -41,16 +49,20 @@ export const useAuthStore = create<AuthState>()(
           });
 
           // Listen for auth state changes
-          supabase.auth.onAuthStateChange((_event, session) => {
+          const {
+            data: { subscription },
+          } = supabase.auth.onAuthStateChange((_event, session) => {
             set({
               session,
               user: session?.user ?? null,
               isAuthenticated: !!session,
             });
           });
+          return subscription;
         } catch (error) {
           console.error('Auth initialization error:', error);
           set({ isLoading: false });
+          return undefined;
         }
       },
 

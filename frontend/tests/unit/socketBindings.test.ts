@@ -625,4 +625,22 @@ describe('socketBindings', () => {
 
     expect(useSessionStore.getState().isConnected).toBe(false);
   });
+
+  // The "had a connection" flag is module-level. Left set across an intentional
+  // teardown, the first connect of the NEXT Session announced "Reconnected".
+  it('does not toast "Reconnected" on the first connect after leaving a Session and disconnecting', async () => {
+    const first = setupSocket();
+    socketBindings.initializeSocket();
+    first.trigger('connect');
+    first.acks.set('session:leave', { success: true, data: null });
+    await socketBindings.leaveSession('OLD11');
+    socketBindings.disconnectSocket();
+
+    const next = setupSocket();
+    socketBindings.initializeSocket();
+    next.trigger('connect');
+
+    expect(useSessionStore.getState().isConnected).toBe(true);
+    expect(socketMocks.toast.success).not.toHaveBeenCalled();
+  });
 });

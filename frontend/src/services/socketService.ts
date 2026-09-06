@@ -45,7 +45,7 @@ let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
  */
 export function initializeSocket(config: SocketConfig = {}): void {
   if (socket?.connected) {
-    console.log('Socket already connected');
+    if (import.meta.env.DEV) console.log('Socket already connected');
     return;
   }
 

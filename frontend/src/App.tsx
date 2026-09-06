@@ -94,10 +94,23 @@ function App() {
   const sessionCode = useSessionStore((state) => state.sessionCode);
   const sessionStatus = useSessionStore((state) => state.sessionStatus);
 
+  // #351: unsubscribe the auth listener on unmount. `active` matters — under
+  // StrictMode the cleanup runs before the dynamic import resolves, so a
+  // subscription that lands afterwards must be dropped here, not kept.
   useEffect(() => {
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
     void import('./stores/authStore')
       .then(({ useAuthStore }) => useAuthStore.getState().initialize())
+      .then((subscription) => {
+        if (active) unsubscribe = () => subscription?.unsubscribe();
+        else subscription?.unsubscribe();
+      })
       .catch((error) => console.error('Failed to initialize auth:', error));
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, []);
 
   useEffect(() => {

@@ -48,14 +48,18 @@ describe('authStore', () => {
 
   it('should initialize from the current Supabase session and auth change events', async () => {
     let authStateCallback: ((_event: string, session: typeof session | null) => void) | undefined;
+    const unsubscribe = vi.fn();
     authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
     authMocks.onAuthStateChange.mockImplementationOnce((callback) => {
       authStateCallback = callback;
       callback('SIGNED_IN', session);
-      return { data: { subscription: { unsubscribe: vi.fn() } } };
+      return { data: { subscription: { unsubscribe } } };
     });
 
-    await useAuthStore.getState().initialize();
+    // #351: the subscription comes back so App can unsubscribe on unmount.
+    const subscription = await useAuthStore.getState().initialize();
+    subscription?.unsubscribe();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
 
     expect(useAuthStore.getState()).toMatchObject({
       user,
@@ -77,7 +81,7 @@ describe('authStore', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     authMocks.getSession.mockRejectedValueOnce(error);
 
-    await useAuthStore.getState().initialize();
+    await expect(useAuthStore.getState().initialize()).resolves.toBeUndefined();
 
     expect(useAuthStore.getState().isLoading).toBe(false);
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
