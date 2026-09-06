@@ -44,6 +44,13 @@ interface SessionState {
   // Session status
   sessionStatus: 'waiting' | 'selecting' | 'complete' | 'expired';
   isConnected: boolean;
+  /**
+   * ISO timestamp of the Session's expiry, as last read from GET /api/sessions.
+   * The backend slides the TTL forward on a join, a submission, a Restart and
+   * the Group Order writes, and no socket event carries the new value — so the
+   * pages that fetch the Session re-read it on every roster change.
+   */
+  expiresAt: string | null;
 
   // Actions
   setSessionCode: (code: string) => void;
@@ -73,6 +80,7 @@ interface SessionState {
   // Status actions
   setSessionStatus: (status: 'waiting' | 'selecting' | 'complete' | 'expired') => void;
   setConnectionStatus: (isConnected: boolean) => void;
+  setExpiresAt: (expiresAt: string) => void;
 
   // Reset action
   resetSession: () => void;
@@ -97,6 +105,7 @@ const initialState = {
   orderPlaceId: null,
   sessionStatus: 'waiting' as const,
   isConnected: false,
+  expiresAt: null,
 };
 
 export const useSessionStore = create<SessionState>()(
@@ -177,6 +186,8 @@ export const useSessionStore = create<SessionState>()(
         setSessionStatus: (status) => set({ sessionStatus: status }),
 
         setConnectionStatus: (isConnected) => set({ isConnected }),
+
+        setExpiresAt: (expiresAt) => set({ expiresAt }),
 
         // Reset actions
         resetSession: () => {

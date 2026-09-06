@@ -14,7 +14,7 @@ import { participantRingClass } from '../utils/participantStyles';
 export default function SessionLobbyPage() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const { participants, isConnected, sessionStatus } = useSessionStore();
+  const { participants, isConnected, sessionStatus, setExpiresAt } = useSessionStore();
   const [shareableLink, setShareableLink] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
@@ -30,6 +30,7 @@ export default function SessionLobbyPage() {
       try {
         const session = await getSession(sessionCode);
         setShareableLink(session.shareableLink);
+        setExpiresAt(session.expiresAt);
       } catch (err) {
         console.error('Failed to load session:', err);
       } finally {
@@ -38,7 +39,10 @@ export default function SessionLobbyPage() {
     };
 
     void loadSession();
-  }, [sessionCode]);
+    // `participants` is a deliberate extra dep: a join slides the Session's TTL
+    // forward server-side and no socket event carries the new expiresAt, so the
+    // header's countdown is re-read from the Session on every roster change.
+  }, [sessionCode, participants, setExpiresAt]);
 
   useEffect(() => {
     if (sessionStatus === 'selecting' && sessionCode) {
@@ -186,10 +190,9 @@ export default function SessionLobbyPage() {
         </button>
 
         {/* Info */}
-        <div className="mt-6 text-center text-sm text-muted space-y-1">
-          <p>Share the code with friends to invite them</p>
-          <p className="text-muted/60">Sessions expire after 30 minutes of inactivity</p>
-        </div>
+        <p className="mt-6 text-center text-sm text-muted">
+          Share the code with friends to invite them
+        </p>
       </div>
     </main>
   );
