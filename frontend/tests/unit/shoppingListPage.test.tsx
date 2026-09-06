@@ -22,6 +22,7 @@ vi.mock('../../src/services/apiClient', async () => {
 });
 
 import ShoppingListPage from '../../src/pages/ShoppingListPage';
+import { useToastStore } from '../../src/hooks/useToast';
 
 const tomatoes = { stockcode: 12345, name: 'Woolworths Diced Tomatoes', packageSize: '400g' };
 const beef = { stockcode: 777, name: 'Beef Chuck Steak', packageSize: 'per 1kg' };
@@ -93,6 +94,13 @@ describe('ShoppingListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     serviceMocks.getShoppingList.mockResolvedValue(list);
+    // The global afterEach's restoreAllMocks drops setup.ts's resolved value.
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    useToastStore.setState({ toasts: [] });
+  });
+
+  afterEach(() => {
+    delete (navigator as { share?: unknown }).share;
   });
 
   // Every NavigationHeader on the funnel is sentence case (#412); this one was
@@ -208,6 +216,45 @@ describe('ShoppingListPage', () => {
     expect(await screen.findByText(/Prices from Woolworths/i)).toBeInTheDocument();
   });
 
+  // "As minted" is the mint's own vocabulary, not the Shopper's: what they
+  // need is the day the tills were read, so a week-old total reads as one.
+  // ADR 0010 was amended for this page (#411) — a list outlives the ≤24 h
+  // window that made an undated "Prices from Woolworths" truthful — so the
+  // date is part of the record now, not just the copy.
+  it('dates the prices to the day the list was minted', async () => {
+    renderPage();
+    expect(await screen.findByText(/Prices from Woolworths on Sat, 1 Aug/i)).toBeInTheDocument();
+    expect(screen.queryByText(/as minted/i)).not.toBeInTheDocument();
+  });
+
+  // The list is meant to be forwarded (#229), and the page is the only place
+  // the URL is on offer — back goes home and takes it with it.
+  it('shares the list URL from the header, copying it where there is no sheet', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+
+    await act(async () => void fireEvent.click(screen.getByRole('button', { name: /share/i })));
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('http://localhost:3000/list/list-1');
+    expect(useToastStore.getState().toasts).toContainEqual(
+      expect.objectContaining({ type: 'success', message: expect.stringMatching(/copied/i) })
+    );
+  });
+
+  it('hands the list URL to the native share sheet where there is one', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+
+    await act(async () => void fireEvent.click(screen.getByRole('button', { name: /share/i })));
+
+    expect(share).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'http://localhost:3000/list/list-1' })
+    );
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  });
+
   it('waits while a fresh list is still being priced', () => {
     serviceMocks.getShoppingList.mockReturnValue(new Promise(() => {}));
     renderPage();
@@ -244,6 +291,8 @@ describe('ShoppingListPage claims', () => {
     serviceMocks.getShoppingList.mockResolvedValue(list);
     serviceMocks.claimShoppingListLine.mockResolvedValue(list);
     serviceMocks.releaseShoppingListLine.mockResolvedValue(list);
+    // Freeing somebody else's line asks first; most of these tests say yes.
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   // Only the two live-channel tests fake the clock; the rest would rather not
@@ -284,11 +333,50 @@ describe('ShoppingListPage claims', () => {
     expect(serviceMocks.claimShoppingListLine).toHaveBeenCalledWith('list-1', '0', 'Alice');
   });
 
-  it('will not claim without a name behind the Claim', async () => {
+  // A greyed-out Claim with nothing saying why is a dead end for the one
+  // Shopper who most needs the page — the housemate on a forwarded link, who
+  // has never typed a name here.
+  it('sends a nameless Claim to the name field instead of greying it out', async () => {
     renderPage();
     await screen.findByText('250 g canned tomatoes');
 
-    expect(buttonOn('250 g canned tomatoes', 'Claim')).toBeDisabled();
+    const claim = buttonOn('250 g canned tomatoes', 'Claim');
+    expect(claim).toBeEnabled();
+    await tap(claim);
+
+    expect(serviceMocks.claimShoppingListLine).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Claiming as')).toHaveFocus();
+    expect(screen.getByText(/type your name/i)).toBeInTheDocument();
+  });
+
+  it('drops the hint and claims once the Shopper has a name', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    const field = screen.getByLabelText('Claiming as');
+    fireEvent.change(field, { target: { value: 'Alice' } });
+    fireEvent.blur(field);
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    expect(screen.queryByText(/type your name/i)).not.toBeInTheDocument();
+    expect(serviceMocks.claimShoppingListLine).toHaveBeenCalledWith('list-1', '0', 'Alice');
+  });
+
+  // The tap that follows the typing starts by blurring the field. If the hint
+  // went away there, the lines below it would slide up between mousedown and
+  // mouseup and the Claim would land on nothing — so it stays until a Claim
+  // actually lands. jsdom can't hit-test; this holds the seam that decides it.
+  it('keeps the hint up across the name field losing focus, so nothing moves mid-tap', async () => {
+    renderPage();
+    await screen.findByText('250 g canned tomatoes');
+    await tap(buttonOn('250 g canned tomatoes', 'Claim'));
+
+    const field = screen.getByLabelText('Claiming as');
+    fireEvent.change(field, { target: { value: 'Alice' } });
+    fireEvent.blur(field);
+
+    expect(screen.getByText(/type your name/i)).toBeInTheDocument();
   });
 
   it('remembers the Shopper, so a second visit does not ask again', async () => {
@@ -316,6 +404,30 @@ describe('ShoppingListPage claims', () => {
 
     await tap(buttonOn('250 g canned tomatoes', 'Release'));
 
+    expect(serviceMocks.releaseShoppingListLine).toHaveBeenCalledWith('list-1', '0');
+  });
+
+  // Any Shopper may free any Claim (#229) — but one small tap that silently
+  // takes a line off somebody mid-aisle is not the way to offer it.
+  it("asks before freeing somebody else's Claim, and drops it on no", async () => {
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '0': 'Bob' }));
+    vi.mocked(window.confirm).mockReturnValue(false);
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Release'));
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Bob'));
+    expect(serviceMocks.releaseShoppingListLine).not.toHaveBeenCalled();
+    expect(screen.getByText('Claimed by Bob')).toBeInTheDocument();
+  });
+
+  it('frees your own Claim without asking', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue(withClaims({ '0': 'Alice' }));
+    await shopping();
+
+    await tap(buttonOn('250 g canned tomatoes', 'Release'));
+
+    expect(window.confirm).not.toHaveBeenCalled();
     expect(serviceMocks.releaseShoppingListLine).toHaveBeenCalledWith('list-1', '0');
   });
 
