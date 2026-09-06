@@ -47,7 +47,7 @@ interface FriendsState {
   // Actions - Session Invites
   fetchSessionInvites: () => Promise<void>;
   inviteFriendsToSession: (sessionCode: string, friendIds: string[]) => Promise<boolean>;
-  acceptSessionInvite: (inviteId: string) => Promise<{ success: boolean; sessionCode?: string }>;
+  acceptSessionInvite: (inviteId: string) => Promise<boolean>;
   declineSessionInvite: (inviteId: string) => Promise<boolean>;
 
   // Utility
@@ -211,14 +211,19 @@ export const useFriendsStore = create<FriendsState>()(
             return true;
           })) ?? false,
 
+        // The server accept is one-shot: it flips the row to 'accepted', which
+        // drops it out of the pending list. Callers spend it only once they have
+        // actually joined, so a refused join leaves the card (and its Join
+        // button) in place instead of losing the Session altogether — and a
+        // failed accept leaves the row listed rather than blackholing it.
         acceptSessionInvite: async (inviteId: string) =>
           (await run('accepting session invite', 'Failed to accept invite', async () => {
-            const sessionCode = await apiClient.acceptSessionInvite(inviteId);
+            await apiClient.acceptSessionInvite(inviteId);
             set((state) => ({
               sessionInvites: state.sessionInvites.filter((i) => i.id !== inviteId),
             }));
-            return { success: true, sessionCode };
-          })) ?? { success: false },
+            return true;
+          })) ?? false,
 
         declineSessionInvite: async (inviteId: string) =>
           (await run('declining session invite', 'Failed to decline invite', async () => {

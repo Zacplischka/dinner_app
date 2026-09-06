@@ -567,10 +567,14 @@ describe('socketBindings', () => {
       data: { participants: [participant], rejoinToken: 'rejoin-token' },
     });
 
+    // A second join in the same tab reuses a live socket, so no `connect` event
+    // fires — the ack is what has to mark the store connected.
+    useSessionStore.setState({ isConnected: false });
     await expect(socketBindings.joinSession('AB123', 'Alice')).resolves.toMatchObject({
       success: true,
     });
     expect(useSessionStore.getState().sessionCode).toBe('AB123');
+    expect(useSessionStore.getState().isConnected).toBe(true);
     expect(useSessionStore.getState().participants.map((p) => p.displayName)).toContain('Alice');
     expect(sessionStorage.getItem('dinder:rejoin:AB123:Alice')).toBe('rejoin-token');
 

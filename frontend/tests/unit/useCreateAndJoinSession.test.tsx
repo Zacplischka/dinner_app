@@ -35,6 +35,7 @@ vi.mock('react-router-dom', () => ({
 
 import { ApiClientError } from '../../src/services/apiClient';
 import { useCreateAndJoinSession } from '../../src/hooks/useCreateAndJoinSession';
+import { useToastStore } from '../../src/hooks/useToast';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
 const richmond: SessionLocation = {
@@ -59,6 +60,7 @@ describe('useCreateAndJoinSession', () => {
     vi.clearAllMocks();
     mocks.createSession.mockResolvedValue(created);
     useSessionStore.getState().resetSession();
+    useToastStore.getState().clearAll();
   });
 
   it('creates an Eat Out Session, joins as Host and lands in the lobby', async () => {
@@ -86,7 +88,9 @@ describe('useCreateAndJoinSession', () => {
     const store = useSessionStore.getState();
     expect(store.sessionCode).toBe('AB123');
     expect(store.currentUserId).toBe('participant-1');
-    expect(store.isConnected).toBe(true);
+    // socketBindings.joinSession owns the connection flag — mocked out here, so
+    // it stays false. The hook must not write it a second time.
+    expect(store.isConnected).toBe(false);
     expect(store.sessionStatus).toBe('waiting');
     expect(store.location).toEqual(richmond);
     expect(store.searchRadiusMiles).toBe(3);
@@ -132,6 +136,22 @@ describe('useCreateAndJoinSession', () => {
     expect(mocks.inviteFriendsToSession.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.navigate.mock.invocationCallOrder[1]
     );
+  });
+
+  // The Session exists either way, so the Host is not blocked — but they have to
+  // learn the Friends never got the invite, and that the code is the way in.
+  it('tells the Host to share the Session Code when the invites fail', async () => {
+    mocks.inviteFriendsToSession.mockRejectedValueOnce(new Error('invite service down'));
+    const { result } = renderHook(() => useCreateAndJoinSession());
+
+    await act(async () => {
+      await result.current.createAndJoin('Alice', { branch: 'cook', craving }, new Set(['f-1']));
+    });
+
+    const [toast] = useToastStore.getState().toasts;
+    expect(toast.type).toBe('error');
+    expect(toast.message).toContain('AB123');
+    expect(mocks.navigate).toHaveBeenCalledWith('/session/AB123');
   });
 
   it('is creating only while the sequence is in flight', async () => {

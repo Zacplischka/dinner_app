@@ -127,10 +127,8 @@ describe('friendsStore', () => {
       useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])
     ).resolves.toBe(true);
 
-    await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toEqual({
-      success: true,
-      sessionCode: 'AB123',
-    });
+    // Accepting drops the row — the card spends it only once its join acked.
+    await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toBe(true);
     expect(useFriendsStore.getState().sessionInvites).toEqual([]);
 
     useFriendsStore.setState({ sessionInvites: [invite] });
@@ -160,9 +158,7 @@ describe('friendsStore', () => {
     await expect(
       useFriendsStore.getState().inviteFriendsToSession('AB123', ['user-2'])
     ).resolves.toBe(false);
-    await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toEqual({
-      success: false,
-    });
+    await expect(useFriendsStore.getState().acceptSessionInvite('invite-1')).resolves.toBe(false);
     await expect(useFriendsStore.getState().declineSessionInvite('invite-1')).resolves.toBe(false);
 
     expect(useFriendsStore.getState().error).toBe('failed');
@@ -294,7 +290,7 @@ describe('friendsStore', () => {
       {
         run: () => useFriendsStore.getState().acceptSessionInvite('invite-1'),
         expectedError: 'Failed to accept invite',
-        expectedResult: { success: false },
+        expectedResult: false,
       },
       {
         run: () => useFriendsStore.getState().declineSessionInvite('invite-1'),
