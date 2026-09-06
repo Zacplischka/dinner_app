@@ -190,7 +190,7 @@
   }
 
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 
   /* Full visible height on mobile: dvh tracks the dynamic browser chrome,
