@@ -1,5 +1,7 @@
 # A committed Wikipedia/Wikidata corpus is the movie source
 
+> **Superseded on source, identity, rating, posters and credit by [ADR 0014](0014-tmdb-is-the-watch-corpus-source.md).** The reference-data posture and the `MovieSource` seam stand.
+
 The Watch Branch deals Movies ([#369](https://github.com/Zacplischka/dinner_app/issues/369)) and had no key to deal them with: TMDB and OMDb both refuse keyless calls. It also needs far less than a catalogue — a group of at most four swipes ~15 well-known films a Deck. And unlike Restaurants, whose supply is bound to where the group is and must be fetched per Session, a movie catalogue is the same everywhere, so it can be built once and shipped. This record settles the supply as reference data (ADR 0011) and names the seam the day it runs thin.
 
 **The corpus.** ~300 well-known films, committed as `backend/src/data/movies.generated.ts` and built by `scripts/build-movie-corpus.mjs` from a seed list of titles (`scripts/movie-titles.json`). The en.wikipedia Action API supplies each film's poster thumbnail, opening sentences and Wikidata id; Wikidata SPARQL supplies year, runtime, genres, review scores and a trailer id. Both are keyless behind a descriptive User-Agent, called sequentially — about twenty requests for the whole corpus. A rebuild is a human running the script and reviewing the diff, occasionally. At runtime `MovieDeckService` filters the corpus by Mood and shuffles it in memory; nothing calls Wikipedia or Wikidata.

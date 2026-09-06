@@ -12,6 +12,7 @@ import {
   DECADES,
   GENRES,
   MAX_HEADCOUNT,
+  MEDIA_TYPES,
   SESSION_CODE_PATTERN,
   type ApiError,
   type CreateSessionRequest,
@@ -32,6 +33,7 @@ const CREATE_WINDOW_MS = 60_000;
 const moodSchema = z.object({
   genres: z.array(z.enum(GENRES)).max(GENRES.length),
   decades: z.array(z.enum(DECADES)).max(DECADES.length),
+  mediaTypes: z.array(z.enum(MEDIA_TYPES)).max(MEDIA_TYPES.length).optional(),
 });
 
 export function createSessionsRouter(sessionService: SessionService) {

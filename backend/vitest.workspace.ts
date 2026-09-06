@@ -14,6 +14,11 @@ const unitEnv = {
 // or re-cuisining the shipped batch cannot turn them red. The unit project sets
 // no override, which is what lets tests/unit/shippedCorpus.test.ts deal and cook
 // the batch that actually ships.
+//
+// The Movie corpus is pointed at a fixture for the same reason (ADR 0014), and
+// for one more: with thousands of titles no in-vocabulary Mood is reliably
+// empty, so the fixture — 24 titles, no Documentary — is what keeps the
+// NO_MOVIES_FOUND contract case a fact. Its poster paths are placeholders.
 const serviceEnv = {
   ...unitEnv,
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
@@ -21,6 +26,7 @@ const serviceEnv = {
   SUPABASE_URL: process.env.SUPABASE_URL || 'http://localhost:54321',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role',
   OWNED_RECIPES_DIR: fileURLToPath(new URL('tests/fixtures/owned-recipes/', import.meta.url)),
+  MOVIES_FILE: fileURLToPath(new URL('tests/fixtures/movies.json', import.meta.url)),
 };
 
 export default defineWorkspace([

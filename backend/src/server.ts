@@ -19,7 +19,12 @@ import { createListsRouter } from './api/lists.js';
 import { createSessionStore } from './store/sessionStore.js';
 import { createSessionService } from './services/SessionService.js';
 import { createRecipePoolService } from './services/RecipePoolService.js';
-import { dealMovieDeck, redealMovieDeck } from './services/MovieDeckService.js';
+import {
+  corpusMovieSource,
+  dealMovieDeck,
+  loadMovieCorpus,
+  redealMovieDeck,
+} from './services/MovieDeckService.js';
 import { createOwnedRecipeStore, loadOwnedCorpus } from './services/ownedRecipeStore.js';
 import { createSpoonacularClient, guardDailyPoints } from './services/spoonacularClient.js';
 import { createProductMatchService } from './services/ProductMatchService.js';
@@ -74,6 +79,8 @@ const recipePoolService = createRecipePoolService({
   client: spoonacularClient,
   owned: createOwnedRecipeStore(loadOwnedCorpus()),
 });
+// The Movie corpus, read off disk once for the same reason (ADR 0014).
+const movieSource = corpusMovieSource(loadMovieCorpus());
 const productMatchService = createProductMatchService({
   redis,
   client: createWoolworthsClient((...args) => fetch(...args)),
@@ -96,8 +103,8 @@ const sessionService = createSessionService({
   dealRecipeDeck: (craving) => recipePoolService.dealDeck(craving),
   redealRecipeDeck: (poolKey, current) => recipePoolService.redeal(poolKey, current),
   // Pure over the committed corpus: no service to construct (#369).
-  dealMovieDeck,
-  redealMovieDeck,
+  dealMovieDeck: (mood) => dealMovieDeck(mood, { source: movieSource }),
+  redealMovieDeck: (mood, current) => redealMovieDeck(mood, current, { source: movieSource }),
   mintShoppingList: (sessionCode, placeId) => shoppingListService.mint(sessionCode, placeId),
 });
 const friendsService = createFriendsService({ store: friendsStore });

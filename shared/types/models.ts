@@ -42,27 +42,38 @@ export interface Recipe {
   aggregateLikes?: number;
 }
 
-/** A Movie a Watch-branch Session deals (#369). Restaurant's counterpart. */
+/**
+ * A Movie a Watch-branch Session deals (#369). Restaurant's counterpart. A
+ * film or a television series — one kind either way, told apart by
+ * `mediaType` (ADR 0014).
+ */
 export interface Movie {
   kind: 'movie';
-  /** The movie source's id. */
+  /** `tmdb:movie:<id>` or `tmdb:tv:<id>` — the TMDB id, typed by what it names. */
   placeId: string;
+  /** Absent reads as 'movie': every producer that predates series (ADR 0007). */
+  mediaType?: 'movie' | 'tv';
   /** The Movie's name. */
   name: string;
   /** Poster. */
   photoUrl?: string;
   /**
-   * The Top Pick's middle rung for a Movie: a critics score on one 0–100
-   * scale — the Rotten Tomatoes Tomatometer %, else Metacritic's Metascore.
-   * Not a Restaurant's 0-5 — a Deck never mixes kinds, so the rung only ever
-   * compares Movie with Movie. Absent when the source has neither.
+   * The Top Pick's middle rung for a Movie: TMDB's user score, vote_average
+   * × 10, on one 0–100 scale. Not a Restaurant's 0-5 — a Deck never mixes
+   * kinds, so the rung only ever compares Movie with Movie. Absent when the
+   * source has no votes.
    */
   rating?: number;
   year?: number;
   genres?: string[];
+  /** A film's length; a series' episode length. */
   runtimeMinutes?: number;
+  /** Series only. */
+  seasons?: number;
   overview?: string;
   trailerUrl?: string;
+  /** `tt…`, for the crown's IMDb link. */
+  imdbId?: string;
 }
 
 /**

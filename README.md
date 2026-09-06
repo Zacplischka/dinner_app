@@ -102,6 +102,7 @@ npm run dev
 |---|---|
 | `GOOGLE_PLACES_API_KEY` | Restaurant search for Eat Out and Takeaway Sessions |
 | `SPOONACULAR_API_KEY` | Sourced Recipes for the Cook Branch |
+| `TMDB_API_KEY` | Only `scripts/build-movie-corpus.mjs`, which rebuilds the committed Movie corpus; the running app never needs it |
 | `PORT`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `FRONTEND_URL` | All have local defaults |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Optional Google sign-in / friends feature only |
 | `VITE_BACKEND_URL`, `VITE_API_BASE_URL` | Frontend → backend; default to the local backend on port 3001 |

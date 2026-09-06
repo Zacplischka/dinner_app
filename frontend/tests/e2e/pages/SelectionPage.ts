@@ -9,7 +9,7 @@ import { BasePage } from './BasePage';
 export class SelectionPage extends BasePage {
   readonly heading: Locator;
   readonly swipeCard: Locator;
-  readonly criticsBadge: Locator;
+  readonly scoreBadge: Locator;
   readonly likeButton: Locator;
   readonly passButton: Locator;
   readonly submitButton: Locator;
@@ -23,13 +23,13 @@ export class SelectionPage extends BasePage {
 
     this.heading = page.locator('header').getByRole('heading').first();
     this.swipeCard = page.locator('[data-swipe-card]');
-    this.criticsBadge = this.swipeCard.getByText(/\d+% critics/);
-    this.likeButton = page.getByRole('button', { name: /Like/i }).or(
-      page.locator('button[aria-label="Like"]')
-    );
-    this.passButton = page.getByRole('button', { name: /Pass|Nope/i }).or(
-      page.locator('button[aria-label="Pass"]')
-    );
+    this.scoreBadge = this.swipeCard.getByText(/\d+% on TMDB/);
+    this.likeButton = page
+      .getByRole('button', { name: /Like/i })
+      .or(page.locator('button[aria-label="Like"]'));
+    this.passButton = page
+      .getByRole('button', { name: /Pass|Nope/i })
+      .or(page.locator('button[aria-label="Pass"]'));
     this.submitButton = page.getByRole('button', { name: /Submit/i });
 
     this.loadingState = page.getByText(/Finding (restaurants|recipes|movies)/i);
@@ -71,7 +71,7 @@ export class SelectionPage extends BasePage {
    * Pass all remaining restaurants
    */
   async passAllRemaining(): Promise<void> {
-    while (await this.passButton.isVisible() && await this.passButton.isEnabled()) {
+    while ((await this.passButton.isVisible()) && (await this.passButton.isEnabled())) {
       await this.passRestaurant();
       if (await this.submitButton.isVisible()) {
         break;

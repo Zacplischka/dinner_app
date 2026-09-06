@@ -67,7 +67,7 @@ The set of Restaurants, Recipes or Movies every current Participant selected, co
 _Avoid_: results, overlap, winners
 
 **Top Pick**:
-The single Restaurant, Recipe or Movie a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then the Deck Entry kind's own middle rung — a Restaurant's rating, a Recipe's aggregate likes, a Movie's critics score — then name A-Z, from the Match when the Match is non-empty, from everything anyone selected when it is empty, and from the Session's open Deck when nobody selected anything. Only the middle rung differs by kind; the rule is otherwise one rule. Every completed Session with a non-empty Deck has exactly one Top Pick; a Session whose Deck is empty has none.
+The single Restaurant, Recipe or Movie a completed Session crowns, together with the one-line reason it won. Chosen by most Selections, then the Deck Entry kind's own middle rung — a Restaurant's rating, a Recipe's aggregate likes, a Movie's Score — then name A-Z, from the Match when the Match is non-empty, from everything anyone selected when it is empty, and from the Session's open Deck when nobody selected anything. Only the middle rung differs by kind; the rule is otherwise one rule. Every completed Session with a non-empty Deck has exactly one Top Pick; a Session whose Deck is empty has none.
 _Avoid_: winner, best match, recommendation, top result, the answer
 
 **Near Miss**:
@@ -253,13 +253,13 @@ _Avoid_: relaxed craving, suggestion, fallback
 ### Watch
 
 **Movie**:
-A film a Watch-branch Session deals for Participants to swipe on, carrying name, poster, year, genres, runtime, critics score, overview and trailer link. Its identity is its Wikidata id, carried in `placeId` like every Deck Entry's (ADR 0013). The swiped card and the crowned Top Pick are the same Movie.
-_Avoid_: film, title, card, show
+A film or a television series a Watch-branch Session deals for Participants to swipe on, carrying name, poster, year, genres, runtime (a series: its seasons), Score, overview, trailer link and IMDb id. One kind either way, told apart by `mediaType`; a series is shown to people as a "Series" but is a Movie in every rule. Its identity is its TMDB id, typed by what it names — `tmdb:movie:<id>` or `tmdb:tv:<id>` — carried in `placeId` like every Deck Entry's (ADR 0014). The swiped card and the crowned Top Pick are the same Movie.
+_Avoid_: film, title, card, show, TV show — and "Series" only on screen, never as a term with its own rules
 
 **Mood**:
-The Host's genre and decade choices a Watch Session's Movie Deck is dealt from — a Movie matches when it carries any chosen genre and was released in any chosen decade; an empty axis is no filter, so no choices at all deals from the whole corpus. The Craving's twin for the Watch Branch, fixed at setup like it; unlike it there is no shared pool and no Nearest Mood — the corpus is small and static enough that dropping a chip is the whole fix.
+The Host's genre, decade and media-type choices a Watch Session's Movie Deck is dealt from — a Movie matches when it carries any chosen genre, was released in any chosen decade and is any chosen media type (film or series); an empty axis is no filter, so no choices at all deals from the whole corpus. The Craving's twin for the Watch Branch, fixed at setup like it; unlike it there is no shared pool and no Nearest Mood — the corpus is static, and dropping a chip is the whole fix.
 _Avoid_: filters, preferences, criteria, Craving, vibe
 
-**Critics score**:
-A Movie's 0–100 score — the Rotten Tomatoes Tomatometer, else Metacritic's Metascore, else absent — as Wikidata last recorded it, and the Top Pick's middle rung for a Movie. One scale, so the rung only ever compares like with like; never a Restaurant's 0–5 stars.
-_Avoid_: rating (when the kind matters — the wire field is still `rating`), stars, IMDb score
+**Score**:
+A Movie's 0–100 score — TMDB's user score, `vote_average × 10`, as the corpus last recorded it, absent only when nobody has voted — and the Top Pick's middle rung for a Movie. One scale from one source, so the rung only ever compares like with like; never a Restaurant's 0–5 stars.
+_Avoid_: rating (when the kind matters — the wire field is still `rating`), stars, critics score, IMDb score

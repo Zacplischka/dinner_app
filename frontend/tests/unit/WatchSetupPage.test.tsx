@@ -79,9 +79,27 @@ describe('WatchSetupPage', () => {
     expect(hostName).toBe('Alice');
     expect(setup).toEqual({
       branch: 'watch',
-      mood: { genres: ['Comedy', 'Horror'], decades: ['1990s'] },
+      mood: { genres: ['Comedy', 'Horror'], decades: ['1990s'], mediaTypes: [] },
     });
     await waitFor(() => expect(screen.getByText('Lobby route')).toBeInTheDocument());
+  });
+
+  it('narrows the Mood to series when the Series chip is picked', async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Series' }));
+
+    const [, setup] = await submitAs();
+    expect(setup.mood).toEqual({ genres: [], decades: [], mediaTypes: ['tv'] });
+  });
+
+  // TMDB's terms ask for the logo and this sentence wherever its data appears;
+  // the setup screen is the Watch Branch's front door, so it carries them.
+  it('credits TMDB', () => {
+    renderPage();
+
+    expect(screen.getByText(/uses the TMDB API but is not endorsed/)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'TMDB' })).toHaveAttribute('src', '/images/tmdb.svg');
   });
 
   it('deselects a chip on a second tap', async () => {
@@ -99,7 +117,7 @@ describe('WatchSetupPage', () => {
     renderPage();
 
     const [, setup] = await submitAs();
-    expect(setup.mood).toEqual({ genres: [], decades: [] });
+    expect(setup.mood).toEqual({ genres: [], decades: [], mediaTypes: [] });
   });
 
   it('asks no solo-or-group question', () => {

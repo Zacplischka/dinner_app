@@ -6,7 +6,7 @@ import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import WikipediaCredit from './WikipediaCredit';
+import TmdbCredit from './TmdbCredit';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -190,12 +190,18 @@ export default function SwipeCard({
   };
 
   // Title and image are all a Recipe carries; rating, price, hours and address
-  // exist only on a Restaurant. A Movie adds year, runtime, genres, a critics
-  // score (0-100, never the Restaurant's stars) and an overview.
+  // exist only on a Restaurant. A Movie adds year, runtime (a series: its
+  // seasons), genres, a score (0-100, never the Restaurant's stars) and an
+  // overview.
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
   const priceDisplay = '$'.repeat(restaurant?.priceLevel || 0);
-  const movieMeta = [movie?.year, movie?.runtimeMinutes && `${movie.runtimeMinutes} min`]
+  const movieMeta = [
+    movie?.year,
+    movie?.mediaType === 'tv'
+      ? movie.seasons && `${movie.seasons} season${movie.seasons === 1 ? '' : 's'}`
+      : movie?.runtimeMinutes && `${movie.runtimeMinutes} min`,
+  ]
     .filter(Boolean)
     .join(' · ');
 
@@ -328,7 +334,7 @@ export default function SwipeCard({
         <div className="flex flex-wrap items-center gap-4 text-sm text-text/80">
           {movie?.rating !== undefined && (
             <span className="rounded-full bg-amber/15 px-2 py-0.5 text-xs font-bold text-amber">
-              {movie.rating}% critics
+              {movie.rating}% on TMDB
             </span>
           )}
 
@@ -360,7 +366,7 @@ export default function SwipeCard({
         {movie?.overview && (
           <>
             <p className="mt-3 text-sm text-muted line-clamp-3">{movie.overview}</p>
-            <WikipediaCredit placeId={movie.placeId} />
+            <TmdbCredit placeId={movie.placeId} />
           </>
         )}
 

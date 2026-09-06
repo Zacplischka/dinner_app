@@ -1,18 +1,29 @@
 // Watch setup (#369): the one screen behind the fork's Watch card. It captures
-// the Mood — genre chips, decade chips — then creates the Session and deals its
-// Movie Deck from the committed corpus. One screen, not a wizard, and no
-// solo/group question: a Session starts as yours and becomes a group when you
-// invite someone. A Mood the corpus cannot answer is refused inline with every
-// chip exactly as the Host set it; there is no Nearest Mood to offer, because
-// the corpus is small and static enough that removing a chip is the whole fix.
+// the Mood — genre chips, decade chips, films or series — then creates the
+// Session and deals its Movie Deck from the committed corpus. One screen, not
+// a wizard, and no solo/group question: a Session starts as yours and becomes
+// a group when you invite someone. A Mood the corpus cannot answer is refused
+// inline with every chip exactly as the Host set it; there is no Nearest Mood
+// to offer, because the corpus is static and dropping a chip is the whole fix.
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DECADES, GENRES, type Decade, type Genre } from '@dinder/shared/types';
+import {
+  DECADES,
+  GENRES,
+  MEDIA_TYPES,
+  type Decade,
+  type Genre,
+  type MediaType,
+} from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
+import TmdbCredit from '../components/TmdbCredit';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import { useCreateAndJoinSession } from '../hooks/useCreateAndJoinSession';
 import { validateDisplayName } from '../utils/displayName';
+
+/** The media-type chips' words: a `tv` Movie is a "Series" to a person. */
+const MEDIA_TYPE_LABELS: Record<MediaType, string> = { movie: 'Movies', tv: 'Series' };
 
 /** Toggle membership of a chip set, preserving the rest. */
 function toggle<T>(values: T[], value: T): T[] {
@@ -24,6 +35,7 @@ export default function WatchSetupPage() {
   const [hostName, setHostName] = useState('');
   const [genres, setGenres] = useState<Genre[]>([]);
   const [decades, setDecades] = useState<Decade[]>([]);
+  const [mediaTypes, setMediaTypes] = useState<MediaType[]>([]);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const { createAndJoin, isCreating: isLoading } = useCreateAndJoinSession();
@@ -40,7 +52,7 @@ export default function WatchSetupPage() {
 
     const failure = await createAndJoin(
       hostName.trim(),
-      { branch: 'watch', mood: { genres, decades } },
+      { branch: 'watch', mood: { genres, decades, mediaTypes } },
       selectedFriendIds
     );
     setError(failure?.message ?? '');
@@ -81,6 +93,28 @@ export default function WatchSetupPage() {
               disabled={isLoading}
             />
           </div>
+
+          <fieldset>
+            <legend className="label">Movies or series</legend>
+            <p className="mb-3 text-xs text-muted">Pick one, or neither for both.</p>
+            <div className="flex flex-wrap gap-2">
+              {MEDIA_TYPES.map((mediaType) => {
+                const selected = mediaTypes.includes(mediaType);
+                return (
+                  <button
+                    key={mediaType}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setMediaTypes(toggle(mediaTypes, mediaType))}
+                    disabled={isLoading}
+                    className={chipClass(selected)}
+                  >
+                    {MEDIA_TYPE_LABELS[mediaType]}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
 
           <fieldset>
             <legend className="label">Genres</legend>
@@ -150,6 +184,8 @@ export default function WatchSetupPage() {
             </button>
           </div>
         </form>
+
+        <TmdbCredit />
       </div>
     </main>
   );

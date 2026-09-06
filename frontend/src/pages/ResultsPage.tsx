@@ -12,8 +12,9 @@ import { useEffect, useMemo, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { useShareLink } from '../hooks/useShareLink';
-import WikipediaCredit from '../components/WikipediaCredit';
+import TmdbCredit from '../components/TmdbCredit';
 import { participantRingClass } from '../utils/participantStyles';
+import { tmdbPath } from '../utils/tmdb';
 import {
   DeliveryActions,
   generateUberEatsUrl,
@@ -81,15 +82,19 @@ function RecipeCrown({
 
 // The Watch ending (#369): the crowned Movie, outright — no other-matches list,
 // nothing to order or compare. The trailer is the one continuation — a YouTube
-// search when the corpus has no trailer id, so every crown has a next step —
-// and the critics score is a 0-100 figure, never the Restaurant's stars.
+// search when the corpus has no trailer, so every crown has a next step — the
+// score is a 0-100 figure, never the Restaurant's stars, and where to watch is
+// TMDB's own page for the title in Australia (ADR 0014): JustWatch's data,
+// shown where its licence already covers it, at the cost of no API call.
 // ponytail: MovieCrown beside RecipeCrown; fold both into one EntryCrown on a fourth kind.
-// ponytail: JustWatch has no public API; a search link is the whole integration.
 function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
+  const series = movie.mediaType === 'tv';
   const meta = [
     movie.year,
-    movie.runtimeMinutes && `${movie.runtimeMinutes} min`,
-    movie.rating !== undefined && `${movie.rating}% critics`,
+    series
+      ? movie.seasons && `${movie.seasons} season${movie.seasons === 1 ? '' : 's'}`
+      : movie.runtimeMinutes && `${movie.runtimeMinutes} min`,
+    movie.rating !== undefined && `${movie.rating}% on TMDB`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -98,7 +103,8 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
     `https://www.youtube.com/results?search_query=${encodeURIComponent(
       [movie.name, movie.year, 'trailer'].filter(Boolean).join(' ')
     )}`;
-  const whereToWatchHref = `https://www.justwatch.com/au/search?q=${encodeURIComponent(movie.name)}`;
+  const tmdb = tmdbPath(movie.placeId);
+  const whereToWatchHref = tmdb && `https://www.themoviedb.org/${tmdb}/watch?locale=AU`;
   return (
     <div
       data-match-card
@@ -113,14 +119,14 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
         />
       )}
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">
-        TONIGHT&rsquo;S MOVIE
+        TONIGHT&rsquo;S {series ? 'SERIES' : 'MOVIE'}
       </p>
       <p className="text-lg font-semibold text-text">{movie.name}</p>
       {meta && <p className="text-sm text-muted mt-1">{meta}</p>}
       {movie.overview && (
         <>
           <p className="text-sm text-muted mt-2 line-clamp-3">{movie.overview}</p>
-          <WikipediaCredit placeId={movie.placeId} />
+          <TmdbCredit placeId={movie.placeId} />
         </>
       )}
       <p className="text-sm text-muted mt-2">{reason}</p>
@@ -134,14 +140,28 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
       >
         Watch trailer
       </a>
-      <a
-        href={whereToWatchHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-2 block py-2 text-center text-sm text-cyan underline"
-      >
-        Where to watch
-      </a>
+      <div className="mt-2 flex justify-center gap-6">
+        {whereToWatchHref && (
+          <a
+            href={whereToWatchHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block py-2 text-center text-sm text-cyan underline"
+          >
+            Where to watch
+          </a>
+        )}
+        {movie.imdbId && (
+          <a
+            href={`https://www.imdb.com/title/${movie.imdbId}/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block py-2 text-center text-sm text-cyan underline"
+          >
+            IMDb
+          </a>
+        )}
+      </div>
     </div>
   );
 }
