@@ -89,33 +89,56 @@ npm install
 # Redis
 docker run -d -p 6379:6379 redis:7-alpine
 
-# backend (terminal 1) — http://localhost:3001
+# the backend reads backend/.env
 echo "GOOGLE_PLACES_API_KEY=your-key-here" > backend/.env
-cd backend && npm run dev
 
-# frontend (terminal 2) — http://localhost:3000
-cd frontend && npm run dev
+# backend on http://localhost:3001, frontend on http://localhost:3000
+npm run dev
 ```
 
 ### Environment variables
 
 | Variable | Needed for |
 |---|---|
-| `GOOGLE_PLACES_API_KEY` | Restaurant search — required at backend boot |
+| `GOOGLE_PLACES_API_KEY` | Restaurant search for Eat Out and Takeaway Sessions |
+| `SPOONACULAR_API_KEY` | Sourced Recipes for the Cook Branch |
 | `PORT`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `FRONTEND_URL` | All have local defaults |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Optional Google sign-in / friends feature only |
+| `VITE_BACKEND_URL`, `VITE_API_BASE_URL` | Frontend → backend; default to the local backend on port 3001 |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Frontend sign-in; without them auth is disabled with a console warning |
 
-### Testing
+### Scripts
 
-The project was built spec-first: the WebSocket contract is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts), and [contract tests](backend/tests/contract/) assert the backend against it (they need Redis running):
+Everything runs from the repo root. `shared/` builds first — `backend` and `frontend` import `@dinder/shared` as a file dependency — and `build` and `typecheck` take care of that.
 
 ```bash
-cd backend && npm test              # unit tests
-cd backend && npm run test:contract # contract + integration tests (Redis required)
-cd frontend && npx playwright test  # end-to-end specs
+npm run dev          # backend + frontend together
+npm run build        # shared → backend → frontend, in that order
+npm test             # backend + frontend vitest suites (the backend's include contract + integration, which need Redis)
+npm run typecheck    # builds shared, then tsc --noEmit on both
+npm run lint         # eslint both workspaces
+npm run format       # prettier both workspaces
+npm run analyze:pr   # fallow audit against origin/main
+npm run gen:types    # regenerate supabase/database.types.ts
 ```
 
-Honest status: the suite is extensive (~200 cases across unit, contract, integration, and Playwright e2e) but not currently all green — some backend unit tests have drifted from newer restaurant-search code. Treat the contract tests as the source of truth for the realtime protocol.
+Narrower runs go through the workspace: `npm run test:unit --workspace=backend`, `npm run test:contract --workspace=backend` (Redis required), `npm run test:e2e --workspace=frontend` (Playwright; `mobile-chrome` is the primary project). The WebSocket contract is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts) and the [contract tests](backend/tests/contract/) assert the backend against it — they are the source of truth for the realtime protocol.
+
+The `check:*` scripts are repo-level checkers with no build step (Node, one bash script); the corpus ones cover the Owned Recipe pipeline in [`scripts/corpus/`](scripts/corpus/) ([ADR 0012](docs/adr/0012-owned-recipes-are-authored-from-fact-records.md)). All but `check:frontend-serving` run in CI's lint job:
+
+| Script | What it checks |
+|---|---|
+| `check:comment-paths` | Documentation paths cited in `backend/src`, `frontend/src` and `shared/types` comments still resolve on disk |
+| `check:production-edge` | The production edge's cache and health contracts — document and fingerprinted-asset headers, purge responses, the declared Cloudflare rollout state. Its `verify` step needs a CI-only cache purge first |
+| `check:frontend-serving` | The `Caddyfile` serves a fresh frontend build correctly — needs Caddy installed |
+| `check:reading-stage` | Corpus reading stage: robots.txt refusal, the UK/EU publisher skip, the three-publisher floor |
+| `check:authoring-stage` | Corpus authoring stage: a draft that lifts text from a source capture is caught |
+| `check:corpus-images` | Corpus image pipeline: prompts, crops, R2 URLs and cost accounting |
+| `check:gate-layers` | Corpus gate: the structural rules and the two-model-family culinary judges |
+| `check:tally-gate` | Corpus tally layer: grading what Woolworths store 1101 can price |
+| `check:human-gate` | Corpus human-review layer: the sample is stratified, deterministic and a tenth of the batch |
+
+CI ([`ci-cd.yml`](.github/workflows/ci-cd.yml)) runs `typecheck`, `lint`, both unit suites and the `check:*` scripts in one job and the contract suite against a Redis service in another; a green `main` auto-deploys.
 
 ## Deployment
 
