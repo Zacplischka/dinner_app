@@ -1,0 +1,12 @@
+{
+  // The typecheck-only view of the backend: sources plus tests. The build
+  // config keeps its `rootDir: src` and its `tests` exclusion, so `npm run
+  // build` still emits nothing from here (#397).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
