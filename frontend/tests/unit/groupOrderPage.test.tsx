@@ -1,6 +1,6 @@
 // Issue #176 — opening a Group Order and the eight §2 failure branches.
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -90,6 +90,17 @@ describe('GroupOrderPage', () => {
     vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
     useToastStore.setState({ toasts: [] });
     seedStore();
+  });
+
+  it('shows the connection indicator, so a drop stays visible after the toast dies (#409)', async () => {
+    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+    useSessionStore.setState({ isConnected: false });
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
+    expect(
+      within(screen.getByTestId('nav-header-secondary')).getByRole('status')
+    ).toHaveTextContent('Reconnecting');
   });
 
   it('renders the venue line, cheaper badge and sectioned menu on a warm ack', async () => {

@@ -68,6 +68,16 @@ describe('ResultsPage', () => {
     useOrderStore.getState().clear();
   });
 
+  it('shows the connection indicator, so a drop stays visible after the toast dies (#409)', () => {
+    seedStore({ participants: [alice, bob], overlappingOptions: [pizza] });
+    useSessionStore.setState({ isConnected: false });
+    renderResults();
+
+    expect(
+      within(screen.getByTestId('nav-header-secondary')).getByRole('status')
+    ).toHaveTextContent('Reconnecting');
+  });
+
   describe('Compare prices link (#71)', () => {
     it('shows a Compare prices link on each Match card targeting the Comparison route', () => {
       seedStore({
