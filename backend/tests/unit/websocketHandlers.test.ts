@@ -194,7 +194,13 @@ describe('websocket handlers', () => {
           participantCount: 1,
           rejoinToken: expect.any(String),
           participants: [
-            { participantId: 'socket-1', displayName: 'Alice', isHost: true, hasSubmitted: false },
+            {
+              participantId: 'socket-1',
+              displayName: 'Alice',
+              isHost: true,
+              hasSubmitted: false,
+              isOnline: true,
+            },
           ],
           state: 'waiting',
         },
@@ -256,6 +262,7 @@ describe('websocket handlers', () => {
     it('should replace an existing participant when they rejoin with the same display name', async () => {
       const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
       await createSessionWithParticipant('old-socket');
+      await store.markDisconnected('old-socket');
       const testSocket = socket('new-socket');
       const callback = vi.fn();
 
@@ -268,7 +275,12 @@ describe('websocket handlers', () => {
 
       expect(callback).toHaveBeenCalledWith({
         success: true,
-        data: expect.objectContaining({ participantId: 'new-socket', participantCount: 1 }),
+        data: expect.objectContaining({
+          participantId: 'new-socket',
+          participantCount: 1,
+          // The rejoin clears the Disconnect: the ack roster reads them live again.
+          participants: [expect.objectContaining({ participantId: 'new-socket', isOnline: true })],
+        }),
       });
       await expect(redis.exists('participant:old-socket')).resolves.toBe(0);
       await expect(redis.exists('participant:new-socket')).resolves.toBe(1);
@@ -692,6 +704,9 @@ describe('websocket handlers', () => {
 
       await handleDisconnect(testSocket as any, {} as any, 'transport close', store);
 
+      // Still a current Participant, now flagged offline for later joiners.
+      expect(await store.countParticipants(sessionCode)).toBe(1);
+      expect((await store.getParticipant('socket-1'))?.isOnline).toBe(false);
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:disconnected', {
         participantId: 'socket-1',
         displayName: 'Alice',
@@ -1178,7 +1193,13 @@ describe('websocket handlers', () => {
           participantCount: 1,
           rejoinToken: expect.any(String),
           participants: [
-            { participantId: 'socket-1', displayName: 'Alice', isHost: true, hasSubmitted: false },
+            {
+              participantId: 'socket-1',
+              displayName: 'Alice',
+              isHost: true,
+              hasSubmitted: false,
+              isOnline: true,
+            },
           ],
           state: 'waiting',
         },

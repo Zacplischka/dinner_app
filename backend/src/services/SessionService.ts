@@ -336,6 +336,7 @@ export function createSessionService({
       displayName: string;
       isHost: boolean;
       hasSubmitted: boolean;
+      isOnline: boolean;
     }[];
     branch?: Branch;
     state: string;
@@ -580,6 +581,9 @@ export function createSessionService({
         // A late joiner must see who has already submitted, or "x of y have
         // swiped" starts at zero in a room where it isn't (#284).
         hasSubmitted: p.hasSubmitted,
+        // ...and who has dropped, so presence starts from server truth rather
+        // than a client's guess that everyone is live.
+        isOnline: p.isOnline,
       })),
       branch: session.branch,
       state: session.state,

@@ -37,6 +37,12 @@ export interface SessionJoinData {
      * "x of y have swiped" starts honest (#284). Additive (ADR 0007).
      */
     hasSubmitted?: boolean;
+    /**
+     * Whether this Participant is connected right now, so a joiner or rejoiner
+     * starts presence from server truth instead of assuming everyone is live.
+     * Absent (older backend) reads as connected. Additive (ADR 0007).
+     */
+    isOnline?: boolean;
   }>;
   /**
    * The Session's Branch, so a Participant's screens know the kind of night
