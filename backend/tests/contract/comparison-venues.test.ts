@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createComparisonRouter } from '../../src/api/comparison.js';
 import { searchNearbyVenues } from '../../src/services/RestaurantSearchService.js';
 import { app as productionApp } from '../../src/server.js';
+import { errorHandler } from '../../src/middleware/errorHandler.js';
 
 describe('GET /api/comparison/venues', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -89,6 +90,7 @@ describe('GET /api/comparison/venues', () => {
     const app = express();
     app.set('trust proxy', 1);
     app.use('/api/comparison', createComparisonRouter({ searchNearbyVenues }));
+    app.use(errorHandler);
     const url = '/api/comparison/venues?latitude=-37.81&longitude=144.96&radiusMiles=5';
 
     for (let requestNumber = 1; requestNumber <= 30; requestNumber++) {
@@ -121,6 +123,7 @@ describe('GET /api/comparison/venues', () => {
     const searchNearbyVenues = vi.fn().mockResolvedValue([]);
     const app = express();
     app.use('/api/comparison', createComparisonRouter({ searchNearbyVenues }));
+    app.use(errorHandler);
 
     const response = await request(app)
       .get('/api/comparison/venues?latitude=91&longitude=144.96&radiusMiles=16')
@@ -137,6 +140,7 @@ describe('GET /api/comparison/venues', () => {
     const searchNearbyVenues = vi.fn().mockResolvedValue([]);
     const app = express();
     app.use('/api/comparison', createComparisonRouter({ searchNearbyVenues }));
+    app.use(errorHandler);
 
     const response = await request(app)
       .get('/api/comparison/venues?latitude=&longitude=&radiusMiles=5')
@@ -150,6 +154,7 @@ describe('GET /api/comparison/venues', () => {
     const searchNearbyVenues = vi.fn().mockResolvedValue([]);
     const app = express();
     app.use('/api/comparison', createComparisonRouter({ searchNearbyVenues }));
+    app.use(errorHandler);
 
     const response = await request(app)
       .get('/api/comparison/venues?latitude=-37.81&latitude=-38&longitude=144.96&radiusMiles=5')
@@ -281,6 +286,7 @@ describe('GET /api/comparison/photo', () => {
         fetchPlacePhoto,
       })
     );
+    app.use(errorHandler);
     const url = '/api/comparison/photo?name=places%2Fabc%2Fphotos%2Fdef';
 
     for (let requestNumber = 1; requestNumber <= 60; requestNumber++) {
@@ -306,6 +312,7 @@ describe('GET /api/comparison/photo', () => {
         photoCache,
       })
     );
+    app.use(errorHandler);
 
     const response = await request(app)
       .get('/api/comparison/photo')

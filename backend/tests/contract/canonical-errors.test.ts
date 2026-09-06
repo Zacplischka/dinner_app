@@ -95,9 +95,21 @@ describe('canonical error transport', () => {
       status: 404,
       code: 'NOT_FOUND',
     },
+    AREA_NOT_FOUND: {
+      domainMessage: "We couldn't find that area.",
+      status: 404,
+      code: 'AREA_NOT_FOUND',
+    },
     RATE_LIMITED: {
       domainMessage: 'Places quota exhausted',
       status: 503,
+      code: 'RATE_LIMITED',
+    },
+    // Same public code as RATE_LIMITED; the status is what tells the client
+    // this is its own window (wait it out) and not the app's upstream quota.
+    TOO_MANY_REQUESTS: {
+      domainMessage: 'Too many photo requests. Please try again shortly.',
+      status: 429,
       code: 'RATE_LIMITED',
     },
     not_found: {

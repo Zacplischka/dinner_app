@@ -5,6 +5,7 @@ import {
   woolworthsProductUrl,
   woolworthsSearchUrl,
 } from '@dinder/shared/types';
+import { DomainError } from '../services/DomainError.js';
 import type { VenueDetails } from '../services/RestaurantSearchService.js';
 import { asyncHandler } from './asyncHandler.js';
 import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
@@ -60,10 +61,10 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
             ? retailerTarget(stockcode, q)
             : null;
         if (!target) {
-          return res.status(400).json({
-            code: 'VALIDATION_ERROR',
-            message: 'retailer (woolworths) and one of stockcode or q are required',
-          });
+          throw new DomainError(
+            'VALIDATION_ERROR',
+            'retailer (woolworths) and one of stockcode or q are required'
+          );
         }
         req.log?.info({ retailer, stockcode, q }, 'Retailer redirect');
         return res.redirect(302, target);
@@ -78,11 +79,10 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
         typeof source !== 'string' ||
         !COMPARISON_TAP_SOURCE_SET.has(source)
       ) {
-        return res.status(400).json({
-          code: 'VALIDATION_ERROR',
-          message:
-            'platform (ubereats|doordash), placeId, and source (match_card|near_miss) are required',
-        });
+        throw new DomainError(
+          'VALIDATION_ERROR',
+          'platform (ubereats|doordash), placeId, and source (match_card|near_miss) are required'
+        );
       }
 
       const cacheKey = `redirect:target:${platform}:${placeId}`;
@@ -92,10 +92,10 @@ export function createRedirectRouter({ fetchPlaceDetails, targetCache }: Redirec
         const ip = requestIp(req);
         if (!admitRequest(redirectRequests, ip, REDIRECT_LIMIT, REDIRECT_WINDOW_MS)) {
           res.setHeader('Retry-After', retryAfterSeconds(redirectRequests, ip, REDIRECT_WINDOW_MS));
-          return res.status(429).json({
-            code: 'RATE_LIMITED',
-            message: 'Too many delivery links opened. Please try again later.',
-          });
+          throw new DomainError(
+            'TOO_MANY_REQUESTS',
+            'Too many delivery links opened. Please try again later.'
+          );
         }
 
         const venue = await fetchPlaceDetails(placeId);

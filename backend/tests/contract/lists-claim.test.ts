@@ -98,7 +98,10 @@ describe('POST /api/lists/:listId/lines/:lineId/claim', () => {
     for (const body of [{}, { displayName: '' }, { displayName: '   ' }, { displayName: 7 }]) {
       const response = await request(app).post(claimUrl()).send(body);
       expect(response.status, JSON.stringify(body)).toBe(400);
-      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body).toEqual({
+        code: 'VALIDATION_ERROR',
+        message: 'A claim needs a display name',
+      });
     }
     expect(claimLine).not.toHaveBeenCalled();
   });
