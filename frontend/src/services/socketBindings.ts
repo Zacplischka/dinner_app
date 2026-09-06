@@ -113,7 +113,7 @@ const socketConfig: SocketConfig = {
 
       // Only show toast for unexpected disconnects, not intentional ones
       if (reason !== 'io client disconnect') {
-        toast.warning('Connection lost. Reconnecting...', { duration: 4000 });
+        toast.warning('Connection lost. Reconnecting…', { duration: 4000 });
       }
     },
 

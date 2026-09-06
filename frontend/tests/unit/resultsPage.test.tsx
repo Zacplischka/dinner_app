@@ -225,7 +225,7 @@ describe('ResultsPage', () => {
       });
       const { container } = renderResults();
 
-      expect(screen.getByText(/no restaurants were selected by all participants/i)).toBeTruthy();
+      expect(screen.getByText(/no restaurants everyone liked/i)).toBeTruthy();
       expect(nearMissCards(container)).toHaveLength(0);
     });
 
@@ -497,7 +497,7 @@ describe('ResultsPage', () => {
 
         expect(share).toHaveBeenCalledWith({
           title: 'Pizza Palace',
-          text: 'Everyone swiped yes on this one.',
+          text: 'Everyone liked this one.',
           url: window.location.href,
         });
         expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
@@ -587,7 +587,7 @@ describe('ResultsPage', () => {
   });
 
   describe('Top Pick (#166)', () => {
-    it('crowns the single Match with "Everyone swiped yes on this one." and no Other matches disclosure', () => {
+    it('crowns the single Match with "Everyone liked this one." and no Other matches disclosure', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [pizza],
@@ -597,7 +597,7 @@ describe('ResultsPage', () => {
       renderResults();
 
       expect(screen.getByText('TOP PICK')).toBeTruthy();
-      expect(screen.getByText('Everyone swiped yes on this one.')).toBeTruthy();
+      expect(screen.getByText('Everyone liked this one.')).toBeTruthy();
       expect(screen.queryByText(/other matches/i)).toBeNull();
     });
 
@@ -613,7 +613,7 @@ describe('ResultsPage', () => {
       });
       const { container } = renderResults();
 
-      expect(screen.getByText('Everyone swiped yes — best rated of your 2 matches.')).toBeTruthy();
+      expect(screen.getByText('Everyone liked it — best rated of your 2 matches.')).toBeTruthy();
       const disclosure = screen.getByText('Other matches (1)').closest('details')!;
       expect(disclosure.textContent).toContain('Pizza Palace');
       expect(disclosure.textContent).not.toContain('Noodle House');
@@ -635,7 +635,7 @@ describe('ResultsPage', () => {
       });
       const { container } = renderResults();
 
-      expect(screen.getByText('2 of 4 swiped yes — the closest you got.')).toBeTruthy();
+      expect(screen.getByText('2 of 4 liked it — the closest you got.')).toBeTruthy();
       const nearMissCards = [...container.querySelectorAll('[data-near-miss-card]')];
       expect(nearMissCards).toHaveLength(1);
       expect(nearMissCards[0].textContent).toContain('Noodle House');
@@ -643,7 +643,7 @@ describe('ResultsPage', () => {
       expect(nearMissCards.some((card) => card.textContent?.includes('Pizza Palace'))).toBe(false);
     });
 
-    it('crowns the highest-rated Restaurant with "Nobody swiped yes" when nobody selected anything', () => {
+    it('crowns the highest-rated Restaurant with "Nobody liked anything" when nobody selected anything', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [],
@@ -653,11 +653,11 @@ describe('ResultsPage', () => {
       renderResults();
 
       expect(
-        screen.getByText("Nobody swiped yes, so here's the highest rated nearby.")
+        screen.getByText("Nobody liked anything, so here's the highest rated nearby.")
       ).toBeTruthy();
     });
 
-    it('renders today\'s "No Match Found" header and empty state when there is no topPick and no Match', () => {
+    it('renders today\'s "No Match" header and empty state when there is no topPick and no Match', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [],
@@ -665,9 +665,9 @@ describe('ResultsPage', () => {
       });
       renderResults();
 
-      expect(screen.getByText('No Match Found')).toBeTruthy();
-      expect(screen.getByText(/no restaurants got a yes from everyone/i)).toBeTruthy();
-      expect(screen.getByText(/no restaurants were selected by all participants/i)).toBeTruthy();
+      expect(screen.getByText('No Match')).toBeTruthy();
+      expect(screen.getByText(/no restaurants got a like from everyone/i)).toBeTruthy();
+      expect(screen.getByText(/no restaurants everyone liked/i)).toBeTruthy();
     });
   });
 
@@ -707,7 +707,7 @@ describe('ResultsPage', () => {
       const crown = container.querySelector('[data-recipe-crown]')!;
       expect(crown).not.toBeNull();
       expect(crown.textContent).toContain('Beef Rendang');
-      expect(crown.textContent).toContain('Everyone swiped yes on this one.');
+      expect(crown.textContent).toContain('Everyone liked this one.');
       expect(crown.querySelector('img')).toHaveAttribute('src', rendang.photoUrl);
     });
 
@@ -729,14 +729,14 @@ describe('ResultsPage', () => {
     });
 
     // The header read the restaurant topPick, which a Cook Session never sets, so a
-    // crowned Recipe sat under "No Match Found" / "No restaurants matched…" (#253).
-    it('titles a crowned Recipe as a Match, not "No Match Found"', () => {
+    // crowned Recipe sat under "No Match" / "No restaurants matched…" (#253).
+    it('titles a crowned Recipe as a Match, not "No Match"', () => {
       seedCook();
       renderResults();
 
       expect(screen.getByText('Perfect Match!')).toBeInTheDocument();
-      expect(screen.queryByText('No Match Found')).not.toBeInTheDocument();
-      expect(screen.queryByText('No restaurants got a yes from everyone')).not.toBeInTheDocument();
+      expect(screen.queryByText('No Match')).not.toBeInTheDocument();
+      expect(screen.queryByText('No restaurants got a like from everyone')).not.toBeInTheDocument();
     });
 
     it('offers no dead button when nothing could be minted', () => {
@@ -817,7 +817,7 @@ describe('ResultsPage', () => {
       });
       const { container } = renderResults();
 
-      expect(screen.getByText('2 of 3 swiped yes — the closest you got.')).toBeInTheDocument();
+      expect(screen.getByText('2 of 3 liked it — the closest you got.')).toBeInTheDocument();
 
       const nearMissCards = container.querySelectorAll('[data-near-miss-card]');
       expect(nearMissCards).toHaveLength(1);
@@ -885,7 +885,7 @@ describe('ResultsPage', () => {
       expect(crown.textContent).toContain('TONIGHT’S MOVIE');
       expect(crown.textContent).toContain('Alien');
       expect(crown.textContent).toContain('1979 · 117 min · 93% on TMDB');
-      expect(crown.textContent).toContain('Everyone swiped yes on this one.');
+      expect(crown.textContent).toContain('Everyone liked this one.');
       expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
       // The crown is where the overview can actually be read, credited where it appears.
       expect(within(crown as HTMLElement).getByText(alien.overview)).toHaveClass('line-clamp-3');
@@ -1015,7 +1015,7 @@ describe('ResultsPage', () => {
 
         expect(share).toHaveBeenCalledWith({
           title: 'Alien',
-          text: 'Everyone swiped yes on this one.',
+          text: 'Everyone liked this one.',
           url: window.location.href,
         });
       } finally {
@@ -1030,7 +1030,7 @@ describe('ResultsPage', () => {
       expect(screen.getByRole('button', { name: 'Select Again' })).toBeInTheDocument();
     });
 
-    it('crowns the highest-rated Movie with "Nobody swiped yes" when nobody selected anything', () => {
+    it('crowns the highest-rated Movie with "Nobody liked anything" when nobody selected anything', () => {
       seedWatch({
         overlappingOptions: [],
         allSelections: { Alice: [], Bob: [] },
@@ -1039,7 +1039,7 @@ describe('ResultsPage', () => {
       renderResults();
 
       expect(
-        screen.getByText("Nobody swiped yes, so here's the highest rated.")
+        screen.getByText("Nobody liked anything, so here's the highest rated.")
       ).toBeInTheDocument();
     });
 
@@ -1072,7 +1072,7 @@ describe('ResultsPage', () => {
 
       // #387 rewords the template; either wording proves the noun is "movies".
       expect(
-        screen.getByText(/No movies (matched everyone's preferences|got a yes from everyone)/)
+        screen.getByText(/No movies (matched everyone's preferences|got a like from everyone)/)
       ).toBeInTheDocument();
     });
   });

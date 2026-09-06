@@ -30,7 +30,7 @@ function LoadingFallback() {
     <div className="flex items-center justify-center min-h-screen bg-ink">
       <div className="text-center">
         <div className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-muted font-body">Loading...</p>
+        <p className="mt-4 text-muted font-body">Loading…</p>
       </div>
     </div>
   );

@@ -86,7 +86,7 @@ export default function InviteFriendsSection({
           {isLoadingFriends ? (
             <div className="py-4 text-center">
               <div className="inline-block w-5 h-5 border-2 border-cyan border-t-transparent rounded-full animate-spin"></div>
-              <p className="mt-2 text-sm text-muted">Loading friends...</p>
+              <p className="mt-2 text-sm text-muted">Loading friends…</p>
             </div>
           ) : friends.length === 0 ? (
             <div className="py-4 text-center text-muted">

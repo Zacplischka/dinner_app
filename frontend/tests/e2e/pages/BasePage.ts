@@ -15,7 +15,7 @@ export abstract class BasePage {
    */
   async waitForPageLoad(): Promise<void> {
     // Wait for React suspense fallback to disappear
-    await this.page.waitForSelector('text=Loading...', {
+    await this.page.waitForSelector('text=Loading…', {
       state: 'hidden',
       timeout: 15_000,
     }).catch(() => {

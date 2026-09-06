@@ -379,7 +379,7 @@ export default function SelectionPage() {
       <div className="flex items-center justify-center min-h-screen bg-ink">
         <div className="text-center">
           <div className="inline-block w-10 h-10 border-3 border-cyan border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-muted font-display text-lg">Finding {deckNoun}s...</p>
+          <p className="mt-4 text-muted font-display text-lg">Finding {deckNoun}s…</p>
         </div>
       </div>
     );
@@ -394,7 +394,7 @@ export default function SelectionPage() {
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
-          title="Waiting for Others"
+          title="Waiting for others…"
           sessionCode={sessionCode}
           showBackButton
           onBack={handleLeaveSession}
@@ -459,7 +459,7 @@ export default function SelectionPage() {
     return (
       <div className="min-h-screen bg-ink">
         <NavigationHeader
-          title="Submit Your Selections"
+          title="Submit your selections"
           sessionCode={sessionCode}
           showBackButton
           onBack={handleLeaveSession}
@@ -513,7 +513,7 @@ export default function SelectionPage() {
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Submitting...
+                    Submitting…
                   </span>
                 ) : (
                   'Submit Selections'
@@ -541,10 +541,10 @@ export default function SelectionPage() {
       <NavigationHeader
         title={
           branch === 'cook'
-            ? 'Choose Recipes'
+            ? 'Choose recipes'
             : branch === 'watch'
-              ? 'Choose Movies'
-              : 'Choose Restaurants'
+              ? 'Choose movies'
+              : 'Choose restaurants'
         }
         sessionCode={sessionCode}
         showBackButton
@@ -774,7 +774,7 @@ export default function SelectionPage() {
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Submitting...
+                  Submitting…
                 </span>
               ) : (
                 'Finish here'

@@ -184,7 +184,7 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
         timeout: 10_000,
       });
       await expect(
-        p.page.getByText('2 of 3 swiped yes — the closest you got.').first()
+        p.page.getByText('2 of 3 liked it — the closest you got.').first()
       ).toBeVisible();
     }
   });

@@ -180,10 +180,10 @@ describe('Movie Deck', () => {
     expect(screen.getByText('Heat')).toBeInTheDocument();
   });
 
-  it('titles the Deck "Choose Movies"', async () => {
+  it('titles the Deck "Choose movies"', async () => {
     renderSelectionPage();
     await screen.findByText('Alien');
 
-    expect(screen.getByRole('heading', { name: 'Choose Movies' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Choose movies' })).toBeInTheDocument();
   });
 });

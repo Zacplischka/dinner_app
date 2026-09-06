@@ -23,7 +23,7 @@ test.describe('Watch Branch', () => {
     await new SessionLobbyPage(page).startSession();
 
     const selectionPage = new SelectionPage(page);
-    await expect(selectionPage.heading).toHaveText('Choose Movies');
+    await expect(selectionPage.heading).toHaveText('Choose movies');
     await expect(selectionPage.swipeCard.first()).toBeVisible();
     await expect(selectionPage.scoreBadge.first()).toBeVisible();
   });

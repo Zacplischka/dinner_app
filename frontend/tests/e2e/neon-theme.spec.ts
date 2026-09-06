@@ -135,7 +135,7 @@ test('uses the five-character Neon join field', async ({ page }) => {
 test('uses Neon panels and micro-labels on secondary pages', async ({ page }) => {
   await page.goto('/compare');
 
-  const panel = page.getByRole('heading', { name: 'Find nearby Venues' }).locator('..');
+  const panel = page.getByRole('heading', { name: 'Find nearby venues' }).locator('..');
   await expect(panel).toHaveCSS('border-color', 'rgb(36, 48, 68)');
   await expect(page.locator('label[for="comparison-radius"]')).toHaveCSS(
     'color',

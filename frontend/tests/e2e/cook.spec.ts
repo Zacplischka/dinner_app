@@ -29,7 +29,7 @@ test.describe('Cook Branch', () => {
     await new SessionLobbyPage(page).startSession();
 
     const selectionPage = new SelectionPage(page);
-    await expect(selectionPage.heading).toHaveText('Choose Recipes');
+    await expect(selectionPage.heading).toHaveText('Choose recipes');
     await expect(selectionPage.swipeCard.first()).toBeVisible();
   });
 });

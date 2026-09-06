@@ -17,7 +17,7 @@ export class CreateSessionPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: /Create Session/i });
+    this.heading = page.getByRole('heading', { name: /New session|Eating out|Getting takeaway/i });
     this.nameInput = page.getByLabel(/Your Name/i);
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
     this.createButton = page.getByRole('button', { name: /Create Session/i });

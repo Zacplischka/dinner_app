@@ -65,7 +65,7 @@ test.describe('Mobile-safe focused-flow header (#78)', () => {
 
   test('Join Session header fits the mobile viewport', async ({ page }) => {
     await page.goto('/join');
-    await expect(page.getByRole('heading', { name: 'Join Session' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Join a session' })).toBeVisible();
 
     await expectMobileSafeHeader(page);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/join.png` });
@@ -77,7 +77,7 @@ test.describe('Mobile-safe focused-flow header (#78)', () => {
 
   test('Create Session header fits the mobile viewport', async ({ page }) => {
     await page.goto('/create');
-    await expect(page.getByRole('heading', { name: 'Create Session' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'New session' })).toBeVisible();
 
     await expectMobileSafeHeader(page);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/create.png` });

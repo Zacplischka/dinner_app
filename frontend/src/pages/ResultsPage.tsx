@@ -526,28 +526,28 @@ export default function ResultsPage() {
     words: { bestOfMany: string; noneSelected: string }
   ): string => {
     if (crowned.likedBy === crowned.of && matchedEntries.length === 1) {
-      return 'Everyone swiped yes on this one.';
+      return 'Everyone liked this one.';
     }
     if (crowned.likedBy === crowned.of && matchedEntries.length > 1) {
-      return `Everyone swiped yes — ${words.bestOfMany} of your ${matchedEntries.length} matches.`;
+      return `Everyone liked it — ${words.bestOfMany} of your ${matchedEntries.length} matches.`;
     }
     if (crowned.likedBy > 0 && crowned.likedBy < crowned.of) {
-      return `${crowned.likedBy} of ${crowned.of} swiped yes — the closest you got.`;
+      return `${crowned.likedBy} of ${crowned.of} liked it — the closest you got.`;
     }
     return words.noneSelected;
   };
 
   const restaurantWords = {
     bestOfMany: 'best rated',
-    noneSelected: "Nobody swiped yes, so here's the highest rated nearby.",
+    noneSelected: "Nobody liked anything, so here's the highest rated nearby.",
   };
   const recipeWords = {
     bestOfMany: 'the most popular',
-    noneSelected: "Nobody swiped yes, so here's the most popular one.",
+    noneSelected: "Nobody liked anything, so here's the most popular one.",
   };
   const movieWords = {
     bestOfMany: 'best rated',
-    noneSelected: "Nobody swiped yes, so here's the highest rated.",
+    noneSelected: "Nobody liked anything, so here's the highest rated.",
   };
 
   // Share the Top Pick: phones get the native sheet headed by the crowned name
@@ -566,13 +566,13 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
       <NavigationHeader
-        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : 'Top Pick') : 'No Match Found'}
+        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : 'Top Pick') : 'No Match'}
         subtitle={
           crownPlaceId
             ? hasOverlap
               ? 'The Top Pick is locked in'
               : "No unanimous Match — here's the closest one"
-            : `No ${deckNoun} got a yes from everyone`
+            : `No ${deckNoun} got a like from everyone`
         }
         sessionCode={sessionCode}
         showBackButton
@@ -701,7 +701,7 @@ export default function ResultsPage() {
                 />
               </svg>
             </div>
-            <p className="text-muted mb-6">No {deckNoun} were selected by all participants</p>
+            <p className="text-muted mb-6">No {deckNoun} everyone liked</p>
             <button
               onClick={handleRestart}
               disabled={isRestarting}

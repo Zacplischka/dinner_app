@@ -195,7 +195,7 @@ describe('Neon Night Market components', () => {
     expect(screen.getByLabelText('Alice, host, live')).toHaveClass('border-coral');
     expect(screen.getByLabelText('Bo, offline')).toBeInTheDocument();
     expect(screen.getByText('Offline')).toHaveClass('text-muted');
-    expect(screen.getAllByText('Waiting for participant...')[0].previousElementSibling).toHaveClass(
+    expect(screen.getAllByText('Waiting for participant…')[0].previousElementSibling).toHaveClass(
       'border-amber'
     );
   });

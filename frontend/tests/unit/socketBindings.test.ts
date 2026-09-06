@@ -116,7 +116,7 @@ describe('socketBindings', () => {
 
     socket.trigger('disconnect', 'transport close');
     expect(useSessionStore.getState().isConnected).toBe(false);
-    expect(socketMocks.toast.warning).toHaveBeenCalledWith('Connection lost. Reconnecting...', {
+    expect(socketMocks.toast.warning).toHaveBeenCalledWith('Connection lost. Reconnecting…', {
       duration: 4000,
     });
 

@@ -194,7 +194,7 @@ describe('page branch coverage', () => {
 
   it('covers lobby route without a session code and leave success', async () => {
     const noCode = renderApp('/lobby');
-    await waitFor(() => expect(screen.queryByText('Loading session...')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Loading session…')).not.toBeInTheDocument());
     fireEvent.click(screen.getByLabelText('Back'));
     fireEvent.click(await screen.findByText('Leave Session'));
     expect(await screen.findByText('Dinder')).toBeInTheDocument();

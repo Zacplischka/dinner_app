@@ -139,7 +139,8 @@ export default function HomePage() {
           <div className="mt-10 max-w-xs space-y-3">
             <GoogleSignInButton />
             <p className="text-xs text-muted">
-              Sign in to save history & invite friends, or continue as a guest.
+              Sign in to add friends and invite them straight into a session. Everything else works
+              as a guest.
             </p>
           </div>
         )}

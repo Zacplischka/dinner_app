@@ -355,7 +355,7 @@ describe('Full House takeover', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Finish here' }));
 
     // In flight: primary shows the spinner and a second tap sends nothing.
-    await waitFor(() => expect(screen.getByText('Submitting...')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Submitting…')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /Submitting/ }));
 
     resolveAck({ success: false, error: { code: 'INTERNAL_ERROR', message: 'boom' } });

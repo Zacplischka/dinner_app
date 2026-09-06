@@ -114,7 +114,7 @@ export default function ComparePage() {
       })
       .catch((cause: unknown) => {
         if (activeRequestKey.current === requestKey) {
-          setError(cause instanceof Error ? cause.message : 'Could not load Venues');
+          setError(cause instanceof Error ? cause.message : 'Could not load venues');
         }
       })
       .finally(() => {
@@ -193,10 +193,10 @@ export default function ComparePage() {
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {!location ? (
           <section className="card text-center">
-            <h2 className="font-display text-2xl font-black">Find nearby Venues</h2>
+            <h2 className="font-display text-2xl font-black">Find nearby venues</h2>
             <p className="mt-2 text-muted">
-              Pick an area to browse Venues near you, then tap one to compare its listed menu prices
-              and current Deals on Uber Eats and DoorDash. We only show what each app lists.
+              Pick an area to browse venues near you, then tap one to compare its listed menu prices
+              and current deals on Uber Eats and DoorDash. We only show what each app lists.
             </p>
 
             <LocationModeToggle
@@ -276,7 +276,7 @@ export default function ComparePage() {
               near {suburb || 'your location'} · change
             </button>
 
-            {loading && <p className="py-12 text-center text-muted">Finding nearby Venues…</p>}
+            {loading && <p className="py-12 text-center text-muted">Finding nearby venues…</p>}
             {error && (
               <div role="alert" className="rounded-xl bg-coral/10 p-4 text-coral-soft">
                 <p>{error}</p>
@@ -294,7 +294,7 @@ export default function ComparePage() {
             )}
             {!loading && !error && venues.length === 0 && (
               <section className="rounded-market-md border border-line bg-raised p-6 text-center">
-                <p className="font-display text-lg font-semibold">No Venues within {radiusKm} km</p>
+                <p className="font-display text-lg font-semibold">No venues within {radiusKm} km</p>
                 <p className="mt-2 text-sm text-muted">Try a wider radius or a different area.</p>
                 <button
                   type="button"
@@ -309,8 +309,8 @@ export default function ComparePage() {
             {venues.length > 0 && (
               <input
                 type="search"
-                aria-label="Search Venues"
-                placeholder="Search Venues"
+                aria-label="Search venues"
+                placeholder="Search venues"
                 value={searchQuery}
                 onChange={(event) => setComparisonState({ searchQuery: event.target.value })}
                 className="input min-h-[48px] w-full"
@@ -375,8 +375,8 @@ export default function ComparePage() {
                 </div>
                 <p className="text-sm text-muted">
                   {filteredVenues.length === venues.length
-                    ? `${venues.length} Venues`
-                    : `${filteredVenues.length} of ${venues.length} Venues`}{' '}
+                    ? `${venues.length} venues`
+                    : `${filteredVenues.length} of ${venues.length} venues`}{' '}
                   · {radiusKm} km radius
                 </p>
               </div>
@@ -384,7 +384,7 @@ export default function ComparePage() {
 
             {venues.length > 0 && filteredVenues.length === 0 && (
               <section className="rounded-market-md border border-line bg-raised p-6 text-center">
-                <p className="font-display text-lg font-semibold">No Venues match</p>
+                <p className="font-display text-lg font-semibold">No venues match</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -441,7 +441,7 @@ export default function ComparePage() {
                 onClick={() => setComparisonState({ visibleCount: visibleCount + VENUE_PAGE_SIZE })}
                 className="btn btn-secondary min-h-[48px] w-full"
               >
-                Show {Math.min(VENUE_PAGE_SIZE, sortedVenues.length - visibleCount)} more Venues
+                Show {Math.min(VENUE_PAGE_SIZE, sortedVenues.length - visibleCount)} more venues
               </button>
             )}
           </>

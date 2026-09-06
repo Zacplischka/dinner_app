@@ -16,7 +16,7 @@ export function useProfileName(): [string, (name: string) => void] {
   const [name, setName] = useState('');
   const [touched, setTouched] = useState(false);
 
-  const fullName = user?.user_metadata?.full_name;
+  const fullName = (user?.user_metadata as { full_name?: unknown } | undefined)?.full_name;
   // The field is bounded at 50 characters (validateDisplayName); a longer
   // Profile name is trimmed to fit rather than seeding an unsubmittable form.
   const profileName = typeof fullName === 'string' ? fullName.trim().slice(0, 50) : '';
