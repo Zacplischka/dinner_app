@@ -58,10 +58,12 @@ function FailureScreen({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="text-lg font-semibold text-text">{heading}</p>
-      <p className="text-sm text-muted">{body}</p>
-      {children}
+    <div className="flex-1 min-h-0 overflow-y-auto flex flex-col px-6 py-6 text-center">
+      <div className="my-auto flex shrink-0 flex-col items-center gap-4">
+        <p className="text-lg font-semibold text-text">{heading}</p>
+        <p className="text-sm text-muted">{body}</p>
+        {children}
+      </div>
     </div>
   );
 }
@@ -217,11 +219,10 @@ export default function GroupOrderPage() {
 
   const handleBack = () => navigate(`/session/${sessionCode}/results`);
 
-  // Header back button: this page means leaving the Session, not returning
-  // to results (the failure-screen "Back to the Match" button above keeps that
-  // behaviour via handleBack). leaveSession already calls resetSession(),
-  // which now clears orderStore too.
+  // Leaving an actual Group Order still leaves the Session. A failed menu
+  // lookup has no basket to leave, so its header returns to the Match.
   const handleHeaderBack = useLeaveSession(sessionCode);
+  const hasOrder = Boolean(order && !failure);
 
   const handleClaimBuyer = async () => {
     if (!sessionCode) return;
@@ -300,7 +301,14 @@ export default function GroupOrderPage() {
       </FailureScreen>
     );
   } else if (failure === 'no_menu' || failure === 'unavailable' || failure === 'internal') {
-    content = <FailureScreen {...FAILURE_COPY[failure]}>{deliveryPills}</FailureScreen>;
+    content = (
+      <FailureScreen {...FAILURE_COPY[failure]}>
+        <button className="btn btn-secondary min-h-[48px] px-6" onClick={handleBack}>
+          Back to the Match
+        </button>
+        {deliveryPills}
+      </FailureScreen>
+    );
   } else if (order && order.state === 'locked') {
     const platformLabel = PLATFORM_LABEL[order.platform];
     const celebration = (
@@ -628,9 +636,9 @@ export default function GroupOrderPage() {
         title="Group order"
         sessionCode={sessionCode}
         showBackButton
-        onBack={handleHeaderBack}
-        confirmOnBack
-        confirmContext="ordering"
+        onBack={hasOrder ? handleHeaderBack : handleBack}
+        confirmOnBack={hasOrder}
+        confirmContext={order?.lines.some((line) => line.by === me) ? 'ordering' : 'lobby'}
         showConnectionStatus
         compact
       />

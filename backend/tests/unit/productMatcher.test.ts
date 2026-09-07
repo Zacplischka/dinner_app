@@ -245,3 +245,37 @@ describe('matchProducts', () => {
     expect(result?.match).not.toHaveProperty('instorePriceCents');
   });
 });
+
+it.each(['garlic', 'garlic cloves', 'fresh garlic'])(
+  'keeps prepared garlic out of a fresh %s match and swap choices',
+  (term) => {
+    const result = matchProducts(
+      [
+        product({
+          stockcode: 1,
+          name: 'Gourmet Garden Cold Blend Pastes Garlic',
+          sapCategory: 'VEG / FRESHCUTS',
+        }),
+        product({ stockcode: 2, name: 'Garlic Powder' }),
+        product({ stockcode: 3, name: 'Garlic Bread', sapCategory: 'BAKERY' }),
+        product({
+          stockcode: 4,
+          name: 'Garlic Fresh Each',
+          packageSize: 'each',
+          sapCategory: 'VEG / FRESHCUTS',
+        }),
+      ],
+      term
+    );
+    expect(result?.match.stockcode).toBe(4);
+    expect(result?.runnersUp).toEqual([]);
+    expect(matchProducts([product({ stockcode: 1, name: 'Garlic Paste' })], term)).toBeNull();
+  }
+);
+
+it.each(['garlic paste', 'crushed garlic', 'garlic powder'])(
+  'still matches explicitly requested %s',
+  (term) => {
+    expect(matchProducts([product({ stockcode: 1, name: term })], term)?.match.stockcode).toBe(1);
+  }
+);

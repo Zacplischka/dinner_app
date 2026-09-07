@@ -376,6 +376,9 @@ export default function ResultsPage() {
   // Kind-agnostic: for a restaurant Deck this is exactly overlappingOptions,
   // and for a Recipe Deck it is the Match the celebration should fire on.
   const hasOverlap = matchedEntries.length > 0;
+  const allPassed =
+    crownedEntry?.likedBy === 0 && Object.values(allSelections).every((ids) => ids.length === 0);
+  const PickContainer = allPassed ? 'details' : 'div';
 
   // A Restart wipes the whole room's Match, so it is the Host's call and the
   // server refuses it from anyone else (#405). Everyone else waits — unless no
@@ -560,13 +563,23 @@ export default function ResultsPage() {
     <main className="min-h-screen bg-ink">
       {/* Navigation Header */}
       <NavigationHeader
-        title={crownPlaceId ? (hasOverlap ? 'Perfect Match!' : 'Top Pick') : 'No Match'}
+        title={
+          allPassed
+            ? 'No likes this round'
+            : crownPlaceId
+              ? hasOverlap
+                ? 'Perfect Match!'
+                : 'Top Pick'
+              : 'No Match'
+        }
         subtitle={
-          crownPlaceId
-            ? hasOverlap
-              ? 'The Top Pick is locked in'
-              : "No unanimous Match — here's the closest one"
-            : `No ${deckNoun} got a like from everyone`
+          allPassed
+            ? 'Try another deck or change your choices'
+            : crownPlaceId
+              ? hasOverlap
+                ? 'The Top Pick is locked in'
+                : "No unanimous Match — here's the closest one"
+              : `No ${deckNoun} got a like from everyone`
         }
         sessionCode={sessionCode}
         showBackButton
@@ -575,26 +588,61 @@ export default function ResultsPage() {
         confirmContext="results"
         showConnectionStatus
         rightAction={
-          <button
-            onClick={() => void handleShareTopPick()}
-            className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-cyan transition-colors"
-            title="Share Top Pick"
-            aria-label="Share Top Pick"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-          </button>
+          !allPassed && (
+            <button
+              onClick={() => void handleShareTopPick()}
+              className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-cyan transition-colors"
+              title="Share Top Pick"
+              aria-label="Share Top Pick"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+            </button>
+          )
         }
       />
 
       <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
-        {crownPlaceId && sessionStatus === 'complete' && (
+        {allPassed && (
+          <section aria-labelledby="no-likes-heading" className="card mb-6 text-center">
+            <h2 id="no-likes-heading" className="text-2xl font-display font-bold text-text mb-3">
+              None of these worked
+            </h2>
+            <p className="text-muted mb-4">Nobody liked any of these {deckNoun}.</p>
+            {isHost ? (
+              <>
+                <button
+                  onClick={handleRestart}
+                  disabled={isRestarting}
+                  className="btn btn-primary w-full min-h-[48px]"
+                >
+                  {isRestarting ? 'Starting another round…' : 'Try another deck'}
+                </button>
+                {lobby && (
+                  <p className="mt-3 text-sm text-muted">
+                    You can change your choices before starting the next round.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted">
+                The host can try another deck or return everyone to change their choices.
+              </p>
+            )}
+            {error && (
+              <p role="alert" className="mt-3 text-sm text-coral-soft">
+                {error}
+              </p>
+            )}
+          </section>
+        )}
+        {crownPlaceId && !allPassed && sessionStatus === 'complete' && (
           <div className="mx-auto mb-3 max-w-sm">
             <SocialMoment
               key={`${sessionCode}:${lobby?.round ?? ''}:${crownPlaceId}`}
@@ -614,125 +662,135 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {crownedRecipe ? (
-          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
-            <RecipeCrown
-              recipe={crownedRecipe.recipe}
-              reason={crownReason(crownedRecipe, recipeWords)}
-              shoppingListId={shoppingListId}
-            />
-          </div>
-        ) : crownedMovie ? (
-          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
-            <MovieCrown movie={crownedMovie.movie} reason={crownReason(crownedMovie, movieWords)} />
-            {otherMovieMatches.length > 0 && (
-              <section aria-labelledby="other-watch-matches" className="mt-6 space-y-4">
-                <h2 id="other-watch-matches" className="text-xl font-semibold text-text">
-                  Other matches ({otherMovieMatches.length})
-                </h2>
-                {otherMovieMatches.map((movie) => (
-                  <MovieCrown
-                    key={movie.placeId}
-                    movie={movie}
-                    reason="Everyone liked this one."
-                    isCrown={false}
-                  />
-                ))}
-              </section>
-            )}
-          </div>
-        ) : pick ? (
-          <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
-            {/* The crowned Restaurant is the dominant surface — no wrapper card
-                competing with it. Warm glow is reflected light from the celebration. */}
-            <MatchCard
-              restaurant={pick.restaurant}
-              eyebrow="TOP PICK"
-              reason={crownReason(pick, restaurantWords)}
-              isCrown
-              showContinuation={showContinuation}
-              ubereatsHref={
-                hasOverlap
-                  ? generateUberEatsUrl(pick.restaurant.name, pick.restaurant.address)
-                  : nearMissRedirectUrl('ubereats', pick.restaurant.placeId)
-              }
-              doordashHref={
-                hasOverlap
-                  ? generateDoorDashUrl(pick.restaurant.name, pick.restaurant.address)
-                  : nearMissRedirectUrl('doordash', pick.restaurant.placeId)
-              }
-              // ponytail: reusing near_miss for the no-Match crown keeps the #68 kill-gate
-              // vocabulary closed; if the gate needs crowned taps separated, add 'top_pick'
-              // to COMPARISON_TAP_SOURCES (additive).
-              comparePath={`/compare/${encodeURIComponent(pick.restaurant.placeId)}?source=${hasOverlap ? 'match_card' : 'near_miss'}`}
-            />
-
-            {hasOverlap && overlappingOptions.length > 1 && (
-              <details className="card group mb-6 mt-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
-                  Other matches ({overlappingOptions.length - 1})
-                  <svg
-                    className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                    />
-                  </svg>
-                </summary>
-                <div className="mt-4 space-y-4">
-                  {overlappingOptions
-                    .filter((restaurant) => restaurant.placeId !== pick.restaurant.placeId)
-                    .map((restaurant) => (
-                      <MatchCard
-                        key={restaurant.placeId}
-                        restaurant={restaurant}
-                        showContinuation={showContinuation}
-                        ubereatsHref={generateUberEatsUrl(restaurant.name, restaurant.address)}
-                        doordashHref={generateDoorDashUrl(restaurant.name, restaurant.address)}
-                        comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
-                      />
-                    ))}
-                </div>
-              </details>
-            )}
-          </div>
-        ) : (
-          <div className="card p-8 mb-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-muted/10 rounded-full flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-muted"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+        <PickContainer className={allPassed ? 'card mb-6' : undefined}>
+          {allPassed && (
+            <summary className="flex min-h-[44px] cursor-pointer items-center text-sm font-semibold text-muted hover:text-text">
+              Optional Top Pick
+            </summary>
+          )}
+          {crownedRecipe ? (
+            <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+              <RecipeCrown
+                recipe={crownedRecipe.recipe}
+                reason={crownReason(crownedRecipe, recipeWords)}
+                shoppingListId={shoppingListId}
+              />
             </div>
-            <p className="text-muted mb-6">No {deckNoun} everyone liked</p>
-            {isHost ? (
-              <button
-                onClick={handleRestart}
-                disabled={isRestarting}
-                className="btn btn-primary px-6 py-3"
-              >
-                Try again
-              </button>
-            ) : (
-              waitingForHost
-            )}
-          </div>
-        )}
+          ) : crownedMovie ? (
+            <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+              <MovieCrown
+                movie={crownedMovie.movie}
+                reason={crownReason(crownedMovie, movieWords)}
+              />
+              {otherMovieMatches.length > 0 && (
+                <section aria-labelledby="other-watch-matches" className="mt-6 space-y-4">
+                  <h2 id="other-watch-matches" className="text-xl font-semibold text-text">
+                    Other matches ({otherMovieMatches.length})
+                  </h2>
+                  {otherMovieMatches.map((movie) => (
+                    <MovieCrown
+                      key={movie.placeId}
+                      movie={movie}
+                      reason="Everyone liked this one."
+                      isCrown={false}
+                    />
+                  ))}
+                </section>
+              )}
+            </div>
+          ) : pick ? (
+            <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
+              {/* The crowned Restaurant is the dominant surface — no wrapper card
+                competing with it. Warm glow is reflected light from the celebration. */}
+              <MatchCard
+                restaurant={pick.restaurant}
+                eyebrow="TOP PICK"
+                reason={crownReason(pick, restaurantWords)}
+                isCrown
+                showContinuation={showContinuation}
+                ubereatsHref={
+                  hasOverlap
+                    ? generateUberEatsUrl(pick.restaurant.name, pick.restaurant.address)
+                    : nearMissRedirectUrl('ubereats', pick.restaurant.placeId)
+                }
+                doordashHref={
+                  hasOverlap
+                    ? generateDoorDashUrl(pick.restaurant.name, pick.restaurant.address)
+                    : nearMissRedirectUrl('doordash', pick.restaurant.placeId)
+                }
+                // ponytail: reusing near_miss for the no-Match crown keeps the #68 kill-gate
+                // vocabulary closed; if the gate needs crowned taps separated, add 'top_pick'
+                // to COMPARISON_TAP_SOURCES (additive).
+                comparePath={`/compare/${encodeURIComponent(pick.restaurant.placeId)}?source=${hasOverlap ? 'match_card' : 'near_miss'}`}
+              />
+
+              {hasOverlap && overlappingOptions.length > 1 && (
+                <details className="card group mb-6 mt-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
+                    Other matches ({overlappingOptions.length - 1})
+                    <svg
+                      className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                      />
+                    </svg>
+                  </summary>
+                  <div className="mt-4 space-y-4">
+                    {overlappingOptions
+                      .filter((restaurant) => restaurant.placeId !== pick.restaurant.placeId)
+                      .map((restaurant) => (
+                        <MatchCard
+                          key={restaurant.placeId}
+                          restaurant={restaurant}
+                          showContinuation={showContinuation}
+                          ubereatsHref={generateUberEatsUrl(restaurant.name, restaurant.address)}
+                          doordashHref={generateDoorDashUrl(restaurant.name, restaurant.address)}
+                          comparePath={`/compare/${encodeURIComponent(restaurant.placeId)}?source=match_card`}
+                        />
+                      ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          ) : (
+            <div className="card p-8 mb-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-muted/10 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-muted"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <p className="text-muted mb-6">No {deckNoun} everyone liked</p>
+              {isHost ? (
+                <button
+                  onClick={handleRestart}
+                  disabled={isRestarting}
+                  className="btn btn-primary px-6 py-3"
+                >
+                  Try again
+                </button>
+              ) : (
+                waitingForHost
+              )}
+            </div>
+          )}
+        </PickContainer>
 
         {/* Near Misses: the all-but-one tier, counts only, never names.
             The crowned placeId is already excluded (see nearMisses above). */}
@@ -825,7 +883,7 @@ export default function ResultsPage() {
         )}
 
         {/* Error message */}
-        {error && (
+        {error && !allPassed && (
           <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
             <p className="text-sm text-coral-soft">{error}</p>
           </div>
@@ -834,6 +892,7 @@ export default function ResultsPage() {
         {/* Action Buttons */}
         <div className="space-y-3">
           {crownPlaceId &&
+            !allPassed &&
             (isHost ? (
               <button
                 onClick={handleRestart}

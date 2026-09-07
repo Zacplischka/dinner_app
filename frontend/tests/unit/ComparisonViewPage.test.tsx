@@ -364,6 +364,8 @@ describe('ComparisonViewPage', () => {
     ).toBeInTheDocument();
     expect(screen.queryByTestId('ubereats-column')).not.toBeInTheDocument();
     expect(screen.queryByTestId('doordash-column')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Choose another venue' }));
+    expect(screen.getByText('Venue list')).toBeInTheDocument();
   });
 
   it('offers recovery when both Platforms failed', () => {
@@ -450,6 +452,8 @@ describe('ComparisonViewPage', () => {
     expect(matchedRow).toHaveTextContent('$20.00');
     expect(matchedRow).toHaveTextContent('$22.00');
     expect(within(matchedRow).getByText('Save $2.00')).toBeInTheDocument();
+    expect(within(matchedRow).getByText('Uber Eats')).toBeVisible();
+    expect(within(matchedRow).getByText('DoorDash')).toBeVisible();
     expect(screen.getByText('$20.00')).toHaveClass('font-semibold');
 
     expect(screen.getByText('Prices shown are non-member menu prices.')).toBeInTheDocument();
@@ -458,9 +462,15 @@ describe('ComparisonViewPage', () => {
     expect(screen.getByText('Only on DoorDash (1)')).toBeInTheDocument();
     expect(screen.getByText('DoorDash special')).toBeInTheDocument();
 
-    // Platform actions appear exactly once, after the evidence.
+    // Platform actions follow the verdict, before the potentially long menu.
     expect(screen.getAllByRole('link', { name: 'Open in Uber Eats' })).toHaveLength(1);
     expect(screen.getAllByRole('link', { name: 'Open in DoorDash' })).toHaveLength(1);
+    for (const name of ['Open in Uber Eats', 'Open in DoorDash']) {
+      expect(
+        screen.getByRole('link', { name }).compareDocumentPosition(matchedRow) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    }
   });
 
   it('concludes prices are about the same when no menu is cheaper', () => {

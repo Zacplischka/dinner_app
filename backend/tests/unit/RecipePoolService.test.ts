@@ -117,8 +117,8 @@ describe('createRecipePoolService', () => {
     expect(searches()[0].url.searchParams.get('number')).toBe('60');
   });
 
-  it('deals ingredient details while keeping structured amounts and method in the pool', async () => {
-    const { service: pool } = service();
+  it('deals existing ingredient and method details without an extra source lookup', async () => {
+    const { service: pool, searches } = service();
 
     const [card] = (await pool.dealDeck(pasta)).entries;
 
@@ -128,8 +128,13 @@ describe('createRecipePoolService', () => {
       name: 'Recipe 1',
       photoUrl: 'https://img.spoonacular.com/1.jpg',
       aggregateLikes: 0,
-      details: expect.objectContaining({ ingredients: ['1 tbsp olive oil'], servings: 4 }),
+      details: expect.objectContaining({
+        ingredients: ['1 tbsp olive oil'],
+        servings: 4,
+        steps: ['Cook it.'],
+      }),
     });
+    expect(searches()).toHaveLength(1);
   });
 
   it('serves a second Session the same warm pool without a second lookup', async () => {
@@ -461,6 +466,11 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
 
     expect(deck).toHaveLength(15);
     expect(deck.filter(isOwned)).toHaveLength(3);
+    expect(deck.find(isOwned)?.details).toMatchObject({
+      ingredients: ['1 tbsp olive oil'],
+      steps: ['Cook it.'],
+      provenance: 'owned',
+    });
   });
 
   it('tops the Deck up from owned when the vendor is thin', async () => {

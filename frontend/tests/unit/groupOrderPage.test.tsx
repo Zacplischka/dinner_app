@@ -121,7 +121,14 @@ describe('GroupOrderPage', () => {
   });
 
   it('confirms with the ordering copy on Leave, then leaves the session on confirm (#180)', async () => {
-    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+    seedStore({ currentUserId: 'p1' });
+    openOrderMock.mockResolvedValue({
+      success: true,
+      data: {
+        ...warmOrder,
+        lines: [{ index: 0, name: 'Margherita', priceCents: 2300, qty: 1, by: 'Alice' }],
+      },
+    });
     renderPage();
 
     await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
@@ -141,6 +148,19 @@ describe('GroupOrderPage', () => {
 
     expect(await screen.findByText('HOME SCREEN')).toBeInTheDocument();
     expect(leaveSessionMock).toHaveBeenCalledWith('AB123');
+  });
+
+  it('still confirms leaving an open order without claiming the viewer has basket items', async () => {
+    seedStore({ currentUserId: 'p1' });
+    openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
+    renderPage();
+    await screen.findByText('In the basket');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('Leave session?');
+    expect(screen.queryByText(/Your items stay in the basket/)).not.toBeInTheDocument();
+    expect(leaveSessionMock).not.toHaveBeenCalled();
   });
 
   it('renders no cheaper badge when cheaperPercent is absent', async () => {
@@ -183,7 +203,7 @@ describe('GroupOrderPage', () => {
     expect(screen.getAllByText('—')).toHaveLength(2);
   });
 
-  it('shows the no_menu dead end with two delivery pills and marks the placeId', async () => {
+  it('offers Back to the Match after no_menu without leaving the Session', async () => {
     openOrderMock.mockResolvedValue({
       success: false,
       error: { code: 'NOT_FOUND', message: 'no menu', reason: 'no_menu' },
@@ -199,6 +219,10 @@ describe('GroupOrderPage', () => {
     expect(screen.getByRole('link', { name: /uber eats/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /doordash/i })).toBeInTheDocument();
     expect(useOrderStore.getState().noMenuPlaceIds).toContain(restaurant.placeId);
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the Match' }));
+    expect(screen.getByText('RESULTS SCREEN')).toBeInTheDocument();
+    expect(leaveSessionMock).not.toHaveBeenCalled();
+    expect(useSessionStore.getState().sessionCode).toBe('AB123');
   });
 
   it('shows the courier for a stale Snapshot and removes it on the successful retry ack', async () => {
@@ -259,6 +283,11 @@ describe('GroupOrderPage', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /uber eats/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to the Match' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByText('RESULTS SCREEN')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(leaveSessionMock).not.toHaveBeenCalled();
   });
 
   it('shows the unavailable screen when a second order:open also acks stale', async () => {
@@ -358,6 +387,9 @@ describe('GroupOrderPage', () => {
       expect(screen.getByText('Something went wrong getting the menu.')).toBeInTheDocument()
     );
     expect(screen.getByRole('link', { name: /doordash/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the Match' }));
+    expect(screen.getByText('RESULTS SCREEN')).toBeInTheDocument();
+    expect(leaveSessionMock).not.toHaveBeenCalled();
   });
 
   it('navigates straight to Select with no screen on VALIDATION_ERROR', async () => {

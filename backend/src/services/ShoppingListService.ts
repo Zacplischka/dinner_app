@@ -278,9 +278,17 @@ type MintIngredient = PooledIngredient & { degraded: boolean };
 function mintIngredients(ingredients: PooledIngredient[]): MintIngredient[] {
   const merged = new Map<string, MintIngredient>();
   for (const ingredient of ingredients) {
-    const cleaned = JUNK_UNITS.has(ingredient.unit.toLowerCase())
+    let cleaned = JUNK_UNITS.has(ingredient.unit.toLowerCase())
       ? null
       : sanitiseIngredientName(ingredient.name);
+    // Some sources parse cloves as bare garlic counts. Restore only a clove
+    // explicitly named in the original, so both display and pricing retain it.
+    if (
+      cleaned?.toLowerCase() === 'garlic' &&
+      ingredient.unit === '' &&
+      /\b(?:garlic cloves?|cloves? (?:of )?garlic)\b/i.test(ingredient.original)
+    )
+      cleaned = 'garlic cloves';
     const entry: MintIngredient =
       cleaned === null
         ? { ...ingredient, degraded: true }

@@ -143,10 +143,19 @@ function PlatformColumn({
   );
 }
 
-function MatchedPrice({ priceCents, otherCents }: { priceCents: number; otherCents: number }) {
+function MatchedPrice({
+  name,
+  priceCents,
+  otherCents,
+}: {
+  name: PlatformName;
+  priceCents: number;
+  otherCents: number;
+}) {
   const cheaper = priceCents < otherCents;
   return (
     <span className={`text-right ${cheaper ? 'font-semibold text-lime' : 'text-text/80'}`}>
+      <span className="block text-xs font-medium text-muted">{name}</span>
       {formatPrice(priceCents)}
       {cheaper && (
         <span className="block text-[10px] font-semibold uppercase tracking-wide text-lime">
@@ -315,6 +324,14 @@ export default function ComparisonViewPage() {
             )}
             {fetchedAt && <p className="text-sm text-muted">{fetchedLabel(fetchedAt)}</p>}
             <p className="text-xs text-muted">Prices shown are non-member menu prices.</p>
+            <div className="grid gap-3 pt-3 sm:grid-cols-2">
+              {storefronts.ubereats?.status === 'resolved' && storefronts.ubereats.storeUrl && (
+                <OutboundLink name="Uber Eats" url={storefronts.ubereats.storeUrl} />
+              )}
+              {storefronts.doordash?.status === 'resolved' && storefronts.doordash.storeUrl && (
+                <OutboundLink name="DoorDash" url={storefronts.doordash.storeUrl} />
+              )}
+            </div>
           </div>
         )}
         {comparison && !neitherFound && !bothFailed && (
@@ -322,24 +339,21 @@ export default function ComparisonViewPage() {
             {comparison.matchedItems.length > 0 ? (
               <section className="overflow-hidden rounded-2xl border border-line/30 bg-raised shadow-card">
                 <h2 className="px-5 pt-5 font-display text-xl font-semibold">Matched items</h2>
-                <div className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] gap-4 px-5 pt-3 text-xs font-semibold text-muted">
-                  <span>Item</span>
-                  <span className="text-right">Uber Eats</span>
-                  <span className="text-right">DoorDash</span>
-                </div>
                 <div className="mt-2 divide-y divide-line/20">
                   {comparison.matchedItems.map((item, index) => (
                     <div
                       key={`${item.name}-${index}`}
                       data-testid={`matched-item-${index}`}
-                      className="grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-center gap-4 px-5 py-4 text-sm"
+                      className="grid grid-cols-2 items-center gap-x-4 gap-y-2 px-5 py-4 text-sm sm:grid-cols-[minmax(0,1fr)_5rem_5rem]"
                     >
-                      <span className="font-medium">{item.name}</span>
+                      <span className="col-span-2 font-medium sm:col-span-1">{item.name}</span>
                       <MatchedPrice
+                        name="Uber Eats"
                         priceCents={item.ubereats.price_cents}
                         otherCents={item.doordash.price_cents}
                       />
                       <MatchedPrice
+                        name="DoorDash"
                         priceCents={item.doordash.price_cents}
                         otherCents={item.ubereats.price_cents}
                       />
@@ -358,9 +372,12 @@ export default function ComparisonViewPage() {
           </>
         )}
         {neitherFound && (
-          <p className="rounded-2xl border border-line/30 bg-raised p-6 text-center text-text/80">
-            Couldn’t find this venue on either delivery app.
-          </p>
+          <div className="space-y-4 rounded-2xl border border-line/30 bg-raised p-6 text-center">
+            <p className="text-text/80">Couldn’t find this venue on either delivery app.</p>
+            <button className="btn btn-secondary min-h-[44px]" onClick={backToVenues}>
+              Choose another venue
+            </button>
+          </div>
         )}
         {bothFailed && (
           <div className="space-y-4 rounded-2xl border border-line/30 bg-raised p-6 text-center">
@@ -399,15 +416,6 @@ export default function ComparisonViewPage() {
           <div className="space-y-5">
             <UnmatchedSection name="Uber Eats" items={comparison.unmatched.ubereats} />
             <UnmatchedSection name="DoorDash" items={comparison.unmatched.doordash} />
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {storefronts.ubereats?.status === 'resolved' && storefronts.ubereats.storeUrl && (
-                <OutboundLink name="Uber Eats" url={storefronts.ubereats.storeUrl} />
-              )}
-              {storefronts.doordash?.status === 'resolved' && storefronts.doordash.storeUrl && (
-                <OutboundLink name="DoorDash" url={storefronts.doordash.storeUrl} />
-              )}
-            </div>
           </div>
         )}
       </div>

@@ -1180,3 +1180,21 @@ describe('ShoppingListService swaps', () => {
     mintGate.open();
   });
 });
+
+it('preserves an explicitly written garlic clove count when parsed source units are empty', async () => {
+  const { service, matchProduct, resolveLine } = build({
+    recipe: {
+      ...recipe,
+      ingredients: [
+        { name: 'garlic', amount: 3, unit: '', original: '3 garlic cloves, thinly sliced' },
+      ],
+    },
+  });
+  const list = await service.readList((await service.mint('AB123', '11'))!);
+  expect(list?.lines[0].text).toBe('9 garlic cloves');
+  expect(matchProduct).toHaveBeenCalledWith('garlic cloves');
+  expect(resolveLine).toHaveBeenCalledWith(
+    { name: 'garlic cloves', amount: 9, unit: '' },
+    expect.anything()
+  );
+});

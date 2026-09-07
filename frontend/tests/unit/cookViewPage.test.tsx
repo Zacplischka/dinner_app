@@ -3,7 +3,7 @@
 // end-of-method credit that doubles as the degrade path when steps are empty.
 import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ShoppingList } from '@dinder/shared/types';
 
@@ -58,11 +58,12 @@ function setVisibility(state: DocumentVisibilityState) {
   fireEvent(document, new Event('visibilitychange'));
 }
 
-function renderPage() {
+function renderPage(listId = 'list-1') {
   return render(
-    <MemoryRouter initialEntries={['/list/list-1/cook']}>
+    <MemoryRouter initialEntries={[`/list/${listId}/cook`]}>
       <Routes>
         <Route path="/list/:listId/cook" element={<CookViewPage />} />
+        <Route path="/list/:listId" element={<Link to={`/list/${listId}/cook`}>Cook</Link>} />
       </Routes>
     </MemoryRouter>
   );
@@ -72,6 +73,7 @@ describe('CookViewPage', () => {
   let wakeLock: ReturnType<typeof mockWakeLock>;
 
   beforeEach(() => {
+    sessionStorage.clear();
     serviceMocks.getShoppingList.mockReset().mockResolvedValue(list);
     wakeLock = mockWakeLock();
   });
@@ -134,6 +136,50 @@ describe('CookViewPage', () => {
 
     fireEvent.click(row);
     expect(row).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('remembers progress through ingredient lookup and a fresh mount, only for that list', async () => {
+    let view = renderPage();
+    fireEvent.click((await screen.findByText(steps[1])).closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Cook' }));
+    expect((await screen.findByText(steps[1])).closest('button')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+
+    view.unmount();
+    view = renderPage();
+    expect((await screen.findByText(steps[1])).closest('button')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    view.unmount();
+
+    serviceMocks.getShoppingList.mockResolvedValue({ ...list, listId: 'list-2' });
+    renderPage('list-2');
+    expect((await screen.findByText(steps[1])).closest('button')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+  });
+
+  it('keeps tab-local progress on navigation when storage is denied', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    serviceMocks.getShoppingList.mockResolvedValue({ ...list, listId: 'storage-denied' });
+    renderPage('storage-denied');
+    fireEvent.click((await screen.findByText(steps[0])).closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Cook' }));
+    const step = (await screen.findByText(steps[0])).closest('button')!;
+    expect(step).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(step);
+    expect(step).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('holds the screen awake while the view is open and lets go on leaving', async () => {

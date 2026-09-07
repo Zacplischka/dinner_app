@@ -102,14 +102,28 @@ describe('createQuantityLadder', () => {
     expect(requests).toHaveLength(0);
   });
 
-  it('garlic cloves buy a fraction of the each-sold bulb, not one bulb per clove', async () => {
+  it.each([
+    { name: 'garlic cloves', unit: '' },
+    { name: 'garlic', unit: 'clove' },
+    { name: 'garlic', unit: 'cloves' },
+  ])('garlic cloves buy a fraction of the each-sold bulb ($name / $unit)', async (ingredient) => {
     const { ladder: rungs } = ladder();
     await expect(
       rungs.resolveLine(
-        { name: 'garlic cloves', amount: 3, unit: '' },
+        { ...ingredient, amount: 3 },
         matched({ packageSize: 'each', priceCents: 90 })
       )
     ).resolves.toMatchObject({ state: 'priced', packs: 1, priceCents: 90 });
+  });
+
+  it('does not count grams of garlic cloves as individual cloves', async () => {
+    const { ladder: rungs } = ladder();
+    await expect(
+      rungs.resolveLine(
+        { name: 'garlic cloves', amount: 50, unit: 'g' },
+        matched({ packageSize: 'each', priceCents: 90 })
+      )
+    ).resolves.toMatchObject({ state: 'unpriced_matched' });
   });
 
   it('rung 2: Convert bridges count to mass, cached forever by (ingredient, unit)', async () => {

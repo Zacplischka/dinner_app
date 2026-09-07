@@ -9,6 +9,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 }));
 
 import ResultsPage from '../../src/pages/ResultsPage';
+import { restartSession } from '../../src/services/socketBindings';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import { useOrderStore } from '../../src/stores/orderStore';
@@ -529,7 +530,12 @@ describe('ResultsPage', () => {
           sessionStatus: 'complete',
         });
         renderResults();
-        expect(screen.getByRole('group', { name: 'Tonight’s pick' })).toBeInTheDocument();
+        if (likedBy) {
+          expect(screen.getByRole('group', { name: 'Tonight’s pick' })).toBeInTheDocument();
+        } else {
+          expect(screen.queryByRole('group', { name: 'Tonight’s pick' })).not.toBeInTheDocument();
+          expect(screen.getByRole('heading', { name: 'None of these worked' })).toBeVisible();
+        }
         expect(screen.queryByRole('heading', { name: 'MATCH!' })).not.toBeInTheDocument();
         expect(screen.queryByText('Everyone liked this one.')).not.toBeInTheDocument();
         expect(
@@ -541,6 +547,100 @@ describe('ResultsPage', () => {
         ).toBeInTheDocument();
       }
     );
+  });
+
+  describe('all-pass recovery', () => {
+    it.each(['restaurant', 'recipe', 'movie'] as const)(
+      'prioritizes another deck and keeps the %s fallback available in a disclosure',
+      (kind) => {
+        seedStore({
+          participants: [alice, bob],
+          allSelections: { Alice: [], Bob: [] },
+          topPick: {
+            restaurant: { kind, placeId: 'fallback', name: 'Optional choice' },
+            likedBy: 0,
+            of: 2,
+          },
+          sessionStatus: 'complete',
+        });
+        renderResults();
+
+        const retry = screen.getByRole('button', { name: 'Try another deck' });
+        const summary = screen.getByText('Optional Top Pick');
+        const fallback = screen.getByText('Optional choice');
+        expect(retry).toBeVisible();
+        expect(
+          retry.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+        expect(fallback).not.toBeVisible();
+        expect(screen.queryByRole('button', { name: 'Select again' })).not.toBeInTheDocument();
+        fireEvent.click(summary);
+        expect(fallback).toBeVisible();
+        expect(screen.getByText(/Nobody liked anything, so here's/)).toBeVisible();
+      }
+    );
+
+    it('lets the host retry through choices and keeps a failed restart error by that action', async () => {
+      seedStore({
+        branch: 'takeaway',
+        participants: [alice, bob],
+        allSelections: { Alice: [], Bob: [] },
+        topPick: { restaurant: pizza, likedBy: 0, of: 2 },
+        sessionStatus: 'complete',
+        lobby: {
+          sessionCode: 'AB123',
+          branch: 'takeaway',
+          state: 'complete',
+          revision: 4,
+          round: 1,
+          headcount: 2,
+          deckSize: 5,
+          searchRadiusMiles: 5,
+          participants: [alice, bob].map((p) => ({ ...p, ready: true })),
+        },
+      });
+      vi.mocked(restartSession).mockRejectedValueOnce(
+        new Error('Connection interrupted. Try again.')
+      );
+      render(
+        <MemoryRouter initialEntries={['/session/AB123/results']}>
+          <Routes>
+            <Route path="/session/:sessionCode/results" element={<ResultsPage />} />
+            <Route path="/session/:sessionCode" element={<div>Choose the next round</div>} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      expect(
+        screen.getByText('You can change your choices before starting the next round.')
+      ).toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: 'Try another deck' }));
+      const recovery = screen.getByRole('region', { name: 'None of these worked' });
+      expect(await within(recovery).findByRole('alert')).toHaveTextContent(
+        'Connection interrupted. Try again.'
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Try another deck' }));
+      expect(await screen.findByText('Choose the next round')).toBeVisible();
+      expect(restartSession).toHaveBeenLastCalledWith('AB123');
+    });
+
+    it('explains the host action to guests without offering an unauthorized restart', () => {
+      seedStore({
+        currentUserId: 'p2',
+        participants: [alice, bob],
+        allSelections: { Alice: [], Bob: [] },
+        topPick: { restaurant: pizza, likedBy: 0, of: 2 },
+        sessionStatus: 'complete',
+      });
+      renderResults();
+      expect(
+        screen.getByText(
+          'The host can try another deck or return everyone to change their choices.'
+        )
+      ).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Try another deck' })).not.toBeInTheDocument();
+      expect(restartSession).not.toHaveBeenCalled();
+    });
   });
 
   describe('Continuation action hierarchy (#85)', () => {

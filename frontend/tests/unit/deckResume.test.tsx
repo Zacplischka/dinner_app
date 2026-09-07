@@ -5,6 +5,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Branch } from '@dinder/shared/types';
 
 const entry = (placeId: string, name: string) => ({
   placeId,
@@ -36,6 +37,7 @@ vi.mock('../../src/services/socketBindings', () => ({
 
 import SelectionPage from '../../src/pages/SelectionPage';
 import { getRestaurants } from '../../src/services/apiClient';
+import { sendLiveSelection, submitSelection } from '../../src/services/socketBindings';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
 const renderSelectionPage = () =>
@@ -50,6 +52,7 @@ const renderSelectionPage = () =>
 const progress = () => screen.getByRole('progressbar').getAttribute('aria-valuenow');
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.mocked(getRestaurants).mockResolvedValue(deck);
   useSessionStore.getState().resetSession();
   useSessionStore.setState({
@@ -64,6 +67,83 @@ beforeEach(() => {
         isHost: true,
       },
     ],
+  });
+});
+
+describe('the final choice stays editable until Submission', () => {
+  it.each<Branch>(['eatout', 'takeaway', 'cook', 'watch'])(
+    'undoes a final Pass by button and Like by Backspace in %s',
+    async (branch) => {
+      vi.mocked(getRestaurants).mockResolvedValue([
+        {
+          kind: branch === 'cook' ? 'recipe' : branch === 'watch' ? 'movie' : 'restaurant',
+          placeId: 'last-choice',
+          name: 'Final choice',
+        },
+      ]);
+      useSessionStore.setState({ branch });
+      renderSelectionPage();
+      await screen.findByRole('button', { name: 'Pass' });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Undo last choice' }));
+      expect(screen.getByRole('heading', { name: 'Final choice' })).toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+      fireEvent.keyDown(window, { key: 'ArrowLeft' });
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      expect(useSessionStore.getState().deckCursor).toBe(1);
+      fireEvent.keyDown(window, { key: 'Backspace' });
+
+      expect(screen.getByRole('heading', { name: 'Final choice' })).toBeVisible();
+      expect(useSessionStore.getState().selections).toEqual([]);
+      expect(sendLiveSelection).toHaveBeenLastCalledWith('AB123', 'last-choice', true);
+      expect(submitSelection).not.toHaveBeenCalled();
+    }
+  );
+
+  it('blocks Undo during submission, restores it on failure, and removes it after success', async () => {
+    let finish!: () => void;
+    vi.mocked(submitSelection).mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      throw new Error('Please try again');
+    });
+    renderSelectionPage();
+    await screen.findByRole('button', { name: 'Pass' });
+    for (const _entry of deck) fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit selections' }));
+    expect(screen.getByRole('button', { name: 'Undo last choice' })).toBeDisabled();
+    fireEvent.keyDown(window, { key: 'Backspace' });
+    expect(useSessionStore.getState().deckCursor).toBe(deck.length);
+
+    await act(async () => finish());
+    expect(await screen.findByText('Please try again')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Undo last choice' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit selections' }));
+    await screen.findByText('All done!');
+    fireEvent.keyDown(window, { key: 'Backspace' });
+    expect(useSessionStore.getState().deckCursor).toBe(deck.length);
+    expect(screen.queryByRole('button', { name: /Undo/ })).not.toBeInTheDocument();
+  });
+
+  it('does not create a hidden final-card Full House that blocks Undo', async () => {
+    useSessionStore.setState((state) => ({
+      participants: [
+        ...state.participants,
+        { ...state.participants[0], participantId: 'p2', displayName: 'Bob', isHost: false },
+      ],
+      liveSelections: { 'place-3': ['Bob'] },
+    }));
+    renderSelectionPage();
+    await screen.findByRole('button', { name: 'Pass' });
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    expect(screen.getByRole('button', { name: 'Undo last choice' })).toBeEnabled();
+    fireEvent.keyDown(window, { key: 'Backspace' });
+    expect(screen.getByRole('heading', { name: 'Pho Bar' })).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 

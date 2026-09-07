@@ -137,6 +137,18 @@ it.each<Branch>(['watch', 'cook'])(
   }
 );
 
+it.each<Branch>(['eatout', 'takeaway'])(
+  'describes the actual area control for the next %s round',
+  async (branch) => {
+    seed(branch);
+    renderSelection();
+    expect(
+      await screen.findByText('This round’s restaurants are fixed. The area can change next round.')
+    ).toBeVisible();
+    expect(screen.queryByText(/New interests/)).not.toBeInTheDocument();
+  }
+);
+
 it('preserves the same round on rejoin and reloads the Deck and Full House state for a recovered new round', async () => {
   seed();
   renderSelection();

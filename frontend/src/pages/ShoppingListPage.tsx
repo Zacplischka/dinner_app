@@ -88,7 +88,7 @@ function WoolworthsLink({
       href={retailerRedirectUrl(target)}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-sm font-semibold text-cyan hover:underline"
+      className="min-w-0 break-words text-sm font-semibold text-cyan hover:underline"
     >
       {children}
     </a>
@@ -150,8 +150,8 @@ function Line({
         </p>
       )}
 
-      <div className="mt-1 flex items-center justify-between gap-3">
-        <span className="flex flex-wrap items-center gap-x-3">
+      <div className="mt-1 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-3">
           {line.state === 'unmatched' ? (
             <WoolworthsLink target={{ q: line.searchTerm }}>Search Woolworths</WoolworthsLink>
           ) : (
@@ -173,7 +173,7 @@ function Line({
               type="button"
               onClick={() => setPicking(!picking)}
               aria-expanded={picking}
-              className="text-sm text-muted hover:text-text"
+              className="min-h-[44px] text-left text-sm text-muted hover:text-text"
             >
               {line.state === 'unmatched' ? 'Pick a product' : 'Wrong product?'}
             </button>
@@ -189,8 +189,8 @@ function Line({
             uses. Ceiling: unstyled and unbrandable. Upgrade path: the same
             dialog the leave flow has, if a designed one is ever wanted. */}
         {line.claimedBy ? (
-          <span className="flex shrink-0 items-center gap-2 text-sm">
-            <span className="text-muted">
+          <span className="flex min-w-0 max-w-full items-center gap-2 text-sm">
+            <span className="min-w-0 break-words text-muted">
               {line.claimedBy === shopperName ? 'Yours' : `Claimed by ${line.claimedBy}`}
             </span>
             <button
@@ -204,7 +204,7 @@ function Line({
                 }
                 onRelease();
               }}
-              className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-muted hover:text-text"
+              className="min-h-[44px] shrink-0 rounded-full border border-line px-3 py-1 text-xs font-semibold text-muted hover:text-text"
             >
               Release
             </button>
@@ -216,7 +216,7 @@ function Line({
           <button
             type="button"
             onClick={onClaim}
-            className="shrink-0 rounded-full bg-cyan/15 px-3 py-1 text-xs font-semibold text-cyan"
+            className="min-h-[44px] shrink-0 rounded-full bg-cyan/15 px-3 py-1 text-xs font-semibold text-cyan"
           >
             Claim
           </button>
@@ -463,7 +463,7 @@ export default function ShoppingListPage() {
                   placeholder="Your name"
                   maxLength={MAX_SHOPPER_NAME}
                   aria-describedby={needsName ? 'shopper-name-hint' : undefined}
-                  className="input flex-1"
+                  className="input min-w-0 flex-1"
                 />
               </div>
               {needsName && (

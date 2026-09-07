@@ -14,17 +14,38 @@ import Spinner from '../components/Spinner';
 import RecipeSourceCredit from '../components/RecipeSourceCredit';
 import RecipePricingStatus from '../components/RecipePricingStatus';
 
-function Step({ text, index }: { text: string; index: number }) {
-  // Dimming is where the cook is up to, not a fact about the list — it lives
-  // here and dies with the tab. Nothing to write, nothing to share.
-  const [dimmed, setDimmed] = useState(false);
+// This tab's fallback when browser storage is blocked or full. Progress is
+// never a shared fact about the Shopping List.
+const unsavedProgress = new Map<string, boolean>();
+
+function Step({ text, index, listId }: { text: string; index: number; listId: string }) {
+  const storageKey = `dinder.cookProgress.${listId}.${index}`;
+  const [dimmed, setDimmed] = useState(() => {
+    if (unsavedProgress.has(storageKey)) return unsavedProgress.get(storageKey)!;
+    try {
+      return sessionStorage.getItem(storageKey) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  function toggle() {
+    const next = !dimmed;
+    setDimmed(next);
+    try {
+      sessionStorage.setItem(storageKey, String(next));
+      unsavedProgress.delete(storageKey);
+    } catch {
+      unsavedProgress.set(storageKey, next);
+    }
+  }
 
   return (
     <li>
       <button
         type="button"
         aria-pressed={dimmed}
-        onClick={() => setDimmed((was) => !was)}
+        onClick={toggle}
         className={`flex w-full items-start gap-4 border-b border-line/30 py-5 text-left transition-opacity ${
           dimmed ? 'opacity-40' : ''
         }`}
@@ -78,7 +99,12 @@ export default function CookViewPage() {
                 </p>
                 <ol>
                   {list.steps.map((step, index) => (
-                    <Step key={index} text={step} index={index} />
+                    <Step
+                      key={`${list.listId}:${index}`}
+                      listId={list.listId}
+                      text={step}
+                      index={index}
+                    />
                   ))}
                 </ol>
               </>

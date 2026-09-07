@@ -220,3 +220,84 @@ it('credits TMDB in the Watch lobby', async () => {
     '/images/tmdb.svg'
   );
 });
+
+const staleChoices = {
+  success: false,
+  error: { code: 'VALIDATION_ERROR', message: 'The choices changed. Review and try again.' },
+};
+
+it('retries a personal interest against the latest revision when only another person changed', async () => {
+  const lobby = snapshot();
+  renderLobby(lobby, 'guest');
+  await screen.findByRole('button', { name: 'Comedy' });
+  const latest: SessionLobbyState = {
+    ...lobby,
+    revision: 2,
+    participants: lobby.participants.map((p) =>
+      p.isHost ? { ...p, mood: { genres: ['Action'], decades: [], mediaTypes: [] } } : p
+    ),
+  };
+  mocks.getSession.mockResolvedValue({ lobby: latest });
+  mocks.updateSessionChoices.mockResolvedValueOnce(staleChoices).mockResolvedValueOnce({
+    success: true,
+    data: {
+      ...latest,
+      revision: 3,
+      participants: latest.participants.map((p) =>
+        p.isHost ? p : { ...p, mood: { genres: ['Comedy'], decades: [], mediaTypes: [] } }
+      ),
+    },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Comedy' })).toHaveAttribute('aria-pressed', 'true')
+  );
+  expect(mocks.updateSessionChoices).toHaveBeenNthCalledWith(2, {
+    sessionCode: 'AB123',
+    revision: 2,
+    mood: { genres: ['Comedy'], decades: [], mediaTypes: [] },
+  });
+  expect(useSessionStore.getState().lobby?.participants[0].mood?.genres).toEqual(['Action']);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it.each(['own choice', 'shared choice', 'round', 'starting'])(
+  'does not retry across a changed %s',
+  async (change) => {
+    const lobby = snapshot();
+    renderLobby(lobby, 'guest');
+    await screen.findByRole('button', { name: 'Comedy' });
+    const latest = { ...lobby, revision: 2 };
+    if (change === 'shared choice') latest.deckSize = 5;
+    if (change === 'round') latest.round = 2;
+    if (change === 'starting') latest.starting = true;
+    if (change === 'own choice')
+      latest.participants = lobby.participants.map((p) =>
+        p.isHost ? p : { ...p, mood: { genres: ['Drama'], decades: [], mediaTypes: [] } }
+      );
+    mocks.getSession.mockResolvedValue({ lobby: latest });
+    mocks.updateSessionChoices.mockResolvedValue(staleChoices);
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The choices changed');
+    expect(mocks.updateSessionChoices).toHaveBeenCalledTimes(1);
+  }
+);
+
+it.each(['eatout', 'takeaway'] as const)('describes actual %s choices', async (branch) => {
+  renderLobby({ ...snapshot(), branch });
+  expect(await screen.findByText(/Choose the shared search area/)).toBeVisible();
+  expect(screen.queryByText(/Everyone’s interests contribute/)).not.toBeInTheDocument();
+  expect(screen.queryByText('Happy with anything')).not.toBeInTheDocument();
+});
+
+it('bounds personal retries while the lobby continues changing', async () => {
+  const lobby = snapshot();
+  renderLobby(lobby, 'guest');
+  await screen.findByRole('button', { name: 'Comedy' });
+  let revision = 2;
+  mocks.getSession.mockImplementation(async () => ({ lobby: { ...lobby, revision: revision++ } }));
+  mocks.updateSessionChoices.mockResolvedValue(staleChoices);
+  fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('The choices changed');
+  expect(mocks.updateSessionChoices).toHaveBeenCalledTimes(4);
+});

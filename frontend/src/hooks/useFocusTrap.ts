@@ -1,9 +1,9 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
-// ponytail: the usual tabbable set minus contenteditable, iframe, summary and
-// visibility checks - neither dialog renders those. Extend the list if one does.
+// ponytail: the usual tabbable set minus contenteditable, iframe and visibility
+// checks - current dialogs don't need those. Extend the list if one does.
 const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 /**
  * The minimum a modal dialog owes the keyboard: Tab and Shift+Tab cycle

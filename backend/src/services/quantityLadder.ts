@@ -129,7 +129,11 @@ export function createQuantityLadder(deps: QuantityLadderDeps): QuantityLadder {
     if (pack.kind === 'count') {
       let packs: number;
       // The clove override outranks the bare-count rule, or 3 cloves buys 3 bulbs.
-      if (/garlic clove/i.test(name)) packs = ceilPacks(amount / CLOVES_PER_HEAD, pack.units);
+      if (
+        /\bgarlic\b/i.test(name) &&
+        (/^cloves?$/.test(unit) || (unit === '' && /\bcloves?\b/i.test(name)))
+      )
+        packs = ceilPacks(amount / CLOVES_PER_HEAD, pack.units);
       else if (COUNT_UNITS.has(unit)) packs = ceilPacks(amount, pack.units);
       else if (unit in VAGUE_GRAMS)
         packs = 1; // a handful/sprigs need: one bunch covers it

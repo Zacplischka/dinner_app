@@ -135,6 +135,9 @@ describe('Deck Entry details sheet — Movie', () => {
     const overview = within(dialog).getByText(/commercial starship crew/);
     expect(overview).not.toHaveClass('line-clamp-3');
     expect(within(dialog).getByRole('heading', { name: 'Alien' })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('link', { name: 'Read full synopsis on TMDB' })
+    ).toHaveAttribute('href', 'https://www.themoviedb.org/movie/348');
   });
 
   it('returns focus to Details after a card tap and dismissal', async () => {
@@ -458,6 +461,7 @@ describe('Deck Entry details sheet — Recipe', () => {
           cuisines: ['Italian'],
           readyInMinutes: 25,
           ingredients: ['200 g pasta', '2 eggs'],
+          steps: ['Boil the pasta.', 'Stir in the eggs off the heat.'],
           servings: 2,
           sourceName: 'Test Kitchen',
           sourceUrl: 'https://example.com/recipe',
@@ -470,6 +474,9 @@ describe('Deck Entry details sheet — Recipe', () => {
     expect(within(dialog).getByText('Italian')).toBeInTheDocument();
     expect(within(dialog).getByText('Ready in 25 minutes')).toBeInTheDocument();
     expect(within(dialog).getByText('200 g pasta')).toBeInTheDocument();
+    expect(within(dialog).getByText('2 ingredients · 2 steps')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByText('Preview the method'));
+    expect(within(dialog).getByText('Stir in the eggs off the heat.')).toBeInTheDocument();
     expect(within(dialog).getByRole('link', { name: 'Test Kitchen' })).toHaveAttribute(
       'href',
       'https://example.com/recipe'
@@ -487,6 +494,7 @@ describe('Deck Entry details sheet — Recipe', () => {
         details: {
           cuisines: ['Italian'],
           ingredients: ['200 g pasta'],
+          steps: ['Boil the pasta.'],
           provenance: 'owned',
         },
       },
@@ -495,7 +503,13 @@ describe('Deck Entry details sheet — Recipe', () => {
     const { dialog } = await pressDetails();
     expect(within(dialog).getByText('200 g pasta')).toBeInTheDocument();
     expect(within(dialog).queryByText('Spoonacular')).not.toBeInTheDocument();
-    expect(within(dialog).getByText('Cooking time is not available.')).toBeInTheDocument();
+    expect(within(dialog).getByText('1 ingredient · 1 step')).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Cooking time is not available. Check the method before choosing.')
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByText('A description is not available for this recipe.')
+    ).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     expect(useSessionStore.getState().selections).toEqual([]);
   });
