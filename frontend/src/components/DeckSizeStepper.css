@@ -1,0 +1,94 @@
+.deck-preview {
+  position: relative;
+  height: 304px;
+  overflow: hidden;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.deck-preview-stack {
+  position: absolute;
+  top: 48px;
+  left: calc(50% - 103px);
+  width: 158px;
+  height: 192px;
+}
+
+.deck-preview-card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid #516070;
+  border-radius: 12px;
+  background: #172431;
+  transform-origin: 50% 70%;
+  transition:
+    transform 580ms cubic-bezier(0.2, 0.75, 0.22, 1.08),
+    opacity 170ms ease,
+    filter 350ms ease;
+}
+
+.deck-preview-front {
+  border-color: #91a0ab;
+  box-shadow: 0 12px 22px #02050a66;
+}
+
+.deck-preview-photo {
+  width: 100%;
+  height: calc(100% - 49px);
+  object-fit: cover;
+  object-position: center 35%;
+}
+
+.deck-preview-caption {
+  height: 49px;
+  padding: 7px 10px;
+  background: #101b28;
+  white-space: nowrap;
+}
+
+.deck-preview-caption span {
+  display: block;
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.deck-preview-caption small {
+  display: block;
+  color: #aebaca;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 470px) {
+  .deck-preview {
+    height: 290px;
+  }
+  .deck-preview-stack {
+    left: calc(50% - 97px);
+    width: 142px;
+    height: 178px;
+  }
+  .deck-preview-caption span {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-preview-card {
+    transition: none;
+  }
+}
+
+@media (max-width: 359px) {
+  .deck-preview-stack {
+    left: calc(50% - 88px);
+    width: 128px;
+    height: 166px;
+  }
+  .deck-preview-caption {
+    padding-inline: 7px;
+  }
+}

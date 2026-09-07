@@ -370,10 +370,11 @@ export default function LobbyChoices({
       )}
       {isHost ? (
         <DeckSizeStepper
+          branch={lobby.branch}
           value={lobby.deckSize}
           onChange={(deckSize) => void onChange({ deckSize })}
           max={restaurant ? MAX_RESTAURANT_DECK_SIZE : MAX_DECK_SIZE}
-          unit={restaurant ? 'restaurants' : lobby.branch === 'cook' ? 'recipes' : 'movies'}
+          unit={restaurant ? 'restaurants' : lobby.branch === 'cook' ? 'recipes' : 'titles'}
           disabled={busy}
         />
       ) : (
