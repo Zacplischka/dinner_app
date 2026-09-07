@@ -52,7 +52,7 @@ export default function ConfirmLeaveModal({
       case 'switching':
         return 'Leave this session to create or join another? Your participation and selections in this session will be removed.';
       case 'results':
-        return 'Leave this session and stop participating? Use the Dinder logo to go home and keep your place.';
+        return 'Leave this session and stop participating? Use the YupCrew logo to go home and keep your place.';
       case 'selecting':
         if (selectionsCount > 0) {
           return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the Match.`;
@@ -140,7 +140,7 @@ export default function ConfirmLeaveModal({
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 min-h-[48px] rounded-xl bg-lime px-4 py-3 font-extrabold text-ink shadow-glow-lime transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 min-h-[48px] rounded-xl bg-lime px-4 py-3 font-extrabold text-white shadow-glow-lime transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
               autoFocus
             >
               {getStayLabel()}

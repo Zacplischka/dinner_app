@@ -5,20 +5,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#030712',
-        surface: '#07111f',
-        raised: '#0c1727',
-        line: '#243044',
-        text: '#f8fafc',
-        muted: '#94a3b8',
+        ink: '#FFF4E8',
+        surface: '#FFFBF6',
+        raised: '#F3E7DC',
+        line: '#D6C5BA',
+        text: '#302331',
+        muted: '#73616C',
         coral: {
-          DEFAULT: '#ff3858',
-          soft: '#ff6b7e',
+          DEFAULT: '#EA7058',
+          strong: '#A63D2D',
+          soft: '#A63D2D',
         },
-        cyan: '#35e7ff',
-        lime: '#c7ff1a',
-        amber: '#ffb627',
-        violet: '#b146ff',
+        cyan: '#302331',
+        lime: '#36704D',
+        amber: '#885914',
+        violet: '#795184',
       },
       fontFamily: {
         display: ['ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -28,13 +29,14 @@ export default {
         'market-md': '18px',
         'market-lg': '28px',
       },
+      // Retain existing utility names so every flow inherits the new identity.
       boxShadow: {
-        'glow-coral': '0 0 12px rgb(255 56 88 / 70%), 0 0 36px rgb(255 56 88 / 28%)',
-        'glow-cyan': '0 0 12px rgb(53 231 255 / 60%), 0 0 30px rgb(53 231 255 / 20%)',
-        'glow-lime': '0 0 12px rgb(199 255 26 / 55%), 0 0 28px rgb(199 255 26 / 18%)',
-        match: '0 0 18px rgb(199 255 26 / 85%), 0 0 54px rgb(199 255 26 / 42%)',
-        card: '0 24px 70px rgb(0 0 0 / 40%)',
-        'card-hover': '0 28px 80px rgb(0 0 0 / 48%)',
+        'glow-coral': '0 2px 5px rgb(48 35 49 / 8%)',
+        'glow-cyan': '0 2px 5px rgb(48 35 49 / 6%)',
+        'glow-lime': '0 2px 5px rgb(48 35 49 / 6%)',
+        match: '0 4px 16px rgb(54 112 77 / 10%)',
+        card: '0 4px 18px rgb(48 35 49 / 6%)',
+        'card-hover': '0 6px 22px rgb(48 35 49 / 9%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
@@ -54,12 +56,12 @@ export default {
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         glowPulse: {
-          '0%': { boxShadow: '0 0 0 0 rgb(199 255 26 / 50%)' },
-          '75%, 100%': { boxShadow: '0 0 0 14px rgb(199 255 26 / 0%)' },
+          '0%': { boxShadow: '0 0 0 0 rgb(54 112 77 / 50%)' },
+          '75%, 100%': { boxShadow: '0 0 0 14px rgb(54 112 77 / 0%)' },
         },
         pulseGlow: {
-          '0%': { boxShadow: '0 0 0 0 rgb(255 56 88 / 60%)' },
-          '100%': { boxShadow: '0 0 0 20px rgb(255 56 88 / 0%)' },
+          '0%': { boxShadow: '0 0 0 0 rgb(234 112 88 / 60%)' },
+          '100%': { boxShadow: '0 0 0 20px rgb(234 112 88 / 0%)' },
         },
         heartPop: {
           '0%': { transform: 'scale(1)' },

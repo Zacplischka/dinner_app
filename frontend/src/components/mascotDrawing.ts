@@ -8,7 +8,7 @@ type PathCommand =
 
 /** Shared artwork from the original Price Patrol. Coordinates are CSS pixels. */
 export function sceneDrawing(ctx: CanvasRenderingContext2D) {
-  const ink = '#302a39';
+  const ink = '#302331';
   function roundedPath(x: number, y: number, w: number, h: number, r: number) {
     // arcTo keeps the artwork available on browsers predating Canvas.roundRect.
     const radius = Math.min(r, w / 2, h / 2);
@@ -398,7 +398,7 @@ export function sceneDrawing(ctx: CanvasRenderingContext2D) {
     );
     if (receipts.ubereats === 'resolved') receipt(-12, -35, '#6cdc9a', -0.18, 0.48);
     if (receipts.doordash === 'resolved') receipt(-1, -36, '#ff8e7d', 0.13, 0.48);
-    rounded(-24, -33, 30, 25, 7, '#ff7589', ink, 2.5);
+    rounded(-24, -33, 30, 25, 7, '#EA7058', ink, 2.5);
     rounded(-24, -33, 30, 9, 5, '#ff99a8', ink, 1.5);
     ellipse(-8, -22, 2, 2, '#ffe5cc');
     line(

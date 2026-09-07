@@ -59,6 +59,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://www.dinder.it.com',
   'https://dinder.it.com',
+  'https://yupcrew.com',
+  'https://www.yupcrew.com',
   FRONTEND_URL,
 ].filter(Boolean);
 

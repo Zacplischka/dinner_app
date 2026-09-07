@@ -38,7 +38,7 @@ function OutboundLink({ name, url }: { name: PlatformName; url: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-coral px-4 py-2 font-semibold text-ink shadow-glow-coral transition-all duration-150 hover:brightness-110"
+      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-coral px-4 py-2 font-semibold text-text shadow-glow-coral transition-all duration-150 hover:brightness-110"
     >
       Open in {name}
     </a>
@@ -50,7 +50,7 @@ function RecoveryActions({ onRetry, onBack }: { onRetry: () => void; onBack: () 
     <div className="flex justify-center gap-3">
       <button
         onClick={onRetry}
-        className="min-h-[44px] rounded-xl bg-cyan px-4 py-2 font-semibold text-ink transition-all duration-150 hover:brightness-110"
+        className="min-h-[44px] rounded-xl bg-cyan px-4 py-2 font-semibold text-white transition-all duration-150 hover:brightness-110"
       >
         Retry
       </button>

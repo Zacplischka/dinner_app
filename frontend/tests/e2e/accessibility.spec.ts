@@ -17,7 +17,7 @@ test.describe('Accessibility - Home Page', () => {
   test('all buttons have accessible names', async ({ homePage }) => {
     await homePage.goto();
 
-    await expect(homePage.eatOutCard).toHaveAccessibleName(/Eating out/i);
+    await expect(homePage.eatOutCard).toHaveAccessibleName(/Eat out/i);
     await expect(homePage.joinLink).toHaveAccessibleName(/Join with a code/i);
   });
 
@@ -122,7 +122,7 @@ test.describe('Accessibility - Keyboard Navigation', () => {
     }
 
     // Main actions should all be reachable in the tab order.
-    expect(interactiveElements.some((name) => name.includes('Eating out'))).toBe(true);
+    expect(interactiveElements.some((name) => name.includes('Eat out'))).toBe(true);
     expect(interactiveElements.some((name) => name.includes('Join with a code'))).toBe(true);
     expect(interactiveElements).toContain('Compare delivery prices');
   });
@@ -168,7 +168,7 @@ test.describe('Accessibility - Screen Reader Support', () => {
     const eatOutText = await homePage.eatOutCard.textContent();
     const joinText = await homePage.joinLink.textContent();
 
-    expect(eatOutText?.toLowerCase()).toContain('eating out');
+    expect(eatOutText?.toLowerCase()).toContain('eat out');
     expect(joinText?.toLowerCase()).toContain('join');
   });
 });

@@ -23,7 +23,7 @@ describe('useShareLink (#350)', () => {
 
     await act(() => result.current());
 
-    expect(share).toHaveBeenCalledWith({ title: 'Dinder', url: LINK });
+    expect(share).toHaveBeenCalledWith({ title: 'YupCrew', url: LINK });
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(useToastStore.getState().toasts).toHaveLength(0);
   });

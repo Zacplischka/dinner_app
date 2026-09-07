@@ -118,16 +118,19 @@ function Line({
   };
 
   return (
-    // A claimed line recedes so the unclaimed ones are what the eye lands on —
-    // what is left to pick up is the whole question the page answers (#229).
+    // Claimed titles recede without fading the price, owner or Release control.
     <li
       data-line-state={line.state}
       data-staple={line.staple || undefined}
-      className={`border-b border-line/30 py-3 last:border-b-0 ${line.staple ? 'text-muted' : ''} ${
-        line.claimedBy ? 'opacity-55' : ''
-      }`}
+      className={`border-b border-line/30 py-3 last:border-b-0 ${line.staple ? 'text-muted' : ''}`}
     >
-      <p className={`font-semibold ${line.staple ? 'text-muted' : 'text-text'}`}>{line.text}</p>
+      <p
+        className={
+          line.claimedBy || line.staple ? 'font-medium text-muted' : 'font-semibold text-text'
+        }
+      >
+        {line.text}
+      </p>
 
       {line.state === 'priced' && (
         <p className="mt-0.5 text-sm text-muted">

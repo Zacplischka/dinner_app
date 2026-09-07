@@ -30,13 +30,13 @@ export default function PricePatrol({ storefronts }: { storefronts: Partial<Snap
         <AnimatedScene draw={draw} height={245} label="Price Patrol animation" />
         <span
           aria-hidden="true"
-          className="absolute left-[19%] top-[77px] -translate-x-1/2 whitespace-nowrap text-xs font-semibold tracking-tight text-[#9df3bd] sm:text-sm"
+          className="absolute left-[19%] top-[77px] -translate-x-1/2 whitespace-nowrap text-xs font-semibold tracking-tight text-lime sm:text-sm"
         >
           Uber Eats
         </span>
         <span
           aria-hidden="true"
-          className="absolute left-[81%] top-[77px] -translate-x-1/2 whitespace-nowrap text-xs font-semibold tracking-tight text-[#ffa89b] sm:text-sm"
+          className="absolute left-[81%] top-[77px] -translate-x-1/2 whitespace-nowrap text-xs font-semibold tracking-tight text-coral-strong sm:text-sm"
         >
           DoorDash
         </span>

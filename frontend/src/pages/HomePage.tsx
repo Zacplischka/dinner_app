@@ -11,37 +11,41 @@ import { useFriendsStore } from '../stores/friendsStore';
 
 const BRANCH_CARDS = [
   {
-    title: 'Eating out',
-    description: 'Find a table everyone’s into.',
+    title: 'Eat out',
+    description: 'Find somewhere you’re into.',
     image: 'eatout',
-    accent: 'border-[#c97052] bg-[#532b20]',
     to: '/create?branch=eatout',
   },
   {
-    title: 'Getting takeaway',
-    description: 'Pick dinner. Compare delivery.',
+    title: 'Order in',
+    description: 'Pick takeaway together.',
     image: 'takeaway',
-    accent: 'border-[#c99b43] bg-[#463418]',
     to: '/create?branch=takeaway',
   },
   {
-    title: 'Cooking',
+    title: 'Cook together',
     description: 'Choose a recipe. Share the shop.',
     image: 'cook',
-    accent: 'border-[#84934d] bg-[#303c22]',
     to: '/cook',
   },
   {
-    title: 'Watching a movie',
+    title: 'Watch something',
     description: 'Movies & series for your kind of night.',
     image: 'watch',
-    accent: 'border-[#b66880] bg-[#482535]',
     to: '/watch',
   },
 ];
 
 export default function HomePage() {
   const navigate = useNavigate();
+  function startSession(path: string) {
+    // New rounds move to YupCrew; existing participants keep their old-origin state.
+    if (['dinder.it.com', 'www.dinder.it.com'].includes(window.location.hostname)) {
+      window.location.assign(`https://yupcrew.com${path}`);
+    } else {
+      navigate(path);
+    }
+  }
   const { sessionCode, sessionStatus } = useSessionStore();
   const [returnError, setReturnError] = useState('');
   const [returning, setReturning] = useState(false);
@@ -111,21 +115,21 @@ export default function HomePage() {
 
   return (
     <main className="home-backdrop min-h-screen px-4 pb-6">
-      <header className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4">
+      <header className="mx-auto flex min-h-16 w-full max-w-5xl items-center justify-between gap-4">
         <Link
           to="/"
-          aria-label="Dinder home"
-          className="inline-flex min-h-[44px] min-w-[44px] items-center gap-3 text-2xl font-black italic tracking-[-0.055em] text-coral-soft drop-shadow-[0_0_12px_rgb(255_56_88_/_0.7)]"
+          aria-label="YupCrew home"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center gap-2 text-2xl font-black tracking-[-0.055em] text-text"
         >
           <span className="logo-mark" aria-hidden="true" />
-          Dinder
+          yupcrew
         </Link>
 
         {isAuthenticated && (
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/friends')}
-              className="relative min-h-[44px] min-w-[44px] rounded-full border border-cyan/40 bg-raised p-2.5 text-cyan shadow-[0_0_18px_rgb(53_231_255_/_0.12)]"
+              className="relative min-h-[44px] min-w-[44px] rounded-full border border-line bg-surface p-2.5 text-text"
               aria-label="Friends"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,7 +141,7 @@ export default function HomePage() {
                 />
               </svg>
               {notificationCount > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-coral text-xs font-bold text-ink">
+                <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-coral text-xs font-bold text-text">
                   {notificationCount > 9 ? '9+' : notificationCount}
                 </span>
               )}
@@ -147,7 +151,7 @@ export default function HomePage() {
         )}
       </header>
 
-      <section className="mx-auto w-full max-w-6xl pb-6 pt-3 md:pt-12">
+      <section className="mx-auto w-full max-w-5xl pb-6 pt-3 md:pt-12">
         {activeSession && (
           <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-cyan/50 bg-raised p-3">
             <button
@@ -172,76 +176,83 @@ export default function HomePage() {
           </p>
         )}
 
-        <div className="grid items-center gap-6 md:grid-cols-[0.9fr_1.1fr] md:gap-12">
+        <div className="grid items-center gap-6 md:grid-cols-[1fr_1fr] md:gap-16">
           <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#ffc2a7]">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-muted">
               A good night starts together
             </p>
-            <h1 className="max-w-xl text-[clamp(2.4rem,7vw,4.5rem)] font-black leading-[1.02] tracking-[-0.055em] text-[#fff4e8]">
-              Find something <span className="text-[#ffa586]">everyone’s into.</span>
+            <h1 className="max-w-xl text-[clamp(2.25rem,7vw,4.5rem)] font-black leading-[1.04] tracking-[-0.055em] text-text">
+              What are we doing tonight?
             </h1>
-            <p className="mt-4 max-w-sm text-base leading-relaxed text-[#d8c9bf]">
-              Get together. Swipe your favourites. Decide tonight.
+            <p className="mt-4 max-w-sm text-base leading-relaxed text-muted">
+              Pick somewhere to eat, something to cook, or something to watch—with your people.
             </p>
-            <div className="mt-5 grid gap-2 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
-              <button
-                onClick={() => navigate('/join')}
-                className="min-h-[48px] rounded-xl bg-[#ffad8e] px-4 py-3 text-sm font-bold text-[#281814] transition-colors hover:bg-[#ffc6ae]"
-              >
-                Join with a code <span aria-hidden="true">↗</span>
-              </button>
-              <button
-                onClick={() => navigate('/compare')}
-                className="min-h-[48px] rounded-xl border border-[#ac8872] bg-[#2d211c] px-4 py-3 text-sm font-bold text-[#fff4e8] transition-colors hover:bg-[#443027]"
-              >
-                Compare delivery prices
-              </button>
-            </div>
+            <p className="mt-4 hidden text-sm text-muted md:block">Everyone gets a say.</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3" aria-label="Choose your night">
-            {BRANCH_CARDS.map((card) => (
-              <button
-                key={card.title}
-                onClick={() => navigate(card.to)}
-                className={`group overflow-hidden rounded-2xl border text-left transition-transform motion-safe:hover:-translate-y-1 ${card.accent}`}
-              >
-                <span className="block h-24 overflow-hidden sm:h-36 md:h-40" aria-hidden="true">
-                  <img
-                    src={`/images/tonight-${card.image}.webp`}
-                    alt=""
-                    width="1536"
-                    height="1024"
-                    className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
-                    onError={(event) => {
-                      event.currentTarget.style.visibility = 'hidden';
-                    }}
-                  />
-                </span>
-                <span className="block min-h-[92px] p-3 sm:p-4">
-                  <span className="block text-base font-bold leading-tight text-[#fff8f0] sm:text-xl">
-                    {card.title}
+          <div>
+            <div className="grid gap-3" aria-label="Choose your night">
+              {BRANCH_CARDS.map((card) => (
+                <button
+                  key={card.title}
+                  onClick={() => startSession(card.to)}
+                  className="group flex min-h-[88px] w-full items-center overflow-hidden rounded-2xl border border-line bg-surface text-left shadow-card transition-all hover:border-coral motion-safe:hover:-translate-y-0.5"
+                >
+                  <span
+                    className="block h-24 w-24 shrink-0 overflow-hidden bg-raised sm:w-32"
+                    aria-hidden="true"
+                  >
+                    <img
+                      src={`/images/tonight-${card.image}.webp`}
+                      alt=""
+                      width="1536"
+                      height="1024"
+                      className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
+                      onError={(event) => {
+                        event.currentTarget.style.visibility = 'hidden';
+                      }}
+                    />
                   </span>
-                  <span className="mt-1.5 block text-xs leading-relaxed text-[#f1e5da] sm:text-sm">
-                    {card.description}
+                  <span className="flex-1 px-3 py-2 sm:px-4">
+                    <span className="block text-base font-bold leading-tight text-text sm:text-lg">
+                      {card.title}
+                    </span>
+                    <span className="mt-1 block text-sm leading-relaxed text-muted">
+                      {card.description}
+                    </span>
                   </span>
-                </span>
-              </button>
-            ))}
+                  <span className="pr-3 text-xl text-text" aria-hidden="true">
+                    →
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => navigate('/join')} className="btn btn-secondary mt-4 w-full">
+              Join with a code
+            </button>
+            <button
+              onClick={() => navigate('/compare')}
+              className="mt-1 min-h-[44px] w-full text-sm font-medium text-muted underline underline-offset-4 hover:text-text"
+            >
+              Compare delivery prices
+            </button>
+            <p className="text-center text-xs text-muted">No download. No account needed.</p>
           </div>
         </div>
 
         {!isLoading && !isAuthenticated && (
-          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-[#614c3c]/50 pt-5">
+          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-5">
             <div className="w-full max-w-[260px]">
               <GoogleSignInButton />
             </div>
-            <p className="max-w-sm text-xs leading-relaxed text-[#d8c9bf]">
-              Join as a guest, or sign in to invite your friends. No account needed to decide
-              together.
+            <p className="max-w-sm text-xs leading-relaxed text-muted">
+              Sign in to keep your friends close, or carry on as a guest.
             </p>
           </div>
         )}
+        <p className="mt-6 text-center text-xs text-muted">
+          Dinder is now YupCrew. Same app. A new look.
+        </p>
       </section>
       <ConfirmLeaveModal
         isOpen={confirmLeave}

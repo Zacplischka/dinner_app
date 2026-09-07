@@ -92,7 +92,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
               <button
                 type="submit"
                 disabled={isSearching || !email.trim()}
-                className="min-h-[44px] px-4 py-2 bg-coral text-ink font-semibold rounded-xl hover:brightness-110 disabled:bg-line disabled:text-muted disabled:cursor-not-allowed transition-all shadow-glow-coral disabled:shadow-none"
+                className="min-h-[44px] px-4 py-2 bg-coral text-text font-semibold rounded-xl hover:brightness-110 disabled:bg-line disabled:text-muted disabled:cursor-not-allowed transition-all shadow-glow-coral disabled:shadow-none"
               >
                 {isSearching ? 'Searching…' : 'Search'}
               </button>
@@ -133,7 +133,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                         />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
-                          <span className="text-ink font-medium">
+                          <span className="text-white font-medium">
                             {user.displayName.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -145,7 +145,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                     </div>
                     <button
                       onClick={() => user.email && handleSendRequest(user.email)}
-                      className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-white hover:bg-cyan/10 rounded-lg transition-colors"
+                      className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-text hover:bg-cyan/10 rounded-lg transition-colors"
                     >
                       Add friend
                     </button>
@@ -157,9 +157,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
 
           {/* No results message */}
           {searchResults.length === 0 && !isSearching && email && !error && !successMessage && (
-            <div className="text-center py-4 text-muted text-sm">
-              No one found with that email
-            </div>
+            <div className="text-center py-4 text-muted text-sm">No one found with that email</div>
           )}
         </div>
       </div>

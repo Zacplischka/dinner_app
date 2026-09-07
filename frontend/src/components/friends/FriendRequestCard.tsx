@@ -48,7 +48,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
-              <span className="text-ink font-medium text-lg">
+              <span className="text-white font-medium text-lg">
                 {fromUser.displayName.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -67,7 +67,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
           <button
             onClick={() => void handleAccept()}
             disabled={isLoading}
-            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-ink bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
+            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-white bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
           >
             Accept
           </button>

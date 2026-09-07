@@ -73,7 +73,12 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
         <div className="flex items-center gap-3">
           {/* Session icon */}
           <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
-            <svg className="w-5 h-5 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -101,7 +106,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           <button
             onClick={handleAccept}
             disabled={isLoading}
-            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-ink bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
+            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-white bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
           >
             {isLoading ? 'Joining…' : 'Join'}
           </button>

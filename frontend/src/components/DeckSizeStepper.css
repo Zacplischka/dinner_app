@@ -18,9 +18,9 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border: 1px solid #516070;
+  border: 1px solid #d6c5ba;
   border-radius: 12px;
-  background: #172431;
+  background: #f3e7dc;
   transform-origin: 50% 70%;
   transition:
     transform 580ms cubic-bezier(0.2, 0.75, 0.22, 1.08),
@@ -29,8 +29,8 @@
 }
 
 .deck-preview-front {
-  border-color: #91a0ab;
-  box-shadow: 0 12px 22px #02050a66;
+  border-color: #d6c5ba;
+  box-shadow: 0 12px 22px #30233118;
 }
 
 .deck-preview-photo {
@@ -43,13 +43,13 @@
 .deck-preview-caption {
   height: 49px;
   padding: 7px 10px;
-  background: #101b28;
+  background: #fffbf6;
   white-space: nowrap;
 }
 
 .deck-preview-caption span {
   display: block;
-  color: #f8fafc;
+  color: #302331;
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
@@ -57,7 +57,7 @@
 
 .deck-preview-caption small {
   display: block;
-  color: #aebaca;
+  color: #73616c;
   font-size: 10px;
   line-height: 1.5;
 }

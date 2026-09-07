@@ -88,7 +88,7 @@ function renderApp(route: string) {
   return render(
     <MemoryRouter initialEntries={[route]}>
       <Routes>
-        <Route path="/" element={<div>Dinder</div>} />
+        <Route path="/" element={<div>YupCrew</div>} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/session/:sessionCode" element={<SessionLobbyPage />} />
         <Route path="/lobby" element={<SessionLobbyPage />} />
@@ -197,7 +197,7 @@ describe('page branch coverage', () => {
     await waitFor(() => expect(screen.queryByText('Loading session…')).not.toBeInTheDocument());
     fireEvent.click(screen.getByLabelText('Back'));
     fireEvent.click(await screen.findByText('Leave session'));
-    expect(await screen.findByText('Dinder')).toBeInTheDocument();
+    expect(await screen.findByText('YupCrew')).toBeInTheDocument();
     noCode.unmount();
 
     renderApp('/session/AB123');
@@ -205,7 +205,7 @@ describe('page branch coverage', () => {
     fireEvent.click(screen.getByLabelText('Leave session'));
     fireEvent.click(await screen.findByText('Leave session'));
     await waitFor(() => expect(serviceMocks.leaveSession).toHaveBeenCalledWith('AB123'));
-    expect(await screen.findByText('Dinder')).toBeInTheDocument();
+    expect(await screen.findByText('YupCrew')).toBeInTheDocument();
   });
 
   it('shares the invite link through the native sheet', async () => {
@@ -219,7 +219,7 @@ describe('page branch coverage', () => {
       fireEvent.click(await screen.findByText('Share invite link'));
       await waitFor(() => expect(shareMock).toHaveBeenCalledTimes(1));
       expect(shareMock).toHaveBeenCalledWith({
-        title: 'Dinder',
+        title: 'YupCrew',
         url: 'http://localhost:3000/join?code=AB123',
       });
       expect(navigator.clipboard.writeText).not.toHaveBeenCalled();

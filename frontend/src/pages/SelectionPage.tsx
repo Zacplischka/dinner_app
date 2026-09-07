@@ -793,7 +793,7 @@ function SelectionRound() {
                   </svg>
                 ) : (
                   <svg
-                    className="w-12 h-12 text-coral"
+                    className="w-12 h-12 text-coral-strong"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -818,7 +818,7 @@ function SelectionRound() {
           <button
             onClick={handleSwipeLeft}
             disabled={deckInert}
-            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-coral-soft text-coral-soft flex items-center justify-center shadow-glow-coral hover:bg-coral/10 active:scale-95 transition-all duration-150"
+            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-text text-text flex items-center justify-center shadow-card hover:bg-raised active:scale-95 transition-all duration-150"
             aria-label="Pass"
           >
             <svg
@@ -858,11 +858,18 @@ function SelectionRound() {
           <button
             onClick={handleSwipeRight}
             disabled={deckInert}
-            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-surface border-2 border-lime text-lime flex items-center justify-center shadow-glow-lime hover:bg-lime/10 active:scale-95 transition-all duration-150"
+            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-coral border-2 border-coral text-text flex items-center justify-center shadow-glow-coral hover:brightness-95 active:scale-95 transition-all duration-150"
             aria-label="Like"
           >
-            <svg className="w-9 h-9" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+            <svg
+              className="w-9 h-9"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
             </svg>
           </button>
         </div>

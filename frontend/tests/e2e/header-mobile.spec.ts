@@ -31,7 +31,7 @@ async function expectMobileSafeHeader(page: Page) {
   expect(hasHorizontalScroll).toBe(false);
 
   // Focused flows show no unrelated navigation links
-  await expect(header.getByRole('link', { name: 'Dinder home' })).toBeVisible();
+  await expect(header.getByRole('link', { name: 'YupCrew home' })).toBeVisible();
 
   // Back action: stable, full-size touch target
   const back = header.getByRole('button', { name: /^(Back|Leave session)$/ });
@@ -77,7 +77,7 @@ test.describe('Mobile-safe focused-flow header (#78)', () => {
 
   test('Create Session header fits the mobile viewport', async ({ page }) => {
     await page.goto('/create');
-    await expect(page.getByRole('heading', { name: 'Eating out' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Eat out' })).toBeVisible();
 
     await expectMobileSafeHeader(page);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/create.png` });

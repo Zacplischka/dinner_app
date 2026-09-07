@@ -63,7 +63,7 @@ describe('NavigationHeader', () => {
   it('provides home navigation without unrelated actions on focused flows', () => {
     renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     expect(screen.queryByRole('link', { name: 'Compare' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Dinder home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'YupCrew home' })).toHaveAttribute('href', '/');
   });
 
   it('goes home without losing identity, selections or Ready', () => {
@@ -91,7 +91,7 @@ describe('NavigationHeader', () => {
         </Routes>
       </MemoryRouter>
     );
-    fireEvent.click(screen.getByRole('link', { name: 'Dinder home' }));
+    fireEvent.click(screen.getByRole('link', { name: 'YupCrew home' }));
     expect(screen.getByText('Home route')).toBeInTheDocument();
     expect(useSessionStore.getState()).toMatchObject({
       sessionCode: 'AB123',

@@ -22,7 +22,7 @@ export function useShareLink(
 
     if (typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title: 'Dinder', ...share, url });
+        await navigator.share({ title: 'YupCrew', ...share, url });
         return;
       } catch (err) {
         // navigator.share rejects with a DOMException, which is not `instanceof Error`
