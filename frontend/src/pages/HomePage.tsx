@@ -253,6 +253,14 @@ export default function HomePage() {
         <p className="mt-6 text-center text-xs text-muted">
           Dinder is now YupCrew. Same app. A new look.
         </p>
+        <p className="text-center text-xs text-muted">
+          <a
+            href="/privacy.html"
+            className="inline-flex min-h-[44px] items-center underline underline-offset-4"
+          >
+            Privacy policy
+          </a>
+        </p>
       </section>
       <ConfirmLeaveModal
         isOpen={confirmLeave}
