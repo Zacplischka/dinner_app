@@ -170,6 +170,32 @@ describe('redealMovieDeck', () => {
 });
 
 describe('collaborative media allocation', () => {
+  it.each([
+    { name: 'absent', mediaTypes: undefined },
+    { name: 'empty', mediaTypes: [] },
+  ])(
+    'does not let one media choice veto another genre interest with $name mediaTypes',
+    ({ mediaTypes }) => {
+      const comedy = stub(6);
+      const drama = stub(6, 'tv').map((movie) => ({ ...movie, genres: ['Drama'] }));
+      const deck = dealMovieDeck(anything, {
+        source: corpusMovieSource([...comedy, ...drama]),
+        interests: [
+          { genres: ['Comedy'], decades: [], mediaTypes: ['movie'] },
+          { genres: ['Drama'], decades: [], mediaTypes },
+        ],
+        deckSize: 6,
+        shuffle: identity,
+      });
+      expect(deck.filter((movie) => movie.kind === 'movie' && movie.mediaType === 'movie')).toEqual(
+        comedy.slice(0, 3)
+      );
+      expect(deck.filter((movie) => movie.kind === 'movie' && movie.mediaType === 'tv')).toEqual(
+        drama.slice(0, 3)
+      );
+    }
+  );
+
   it.each([1, 5, 6, 15])(
     'balances both types from a movie-dominated corpus for size %i',
     (deckSize) => {

@@ -130,16 +130,12 @@ export function redealMovieDeck(
   { source, shuffle = shuffled, deckSize = DECK_SIZE, poolCap = POOL_CAP, interests }: DealOptions
 ): DeckEntry[] {
   const contributions = interests?.length ? interests : [mood];
-  const requestedTypes = [...new Set(contributions.flatMap((m) => m.mediaTypes ?? []))];
-  const types = ['movie', 'tv'].filter(
-    (type) => !requestedTypes.length || requestedTypes.includes(type as 'movie' | 'tv')
-  );
   const wiped = new Set(current.map((entry) => entry.placeId));
   // Shortlist each person's interests and media type separately: a popular
   // movie prefix can no longer remove all series before allocation (#437).
   const queues = contributions.map((contribution) => {
     const eligible = source(contribution);
-    return types.map((type) => {
+    return MEDIA_TYPES.map((type) => {
       const pool = eligible.filter((m) => (m.mediaType ?? 'movie') === type).slice(0, poolCap);
       return [
         ...shuffle(pool.filter((m) => !wiped.has(m.placeId))),
@@ -149,7 +145,7 @@ export function redealMovieDeck(
   });
   const taken = new Set<string>();
   const dealt: Movie[] = [];
-  const turns = types.map(() => 0);
+  const turns = MEDIA_TYPES.map(() => 0);
   const pick = (typeIndex: number): boolean => {
     // Every Participant gets one turn, including someone happy with anything.
     // Exhausted contributions yield their turn; duplicate titles never consume it.
@@ -174,7 +170,7 @@ export function redealMovieDeck(
   // to the other type; a one-entry Deck makes no mixture promise.
   while (dealt.length < deckSize) {
     let added = false;
-    for (let type = 0; type < types.length && dealt.length < deckSize; type++) {
+    for (let type = 0; type < MEDIA_TYPES.length && dealt.length < deckSize; type++) {
       added = pick(type) || added;
     }
     if (!added) break;
