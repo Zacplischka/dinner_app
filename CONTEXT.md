@@ -89,7 +89,7 @@ The sole keeper of everything a live Session remembers — Participants, Selecti
 _Avoid_: models, repository, DAO
 
 **Restart**:
-Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again. The Host's alone, as the lobby's start is — both move the whole room, and the same command carries them. A Restaurant Deck is kept — restaurant supply is bound to where you are — while a Recipe Deck is dealt again from its Craving's pool and a Movie Deck from its Mood, avoiding the just-wiped deal as far as the pool allows. A Restart the Host asks for never fails and never leaves a Session without a Deck.
+The Host-initiated return of a Session’s Participants to the Lobby for a fresh round, discarding the previous round’s Selections, Submissions and Match. Existing choices remain editable and everyone confirms Ready again before swiping resumes.
 _Avoid_: reset, replay
 
 **Leave**:

@@ -1,6 +1,6 @@
 # Dinder UX refresh
 
-Status: accepted. Shared understanding confirmed by the user on 2026-09-07 after the grill-with-docs interview. This brief records the agreed product direction; remaining implementation and design details are listed below. This branch contains documentation only; implementation has not started.
+Status: accepted. Shared understanding confirmed by the user on 2026-09-07 after the grill-with-docs interview. This brief records the agreed product direction; remaining implementation and design details are listed below. This branch contains documentation only; implementation has not started. Delivery is tracked in [epic #434](https://github.com/Zacplischka/dinner_app/issues/434).
 
 ## Product intent
 
@@ -18,19 +18,21 @@ Make Dinder immediately understandable and inviting, and make choosing together 
 
 - Watch genres, decades and media types combine across Participants. An unselected choice means no preference, not exclusion. One person’s choices do not veto another’s.
 - Balance representation across Participants. Shared interests may get extra weight without crowding out someone else’s interests.
-- When the group chooses both movies and series, the Deck meaningfully represents both. This also applies when one Participant chooses movies and another chooses series.
+- When the group chooses both movies and series, the Deck meaningfully represents both. This also applies when one Participant chooses movies and another chooses series. Target an even split when eligible supply permits; odd-sized Decks differ by at most one, and scarce supply fills from the other type without duplicates or invented entries.
 - Decades remain optional. The 1990s and 2020s, if selected by different Participants, both contribute.
 - Cook cuisine interests combine like Watch genres.
 - Every Cook Recipe must satisfy every Participant’s Dietary Requirements. If nothing fits, explain the conflict or lack of supply and let people explicitly adjust their choices. Never silently relax a diet. Diet labels remain distinct from an allergy-safety guarantee.
 - Cook uses one shared meal type, defaulting to Main course. Put other types behind an optional “Change meal type” control.
 - Eat Out and Takeaway use one shared search location and radius, set in the Lobby after people can join.
 - Any Participant may change the shared meal type, location or radius. These changes clear everyone’s Ready status. Changing personal choices clears that Participant’s Ready status.
+- Retain existing Host ownership, defaults and bounds for Headcount and Deck size, with those controls in the Lobby. Changes clear everyone’s Ready status.
 
 ## Joining, waiting and returning
 
 - A temporary Disconnect neither removes someone nor confirms Ready. The Host can explicitly remove someone who disappears before confirming Ready, allowing those remaining to proceed once all are Ready.
 - Late joiners use the existing Deck, with a clear explanation that their preferences apply next round. Do not change the Deck midway.
 - Exception: a Cook late joiner whose Dietary Requirements conflict with the current Deck waits until the Host confirms returning the group to preferences and starting a fresh Deck that satisfies everyone. Everyone confirms Ready again and the round starts over.
+- Ordinary Host Restart returns the group to its Lobby with existing choices retained and editable. Everyone confirms Ready again before a fresh round is dealt.
 - The Dinder logo goes home immediately and is consistently available, including on the Shopping List and Cook View. Going home preserves Session participation; home shows a prominent “Return to session” action while that Session remains available.
 - “Leave session” explicitly removes participation. Going home is not a Leave.
 
@@ -64,7 +66,6 @@ These are code observations, not claims of production reproduction. Inspected ma
 ## Remaining implementation and design work
 
 - Specify and verify Deck balancing when interests overlap or suitable supply is scarce; meaningful representation must reflect available data.
-- Define the remaining shared controls (Headcount and Deck size) and ordinary next-round preference editing before implementing those parts of the Lobby.
 - Reuse existing Host succession semantics unless a separate decision revises them. Verify return-home behaviour when a Session advances or expires and when creating or joining a different Session.
 - Design empty, loading and failure states for richer Recipe data and pricing. Preserve Shopping List lifetime, source attribution and pricing accuracy.
 - Investigate and fix confirmed name, Movie mix, instruction-formatting and image defects, with focused checks of each affected flow.
