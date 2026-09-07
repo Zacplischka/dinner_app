@@ -110,6 +110,13 @@ it.each([
     );
   update(15);
   expect(visibleCards()).toHaveLength(15);
+  const animationStyles = () =>
+    Array.from(view.container.querySelectorAll('[data-deck-preview-card]'), (card) =>
+      card.getAttribute('style')
+    );
+  const movingCards = animationStyles();
+  update(15, true);
+  expect(animationStyles()).toEqual(movingCards);
   update(5);
   expect(screen.getByRole('button', { name: 'Smaller Deck' })).toBeDisabled();
   update(max);

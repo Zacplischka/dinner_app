@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { MIN_DECK_SIZE, type Branch } from '@dinder/shared/types';
 import pizza from '../assets/deck-preview/pizza.webp';
 import dumplings from '../assets/deck-preview/dumplings.webp';
@@ -52,11 +52,10 @@ export default function DeckSizeStepper({
   unit,
   disabled,
 }: DeckSizeStepperProps) {
-  const previousValue = useRef(value);
-  const previous = previousValue.current;
-  useEffect(() => {
-    previousValue.current = value;
-  }, [value]);
+  const [sizes, setSizes] = useState({ value, previous: value });
+  // Keep each transition stable through unrelated roster or pending-state renders.
+  if (sizes.value !== value) setSizes({ value, previous: sizes.value });
+  const previous = sizes.previous;
   const photos = PREVIEWS[branch];
   return (
     <div>
