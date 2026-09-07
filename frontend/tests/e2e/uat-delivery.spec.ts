@@ -60,8 +60,8 @@ test('long comparisons keep the next action near the verdict and every price lab
   for (const name of ['Open in Uber Eats', 'Open in DoorDash']) {
     const action = page.getByRole('link', { name });
     await expect(action).toBeInViewport();
-    const box = await action.boundingBox();
-    expect(box!.height).toBeGreaterThanOrEqual(44);
+    const height = await action.evaluate((element) => parseFloat(getComputedStyle(element).height));
+    expect(height).toBeGreaterThanOrEqual(44);
   }
   await page.screenshot({
     animations: 'disabled',

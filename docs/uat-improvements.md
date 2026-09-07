@@ -19,7 +19,11 @@ Implement the twelve improvements accepted after three-agent production UAT on 7
 
 ## Validation
 
-Use existing service/public UI test seams for regression checks, typecheck and lint, then run the complete relevant suite once and production-build browser checks on phone and desktop. Verify the observed UAT regressions, actual multi-participant state changes, and recovery paths. Perform independent Standards and Spec reviews against main before opening the PR. Production merge/deploy is separate from this implementation request.
+The complete local suite passed: 1,029 backend tests and 651 frontend tests. Final quantity and keyboard review changes passed their focused suites (102 backend tests and 28 frontend tests). Final typecheck, browser-test typecheck and lint passed; lint retains the existing SelectionPage cleanup warning tracked in #426.
+
+All 26 browser scenarios across the four new UAT specs and the extended social/menu spec passed on the production-built frontend in mobile Chrome emulation and desktop Chromium, including focused reruns after correcting a fractional-pixel assertion. Four independent browser contexts exercised simultaneous lobby changes against the real local backend. Watch exercised final-choice Undo, reload, keyboard correction, all-pass results and shared restart. Deterministic service-boundary fixtures covered claimed Shopping Lists, local Cook progress, Recipe method keyboard access, menu failures, long Comparisons, venue recovery and rejected-edit visibility. These checks did not query paid providers or modify production.
+
+Three agents cross-reviewed the diff against base `86508a7d`, with authors excluded from their own files. Standards review found a missing native-summary focus stop; Spec review found an error that could scroll under the sticky header. Both were fixed, browser-verified and independently rechecked. Production merge/deploy is separate from this implementation request.
 
 ## Related existing work
 

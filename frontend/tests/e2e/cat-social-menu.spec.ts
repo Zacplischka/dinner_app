@@ -185,6 +185,33 @@ async function fits(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
 
+test('a rejected lower lobby choice stays visible below the sticky header', async ({
+  page,
+}, info) => {
+  const fixture = await sessionFixture(page, 'watch');
+  const message = 'The choices changed. Review the latest choices and try again.';
+  fixture.io.on('connection', (socket) => {
+    socket.on('session:choices', (_payload, ack) =>
+      ack({ success: false, error: { code: 'VALIDATION_ERROR', message } })
+    );
+  });
+  try {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await page.goto('/session/CAT45');
+    await page.getByRole('button', { name: '2020s', exact: true }).click();
+    const alert = page.getByRole('alert').filter({ hasText: message });
+    await expect(alert).toBeInViewport({ ratio: 1 });
+    const header = (await page.locator('header').boundingBox())!;
+    expect((await alert.boundingBox())!.y).toBeGreaterThanOrEqual(header.y + header.height);
+    await page.screenshot({
+      path: info.outputPath('lobby-rejected-choice.png'),
+      animations: 'disabled',
+    });
+  } finally {
+    await fixture.close();
+  }
+});
+
 test('Recipe Details previews the existing method and effort at 320px', async ({ page }, info) => {
   const fixture = await sessionFixture(page, 'cook', {
     kind: 'recipe',
@@ -211,7 +238,11 @@ test('Recipe Details previews the existing method and effort at 320px', async ({
       dialog.getByText('Cooking time is not available. Check the method before choosing.')
     ).toBeVisible();
     const preview = dialog.locator('summary', { hasText: 'Preview the method' });
-    await preview.click();
+    const close = dialog.getByRole('button', { name: 'Close', exact: true });
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(preview).toBeFocused();
+    await page.keyboard.press('Enter');
     await expect(dialog.getByText('Simmer the tomatoes and toss with the penne.')).toBeVisible();
     expect((await preview.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await fits(page);
@@ -219,7 +250,10 @@ test('Recipe Details previews the existing method and effort at 320px', async ({
       path: info.outputPath('recipe-method-preview-320.png'),
       animations: 'disabled',
     });
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.keyboard.press('Shift+Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(dialog).toHaveCount(0);
     await expect(page.getByRole('status', { name: '0 liked' })).toBeVisible();
   } finally {
     await fixture.close();

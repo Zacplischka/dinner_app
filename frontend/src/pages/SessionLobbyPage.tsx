@@ -155,7 +155,7 @@ export default function SessionLobbyPage() {
   }
 
   useEffect(() => {
-    if (error) errorRef.current?.scrollIntoView?.({ block: 'nearest' });
+    if (error) errorRef.current?.scrollIntoView?.({ block: 'center' });
   }, [error]);
 
   if (isLoading)

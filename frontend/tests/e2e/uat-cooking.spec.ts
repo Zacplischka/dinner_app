@@ -15,6 +15,7 @@ const list: ShoppingList = {
       id: String(index),
       text: '500 g penne',
       state: 'priced',
+      staple: false,
       claimedBy,
       needs: { amount: 500, unit: 'g' },
       packs: 1,
