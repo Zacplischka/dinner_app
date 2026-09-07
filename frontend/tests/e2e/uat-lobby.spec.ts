@@ -7,9 +7,12 @@ for (const [branch, unit, max] of [
   ['eatout', 'restaurants', 20],
   ['takeaway', 'restaurants', 20],
 ] as const) {
-  test(`${branch} photo Deck grows and shrinks within a 320px Lobby`, async ({ page }, info) => {
+  test(`${branch} photo Deck grows and shrinks within the Lobby`, async ({ page }, info) => {
     test.setTimeout(60_000);
-    await page.setViewportSize({ width: 320, height: 844 });
+    await page.setViewportSize({
+      width: info.project.name === 'mobile-chrome' ? 320 : 1280,
+      height: 844,
+    });
     await page.goto(
       branch === 'watch' ? '/watch' : branch === 'cook' ? '/cook' : `/create?branch=${branch}`
     );
