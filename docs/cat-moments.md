@@ -20,7 +20,7 @@ The three implementation agents planned the following page replacements before e
 
 The frontend unit suite passed all 626 tests before final accessibility refinements; the subsequent focused pass passed 87 tests, including the new persistent failure-announcement check. Repository typechecking, frontend lint and production build passed. Lint reports only the existing SelectionPage ref-cleanup warning tracked separately.
 
-Browser checks exercise the built frontend through actual HTTP/Socket.IO/Comparison-stream boundaries with deterministic responses. They make no paid provider calls or production mutations. The new specs cover all seven scenes, food/Watch variants, immediate terminal transitions, live roster redraw while paused, finite reveals, reduced motion, and phone layout. The existing Price Patrol spec runs alongside them to check the extracted drawing/runtime. Screenshots are written to the Playwright output directory and CI retains artifacts on failure.
+All 18 browser checks passed against the production build across desktop and phone viewports. Browser checks exercise the built frontend through actual HTTP/Socket.IO/Comparison-stream boundaries with deterministic responses. They make no paid provider calls or production mutations. The new specs cover all seven scenes, food/Watch variants, immediate terminal transitions, live roster redraw while paused, finite reveals, reduced motion, and phone layout. The existing Price Patrol spec runs alongside them to check the extracted drawing/runtime. Screenshots are written to the Playwright output directory and CI retains artifacts on failure.
 
 Reproduce with the normal local backend/Redis test setup:
 

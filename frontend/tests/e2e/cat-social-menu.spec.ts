@@ -189,7 +189,9 @@ for (const branch of ['watch', 'takeaway'] as const) {
       await expect(gathering).toBeVisible();
       await expect(page.getByRole('button', { name: 'I’m ready', exact: true })).toBeEnabled();
       await gathering.getByRole('button', { name: 'Pause animation' }).click();
-      const beforeJoin = await gathering.locator('canvas').evaluate((el) => el.toDataURL());
+      const beforeJoin = await gathering
+        .locator('canvas')
+        .evaluate((el: HTMLCanvasElement) => el.toDataURL());
       fixture.lobby.participants[0].ready = true;
       fixture.lobby.participants.push({
         participantId: 'guest',
@@ -203,7 +205,7 @@ for (const branch of ['watch', 'takeaway'] as const) {
       fixture.publish();
       await expect(page.getByText('Bob', { exact: true })).toBeVisible();
       await expect
-        .poll(() => gathering.locator('canvas').evaluate((el) => el.toDataURL()))
+        .poll(() => gathering.locator('canvas').evaluate((el: HTMLCanvasElement) => el.toDataURL()))
         .not.toBe(beforeJoin);
       await fits(page);
       await gathering.screenshot({ path: info.outputPath(`gather-${branch}.png`) });
@@ -220,9 +222,13 @@ for (const branch of ['watch', 'takeaway'] as const) {
 
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await expect(saved.getByRole('button')).toHaveCount(0);
-      const savedStill = await saved.locator('canvas').evaluate((el) => el.toDataURL());
+      const savedStill = await saved
+        .locator('canvas')
+        .evaluate((el: HTMLCanvasElement) => el.toDataURL());
       await page.waitForTimeout(120);
-      expect(await saved.locator('canvas').evaluate((el) => el.toDataURL())).toBe(savedStill);
+      expect(
+        await saved.locator('canvas').evaluate((el: HTMLCanvasElement) => el.toDataURL())
+      ).toBe(savedStill);
       await page.emulateMedia({ reducedMotion: 'no-preference' });
       fixture.lobby.state = 'complete';
       fixture.lobby.participants[1].hasSubmitted = true;
@@ -236,17 +242,25 @@ for (const branch of ['watch', 'takeaway'] as const) {
       await expect(page.getByRole('link', { name: 'Dinder home', exact: true })).toBeVisible();
       await fits(page);
       await page.waitForTimeout(3300);
-      const finalFrame = await reveal.locator('canvas').evaluate((el) => el.toDataURL());
+      const finalFrame = await reveal
+        .locator('canvas')
+        .evaluate((el: HTMLCanvasElement) => el.toDataURL());
       await page.waitForTimeout(120);
-      expect(await reveal.locator('canvas').evaluate((el) => el.toDataURL())).toBe(finalFrame);
+      expect(
+        await reveal.locator('canvas').evaluate((el: HTMLCanvasElement) => el.toDataURL())
+      ).toBe(finalFrame);
       await page.screenshot({
         path: info.outputPath(`tonights-pick-${branch}.png`),
         fullPage: true,
       });
       await page.emulateMedia({ reducedMotion: 'reduce' });
-      const reducedPick = await reveal.locator('canvas').evaluate((el) => el.toDataURL());
+      const reducedPick = await reveal
+        .locator('canvas')
+        .evaluate((el: HTMLCanvasElement) => el.toDataURL());
       await page.waitForTimeout(120);
-      expect(await reveal.locator('canvas').evaluate((el) => el.toDataURL())).toBe(reducedPick);
+      expect(
+        await reveal.locator('canvas').evaluate((el: HTMLCanvasElement) => el.toDataURL())
+      ).toBe(reducedPick);
       fixture.lobby.state = 'waiting';
       fixture.lobby.round = 2;
       fixture.lobby.participants.forEach((p) => {
@@ -258,9 +272,13 @@ for (const branch of ['watch', 'takeaway'] as const) {
       await expect(gathering).toBeVisible();
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await expect(gathering.getByRole('button')).toHaveCount(0);
-      const still = await gathering.locator('canvas').evaluate((el) => el.toDataURL());
+      const still = await gathering
+        .locator('canvas')
+        .evaluate((el: HTMLCanvasElement) => el.toDataURL());
       await page.waitForTimeout(120);
-      expect(await gathering.locator('canvas').evaluate((el) => el.toDataURL())).toBe(still);
+      expect(
+        await gathering.locator('canvas').evaluate((el: HTMLCanvasElement) => el.toDataURL())
+      ).toBe(still);
     } finally {
       await fixture.close();
     }
@@ -315,9 +333,13 @@ test('Menu Delivery pauses independently and yields to the actual pinned menu', 
     await page.screenshot({ path: info.outputPath('menu-delivery-original-viewport.png') });
     await page.setViewportSize({ width: 320, height: 568 });
     await scene.getByRole('button', { name: 'Pause animation' }).click();
-    const paused = await scene.locator('canvas').evaluate((el) => el.toDataURL());
+    const paused = await scene
+      .locator('canvas')
+      .evaluate((el: HTMLCanvasElement) => el.toDataURL());
     await page.waitForTimeout(120);
-    expect(await scene.locator('canvas').evaluate((el) => el.toDataURL())).toBe(paused);
+    expect(await scene.locator('canvas').evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(
+      paused
+    );
     await fits(page);
     await expect(
       page.getByRole('button', { name: 'Back to the Match', exact: true })
@@ -325,9 +347,13 @@ test('Menu Delivery pauses independently and yields to the actual pinned menu', 
     await page.screenshot({ path: info.outputPath('menu-delivery.png'), fullPage: true });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(scene.getByRole('button')).toHaveCount(0);
-    const reducedMenu = await scene.locator('canvas').evaluate((el) => el.toDataURL());
+    const reducedMenu = await scene
+      .locator('canvas')
+      .evaluate((el: HTMLCanvasElement) => el.toDataURL());
     await page.waitForTimeout(120);
-    expect(await scene.locator('canvas').evaluate((el) => el.toDataURL())).toBe(reducedMenu);
+    expect(await scene.locator('canvas').evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(
+      reducedMenu
+    );
     fixture.finishMenu();
     await page.evaluate(() => window.dispatchEvent(new Event('menu-fixture')));
     await expect(scene).toHaveCount(0);
