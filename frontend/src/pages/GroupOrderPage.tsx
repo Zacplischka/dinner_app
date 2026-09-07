@@ -18,7 +18,8 @@ import {
 import { participantRingClass } from '../utils/participantStyles';
 import { formatPrice, parseDollarsToCents } from '../utils/money';
 import { toast } from '../hooks/useToast';
-import Spinner from '../components/Spinner';
+import AnimatedScene from '../components/AnimatedScene';
+import { drawMenuDelivery } from '../components/groceryMenuScene';
 
 const PLATFORM_LABEL = { ubereats: 'Uber Eats', doordash: 'DoorDash' } as const;
 
@@ -261,8 +262,15 @@ export default function GroupOrderPage() {
     );
   } else if (failure === 'cold') {
     content = (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <Spinner size="xl" className="text-cyan" label="Getting tonight's menu…" />
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center gap-4 px-6 py-6 text-center">
+        <div className="mt-auto w-full max-w-sm shrink-0">
+          <AnimatedScene
+            draw={drawMenuDelivery}
+            height={180}
+            label="Menu delivery"
+            loadingLabel="Getting tonight's menu…"
+          />
+        </div>
         <p className="text-lg font-semibold text-text">Getting tonight&apos;s menu…</p>
         <p className="text-sm text-muted">
           This can take up to a minute the first time. Everyone else is waiting on the same fetch.
@@ -270,7 +278,10 @@ export default function GroupOrderPage() {
         {/* The cold wait is the one screen with no way out (#412) — the header's
             back leaves the Session entirely, which is not what "I'll wait
             somewhere else" means. */}
-        <button className="btn btn-secondary min-h-[48px] px-6" onClick={handleBack}>
+        <button
+          className="btn btn-secondary mb-auto min-h-[48px] shrink-0 px-6"
+          onClick={handleBack}
+        >
           Back to the Match
         </button>
       </div>

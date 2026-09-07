@@ -70,7 +70,7 @@ export default function CookViewPage() {
 
         {list && (
           <div className="card">
-            <RecipePricingStatus status={list.pricingStatus} />
+            <RecipePricingStatus status={list.pricingStatus} compact />
             {list.steps.length > 0 && (
               <>
                 <p className="pb-2 text-xs font-semibold tracking-[0.14em] text-lime">

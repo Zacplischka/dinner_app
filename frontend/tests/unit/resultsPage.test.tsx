@@ -489,29 +489,58 @@ describe('ResultsPage', () => {
   });
 
   describe('Celebration (#85)', () => {
-    it('renders a decorative ray layer behind the Match heading only when the Match is non-empty', () => {
+    it('reveals the actual crown while its content and continuation are immediately available', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [pizza],
         allSelections: { Alice: [pizza.placeId], Bob: [pizza.placeId] },
+        sessionStatus: 'complete',
       });
-      const { container } = renderResults();
-
-      const rays = container.querySelector('[data-match-rays]');
-      expect(rays).not.toBeNull();
-      expect(rays!.getAttribute('aria-hidden')).toBe('true');
+      renderResults();
+      const reveal = screen.getByRole('group', { name: 'Tonight’s pick' });
+      expect(reveal.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
+      expect(screen.getByRole('heading', { name: 'MATCH!' })).toBeInTheDocument();
+      expect(screen.getAllByText('Pizza Palace')[0]).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /compare prices/i })).toBeEnabled();
+      expect(screen.queryByRole('button', { name: 'Pause animation' })).not.toBeInTheDocument();
+      act(() => useSessionStore.getState().setSessionStatus('expired'));
+      expect(screen.queryByRole('group', { name: 'Tonight’s pick' })).not.toBeInTheDocument();
     });
 
-    it('renders no ray layer for an empty Match', () => {
+    it('renders no reveal when there is no crown', () => {
       seedStore({
         participants: [alice, bob],
         overlappingOptions: [],
         allSelections: { Alice: [pizza.placeId], Bob: [noodle.placeId] },
+        sessionStatus: 'complete',
       });
-      const { container } = renderResults();
-
-      expect(container.querySelector('[data-match-rays]')).toBeNull();
+      renderResults();
+      expect(screen.queryByRole('group', { name: 'Tonight’s pick' })).not.toBeInTheDocument();
     });
+
+    it.each([0, 1])(
+      'introduces a fallback crown with %i likes without claiming unanimity',
+      (likedBy) => {
+        seedStore({
+          participants: [alice, bob, cara],
+          overlappingOptions: [],
+          allSelections: { Alice: likedBy ? [pizza.placeId] : [], Bob: [], Cara: [] },
+          topPick: { restaurant: pizza, likedBy, of: 3 },
+          sessionStatus: 'complete',
+        });
+        renderResults();
+        expect(screen.getByRole('group', { name: 'Tonight’s pick' })).toBeInTheDocument();
+        expect(screen.queryByRole('heading', { name: 'MATCH!' })).not.toBeInTheDocument();
+        expect(screen.queryByText('Everyone liked this one.')).not.toBeInTheDocument();
+        expect(
+          screen.getByText(
+            likedBy
+              ? '1 of 3 liked it — the closest you got.'
+              : "Nobody liked anything, so here's the highest rated nearby."
+          )
+        ).toBeInTheDocument();
+      }
+    );
   });
 
   describe('Continuation action hierarchy (#85)', () => {

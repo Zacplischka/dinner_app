@@ -90,6 +90,30 @@ it('keeps a waiting Cook newcomer outside the active roster, Full House and subm
   );
   expect(screen.getByText('Waiting for Bob')).toBeInTheDocument();
   expect(screen.queryByLabelText('Carol: still swiping')).not.toBeInTheDocument();
+  expect(screen.getByRole('group', { name: 'Saved you a seat' })).toBeInTheDocument();
+
+  act(() => useSessionStore.getState().removeParticipant('p2'));
+  expect(screen.queryByRole('group', { name: 'Saved you a seat' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Waiting for Bob')).not.toBeInTheDocument();
+  expect(screen.getByText('Your selections are submitted.')).toBeInTheDocument();
+});
+
+it('keeps the saved seat for disconnected Participants and removes it when the Session expires', async () => {
+  seed('watch');
+  act(() =>
+    useSessionStore.setState((state) => ({
+      participants: state.participants.map((participant) => ({
+        ...participant,
+        hasSubmitted: participant.isHost,
+        isOnline: participant.isHost,
+      })),
+    }))
+  );
+  renderSelection();
+  expect(await screen.findByRole('group', { name: 'Saved you a seat' })).toBeInTheDocument();
+  expect(screen.getByText('Waiting for Bob')).toBeInTheDocument();
+  act(() => useSessionStore.getState().setSessionStatus('expired'));
+  expect(screen.queryByRole('group', { name: 'Saved you a seat' })).not.toBeInTheDocument();
 });
 
 it.each<Branch>(['watch', 'cook'])(

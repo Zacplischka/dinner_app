@@ -282,12 +282,15 @@ describe('ShoppingListPage', () => {
       expect(container.querySelector('[data-list-total]')).not.toBeInTheDocument();
       expect(
         screen.getByText(
-          pricingStatus === 'pending' ? 'Prices are still loading' : 'Prices are unavailable'
+          pricingStatus === 'pending' ? 'Checking Woolworths prices…' : 'Prices are unavailable'
         )
       ).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Cook' })).toHaveAttribute(
         'href',
         '/list/list-1/cook'
+      );
+      expect(screen.queryByRole('group', { name: 'Grocery run' }) !== null).toBe(
+        pricingStatus === 'pending'
       );
       fireEvent.click(screen.getByText('Read the method'));
       expect(screen.getByText('Boil the pasta.')).toBeInTheDocument();

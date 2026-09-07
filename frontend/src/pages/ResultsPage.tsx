@@ -14,6 +14,7 @@ import RetryingPhoto from '../components/RetryingPhoto';
 import { useShareLink } from '../hooks/useShareLink';
 import TmdbCredit from '../components/TmdbCredit';
 import MovieLinks from '../components/MovieLinks';
+import SocialMoment from '../components/SocialMoment';
 import { participantRingClass } from '../utils/participantStyles';
 import { formatPriceLevel } from '../utils/money';
 import { movieMeta } from '../utils/tmdb';
@@ -593,11 +594,19 @@ export default function ResultsPage() {
       />
 
       <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
-        {/* Celebration leads; rays sit behind the heading, fade inside the
-            header block, and freeze under reduced motion (see index.css). */}
+        {crownPlaceId && sessionStatus === 'complete' && (
+          <div className="mx-auto mb-3 max-w-sm">
+            <SocialMoment
+              key={`${sessionCode}:${lobby?.round ?? ''}:${crownPlaceId}`}
+              moment="pick"
+              watch={deckKind === 'movie'}
+            />
+            {!hasOverlap && <p className="text-center text-sm text-muted">Tonight’s pick.</p>}
+          </div>
+        )}
+        {/* Only an actual Match gets the unanimity celebration. */}
         {hasOverlap && (
           <div className="match-celebration mb-6 text-center">
-            <div className="match-rays" data-match-rays aria-hidden="true" />
             <h2 className="relative inline-block animate-match-pop rounded-market-md px-5 py-2 text-4xl font-black tracking-[0.14em] text-lime shadow-match">
               MATCH!
             </h2>

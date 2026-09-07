@@ -106,6 +106,25 @@ describe('CookViewPage', () => {
     expect(screen.getAllByRole('button', { pressed: false })).toHaveLength(steps.length);
   });
 
+  it.each(['pending', 'failed'] as const)(
+    'keeps every step usable while pricing is %s',
+    async (pricingStatus) => {
+      serviceMocks.getShoppingList.mockResolvedValue({ ...list, pricingStatus });
+      renderPage();
+      const step = (await screen.findByText(steps[0])).closest('button')!;
+
+      for (const text of steps) expect(screen.getByText(text)).toBeInTheDocument();
+      fireEvent.click(step);
+      expect(step).toHaveAttribute('aria-pressed', 'true');
+      if (pricingStatus === 'pending') {
+        expect(screen.getByRole('group', { name: 'Grocery run' })).toHaveStyle({ height: '96px' });
+      } else {
+        expect(screen.queryByRole('group', { name: 'Grocery run' })).not.toBeInTheDocument();
+        expect(screen.getByText('Prices are unavailable')).toBeInTheDocument();
+      }
+    }
+  );
+
   it('dims a step on tap and restores it on the next tap', async () => {
     renderPage();
     const row = (await screen.findByText(steps[1])).closest('button')!;
