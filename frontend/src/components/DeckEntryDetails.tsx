@@ -18,9 +18,6 @@ import MovieLinks from './MovieLinks';
 import TmdbCredit from './TmdbCredit';
 import RecipeSourceCredit from './RecipeSourceCredit';
 
-/** Even an older Recipe can explain that its details are unavailable. */
-export const hasDetails = (_entry: DeckEntry): boolean => true;
-
 interface DeckEntryDetailsProps {
   /** The Deck Entry to show, or null when the sheet is closed. */
   entry: DeckEntry | null;

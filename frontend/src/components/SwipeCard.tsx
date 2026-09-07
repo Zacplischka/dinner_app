@@ -10,7 +10,6 @@ import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import TmdbCredit from './TmdbCredit';
 import GenrePills from './GenrePills';
 import { movieMeta } from '../utils/tmdb';
-import { hasDetails } from './DeckEntryDetails';
 
 interface SwipeCardProps {
   entry: DeckEntry;
@@ -63,9 +62,8 @@ export default function SwipeCard({
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const detailsButtonRef = useRef<HTMLButtonElement>(null);
-  // Only the top card is interactive at all, and only an entry with something
-  // to read has details to open — a tap on a Recipe does nothing.
-  const openDetails = isTop && hasDetails(entry) ? onOpenDetails : undefined;
+  // Only the top card is interactive; every kind supports details.
+  const openDetails = isTop ? onOpenDetails : undefined;
 
   const deltaX = dragState.currentX - dragState.startX;
   const prefersReducedMotion = usePrefersReducedMotion();

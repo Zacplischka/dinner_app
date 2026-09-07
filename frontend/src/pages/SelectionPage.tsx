@@ -3,7 +3,7 @@
 // and Movies (Watch).
 // Swipe right to like, swipe left to pass
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
@@ -50,13 +50,20 @@ export const listNames = (names: string[]): string =>
     : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 
 export default function SelectionPage() {
+  const roundKey = useSessionStore((state) => `${state.sessionCode}:${state.lobby?.round ?? ''}`);
+  // Reconnecting into a newer round must also discard local Deck and overlay state.
+  return <SelectionRound key={roundKey} />;
+}
+
+function SelectionRound() {
   const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const {
     selections,
     addSelection,
     removeSelection,
-    participants,
+    participants: sessionParticipants,
+    lobby,
     liveSelections,
     branch,
     currentUserId,
@@ -64,6 +71,10 @@ export default function SelectionPage() {
     deckCursor,
     setDeckCursor,
   } = useSessionStore();
+  const participants = useMemo(
+    () => sessionParticipants.filter((participant) => !participant.waitingForNextRound),
+    [sessionParticipants]
+  );
   // The Deck is shared with every Branch, but its copy must not be: a Cook
   // Session deals Recipes and said "Choose Restaurants" over them (#253).
   const deckNoun = branch === 'cook' ? 'recipe' : branch === 'watch' ? 'movie' : 'restaurant';
@@ -723,6 +734,11 @@ export default function SelectionPage() {
               : `${participants.length} together`}
           </p>
         </div>
+        {lobby && (
+          <p className="mb-3 w-full max-w-sm flex-shrink-0 text-center text-xs text-muted">
+            This round’s deck is fixed. New interests apply next round.
+          </p>
+        )}
         {recipeSourceDown && (
           <p
             data-testid="source-down-note"

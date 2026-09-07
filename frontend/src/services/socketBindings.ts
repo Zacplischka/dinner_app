@@ -389,7 +389,15 @@ export async function joinSession(
     );
 
   if (ack.data.lobby) store.setLobby(ack.data.lobby);
-  if (ack.data.results) applyResults(ack.data.results);
+  const currentLobby = useSessionStore.getState().lobby;
+  // A delayed completed ack must not restore a Match discarded by Restart.
+  // Later roster revisions are fine while this same round remains complete.
+  if (
+    ack.data.results &&
+    (!ack.data.lobby ||
+      (currentLobby?.state === 'complete' && currentLobby.round === ack.data.lobby.round))
+  )
+    applyResults(ack.data.results);
 
   return ack;
 }

@@ -227,6 +227,14 @@ describe('ShoppingListPage', () => {
     expect(screen.queryByText(/as minted/i)).not.toBeInTheDocument();
   });
 
+  it('keeps successfully priced lines dated when another lookup fails', async () => {
+    serviceMocks.getShoppingList.mockResolvedValue({ ...list, pricingStatus: 'failed' });
+    renderPage();
+
+    expect(await screen.findByText(/Prices from Woolworths on Sat, 1 Aug/i)).toBeInTheDocument();
+    expect(lineFor('250 g canned tomatoes')).toHaveTextContent('$1.40');
+  });
+
   // The list is meant to be forwarded (#229), and the page is the only place
   // the URL is on offer — back goes home and takes it with it.
   it('shares the list URL from the header, copying it where there is no sheet', async () => {

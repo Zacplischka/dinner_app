@@ -438,7 +438,7 @@ export default function ShoppingListPage() {
                   list outlives the ≤24 h Freshness Window its truthfulness
                   rested on. The date is the mint's, and the cache entry behind
                   a line may be up to a day older — the skew the ADR accepts. */}
-              {!list.pricingStatus && (
+              {list.pricingStatus !== 'pending' && (
                 <p className="mt-2 text-xs text-muted">
                   Prices from Woolworths on {day.format(new Date(list.mintedAt))}.
                 </p>
