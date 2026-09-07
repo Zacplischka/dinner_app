@@ -78,6 +78,54 @@ it('retains the server deck size and Host ownership of headcount/deck size', () 
   expect(screen.queryByLabelText('Cooking for')).toBeNull();
   expect(screen.getByText('Change meal type')).toBeInTheDocument();
 });
+it.each([
+  ['cook', 'recipes', 50],
+  ['watch', 'titles', 50],
+  ['eatout', 'restaurants', 20],
+  ['takeaway', 'restaurants', 20],
+] as const)('shows the confirmed %s Deck size without changing its limits', (branch, unit, max) => {
+  const state = lobby(branch);
+  const view = renderChoices(state);
+  const visibleCards = () =>
+    view.container.querySelectorAll('[data-deck-preview-card][data-active="true"]');
+  expect(screen.getByText(`10 ${unit}`)).toBeInTheDocument();
+  expect(visibleCards()).toHaveLength(10);
+  expect(view.container.querySelector('[data-deck-preview]')).toHaveAttribute(
+    'aria-hidden',
+    'true'
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Bigger Deck' }));
+  expect(onChange).toHaveBeenCalledWith({ deckSize: 15 });
+  // The server owns the shared value; no optimistic, misleading extra cards.
+  expect(visibleCards()).toHaveLength(10);
+  const update = (deckSize: number, disabled = false) =>
+    view.rerender(
+      <LobbyChoices
+        lobby={{ ...state, deckSize }}
+        participantId="me"
+        isHost
+        disabled={disabled}
+        onChange={onChange}
+      />
+    );
+  update(15);
+  expect(visibleCards()).toHaveLength(15);
+  const animationStyles = () =>
+    Array.from(view.container.querySelectorAll('[data-deck-preview-card]'), (card) =>
+      card.getAttribute('style')
+    );
+  const movingCards = animationStyles();
+  update(15, true);
+  expect(animationStyles()).toEqual(movingCards);
+  update(5);
+  expect(screen.getByRole('button', { name: 'Smaller Deck' })).toBeDisabled();
+  update(max);
+  expect(visibleCards()).toHaveLength(max);
+  expect(screen.getByRole('button', { name: 'Bigger Deck' })).toBeDisabled();
+  update(10, true);
+  expect(screen.getByRole('button', { name: 'Smaller Deck' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Bigger Deck' })).toBeDisabled();
+});
 it('collects all requirements before checking admission of a Cook newcomer', async () => {
   const state = lobby();
   state.state = 'selecting';

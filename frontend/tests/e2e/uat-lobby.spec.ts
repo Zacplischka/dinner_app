@@ -1,6 +1,107 @@
 import { test, expect } from '@playwright/test';
 import { WatchSetupPage, JoinSessionPage, SessionLobbyPage } from './pages';
 
+for (const [branch, unit, max] of [
+  ['watch', 'titles', 50],
+  ['cook', 'recipes', 50],
+  ['eatout', 'restaurants', 20],
+  ['takeaway', 'restaurants', 20],
+] as const) {
+  test(`${branch} photo Deck grows and shrinks within the Lobby`, async ({ page }, info) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({
+      width: info.project.name === 'mobile-chrome' ? 320 : 1280,
+      height: 844,
+    });
+    await page.goto(
+      branch === 'watch' ? '/watch' : branch === 'cook' ? '/cook' : `/create?branch=${branch}`
+    );
+    await page.getByLabel('Your Name').fill('Deck preview check');
+    await page.getByRole('button', { name: 'Create session', exact: true }).click();
+    await expect(page).toHaveURL(/\/session\/[A-Z0-9]+$/);
+    const preview = page.locator('[data-deck-preview]');
+    const controls = page.getByRole('group', { name: 'Deck size', exact: true });
+    const count = controls.locator('[aria-live]');
+    const smaller = controls.getByRole('button', { name: 'Smaller Deck' });
+    const bigger = controls.getByRole('button', { name: 'Bigger Deck' });
+    try {
+      await expect(preview).toHaveAttribute('data-deck-preview', branch);
+      await expect(preview).toHaveAttribute('aria-hidden', 'true');
+      await expect
+        .poll(() =>
+          preview
+            .locator('img')
+            .evaluateAll((images) =>
+              images.every(
+                (image) =>
+                  image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0
+              )
+            )
+        )
+        .toBe(true);
+      const sources = await preview
+        .locator('img')
+        .evaluateAll((images) => [...new Set(images.map((image) => image.getAttribute('src')))]);
+      expect(sources).toHaveLength(3);
+      expect(sources.every((src) => src?.includes('watch-'))).toBe(branch === 'watch');
+      const initial = parseInt((await count.textContent())!);
+      for (let next = initial - 5; next >= 5; next -= 5) {
+        await smaller.click();
+        await expect(count).toHaveText(`${next} ${unit}`);
+      }
+      await expect(smaller).toBeDisabled();
+      await expect(preview.locator('[data-active="true"]')).toHaveCount(5);
+      if (branch === 'watch') await new SessionLobbyPage(page).ready();
+      for (let next = 10; next <= max; next += 5) {
+        await bigger.click();
+        await expect(count).toHaveText(`${next} ${unit}`);
+      }
+      await expect(bigger).toBeDisabled();
+      await expect(preview.locator('[data-active="true"]')).toHaveCount(max);
+      if (branch === 'watch')
+        await expect(page.getByRole('button', { name: 'I’m ready', exact: true })).toBeEnabled();
+      await expect
+        .poll(() => preview.evaluate((element) => element.getAnimations({ subtree: true }).length))
+        .toBe(0);
+      const bounds = await preview.evaluate((element) => {
+        const frame = element.getBoundingClientRect();
+        return [...element.querySelectorAll('[data-active="true"]')].flatMap((card, index) => {
+          const box = card.getBoundingClientRect();
+          return box.left >= frame.left &&
+            box.right <= frame.right &&
+            box.top >= frame.top &&
+            box.bottom <= frame.bottom
+            ? []
+            : [
+                {
+                  index,
+                  left: box.left - frame.left,
+                  right: box.right - frame.right,
+                  top: box.top - frame.top,
+                  bottom: box.bottom - frame.bottom,
+                },
+              ];
+        });
+      });
+      expect(bounds).toEqual([]);
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+        .toBe(true);
+      await preview.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: info.outputPath(`${branch}-deck.png`) });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await smaller.click();
+      await expect(count).toHaveText(`${max - 5} ${unit}`);
+      await expect(preview.locator('[data-deck-preview-card]').first()).toHaveCSS(
+        'transition-property',
+        'none'
+      );
+    } finally {
+      await new SessionLobbyPage(page).leaveSession();
+    }
+  });
+}
+
 test('four people can choose personal interests together without losing edits', async ({
   page,
   browser,

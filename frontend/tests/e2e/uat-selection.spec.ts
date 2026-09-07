@@ -11,9 +11,9 @@ test('corrects the final swipe, then recovers an all-pass Watch round through sh
   await host.enterName('UAT Host');
   const code = await host.createSession();
   await page.getByRole('button', { name: 'Smaller Deck' }).click();
-  await expect(page.getByText('10 movies', { exact: true })).toBeVisible();
+  await expect(page.getByText('10 titles', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Smaller Deck' }).click();
-  await expect(page.getByText('5 movies', { exact: true })).toBeVisible();
+  await expect(page.getByText('5 titles', { exact: true })).toBeVisible();
 
   const guestContext = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } });
   try {
