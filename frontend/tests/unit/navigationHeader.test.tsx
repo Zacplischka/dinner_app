@@ -19,6 +19,7 @@ const renderHeader = (ui: ReactElement) => render(ui, { wrapper: MemoryRouter })
  */
 describe('NavigationHeader', () => {
   beforeEach(() => {
+    useSessionStore.getState().resetSession();
     useSessionStore.setState({ isConnected: true, expiresAt: null, sessionStatus: 'selecting' });
   });
 
@@ -59,10 +60,45 @@ describe('NavigationHeader', () => {
     expect(rightCell.className).toContain('basis-0');
   });
 
-  it('shows no unrelated navigation actions on focused flows', () => {
+  it('provides home navigation without unrelated actions on focused flows', () => {
     renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     expect(screen.queryByRole('link', { name: 'Compare' })).toBeNull();
-    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Dinder home' })).toHaveAttribute('href', '/');
+  });
+
+  it('goes home without losing identity, selections or Ready', () => {
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: 'alice',
+      selections: ['movie-a'],
+      participants: [
+        {
+          participantId: 'alice',
+          displayName: 'Alice',
+          sessionCode: 'AB123',
+          joinedAt: 1,
+          hasSubmitted: false,
+          isHost: true,
+          ready: true,
+        },
+      ],
+    });
+    render(
+      <MemoryRouter initialEntries={['/flow']}>
+        <Routes>
+          <Route path="/flow" element={<NavigationHeader title="Choose" sessionCode="AB123" />} />
+          <Route path="/" element={<p>Home route</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Dinder home' }));
+    expect(screen.getByText('Home route')).toBeInTheDocument();
+    expect(useSessionStore.getState()).toMatchObject({
+      sessionCode: 'AB123',
+      currentUserId: 'alice',
+      selections: ['movie-a'],
+    });
+    expect(useSessionStore.getState().participants[0].ready).toBe(true);
   });
 
   it('places session code, progress and subtitle in a separated secondary region', () => {

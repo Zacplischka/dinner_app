@@ -4,6 +4,7 @@
 // Secondary region: session code, progress, connection state and subtitle.
 
 import { ReactNode, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { toast } from '../hooks/useToast';
@@ -65,7 +66,16 @@ export default function NavigationHeader({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { isConnected, expiresAt, sessionStatus } = useSessionStore();
+  const { isConnected, expiresAt, sessionStatus, lobby, participants, currentUserId } =
+    useSessionStore();
+  const me = participants.find((participant) => participant.participantId === currentUserId);
+  const canReviewWaiting =
+    me &&
+    !me.waitingForNextRound &&
+    (me.isHost ||
+      !participants.some((participant) => participant.isHost && participant.isOnline !== false));
+  const waitingCount =
+    lobby?.participants.filter((participant) => participant.waitingForNextRound).length ?? 0;
   // Only a Session screen (one that shows the code) carries the countdown or
   // the expired banner; the store's expiresAt and status can linger after a
   // Session ends and must not leak onto Join or Create.
@@ -147,12 +157,22 @@ export default function NavigationHeader({
               and stop long titles from moving or shrinking the edge actions. */}
           <div className="flex items-center gap-2">
             {/* Left edge - Back button */}
-            <div className="flex flex-1 basis-0 items-center justify-start min-w-0">
+            <div
+              className={`flex flex-1 basis-0 items-center justify-start ${showBackButton ? 'min-w-[88px]' : 'min-w-[44px]'}`}
+            >
+              <Link
+                to="/"
+                aria-label="Dinder home"
+                title="Dinder home"
+                className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
+              >
+                <span className="logo-mark scale-75" aria-hidden="true" />
+              </Link>
               {showBackButton && (
                 <button
                   onClick={handleBackClick}
-                  className="flex shrink-0 items-center gap-1 text-muted hover:text-cyan transition-colors min-h-[44px] min-w-[44px] -ml-2 pl-2 pr-1"
-                  aria-label={backLabel}
+                  className="flex shrink-0 items-center gap-1 text-muted hover:text-cyan transition-colors min-h-[44px] min-w-[44px] pl-2 pr-1"
+                  aria-label={confirmOnBack && sessionCode ? 'Leave session' : backLabel}
                 >
                   <svg
                     className="w-5 h-5 flex-shrink-0"
@@ -187,7 +207,9 @@ export default function NavigationHeader({
             </div>
 
             {/* Right edge - page-specific action */}
-            <div className="flex flex-1 basis-0 items-center justify-end min-w-0">
+            <div
+              className={`flex flex-1 basis-0 items-center justify-end ${showBackButton ? 'min-w-[88px]' : 'min-w-[44px]'}`}
+            >
               {rightAction && (
                 <div className="min-h-[44px] flex shrink-0 items-center">{rightAction}</div>
               )}
@@ -209,6 +231,18 @@ export default function NavigationHeader({
                 Start over
               </button>
             </div>
+          )}
+
+          {sessionCode && waitingCount > 0 && canReviewWaiting && sessionStatus !== 'waiting' && (
+            <Link
+              to={`/session/${sessionCode}`}
+              className="mt-2 flex min-h-[44px] items-center justify-center rounded-xl border border-amber/40 bg-amber/10 px-3 py-2 text-center text-sm text-amber"
+            >
+              {waitingCount === 1
+                ? 'Someone is waiting with dietary requirements.'
+                : `${waitingCount} people are waiting with dietary requirements.`}{' '}
+              Review in the lobby
+            </Link>
           )}
 
           {/* Secondary region - metadata that must not compete with the title row */}

@@ -20,6 +20,7 @@ import { useFriendsStore } from '../stores/friendsStore';
 import { toast } from './useToast';
 
 interface SessionSetup {
+  collaborative?: boolean;
   location?: SessionLocation;
   searchRadiusMiles?: number;
   branch?: Branch;
@@ -34,12 +35,9 @@ export function useCreateAndJoinSession() {
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
   const {
-    setSessionCode,
     setLocation: setStoreLocation,
     setSearchRadiusMiles: setStoreRadius,
     setCurrentUserId,
-    setSessionStatus,
-    resetSelections,
   } = useSessionStore();
   const { inviteFriendsToSession } = useFriendsStore();
 
@@ -61,12 +59,6 @@ export function useCreateAndJoinSession() {
         import('../services/socketBindings'),
       ]);
 
-      setSessionCode(response.sessionCode);
-      if (setup.location) setStoreLocation(setup.location);
-      if (setup.searchRadiusMiles !== undefined) setStoreRadius(setup.searchRadiusMiles);
-      resetSelections();
-      setSessionStatus('waiting');
-
       // Connect WebSocket and wait for connection, then join as host
       await waitForConnection();
       const ack = await joinSession(response.sessionCode, hostName);
@@ -77,6 +69,8 @@ export function useCreateAndJoinSession() {
       }
 
       setCurrentUserId(ack.data.participantId);
+      if (setup.location) setStoreLocation(setup.location);
+      if (setup.searchRadiusMiles !== undefined) setStoreRadius(setup.searchRadiusMiles);
 
       // The Session is already the Host's; failing invites only cost them the
       // shortcut, so say so and point at the Session Code rather than blocking.

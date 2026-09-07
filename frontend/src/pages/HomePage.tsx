@@ -1,13 +1,10 @@
-// The entry fork (#255): `/` asks the only question that matters — "Tonight
-// you're…" — with a Branch card per kind of night. Eat Out and Takeaway route
-// into the existing create flow with their Branch; Cook and Watch route to
-// their own setup screens (#260, #369). Join-with-code and Compare are demoted
-// to a text row. There is no solo/group question: a Session starts
-// as yours and becomes a group when you invite someone.
-
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import ConfirmLeaveModal from '../components/ConfirmLeaveModal';
+import { getSession, ApiClientError } from '../services/apiClient';
+import { useLeaveSession } from '../hooks/useLeaveSession';
+import { useSessionStore } from '../stores/sessionStore';
 import UserMenu from '../components/UserMenu';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
@@ -15,36 +12,90 @@ import { useFriendsStore } from '../stores/friendsStore';
 const BRANCH_CARDS = [
   {
     title: 'Eating out',
-    description: 'Swipe nearby restaurants until the group agrees.',
-    icon: '🍽️',
-    accent: 'border-coral/40 hover:border-coral shadow-[0_0_18px_rgb(255_56_88_/_0.12)]',
+    description: 'Find a table everyone’s into.',
+    image: 'eatout',
+    accent: 'border-[#c97052] bg-[#532b20]',
     to: '/create?branch=eatout',
   },
   {
     title: 'Getting takeaway',
-    description: 'Pick a place together, then compare delivery prices.',
-    icon: '🥡',
-    accent: 'border-cyan/40 hover:border-cyan shadow-[0_0_18px_rgb(53_231_255_/_0.12)]',
+    description: 'Pick dinner. Compare delivery.',
+    image: 'takeaway',
+    accent: 'border-[#c99b43] bg-[#463418]',
     to: '/create?branch=takeaway',
   },
   {
     title: 'Cooking',
-    description: 'Swipe recipes, then split the shopping list.',
-    icon: '🍳',
-    accent: 'border-lime/40 hover:border-lime shadow-[0_0_18px_rgb(163_230_53_/_0.12)]',
+    description: 'Choose a recipe. Share the shop.',
+    image: 'cook',
+    accent: 'border-[#84934d] bg-[#303c22]',
     to: '/cook',
   },
   {
     title: 'Watching a movie',
-    description: 'Swipe movies, then watch the trailer together.',
-    icon: '🎬',
-    accent: 'border-amber/40 hover:border-amber shadow-[0_0_18px_rgb(255_182_39_/_0.12)]',
+    description: 'Movies & series for your kind of night.',
+    image: 'watch',
+    accent: 'border-[#b66880] bg-[#482535]',
     to: '/watch',
   },
 ];
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { sessionCode, sessionStatus } = useSessionStore();
+  const [returnError, setReturnError] = useState('');
+  const [returning, setReturning] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const leaveSession = useLeaveSession(sessionCode ?? undefined);
+  const activeSession = sessionCode && sessionStatus !== 'expired';
+
+  async function refreshSession(code: string) {
+    const priorStatus = useSessionStore.getState().sessionStatus;
+    try {
+      const session = await getSession(code);
+      const store = useSessionStore.getState();
+      if (store.sessionCode !== code) return false;
+      if (session.state === 'expired') {
+        store.resetSession();
+        setReturnError('Your previous session has expired. Start a new one below.');
+        return false;
+      }
+      store.setExpiresAt(session.expiresAt);
+      if (session.lobby) store.setLobby(session.lobby);
+      else if (
+        store.sessionStatus === priorStatus &&
+        (session.state === 'waiting' ||
+          session.state === 'selecting' ||
+          session.state === 'complete')
+      ) {
+        store.setSessionStatus(session.state);
+      }
+      return true;
+    } catch (error) {
+      if (useSessionStore.getState().sessionCode !== code) return false;
+      if (error instanceof ApiClientError && (error.status === 404 || error.status === 410)) {
+        useSessionStore.getState().resetSession();
+        setReturnError('Your previous session has expired. Start a new one below.');
+      } else {
+        setReturnError('Could not check your session. Try returning again when connected.');
+      }
+      return false;
+    }
+  }
+
+  useEffect(() => {
+    if (sessionCode && sessionStatus !== 'expired') void refreshSession(sessionCode);
+    // Refresh when arriving home. Socket events keep subsequent changes current.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionCode]);
+
+  async function returnToSession() {
+    if (!sessionCode || returning) return;
+    setReturning(true);
+    setReturnError('');
+    if (await refreshSession(sessionCode)) navigate(`/session/${sessionCode}`);
+    setReturning(false);
+  }
   const { isAuthenticated, isLoading } = useAuthStore();
   const { friendRequests, sessionInvites, fetchFriendRequests, fetchSessionInvites } =
     useFriendsStore();
@@ -59,16 +110,16 @@ export default function HomePage() {
   const notificationCount = friendRequests.length + sessionInvites.length;
 
   return (
-    <main className="market-backdrop min-h-screen px-4 pb-16">
-      <header className="mx-auto flex min-h-20 w-full max-w-6xl items-center justify-between gap-4">
-        <a
-          href="/"
+    <main className="home-backdrop min-h-screen px-4 pb-6">
+      <header className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4">
+        <Link
+          to="/"
           aria-label="Dinder home"
-          className="inline-flex items-center gap-3 text-2xl font-black italic tracking-[-0.055em] text-coral-soft drop-shadow-[0_0_12px_rgb(255_56_88_/_0.7)]"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center gap-3 text-2xl font-black italic tracking-[-0.055em] text-coral-soft drop-shadow-[0_0_12px_rgb(255_56_88_/_0.7)]"
         >
           <span className="logo-mark" aria-hidden="true" />
           Dinder
-        </a>
+        </Link>
 
         {isAuthenticated && (
           <div className="flex items-center gap-3">
@@ -96,55 +147,111 @@ export default function HomePage() {
         )}
       </header>
 
-      <section className="mx-auto w-full max-w-2xl py-10 md:py-16 animate-fade-in">
-        <h1 className="mb-10 text-[clamp(2.8rem,10vw,5rem)] font-black leading-[0.9] tracking-[-0.06em] text-text">
-          Tonight <span className="neon-outline italic">you&rsquo;re&hellip;</span>
-        </h1>
-
-        <div className="grid gap-4">
-          {BRANCH_CARDS.map((card) => (
+      <section className="mx-auto w-full max-w-6xl pb-6 pt-3 md:pt-12">
+        {activeSession && (
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-cyan/50 bg-raised p-3">
             <button
-              key={card.title}
-              onClick={() => navigate(card.to)}
-              className={`flex items-center gap-5 rounded-market-lg border bg-surface/95 p-5 text-left transition-colors ${card.accent}`}
+              onClick={() => void returnToSession()}
+              disabled={returning}
+              className="btn btn-secondary flex-1"
             >
-              <span className="text-4xl" aria-hidden="true">
-                {card.icon}
-              </span>
-              <span>
-                <span className="block text-2xl font-black text-text">{card.title}</span>
-                <span className="block text-sm text-muted">{card.description}</span>
-              </span>
+              {returning ? 'Checking your session…' : 'Return to session'}
+              {!returning && <span className="ml-2 font-mono text-sm">{sessionCode}</span>}
             </button>
-          ))}
-        </div>
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="min-h-[44px] px-3 text-sm text-muted underline underline-offset-4"
+            >
+              Leave session
+            </button>
+          </div>
+        )}
+        {returnError && (
+          <p role="status" className="mb-4 rounded-xl bg-raised p-3 text-sm text-amber">
+            {returnError}
+          </p>
+        )}
 
-        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <button
-            onClick={() => navigate('/join')}
-            className="inline-flex min-h-[44px] items-center text-cyan underline-offset-4 hover:underline"
-          >
-            Join with a code
-          </button>
-          <button
-            onClick={() => navigate('/compare')}
-            aria-label="Compare delivery prices"
-            className="inline-flex min-h-[44px] items-center text-muted underline-offset-4 hover:underline"
-          >
-            Compare delivery prices
-          </button>
+        <div className="grid items-center gap-6 md:grid-cols-[0.9fr_1.1fr] md:gap-12">
+          <div>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#ffc2a7]">
+              A good night starts together
+            </p>
+            <h1 className="max-w-xl text-[clamp(2.4rem,7vw,4.5rem)] font-black leading-[1.02] tracking-[-0.055em] text-[#fff4e8]">
+              Find something <span className="text-[#ffa586]">everyone’s into.</span>
+            </h1>
+            <p className="mt-4 max-w-sm text-base leading-relaxed text-[#d8c9bf]">
+              Get together. Swipe your favourites. Decide tonight.
+            </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
+              <button
+                onClick={() => navigate('/join')}
+                className="min-h-[48px] rounded-xl bg-[#ffad8e] px-4 py-3 text-sm font-bold text-[#281814] transition-colors hover:bg-[#ffc6ae]"
+              >
+                Join with a code <span aria-hidden="true">↗</span>
+              </button>
+              <button
+                onClick={() => navigate('/compare')}
+                className="min-h-[48px] rounded-xl border border-[#ac8872] bg-[#2d211c] px-4 py-3 text-sm font-bold text-[#fff4e8] transition-colors hover:bg-[#443027]"
+              >
+                Compare delivery prices
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3" aria-label="Choose your night">
+            {BRANCH_CARDS.map((card) => (
+              <button
+                key={card.title}
+                onClick={() => navigate(card.to)}
+                className={`group overflow-hidden rounded-2xl border text-left transition-transform motion-safe:hover:-translate-y-1 ${card.accent}`}
+              >
+                <span className="block h-24 overflow-hidden sm:h-36 md:h-40" aria-hidden="true">
+                  <img
+                    src={`/images/tonight-${card.image}.webp`}
+                    alt=""
+                    width="1536"
+                    height="1024"
+                    className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
+                    onError={(event) => {
+                      event.currentTarget.style.visibility = 'hidden';
+                    }}
+                  />
+                </span>
+                <span className="block min-h-[92px] p-3 sm:p-4">
+                  <span className="block text-base font-bold leading-tight text-[#fff8f0] sm:text-xl">
+                    {card.title}
+                  </span>
+                  <span className="mt-1.5 block text-xs leading-relaxed text-[#f1e5da] sm:text-sm">
+                    {card.description}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {!isLoading && !isAuthenticated && (
-          <div className="mt-10 max-w-xs space-y-3">
-            <GoogleSignInButton />
-            <p className="text-xs text-muted">
-              Sign in to add friends and invite them straight into a session. Everything else works
-              as a guest.
+          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-[#614c3c]/50 pt-5">
+            <div className="w-full max-w-[260px]">
+              <GoogleSignInButton />
+            </div>
+            <p className="max-w-sm text-xs leading-relaxed text-[#d8c9bf]">
+              Join as a guest, or sign in to invite your friends. No account needed to decide
+              together.
             </p>
           </div>
         )}
       </section>
+      <ConfirmLeaveModal
+        isOpen={confirmLeave}
+        onClose={() => setConfirmLeave(false)}
+        onConfirm={() => {
+          setConfirmLeave(false);
+          void leaveSession();
+        }}
+        context="lobby"
+      />
     </main>
   );
 }

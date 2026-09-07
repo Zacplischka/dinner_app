@@ -71,9 +71,15 @@ export async function handleSessionRestart(
 
     // Broadcast to ALL participants (including sender). The lobby's
     // start rides the same event; only the message says which it was (#289).
+    const lobby = await service.getLobby(sessionCode);
     io.in(sessionCode).emit('session:restarted', {
+      ...(lobby ? { state: 'waiting' as const, lobby } : {}),
       sessionCode,
-      message: restarted ? 'Session restarted. Make new selections.' : 'Selection started.',
+      message: lobby
+        ? 'Back in the lobby. Review your choices and confirm Ready.'
+        : restarted
+          ? 'Session restarted. Make new selections.'
+          : 'Selection started.',
     });
   } catch (error) {
     logger.error({ err: error, socketId: socket.id }, 'Error in session:restart handler');

@@ -21,10 +21,10 @@ test.describe('Cook Branch', () => {
     await expect(cookPage.heading).toBeVisible();
 
     // Italian is the corpus's largest tagged cuisine cell, so it deals keyless.
-    await cookPage.pickChip('italian');
     await cookPage.enterName('Host');
-    const sessionCode = await cookPage.startSwiping();
+    const sessionCode = await cookPage.createSession();
     expect(sessionCode).toMatch(/^[A-Z0-9]{5}$/);
+    await cookPage.pickChip('italian');
 
     await new SessionLobbyPage(page).startSession();
 

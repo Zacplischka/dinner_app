@@ -43,7 +43,6 @@ export class CreateSessionPage extends BasePage {
    */
   async createSession(name: string): Promise<string> {
     await this.enterName(name);
-    await this.setCurrentLocation();
     await this.createButton.click();
 
     // Wait for navigation to session lobby
@@ -73,7 +72,7 @@ export class CreateSessionPage extends BasePage {
       longitude: -122.4194,
     });
     await this.useMyLocationButton.click();
-    await expect(this.page.getByText(/Location set/i)).toBeVisible();
+    await expect(this.page.getByRole('region', { name: 'Shared search area' }).getByText(/37.7749|San Francisco/)).toBeVisible();
   }
 
   /**
@@ -89,7 +88,7 @@ export class CreateSessionPage extends BasePage {
   async verifyPageElements(): Promise<void> {
     await expect(this.heading).toBeVisible();
     await expect(this.nameInput).toBeVisible();
-    await expect(this.useMyLocationButton).toBeVisible();
+    await expect(this.useMyLocationButton).toHaveCount(0);
     await expect(this.createButton).toBeVisible();
     await expect(this.backButton).toBeVisible();
   }

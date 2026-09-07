@@ -44,7 +44,16 @@ export class SessionLobbyPage extends BasePage {
   /**
    * Start the session (host only)
    */
+  async ready(): Promise<void> {
+    const ready = this.page.getByRole('button', { name: 'I’m ready', exact: true });
+    if (await ready.isVisible()) {
+      await ready.click();
+      await expect(this.page.getByRole('button', { name: 'Ready — change my confirmation' })).toBeEnabled();
+    }
+  }
+
   async startSession(): Promise<void> {
+    await this.ready();
     await expect(this.startButton).toBeEnabled();
     await this.startButton.click();
 
@@ -59,7 +68,7 @@ export class SessionLobbyPage extends BasePage {
     await this.leaveButton.click();
 
     // Handle confirmation modal if present
-    const confirmButton = this.page.getByRole('button', { name: /^Leave session$/i });
+    const confirmButton = this.page.getByRole('dialog').getByRole('button', { name: /^Leave session$/i });
     if (await confirmButton.isVisible()) {
       await confirmButton.click();
     }

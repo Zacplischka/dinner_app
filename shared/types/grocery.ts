@@ -151,6 +151,8 @@ export type ShoppingListLineState =
 export type ShoppingListLine = ShoppingListLineFields & ShoppingListLineState;
 
 export interface ShoppingList {
+  /** Absent on finished legacy lists; pending/failed never has a final total. */
+  pricingStatus?: 'pending' | 'failed';
   listId: string;
   recipeName: string;
   /** Inert (#239): displayed as "Scaled for N". Nothing recomputes from it. */

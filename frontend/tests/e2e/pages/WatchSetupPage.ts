@@ -19,7 +19,7 @@ export class WatchSetupPage extends BasePage {
 
     this.heading = page.getByRole('heading', { name: /Watching a movie/i });
     this.nameInput = page.getByLabel(/Your Name/i);
-    this.startButton = page.getByRole('button', { name: /Start swiping/i });
+    this.startButton = page.getByRole('button', { name: /Create session/i });
     this.backButton = page.getByRole('button', { name: /Back/i });
   }
 
@@ -51,7 +51,7 @@ export class WatchSetupPage extends BasePage {
    * Start swiping and land in the lobby
    * Returns the session code from the URL
    */
-  async startSwiping(): Promise<string> {
+  async createSession(): Promise<string> {
     await this.startButton.click();
     await this.page.waitForURL(/\/session\/[A-Z0-9]+$/, { timeout: 10_000 });
     return this.page.url().match(/\/session\/([A-Z0-9]+)/)?.[1] ?? '';

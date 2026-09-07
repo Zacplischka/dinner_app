@@ -11,12 +11,14 @@ interface InviteFriendsSectionProps {
   selectedFriendIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
   disabled?: boolean;
+  description?: string;
 }
 
 export default function InviteFriendsSection({
   selectedFriendIds,
   onSelectionChange,
   disabled = false,
+  description = 'Select friends to invite when the session is created',
 }: InviteFriendsSectionProps) {
   const { isAuthenticated } = useAuthStore();
   const { friends, isLoadingFriends, fetchFriends } = useFriendsStore();
@@ -98,9 +100,7 @@ export default function InviteFriendsSection({
             </div>
           ) : (
             <div>
-              <p className="text-xs text-muted mb-3">
-                Select friends to invite when the session is created
-              </p>
+              <p className="text-xs text-muted mb-3">{description}</p>
               <div className="max-h-48 overflow-y-auto -mx-2">
                 <FriendsList
                   friends={friends}

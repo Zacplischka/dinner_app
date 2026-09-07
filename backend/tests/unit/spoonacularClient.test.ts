@@ -133,6 +133,34 @@ describe('createSpoonacularClient', () => {
       ]);
     });
 
+    it('carries truthful details and canonical diet labels without rewriting method text', async () => {
+      const client = createSpoonacularClient(
+        async () =>
+          Response.json({
+            results: [
+              {
+                id: 42,
+                title: 'Bean stew',
+                summary: '<p>Beans &amp; greens.</p><p>Ready for supper.</p>',
+                cuisines: ['Italian', 7, ''],
+                readyInMinutes: 35,
+                diets: ['lacto ovo vegetarian', 'gluten free', 'unknown'],
+                analyzedInstructions: [{ steps: [{ step: 'Use 1.5 tbsp. oil. Simmer at 95°C.' }] }],
+              },
+            ],
+          }),
+        'test-key'
+      );
+      const [recipe] = await client.searchRecipes(craving, { number: 1, offset: 0 });
+      expect(recipe).toMatchObject({
+        description: 'Beans & greens. Ready for supper.',
+        cuisines: ['Italian'],
+        readyInMinutes: 35,
+        diets: ['vegetarian', 'gluten free'],
+        steps: ['Use 1.5 tbsp. oil. Simmer at 95°C.'],
+      });
+    });
+
     it("falls back to Spoonacular's own page when the Recipe names no source URL", async () => {
       // The credit line is the cook view's degrade path (#265) — it must have
       // somewhere to go even when the original publisher went unnamed.

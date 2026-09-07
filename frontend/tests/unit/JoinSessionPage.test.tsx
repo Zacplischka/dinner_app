@@ -21,7 +21,13 @@ vi.mock('../../src/services/socketBindings', () => socketMocks);
 
 import { ApiClientError } from '../../src/services/apiClient';
 import JoinSessionPage from '../../src/pages/JoinSessionPage';
+import { useSessionStore } from '../../src/stores/sessionStore';
 import { useAuthStore } from '../../src/stores/authStore';
+
+beforeEach(() => {
+  useAuthStore.setState({ user: null, session: null, isAuthenticated: false, isLoading: false });
+  useSessionStore.getState().resetSession();
+});
 
 function renderPage(initialEntry: string) {
   return render(
@@ -155,7 +161,7 @@ describe('JoinSessionPage identity', () => {
     useAuthStore.setState({ user: null, session: null, isAuthenticated: false, isLoading: false });
   });
 
-  it('prefills the name field from the signed-in Profile', async () => {
+  it('uses the signed-in name without displaying a name form', async () => {
     renderPage('/join');
     expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
 
@@ -166,13 +172,50 @@ describe('JoinSessionPage identity', () => {
       });
     });
 
-    await waitFor(() =>
-      expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Alice Nguyen')
-    );
+    await waitFor(() => expect(screen.queryByLabelText('Your Name')).toBeNull());
   });
 
   it('leaves a guest with an empty name field', () => {
     renderPage('/join');
     expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
   });
+});
+
+it('reveals a correction field on a collision while preserving the Invite Link', async () => {
+  useAuthStore.setState({
+    user: { user_metadata: { full_name: 'Alice' } } as never,
+    isAuthenticated: true,
+  });
+  serviceMocks.getSession.mockResolvedValue({ state: 'waiting' });
+  socketMocks.joinSession.mockResolvedValueOnce({
+    success: false,
+    error: { code: 'DISPLAY_NAME_TAKEN', message: 'That name is already taken. Choose another.' },
+  });
+  renderPage('/join?code=AB123');
+  expect(await screen.findByRole('alert')).toHaveTextContent('already taken');
+  expect(screen.getByLabelText('Session code')).toHaveValue('AB123');
+  expect(screen.getByLabelText('Your Name')).toHaveValue('Alice');
+  fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice N' } });
+  socketMocks.joinSession.mockResolvedValueOnce({
+    success: true,
+    data: { participantId: 'alice', state: 'waiting' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
+  expect(await screen.findByText('Lobby route')).toBeTruthy();
+  expect(socketMocks.joinSession).toHaveBeenLastCalledWith('AB123', 'Alice N');
+});
+it('routes a pending Cook newcomer to choices during a selecting Session', async () => {
+  socketMocks.joinSession.mockResolvedValueOnce({
+    success: true,
+    data: {
+      participantId: 'p-bob',
+      state: 'selecting',
+      lobby: { participants: [{ participantId: 'p-bob', waitingForNextRound: true }] },
+    },
+  });
+  renderPage('/join');
+  fireEvent.change(screen.getByLabelText('Session code'), { target: { value: 'AB123' } });
+  fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Bob' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
+  expect(await screen.findByText('Lobby route')).toBeTruthy();
 });

@@ -7,6 +7,7 @@
 
 import type { Craving } from './cook.js';
 import type { Branch, DeckEntry } from './models.js';
+import type { SessionLobbyState } from './session-lobby.js';
 import type { Mood } from './watch.js';
 
 /**
@@ -35,6 +36,7 @@ export interface SessionDefaultsResponse {
 
 export interface CreateSessionRequest {
   hostName: string;
+  collaborative?: boolean;
   location?: SessionLocation;
   searchRadiusMiles?: number;
   branch?: Branch;
@@ -54,6 +56,7 @@ export interface CreateSessionRequest {
 
 // GET /api/sessions/:sessionCode
 export interface SessionResponse {
+  lobby?: SessionLobbyState;
   sessionCode: string;
   hostName: string;
   participantCount: number;

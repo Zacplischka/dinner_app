@@ -19,6 +19,7 @@ import {
 // Note: We allow 0 selections - a user may not like any options, and that's valid.
 // The overlap calculation will handle empty selections gracefully.
 const selectionSubmitPayloadSchema = z.object({
+  round: z.number().int().nonnegative().optional(),
   sessionCode: z.string().regex(SESSION_CODE_PATTERN),
   selections: z.array(z.string()).max(50),
 });
@@ -49,7 +50,7 @@ export async function handleSelectionSubmit(
       });
     }
 
-    const { sessionCode, selections } = validation.data;
+    const { sessionCode, selections, round } = validation.data;
 
     let submittedCount: number;
     let participantCount: number;
@@ -58,7 +59,8 @@ export async function handleSelectionSubmit(
       ({ submittedCount, participantCount, results } = await service.submitSelections(
         sessionCode,
         socket.id,
-        selections
+        selections,
+        round
       ));
     } catch (error) {
       if (!(error instanceof DomainError)) {
@@ -85,6 +87,9 @@ export async function handleSelectionSubmit(
       submittedCount,
       participantCount,
     });
+
+    const lobby = await service.getLobby(sessionCode);
+    if (lobby) io.in(sessionCode).emit('session:lobby', lobby);
 
     logger.info(
       { socketId: socket.id, sessionCode, submittedCount, participantCount },

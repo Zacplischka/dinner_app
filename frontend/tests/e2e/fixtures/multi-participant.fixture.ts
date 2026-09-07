@@ -71,6 +71,7 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
       // Host creates session
       await host.createPage.goto();
       const sessionCode = await host.createPage.createSession('Host');
+      await host.createPage.setCurrentLocation();
 
       // Create participant contexts
       const participants: Participant[] = [];
@@ -106,6 +107,8 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
       for (const p of participants) {
         await host.lobbyPage.waitForParticipant(p.name);
       }
+
+      for (const participant of participants) await participant.lobbyPage.ready();
 
       return {
         sessionCode,

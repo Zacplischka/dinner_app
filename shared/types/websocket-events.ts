@@ -2,6 +2,13 @@
 
 // Note: Socket type imports are added in backend/frontend packages where socket.io is installed
 
+import type {
+  SessionLobbyState,
+  SessionLobbyPayload,
+  SessionChoicesPayload,
+  SessionReadyPayload,
+  SessionRemovePayload,
+} from './session-lobby.js';
 import type { ApiError } from './api-errors.js';
 import type { Branch, DeckEntry } from './models.js';
 import type { MenuItemCapture } from './comparison.js';
@@ -23,6 +30,9 @@ export interface SessionJoinPayload {
 
 /** Canonical success payload for session:join (the `data` of Ack<SessionJoinData>). */
 export interface SessionJoinData {
+  /** Canonical completed outcome on rejoin; no re-submission or re-mint. */
+  results?: SessionResultsEvent;
+  lobby?: SessionLobbyState;
   participantId: string;
   sessionCode: string;
   displayName: string;
@@ -62,6 +72,7 @@ export interface SessionJoinData {
 export type SessionJoinResponse = Ack<SessionJoinData>;
 
 export interface SelectionSubmitPayload {
+  round?: number;
   sessionCode: string;
   selections: string[]; // placeIds — the Deck Entry identity, both kinds
 }
@@ -89,6 +100,7 @@ export type SessionLeaveResponse = Ack<null>;
  * still computed from `selection:submit`.
  */
 export interface SelectionLivePayload {
+  round?: number;
   sessionCode: string;
   placeId: string;
   /**
@@ -161,6 +173,8 @@ export interface SessionResultsEvent {
 }
 
 export interface SessionRestartedEvent {
+  state?: 'waiting' | 'selecting';
+  lobby?: SessionLobbyState;
   sessionCode: string;
   message: string;
 }
@@ -285,6 +299,22 @@ export interface OrderStateEvent {
 // ============= Socket.IO Typed Interfaces =============
 
 export interface ClientToServerEvents {
+  'session:choices': (
+    payload: SessionChoicesPayload,
+    callback: (response: Ack<SessionLobbyState>) => void
+  ) => void;
+  'session:ready': (
+    payload: SessionReadyPayload,
+    callback: (response: Ack<SessionLobbyState>) => void
+  ) => void;
+  'session:start': (
+    payload: SessionLobbyPayload,
+    callback: (response: Ack<SessionLobbyState>) => void
+  ) => void;
+  'session:remove': (
+    payload: SessionRemovePayload,
+    callback: (response: Ack<SessionLobbyState>) => void
+  ) => void;
   'session:join': (
     payload: SessionJoinPayload,
     callback: (response: SessionJoinResponse) => void
@@ -316,6 +346,7 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
+  'session:lobby': (data: SessionLobbyState) => void;
   'participant:joined': (data: ParticipantJoinedEvent) => void;
   'participant:submitted': (data: ParticipantSubmittedEvent) => void;
   'session:results': (data: SessionResultsEvent) => void;

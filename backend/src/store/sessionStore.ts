@@ -7,8 +7,18 @@
 // instance.
 
 import type { ChainableCommander, Redis } from 'ioredis';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { DomainError } from '../services/DomainError.js';
-import { SESSION_CODE_LENGTH, type Branch, type DeckEntry, type Mood } from '@dinder/shared/types';
+import {
+  SESSION_CODE_LENGTH,
+  type Branch,
+  type DeckEntry,
+  type Mood,
+  type LobbyParticipant,
+  type SessionLobbyState,
+} from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
 
@@ -26,6 +36,8 @@ export interface Session {
   createdAt: number;
   lastActivityAt: number;
   hostName?: string;
+  /** Explicit removal releases the reservation; a fresh join cannot recover Host authority. */
+  hostSlotReleased?: boolean;
   /** Fixed at creation for the Session's life (#255); absent on pre-fork sessions. */
   branch?: Branch;
   /**
@@ -35,6 +47,8 @@ export interface Session {
    */
   headcount?: number;
   cravingKey?: string;
+  /** The area and size used by the current Restaurant Deck. */
+  dealtSearch?: string;
   /**
    * How many cards the Host asked to swipe (#415), on every Branch. Absent when
    * they took the Branch's default, and a ceiling either way — a Restart deals
@@ -61,6 +75,7 @@ export interface Session {
    * its own keys, its own URL, and its own 7-day clock.
    */
   shoppingListId?: string;
+  lobby?: Pick<SessionLobbyState, 'revision' | 'mealType' | 'starting' | 'notice' | 'round'>;
   location?: {
     latitude: number;
     longitude: number;
@@ -70,6 +85,11 @@ export interface Session {
 }
 
 export interface Participant {
+  ready?: boolean;
+  waitingForNextRound?: boolean;
+  mood?: LobbyParticipant['mood'];
+  cuisines?: LobbyParticipant['cuisines'];
+  diets?: LobbyParticipant['diets'];
   participantId: string;
   displayName: string;
   sessionCode: string;
@@ -183,6 +203,45 @@ function queueDeckWrite(
 }
 
 export function createSessionStore(redis: Redis) {
+  const heldLocks = new AsyncLocalStorage<ReadonlySet<string>>();
+  /** Short Session mutations serialize across server instances; supply runs outside.
+   * ponytail: a lease per Session, not a global lock; split only if four-person
+   * Session mutation traffic ever saturates its Redis round trips.
+   */
+  async function withSessionLock<T>(sessionCode: string, mutate: () => Promise<T>): Promise<T> {
+    if (heldLocks.getStore()?.has(sessionCode)) return mutate();
+    const key = `${sessionKey(sessionCode)}:mutation`;
+    const token = randomUUID();
+    const deadline = Date.now() + 5_000;
+    while (!(await redis.set(key, token, 'PX', 30_000, 'NX'))) {
+      if (Date.now() >= deadline)
+        throw new DomainError('VALIDATION_ERROR', 'The session is updating. Please try again.');
+      await delay(10);
+    }
+    const lease = setInterval(() => {
+      void redis
+        .eval(
+          "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('PEXPIRE', KEYS[1], 30000) end return 0",
+          1,
+          key,
+          token
+        )
+        .catch(() => undefined);
+    }, 10_000);
+    lease.unref();
+    try {
+      return await heldLocks.run(new Set([...(heldLocks.getStore() ?? []), sessionCode]), mutate);
+    } finally {
+      clearInterval(lease);
+      await redis.eval(
+        "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0",
+        1,
+        key,
+        token
+      );
+    }
+  }
+
   /**
    * Refresh TTL on every key belonging to a session and stamp lastActivityAt.
    * Called by the flow mutations — create, join, submission, results, restart,
@@ -226,6 +285,7 @@ export function createSessionStore(redis: Redis) {
     sessionCode: string,
     opts: {
       hostId: string;
+      lobby?: Session['lobby'];
       hostName?: string;
       branch?: Branch;
       headcount?: number;
@@ -243,6 +303,7 @@ export function createSessionStore(redis: Redis) {
 
     const session: Session = {
       sessionCode,
+      lobby: opts.lobby,
       hostId: opts.hostId,
       state: 'waiting',
       participantCount: 1,
@@ -266,6 +327,7 @@ export function createSessionStore(redis: Redis) {
       participantCount: session.participantCount,
       lastActivityAt: session.lastActivityAt,
     };
+    if (opts.lobby) sessionData.lobby = JSON.stringify(opts.lobby);
     if (opts.hostName) sessionData.hostName = opts.hostName;
     if (opts.branch) sessionData.branch = opts.branch;
     if (opts.headcount !== undefined) sessionData.headcount = opts.headcount;
@@ -309,13 +371,16 @@ export function createSessionStore(redis: Redis) {
       createdAt: parseInt(data.createdAt, 10),
       lastActivityAt: parseInt(data.lastActivityAt, 10),
       hostName: data.hostName,
+      hostSlotReleased: data.hostSlotReleased === '1',
       branch: data.branch as Branch | undefined,
       headcount: data.headcount ? parseInt(data.headcount, 10) : undefined,
       deckSize: data.deckSize ? parseInt(data.deckSize, 10) : undefined,
       cravingKey: data.cravingKey,
+      dealtSearch: data.dealtSearch,
       mood: data.mood ? (JSON.parse(data.mood) as Mood) : undefined,
       recipeSourceDown: data.recipeSourceDown === '1' ? true : undefined,
       shoppingListId: data.shoppingListId,
+      lobby: data.lobby ? (JSON.parse(data.lobby) as Session['lobby']) : undefined,
     };
 
     if (data.locationLat && data.locationLng) {
@@ -393,6 +458,11 @@ export function createSessionStore(redis: Redis) {
       displayName: string;
       isHost?: boolean;
       rejoinToken?: string;
+      ready?: boolean;
+      waitingForNextRound?: boolean;
+      mood?: LobbyParticipant['mood'];
+      cuisines?: LobbyParticipant['cuisines'];
+      diets?: LobbyParticipant['diets'];
     }
   ): Promise<number> {
     const { participantId, displayName, isHost = false, rejoinToken } = participant;
@@ -409,6 +479,10 @@ export function createSessionStore(redis: Redis) {
       isOnline: '1',
     };
     if (rejoinToken) participantData.rejoinToken = rejoinToken;
+    for (const field of ['ready', 'waitingForNextRound', 'mood', 'cuisines', 'diets'] as const) {
+      if (participant[field] !== undefined)
+        participantData[field] = JSON.stringify(participant[field]);
+    }
     pipeline.hset(participantKey(participantId), participantData);
     await pipeline.exec();
 
@@ -462,6 +536,13 @@ export function createSessionStore(redis: Redis) {
       // Absent on a hash written before the flag existed: online, as it always read.
       isOnline: data.isOnline !== '0',
       rejoinToken: data.rejoinToken || undefined,
+      ready: data.ready === 'true',
+      waitingForNextRound: data.waitingForNextRound === 'true',
+      mood: data.mood ? (JSON.parse(data.mood) as LobbyParticipant['mood']) : undefined,
+      cuisines: data.cuisines
+        ? (JSON.parse(data.cuisines) as LobbyParticipant['cuisines'])
+        : undefined,
+      diets: data.diets ? (JSON.parse(data.diets) as LobbyParticipant['diets']) : undefined,
     };
   }
 
@@ -528,8 +609,8 @@ export function createSessionStore(redis: Redis) {
 
     const participants = await listParticipants(sessionCode);
     return {
-      submittedCount: participants.filter((p) => p.hasSubmitted).length,
-      participantCount: participants.length,
+      submittedCount: participants.filter((p) => !p.waitingForNextRound && p.hasSubmitted).length,
+      participantCount: participants.filter((p) => !p.waitingForNextRound).length,
     };
   }
 
@@ -544,16 +625,18 @@ export function createSessionStore(redis: Redis) {
   // --- Match -------------------------------------------------------------
 
   /**
-   * Computes the Match (the Deck Entries every Participant selected) via SINTER,
-   * stores it, and returns it with per-participant selections for transparency.
+   * Reads the Match and per-participant selections without mutation, including
+   * completed rejoin hydration. Pending Cook newcomers never enter the tally.
    */
-  async function computeAndStoreResults(sessionCode: string): Promise<{
+  async function readMatch(sessionCode: string): Promise<{
     overlappingOptions: DeckEntry[];
     allSelections: Record<string, string[]>;
     restaurantNames: Record<string, string>;
     hasOverlap: boolean;
   }> {
-    const participants = await listParticipants(sessionCode);
+    const participants = (await listParticipants(sessionCode)).filter(
+      (p) => !p.waitingForNextRound
+    );
 
     if (participants.length === 0) {
       return {
@@ -594,21 +677,20 @@ export function createSessionStore(redis: Redis) {
       }
     });
 
-    // Store the Match; sentinel keeps the key alive under TTL when empty
-    if (overlappingOptions.length > 0) {
-      await redis.sadd(resultsKey(sessionCode), ...overlappingOptions.map((c) => c.placeId));
-    } else {
-      await redis.sadd(resultsKey(sessionCode), '__empty__');
-    }
-
-    await touch(sessionCode);
-
     return {
       overlappingOptions,
       allSelections,
       restaurantNames,
       hasOverlap: overlappingOptions.length > 0,
     };
+  }
+
+  async function computeAndStoreResults(sessionCode: string) {
+    const match = await readMatch(sessionCode);
+    const ids = match.overlappingOptions.map((entry) => entry.placeId);
+    await redis.sadd(resultsKey(sessionCode), ...(ids.length ? ids : ['__empty__']));
+    await touch(sessionCode);
+    return match;
   }
 
   /** Admits a Top Pick crowned on the empty-Match path into the results set. */
@@ -649,7 +731,10 @@ export function createSessionStore(redis: Redis) {
    * Restart: wipes all Selections, Submissions, and the Match so the same
    * Participants can decide again; puts the session back in 'selecting'.
    */
-  async function resetForRestart(sessionCode: string): Promise<void> {
+  async function resetForRestart(
+    sessionCode: string,
+    state: 'waiting' | 'selecting' = 'selecting'
+  ): Promise<void> {
     const participantIds = await redis.smembers(participantsKey(sessionCode));
     const wasComplete = (await redis.hget(sessionKey(sessionCode), 'state')) === 'complete';
 
@@ -667,7 +752,7 @@ export function createSessionStore(redis: Redis) {
     // is untouched — it has its own URL and its own clock, and anyone holding
     // the link keeps it.
     pipeline.hdel(sessionKey(sessionCode), 'shoppingListId');
-    pipeline.hset(sessionKey(sessionCode), 'state', 'selecting');
+    pipeline.hset(sessionKey(sessionCode), 'state', state);
     if (wasComplete) {
       // Session-outcome metrics: the next completion is a Restart's outcome
       pipeline.hset(sessionKey(sessionCode), 'restartedAfterComplete', '1');
@@ -723,6 +808,78 @@ export function createSessionStore(redis: Redis) {
       (entry): entry is DeckEntry => entry !== null
     );
     return { entries, missingCount: placeIds.length - entries.length };
+  }
+
+  function lobbySessionFields(session: Session): Record<string, string | number> {
+    const fields: Record<string, string | number> = {
+      lobby: JSON.stringify(session.lobby),
+      hostSlotReleased: session.hostSlotReleased ? '1' : '0',
+      headcount: session.headcount ?? 2,
+      deckSize: session.deckSize ?? 15,
+      searchRadiusMiles: session.searchRadiusMiles ?? 5,
+    };
+    if (session.location) {
+      fields.locationLat = session.location.latitude;
+      fields.locationLng = session.location.longitude;
+      fields.locationAddress = session.location.address ?? '';
+    }
+    if (session.mood) fields.mood = JSON.stringify(session.mood);
+    if (session.cravingKey) fields.cravingKey = session.cravingKey;
+    if (session.dealtSearch) fields.dealtSearch = session.dealtSearch;
+    fields.recipeSourceDown = session.recipeSourceDown ? '1' : '0';
+    return fields;
+  }
+
+  /** Called within withSessionLock; the entire lobby settings update is one write. */
+  async function writeLobbySession(session: Session): Promise<void> {
+    await redis.hset(sessionKey(session.sessionCode), lobbySessionFields(session));
+    await touch(session.sessionCode);
+  }
+
+  async function writeParticipantChoices(
+    participantId: string,
+    choices: Partial<LobbyParticipant>
+  ): Promise<void> {
+    const fields: Record<string, string> = {};
+    for (const field of ['ready', 'waitingForNextRound', 'mood', 'cuisines', 'diets'] as const) {
+      if (choices[field] !== undefined) fields[field] = JSON.stringify(choices[field]);
+    }
+    if (Object.keys(fields).length) await redis.hset(participantKey(participantId), fields);
+  }
+
+  /** The version check, metadata, Deck and stage are one Redis operation.
+   * Even a delayed supplier can never publish against a newer choice revision.
+   */
+  async function startLobbyRound(
+    session: Session,
+    entries: DeckEntry[],
+    expectedLobby: Session['lobby']
+  ): Promise<boolean> {
+    const fields = Object.entries(lobbySessionFields(session));
+    const published = await redis.eval(
+      `
+      if redis.call('HGET', KEYS[1], 'lobby') ~= ARGV[1] or redis.call('HGET', KEYS[1], 'state') ~= 'waiting' then return 0 end
+      local fieldEnd = 2 + tonumber(ARGV[2]) * 2
+      for i = 3, fieldEnd, 2 do redis.call('HSET', KEYS[1], ARGV[i], ARGV[i + 1]) end
+      redis.call('DEL', KEYS[2], KEYS[3])
+      for i = fieldEnd + 1, #ARGV, 2 do
+        redis.call('SADD', KEYS[2], ARGV[i])
+        redis.call('HSET', KEYS[3], ARGV[i], ARGV[i + 1])
+      end
+      redis.call('HSET', KEYS[1], 'state', 'selecting')
+      return 1
+    `,
+      3,
+      sessionKey(session.sessionCode),
+      restaurantIdsKey(session.sessionCode),
+      restaurantsKey(session.sessionCode),
+      JSON.stringify(expectedLobby),
+      fields.length,
+      ...fields.flat(),
+      ...entries.flatMap((entry) => [entry.placeId, JSON.stringify(entry)])
+    );
+    if (published === 1) await touch(session.sessionCode);
+    return published === 1;
   }
 
   // --- Group Order -------------------------------------------------------
@@ -796,6 +953,10 @@ export function createSessionStore(redis: Redis) {
   }
 
   return {
+    withSessionLock,
+    writeLobbySession,
+    writeParticipantChoices,
+    startLobbyRound,
     sessionExists,
     createSession,
     readSession,
@@ -814,6 +975,7 @@ export function createSessionStore(redis: Redis) {
     recordSubmission,
     readSelections,
     computeAndStoreResults,
+    readMatch,
     addResultPlaceId,
     claimShoppingListId,
     releaseShoppingListId,

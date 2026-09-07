@@ -1,11 +1,18 @@
 // The entry fork (#255): `/` asks the only question that matters — "Tonight
 // you're…" — with four Branch cards, and demotes Join/Compare to a text row.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act } from '@testing-library/react';
+import { useSessionStore } from '../../src/stores/sessionStore';
 import HomePage from '../../src/pages/HomePage';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
+
+function SessionStub() {
+  const status = useSessionStore((state) => state.sessionStatus);
+  return <p>Returned to {status}</p>;
+}
 
 function CreateStub() {
   const [params] = useSearchParams();
@@ -22,6 +29,7 @@ function renderFork(initialEntry = '/') {
         <Route path="/compare" element={<div>Compare route</div>} />
         <Route path="/cook" element={<div>Cook setup route</div>} />
         <Route path="/watch" element={<div>Watch setup route</div>} />
+        <Route path="/session/:sessionCode" element={<SessionStub />} />
       </Routes>
     </MemoryRouter>
   );
@@ -29,13 +37,18 @@ function renderFork(initialEntry = '/') {
 
 describe('HomePage entry fork', () => {
   beforeEach(() => {
+    useSessionStore.getState().resetSession();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     useAuthStore.setState({ isAuthenticated: false, isLoading: false, user: null, session: null });
     useFriendsStore.getState().reset();
   });
 
-  it('asks "Tonight you\'re…" with the four Branch cards', () => {
+  it('explains the shared decision and shows the four Branch cards', () => {
     renderFork();
-    expect(screen.getByRole('heading', { name: /tonight you.re/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /find something everyone.s into/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /eating out/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /getting takeaway/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cooking/i })).toBeInTheDocument();
@@ -66,16 +79,107 @@ describe('HomePage entry fork', () => {
     expect(screen.getByText('Watch setup route')).toBeInTheDocument();
   });
 
-  it('keeps Join with a code reachable from the text row', () => {
+  it('keeps Join with a code reachable prominently', () => {
     renderFork();
     fireEvent.click(screen.getByRole('button', { name: /join with a code/i }));
     expect(screen.getByText('Join route')).toBeInTheDocument();
   });
 
-  it('keeps Compare delivery prices reachable from the text row', () => {
+  it('keeps Compare delivery prices reachable prominently', () => {
     renderFork();
     fireEvent.click(screen.getByRole('button', { name: 'Compare delivery prices' }));
     expect(screen.getByText('Compare route')).toBeInTheDocument();
+  });
+
+  it('returns to the current server stage without clearing selections', async () => {
+    const session = { sessionCode: 'AB123', state: 'selecting', expiresAt: '2099-01-01T00:00:00Z' };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(session)))
+    );
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      sessionStatus: 'selecting',
+      selections: ['movie-a'],
+      currentUserId: 'alice',
+    });
+    renderFork();
+    await waitFor(() => expect(useSessionStore.getState().expiresAt).toBe(session.expiresAt));
+    session.state = 'complete';
+    fireEvent.click(screen.getByRole('button', { name: /return to session/i }));
+    expect(await screen.findByText('Returned to complete')).toBeInTheDocument();
+    expect(useSessionStore.getState().selections).toEqual(['movie-a']);
+    expect(useSessionStore.getState().currentUserId).toBe('alice');
+  });
+
+  it('drops an expired Session instead of offering an endless return loop', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ code: 'SESSION_NOT_FOUND', message: 'Expired' }), {
+            status: 404,
+          })
+      )
+    );
+    useSessionStore.setState({ sessionCode: 'AB123', sessionStatus: 'selecting' });
+    renderFork();
+    expect(await screen.findByText(/previous session has expired/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /return to session/i })).toBeNull();
+    expect(useSessionStore.getState().sessionCode).toBeNull();
+  });
+
+  it('preserves the Session on a temporary lookup failure and allows another return attempt', async () => {
+    const fetchMock = vi.fn(async () => new Response('Unavailable', { status: 503 }));
+    vi.stubGlobal('fetch', fetchMock);
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      sessionStatus: 'selecting',
+      selections: ['recipe-a'],
+    });
+    renderFork();
+    expect(await screen.findByText(/could not check your session/i)).toBeInTheDocument();
+    expect(useSessionStore.getState().selections).toEqual(['recipe-a']);
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            sessionCode: 'AB123',
+            state: 'waiting',
+            expiresAt: '2099-01-01T00:00:00Z',
+          })
+        )
+    );
+    fireEvent.click(screen.getByRole('button', { name: /return to session/i }));
+    expect(await screen.findByText('Returned to waiting')).toBeInTheDocument();
+  });
+
+  it('keeps Leave as an explicit choice while home preserves participation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              sessionCode: 'AB123',
+              state: 'selecting',
+              expiresAt: '2099-01-01T00:00:00Z',
+            })
+          )
+      )
+    );
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      sessionStatus: 'selecting',
+      currentUserId: 'alice',
+    });
+    renderFork();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
+    });
+    expect(screen.getByRole('dialog', { name: 'Leave session?' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Stay in session' }));
+    expect(useSessionStore.getState().currentUserId).toBe('alice');
   });
 
   it('the fork never asks solo-or-group', () => {

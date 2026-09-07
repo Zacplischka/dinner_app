@@ -30,9 +30,18 @@ import type {
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import { relaxationLadder } from './cuisineGroups.js';
-import type { OwnedRecipeStore } from './ownedRecipeStore.js';
+import { satisfiedDiets, type OwnedRecipeStore } from './ownedRecipeStore.js';
 import { SpoonacularRefusal } from './spoonacularClient.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
+
+/** Diet labels, including their safe implications; never an allergy assertion. */
+export function satisfiesDiets(
+  labels: readonly Diet[] | undefined,
+  required: readonly Diet[]
+): boolean {
+  const satisfied = satisfiedDiets(labels ?? []);
+  return required.every((diet) => satisfied.has(diet));
+}
 
 // --- Keyspace ----------------------------------------------------------
 // recipes:pool:{craving}    string: the pooled Recipes, JSON, TTL from config
@@ -165,6 +174,12 @@ export interface RecipePoolService {
    * the corpus can still deal, and propagates only when owned is empty too.
    */
   dealDeck(craving: Craving, deckSize?: number): Promise<DealtDeck>;
+  dealCollaborativeDeck(
+    craving: Craving,
+    interests: Cuisine[][],
+    current: DeckEntry[],
+    deckSize?: number
+  ): Promise<DealtDeck>;
   /**
    * The Nearest Craving to offer a Craving that dealt nothing (#334), or null
    * when even the widest step of the ladder is empty. Priced from the corpus in
@@ -210,6 +225,17 @@ function toDeckEntry(recipe: PooledRecipe): Recipe {
     name: recipe.name,
     photoUrl: recipe.photoUrl,
     aggregateLikes: recipe.aggregateLikes,
+    diets: recipe.diets,
+    details: {
+      description: recipe.description,
+      cuisines: recipe.cuisines ?? (recipe.cuisine ? [recipe.cuisine] : undefined),
+      readyInMinutes: recipe.readyInMinutes,
+      ingredients: recipe.ingredients.map((ingredient) => ingredient.original),
+      servings: recipe.servings,
+      sourceName: recipe.sourceName,
+      sourceUrl: recipe.sourceUrl,
+      provenance: recipe.placeId.startsWith('owned:') ? 'owned' : undefined,
+    },
   };
 }
 
@@ -397,6 +423,70 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
       });
       const entries = blendDeck(owned, sourced, deckSize, ownedFloor, [], shuffle);
       return { entries, recipeSourceDown: sourceDown && entries.length < deckSize };
+    },
+
+    async dealCollaborativeDeck(craving, interests, current, deckSize = defaultDeckSize) {
+      const owned = deps.owned.forCraving(craving);
+      let sourceDown = false;
+      const sourced = (
+        await sourcedSupply(craving).catch((error: unknown) => {
+          if (!owned.length) throw error;
+          sourceDown = true;
+          return [];
+        })
+      ).filter((r) => satisfiesDiets(r.diets, craving.diets));
+      const previous = new Set(current.map((e) => e.placeId));
+      const ordered: PooledRecipe[] = [
+        ...shuffle([...owned, ...sourced].filter((r) => !previous.has(r.placeId))),
+        ...shuffle([...owned, ...sourced].filter((r) => previous.has(r.placeId))),
+      ];
+      const queues = interests.map((cuisines) =>
+        ordered.filter(
+          (r) =>
+            !cuisines.length ||
+            [...(r.cuisines ?? []), ...(r.cuisine ? [r.cuisine] : [])].some((c) =>
+              cuisines.includes(c.toLowerCase() as Cuisine)
+            )
+        )
+      );
+      const picked: PooledRecipe[] = [];
+      const taken = new Set<string>();
+      const ownedIds = new Set(owned.map((r) => r.placeId));
+      const floor = Math.min(ownedFloor, owned.length, deckSize);
+      let ownedCount = 0;
+      const take = (recipe: PooledRecipe) => {
+        picked.push(recipe);
+        taken.add(recipe.placeId);
+        if (ownedIds.has(recipe.placeId)) ownedCount++;
+      };
+      while (picked.length < deckSize) {
+        let changed = false;
+        for (const queue of queues) {
+          const available = queue.filter((r) => !taken.has(r.placeId));
+          const ownedCandidate =
+            ownedCount < floor ? available.find((r) => ownedIds.has(r.placeId)) : undefined;
+          const reserveOwned = floor - ownedCount >= deckSize - picked.length;
+          const next = ownedCandidate ?? (reserveOwned ? undefined : available[0]);
+          if (next && picked.length < deckSize) {
+            take(next);
+            changed = true;
+          }
+        }
+        if (!changed) break;
+      }
+      // Source records with no cuisine label can still fill scarce supply;
+      // their diet labels have already passed the same requirement gate.
+      for (const recipe of [
+        ...ordered.filter((r) => ownedIds.has(r.placeId)).slice(0, Math.max(0, floor - ownedCount)),
+        ...ordered,
+      ]) {
+        if (picked.length >= deckSize) break;
+        if (!taken.has(recipe.placeId)) take(recipe);
+      }
+      return {
+        entries: shuffle(picked.map(toDeckEntry)),
+        recipeSourceDown: sourceDown && picked.length < deckSize,
+      };
     },
 
     async nearestCraving(craving: Craving): Promise<NearestCraving | null> {

@@ -105,6 +105,19 @@ describe('useShoppingList', () => {
     expect(mocks.getShoppingList).toHaveBeenCalledTimes(1);
   });
 
+  it('polls the Cook View while pricing is pending and stops once the frozen list arrives', async () => {
+    vi.useFakeTimers();
+    mocks.getShoppingList.mockResolvedValue({ ...list, pricingStatus: 'pending' });
+    const { result } = renderHook(() => useShoppingList('list-1'));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(result.current.list?.pricingStatus).toBe('pending');
+    mocks.getShoppingList.mockResolvedValue(list);
+    await act(() => vi.advanceTimersByTimeAsync(2000));
+    expect(result.current.list).toEqual(list);
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    expect(mocks.getShoppingList).toHaveBeenCalledTimes(2);
+  });
+
   it('stops polling once the view has gone', async () => {
     vi.useFakeTimers();
     const { unmount } = renderHook(() => useShoppingList('list-1', 5_000));

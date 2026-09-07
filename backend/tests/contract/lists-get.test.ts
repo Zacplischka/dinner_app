@@ -65,6 +65,21 @@ describe('GET /api/lists/:listId', () => {
     expect(response.body).toEqual(list);
   });
 
+  it('opts in to the Recipe snapshot on the same capability URL while legacy reads keep waiting', async () => {
+    const { app, readList } = buildApp(
+      vi.fn(async (_id, includePending) =>
+        includePending ? { ...list, pricingStatus: 'pending' as const } : list
+      )
+    );
+    const pending = await request(app).get(`/api/lists/${LIST_ID}?includePending=true`);
+    expect(pending.status).toBe(200);
+    expect(pending.body).toMatchObject({ pricingStatus: 'pending', steps: ['Boil the pasta.'] });
+    expect(readList).toHaveBeenCalledWith(LIST_ID, true);
+    const legacy = await request(app).get(`/api/lists/${LIST_ID}`);
+    expect(legacy.body.pricingStatus).toBeUndefined();
+    expect(readList).toHaveBeenCalledWith(LIST_ID, false);
+  });
+
   it('carries the Headcount the list was scaled to, inert', async () => {
     const { app } = buildApp();
 

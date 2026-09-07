@@ -7,10 +7,10 @@ import { getShoppingList } from '../services/apiClient';
  * list page and the cook view (#265). Neither a Session nor a display name is
  * asked for anywhere in it.
  *
- * The first read needs no retry: the backend holds the request while a fresh
- * list is still being priced, and an expired list is an error, not a thing to
- * wait for. Past that, `livePollMs` is the list's live-update channel (#263) —
- * the cook view leaves it off, because a snapshotted method never changes.
+ * Legacy servers hold the first read; current servers return the Recipe while
+ * pricing runs. Cook View polls only until pricing settles.
+ * `livePollMs` keeps Claims current on the list page; Cook View stops reading
+ * once its prices settle because the snapshotted method never changes.
  */
 export function useShoppingList(
   listId: string | undefined,
@@ -48,7 +48,10 @@ export function useShoppingList(
     // while a cancelled mount's in-flight read is already discarded by
     // `active`, so letting the fresh run read past it is safe.
     let reading = false;
+    let pendingSince: number | undefined;
     onScreen.current = null;
+    setList(null);
+    setError('');
 
     const read = async () => {
       if (reading) return;
@@ -57,12 +60,28 @@ export function useShoppingList(
       try {
         const fresh = await getShoppingList(listId);
         // A Claim made while this read was in flight is newer than this read.
-        if (active && at === changes.current) show(fresh);
+        if (active && at === changes.current) {
+          pendingSince =
+            fresh.pricingStatus === 'pending' ? (pendingSince ?? Date.now()) : undefined;
+          show(fresh);
+        }
       } catch (err: unknown) {
         // A tick that fails over a list already on screen changes nothing —
         // the Shopper keeps shopping from what they have.
-        if (active && !onScreen.current) {
-          setError(err instanceof Error ? err.message : 'This shopping list could not be loaded.');
+        if (
+          active &&
+          (!onScreen.current ||
+            (onScreen.current.pricingStatus === 'pending' &&
+              pendingSince !== undefined &&
+              Date.now() - pendingSince >= 120_000))
+        ) {
+          setError(
+            onScreen.current
+              ? 'Prices could not be refreshed. Your recipe is still available; reload to check again.'
+              : err instanceof Error
+                ? err.message
+                : 'This shopping list could not be loaded.'
+          );
         }
       } finally {
         reading = false;
@@ -70,12 +89,9 @@ export function useShoppingList(
     };
 
     void read();
-    if (!livePollMs) {
-      return () => {
-        active = false;
-      };
-    }
-    const ticker = setInterval(() => void read(), livePollMs);
+    const ticker = setInterval(() => {
+      if (livePollMs || onScreen.current?.pricingStatus === 'pending') void read();
+    }, livePollMs ?? 2000);
     return () => {
       active = false;
       clearInterval(ticker);

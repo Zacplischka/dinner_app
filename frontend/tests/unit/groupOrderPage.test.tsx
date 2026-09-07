@@ -120,13 +120,13 @@ describe('GroupOrderPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('confirms with the ordering copy on header back, then leaves the session on confirm (#180)', async () => {
+  it('confirms with the ordering copy on Leave, then leaves the session on confirm (#180)', async () => {
     openOrderMock.mockResolvedValue({ success: true, data: warmOrder });
     renderPage();
 
     await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
 
     expect(screen.getByText('Leave the basket?')).toBeInTheDocument();
     expect(
@@ -135,7 +135,9 @@ describe('GroupOrderPage', () => {
       )
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Leave session' })
+    );
 
     expect(await screen.findByText('HOME SCREEN')).toBeInTheDocument();
     expect(leaveSessionMock).toHaveBeenCalledWith('AB123');

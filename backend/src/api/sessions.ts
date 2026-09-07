@@ -4,17 +4,15 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { config } from '../config/index.js';
 import { asyncHandler } from './asyncHandler.js';
+import { moodSchema } from './lobbySchema.js';
 import { cravingSchema } from './cravingSchema.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
 import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
 import {
   BRANCHES,
-  DECADES,
-  GENRES,
   MAX_DECK_SIZE,
   MAX_HEADCOUNT,
-  MEDIA_TYPES,
   MIN_DECK_SIZE,
   SESSION_CODE_PATTERN,
   type ApiError,
@@ -31,15 +29,6 @@ import {
 const CREATE_LIMIT = 20;
 const CREATE_WINDOW_MS = 60_000;
 
-// The Mood as a request shape (#369): closed vocabularies capped like the
-// Craving's, so only chips the setup screen offers reach the corpus filter.
-// One consumer, so it lives here rather than beside cravingSchema.
-const moodSchema = z.object({
-  genres: z.array(z.enum(GENRES)).max(GENRES.length),
-  decades: z.array(z.enum(DECADES)).max(DECADES.length),
-  mediaTypes: z.array(z.enum(MEDIA_TYPES)).max(MEDIA_TYPES.length).optional(),
-});
-
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
   router.get('/defaults', (_req, res) => {
@@ -51,7 +40,8 @@ export function createSessionsRouter(sessionService: SessionService) {
   // Zod schemas for validation
   const createSessionRequestSchema = z
     .object({
-      hostName: z.string().min(1).max(50),
+      hostName: z.string().trim().min(1).max(50),
+      collaborative: z.boolean().optional(),
       location: z
         .object({
           latitude: z.number().min(-90).max(90),
@@ -78,6 +68,10 @@ export function createSessionsRouter(sessionService: SessionService) {
     .superRefine((body, ctx) => {
       const required = (field: string) =>
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: 'required' });
+      if (body.collaborative) {
+        if (!body.branch) required('branch');
+        return;
+      }
       if (body.branch === 'cook') {
         if (!body.craving) required('craving');
         if (body.headcount === undefined) required('headcount');
@@ -128,6 +122,7 @@ export function createSessionsRouter(sessionService: SessionService) {
       // shared/types/cook.ts fails the build instead of the request.
       const {
         hostName,
+        collaborative,
         location,
         searchRadiusMiles,
         branch,
@@ -162,6 +157,7 @@ export function createSessionsRouter(sessionService: SessionService) {
       };
       const session = await sessionService
         .createSession(hostName, {
+          collaborative,
           location,
           searchRadiusMiles: radius,
           branch,

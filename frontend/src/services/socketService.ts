@@ -6,6 +6,11 @@
 import { io, Socket } from 'socket.io-client';
 import type {
   Ack,
+  SessionLobbyState,
+  SessionLobbyPayload,
+  SessionChoicesPayload,
+  SessionReadyPayload,
+  SessionRemovePayload,
   ClientToServerEvents,
   ServerToClientEvents,
   SessionJoinPayload,
@@ -138,8 +143,12 @@ export function joinSession(
 /**
  * Submit selections
  */
-export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
-  const payload: SelectionSubmitPayload = { sessionCode, selections: optionIds };
+export function submitSelection(
+  sessionCode: string,
+  optionIds: string[],
+  round?: number
+): Promise<Ack<null>> {
+  const payload: SelectionSubmitPayload = { sessionCode, selections: optionIds, round };
   return emitAck<null>('selection:submit', payload);
 }
 
@@ -151,9 +160,10 @@ export function submitSelection(sessionCode: string, optionIds: string[]): Promi
 export function sendLiveSelection(
   sessionCode: string,
   placeId: string,
-  retract?: boolean
+  retract?: boolean,
+  round?: number
 ): Promise<Ack<null>> {
-  const payload: SelectionLivePayload = { sessionCode, placeId, retract };
+  const payload: SelectionLivePayload = { sessionCode, placeId, retract, round };
   return emitAck<null>('selection:live', payload);
 }
 
@@ -199,6 +209,23 @@ export function claimBuyer(sessionCode: string, feeCents?: number): Promise<Orde
 export function restartSession(sessionCode: string): Promise<Ack<null>> {
   const payload: SessionRestartPayload = { sessionCode };
   return emitAck<null>('session:restart', payload);
+}
+
+export function updateSessionChoices(
+  payload: SessionChoicesPayload
+): Promise<Ack<SessionLobbyState>> {
+  return emitAck<SessionLobbyState>('session:choices', payload);
+}
+export function setSessionReady(payload: SessionReadyPayload): Promise<Ack<SessionLobbyState>> {
+  return emitAck<SessionLobbyState>('session:ready', payload);
+}
+export function startSession(payload: SessionLobbyPayload): Promise<Ack<SessionLobbyState>> {
+  return emitAck<SessionLobbyState>('session:start', payload);
+}
+export function removeSessionParticipant(
+  payload: SessionRemovePayload
+): Promise<Ack<SessionLobbyState>> {
+  return emitAck<SessionLobbyState>('session:remove', payload);
 }
 
 /**

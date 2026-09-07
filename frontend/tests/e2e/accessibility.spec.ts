@@ -53,9 +53,8 @@ test.describe('Accessibility - Create Session Page', () => {
     // Button should have disabled state communicated
     await expect(createPage.createButton).toBeDisabled();
 
-    // After entering the required name and location, button should be enabled
+    // After entering the required name, button should be enabled
     await createPage.enterName('TestUser');
-    await createPage.setCurrentLocation();
     await expect(createPage.createButton).toBeEnabled();
   });
 

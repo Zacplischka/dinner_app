@@ -117,7 +117,7 @@ describe('createRecipePoolService', () => {
     expect(searches()[0].url.searchParams.get('number')).toBe('60');
   });
 
-  it('deals the Deck Entry alone — ingredients and steps stay in the pool', async () => {
+  it('deals ingredient details while keeping structured amounts and method in the pool', async () => {
     const { service: pool } = service();
 
     const [card] = (await pool.dealDeck(pasta)).entries;
@@ -128,6 +128,7 @@ describe('createRecipePoolService', () => {
       name: 'Recipe 1',
       photoUrl: 'https://img.spoonacular.com/1.jpg',
       aggregateLikes: 0,
+      details: expect.objectContaining({ ingredients: ['1 tbsp olive oil'], servings: 4 }),
     });
   });
 
@@ -407,6 +408,7 @@ describe('the two seams the deal is split into (#327)', () => {
       name: 'Recipe 1',
       photoUrl: 'https://img.spoonacular.com/1.jpg',
       aggregateLikes: 0,
+      details: expect.objectContaining({ ingredients: ['1 tbsp olive oil'], servings: 4 }),
     });
   });
 
@@ -840,5 +842,48 @@ describe('the Nearest Craving — offering the closest deal there is (#334)', ()
     // Nine korean mains sit right there, and none of them is vegan: the offer
     // is the Craving with its cuisine widened, or there is no offer.
     await expect(pool.nearestCraving(koreanVegan)).resolves.toBeNull();
+  });
+});
+
+describe('collaborative Cook Deck', () => {
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+  });
+  it('combines cuisines fairly while requiring every diet, including vegan implications', async () => {
+    const hits = recipeHits(20).map((r, i) => ({
+      ...r,
+      cuisines: [i < 10 ? 'Italian' : 'Thai'],
+      diets: ['vegan', ...(i === 0 ? [] : ['gluten free'])],
+    }));
+    const { service: recipes } = service(hits);
+    const deck = await recipes.dealCollaborativeDeck(
+      {
+        mealType: 'main course',
+        cuisines: ['italian', 'thai'],
+        diets: ['vegetarian', 'gluten free'],
+      },
+      [['italian'], ['thai']],
+      [],
+      6
+    );
+    expect(deck.entries.filter((r) => r.details?.cuisines?.includes('Italian'))).toHaveLength(3);
+    expect(deck.entries.filter((r) => r.details?.cuisines?.includes('Thai'))).toHaveLength(3);
+    expect(deck.entries.every((r) => r.diets?.includes('gluten free'))).toBe(true);
+  });
+
+  it('keeps the Owned Recipe floor when abundant source entries also match', async () => {
+    const hits = recipeHits(30).map((r) => ({
+      ...r,
+      cuisines: ['Italian'],
+      diets: ['vegetarian'],
+    }));
+    const { service: recipes } = service(hits, {
+      owned: ownedRecipes(10, { diets: ['vegetarian'] }),
+      shuffle: (entries) => [...entries].reverse(),
+    });
+    const deck = await recipes.dealCollaborativeDeck(pasta, [['italian']], [], 15);
+    expect(
+      deck.entries.filter((r) => r.placeId.startsWith('owned:')).length
+    ).toBeGreaterThanOrEqual(3);
   });
 });

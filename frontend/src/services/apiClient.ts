@@ -48,6 +48,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export async function createSession(
   hostName: string,
   setup: {
+    collaborative?: boolean;
     location?: SessionLocation;
     searchRadiusMiles?: number;
     branch?: Branch;
@@ -58,6 +59,7 @@ export async function createSession(
   } = {}
 ): Promise<CreateSessionResponse> {
   const body: CreateSessionRequest = { hostName };
+  if (setup.collaborative) body.collaborative = true;
 
   if (setup.location) {
     body.location = setup.location;
@@ -152,7 +154,7 @@ export async function getRestaurants(sessionCode: string): Promise<DeckEntry[]> 
  * so this must never carry a token or a session (#229).
  */
 export async function getShoppingList(listId: string): Promise<ShoppingListResponse> {
-  return request<ShoppingListResponse>(`/lists/${encodeURIComponent(listId)}`);
+  return request<ShoppingListResponse>(`/lists/${encodeURIComponent(listId)}?includePending=true`);
 }
 
 const claimPath = (listId: string, lineId: string) =>

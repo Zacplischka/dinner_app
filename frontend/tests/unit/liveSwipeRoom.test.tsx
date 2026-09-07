@@ -597,7 +597,7 @@ describe('Keyboard swipe', () => {
 
     // Leave Session? is state inside the header, not deckInert — the deck
     // underneath must still not swipe (or broadcast) behind it.
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Leave session?')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'ArrowRight' });

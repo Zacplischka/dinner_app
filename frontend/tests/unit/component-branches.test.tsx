@@ -154,9 +154,9 @@ describe('component and hook branch coverage', () => {
     );
     fireEvent.click(screen.getByLabelText('Back'));
     fireEvent.click(await screen.findByText('Stay here'));
-    expect(screen.queryByText('Go home')).not.toBeInTheDocument();
+    expect(screen.queryByText('Leave session')).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Back'));
-    fireEvent.click(await screen.findByText('Go home'));
+    fireEvent.click(await screen.findByText('Leave session'));
     expect(historyBack).toHaveBeenCalledTimes(2);
     historyBack.mockRestore();
   });

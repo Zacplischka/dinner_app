@@ -11,53 +11,8 @@ import NavigationHeader from '../components/NavigationHeader';
 import { useShoppingList } from '../hooks/useShoppingList';
 import { useWakeLock } from '../hooks/useWakeLock';
 import Spinner from '../components/Spinner';
-
-/**
- * The one end-of-method credit, which doubles as the degrade path: a Recipe
- * whose snapshotted steps are empty shows this line in place of the method.
- * Spoonacular is the sole recipe *vendor* in v1, so a missing source name still
- * has an honest thing to credit; a missing URL is simply not a link.
- *
- * An Owned Recipe is the one thing that renders nothing at all, in both paths:
- * it names no source and the absence is correct (ADR 0012). Only the explicit
- * `provenance` says so — a missing name alone is a data glitch, and the vendor
- * credit is a licence obligation that must survive one (#314).
- */
-function SourceCredit({
-  hasMethod,
-  sourceName,
-  sourceUrl,
-  provenance,
-}: {
-  hasMethod: boolean;
-  sourceName?: string;
-  sourceUrl?: string;
-  provenance?: 'owned';
-}) {
-  if (provenance === 'owned') return null;
-  const name = sourceName ?? 'Spoonacular';
-  const source = sourceUrl ? (
-    <a
-      href={sourceUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="font-semibold text-cyan hover:underline"
-    >
-      {name}
-    </a>
-  ) : (
-    <span className="font-semibold text-text">{name}</span>
-  );
-
-  return hasMethod ? (
-    <p className="mt-6 text-center text-sm text-muted">Method from {source}.</p>
-  ) : (
-    <p className="text-center text-muted">
-      This recipe&rsquo;s method didn&rsquo;t come through with the list. The full method is at{' '}
-      {source}.
-    </p>
-  );
-}
+import RecipeSourceCredit from '../components/RecipeSourceCredit';
+import RecipePricingStatus from '../components/RecipePricingStatus';
 
 function Step({ text, index }: { text: string; index: number }) {
   // Dimming is where the cook is up to, not a fact about the list — it lives
@@ -115,6 +70,7 @@ export default function CookViewPage() {
 
         {list && (
           <div className="card">
+            <RecipePricingStatus status={list.pricingStatus} />
             {list.steps.length > 0 && (
               <>
                 <p className="pb-2 text-xs font-semibold tracking-[0.14em] text-lime">
@@ -127,7 +83,8 @@ export default function CookViewPage() {
                 </ol>
               </>
             )}
-            <SourceCredit
+            <RecipeSourceCredit
+              label="Method"
               hasMethod={list.steps.length > 0}
               sourceName={list.sourceName}
               sourceUrl={list.sourceUrl}

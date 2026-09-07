@@ -56,6 +56,48 @@ describe('RequireSession', () => {
     expect(screen.getByText('Join route?code=AB123')).toBeInTheDocument();
   });
 
+  it('redirects stale selecting and results routes back to shared choices after Restart', () => {
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      sessionStatus: 'waiting',
+      lobby: {
+        sessionCode: 'AB123',
+        branch: 'watch',
+        state: 'waiting',
+        revision: 4,
+        round: 2,
+        participants: [],
+        mealType: 'main course',
+        headcount: 2,
+        deckSize: 15,
+        searchRadiusMiles: 5,
+      },
+    });
+    renderAt('/session/AB123/select');
+    expect(screen.getByText('Lobby route')).toBeInTheDocument();
+  });
+
+  it('keeps a waiting dietary newcomer out of the active Deck route', () => {
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      sessionStatus: 'selecting',
+      currentUserId: 'newcomer',
+      participants: [
+        {
+          participantId: 'newcomer',
+          displayName: 'Newcomer',
+          sessionCode: 'AB123',
+          joinedAt: 1,
+          hasSubmitted: false,
+          isHost: false,
+          waitingForNextRound: true,
+        },
+      ],
+    });
+    renderAt('/session/AB123/select');
+    expect(screen.getByText('Lobby route')).toBeInTheDocument();
+  });
+
   // A rejected rejoin resets the store (socketBindings) and toasts the server's
   // reason; the guard is what turns that reset into a redirect, from whichever
   // Session route was open.

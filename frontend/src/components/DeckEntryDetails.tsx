@@ -8,7 +8,7 @@
 
 import type { RefObject } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
-import { isMovie, isRestaurant } from '../types';
+import { isMovie, isRecipe, isRestaurant } from '../types';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import { movieMeta } from '../utils/tmdb';
@@ -16,13 +16,7 @@ import RetryingPhoto from './RetryingPhoto';
 import GenrePills from './GenrePills';
 import MovieLinks from './MovieLinks';
 import TmdbCredit from './TmdbCredit';
-
-/**
- * Whether a Deck Entry has anything worth opening. A Recipe carries only a
- * name, photo and likes on the wire, so its card offers no Details control and
- * a tap on it does nothing — add it when a Recipe carries more (#425 territory).
- */
-export const hasDetails = (entry: DeckEntry): boolean => isRestaurant(entry) || isMovie(entry);
+import RecipeSourceCredit from './RecipeSourceCredit';
 
 interface DeckEntryDetailsProps {
   /** The Deck Entry to show, or null when the sheet is closed. */
@@ -38,6 +32,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
 
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
+  const recipe = isRecipe(entry) ? entry : undefined;
   const meta = movie && movieMeta(movie);
   // `query` is required beside the id, and it is what a viewer sees if the id
   // no longer resolves. Nothing new on the wire: both fields are already there.
@@ -132,6 +127,42 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
                 </span>
               )}
             </div>
+          )}
+
+          {recipe && (
+            <section className="mt-3 space-y-3 text-sm text-muted" aria-label="Recipe details">
+              {recipe.details?.cuisines?.length ? (
+                <p className="font-bold capitalize text-coral-soft">
+                  {recipe.details.cuisines.join(' · ')}
+                </p>
+              ) : null}
+              {recipe.details?.readyInMinutes && (
+                <p>Ready in {recipe.details.readyInMinutes} minutes</p>
+              )}
+              <p>
+                {recipe.details?.description || 'A description is not available for this recipe.'}
+              </p>
+              {!recipe.details?.readyInMinutes && <p>Cooking time is not available.</p>}
+              <h3 className="font-bold text-text">
+                Ingredients{recipe.details?.servings ? ` · serves ${recipe.details.servings}` : ''}
+              </h3>
+              {recipe.details?.ingredients?.length ? (
+                <ul className="list-disc space-y-2 pl-5">
+                  {recipe.details.ingredients.map((ingredient, index) => (
+                    <li key={index}>{ingredient}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>Ingredient details are not available.</p>
+              )}
+              <RecipeSourceCredit
+                sourceName={recipe.details?.sourceName}
+                sourceUrl={recipe.details?.sourceUrl}
+                provenance={
+                  recipe.placeId.startsWith('owned:') ? 'owned' : recipe.details?.provenance
+                }
+              />
+            </section>
           )}
 
           {movie?.overview && <p className="mt-3 text-sm text-muted">{movie.overview}</p>}

@@ -104,9 +104,12 @@ const sessionService = createSessionService({
   redealRecipeDeck: (poolKey, current, deckSize) =>
     recipePoolService.redeal(poolKey, current, deckSize),
   // Pure over the committed corpus: no service to construct (#369).
-  dealMovieDeck: (mood, deckSize) => dealMovieDeck(mood, { source: movieSource, deckSize }),
-  redealMovieDeck: (mood, current, deckSize) =>
-    redealMovieDeck(mood, current, { source: movieSource, deckSize }),
+  dealMovieDeck: (mood, deckSize, interests) =>
+    dealMovieDeck(mood, { source: movieSource, deckSize, interests }),
+  redealMovieDeck: (mood, current, deckSize, interests) =>
+    redealMovieDeck(mood, current, { source: movieSource, deckSize, interests }),
+  dealCollaborativeRecipeDeck: (craving, interests, current, deckSize) =>
+    recipePoolService.dealCollaborativeDeck(craving, interests, current, deckSize),
   mintShoppingList: (sessionCode, placeId) => shoppingListService.mint(sessionCode, placeId),
 });
 const friendsService = createFriendsService({ store: friendsStore });
@@ -237,6 +240,7 @@ const io = new SocketIOServer<
 });
 
 // Import WebSocket handlers (they run over the store/service built above)
+import { registerLobbyHandlers } from './websocket/lobbyHandler.js';
 import { handleSessionJoin } from './websocket/joinHandler.js';
 import { handleSelectionSubmit } from './websocket/submitHandler.js';
 import { handleOrderOpen, handleOrderItem, handleOrderBuy } from './websocket/orderHandler.js';
@@ -287,6 +291,8 @@ io.on('connection', (socket) => {
     socketLog.info('Socket recovered from disconnect');
   }
 
+  registerLobbyHandlers(socket, io, sessionService);
+
   // T041: session:join event handler
   socket.on('session:join', (payload, callback) => {
     void handleSessionJoin(socket, payload, callback, sessionService);
@@ -329,7 +335,7 @@ io.on('connection', (socket) => {
 
   // T045: disconnect handler
   socket.on('disconnect', (reason) => {
-    void handleDisconnect(socket, io, reason, sessionStore);
+    void handleDisconnect(socket, io, reason, sessionStore, sessionService);
   });
 });
 

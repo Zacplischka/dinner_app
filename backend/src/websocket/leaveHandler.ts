@@ -85,6 +85,9 @@ export async function handleSessionLeave(
       participantCount,
     });
 
+    const lobby = await service.getLobby(sessionCode);
+    if (lobby) io.in(sessionCode).emit('session:lobby', lobby);
+
     // Leaving completed the session for those remaining: broadcast the Match
     if (results) {
       io.in(sessionCode).emit('session:results', {

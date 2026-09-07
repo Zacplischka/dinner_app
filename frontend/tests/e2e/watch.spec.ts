@@ -15,10 +15,10 @@ test.describe('Watch Branch', () => {
     await homePage.clickWatch();
     await expect(watchPage.heading).toBeVisible();
 
-    await watchPage.pickChip('Comedy');
     await watchPage.enterName('Host');
-    const sessionCode = await watchPage.startSwiping();
+    const sessionCode = await watchPage.createSession();
     expect(sessionCode).toMatch(/^[A-Z0-9]{5}$/);
+    await watchPage.pickChip('Comedy');
 
     await new SessionLobbyPage(page).startSession();
 

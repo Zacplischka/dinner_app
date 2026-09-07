@@ -12,6 +12,14 @@ These are the names in code, docs and conversation. On screen they are ordinary 
 A short-lived shared decision room identified by a Session Code, holding at most four Participants, created into exactly one Branch. Expires automatically after inactivity; nothing about it persists afterward except a Shopping List it minted, which lives on its own clock.
 _Avoid_: room, game, lobby — and never "cook Session" as a term of its own; a Session in the Cook Branch is just a Session
 
+**Lobby**:
+The gathering screen within a Session, where Participants see who has joined before swiping begins. Not a synonym for the Session itself.
+_Avoid_: room, Session (when referring specifically to this screen)
+
+**Ready**:
+A Participant's explicit confirmation that their current choices, including no preferences, are settled for the shared Deck. Changing those choices clears that confirmation.
+_Avoid_: Submission (which means finishing Selection, not confirming choices)
+
 **Branch**:
 The top-level choice a Session is created into — Eat Out, Takeaway, Cook, or Watch — picked up front on the entry screen and fixed for the Session's life.
 _Avoid_: mode, flow, journey, path
@@ -81,7 +89,7 @@ The sole keeper of everything a live Session remembers — Participants, Selecti
 _Avoid_: models, repository, DAO
 
 **Restart**:
-Wiping all Selections, Submissions, and the Match of a Session so the same Participants can decide again. The Host's alone, as the lobby's start is — both move the whole room, and the same command carries them. A Restaurant Deck is kept — restaurant supply is bound to where you are — while a Recipe Deck is dealt again from its Craving's pool and a Movie Deck from its Mood, avoiding the just-wiped deal as far as the pool allows. A Restart the Host asks for never fails and never leaves a Session without a Deck.
+The Host-initiated return of a Session’s Participants to the Lobby for a fresh round, discarding the previous round’s Selections, Submissions and Match. Existing choices remain editable and everyone confirms Ready again before swiping resumes.
 _Avoid_: reset, replay
 
 **Leave**:
@@ -185,15 +193,19 @@ _Avoid_: split, tab, portion, IOU
 ### Cook
 
 **Craving**:
-The canonical triple a Cook Session's Deck is dealt from — meal type, cuisine set, diet set. Two Sessions with the same Craving draw from the same shared recipe pool. Diet is a preference filter, explicitly not an allergy-safety guarantee. Headcount is not part of a Craving.
+The shared meal type, cuisine interests and Dietary Requirements a Cook Session's Participants settle on for their Deck. Headcount is separate: it scales ingredients rather than expressing what the group wants to cook.
 _Avoid_: filters, preferences, criteria, setup
 
+**Dietary Requirement**:
+A Participant's chosen diet that every Recipe in the shared Cook Deck must satisfy, together with the other Participants' chosen diets. A requirement on Recipe diet labels, not an allergy-safety guarantee.
+_Avoid_: soft preference, cuisine interest
+
 **Headcount**:
-The number of people the Top Pick's ingredients are scaled to. Set at Cook setup; never part of the Craving — it scales servings, it doesn't filter the Deck.
+The number of people the Top Pick's ingredients are scaled to. Separate from the Craving and not necessarily the number of Participants choosing the Recipe.
 _Avoid_: serves, servings, party size
 
 **Shopping List**:
-The priced, claimable list minted once from a completed Cook Session's Top Pick, its Ingredient Lines scaled to the Headcount. Lives on its own fixed lifetime that nothing extends, and outlives its Session: the URL is the capability — anyone holding it reads, claims, and unclaims, with no Participant check and no live Session required. Its headline is the list total across in-tally lines.
+The claimable list minted once from a completed Cook Session's Top Pick, its Ingredient Lines scaled to the Headcount. The Recipe and scaled lines are readable while pricing runs; its price snapshot becomes frozen when pricing completes. Lives on its own fixed lifetime that nothing extends, and outlives its Session: the URL is the capability — anyone holding it reads, claims, and unclaims, with no Participant check and no live Session required. Its headline is the list total across in-tally lines.
 _Avoid_: cart, basket (both reserved for the Platform's own), grocery list, ingredient list
 
 **Ingredient Line**:
@@ -258,8 +270,12 @@ _Avoid_: relaxed craving, suggestion, fallback
 A film or a television series a Watch-branch Session deals for Participants to swipe on, carrying name, poster, year, genres, runtime (a series: its seasons), Score, overview, trailer link and IMDb id. One kind either way, told apart by `mediaType`; a series is shown to people as a "Series" but is a Movie in every rule. Its identity is its TMDB id, typed by what it names — `tmdb:movie:<id>` or `tmdb:tv:<id>` — carried in `placeId` like every Deck Entry's (ADR 0014). The swiped card and the crowned Top Pick are the same Movie.
 _Avoid_: film, title, card, show, TV show — and "Series" only on screen, never as a term with its own rules
 
+**Genre Preference**:
+A Participant's positive interest in a Watch genre. An unselected genre expresses no preference, not a rejection of Movies in that genre.
+_Avoid_: exclusion, veto, genre restriction
+
 **Mood**:
-The Host's genre, decade and media-type choices a Watch Session's Movie Deck is dealt from — a Movie matches when it carries any chosen genre, was released in any chosen decade and is any chosen media type (film or series); an empty axis is no filter, so no choices at all deals from the whole corpus. The Craving's twin for the Watch Branch, fixed at setup like it; unlike it there is no shared pool and no Nearest Mood — the corpus is static, and dropping a chip is the whole fix.
+The collective genre, decade and media-type interests a Watch Session's Participants contribute toward their shared Deck. An unselected choice expresses no preference, not exclusion; interests combine across Participants so one person's choices do not veto another's.
 _Avoid_: filters, preferences, criteria, Craving, vibe
 
 **Score**:

@@ -111,10 +111,14 @@ describe('dealMovieDeck', () => {
     }
   });
 
-  it('deals the best-known titles first when the Mood filters nothing', () => {
+  it('deals the best-known titles within each media type when the Mood filters nothing', () => {
     expect(source(anything)).toHaveLength(MOVIES.length);
-    expect(dealMovieDeck(anything, { source, shuffle: identity })).toEqual(
-      MOVIES.slice(0, DECK_SIZE)
+    const deck = dealMovieDeck(anything, { source, shuffle: identity }) as Movie[];
+    expect(deck.filter((m) => m.mediaType === 'movie')).toEqual(
+      MOVIES.filter((m) => m.mediaType === 'movie').slice(0, 8)
+    );
+    expect(deck.filter((m) => m.mediaType === 'tv')).toEqual(
+      MOVIES.filter((m) => m.mediaType === 'tv').slice(0, 7)
     );
     // The real shuffle deals a whole Deck too — the cut is after the shuffle.
     expect(dealMovieDeck(anything, { source })).toHaveLength(DECK_SIZE);
@@ -126,7 +130,7 @@ describe('dealMovieDeck', () => {
     const deck = dealMovieDeck(anything, { source: () => many, shuffle: reversed });
 
     // Reversed within the cap: the cap's last title comes first, nothing past it appears.
-    expect(deck).toEqual(many.slice(POOL_CAP - DECK_SIZE, POOL_CAP).reverse());
+    expect(deck).toEqual(many.slice(POOL_CAP - DECK_SIZE, POOL_CAP));
   });
 
   it('deals none for a Mood the corpus cannot answer', () => {
@@ -140,7 +144,8 @@ describe('redealMovieDeck', () => {
 
     const next = redealMovieDeck(anything, first, { source, shuffle: identity });
 
-    expect(next).toEqual(MOVIES.slice(DECK_SIZE, 2 * DECK_SIZE));
+    expect(next).toHaveLength(DECK_SIZE);
+    expect(next.some((m) => first.some((old) => old.placeId === m.placeId))).toBe(false);
   });
 
   it('repeats only once the Mood has run out of unshown Movies', () => {
@@ -161,5 +166,100 @@ describe('redealMovieDeck', () => {
     expect(redealMovieDeck(anything, current, { source: () => [], shuffle: identity })).toEqual(
       current
     );
+  });
+});
+
+describe('collaborative media allocation', () => {
+  it.each([
+    { name: 'absent', mediaTypes: undefined },
+    { name: 'empty', mediaTypes: [] },
+  ])(
+    'does not let one media choice veto another genre interest with $name mediaTypes',
+    ({ mediaTypes }) => {
+      const comedy = stub(6);
+      const drama = stub(6, 'tv').map((movie) => ({ ...movie, genres: ['Drama'] }));
+      const deck = dealMovieDeck(anything, {
+        source: corpusMovieSource([...comedy, ...drama]),
+        interests: [
+          { genres: ['Comedy'], decades: [], mediaTypes: ['movie'] },
+          { genres: ['Drama'], decades: [], mediaTypes },
+        ],
+        deckSize: 6,
+        shuffle: identity,
+      });
+      expect(deck.filter((movie) => movie.kind === 'movie' && movie.mediaType === 'movie')).toEqual(
+        comedy.slice(0, 3)
+      );
+      expect(deck.filter((movie) => movie.kind === 'movie' && movie.mediaType === 'tv')).toEqual(
+        drama.slice(0, 3)
+      );
+    }
+  );
+
+  it.each([1, 5, 6, 15])(
+    'balances both types from a movie-dominated corpus for size %i',
+    (deckSize) => {
+      const source = corpusMovieSource([...stub(500), ...stub(40, 'tv')]);
+      const deck = dealMovieDeck(
+        { genres: ['Comedy'], decades: ['1990s'], mediaTypes: ['movie', 'tv'] },
+        { source, shuffle: identity, deckSize }
+      );
+      const films = deck.filter((m) => m.kind === 'movie' && m.mediaType === 'movie').length;
+      expect(Math.abs(films - (deck.length - films))).toBeLessThanOrEqual(1);
+      expect(deck).toHaveLength(deckSize);
+      expect(new Set(deck.map((m) => m.placeId)).size).toBe(deckSize);
+    }
+  );
+
+  it('fills scarce series with movies without inventing entries', () => {
+    const deck = dealMovieDeck(anything, {
+      source: corpusMovieSource([...stub(100), ...stub(2, 'tv')]),
+      deckSize: 15,
+      shuffle: identity,
+    });
+    expect(deck.filter((m) => m.kind === 'movie' && m.mediaType === 'tv')).toHaveLength(2);
+    expect(deck).toHaveLength(15);
+  });
+
+  it('gives two people equal turns despite unequal genre counts, and retains both decades', () => {
+    const action = stub(40).map((m) => ({
+      ...m,
+      year: 1995,
+      genres: ['Action', 'Adventure', 'Comedy'],
+    }));
+    const music = stub(40).map((m) => ({
+      ...m,
+      placeId: `music:${m.placeId}`,
+      year: 2024,
+      genres: ['Music'],
+    }));
+    const interests: Mood[] = [
+      { genres: ['Action', 'Adventure', 'Comedy'], decades: ['1990s'], mediaTypes: ['movie'] },
+      { genres: ['Music'], decades: ['2020s'], mediaTypes: ['movie'] },
+    ];
+    const deck = dealMovieDeck(anything, {
+      source: corpusMovieSource([...action, ...music]),
+      interests,
+      deckSize: 10,
+      shuffle: identity,
+    });
+    expect(deck.filter((m) => m.placeId.startsWith('music:'))).toHaveLength(5);
+    expect(deck).toHaveLength(10);
+  });
+
+  it('uses fresh overlapping interests before repeating another participant’s previous title', () => {
+    const a = { ...stub(1)[0], genres: ['Action'] };
+    const b = { ...stub(1)[0], placeId: 'fresh', genres: ['Music'] };
+    const interests: Mood[] = [
+      { genres: ['Action'], decades: [] },
+      { genres: ['Music'], decades: [] },
+    ];
+    const next = redealMovieDeck(anything, [a], {
+      source: corpusMovieSource([a, b]),
+      deckSize: 1,
+      interests,
+      shuffle: identity,
+    });
+    expect(next).toEqual([b]);
   });
 });

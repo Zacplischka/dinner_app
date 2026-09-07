@@ -19,6 +19,7 @@ import {
 } from '@dinder/shared/types';
 
 const selectionLivePayloadSchema = z.object({
+  round: z.number().int().nonnegative().optional(),
   sessionCode: z.string().regex(SESSION_CODE_PATTERN),
   placeId: z.string().min(1),
   // An Undo taking a Live Selection back (#410). Same command, same membership
@@ -40,7 +41,7 @@ export async function handleLiveSelection(
       return callback({ success: false, error: { code: 'VALIDATION_ERROR', message: reason } });
     }
 
-    const { sessionCode, placeId, retract } = validation.data;
+    const { sessionCode, placeId, retract, round } = validation.data;
 
     // One HGETALL both proves membership and yields displayName — the same
     // check SessionService.leaveSession makes. No second read.
@@ -50,6 +51,19 @@ export async function handleLiveSelection(
         success: false,
         error: { code: 'NOT_IN_SESSION', message: 'You are not a participant in this session' },
       });
+    }
+
+    const session = await store.readSession(sessionCode);
+    if (
+      participant.waitingForNextRound ||
+      (session?.lobby &&
+        (session.state !== 'selecting' || (round !== undefined && round !== session.lobby.round)))
+    ) {
+      callback({
+        success: false,
+        error: { code: 'NOT_IN_SESSION', message: 'You are waiting for the next round.' },
+      });
+      return;
     }
 
     callback({ success: true, data: null });

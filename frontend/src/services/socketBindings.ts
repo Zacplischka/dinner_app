@@ -4,6 +4,7 @@
 
 import type {
   Ack,
+  SessionLobbyState,
   SessionJoinData,
   ParticipantJoinedEvent,
   ParticipantLeftEvent,
@@ -48,6 +49,21 @@ function cancelDisconnectToast(displayName: string): boolean {
   const timer = pendingDisconnectToasts.get(displayName);
   clearTimeout(timer);
   return pendingDisconnectToasts.delete(displayName);
+}
+
+function applyResults(event: SessionResultsEvent): void {
+  useSessionStore.getState().setResults({
+    sessionCode: event.sessionCode,
+    overlappingOptions: resolvePhotoUrls(event.overlappingOptions),
+    allSelections: event.allSelections,
+    restaurantNames: event.restaurantNames,
+    hasOverlap: event.hasOverlap,
+    topPick: event.topPick && {
+      ...event.topPick,
+      restaurant: resolvePhotoUrls([event.topPick.restaurant])[0],
+    },
+    shoppingListId: event.shoppingListId,
+  });
 }
 
 const socketConfig: SocketConfig = {
@@ -245,21 +261,7 @@ const socketConfig: SocketConfig = {
     },
 
     // session:results - All participants submitted, results revealed
-    'session:results': (event: SessionResultsEvent) => {
-      log('Session results:', event);
-      useSessionStore.getState().setResults({
-        sessionCode: event.sessionCode,
-        overlappingOptions: resolvePhotoUrls(event.overlappingOptions),
-        allSelections: event.allSelections,
-        restaurantNames: event.restaurantNames,
-        hasOverlap: event.hasOverlap,
-        topPick: event.topPick && {
-          ...event.topPick,
-          restaurant: resolvePhotoUrls([event.topPick.restaurant])[0],
-        },
-        shoppingListId: event.shoppingListId,
-      });
-    },
+    'session:results': applyResults,
 
     // order:state - Group Order state sans Pinned Menu, broadcast on every
     // Order Line change and the Buyer claim (order:open acks directly and
@@ -277,6 +279,10 @@ const socketConfig: SocketConfig = {
       }
     },
 
+    'session:lobby': (event: SessionLobbyState) => {
+      useSessionStore.getState().setLobby(event);
+    },
+
     // session:restarted - a Restart, or the lobby's start riding the same
     // event; the server's message says which (#289), so log that, not a
     // hardcoded "Session restarted" that makes real Restarts unspottable.
@@ -285,7 +291,8 @@ const socketConfig: SocketConfig = {
       useSessionStore.getState().resetSelections();
       // resetSelections() also flips sessionStatus, but the lobby's
       // auto-navigate keys off this transition — keep it explicit here.
-      useSessionStore.getState().setSessionStatus('selecting');
+      useSessionStore.getState().setSessionStatus(event.state ?? 'selecting');
+      if (event.lobby) useSessionStore.getState().setLobby(event.lobby);
     },
 
     // session:expired - Session expired due to inactivity. The status drives
@@ -347,13 +354,13 @@ export async function joinSession(
     store.setSessionStatus('waiting');
   }
 
-  // Adopt the ack's state OUTSIDE the different-session guard: the /join page
-  // pre-stores this very sessionCode before the ack lands, so a guard-bound
-  // adoption would never run for the one path #284 exists for — leaving a late
-  // joiner's status pinned at 'waiting' and the lobby's auto-forward dead.
-  // An ack without state (older backend, ADR 0007) touches nothing.
+  // Legacy acks carry state alone. Collaborative acks use their revisioned
+  // snapshot, so an older ack cannot roll back a newer broadcast.
   const { state } = ack.data;
-  if (state === 'waiting' || state === 'selecting' || state === 'complete' || state === 'expired') {
+  if (
+    !ack.data.lobby &&
+    (state === 'waiting' || state === 'selecting' || state === 'complete' || state === 'expired')
+  ) {
     store.setSessionStatus(state);
   }
 
@@ -362,21 +369,35 @@ export async function joinSession(
   // — or before my own rejoin replaced the list — starts offline, not live.
   // Absent on an older backend, which reads as live (ADR 0007).
   store.setSessionCode(sessionCode);
+  store.setCurrentUserId(ack.data.participantId);
+  if (store.lobby?.sessionCode !== sessionCode) store.setLobby(undefined);
   // A successful ack proves the socket is up. Set it here, where all three join
   // paths meet: the `connect` handler only fires on a socket that wasn't already
   // connected, so a second join in the same tab — leaveSession resets the store
   // without disconnecting — would otherwise sit on a false "Disconnected" banner.
   store.setConnectionStatus(true);
   store.setBranch(ack.data.branch);
-  store.updateParticipants(
-    ack.data.participants.map((p) => ({
-      ...p,
-      sessionCode,
-      joinedAt: Date.now(),
-      // The server says who already submitted (#284); absent on older backends.
-      hasSubmitted: p.hasSubmitted ?? false,
-    }))
-  );
+  if (!ack.data.lobby)
+    store.updateParticipants(
+      ack.data.participants.map((p) => ({
+        ...p,
+        sessionCode,
+        joinedAt: Date.now(),
+        // The server says who already submitted (#284); absent on older backends.
+        hasSubmitted: p.hasSubmitted ?? false,
+      }))
+    );
+
+  if (ack.data.lobby) store.setLobby(ack.data.lobby);
+  const currentLobby = useSessionStore.getState().lobby;
+  // A delayed completed ack must not restore a Match discarded by Restart.
+  // Later roster revisions are fine while this same round remains complete.
+  if (
+    ack.data.results &&
+    (!ack.data.lobby ||
+      (currentLobby?.state === 'complete' && currentLobby.round === ack.data.lobby.round))
+  )
+    applyResults(ack.data.results);
 
   return ack;
 }
@@ -394,13 +415,39 @@ export async function joinSession(
  * update, not a re-claim, and the server tells the two apart.
  */
 export {
-  submitSelection,
-  sendLiveSelection,
   restartSession,
+  updateSessionChoices,
+  setSessionReady,
+  startSession,
+  removeSessionParticipant,
   openOrder,
   addOrderItem,
   claimBuyer,
 } from './socketService';
+
+// Include the round that produced this phone's Deck, so a delayed Selection
+// cannot become a vote in a freshly restarted round.
+export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
+  const lobby = useSessionStore.getState().lobby;
+  return socketService.submitSelection(
+    sessionCode,
+    optionIds,
+    lobby?.sessionCode === sessionCode ? lobby.round : undefined
+  );
+}
+export function sendLiveSelection(
+  sessionCode: string,
+  placeId: string,
+  retract?: boolean
+): Promise<Ack<null>> {
+  const lobby = useSessionStore.getState().lobby;
+  return socketService.sendLiveSelection(
+    sessionCode,
+    placeId,
+    retract,
+    lobby?.sessionCode === sessionCode ? lobby.round : undefined
+  );
+}
 
 /**
  * Leave session intentionally and clear local session state. The store is reset

@@ -12,7 +12,7 @@ interface ConfirmLeaveModalProps {
   onConfirm: () => void;
   isLoading?: boolean;
   /** Context determines the warning message shown */
-  context?: 'lobby' | 'selecting' | 'results' | 'ordering';
+  context?: 'lobby' | 'selecting' | 'results' | 'ordering' | 'switching';
   /** Number of selections made (for selecting context) */
   selectionsCount?: number;
 }
@@ -33,6 +33,8 @@ export default function ConfirmLeaveModal({
   // Context-aware messaging
   const getTitle = () => {
     switch (context) {
+      case 'switching':
+        return 'Leave this session to continue?';
       case 'results':
         return 'Leave session?';
       case 'selecting':
@@ -47,8 +49,10 @@ export default function ConfirmLeaveModal({
 
   const getMessage = () => {
     switch (context) {
+      case 'switching':
+        return 'Leave this session to create or join another? Your participation and selections in this session will be removed.';
       case 'results':
-        return 'Return to the home screen? You can always start a new session.';
+        return 'Leave this session and stop participating? Use the Dinder logo to go home and keep your place.';
       case 'selecting':
         if (selectionsCount > 0) {
           return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the Match.`;
@@ -78,8 +82,8 @@ export default function ConfirmLeaveModal({
 
   const getLeaveLabel = () => {
     switch (context) {
-      case 'results':
-        return 'Go home';
+      case 'switching':
+        return 'Leave and continue';
       default:
         return 'Leave session';
     }

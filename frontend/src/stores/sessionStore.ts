@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
-import type { Branch, DeckEntry } from '@dinder/shared/types';
+import type { Branch, DeckEntry, SessionLobbyState } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
 import { useOrderStore } from './orderStore';
 
@@ -19,6 +19,9 @@ interface SessionState {
   currentUserId: string | null;
   /** The Session's Branch, from the join ack. Undefined before the entry fork. */
   branch?: Branch;
+
+  lobby?: SessionLobbyState;
+  setLobby: (lobby?: SessionLobbyState) => void;
 
   // Location data
   location?: Location;
@@ -93,13 +96,7 @@ interface SessionState {
   resetSelections: () => void;
 }
 
-const initialState = {
-  sessionCode: null,
-  participants: [],
-  currentUserId: null,
-  branch: undefined,
-  location: undefined,
-  searchRadiusMiles: undefined,
+const emptyRound = {
   restaurants: [],
   selections: [],
   deckCursor: 0,
@@ -110,6 +107,17 @@ const initialState = {
   topPick: undefined,
   shoppingListId: undefined,
   orderPlaceId: null,
+};
+
+const initialState = {
+  ...emptyRound,
+  sessionCode: null,
+  participants: [],
+  currentUserId: null,
+  branch: undefined,
+  lobby: undefined,
+  location: undefined,
+  searchRadiusMiles: undefined,
   sessionStatus: 'waiting' as const,
   isConnected: false,
   expiresAt: null,
@@ -120,6 +128,42 @@ export const useSessionStore = create<SessionState>()(
     persist(
       (set) => ({
         ...initialState,
+
+        setLobby: (lobby) =>
+          set((state) => {
+            if (!lobby) return { lobby: undefined };
+            if (
+              lobby.sessionCode !== state.sessionCode ||
+              (state.lobby?.sessionCode === lobby.sessionCode &&
+                (lobby.revision < state.lobby.revision ||
+                  (lobby.revision === state.lobby.revision &&
+                    state.lobby.state === 'complete' &&
+                    lobby.state === 'selecting')))
+            )
+              return state;
+            // Rejoin and HTTP hydration can recover a Restart whose broadcast
+            // this phone missed, even after the next Deck has already started.
+            const restarted =
+              state.lobby &&
+              ((lobby.round !== undefined && lobby.round !== state.lobby.round) ||
+                (lobby.state === 'waiting' && state.lobby.state !== 'waiting'));
+            if (restarted) useOrderStore.getState().clear();
+            return {
+              ...(restarted ? emptyRound : {}),
+              lobby,
+              branch: lobby.branch,
+              sessionStatus: lobby.state,
+              location: lobby.location,
+              searchRadiusMiles: lobby.searchRadiusMiles,
+              participants: lobby.participants.map((participant) => ({
+                ...participant,
+                sessionCode: lobby.sessionCode,
+                joinedAt:
+                  state.participants.find((old) => old.displayName === participant.displayName)
+                    ?.joinedAt ?? Date.now(),
+              })),
+            };
+          }),
 
         // Session actions
         setSessionCode: (code) => set({ sessionCode: code }),
@@ -194,14 +238,15 @@ export const useSessionStore = create<SessionState>()(
 
         // Results actions
         setResults: (results) =>
-          set({
+          set((state) => ({
+            lobby: state.lobby ? { ...state.lobby, state: 'complete' } : undefined,
             allSelections: results.allSelections,
             restaurantNames: results.restaurantNames || {},
             overlappingOptions: results.overlappingOptions,
             topPick: results.topPick,
             shoppingListId: results.shoppingListId,
             sessionStatus: 'complete',
-          }),
+          })),
 
         setOrderPlaceId: (placeId) => set({ orderPlaceId: placeId }),
 
@@ -223,21 +268,11 @@ export const useSessionStore = create<SessionState>()(
           // the same resetForRestart pipeline — never render last venue's basket.
           useOrderStore.getState().clear();
           set((state) => ({
+            ...emptyRound,
             // The server's resetForRestart clears every Participant's
             // Submission; a stale true here would re-seed a fresh Deck as
             // already submitted and mis-count "x of y have swiped".
             participants: state.participants.map((p) => ({ ...p, hasSubmitted: false })),
-            selections: [],
-            // A Restart deals the Deck again; a surviving cursor would drop
-            // the Participant into the middle of a Deck they have not seen.
-            deckCursor: 0,
-            allSelections: {},
-            liveSelections: {},
-            restaurantNames: {},
-            overlappingOptions: [],
-            topPick: undefined,
-            shoppingListId: undefined,
-            orderPlaceId: null,
             sessionStatus: 'selecting',
           }));
         },

@@ -113,6 +113,8 @@ export interface DealOptions {
   shuffle?: <T>(entries: readonly T[]) => T[];
   deckSize?: number;
   poolCap?: number;
+  /** Equal turns per Participant, irrespective of how many interests they chose. */
+  interests?: readonly Mood[];
 }
 
 /**
@@ -125,14 +127,55 @@ export interface DealOptions {
 export function redealMovieDeck(
   mood: Mood,
   current: readonly DeckEntry[],
-  { source, shuffle = shuffled, deckSize = DECK_SIZE, poolCap = POOL_CAP }: DealOptions
+  { source, shuffle = shuffled, deckSize = DECK_SIZE, poolCap = POOL_CAP, interests }: DealOptions
 ): DeckEntry[] {
+  const contributions = interests?.length ? interests : [mood];
   const wiped = new Set(current.map((entry) => entry.placeId));
-  const pool = source(mood).slice(0, poolCap);
-  const fresh = pool.filter((movie) => !wiped.has(movie.placeId));
-  const repeats = pool.filter((movie) => wiped.has(movie.placeId));
-  const dealt = [...shuffle(fresh), ...shuffle(repeats)].slice(0, deckSize);
-  return dealt.length > 0 ? dealt : shuffle(current);
+  // Shortlist each person's interests and media type separately: a popular
+  // movie prefix can no longer remove all series before allocation (#437).
+  const queues = contributions.map((contribution) => {
+    const eligible = source(contribution);
+    return MEDIA_TYPES.map((type) => {
+      const pool = eligible.filter((m) => (m.mediaType ?? 'movie') === type).slice(0, poolCap);
+      return [
+        ...shuffle(pool.filter((m) => !wiped.has(m.placeId))),
+        ...shuffle(pool.filter((m) => wiped.has(m.placeId))),
+      ];
+    });
+  });
+  const taken = new Set<string>();
+  const dealt: Movie[] = [];
+  const turns = MEDIA_TYPES.map(() => 0);
+  const pick = (typeIndex: number): boolean => {
+    // Every Participant gets one turn, including someone happy with anything.
+    // Exhausted contributions yield their turn; duplicate titles never consume it.
+    for (const allowRepeats of [false, true]) {
+      for (let n = 0; n < queues.length; n++) {
+        const index = (turns[typeIndex] + n) % queues.length;
+        const queue = queues[index][typeIndex];
+        while (queue.length && taken.has(queue[0].placeId)) queue.shift();
+        const entry = queue[0];
+        if (entry && (allowRepeats || !wiped.has(entry.placeId))) {
+          queue.shift();
+          turns[typeIndex] = (index + 1) % queues.length;
+          taken.add(entry.placeId);
+          dealt.push(entry);
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  // Alternate types, giving odd Decks at most one extra movie. Scarcity yields
+  // to the other type; a one-entry Deck makes no mixture promise.
+  while (dealt.length < deckSize) {
+    let added = false;
+    for (let type = 0; type < MEDIA_TYPES.length && dealt.length < deckSize; type++) {
+      added = pick(type) || added;
+    }
+    if (!added) break;
+  }
+  return dealt.length ? shuffle(dealt) : interests ? [] : shuffle(current);
 }
 
 /** A Session's first Deck: up to `deckSize` Movies matching the Mood, or none. */
