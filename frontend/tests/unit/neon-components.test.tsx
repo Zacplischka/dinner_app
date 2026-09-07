@@ -41,7 +41,7 @@ import UserMenu from '../../src/components/UserMenu';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
-describe('Neon Night Market components', () => {
+describe('YupCrew components', () => {
   beforeEach(() => {
     useSessionStore.getState().resetSession();
     useSessionStore.setState({ sessionCode: 'AB123', participants: [] });
@@ -96,13 +96,13 @@ describe('Neon Night Market components', () => {
 
     expect(screen.getByRole('button', { name: 'Pass' })).toHaveClass(
       'min-h-[48px]',
-      'text-coral-soft',
-      'shadow-glow-coral'
+      'text-text',
+      'shadow-card'
     );
     expect(screen.getByRole('button', { name: 'Like' })).toHaveClass(
       'min-h-[48px]',
-      'text-lime',
-      'shadow-glow-lime'
+      'bg-coral',
+      'text-text'
     );
   });
 
@@ -129,7 +129,7 @@ describe('Neon Night Market components', () => {
     expect(screen.getByText('Connected').closest('.border-l-4')).toHaveClass('border-l-cyan');
   });
 
-  it('presents leave confirmation as a Neon dialog', () => {
+  it('presents leave confirmation as a branded dialog', () => {
     render(<ConfirmLeaveModal isOpen onClose={vi.fn()} onConfirm={vi.fn()} />);
 
     const dialog = screen.getByRole('dialog');

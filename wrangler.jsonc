@@ -1,0 +1,12 @@
+{
+  "name": "yupcrew-frontend",
+  "main": "scripts/yupcrew-proxy.mjs",
+  "compatibility_date": "2026-09-01",
+  "account_id": "71e209a24502ed9323f137c4e5627f20",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "yupcrew.com", "custom_domain": true },
+    { "pattern": "www.yupcrew.com", "custom_domain": true },
+  ],
+}

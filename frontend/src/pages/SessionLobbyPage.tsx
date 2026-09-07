@@ -182,7 +182,7 @@ export default function SessionLobbyPage() {
           <h2 id="invite-title" className="label text-center">
             Session code
           </h2>
-          <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+          <div className="rounded-market-md border border-cyan bg-surface p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
             {sessionCode}
           </div>
           {shareableLink && (

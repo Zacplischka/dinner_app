@@ -1,4 +1,4 @@
-/* Neon Night Market */
+/* YupCrew — cream, aubergine and coral. */
 
 @tailwind base;
 @tailwind components;
@@ -15,10 +15,6 @@
     @apply antialiased;
     @apply font-body;
     @apply text-text bg-ink;
-    background-image:
-      radial-gradient(circle at 0 0, rgb(255 56 88 / 16%), transparent 28rem),
-      radial-gradient(circle at 100% 38%, rgb(53 231 255 / 10%), transparent 34rem);
-    background-attachment: fixed;
   }
 
   h1,
@@ -38,11 +34,11 @@
   }
 
   *:focus-visible {
-    outline: 3px solid #35e7ff;
+    outline: 3px solid #302331;
     outline-offset: 3px;
   }
 
-  /* Custom scrollbar for dark theme */
+  /* Shared scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -80,15 +76,15 @@
   }
 
   .btn-primary {
-    @apply bg-gradient-to-br from-coral-soft to-coral;
-    @apply text-ink shadow-glow-coral;
-    @apply hover:brightness-110;
+    @apply bg-coral;
+    @apply text-text shadow-glow-coral;
+    @apply hover:brightness-95;
     @apply disabled:bg-none disabled:bg-raised disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
     @apply bg-transparent text-cyan;
-    @apply border border-cyan shadow-glow-cyan;
+    @apply border border-cyan;
     @apply hover:bg-cyan/10;
     @apply disabled:border-line disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
   }
@@ -103,7 +99,7 @@
     @apply rounded-market-lg shadow-card p-6;
     @apply border border-line;
     @apply transition-all duration-[250ms];
-    background: linear-gradient(145deg, rgb(12 23 39 / 92%), rgb(5 13 24 / 94%));
+    @apply bg-surface;
   }
 
   .card:hover {
@@ -114,7 +110,7 @@
     @apply w-full min-h-[44px];
     @apply px-4 py-3;
     @apply text-base text-text;
-    @apply bg-[#050d19] border border-[#28556b] rounded-xl;
+    @apply bg-surface border border-muted rounded-xl;
     @apply placeholder:text-muted;
     @apply focus:border-cyan;
     @apply transition-all duration-150;
@@ -132,66 +128,25 @@
   }
 
   .logo-mark {
-    position: relative;
-    width: 33px;
-    height: 24px;
-    border: 2px solid #ff6b7e;
-    border-top: 0;
-    border-radius: 4px 4px 16px 16px;
-    box-shadow:
-      0 0 12px rgb(255 56 88 / 70%),
-      0 0 36px rgb(255 56 88 / 28%);
-  }
-
-  .logo-mark::before,
-  .logo-mark::after {
-    position: absolute;
-    top: -11px;
-    width: 2px;
-    height: 22px;
-    border-radius: 999px;
-    content: '';
-    background: #ff6b7e;
-    box-shadow: 0 0 12px rgb(255 56 88 / 70%);
-    transform: rotate(34deg);
-  }
-
-  .logo-mark::before {
-    left: 15px;
-  }
-
-  .logo-mark::after {
-    left: 21px;
+    display: inline-block;
+    flex-shrink: 0;
+    width: 38px;
+    height: 32px;
+    background: url('/yupcrew-mark.svg') center / contain no-repeat;
   }
 
   .live-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #c7ff1a;
-    box-shadow:
-      0 0 12px rgb(199 255 26 / 55%),
-      0 0 28px rgb(199 255 26 / 18%);
-    @apply animate-glow-pulse;
+    @apply bg-lime animate-glow-pulse;
   }
 }
 
 @layer utilities {
-  .market-backdrop {
-    background-color: #030712;
-    background-image:
-      linear-gradient(90deg, rgb(3 7 18 / 96%), rgb(3 7 18 / 86%) 55%, rgb(3 7 18 / 62%)),
-      url('/images/neon-night-market.jpg');
-    background-position: center;
-    background-size: cover;
-  }
-
+  .market-backdrop,
   .shared-table-backdrop {
-    background-color: #030712;
-    background-image:
-      linear-gradient(rgb(3 7 18 / 84%), rgb(3 7 18 / 96%)), url('/images/shared-table.jpg');
-    background-position: center top;
-    background-size: cover;
+    @apply bg-ink;
   }
 
   .safe-bottom {
@@ -238,18 +193,11 @@
   }
 }
 
+/* Existing celebration hooks keep their motion and layout contracts. */
 .neon-outline {
-  color: transparent;
-  -webkit-text-stroke: 2px #ff6b7e;
-  text-shadow:
-    0 0 12px rgb(255 56 88 / 70%),
-    0 0 36px rgb(255 56 88 / 28%);
+  color: #a63d2d;
 }
 
-/* Match celebration (#85): concentrated lime glow on the heading, warm
-   reflected light on the matched Restaurant surface, and a few broad
-   volumetric rays behind the header. The rays are masked to fade inside the
-   header block so they never cross body text or cover the next action. */
 .match-celebration {
   position: relative;
   isolation: isolate;
@@ -270,16 +218,16 @@
   background: conic-gradient(
     from -90deg at 50% 50%,
     transparent 0deg,
-    rgb(199 255 26 / 13%) 16deg,
+    rgb(234 112 88 / 13%) 16deg,
     transparent 34deg,
     transparent 82deg,
-    rgb(255 182 39 / 11%) 100deg,
+    rgb(234 112 88 / 11%) 100deg,
     transparent 118deg,
     transparent 172deg,
-    rgb(199 255 26 / 10%) 190deg,
+    rgb(234 112 88 / 10%) 190deg,
     transparent 208deg,
     transparent 292deg,
-    rgb(255 182 39 / 10%) 310deg,
+    rgb(234 112 88 / 10%) 310deg,
     transparent 328deg
   );
   filter: blur(6px);
@@ -298,7 +246,7 @@
 }
 
 .match-warm-glow {
-  background: radial-gradient(ellipse 75% 40% at 50% 0%, rgb(255 182 39 / 6%), transparent 70%);
+  background: radial-gradient(ellipse 75% 40% at 50% 0%, rgb(234 112 88 / 6%), transparent 70%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -324,9 +272,7 @@
 
 /* Warm surfaces and reserved image frames keep the home fork readable before images load. */
 .home-backdrop {
-  background:
-    radial-gradient(ellipse at 5% 0%, #513024 0%, transparent 55%),
-    radial-gradient(ellipse at 100% 90%, #343620 0%, transparent 55%), #191410;
+  background: #fff4e8;
 }
 
 /* Route announcements focus this non-interactive heading; controls retain visible keyboard focus. */

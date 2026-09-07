@@ -1,7 +1,7 @@
 # Claude Code Context
 
-**Project**: Dinder
-**Last Updated**: 2026-07-19
+**Project**: YupCrew (formerly Dinder)
+**Last Updated**: 2026-09-08
 
 ### Supported Deployment Platforms
 

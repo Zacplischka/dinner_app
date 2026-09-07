@@ -46,12 +46,14 @@ function Step({ text, index, listId }: { text: string; index: number; listId: st
         type="button"
         aria-pressed={dimmed}
         onClick={toggle}
-        className={`flex w-full items-start gap-4 border-b border-line/30 py-5 text-left transition-opacity ${
-          dimmed ? 'opacity-40' : ''
-        }`}
+        className="flex w-full items-start gap-4 border-b border-line/30 py-5 text-left"
       >
         <span className="shrink-0 font-display text-lg font-black text-lime">{index + 1}</span>
-        <span className={`text-lg leading-relaxed ${dimmed ? '' : 'text-text'}`}>{text}</span>
+        <span
+          className={`text-lg leading-relaxed ${dimmed ? 'text-muted line-through' : 'text-text'}`}
+        >
+          {text}
+        </span>
       </button>
     </li>
   );

@@ -17,7 +17,7 @@ export class CreateSessionPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: /New session|Eating out|Getting takeaway/i });
+    this.heading = page.getByRole('heading', { name: /New session|Eat out|Order in/i });
     this.nameInput = page.getByLabel(/Your Name/i);
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
     this.createButton = page.getByRole('button', { name: /Create session/i });
@@ -72,14 +72,18 @@ export class CreateSessionPage extends BasePage {
       longitude: -122.4194,
     });
     await this.useMyLocationButton.click();
-    await expect(this.page.getByRole('region', { name: 'Shared search area' }).getByText(/37.7749|San Francisco/)).toBeVisible();
+    await expect(
+      this.page
+        .getByRole('region', { name: 'Shared search area' })
+        .getByText(/37.7749|San Francisco/)
+    ).toBeVisible();
   }
 
   /**
    * Get current character count display
    */
   async getCharacterCountText(): Promise<string> {
-    return await this.nameCharacterCount.textContent() || '';
+    return (await this.nameCharacterCount.textContent()) || '';
   }
 
   /**

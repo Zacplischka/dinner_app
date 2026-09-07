@@ -355,7 +355,7 @@ for (const branch of ['watch', 'takeaway'] as const) {
       await expect(
         page.getByText(branch === 'watch' ? 'Alien' : 'Pizza Palace', { exact: true }).first()
       ).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Dinder home', exact: true })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'YupCrew home', exact: true })).toBeVisible();
       await fits(page);
       await page.waitForTimeout(3300);
       const finalFrame = await reveal

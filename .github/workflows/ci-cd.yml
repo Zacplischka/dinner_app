@@ -59,7 +59,9 @@ jobs:
       # Offline validator for the production-edge purge/cache assertions.
       # Does not touch the network.
       - name: Run delivery-infrastructure checks
-        run: npm run check:production-edge
+        run: |
+          npm run check:production-edge
+          node --test scripts/yupcrew-proxy.test.mjs
 
       # Offline validator: no source comment may cite a repository path that
       # does not exist (#295). Does not touch the network.
@@ -215,7 +217,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: Dinner-App / production
-      url: https://www.dinder.it.com
+      url: https://yupcrew.com
     env:
       # Explicit, non-secret rollout state. Accepted values:
       #   bootstrap  - no frontend host is proxied (default when the variable is unset)
@@ -289,6 +291,12 @@ jobs:
             sleep 10
           done
           exit 1
+
+      - name: Verify YupCrew domains
+        run: |
+          for host in yupcrew.com www.yupcrew.com; do
+            curl --fail --silent --show-error "https://${host}/" | grep -F '<title>YupCrew</title>'
+          done
 
       # Runs before the purge so the tag purge is proved to reset a warm document
       # while the warm fingerprinted asset survives it.

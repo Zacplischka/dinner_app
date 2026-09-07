@@ -16,7 +16,7 @@ export class CookSetupPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: 'Cooking' });
+    this.heading = page.getByRole('heading', { name: 'Cook together' });
     this.nameInput = page.getByLabel('Your Name');
     this.startButton = page.getByRole('button', { name: 'Create session' });
   }

@@ -162,8 +162,8 @@ export default function NavigationHeader({
             >
               <Link
                 to="/"
-                aria-label="Dinder home"
-                title="Dinder home"
+                aria-label="YupCrew home"
+                title="YupCrew home"
                 className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
               >
                 <span className="logo-mark scale-75" aria-hidden="true" />
@@ -221,7 +221,9 @@ export default function NavigationHeader({
               role="alert"
               className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-lg border border-coral/30 bg-coral/10 px-3 py-2 text-center"
             >
-              <span className="text-sm font-semibold text-coral">This session has expired</span>
+              <span className="text-sm font-semibold text-coral-strong">
+                This session has expired
+              </span>
               {/* -my-2 buys the 44px tap target without growing the banner. */}
               <button
                 type="button"

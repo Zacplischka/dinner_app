@@ -66,7 +66,7 @@ export default function FriendsList({
                 >
                   {selectedIds.has(friend.id) && (
                     <svg
-                      className="w-3 h-3 text-ink"
+                      className="w-3 h-3 text-white"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -90,7 +90,7 @@ export default function FriendsList({
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
-                  <span className="text-ink font-medium text-lg">
+                  <span className="text-white font-medium text-lg">
                     {friend.displayName.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -112,7 +112,7 @@ export default function FriendsList({
                       e.stopPropagation();
                       onInvite(friend.id);
                     }}
-                    className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-white hover:bg-cyan/10 rounded-lg transition-colors"
+                    className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-text hover:bg-cyan/10 rounded-lg transition-colors"
                   >
                     Invite
                   </button>
@@ -122,7 +122,7 @@ export default function FriendsList({
                     e.stopPropagation();
                     void handleRemoveFriend(friend.id, friend.displayName);
                   }}
-                  className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-soft hover:text-white hover:bg-coral/10 rounded-lg transition-colors"
+                  className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-soft hover:text-text hover:bg-coral/10 rounded-lg transition-colors"
                 >
                   Remove
                 </button>

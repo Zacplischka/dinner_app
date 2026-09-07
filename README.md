@@ -1,19 +1,21 @@
 <p align="center">
-  <img src="frontend/public/dinder-logo.png" alt="Dinder logo" width="120" />
+  <img src="frontend/public/yupcrew-wordmark.svg" alt="YupCrew logo" width="240" />
 </p>
 
-# Dinder
+# YupCrew
 
-**Swipe. Match. Eat.** Dinder is a real-time app for groups of 2–4 who can't decide where to eat: everyone swipes through nearby restaurants, and the moment the last person submits, Redis computes the overlap and pushes the matches to every phone at once.
+**What are we doing tonight?** YupCrew helps friends, couples and housemates choose somewhere to eat, takeaway, a recipe to cook, or a movie or series to watch. Invite your people with a link, choose together and swipe to find a shared pick. No download or account needed.
+
+Formerly Dinder. Public address: [yupcrew.com](https://yupcrew.com). Existing Dinder addresses remain available for current Sessions and Shopping Lists; internal service and storage identifiers are unchanged. See the [rebrand and migration notes](docs/yupcrew-rebrand-plan.md).
 
 <p align="center">
-  <a href="https://www.dinder.it.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
+  <a href="https://yupcrew.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A520-339933" alt="Node 20+">
 </p>
 
 <p align="center">
-  <a href="https://www.dinder.it.com">Live demo</a> ·
+  <a href="https://yupcrew.com">Live demo</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#architecture">Architecture</a> ·

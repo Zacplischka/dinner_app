@@ -14,8 +14,8 @@ export function drawSocialMoment(
   { moment, watch = false, seats = [] }: SocialScene
 ) {
   const { cat, rounded, ellipse, path, line, star } = sceneDrawing(ctx);
-  const ink = '#302a39';
-  const coral = '#ff7589';
+  const ink = '#302331';
+  const coral = '#EA7058';
   const cream = '#ffdeaa';
   const progress = Math.min(elapsed / 2.4, 1);
   const ease = progress * progress * (3 - 2 * progress);

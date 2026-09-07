@@ -46,38 +46,54 @@ describe('HomePage entry fork', () => {
 
   it('explains the shared decision and shows the four Branch cards', () => {
     renderFork();
-    expect(
-      screen.getByRole('heading', { name: /find something everyone.s into/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /eating out/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /getting takeaway/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /cooking/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /watching a movie/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /what are we doing tonight/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /eat out/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /order in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /cook together/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /watch something/i })).toBeInTheDocument();
   });
 
   it('routes the Eat Out card into the existing create flow with its branch', () => {
     renderFork();
-    fireEvent.click(screen.getByRole('button', { name: /eating out/i }));
+    fireEvent.click(screen.getByRole('button', { name: /eat out/i }));
     expect(screen.getByText('Create branch: eatout')).toBeInTheDocument();
   });
 
   it('routes the Takeaway card into the existing create flow with its branch', () => {
     renderFork();
-    fireEvent.click(screen.getByRole('button', { name: /getting takeaway/i }));
+    fireEvent.click(screen.getByRole('button', { name: /order in/i }));
     expect(screen.getByText('Create branch: takeaway')).toBeInTheDocument();
   });
 
   it('routes the Cook card into Cook setup (#259)', () => {
     renderFork();
-    fireEvent.click(screen.getByRole('button', { name: /cooking/i }));
+    fireEvent.click(screen.getByRole('button', { name: /cook together/i }));
     expect(screen.getByText('Cook setup route')).toBeInTheDocument();
   });
 
   it('routes the Watch card into Watch setup (#369)', () => {
     renderFork();
-    fireEvent.click(screen.getByRole('button', { name: /watching a movie/i }));
+    fireEvent.click(screen.getByRole('button', { name: /watch something/i }));
     expect(screen.getByText('Watch setup route')).toBeInTheDocument();
   });
+
+  it.each(['dinder.it.com', 'www.dinder.it.com'])(
+    'moves new rounds from %s without clearing the existing participant',
+    (hostname) => {
+      const assign = vi.fn();
+      vi.stubGlobal('location', { hostname, assign });
+      useSessionStore.setState({ currentUserId: 'existing-participant' });
+      renderFork();
+      fireEvent.click(screen.getByRole('button', { name: /eat out/i }));
+      expect(assign).toHaveBeenLastCalledWith('https://yupcrew.com/create?branch=eatout');
+      fireEvent.click(screen.getByRole('button', { name: /watch something/i }));
+      expect(assign).toHaveBeenLastCalledWith('https://yupcrew.com/watch');
+      expect(useSessionStore.getState().currentUserId).toBe('existing-participant');
+      fireEvent.click(screen.getByRole('button', { name: /join with a code/i }));
+      expect(screen.getByText('Join route')).toBeInTheDocument();
+      expect(assign).toHaveBeenCalledTimes(2);
+    }
+  );
 
   it('keeps Join with a code reachable prominently', () => {
     renderFork();

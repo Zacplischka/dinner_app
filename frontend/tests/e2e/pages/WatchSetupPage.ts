@@ -17,7 +17,7 @@ export class WatchSetupPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: /Watching a movie/i });
+    this.heading = page.getByRole('heading', { name: /Watch something/i });
     this.nameInput = page.getByLabel(/Your Name/i);
     this.startButton = page.getByRole('button', { name: /Create session/i });
     this.backButton = page.getByRole('button', { name: /Back/i });
