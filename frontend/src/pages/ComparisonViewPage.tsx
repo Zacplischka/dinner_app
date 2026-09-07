@@ -84,7 +84,7 @@ function UnmatchedSection({ name, items }: { name: PlatformName; items: MenuItem
 }
 
 const STATUS_PRESENTATION = {
-  checking: { label: 'Still checking…', className: 'motion-safe:animate-pulse text-muted' },
+  checking: { label: 'Still checking…', className: 'animate-pulse text-muted' },
   resolved: { label: 'Ready', className: 'text-lime' },
   not_found: { label: 'Not found', className: 'text-muted' },
   failed: { label: 'Failed', className: 'text-amber' },

@@ -3,6 +3,8 @@ import { test, expect, type Page } from '@playwright/test';
 // Exercise the real stream parser and page without making paid Platform requests.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
+    // Prove the drawing works on clients without the newer roundRect API.
+    Object.defineProperty(CanvasRenderingContext2D.prototype, 'roundRect', { value: undefined });
     class ComparisonSource extends EventTarget {
       static CLOSED = 2;
       readyState = 1;

@@ -21,6 +21,17 @@ export function drawPricePatrol(
     t = clamp(t);
     return t * t * (3 - 2 * t);
   };
+  function roundedPath(x: number, y: number, w: number, h: number, r: number) {
+    // arcTo keeps the artwork available on browsers predating Canvas.roundRect.
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
   function rounded(
     x: number,
     y: number,
@@ -31,8 +42,7 @@ export function drawPricePatrol(
     stroke?: string,
     line = 2
   ) {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
+    roundedPath(x, y, w, h, r);
     if (fill) {
       ctx.fillStyle = fill;
       ctx.fill();
@@ -169,8 +179,7 @@ export function drawPricePatrol(
     // Striped awning, lit windows, and a small pavement step.
     rounded(left - 5, 106, w + 10, 18, 4, accent);
     ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(left - 5, 106, w + 10, 18, 4);
+    roundedPath(left - 5, 106, w + 10, 18, 4);
     ctx.clip();
     ctx.globalAlpha = 0.21;
     ctx.fillStyle = '#fff3dd';
@@ -578,20 +587,6 @@ export function drawPricePatrol(
   }
   if (ubereats === 'resolved' && !settled) collectSlip(3.3, 4.3, left, '#65c796');
   if (doordash === 'resolved' && !settled) collectSlip(7.4, 8.4, right, '#eb8574');
-  else if (doordash && doordash !== 'resolved' && t > 7.4 && t < 8.6) {
-    const a = Math.sin(clamp((t - 7.4) / 1.2) * Math.PI);
-    ctx.globalAlpha = a;
-    rounded(right - 14, 126, 28, 23, 8, '#fff0dd');
-    line(
-      [
-        ['moveTo', right - 5, 137],
-        ['lineTo', right + 5, 137],
-      ],
-      '#76595a',
-      2
-    );
-    ctx.globalAlpha = 1;
-  }
   if (party) {
     const wobble = Math.sin(t * 3) * 0.06;
     if (ubereats === 'resolved') receipt(mid - 28, 100, '#65c796', -0.23 + wobble, 0.85);
