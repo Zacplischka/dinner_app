@@ -1,167 +1,172 @@
-// Watch setup (#369): one screen captures the Mood, then creates the Session
-// that deals the Movie Deck. A Mood the corpus cannot answer is refused inline,
-// with the chips still the Host's to edit.
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const serviceMocks = vi.hoisted(() => ({
-  createSession: vi.fn(),
-  waitForConnection: vi.fn(async () => undefined),
-  joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
+import { beforeEach, expect, it, vi } from 'vitest';
+import type { SessionLobbyState } from '@dinder/shared/types';
+const mocks = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  updateSessionChoices: vi.fn(),
+  setSessionReady: vi.fn(),
+  startSession: vi.fn(),
+  restartSession: vi.fn(),
+  removeSessionParticipant: vi.fn(),
 }));
-
-vi.mock('../../src/services/apiClient', () => ({
-  createSession: serviceMocks.createSession,
+vi.mock('../../src/services/apiClient', async (original) => ({
+  ...(await original<typeof import('../../src/services/apiClient')>()),
+  getSession: mocks.getSession,
 }));
-
-vi.mock('../../src/services/socketBindings', () => ({
-  waitForConnection: serviceMocks.waitForConnection,
-  joinSession: serviceMocks.joinSession,
-}));
-
-vi.mock('../../src/services/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(async () => ({ data: { session: null }, error: null })),
-      onAuthStateChange: vi.fn(),
+vi.mock('../../src/services/socketBindings', () => mocks);
+import SessionLobbyPage from '../../src/pages/SessionLobbyPage';
+import { useSessionStore } from '../../src/stores/sessionStore';
+import { useAuthStore } from '../../src/stores/authStore';
+const snapshot = (): SessionLobbyState => ({
+  sessionCode: 'AB123',
+  state: 'waiting',
+  branch: 'watch',
+  revision: 1,
+  mealType: 'main course',
+  headcount: 2,
+  deckSize: 15,
+  searchRadiusMiles: 5,
+  participants: [
+    {
+      participantId: 'host',
+      displayName: 'Alice',
+      isHost: true,
+      isOnline: true,
+      hasSubmitted: false,
+      ready: false,
+      waitingForNextRound: false,
     },
-  },
-  signInWithGoogle: vi.fn(async () => undefined),
-  signOut: vi.fn(async () => undefined),
-}));
-
-import WatchSetupPage from '../../src/pages/WatchSetupPage';
-
-function renderPage() {
+    {
+      participantId: 'guest',
+      displayName: 'Bob',
+      isHost: false,
+      isOnline: true,
+      hasSubmitted: false,
+      ready: false,
+      waitingForNextRound: false,
+    },
+  ],
+});
+function renderLobby(lobby = snapshot(), me = 'host') {
+  useSessionStore.setState({ sessionCode: 'AB123', currentUserId: me, isConnected: true });
+  useSessionStore.getState().setLobby(lobby);
+  mocks.getSession.mockResolvedValue({
+    shareableLink: 'http://localhost/join?code=AB123',
+    expiresAt: new Date(Date.now() + 600000).toISOString(),
+    lobby,
+  });
   return render(
-    <MemoryRouter initialEntries={['/watch']}>
+    <MemoryRouter initialEntries={['/session/AB123']}>
       <Routes>
-        <Route path="/watch" element={<WatchSetupPage />} />
-        <Route path="/session/:sessionCode" element={<div>Lobby route</div>} />
+        <Route path="/session/:sessionCode" element={<SessionLobbyPage />} />
+        <Route path="/session/:sessionCode/select" element={<div>Deck route</div>} />
       </Routes>
     </MemoryRouter>
   );
 }
-
-async function submitAs(name = 'Alice') {
-  fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: name } });
+beforeEach(() => {
+  vi.clearAllMocks();
+  useSessionStore.getState().resetSession();
+  useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false });
+});
+it('gathers people before choices and starts only after everyone confirms Ready', async () => {
+  const lobby = snapshot();
+  renderLobby(lobby);
+  expect(await screen.findByTestId('participants-list')).toHaveTextContent('Alice');
+  expect(screen.getByRole('button', { name: 'Copy shareable link' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Start swiping' })).toBeDisabled();
+  mocks.setSessionReady.mockResolvedValue({
+    success: true,
+    data: {
+      ...lobby,
+      revision: 2,
+      participants: lobby.participants.map((p) => ({ ...p, ready: true })),
+    },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'I’m ready' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Start swiping' })).toBeEnabled());
+  expect(mocks.setSessionReady).toHaveBeenCalledWith({
+    sessionCode: 'AB123',
+    revision: 1,
+    ready: true,
+  });
+  mocks.startSession.mockResolvedValue({
+    success: true,
+    data: { ...lobby, revision: 3, state: 'selecting' },
+  });
   fireEvent.click(screen.getByRole('button', { name: 'Start swiping' }));
-  await waitFor(() => expect(serviceMocks.createSession).toHaveBeenCalled());
-  return serviceMocks.createSession.mock.calls[0];
-}
-
-describe('WatchSetupPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    serviceMocks.createSession.mockResolvedValue({
+  expect(await screen.findByText('Deck route')).toBeTruthy();
+  expect(mocks.startSession).toHaveBeenCalledWith({ sessionCode: 'AB123', revision: 2 });
+});
+it('edits only the current person’s positive interests and adopts cleared Ready from the server', async () => {
+  const lobby = snapshot();
+  lobby.participants.forEach((p) => (p.ready = true));
+  renderLobby(lobby, 'guest');
+  await screen.findByRole('button', { name: 'Comedy' });
+  expect(screen.queryByRole('button', { name: 'Start swiping' })).toBeNull();
+  mocks.updateSessionChoices.mockResolvedValue({
+    success: true,
+    data: {
+      ...lobby,
+      revision: 2,
+      participants: lobby.participants.map((p) =>
+        p.participantId === 'guest'
+          ? { ...p, ready: false, mood: { genres: ['Comedy'], decades: [], mediaTypes: [] } }
+          : p
+      ),
+    },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Comedy' })).toHaveAttribute('aria-pressed', 'true')
+  );
+  expect(mocks.updateSessionChoices).toHaveBeenCalledWith({
+    sessionCode: 'AB123',
+    revision: 1,
+    mood: { genres: ['Comedy'], decades: [], mediaTypes: [] },
+  });
+  expect(screen.getByRole('button', { name: 'I’m ready' })).toBeEnabled();
+  expect(useSessionStore.getState().participants.find((p) => p.isHost)?.ready).toBe(true);
+});
+it('keeps the group together after a failed deal with choices intact and retry available', async () => {
+  const lobby = snapshot();
+  lobby.participants.forEach((p) => (p.ready = true));
+  renderLobby(lobby);
+  mocks.startSession.mockResolvedValue({
+    success: false,
+    error: { code: 'NO_MOVIES_FOUND', message: 'No movies fit. Adjust your choices.' },
+  });
+  fireEvent.click(await screen.findByRole('button', { name: 'Start swiping' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('No movies fit');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Start swiping' })).toBeEnabled());
+  expect(screen.getByRole('button', { name: 'Comedy' })).toBeVisible();
+});
+it('shows offline unready people and removes only after a Host confirmation', async () => {
+  const lobby = snapshot();
+  lobby.participants[1].isOnline = false;
+  renderLobby(lobby);
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  mocks.removeSessionParticipant.mockResolvedValue({
+    success: true,
+    data: { ...lobby, revision: 2, participants: [lobby.participants[0]] },
+  });
+  fireEvent.click(await screen.findByRole('button', { name: 'Remove Bob' }));
+  await waitFor(() =>
+    expect(mocks.removeSessionParticipant).toHaveBeenCalledWith({
       sessionCode: 'AB123',
-      hostName: 'Alice',
-      participantCount: 1,
-      state: 'waiting',
-      expiresAt: new Date().toISOString(),
-      shareableLink: 'http://localhost:3000/join?code=AB123',
-      branch: 'watch',
-      restaurantCount: 15,
-    });
-  });
-
-  it('creates a Watch Session from the Mood, then lands in the lobby', async () => {
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Horror' }));
-    fireEvent.click(screen.getByRole('button', { name: '1990s' }));
-
-    const [hostName, setup] = await submitAs();
-
-    expect(hostName).toBe('Alice');
-    expect(setup).toEqual({
-      branch: 'watch',
-      mood: { genres: ['Comedy', 'Horror'], decades: ['1990s'], mediaTypes: [] },
-      deckSize: 15,
-    });
-    await waitFor(() => expect(screen.getByText('Lobby route')).toBeInTheDocument());
-  });
-
-  it('sends the Deck size the Host chose (#415)', async () => {
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Bigger Deck' }));
-    expect(screen.getByText('20 movies')).toBeTruthy();
-
-    const [, setup] = await submitAs();
-    expect(setup.deckSize).toBe(20);
-  });
-
-  it('narrows the Mood to series when the Series chip is picked', async () => {
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Series' }));
-
-    const [, setup] = await submitAs();
-    expect(setup.mood).toEqual({ genres: [], decades: [], mediaTypes: ['tv'] });
-  });
-
-  // TMDB's terms ask for the logo and this sentence wherever its data appears;
-  // the setup screen is the Watch Branch's front door, so it carries them.
-  it('credits TMDB', () => {
-    renderPage();
-
-    expect(screen.getByText(/uses the TMDB API but is not endorsed/)).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'TMDB' })).toHaveAttribute('src', '/images/tmdb.svg');
-  });
-
-  it('deselects a chip on a second tap', async () => {
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
-    expect(screen.getByRole('button', { name: 'Comedy' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
-
-    const [, setup] = await submitAs();
-    expect(setup.mood.genres).toEqual([]);
-  });
-
-  it('sends empty chip sets when nothing is picked — no chips means anything', async () => {
-    renderPage();
-
-    const [, setup] = await submitAs();
-    expect(setup.mood).toEqual({ genres: [], decades: [], mediaTypes: [] });
-  });
-
-  it('asks no solo-or-group question', () => {
-    renderPage();
-    expect(screen.queryByText(/just me|by myself|solo|group\?/i)).not.toBeInTheDocument();
-  });
-
-  // The corpus is static, so a refusal is the whole answer: no Nearest Mood is
-  // offered, and the chips stay exactly as the Host set them.
-  it('shows the NO_MOVIES_FOUND refusal inline and leaves the Mood editable', async () => {
-    serviceMocks.createSession.mockRejectedValue(
-      Object.assign(new Error('No movies match those choices. Try removing a genre or decade.'), {
-        code: 'NO_MOVIES_FOUND',
-      })
-    );
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Documentary' }));
-    fireEvent.click(screen.getByRole('button', { name: '1970s' }));
-    await submitAs();
-
-    // Announced, like every other setup page's inline refusal.
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'No movies match those choices. Try removing a genre or decade.'
-      )
-    );
-    expect(screen.getByRole('button', { name: 'Start swiping' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Documentary' })).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
-    expect(screen.getByRole('button', { name: 'Documentary' })).toBeEnabled();
-    expect(screen.queryByRole('button', { name: /instead/i })).not.toBeInTheDocument();
-  });
+      revision: 1,
+      participantId: 'guest',
+    })
+  );
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Bob'));
+  confirm.mockRestore();
+});
+it('credits TMDB in the Watch lobby', async () => {
+  renderLobby();
+  expect(await screen.findByRole('img', { name: 'TMDB' })).toHaveAttribute(
+    'src',
+    '/images/tmdb.svg'
+  );
 });

@@ -38,7 +38,7 @@ test('uses the Neon Night Market foundation', async ({ page }) => {
   await expect(body).toHaveCSS('color', 'rgb(248, 250, 252)');
   await expect(body).toHaveCSS('background-color', 'rgb(3, 7, 18)');
 
-  // The fork has no primary CTA; the Cook setup's `Start swiping` is an
+  // Cook entry's `Create session` is an
   // enabled btn-primary once a name is entered.
   const cook = new CookSetupPage(page);
   await cook.goto();
@@ -96,12 +96,12 @@ test('uses the Neon card and field treatments', async ({ page }) => {
   await expect(submit).toHaveCSS('background-color', 'rgb(12, 23, 39)');
 });
 
-test('renders the Neon entry fork at mobile width', async ({ page }) => {
+test('renders the warm entry fork at mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
   await expect(page.getByRole('link', { name: 'Dinder home' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Tonight you/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Find something everyone.s into/i })).toBeVisible();
 
   const eatOut = page.getByRole('button', { name: /eating out/i });
   const takeaway = page.getByRole('button', { name: /getting takeaway/i });

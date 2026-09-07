@@ -1,12 +1,13 @@
 // Join Session page - Join an existing session via code
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import NavigationHeader from '../components/NavigationHeader';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
 import { validateDisplayName } from '../utils/displayName';
+import { useSessionSwitch } from '../hooks/useSessionSwitch';
 import { useProfileName } from '../hooks/useProfileName';
 
 const cleanSessionCode = (value: string) =>
@@ -17,18 +18,16 @@ const cleanSessionCode = (value: string) =>
 
 export default function JoinSessionPage() {
   const navigate = useNavigate();
+  const { continueTo, switchDialog } = useSessionSwitch();
   const [searchParams] = useSearchParams();
   const [sessionCode, setSessionCode] = useState('');
-  const [participantName, setParticipantName] = useProfileName();
+  const [participantName, setParticipantName, identity] = useProfileName();
+  const [needsName, setNeedsName] = useState(false);
+  const autoJoined = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [linkDead, setLinkDead] = useState(false);
-  const {
-    setSessionCode: storeSessionCode,
-    setCurrentUserId,
-    setSessionStatus,
-    resetSelections,
-  } = useSessionStore();
+  const { setCurrentUserId } = useSessionStore();
 
   // Pre-fill session code if provided in URL query params, then probe it.
   useEffect(() => {
@@ -45,8 +44,7 @@ export default function JoinSessionPage() {
     });
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const enter = async () => {
     setError('');
 
     // Validate inputs
@@ -67,10 +65,6 @@ export default function JoinSessionPage() {
       const socketBindingsPromise = import('../services/socketBindings');
       const code = sessionCode.trim().toUpperCase();
 
-      storeSessionCode(code);
-      resetSelections();
-      setSessionStatus('waiting');
-
       const { waitForConnection, joinSession } = await socketBindingsPromise;
       await waitForConnection();
       const ack = await joinSession(code, participantName.trim());
@@ -79,10 +73,20 @@ export default function JoinSessionPage() {
         setCurrentUserId(ack.data.participantId);
         // A Session already selecting admits late joiners (#284) — straight to
         // the Deck; the lobby is only for a Session that hasn't started.
-        navigate(ack.data.state === 'selecting' ? `/session/${code}/select` : `/session/${code}`);
+        const pending = ack.data.lobby?.participants.find(
+          (p) => p.participantId === ack.data.participantId
+        )?.waitingForNextRound;
+        navigate(
+          ack.data.state === 'selecting' && !pending
+            ? `/session/${code}/select`
+            : ack.data.state === 'complete' && !pending
+              ? `/session/${code}/results`
+              : `/session/${code}`
+        );
       } else {
         // Handle specific error cases by canonical code, falling back to message text.
         const errorMessage = ack.error.message;
+        if (ack.error.code === 'DISPLAY_NAME_TAKEN') setNeedsName(true);
         if (ack.error.code === 'SESSION_FULL' || errorMessage.includes('full')) {
           setError('This session is full (maximum 4 participants)');
         } else if (ack.error.code === 'SESSION_NOT_FOUND' || errorMessage.includes('not found')) {
@@ -99,9 +103,24 @@ export default function JoinSessionPage() {
     }
   };
 
+  useEffect(() => {
+    if (
+      identity.isLoading ||
+      !identity.hasProfileName ||
+      linkDead ||
+      autoJoined.current ||
+      !searchParams.get('code') ||
+      sessionCode.length !== SESSION_CODE_LENGTH
+    )
+      return;
+    autoJoined.current = true;
+    continueTo(enter, sessionCode);
+  });
+
   if (linkDead) {
     return (
       <main className="min-h-screen bg-ink">
+        {switchDialog}
         <NavigationHeader
           title="Join a session"
           subtitle="Enter the session code shared by your host"
@@ -138,6 +157,7 @@ export default function JoinSessionPage() {
 
   return (
     <main className="min-h-screen bg-ink">
+      {switchDialog}
       <NavigationHeader
         title="Join a session"
         subtitle="Enter the session code shared by your host"
@@ -147,7 +167,13 @@ export default function JoinSessionPage() {
 
       <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
         {/* Form */}
-        <form onSubmit={handleSubmit} className="card space-y-6">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            continueTo(enter, sessionCode);
+          }}
+          className="card space-y-6"
+        >
           {/* Session Code */}
           <div>
             <label htmlFor="sessionCode" className="label">
@@ -171,27 +197,35 @@ export default function JoinSessionPage() {
           </div>
 
           {/* Participant Name */}
-          <div>
-            <label htmlFor="participantName" className="label">
-              Your Name
-            </label>
-            <input
-              id="participantName"
-              name="displayName"
-              type="text"
-              value={participantName}
-              onChange={(e) => setParticipantName(e.target.value)}
-              placeholder="Enter your name"
-              maxLength={50}
-              className="input"
-              disabled={isLoading}
-            />
-            <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
-          </div>
+          {identity.isLoading ? (
+            <p role="status">Checking your profile…</p>
+          ) : identity.hasProfileName && !needsName ? (
+            <p>
+              Joining as <strong>{participantName}</strong>
+            </p>
+          ) : (
+            <div>
+              <label htmlFor="participantName" className="label">
+                Your Name
+              </label>
+              <input
+                id="participantName"
+                name="displayName"
+                type="text"
+                value={participantName}
+                onChange={(e) => setParticipantName(e.target.value)}
+                placeholder="Enter your name"
+                maxLength={50}
+                className="input"
+                disabled={isLoading}
+              />
+              <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
+            </div>
+          )}
 
           {/* Error message */}
           {error && (
-            <div className="p-3 bg-coral/10 border border-coral/30 rounded-xl">
+            <div role="alert" className="p-3 bg-coral/10 border border-coral/30 rounded-xl">
               <p className="text-sm text-coral-soft">{error}</p>
             </div>
           )}
@@ -200,7 +234,12 @@ export default function JoinSessionPage() {
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isLoading || !sessionCode.trim() || !participantName.trim()}
+              disabled={
+                identity.isLoading ||
+                isLoading ||
+                sessionCode.length !== SESSION_CODE_LENGTH ||
+                !!validateDisplayName(participantName)
+              }
               className="btn btn-primary w-full min-h-[48px] text-lg"
             >
               {isLoading ? 'Joining…' : 'Join session'}

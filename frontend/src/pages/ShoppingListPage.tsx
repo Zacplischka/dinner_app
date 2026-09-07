@@ -25,6 +25,8 @@ import {
 import { useSessionStore } from '../stores/sessionStore';
 import { formatPrice } from '../utils/money';
 import Spinner from '../components/Spinner';
+import RecipePricingStatus from '../components/RecipePricingStatus';
+import RecipeSourceCredit from '../components/RecipeSourceCredit';
 
 /**
  * How often the list re-reads itself — its live-update channel (#263), a timer
@@ -393,13 +395,18 @@ export default function ShoppingListPage() {
 
         {!list && !error && (
           <div className="card p-8 text-center">
-            <Spinner size="lg" className="text-cyan" label="Pricing your list at Woolworths…" />
-            <p className="mt-4 text-muted">Pricing your list at Woolworths…</p>
+            <Spinner
+              size="lg"
+              className="text-cyan"
+              label="Fetching your recipe and shopping list…"
+            />
+            <p className="mt-4 text-muted">Fetching your recipe and shopping list…</p>
           </div>
         )}
 
         {list && (
           <>
+            <RecipePricingStatus status={list.pricingStatus} />
             {/* The headline is the list total over in-tally lines — solo and
                 group need no separate design (#229). */}
             <div className="card mb-6 text-center">
@@ -409,11 +416,15 @@ export default function ShoppingListPage() {
               <p className="text-xs font-semibold tracking-[0.14em] text-lime">
                 {list.servings ? `SCALED FOR ${list.headcount}` : 'RECIPE AMOUNTS, AS WRITTEN'}
               </p>
-              <p data-list-total className="mt-1 text-4xl font-black text-text">
-                {money(total)}
-              </p>
-              {total.unpricedCount > 0 && (
-                <p className="mt-1 text-sm text-muted">{unpriced(total.unpricedCount)}</p>
+              {!list.pricingStatus && (
+                <>
+                  <p data-list-total className="mt-1 text-4xl font-black text-text">
+                    {money(total)}
+                  </p>
+                  {total.unpricedCount > 0 && (
+                    <p className="mt-1 text-sm text-muted">{unpriced(total.unpricedCount)}</p>
+                  )}
+                </>
               )}
               <p data-coverage className="mt-2 text-sm font-semibold text-lime">
                 {claimed === shop.length && shop.length > 0
@@ -427,9 +438,11 @@ export default function ShoppingListPage() {
                   list outlives the ≤24 h Freshness Window its truthfulness
                   rested on. The date is the mint's, and the cache entry behind
                   a line may be up to a day older — the skew the ADR accepts. */}
-              <p className="mt-2 text-xs text-muted">
-                Prices from Woolworths on {day.format(new Date(list.mintedAt))}.
-              </p>
+              {!list.pricingStatus && (
+                <p className="mt-2 text-xs text-muted">
+                  Prices from Woolworths on {day.format(new Date(list.mintedAt))}.
+                </p>
+              )}
             </div>
 
             {/* Identity is a label the Shopper types, never a check (#229) —
@@ -462,7 +475,7 @@ export default function ShoppingListPage() {
 
             {/* A Tally is a preview of your own receipt, not a debt: it lights
                 up on your first Claim rather than sitting at $0 (#229). */}
-            {mine.length > 0 && (
+            {mine.length > 0 && !list.pricingStatus && (
               <div className="card mb-6">
                 <p className="text-xs font-semibold tracking-[0.14em] text-muted">YOUR TALLY</p>
                 <p data-tally className="mt-1 text-2xl font-black text-text">
@@ -487,6 +500,24 @@ export default function ShoppingListPage() {
                 <ul>{pantry.map(renderLine)}</ul>
               </div>
             )}
+
+            <details className="card mb-6">
+              <summary className="cursor-pointer font-semibold text-text">Read the method</summary>
+              {list.steps.length > 0 && (
+                <ol className="mt-4 list-decimal space-y-3 pl-5 text-text">
+                  {list.steps.map((step, index) => (
+                    <li key={index}>{step}</li>
+                  ))}
+                </ol>
+              )}
+              <RecipeSourceCredit
+                hasMethod={list.steps.length > 0}
+                label="Method"
+                sourceName={list.sourceName}
+                sourceUrl={list.sourceUrl}
+                provenance={list.provenance}
+              />
+            </details>
 
             {/* The lifetime is the honest part of the bargain (#229): the URL
                 is the whole capability, and nothing extends it — so say the

@@ -435,14 +435,68 @@ describe('Deck Entry details sheet — Recipe', () => {
     seed('cook', 'Alice');
   });
 
-  it('offers no Details control, and a tap does nothing', async () => {
+  it('opens truthful fallback details for an older Recipe and returns focus without selecting', async () => {
     renderSelectionPage();
-    await screen.findByText('Carbonara');
+    const { pill, dialog } = await pressDetails();
+    expect(
+      within(dialog).getByText('A description is not available for this recipe.')
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText('Cooking time is not available.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Spoonacular')).toBeInTheDocument();
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(pill);
+    expect(useSessionStore.getState().selections).toEqual([]);
+  });
 
-    expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
+  it('shows sourced description, cuisine, time, ingredients and credit inside the existing sheet', async () => {
+    deal.mockResolvedValue([
+      {
+        ...carbonara,
+        details: {
+          description: 'Pasta with egg and cheese.',
+          cuisines: ['Italian'],
+          readyInMinutes: 25,
+          ingredients: ['200 g pasta', '2 eggs'],
+          servings: 2,
+          sourceName: 'Test Kitchen',
+          sourceUrl: 'https://example.com/recipe',
+        },
+      },
+    ]);
+    renderSelectionPage();
+    const { dialog } = await pressDetails();
+    expect(within(dialog).getByText('Pasta with egg and cheese.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Italian')).toBeInTheDocument();
+    expect(within(dialog).getByText('Ready in 25 minutes')).toBeInTheDocument();
+    expect(within(dialog).getByText('200 g pasta')).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: 'Test Kitchen' })).toHaveAttribute(
+      'href',
+      'https://example.com/recipe'
+    );
+    fireEvent.click(screen.getByTestId('details-backdrop'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(useSessionStore.getState().selections).toEqual([]);
+  });
 
-    fireEvent.mouseDown(cardFor('Carbonara'), { clientX: 120 });
-    fireEvent.mouseUp(cardFor('Carbonara'), { clientX: 120 });
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  it('shows Owned ingredients without inventing time, description or a source credit', async () => {
+    deal.mockResolvedValue([
+      {
+        ...carbonara,
+        placeId: 'owned:carbonara',
+        details: {
+          cuisines: ['Italian'],
+          ingredients: ['200 g pasta'],
+          provenance: 'owned',
+        },
+      },
+    ]);
+    renderSelectionPage();
+    const { dialog } = await pressDetails();
+    expect(within(dialog).getByText('200 g pasta')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Spoonacular')).not.toBeInTheDocument();
+    expect(within(dialog).getByText('Cooking time is not available.')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(useSessionStore.getState().selections).toEqual([]);
   });
 });

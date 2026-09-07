@@ -2,352 +2,127 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const serviceMocks = vi.hoisted(() => ({
+const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
-  geocodeArea: vi.fn(),
-  reverseGeocode: vi.fn(),
   waitForConnection: vi.fn(async () => undefined),
-  joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
+  joinSession: vi.fn(),
+  leaveSession: vi.fn(),
 }));
-
-vi.mock('../../src/services/apiClient', () => ({
-  createSession: serviceMocks.createSession,
-  geocodeArea: serviceMocks.geocodeArea,
-  reverseGeocode: serviceMocks.reverseGeocode,
+vi.mock('../../src/services/apiClient', async (original) => ({
+  ...(await original<typeof import('../../src/services/apiClient')>()),
+  createSession: mocks.createSession,
 }));
-
-vi.mock('../../src/services/socketBindings', () => ({
-  waitForConnection: serviceMocks.waitForConnection,
-  joinSession: serviceMocks.joinSession,
-}));
-
-vi.mock('../../src/services/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(async () => ({ data: { session: null }, error: null })),
-      onAuthStateChange: vi.fn(),
-    },
-  },
-  signInWithGoogle: vi.fn(async () => undefined),
-  signOut: vi.fn(async () => undefined),
-}));
-
+vi.mock('../../src/services/socketBindings', () => mocks);
 import CreateSessionPage from '../../src/pages/CreateSessionPage';
+import CookSetupPage from '../../src/pages/CookSetupPage';
+import WatchSetupPage from '../../src/pages/WatchSetupPage';
 import { useAuthStore } from '../../src/stores/authStore';
-
-const richmond = {
-  latitude: -37.8238936,
-  longitude: 144.9982667,
-  area: 'Richmond VIC 3121, Australia',
-};
-
-function renderPage(initialEntry = '/create') {
+import { useSessionStore } from '../../src/stores/sessionStore';
+function renderPage(route = '/create') {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <MemoryRouter initialEntries={[route]}>
       <Routes>
         <Route path="/create" element={<CreateSessionPage />} />
+        <Route path="/cook" element={<CookSetupPage />} />
+        <Route path="/watch" element={<WatchSetupPage />} />
         <Route path="/session/:sessionCode" element={<div>Lobby route</div>} />
       </Routes>
     </MemoryRouter>
   );
 }
-
-function stubGeolocation(impl?: Geolocation['getCurrentPosition']) {
-  Object.defineProperty(globalThis.navigator, 'geolocation', {
-    value: impl ? { getCurrentPosition: impl } : undefined,
-    configurable: true,
-  });
-}
-
-describe('CreateSessionPage location flows', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    serviceMocks.createSession.mockResolvedValue({
-      sessionCode: 'AB123',
-      hostName: 'Alice',
-      participantCount: 1,
-      state: 'waiting',
-      expiresAt: new Date().toISOString(),
-      shareableLink: 'http://localhost:3000/join?code=AB123',
-    });
-    stubGeolocation();
-  });
-
-  it('explains why location is requested', () => {
-    renderPage();
-    expect(screen.getByText(/only used to find restaurants near your group/i)).toBeTruthy();
-  });
-
-  it('creates a Session from a manually entered suburb without geolocation', async () => {
-    serviceMocks.geocodeArea.mockResolvedValue(richmond);
-    renderPage();
-
-    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
-    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
-      target: { value: 'Richmond' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Location set')).toBeTruthy();
-    });
-    expect(serviceMocks.geocodeArea).toHaveBeenCalledWith('Richmond');
-    // Human-readable area with a nearby Update action
-    expect(screen.getByText('Richmond VIC 3121, Australia')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Update' })).toBeTruthy();
-    // Radius surfaced in kilometres before submission
-    expect(screen.getByText('8 km')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Lobby route')).toBeTruthy();
-    });
-    expect(serviceMocks.createSession).toHaveBeenCalledWith('Alice', {
-      location: {
-        latitude: richmond.latitude,
-        longitude: richmond.longitude,
-        address: richmond.area,
-      },
-      searchRadiusMiles: 5, // 8 km converted to miles for the backend contract
-      branch: undefined, // no branch in the URL → today's contract, untouched (ADR 0007)
-      deckSize: 20, // untouched stepper — one Places page, exactly as before (#415)
-    });
-  });
-
-  it('forwards the fork-chosen branch to session create (#255)', async () => {
-    serviceMocks.geocodeArea.mockResolvedValue(richmond);
-    renderPage('/create?branch=takeaway');
-
-    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
-    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
-      target: { value: 'Richmond' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
-    await waitFor(() => {
-      expect(screen.getByText('Location set')).toBeTruthy();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Lobby route')).toBeTruthy();
-    });
-    expect(serviceMocks.createSession).toHaveBeenCalledWith('Alice', {
-      location: expect.any(Object),
-      searchRadiusMiles: 5,
-      branch: 'takeaway',
-      deckSize: 20,
-    });
-  });
-
-  it('drops a junk branch from the URL rather than sending it (#255)', async () => {
-    serviceMocks.geocodeArea.mockResolvedValue(richmond);
-    renderPage('/create?branch=delivery');
-
-    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
-    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
-      target: { value: 'Richmond' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
-    await waitFor(() => {
-      expect(screen.getByText('Location set')).toBeTruthy();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Lobby route')).toBeTruthy();
-    });
-    expect(serviceMocks.createSession).toHaveBeenCalledWith('Alice', {
-      location: expect.any(Object),
-      searchRadiusMiles: 5,
-      branch: undefined,
-      deckSize: 20,
-    });
-  });
-
-  it('sends the Deck size the Host stepped down to, and stops at one Places page (#415)', async () => {
-    serviceMocks.geocodeArea.mockResolvedValue(richmond);
-    renderPage();
-
-    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
-    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
-      target: { value: 'Richmond' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
-    await waitFor(() => {
-      expect(screen.getByText('Location set')).toBeTruthy();
-    });
-
-    // Eat Out and Takeaway top out at one Places page, so the stepper is
-    // already at its ceiling — the only way is down.
-    expect(screen.getByRole('button', { name: 'Bigger Deck' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Smaller Deck' }));
-    expect(screen.getByText('15 restaurants')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Lobby route')).toBeTruthy();
-    });
-    expect(serviceMocks.createSession.mock.calls[0][1]).toMatchObject({ deckSize: 15 });
-  });
-
-  it('recovers from a denied permission by switching to manual entry with inputs intact', async () => {
-    stubGeolocation((_success, errorCallback) => {
-      errorCallback?.({ code: 1, message: 'denied' } as GeolocationPositionError);
-    });
-    renderPage();
-
-    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alice' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
-
-    expect(await screen.findByText(/Location access is blocked/i)).toBeTruthy();
-    // Manual entry offered as the recovery action; name input intact
-    expect(screen.getByLabelText('Suburb or postcode')).toBeTruthy();
-    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Alice');
-  });
-
-  it('shows a retry-flavoured error when location is unavailable', async () => {
-    stubGeolocation((_success, errorCallback) => {
-      errorCallback?.({ code: 2, message: 'unavailable' } as GeolocationPositionError);
-    });
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
-
-    expect(await screen.findByText(/couldn’t determine your location/i)).toBeTruthy();
-    // Retry action still available
-    expect(screen.getByRole('button', { name: 'Use my current location' })).toBeTruthy();
-  });
-
-  it('keeps the manual query after an unresolvable area and shows the specific message', async () => {
-    serviceMocks.geocodeArea.mockRejectedValue(
-      new Error(
-        "We couldn't find that area. Check the spelling or try a nearby suburb or postcode."
-      )
-    );
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Suburb or postcode' }));
-    fireEvent.change(screen.getByLabelText('Suburb or postcode'), {
-      target: { value: 'Nowhereville' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Find area' }));
-
-    expect(await screen.findByText(/couldn't find that area/i)).toBeTruthy();
-    expect((screen.getByLabelText('Suburb or postcode') as HTMLInputElement).value).toBe(
-      'Nowhereville'
-    );
-    expect(screen.queryByText('Location set')).toBeNull();
-  });
-
-  it('resolves current location and shows a human-readable area when available', async () => {
-    stubGeolocation((success) => {
-      success({
-        coords: { latitude: -37.81, longitude: 144.96 },
-      } as GeolocationPosition);
-    });
-    serviceMocks.reverseGeocode.mockResolvedValue({
-      latitude: -37.81,
-      longitude: 144.96,
-      area: 'Melbourne',
-    });
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Location set')).toBeTruthy();
-    });
-    expect(serviceMocks.reverseGeocode).toHaveBeenCalledWith(-37.81, 144.96);
-    expect(screen.getByText('Melbourne')).toBeTruthy();
-  });
-
-  it('falls back to coordinates when no area name is available', async () => {
-    stubGeolocation((success) => {
-      success({
-        coords: { latitude: -37.81, longitude: 144.96 },
-      } as GeolocationPosition);
-    });
-    serviceMocks.reverseGeocode.mockRejectedValue(new TypeError('Failed to fetch'));
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Location set')).toBeTruthy();
-    });
-    expect(screen.getByText('-37.8100, 144.9600')).toBeTruthy();
-  });
-
-  it('offers manual entry when the browser has no geolocation support', () => {
-    stubGeolocation(undefined);
-    renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
-
-    expect(screen.getByText(/browser doesn’t support location/i)).toBeTruthy();
-    expect(screen.getByLabelText('Suburb or postcode')).toBeTruthy();
+beforeEach(() => {
+  vi.clearAllMocks();
+  useSessionStore.getState().resetSession();
+  useAuthStore.setState({ user: null, session: null, isAuthenticated: false, isLoading: false });
+  mocks.createSession.mockResolvedValue({ sessionCode: 'AB123' });
+  mocks.joinSession.mockResolvedValue({ success: true, data: { participantId: 'host' } });
+  mocks.leaveSession.mockImplementation(async () => {
+    useSessionStore.getState().resetSession();
+    return { success: true, data: null };
   });
 });
-
-// #412 — the page echoes the Branch chosen at the entry fork, and a signed-in
-// Host doesn't retype the name their Profile already carries.
-describe('CreateSessionPage identity and Branch copy', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    stubGeolocation();
-    useAuthStore.setState({ user: null, session: null, isAuthenticated: false, isLoading: false });
-  });
-
+describe('gather-first entry and identity', () => {
   it.each([
-    ['/create?branch=eatout', 'Eating out'],
-    ['/create?branch=takeaway', 'Getting takeaway'],
-    ['/create', 'New session'],
-  ])('titles %s "%s"', (entry, title) => {
-    renderPage(entry);
-    expect(screen.getByRole('heading', { name: title })).toBeTruthy();
+    ['/create', 'eatout'],
+    ['/create?branch=takeaway', 'takeaway'],
+    ['/cook', 'cook'],
+    ['/watch', 'watch'],
+  ])('creates %s before any choices', async (route, branch) => {
+    renderPage(route);
+    expect(screen.queryByRole('button', { name: 'Use my current location' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Comedy' })).toBeNull();
+    expect(screen.queryByLabelText('Shared meal type')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: ' Guest ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
+    expect(await screen.findByText('Lobby route')).toBeTruthy();
+    expect(mocks.createSession).toHaveBeenCalledWith('Guest', { branch, collaborative: true });
   });
-
-  it('prefills the name field from the signed-in Profile', async () => {
-    renderPage();
-    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
-
-    act(() => {
+  it('waits for delayed auth and creates once without a name form or confirmation', async () => {
+    useAuthStore.setState({ isLoading: true });
+    renderPage('/watch');
+    expect(screen.queryByLabelText('Your Name')).toBeNull();
+    expect(mocks.createSession).not.toHaveBeenCalled();
+    act(() =>
       useAuthStore.setState({
-        user: { user_metadata: { full_name: 'Alice Nguyen' } } as never,
+        user: { user_metadata: { full_name: ' Alice Nguyen ' } } as never,
         isAuthenticated: true,
-      });
-    });
-
-    await waitFor(() =>
-      expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Alice Nguyen')
+        isLoading: false,
+      })
     );
+    expect(await screen.findByText('Lobby route')).toBeTruthy();
+    expect(mocks.createSession).toHaveBeenCalledTimes(1);
+    expect(mocks.createSession).toHaveBeenCalledWith('Alice Nguyen', {
+      branch: 'watch',
+      collaborative: true,
+    });
   });
-
-  it('never overwrites a name the Host has already typed', async () => {
-    renderPage();
-    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Bo' } });
-
-    act(() => {
+  it.each([undefined, '', ' '.repeat(5), 'A'.repeat(51)])(
+    'asks for an explicit correction to invalid metadata %s',
+    (name) => {
       useAuthStore.setState({
-        user: { user_metadata: { full_name: 'Alice Nguyen' } } as never,
+        user: { user_metadata: { full_name: name } } as never,
         isAuthenticated: true,
       });
-    });
-
-    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('Bo');
-  });
-
-  it('leaves a guest with an empty name field', () => {
+      renderPage('/cook');
+      expect(screen.getByLabelText('Your Name')).toHaveValue('');
+      expect(mocks.createSession).not.toHaveBeenCalled();
+    }
+  );
+  it('preserves a name the guest typed when auth resolves later', () => {
     renderPage();
-    expect((screen.getByLabelText('Your Name') as HTMLInputElement).value).toBe('');
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Alex' } });
+    act(() =>
+      useAuthStore.setState({
+        user: { user_metadata: { full_name: 'Alice' } } as never,
+        isAuthenticated: true,
+      })
+    );
+    expect(screen.getByLabelText('Your Name')).toHaveValue('Alex');
+    expect(mocks.createSession).not.toHaveBeenCalled();
+  });
+  it('retains the branch and permits retry after a create failure', async () => {
+    mocks.createSession.mockRejectedValueOnce(new Error('Network unavailable'));
+    renderPage('/cook');
+    fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Zac' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create session' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network unavailable');
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Lobby route')).toBeTruthy();
+  });
+  it('does not replace existing participation without an explicit switch confirmation', async () => {
+    useSessionStore.setState({ sessionCode: 'OLD12', sessionStatus: 'selecting' });
+    useAuthStore.setState({
+      user: { user_metadata: { full_name: 'Alice' } } as never,
+      isAuthenticated: true,
+    });
+    renderPage('/cook');
+    expect(await screen.findByRole('dialog')).toHaveTextContent(
+      'Leave this session to create or join another'
+    );
+    expect(mocks.createSession).not.toHaveBeenCalled();
+    expect(mocks.leaveSession).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and continue' }));
+    await waitFor(() => expect(mocks.leaveSession).toHaveBeenCalledWith('OLD12'));
+    expect(await screen.findByText('Lobby route')).toBeTruthy();
   });
 });

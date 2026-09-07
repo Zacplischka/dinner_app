@@ -50,6 +50,45 @@ test.describe('Home Page', () => {
   });
 });
 
+test('home remains usable with failed images, reduced motion and narrow screens', async ({
+  page,
+}) => {
+  await page.route('**/images/tonight-*', (route) => route.abort());
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(
+      page.getByRole('heading', { name: /Find something everyone.s into/i })
+    ).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true
+    );
+    for (const label of [
+      /Eating out/i,
+      /Getting takeaway/i,
+      /Cooking/i,
+      /Watching a movie/i,
+      /Join with a code/i,
+      /Compare delivery prices/i,
+    ]) {
+      const control = page.getByRole('button', { name: label });
+      await expect(control).toBeVisible();
+      const box = await control.boundingBox();
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+    }
+  }
+  await page.getByRole('button', { name: /Join with a code/i }).focus();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: /Compare delivery prices/i })).toBeFocused();
+  const duration = await page
+    .locator('img[src*="tonight-"]')
+    .first()
+    .evaluate((image) => parseFloat(getComputedStyle(image).transitionDuration));
+  expect(duration).toBeLessThan(0.01);
+});
+
 test.describe('Create Session Page', () => {
   test('should display create session form', async ({ createPage }) => {
     await createPage.goto();
@@ -69,10 +108,9 @@ test.describe('Create Session Page', () => {
     await createPage.verifySubmitButtonState(false);
   });
 
-  test('should enable submit button when name and location are set', async ({ createPage }) => {
+  test('should enable submit button when the name is set', async ({ createPage }) => {
     await createPage.goto();
     await createPage.enterName('John');
-    await createPage.setCurrentLocation();
     await createPage.verifySubmitButtonState(true);
   });
 

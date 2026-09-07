@@ -203,7 +203,7 @@ describe('CookViewPage', () => {
     renderPage();
 
     await screen.findByText(steps[0]);
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Serious Eats' })).not.toBeInTheDocument();
     expect(screen.getByText(/Serious Eats/)).toBeInTheDocument();
   });
 

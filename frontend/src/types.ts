@@ -23,6 +23,8 @@ export interface Participant {
    * truth), then kept current by participant:disconnected / participant:joined.
    */
   isOnline?: boolean;
+  ready?: boolean;
+  waitingForNextRound?: boolean;
 }
 
 export interface Result {

@@ -755,4 +755,82 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().isConnected).toBe(true);
     expect(socketMocks.toast.success).not.toHaveBeenCalled();
   });
+  it('adopts authoritative lobby choices, ignores stale revisions and restarts to the Lobby', () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.setState({ sessionCode: 'AB123', selections: ['old'], deckCursor: 3 });
+    const lobby = {
+      sessionCode: 'AB123',
+      state: 'waiting',
+      branch: 'watch',
+      revision: 2,
+      mealType: 'main course',
+      headcount: 2,
+      deckSize: 15,
+      searchRadiusMiles: 5,
+      participants: [{ ...participant, ready: true, isOnline: true, waitingForNextRound: false }],
+    };
+    socket.trigger('session:lobby', lobby);
+    socket.trigger('session:lobby', { ...lobby, revision: 1, participants: [] });
+    expect(useSessionStore.getState().participants).toHaveLength(1);
+    expect(useSessionStore.getState().lobby?.revision).toBe(2);
+    socket.trigger('session:restarted', {
+      sessionCode: 'AB123',
+      state: 'waiting',
+      lobby: { ...lobby, revision: 3 },
+    });
+    expect(useSessionStore.getState().sessionStatus).toBe('waiting');
+    expect(useSessionStore.getState().selections).toEqual([]);
+    expect(useSessionStore.getState().deckCursor).toBe(0);
+  });
+
+  it('binds selections to the round that produced this Deck', async () => {
+    const socket = setupSocket();
+    const emit = vi.spyOn(socket, 'emit');
+    socketBindings.initializeSocket();
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      lobby: { sessionCode: 'AB123', round: 7 } as never,
+    });
+    await socketBindings.submitSelection('AB123', ['movie-1']);
+    await socketBindings.sendLiveSelection('AB123', 'movie-1', true);
+    expect(emit).toHaveBeenCalledWith(
+      'selection:submit',
+      { sessionCode: 'AB123', selections: ['movie-1'], round: 7 },
+      expect.any(Function)
+    );
+    expect(emit).toHaveBeenCalledWith(
+      'selection:live',
+      { sessionCode: 'AB123', placeId: 'movie-1', retract: true, round: 7 },
+      expect.any(Function)
+    );
+  });
+
+  it('hydrates a completed rejoin from the existing result without resubmitting', async () => {
+    const socket = setupSocket();
+    const emit = vi.spyOn(socket, 'emit');
+    socketBindings.initializeSocket();
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: 'socket-1',
+        participants: [participant],
+        rejoinToken: 'token',
+        state: 'complete',
+        results: {
+          sessionCode: 'AB123',
+          overlappingOptions: [{ placeId: 'movie-1', name: 'Shared movie' }],
+          allSelections: { Alice: ['movie-1'] },
+          hasOverlap: true,
+          topPick: { restaurant: { placeId: 'movie-1', name: 'Shared movie' }, likedBy: 1, of: 1 },
+          shoppingListId: 'existing-list',
+        },
+      },
+    });
+    await socketBindings.joinSession('AB123', 'Alice');
+    expect(useSessionStore.getState().sessionStatus).toBe('complete');
+    expect(useSessionStore.getState().topPick?.restaurant.name).toBe('Shared movie');
+    expect(useSessionStore.getState().shoppingListId).toBe('existing-list');
+    expect(emit.mock.calls.map(([event]) => event)).toEqual(['session:join']);
+  });
 });

@@ -188,7 +188,7 @@ jobs:
       # because its corpus is committed and dealt in memory (ADR 0014). The
       # playwright webServer entries build and start frontend + backend here.
       - name: Run mobile e2e subset
-        run: npm run test:e2e:mobile --workspace=@dinder/frontend -- home.spec.ts accessibility.spec.ts neon-theme.spec.ts cook.spec.ts watch.spec.ts
+        run: npm run test:e2e:mobile --workspace=@dinder/frontend -- home.spec.ts accessibility.spec.ts neon-theme.spec.ts cook.spec.ts watch.spec.ts collaborative-session.spec.ts
         env:
           REDIS_HOST: localhost
           REDIS_PORT: 6379

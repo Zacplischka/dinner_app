@@ -945,6 +945,42 @@ describe('ResultsPage', () => {
       });
     }
 
+    it('shows every other unanimous movie or series immediately, once, with its links', () => {
+      const unshared = { ...heat, placeId: 'tmdb:movie:999', name: 'Only Alice chose this' };
+      seedWatch({
+        restaurants: [alien, heat, thrones, unshared],
+        overlappingOptions: [alien, heat, thrones, heat],
+        allSelections: {
+          Alice: [alien.placeId, heat.placeId, thrones.placeId, unshared.placeId],
+          Bob: [alien.placeId, heat.placeId, thrones.placeId],
+        },
+      });
+      renderResults();
+      const alternatives = screen.getByRole('region', { name: 'Other matches (2)' });
+      expect(within(alternatives).getAllByText('Heat')).toHaveLength(1);
+      expect(within(alternatives).getByText('Game of Thrones')).toBeVisible();
+      expect(within(alternatives).getByText('SERIES · MATCH')).toBeVisible();
+      expect(within(alternatives).queryByText('Alien')).toBeNull();
+      expect(within(alternatives).queryByText(unshared.name)).toBeNull();
+      expect(within(alternatives).getAllByRole('link', { name: 'Where to watch' })).toHaveLength(2);
+      expect(alternatives.closest('details')).toBeNull();
+    });
+
+    it('keeps waiting Cook newcomers outside the current round selections', () => {
+      seedStore({
+        branch: 'cook',
+        participants: [alice, bob, { ...cara, waitingForNextRound: true }],
+        restaurants: [],
+        topPick: {
+          restaurant: { kind: 'recipe', placeId: 'owned:pasta', name: 'Pasta' },
+          likedBy: 2,
+          of: 2,
+        },
+      });
+      renderResults();
+      expect(screen.queryByText('Cara')).toBeNull();
+    });
+
     it('crowns the Movie with its title, poster, facts and reason', () => {
       seedWatch();
       const { container } = renderResults();
@@ -1030,8 +1066,8 @@ describe('ResultsPage', () => {
       );
       expect(trailer).toHaveAttribute('target', '_blank');
       expect(trailer.getAttribute('rel')).toContain('noopener');
-      // No overview, so nothing to credit; no IMDb id, so no IMDb link.
-      expect(screen.queryByRole('link', { name: 'TMDB' })).not.toBeInTheDocument();
+      // Catalogue metadata keeps TMDB credit even without an overview.
+      expect(screen.getByRole('link', { name: 'TMDB' })).toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'IMDb' })).not.toBeInTheDocument();
     });
 

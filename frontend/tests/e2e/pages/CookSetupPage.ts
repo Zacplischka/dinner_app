@@ -18,7 +18,7 @@ export class CookSetupPage extends BasePage {
 
     this.heading = page.getByRole('heading', { name: 'Cooking' });
     this.nameInput = page.getByLabel('Your Name');
-    this.startButton = page.getByRole('button', { name: 'Start swiping' });
+    this.startButton = page.getByRole('button', { name: 'Create session' });
   }
 
   async goto(): Promise<void> {
@@ -36,7 +36,7 @@ export class CookSetupPage extends BasePage {
   }
 
   /** Deal the Deck and land in the lobby; resolves to the Session code. */
-  async startSwiping(): Promise<string> {
+  async createSession(): Promise<string> {
     await this.startButton.click();
     await this.page.waitForURL(/\/session\/[A-Z0-9]{5}$/, { timeout: 15_000 });
     return this.page.url().split('/').pop() ?? '';

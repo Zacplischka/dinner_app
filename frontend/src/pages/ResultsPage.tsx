@@ -82,21 +82,29 @@ function RecipeCrown({
   );
 }
 
-// The Watch ending (#369): the crowned Movie, outright — no other-matches list,
-// nothing to order or compare. The trailer is the one continuation — a YouTube
+// The Watch ending: one prominent crown, followed by the other unanimous matches.
+// The trailer is the one continuation — a YouTube
 // search when the corpus has no trailer, so every crown has a next step — the
 // score is a 0-100 figure, never the Restaurant's stars, and where to watch is
 // TMDB's own page for the title in Australia (ADR 0014): JustWatch's data,
 // shown where its licence already covers it, at the cost of no API call.
 // ponytail: MovieCrown beside RecipeCrown; fold both into one EntryCrown on a fourth kind.
-function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
+function MovieCrown({
+  movie,
+  reason,
+  isCrown = true,
+}: {
+  movie: Movie;
+  reason: string;
+  isCrown?: boolean;
+}) {
   const series = movie.mediaType === 'tv';
   const meta = movieMeta(movie);
   return (
     <div
       data-match-card
-      data-movie-crown
-      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+      data-movie-crown={isCrown || undefined}
+      className={`p-4 border rounded-market-md ${isCrown ? 'bg-lime/10 border-lime shadow-glow-lime' : 'bg-surface border-line'}`}
     >
       {/* A poster is portrait, so it gets a 2:3 frame rather than the landscape hero strip. */}
       {movie.photoUrl && (
@@ -106,16 +114,18 @@ function MovieCrown({ movie, reason }: { movie: Movie; reason: string }) {
         />
       )}
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">
-        TONIGHT&rsquo;S {series ? 'SERIES' : 'MOVIE'}
+        {isCrown ? 'TONIGHT’S ' : ''}
+        {series ? 'SERIES' : 'MOVIE'}
+        {isCrown ? '' : ' · MATCH'}
       </p>
       <p className="text-lg font-semibold text-text">{movie.name}</p>
       {meta && <p className="text-sm text-muted mt-1">{meta}</p>}
       {movie.overview && (
         <>
           <p className="text-sm text-muted mt-2 line-clamp-3">{movie.overview}</p>
-          <TmdbCredit placeId={movie.placeId} />
         </>
       )}
+      <TmdbCredit placeId={movie.placeId} />
       <p className="text-sm text-muted mt-2">{reason}</p>
 
       <MovieLinks movie={movie} />
@@ -306,16 +316,21 @@ export default function ResultsPage() {
     overlappingOptions: matchedEntries,
     allSelections,
     restaurantNames,
-    participants,
+    participants: sessionParticipants,
     currentUserId,
     restaurants: deckEntries,
     sessionStatus,
     topPick: crownedEntry,
     branch,
     shoppingListId,
+    lobby,
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
+  const participants = useMemo(
+    () => sessionParticipants.filter((participant) => !participant.waitingForNextRound),
+    [sessionParticipants]
+  );
 
   // Everything below the crown — other matches, Near Misses, delivery links —
   // is restaurant chrome, so Recipes and Movies are filtered out of it. The
@@ -335,6 +350,14 @@ export default function ResultsPage() {
     crownedEntry && isMovie(crownedEntry.restaurant)
       ? { ...crownedEntry, movie: crownedEntry.restaurant }
       : undefined;
+  const otherMovieMatches = [
+    ...new Map(
+      matchedEntries
+        .filter(isMovie)
+        .filter((movie) => movie.placeId !== crownedMovie?.movie.placeId)
+        .map((movie) => [movie.placeId, movie])
+    ).values(),
+  ];
 
   // A Deck never mixes kinds, so one entry names the Deck's kind — the crown's,
   // which covers a Participant whose local Deck is empty, else the first dealt.
@@ -377,10 +400,13 @@ export default function ResultsPage() {
   // #14: a Restart from any Participant flips the Session back to selecting —
   // every tab still on results follows, not just the one that tapped the button.
   useEffect(() => {
+    if (sessionStatus === 'waiting' && lobby && sessionCode) {
+      navigate(`/session/${sessionCode}`);
+    }
     if (sessionStatus === 'selecting' && sessionCode) {
       navigate(`/session/${sessionCode}/select`);
     }
-  }, [sessionStatus, sessionCode, navigate]);
+  }, [sessionStatus, sessionCode, navigate, lobby]);
 
   // Create a lookup map for restaurant names by placeId. This, the Near Misses
   // and the unanimity check below are memoised so a socket tick that touches
@@ -462,9 +488,13 @@ export default function ResultsPage() {
       const ack = await restartSession(sessionCode);
       if (ack.success) {
         // Reset local store selections/results
-        useSessionStore.getState().resetSelections();
-        // Navigate back to selection page
-        navigate(`/session/${sessionCode}/select`);
+        if (lobby) {
+          // The restart broadcast has cleared progress and returned everyone to choices.
+          navigate(`/session/${sessionCode}`);
+        } else {
+          useSessionStore.getState().resetSelections();
+          navigate(`/session/${sessionCode}/select`);
+        }
       } else {
         setError(ack.error.message);
         setIsRestarting(false);
@@ -586,6 +616,21 @@ export default function ResultsPage() {
         ) : crownedMovie ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>
             <MovieCrown movie={crownedMovie.movie} reason={crownReason(crownedMovie, movieWords)} />
+            {otherMovieMatches.length > 0 && (
+              <section aria-labelledby="other-watch-matches" className="mt-6 space-y-4">
+                <h2 id="other-watch-matches" className="text-xl font-semibold text-text">
+                  Other matches ({otherMovieMatches.length})
+                </h2>
+                {otherMovieMatches.map((movie) => (
+                  <MovieCrown
+                    key={movie.placeId}
+                    movie={movie}
+                    reason="Everyone liked this one."
+                    isCrown={false}
+                  />
+                ))}
+              </section>
+            )}
           </div>
         ) : pick ? (
           <div className={hasOverlap ? 'match-warm-glow mb-6' : 'mb-6'}>

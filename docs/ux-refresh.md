@@ -1,6 +1,6 @@
 # Dinder UX refresh
 
-Status: accepted. Shared understanding confirmed by the user on 2026-09-07 after the grill-with-docs interview. This brief records the agreed product direction; remaining implementation and design details are listed below. This branch contains documentation only; implementation has not started. Delivery is tracked in [epic #434](https://github.com/Zacplischka/dinner_app/issues/434).
+Status: accepted. Shared understanding confirmed by the user on 2026-09-07 after the grill-with-docs interview. This brief records the agreed product direction; remaining implementation and design details are listed below. Implementation is on `codex/epic-434`; validation and the remaining diagnostic evidence are recorded in [the implementation report](epic-434-implementation.md). Delivery is tracked in [epic #434](https://github.com/Zacplischka/dinner_app/issues/434).
 
 ## Product intent
 

@@ -205,7 +205,7 @@ The number of people the Top Pick's ingredients are scaled to. Separate from the
 _Avoid_: serves, servings, party size
 
 **Shopping List**:
-The priced, claimable list minted once from a completed Cook Session's Top Pick, its Ingredient Lines scaled to the Headcount. Lives on its own fixed lifetime that nothing extends, and outlives its Session: the URL is the capability — anyone holding it reads, claims, and unclaims, with no Participant check and no live Session required. Its headline is the list total across in-tally lines.
+The claimable list minted once from a completed Cook Session's Top Pick, its Ingredient Lines scaled to the Headcount. The Recipe and scaled lines are readable while pricing runs; its price snapshot becomes frozen when pricing completes. Lives on its own fixed lifetime that nothing extends, and outlives its Session: the URL is the capability — anyone holding it reads, claims, and unclaims, with no Participant check and no live Session required. Its headline is the list total across in-tally lines.
 _Avoid_: cart, basket (both reserved for the Platform's own), grocery list, ingredient list
 
 **Ingredient Line**:

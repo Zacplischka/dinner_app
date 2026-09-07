@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
-import type { Branch, DeckEntry } from '@dinder/shared/types';
+import type { Branch, DeckEntry, SessionLobbyState } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
 import { useOrderStore } from './orderStore';
 
@@ -19,6 +19,9 @@ interface SessionState {
   currentUserId: string | null;
   /** The Session's Branch, from the join ack. Undefined before the entry fork. */
   branch?: Branch;
+
+  lobby?: SessionLobbyState;
+  setLobby: (lobby?: SessionLobbyState) => void;
 
   // Location data
   location?: Location;
@@ -98,6 +101,7 @@ const initialState = {
   participants: [],
   currentUserId: null,
   branch: undefined,
+  lobby: undefined,
   location: undefined,
   searchRadiusMiles: undefined,
   restaurants: [],
@@ -120,6 +124,34 @@ export const useSessionStore = create<SessionState>()(
     persist(
       (set) => ({
         ...initialState,
+
+        setLobby: (lobby) =>
+          set((state) => {
+            if (!lobby) return { lobby: undefined };
+            if (
+              lobby.sessionCode !== state.sessionCode ||
+              (state.lobby?.sessionCode === lobby.sessionCode &&
+                (lobby.revision < state.lobby.revision ||
+                  (lobby.revision === state.lobby.revision &&
+                    state.lobby.state === 'complete' &&
+                    lobby.state === 'selecting')))
+            )
+              return state;
+            return {
+              lobby,
+              branch: lobby.branch,
+              sessionStatus: lobby.state,
+              location: lobby.location,
+              searchRadiusMiles: lobby.searchRadiusMiles,
+              participants: lobby.participants.map((participant) => ({
+                ...participant,
+                sessionCode: lobby.sessionCode,
+                joinedAt:
+                  state.participants.find((old) => old.displayName === participant.displayName)
+                    ?.joinedAt ?? Date.now(),
+              })),
+            };
+          }),
 
         // Session actions
         setSessionCode: (code) => set({ sessionCode: code }),
@@ -194,14 +226,15 @@ export const useSessionStore = create<SessionState>()(
 
         // Results actions
         setResults: (results) =>
-          set({
+          set((state) => ({
+            lobby: state.lobby ? { ...state.lobby, state: 'complete' } : undefined,
             allSelections: results.allSelections,
             restaurantNames: results.restaurantNames || {},
             overlappingOptions: results.overlappingOptions,
             topPick: results.topPick,
             shoppingListId: results.shoppingListId,
             sessionStatus: 'complete',
-          }),
+          })),
 
         setOrderPlaceId: (placeId) => set({ orderPlaceId: placeId }),
 

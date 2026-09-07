@@ -193,7 +193,7 @@ describe('ShoppingListPage', () => {
     // that nothing anywhere reaches Woolworths except through the redirect.
     const hrefs = [...document.querySelectorAll('a')]
       .map((a) => a.getAttribute('href') ?? '')
-      .filter((href) => href !== '/list/list-1/cook');
+      .filter((href) => href !== '/list/list-1/cook' && href !== '/');
     expect(hrefs.length).toBe(5);
     for (const href of hrefs) {
       expect(href).toContain('/redirect?retailer=woolworths');
@@ -255,11 +255,36 @@ describe('ShoppingListPage', () => {
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
   });
 
-  it('waits while a fresh list is still being priced', () => {
+  it('labels the initial Recipe read accurately', () => {
     serviceMocks.getShoppingList.mockReturnValue(new Promise(() => {}));
     renderPage();
-    expect(screen.getByText(/Pricing your list at Woolworths/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fetching your recipe and shopping list/i)).toBeInTheDocument();
   });
+
+  it.each(['pending', 'failed'] as const)(
+    'keeps ingredients and method available when pricing is %s without a false total',
+    async (pricingStatus) => {
+      serviceMocks.getShoppingList.mockResolvedValue({
+        ...list,
+        pricingStatus,
+        steps: ['Boil the pasta.'],
+      });
+      const { container } = renderPage();
+      await screen.findByText('250 g canned tomatoes');
+      expect(container.querySelector('[data-list-total]')).not.toBeInTheDocument();
+      expect(
+        screen.getByText(
+          pricingStatus === 'pending' ? 'Prices are still loading' : 'Prices are unavailable'
+        )
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Cook' })).toHaveAttribute(
+        'href',
+        '/list/list-1/cook'
+      );
+      fireEvent.click(screen.getByText('Read the method'));
+      expect(screen.getByText('Boil the pasta.')).toBeInTheDocument();
+    }
+  );
 
   it('says so when the list has expired', async () => {
     serviceMocks.getShoppingList.mockRejectedValue(

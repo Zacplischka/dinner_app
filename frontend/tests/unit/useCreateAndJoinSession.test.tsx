@@ -86,7 +86,8 @@ describe('useCreateAndJoinSession', () => {
     expect(mocks.navigate).toHaveBeenCalledWith('/session/AB123');
 
     const store = useSessionStore.getState();
-    expect(store.sessionCode).toBe('AB123');
+    // joinSession owns successful Session adoption; its mock does not mutate the store.
+    expect(store.sessionCode).toBeNull();
     expect(store.currentUserId).toBe('participant-1');
     // socketBindings.joinSession owns the connection flag — mocked out here, so
     // it stays false. The hook must not write it a second time.

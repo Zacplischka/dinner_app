@@ -5,8 +5,8 @@ import { BasePage } from './BasePage';
  * HomePage - Page object for the entry fork (#255)
  *
  * Routes: /
- * `/` asks "Tonight you're…" with four Branch cards; Join-with-code and
- * Compare are a demoted text row.
+ * `/` explains the shared choice with four Branch cards; Join-with-code and
+ * Compare are prominent actions.
  */
 export class HomePage extends BasePage {
   readonly heading: Locator;
@@ -22,15 +22,15 @@ export class HomePage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: /Tonight you/i });
+    this.heading = page.getByRole('heading', { name: /Find something everyone.s into/i });
     this.eatOutCard = page.getByRole('button', { name: /Eating out/i });
     this.takeawayCard = page.getByRole('button', { name: /Getting takeaway/i });
     this.cookCard = page.getByRole('button', { name: /Cooking/i });
     this.watchCard = page.getByRole('button', { name: /Watching a movie/i });
     this.joinLink = page.getByRole('button', { name: /Join with a code/i });
     this.compareLink = page.getByRole('button', { name: 'Compare delivery prices', exact: true });
-    this.eatOutDescription = page.getByText('Swipe nearby restaurants until the group agrees.');
-    this.guestModeText = page.getByText(/Sign in to add friends/i);
+    this.eatOutDescription = page.getByText('Find a table everyone’s into.');
+    this.guestModeText = page.getByText(/No account needed/i);
   }
 
   async goto(): Promise<void> {

@@ -14,15 +14,30 @@
 // one, and it makes a rejected rejoin redirect for free — socketBindings
 // resets the store and toasts the server's reason, and this re-renders.
 
-import { Navigate, Outlet, useParams } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 
 export default function RequireSession() {
   const { sessionCode } = useParams<{ sessionCode: string }>();
-  const storedSessionCode = useSessionStore((state) => state.sessionCode);
+  const { pathname } = useLocation();
+  const {
+    sessionCode: storedSessionCode,
+    sessionStatus,
+    lobby,
+    participants,
+    currentUserId,
+  } = useSessionStore();
 
   if (storedSessionCode !== sessionCode) {
     return <Navigate to={`/join?code=${encodeURIComponent(sessionCode ?? '')}`} replace />;
+  }
+
+  const lobbyPath = `/session/${sessionCode}`;
+  const waitingParticipant = participants.find(
+    (participant) => participant.participantId === currentUserId
+  )?.waitingForNextRound;
+  if (pathname !== lobbyPath && (waitingParticipant || (lobby && sessionStatus === 'waiting'))) {
+    return <Navigate to={lobbyPath} replace />;
   }
 
   return <Outlet />;
