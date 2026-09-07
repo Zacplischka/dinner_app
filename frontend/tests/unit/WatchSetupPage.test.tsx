@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { SessionLobbyState } from '@dinder/shared/types';
@@ -75,6 +75,8 @@ it('gathers people before choices and starts only after everyone confirms Ready'
   const lobby = snapshot();
   renderLobby(lobby);
   expect(await screen.findByTestId('participants-list')).toHaveTextContent('Alice');
+  expect(screen.getByRole('group', { name: 'Getting together' })).toBeInTheDocument();
+  expect(screen.queryByText('Waiting for participant…')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Copy shareable link' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Start swiping' })).toBeDisabled();
   mocks.setSessionReady.mockResolvedValue({
@@ -98,6 +100,7 @@ it('gathers people before choices and starts only after everyone confirms Ready'
   });
   fireEvent.click(screen.getByRole('button', { name: 'Start swiping' }));
   expect(await screen.findByText('Deck route')).toBeTruthy();
+  expect(screen.queryByRole('group', { name: 'Getting together' })).not.toBeInTheDocument();
   expect(mocks.startSession).toHaveBeenCalledWith({ sessionCode: 'AB123', revision: 2 });
 });
 it('edits only the current person’s positive interests and adopts cleared Ready from the server', async () => {
@@ -142,6 +145,53 @@ it('keeps the group together after a failed deal with choices intact and retry a
   expect(await screen.findByRole('alert')).toHaveTextContent('No movies fit');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Start swiping' })).toBeEnabled());
   expect(screen.getByRole('button', { name: 'Comedy' })).toBeVisible();
+  expect(screen.getByRole('group', { name: 'Getting together' })).toBeInTheDocument();
+});
+
+it.each([1, 4])(
+  'gathers %i actual Participants without requiring empty seats to fill',
+  async (count) => {
+    const lobby = snapshot();
+    lobby.participants = Array.from({ length: count }, (_, index) => ({
+      ...lobby.participants[0],
+      participantId: index === 0 ? 'host' : `guest${index}`,
+      displayName: `Person ${index + 1}`,
+      isHost: index === 0,
+      ready: true,
+    }));
+    renderLobby(lobby);
+    expect(await screen.findByRole('button', { name: 'Start swiping' })).toBeEnabled();
+    expect(screen.getAllByTestId('participant')).toHaveLength(count);
+    expect(screen.getByRole('group', { name: 'Getting together' })).toBeInTheDocument();
+    expect(screen.getByText('Choose with whoever’s here.')).toBeInTheDocument();
+    expect(screen.queryByText('Waiting for participant…')).not.toBeInTheDocument();
+    act(() => useSessionStore.getState().setSessionStatus('expired'));
+    expect(screen.queryByRole('group', { name: 'Getting together' })).not.toBeInTheDocument();
+  }
+);
+
+it('keeps gathering art out of the late dietary check and restores it for a fresh round', async () => {
+  const lobby = snapshot();
+  lobby.branch = 'cook';
+  lobby.state = 'selecting';
+  lobby.participants[1].waitingForNextRound = true;
+  renderLobby(lobby);
+  expect(await screen.findByText('Include everyone in a fresh round')).toBeInTheDocument();
+  expect(screen.queryByRole('group', { name: 'Getting together' })).not.toBeInTheDocument();
+  act(() =>
+    useSessionStore.getState().setLobby({
+      ...lobby,
+      revision: 2,
+      state: 'waiting',
+      participants: lobby.participants.map((participant) => ({
+        ...participant,
+        ready: false,
+        waitingForNextRound: false,
+      })),
+    })
+  );
+  expect(screen.getByRole('group', { name: 'Getting together' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Start swiping' })).toBeDisabled();
 });
 it('shows offline unready people and removes only after a Host confirmation', async () => {
   const lobby = snapshot();

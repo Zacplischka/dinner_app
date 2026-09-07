@@ -20,6 +20,7 @@ import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import LobbyChoices from '../components/LobbyChoices';
 import Spinner from '../components/Spinner';
 import TmdbCredit from '../components/TmdbCredit';
+import SocialMoment from '../components/SocialMoment';
 
 export default function SessionLobbyPage() {
   const navigate = useNavigate();
@@ -183,7 +184,7 @@ export default function SessionLobbyPage() {
 
         <section className="card" aria-labelledby="participants-title">
           <h2 id="participants-title" className="mb-4 text-lg font-display font-semibold">
-            Participants <span className="text-cyan">({participants.length}/4)</span>
+            Participants <span className="text-cyan">({participants.length})</span>
           </h2>
           <div className="space-y-3" data-testid="participants-list" aria-live="polite">
             {participants.map((participant, index) => {
@@ -267,15 +268,20 @@ export default function SessionLobbyPage() {
                 </div>
               );
             })}
-            {Array.from({ length: Math.max(0, 4 - participants.length) }, (_, index) => (
-              <p
-                key={index}
-                className="rounded-xl border border-dashed border-line p-3 text-sm text-muted"
-              >
-                Waiting for participant…
-              </p>
-            ))}
           </div>
+          {sessionStatus === 'waiting' && !lobby?.starting && (
+            <div className="mt-3 text-center">
+              <SocialMoment
+                moment="gather"
+                seats={participants.map((participant) => ({
+                  ready: participant.ready,
+                  offline: participant.isOnline === false,
+                }))}
+              />
+              <p className="mt-2 text-sm font-medium">Getting together.</p>
+              <p className="mt-1 text-xs text-muted">Choose with whoever’s here.</p>
+            </div>
+          )}
         </section>
 
         {!isConnected && (

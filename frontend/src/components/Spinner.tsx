@@ -46,7 +46,7 @@ export function LoadingAnnouncer() {
  * spinner inside a coral button is coral and one on a dark page is whatever
  * `text-*` its wrapper sets — no colour prop to keep in sync.
  */
-export default function Spinner({ size = 'md', className = '', label = '' }: SpinnerProps) {
+export function useLoadingAnnouncement(label: string) {
   // ponytail: one slot, last spinner to mount wins. Two overlapping waits would
   // announce only the newer one; give the store a stack if that ever happens.
   useEffect(() => {
@@ -56,6 +56,10 @@ export default function Spinner({ size = 'md', className = '', label = '' }: Spi
       if (useWaitStore.getState().label === label) useWaitStore.setState({ label: '' });
     };
   }, [label]);
+}
+
+export default function Spinner({ size = 'md', className = '', label = '' }: SpinnerProps) {
+  useLoadingAnnouncement(label);
 
   return (
     <span

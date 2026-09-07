@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle, { type LocationMode } from '../components/LocationModeToggle';
 import RetryingPhoto from '../components/RetryingPhoto';
+import AnimatedScene from '../components/AnimatedScene';
+import { drawNeighbourhoodScout, drawALittleFurther } from '../components/discoveryMomentScene';
 import { getVenues } from '../services/apiClient';
 import {
   KM_PER_MILE,
@@ -55,12 +57,20 @@ export default function ComparePage() {
   } = useComparisonStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searched, setSearched] = useState(false);
   const [locationMode, setLocationMode] = useState<LocationMode>('current');
   const [manualQuery, setManualQuery] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [isResolvingArea, setIsResolvingArea] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
-  const activeRequestKey = useRef<string>();
+  const activeRequest = useRef<{ key: string }>();
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const cuisineCounts = new Map<string, number>();
   for (const venue of venues) {
     if (venue.cuisineType) {
@@ -89,21 +99,26 @@ export default function ComparePage() {
 
   useEffect(() => {
     if (!location) {
-      activeRequestKey.current = undefined;
+      activeRequest.current = undefined;
       return;
     }
     if (venues.length > 0) return;
 
     const requestKey = `${location.latitude}:${location.longitude}:${radiusKm}:${retryNonce}`;
-    if (activeRequestKey.current === requestKey) return;
-    activeRequestKey.current = requestKey;
+    if (activeRequest.current?.key === requestKey) return;
+    // Identity distinguishes two attempts for the same area. StrictMode still
+    // reuses an in-flight attempt instead of paying for another search.
+    const request = { key: requestKey };
+    activeRequest.current = request;
     // Backend contract is miles (1-15); the UI speaks kilometres.
     const radiusMiles = toBackendRadiusMiles(radiusKm);
     setError('');
     setLoading(true);
+    setSearched(false);
     getVenues(location, radiusMiles)
       .then((result) => {
-        if (activeRequestKey.current === requestKey) {
+        if (mounted.current && activeRequest.current === request) {
+          setSearched(true);
           setComparisonState({
             venues: result.venues,
             visibleCount: VENUE_PAGE_SIZE,
@@ -113,13 +128,13 @@ export default function ComparePage() {
         }
       })
       .catch((cause: unknown) => {
-        if (activeRequestKey.current === requestKey) {
+        if (mounted.current && activeRequest.current === request) {
           setError(cause instanceof Error ? cause.message : 'Could not load venues');
         }
       })
       .finally(() => {
-        if (activeRequestKey.current === requestKey) {
-          activeRequestKey.current = undefined;
+        if (mounted.current && activeRequest.current === request) {
+          activeRequest.current = undefined;
           setLoading(false);
         }
       });
@@ -181,6 +196,9 @@ export default function ComparePage() {
   };
 
   const changeArea = () => {
+    activeRequest.current = undefined;
+    setLoading(false);
+    setSearched(false);
     setComparisonState({ venues: [], suburb: undefined, location: undefined });
     setError('');
   };
@@ -276,7 +294,20 @@ export default function ComparePage() {
               near {suburb || 'your location'} · change
             </button>
 
-            {loading && <p className="py-12 text-center text-muted">Finding nearby venues…</p>}
+            {loading && (
+              <section className="overflow-hidden rounded-2xl border border-line/30 bg-raised p-3 pb-6 shadow-card">
+                <AnimatedScene
+                  draw={drawNeighbourhoodScout}
+                  height={180}
+                  label="Neighbourhood Scout"
+                  loadingLabel="Finding nearby venues…"
+                />
+                <h2 className="mt-2 text-center font-display text-2xl font-semibold">
+                  Scouting the neighbourhood.
+                </h2>
+                <p className="mt-2 text-center text-sm text-muted">Finding nearby venues…</p>
+              </section>
+            )}
             {error && (
               <div role="alert" className="rounded-xl bg-coral/10 p-4 text-coral-soft">
                 <p>{error}</p>
@@ -284,6 +315,7 @@ export default function ComparePage() {
                   type="button"
                   onClick={() => {
                     setError('');
+                    setSearched(false);
                     setRetryNonce(retryNonce + 1);
                   }}
                   className="btn btn-secondary mt-3 min-h-[44px]"
@@ -292,14 +324,21 @@ export default function ComparePage() {
                 </button>
               </div>
             )}
-            {!loading && !error && venues.length === 0 && (
-              <section className="rounded-market-md border border-line bg-raised p-6 text-center">
-                <p className="font-display text-lg font-semibold">No venues within {radiusKm} km</p>
+            {searched && !loading && !error && venues.length === 0 && (
+              <section className="overflow-hidden rounded-2xl border border-line bg-raised p-3 pb-6 text-center">
+                <AnimatedScene
+                  draw={drawALittleFurther}
+                  height={180}
+                  label="A Little Further"
+                  duration={3}
+                />
+                <h2 className="mt-2 font-display text-2xl font-semibold">A little further?</h2>
+                <p className="mt-3 font-semibold">No venues within {radiusKm} km</p>
                 <p className="mt-2 text-sm text-muted">Try a wider radius or a different area.</p>
                 <button
                   type="button"
                   onClick={changeArea}
-                  className="btn btn-secondary mt-4 min-h-[44px]"
+                  className="btn btn-secondary mt-4 min-h-[44px] w-full"
                 >
                   Change area
                 </button>

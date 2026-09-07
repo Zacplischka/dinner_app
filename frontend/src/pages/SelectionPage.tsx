@@ -17,6 +17,7 @@ import NavigationHeader from '../components/NavigationHeader';
 import type { DeckEntry } from '@dinder/shared/types';
 import { participantRingClass } from '../utils/participantStyles';
 import Spinner from '../components/Spinner';
+import SocialMoment from '../components/SocialMoment';
 
 interface LiveRevealInput {
   placeId: string;
@@ -500,20 +501,18 @@ function SelectionRound() {
 
         <div className="flex items-center justify-center px-4 py-8">
           <div className="max-w-md w-full text-center animate-fade-in">
-            <div className="card p-8">
-              <div className="w-20 h-20 mx-auto mb-6 bg-lime/10 border border-lime/30 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-10 h-10 text-lime"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+            <div className="card p-5 sm:p-8">
+              {sessionStatus === 'selecting' && stillSwiping.length > 0 && (
+                <SocialMoment moment="seat" watch={branch === 'watch'} />
+              )}
               <h2 className="text-3xl font-display font-black text-text mb-3">All done!</h2>
-              <p className="text-muted mb-8 text-lg">Waiting for the others…</p>
+              <p className="text-muted mb-6 text-lg">
+                {sessionStatus === 'expired'
+                  ? 'This session has expired.'
+                  : stillSwiping.length > 0
+                    ? 'Saved you a seat.'
+                    : 'Your selections are submitted.'}
+              </p>
 
               <div className="mb-6">
                 <div className="flex justify-center gap-2 mb-3">

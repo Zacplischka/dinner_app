@@ -195,8 +195,8 @@ describe('Neon Night Market components', () => {
     expect(screen.getByLabelText('Alice, host, live')).toHaveClass('border-coral');
     expect(screen.getByLabelText('Bo, offline')).toBeInTheDocument();
     expect(screen.getByText('Offline')).toHaveClass('text-muted');
-    expect(screen.getAllByText('Waiting for participant…')).toHaveLength(2);
-    expect(screen.getAllByText('Waiting for participant…')[0]).toHaveClass('border-dashed');
+    expect(screen.queryByText('Waiting for participant…')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Getting together' })).toBeInTheDocument();
   });
 
   it('reserves the brightest animation for a real match', () => {

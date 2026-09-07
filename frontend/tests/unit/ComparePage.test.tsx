@@ -332,6 +332,7 @@ describe('ComparePage', () => {
     renderPage();
 
     expect(screen.getByText('No venues match')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'A little further?' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
 
     expect(screen.getByText('Pizza Place')).toBeInTheDocument();
@@ -440,6 +441,10 @@ describe('ComparePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Too many venue searches');
+    expect(
+      screen.queryByRole('heading', { name: 'Scouting the neighbourhood.' })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'A little further?' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByText('11 Inch Pizza')).toBeInTheDocument();
@@ -491,6 +496,80 @@ describe('ComparePage', () => {
 
     expect(await screen.findByText('11 Inch Pizza')).toBeInTheDocument();
     expect(getVenues).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows Scout only while venue discovery is pending, then shows the successful empty search', async () => {
+    const pending = deferred<Awaited<ReturnType<typeof getVenues>>>();
+    vi.mocked(getVenues).mockReturnValue(pending.promise);
+    renderPage();
+    expect(
+      screen.queryByRole('heading', { name: 'Scouting the neighbourhood.' })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'A little further?' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Scouting the neighbourhood.' })
+    ).toBeInTheDocument();
+    expect(screen.getByText('Finding nearby venues…')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'A little further?' })).not.toBeInTheDocument();
+    await act(async () => pending.resolve({ venues: [] }));
+    expect(
+      screen.queryByRole('heading', { name: 'Scouting the neighbourhood.' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A little further?' })).toBeInTheDocument();
+    expect(screen.queryByText('Finding nearby venues…')).not.toBeInTheDocument();
+    expect(getVenues).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores the abandoned request when the same area is searched again', async () => {
+    const oldRequest = deferred<Awaited<ReturnType<typeof getVenues>>>();
+    const newRequest = deferred<Awaited<ReturnType<typeof getVenues>>>();
+    vi.mocked(getVenues)
+      .mockReturnValueOnce(oldRequest.promise)
+      .mockReturnValueOnce(newRequest.promise);
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+    await waitFor(() => expect(getVenues).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: /near .* · change/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+    await waitFor(() => expect(getVenues).toHaveBeenCalledTimes(2));
+    await act(async () => oldRequest.resolve({ venues: venueList(1) }));
+    expect(screen.queryByText('Venue 0')).not.toBeInTheDocument();
+    await act(async () => newRequest.resolve({ venues: [] }));
+    expect(screen.getByText('No venues within 8 km')).toBeInTheDocument();
+  });
+
+  it('does not repopulate the shared Venue list after leaving discovery', async () => {
+    const pending = deferred<Awaited<ReturnType<typeof getVenues>>>();
+    vi.mocked(getVenues).mockReturnValue(pending.promise);
+    const view = renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+    await waitFor(() => expect(getVenues).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await act(async () => pending.resolve({ venues: venueList(1) }));
+    expect(useComparisonStore.getState().venues).toEqual([]);
+  });
+
+  it('starts a fresh Scout on Retry and never retries because its animation is paused', async () => {
+    const retry = deferred<Awaited<ReturnType<typeof getVenues>>>();
+    vi.mocked(getVenues)
+      .mockRejectedValueOnce(new Error('Search unavailable'))
+      .mockReturnValueOnce(retry.promise);
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Scouting the neighbourhood.' })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Pause animation' }));
+    expect(getVenues).toHaveBeenCalledTimes(2);
+    await act(async () => retry.resolve({ venues: venueList(1) }));
+    expect(screen.getByText('Venue 0')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Scouting the neighbourhood.' })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'A little further?' })).not.toBeInTheDocument();
   });
 
   it('ignores stale results when the location changes during a request', async () => {

@@ -201,7 +201,7 @@ describe('GroupOrderPage', () => {
     expect(useOrderStore.getState().noMenuPlaceIds).toContain(restaurant.placeId);
   });
 
-  it('spins once on a stale Snapshot, then re-fires order:open on the terminal comparison event', async () => {
+  it('shows the courier for a stale Snapshot and removes it on the successful retry ack', async () => {
     let handlers: { onComparison?: () => void; onError?: (e: unknown) => void } = {};
     subscribeToComparisonMock.mockImplementation((_placeId, h) => {
       handlers = h;
@@ -217,6 +217,7 @@ describe('GroupOrderPage', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("Getting tonight's menu…")).toBeInTheDocument());
+    expect(screen.getByRole('group', { name: 'Menu delivery' })).toBeInTheDocument();
     expect(subscribeToComparisonMock).toHaveBeenCalledTimes(1);
     expect(subscribeToComparisonMock).toHaveBeenCalledWith(
       restaurant.placeId,
@@ -229,6 +230,7 @@ describe('GroupOrderPage', () => {
 
     await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
     expect(openOrderMock).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('group', { name: 'Menu delivery' })).not.toBeInTheDocument();
   });
 
   it('shows the unavailable screen when the SSE reports an error (429 / STREAM_CLOSED)', async () => {
@@ -250,6 +252,7 @@ describe('GroupOrderPage', () => {
     await waitFor(() =>
       expect(screen.getByText("Couldn't get tonight's menu.")).toBeInTheDocument()
     );
+    expect(screen.queryByRole('group', { name: 'Menu delivery' })).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "We may have hit tonight's limit on price lookups. Try again in an hour, or just order the usual way."
@@ -286,7 +289,8 @@ describe('GroupOrderPage', () => {
   });
 
   it('offers a way back to the Match while the cold menu fetch runs (#412)', async () => {
-    subscribeToComparisonMock.mockReturnValue(vi.fn());
+    const unsubscribe = vi.fn();
+    subscribeToComparisonMock.mockReturnValue(unsubscribe);
     openOrderMock.mockResolvedValue({
       success: false,
       error: { code: 'NOT_FOUND', message: 'stale', reason: 'stale' },
@@ -295,8 +299,34 @@ describe('GroupOrderPage', () => {
 
     await waitFor(() => expect(screen.getByText("Getting tonight's menu…")).toBeInTheDocument());
 
+    const wait = screen.getByText("Getting tonight's menu…").parentElement!;
+    expect(wait).toHaveClass('min-h-0', 'overflow-y-auto');
+    expect(screen.getByRole('button', { name: 'Back to the Match' })).toHaveClass('min-h-[48px]');
+
     fireEvent.click(screen.getByRole('button', { name: 'Back to the Match' }));
     expect(screen.getByText('RESULTS SCREEN')).toBeInTheDocument();
+    expect(unsubscribe).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('group', { name: 'Menu delivery' })).not.toBeInTheDocument();
+  });
+
+  it('replaces the courier when the Session expires during the cold wait', async () => {
+    subscribeToComparisonMock.mockReturnValue(vi.fn());
+    openOrderMock.mockResolvedValue({
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'stale', reason: 'stale' },
+    });
+    renderPage();
+    await screen.findByRole('group', { name: 'Menu delivery' });
+
+    act(() => useSessionStore.getState().setSessionStatus('expired'));
+
+    expect(screen.queryByRole('group', { name: 'Menu delivery' })).not.toBeInTheDocument();
+    expect(screen.getByText('This session has expired.')).toBeInTheDocument();
+    expect(
+      within(screen.getByText('This session has expired.').parentElement!).getByRole('button', {
+        name: 'Start over',
+      })
+    ).toBeInTheDocument();
   });
 
   it('shows the not-in-session screen with Back to the Match and Start over', async () => {
