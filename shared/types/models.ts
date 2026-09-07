@@ -49,6 +49,8 @@ export interface Recipe {
     cuisines?: string[];
     readyInMinutes?: number;
     ingredients: string[];
+    /** Already-normalized method, optional for older Decks (ADR 0007). */
+    steps?: string[];
     servings?: number;
     sourceName?: string;
     sourceUrl?: string;

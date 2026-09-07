@@ -93,12 +93,22 @@ function toCandidate(product: WoolworthsProduct): ProductCandidate {
  * results (#243's sapcat guard) and the verdict is a clean miss (`null`).
  */
 export function matchProducts(products: WoolworthsProduct[], term: string): ProductMatch | null {
+  // Bare garlic/cloves mean a fresh ingredient, not a prepared substitute.
+  // Keep explicitly requested paste, powder, etc. on the usual matching path.
+  const freshGarlic = /^(?:fresh |whole )?garlic(?: cloves?| bulbs?| heads?| loose)?$/i.test(
+    term.trim()
+  );
   const eligible = products
     .map((product, rank) => ({ product, rank }))
     .filter(
       ({ product }) =>
         product.sapCategory &&
-        !BLOCKED_SECTIONS.test(`${product.sapCategory} ${product.sapSubCategory ?? ''}`)
+        !BLOCKED_SECTIONS.test(`${product.sapCategory} ${product.sapSubCategory ?? ''}`) &&
+        (!freshGarlic ||
+          (/\bgarlic\b/i.test(product.name) &&
+            !/\b(pastes?|crushed|minced|chopped|dried|powder|granules?|bread|butter|oil|sauce|dip|aioli|salt|pickled|black|roasted|supplements?)\b/i.test(
+              product.name
+            )))
     );
   if (eligible.length === 0) return null;
 

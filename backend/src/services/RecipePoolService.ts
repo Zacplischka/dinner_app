@@ -231,6 +231,7 @@ function toDeckEntry(recipe: PooledRecipe): Recipe {
       cuisines: recipe.cuisines ?? (recipe.cuisine ? [recipe.cuisine] : undefined),
       readyInMinutes: recipe.readyInMinutes,
       ingredients: recipe.ingredients.map((ingredient) => ingredient.original),
+      steps: recipe.steps,
       servings: recipe.servings,
       sourceName: recipe.sourceName,
       sourceUrl: recipe.sourceUrl,

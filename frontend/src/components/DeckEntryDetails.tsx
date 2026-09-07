@@ -11,7 +11,7 @@ import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRecipe, isRestaurant } from '../types';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { formatPriceLevel, priceLevelLabel } from '../utils/money';
-import { movieMeta } from '../utils/tmdb';
+import { movieMeta, tmdbPath } from '../utils/tmdb';
 import RetryingPhoto from './RetryingPhoto';
 import GenrePills from './GenrePills';
 import MovieLinks from './MovieLinks';
@@ -33,7 +33,9 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
   const recipe = isRecipe(entry) ? entry : undefined;
+  const steps = recipe?.details?.steps ?? [];
   const meta = movie && movieMeta(movie);
+  const tmdb = movie && tmdbPath(movie.placeId);
   // `query` is required beside the id, and it is what a viewer sees if the id
   // no longer resolves. Nothing new on the wire: both fields are already there.
   const mapsHref =
@@ -139,10 +141,36 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
               {recipe.details?.readyInMinutes && (
                 <p>Ready in {recipe.details.readyInMinutes} minutes</p>
               )}
-              <p>
-                {recipe.details?.description || 'A description is not available for this recipe.'}
-              </p>
-              {!recipe.details?.readyInMinutes && <p>Cooking time is not available.</p>}
+              {recipe.details?.description ? (
+                <p>{recipe.details.description}</p>
+              ) : steps.length === 0 ? (
+                <p>A description is not available for this recipe.</p>
+              ) : null}
+              {recipe.details?.ingredients.length ? (
+                <p>
+                  {recipe.details.ingredients.length} ingredient
+                  {recipe.details.ingredients.length === 1 ? '' : 's'}
+                  {steps.length > 0 && ` · ${steps.length} step${steps.length === 1 ? '' : 's'}`}
+                </p>
+              ) : null}
+              {!recipe.details?.readyInMinutes && (
+                <p>
+                  Cooking time is not available.
+                  {steps.length > 0 ? ' Check the method before choosing.' : ''}
+                </p>
+              )}
+              {steps.length > 0 && (
+                <details>
+                  <summary className="min-h-[44px] cursor-pointer py-2 font-bold text-cyan">
+                    Preview the method
+                  </summary>
+                  <ol className="mt-2 list-decimal space-y-3 pl-5 text-text">
+                    {steps.map((step, index) => (
+                      <li key={index}>{step}</li>
+                    ))}
+                  </ol>
+                </details>
+              )}
               <h3 className="font-bold text-text">
                 Ingredients{recipe.details?.servings ? ` · serves ${recipe.details.servings}` : ''}
               </h3>
@@ -166,6 +194,16 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
           )}
 
           {movie?.overview && <p className="mt-3 text-sm text-muted">{movie.overview}</p>}
+          {tmdb && (
+            <a
+              href={`https://www.themoviedb.org/${tmdb}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex min-h-[44px] items-center text-sm text-cyan underline"
+            >
+              Read full synopsis on TMDB
+            </a>
+          )}
 
           {/* Not under the overview, which is optional: ADR 0014 asks for the
               credit wherever TMDB's data or images appear, and a Movie with no

@@ -31,6 +31,7 @@ export default function SessionLobbyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const inFlight = useRef(false);
   const fetchFailed = useRef(false);
@@ -107,10 +108,55 @@ export default function SessionLobbyPage() {
   }
   function change(choices: Omit<SessionChoicesPayload, 'sessionCode' | 'revision'>) {
     if (!lobby) return Promise.resolve();
-    return run(() =>
-      updateSessionChoices({ sessionCode: lobby.sessionCode, revision: lobby.revision, ...choices })
+    const personal = Object.keys(choices).every((key) =>
+      ['mood', 'cuisines', 'diets'].includes(key)
     );
+    // Retry only unrelated personal edits. Another tab changing my choices,
+    // shared settings, roster or round must still ask me to review them.
+    const context = (state: SessionLobbyState) =>
+      JSON.stringify([
+        state.state,
+        state.branch,
+        state.round,
+        state.starting ?? false,
+        state.mealType,
+        state.headcount,
+        state.deckSize,
+        state.location,
+        state.searchRadiusMiles,
+        state.participants.map((p) => [p.participantId, p.isHost, p.waitingForNextRound]),
+        state.participants.find((p) => p.participantId === currentUserId),
+      ]);
+    const original = context(lobby);
+    return run(async () => {
+      let current = lobby;
+      // ponytail: three retries cover the other three Participants; sustained
+      // editing surfaces the existing error instead of retrying indefinitely.
+      for (let attempt = 0; ; attempt++) {
+        const ack = await updateSessionChoices({
+          sessionCode: current.sessionCode,
+          revision: current.revision,
+          ...choices,
+        });
+        if (
+          ack.success ||
+          !personal ||
+          lobby.state !== 'waiting' ||
+          attempt === 3 ||
+          ack.error.code !== 'VALIDATION_ERROR'
+        )
+          return ack;
+        const latest = (await getSession(lobby.sessionCode)).lobby;
+        if (!latest || latest.revision <= current.revision || context(latest) !== original)
+          return ack;
+        current = latest;
+      }
+    });
   }
+
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [error]);
 
   if (isLoading)
     return (
@@ -234,7 +280,7 @@ export default function SessionLobbyPage() {
                       </p>
                     </div>
                   </div>
-                  {lobby && (
+                  {lobby && (lobby.branch === 'watch' || lobby.branch === 'cook') && (
                     <p className="mt-2 text-xs text-muted">
                       {interests.length ? interests.join(', ') : 'Happy with anything'}
                     </p>
@@ -302,6 +348,7 @@ export default function SessionLobbyPage() {
         )}
         {error && (
           <p
+            ref={errorRef}
             role="alert"
             className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
           >

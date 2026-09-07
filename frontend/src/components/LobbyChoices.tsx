@@ -186,8 +186,9 @@ export default function LobbyChoices({
           Make it your kind of night
         </h2>
         <p className="mt-2 text-sm text-muted">
-          Choices are optional. Everyone’s interests contribute; choosing nothing means you’re happy
-          with anything. Changes ask you to confirm Ready again.
+          {restaurant
+            ? 'Choose the shared search area and radius. The host can change how many restaurants to swipe. Changes ask everyone to confirm Ready again.'
+            : 'Choices are optional. Everyone’s interests contribute; choosing nothing means you’re happy with anything. Changes ask you to confirm Ready again.'}
         </p>
       </div>
       {lobby.branch === 'watch' && (

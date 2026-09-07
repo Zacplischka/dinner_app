@@ -267,6 +267,7 @@ function SelectionRound() {
 
     if (
       latest.result.fullHouse &&
+      deckCursor < entries.length &&
       fullHouseArmedRef.current &&
       !fullHouseShownRef.current.has(latest.restaurant.placeId)
     ) {
@@ -348,7 +349,8 @@ function SelectionRound() {
     setDeckCursor(deckCursor + 1);
   }, [deckCursor, entries, addSelection, sessionCode, setDeckCursor]);
 
-  const canUndo = deckCursor > 0;
+  const canUndo =
+    deckCursor > 0 && deckCursor <= entries.length && !isLoading && !isSubmitting && !hasSubmitted;
   const handleUndo = useCallback(() => {
     if (!canUndo) return;
     const previous = entries[deckCursor - 1];
@@ -432,8 +434,9 @@ function SelectionRound() {
 
   // Keyboard swipe on desktop: ← pass, → like, Backspace undo. Off while the
   // deck is inert (the Full House dialog owns the keyboard, Escape included),
-  // off the deck (loading, end-of-deck, submitted), and never while typing.
-  const deckLive = !deckInert && !isLoading && !isDone && !hasSubmitted;
+  // off the deck (loading, submitting, submitted), and never while typing.
+  // At the end of the Deck only Undo remains available, until Submission.
+  const deckLive = !deckInert && !isLoading && !isSubmitting && !hasSubmitted && entries.length > 0;
   useEffect(() => {
     if (!deckLive) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -456,8 +459,8 @@ function SelectionRound() {
       ) {
         return;
       }
-      if (e.key === 'ArrowLeft') handleSwipeLeft();
-      else if (e.key === 'ArrowRight') handleSwipeRight();
+      if (e.key === 'ArrowLeft' && !isDone) handleSwipeLeft();
+      else if (e.key === 'ArrowRight' && !isDone) handleSwipeRight();
       else if (e.key === 'Backspace' && canUndo) {
         e.preventDefault();
         handleUndo();
@@ -465,7 +468,7 @@ function SelectionRound() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [deckLive, canUndo, handleSwipeLeft, handleSwipeRight, handleUndo]);
+  }, [deckLive, isDone, canUndo, handleSwipeLeft, handleSwipeRight, handleUndo]);
 
   if (isLoading) {
     return (
@@ -653,6 +656,14 @@ function SelectionRound() {
                 )}
               </button>
 
+              <button
+                onClick={handleUndo}
+                disabled={!canUndo}
+                className="btn btn-secondary w-full min-h-[48px] mt-3"
+              >
+                Undo last choice
+              </button>
+
               {selections.length === 0 && (
                 <p className="mt-4 text-sm text-muted">
                   You didn&apos;t like any {deckNoun}s, but you can still submit!
@@ -735,7 +746,9 @@ function SelectionRound() {
         </div>
         {lobby && (
           <p className="mb-3 w-full max-w-sm flex-shrink-0 text-center text-xs text-muted">
-            This round’s deck is fixed. New interests apply next round.
+            {branch === 'eatout' || branch === 'takeaway'
+              ? 'This round’s restaurants are fixed. The area can change next round.'
+              : 'This round’s deck is fixed. New interests apply next round.'}
           </p>
         )}
         {recipeSourceDown && (
