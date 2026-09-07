@@ -129,6 +129,7 @@ function build(
     resolution?: QuantityResolution;
     /** Redis refuses the final write, the one way a mint actually fails. */
     failWrite?: boolean;
+    now?: () => number;
     failWriteOnce?: boolean;
     /** Parks the mint mid-price, so the test can stand in front of one still running. */
     holdMint?: boolean;
@@ -145,7 +146,8 @@ function build(
   redis.set = vi.fn(async (key: string, value: string, mode: 'PX', ttlMs: number) => {
     // Only the list write — the minting marker shares the key and must land,
     // otherwise the failure being staged is a different one.
-    if (ttlMs === SHOPPING_LIST_TTL_MS && writeShouldFail()) throw new Error('Redis unavailable');
+    if (!key.endsWith(':recipe') && ttlMs === SHOPPING_LIST_TTL_MS && writeShouldFail())
+      throw new Error('Redis unavailable');
     return realSet(key, value, mode, ttlMs);
   }) as typeof redis.set;
   // `hold` parks every new mint; `open` releases the one already parked. A mint
@@ -195,14 +197,14 @@ function build(
     matchProduct,
     resolveLine,
     newListId: () => `00000000-0000-4000-8000-00000000000${next++}`,
-    now: () => Date.parse('2026-08-01T10:00:00.000Z'),
+    now: overrides.now ?? (() => Date.parse('2026-08-01T10:00:00.000Z')),
     pollMs: 1,
   };
   const service = createShoppingListService(deps);
   // A second backend instance: same Redis, same Session, no shared memory —
   // which is the whole point of the marker.
   const otherInstance = () => createShoppingListService(deps);
-  return { service, otherInstance, mintGate, redis, resolveLine, matchProduct };
+  return { service, otherInstance, mintGate, redis, resolveLine, matchProduct, deps };
 }
 
 describe('ShoppingListService.mint', () => {
@@ -664,25 +666,40 @@ describe('ShoppingListService.mint', () => {
     expect(await service.readList(listId)).toBeNull();
   });
 
-  it('releases the claim when the mint fails, so the URL is not dead forever', async () => {
+  it('reports a Retailer failure while keeping ingredients, method and the same mint', async () => {
+    const { service, matchProduct } = build({ outcome: { status: 'failed' } });
+    const id = (await service.mint('AB123', '11'))!;
+    expect(await service.readList(id)).toMatchObject({
+      pricingStatus: 'failed',
+      steps: recipe.steps,
+    });
+    expect(await service.mint('AB123', '11')).toBe(id);
+    expect(matchProduct).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the Recipe URL and claim when pricing fails', async () => {
     const released: string[] = [];
     const { service } = build({ failWrite: true, onRelease: (listId) => released.push(listId) });
 
     const listId = await service.mint('AB123', '11');
     await service.readList(listId!);
 
-    expect(released).toEqual([listId]);
+    expect(released).toEqual([]);
+    expect(await service.readList(listId!, true)).toMatchObject({
+      pricingStatus: 'failed',
+      steps: recipe.steps,
+    });
   });
 
-  it('mints again after a failed mint rather than re-serving the dead id', async () => {
+  it('never silently prices the same Recipe again after a pricing failure', async () => {
     const { service } = build({ failWriteOnce: true });
 
     const dead = await service.mint('AB123', '11');
-    expect(await service.readList(dead!)).toBeNull();
+    expect(await service.readList(dead!)).toMatchObject({ pricingStatus: 'failed' });
 
     const retry = await service.mint('AB123', '11');
 
-    expect(retry).not.toBe(dead);
+    expect(retry).toBe(dead);
     expect(await service.readList(retry!)).toMatchObject({ recipeName: 'Aglio e Olio' });
   });
 
@@ -734,22 +751,59 @@ describe('ShoppingListService.mint', () => {
     expect(await reading).toMatchObject({ recipeName: 'Aglio e Olio' });
   });
 
-  // #274: a deploy restart or an OOM mid-price leaves the Session naming a list
-  // nothing ever wrote. The claim has to die with the mint, not with the Session.
-  it('mints again once an abandoned mint has expired, instead of answering with a dead id', async () => {
+  it('keeps the Recipe readable after a worker times out without repricing on read', async () => {
+    let now = Date.parse('2026-08-01T10:00:00.000Z');
+    const { service, otherInstance, mintGate, matchProduct } = build({
+      holdMint: true,
+      now: () => now,
+    });
+    const listId = (await service.mint('AB123', '11'))!;
+    now += 120_001;
+    expect(await otherInstance().readList(listId, true)).toMatchObject({
+      pricingStatus: 'failed',
+      steps: recipe.steps,
+    });
+    expect(await service.mint('AB123', '11')).toBe(listId);
+    expect(matchProduct).toHaveBeenCalledTimes(1);
+    mintGate.open();
+  });
+
+  it('does not lose the list when a pending read races pricing completion', async () => {
     const { service, redis, mintGate } = build({ holdMint: true });
-    const dead = (await service.mint('AB123', '11'))!;
+    const listId = (await service.mint('AB123', '11'))!;
+    const get = redis.get.getMockImplementation()!;
+    redis.get.mockImplementation(async (key) => {
+      if (key.endsWith(':recipe')) {
+        mintGate.open();
+        await service.readList(listId);
+      }
+      return get(key);
+    });
+    expect(await service.readList(listId, true)).toMatchObject({ recipeName: 'Aglio e Olio' });
+  });
 
-    // The process dies here: no list is ever written, and the marker holding
-    // the claim expires on its own.
-    redis.keys.delete(`shoppinglist:${dead}`);
-    expect(await service.readList(dead)).toBeNull();
-
-    mintGate.hold = false;
-    const retry = (await service.mint('AB123', '11'))!;
-
-    expect(retry).not.toBe(dead);
-    expect(await service.readList(retry)).toMatchObject({ recipeName: 'Aglio e Olio' });
+  it('opens pending ingredients by URL, survives Session expiry and preserves Claims when prices arrive', async () => {
+    const { service, otherInstance, mintGate, deps, matchProduct } = build({ holdMint: true });
+    const listId = (await service.mint('AB123', '11'))!;
+    vi.spyOn(deps, 'readSession').mockResolvedValue(null);
+    for (const reader of [service, otherInstance()]) {
+      expect(await reader.readList(listId, true)).toMatchObject({
+        pricingStatus: 'pending',
+        steps: recipe.steps,
+        sourceName: 'Full Belly Sisters',
+        lines: [{ text: '600 g canned tomatoes', state: 'unmatched' }, { text: '3 tsp salt' }],
+      });
+    }
+    await service.claimLine(listId, '0', 'Alice');
+    mintGate.open();
+    const completed = await otherInstance().readList(listId);
+    expect(completed?.pricingStatus).toBeUndefined();
+    expect(completed?.lines[0]).toMatchObject({
+      state: 'priced',
+      claimedBy: 'Alice',
+      priceCents: 280,
+    });
+    expect(matchProduct).toHaveBeenCalledTimes(1);
   });
 
   it('keeps answering with the id it minted while that list is still there', async () => {
@@ -865,12 +919,11 @@ describe('ShoppingListService claims', () => {
     expect(await service.releaseLine('00000000-0000-4000-8000-000000009999', '0')).toBeNull();
   });
 
-  it('will not claim on a list still being priced', async () => {
+  it('claims the stable Ingredient Line while its price is pending', async () => {
     const { service, mintGate } = build({ holdMint: true });
     const listId = (await service.mint('AB123', '11'))!;
 
-    // The marker stands under the key, but there are no lines yet to claim.
-    expect(await service.claimLine(listId, '0', 'Alice')).toBeNull();
+    expect((await service.claimLine(listId, '0', 'Alice'))?.lines[0].claimedBy).toBe('Alice');
     mintGate.open();
   });
 

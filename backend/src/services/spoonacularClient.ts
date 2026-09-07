@@ -3,7 +3,7 @@
 // Spoonacular call must flow through — the #261 daily-points guard wraps it.
 // api.spoonacular.com sits behind Cloudflare, which 403s non-browser user
 // agents (#244), so the browser UA is pinned like the Woolworths client's.
-import type { Craving, Recipe } from '@dinder/shared/types';
+import { DIETS, type Craving, type Diet, type Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import { number } from './storefrontResolution.js';
@@ -53,6 +53,10 @@ export interface PooledRecipe extends Recipe {
   servings?: number;
   sourceName?: string;
   sourceUrl?: string;
+  description?: string;
+  cuisines?: string[];
+  cuisine?: string;
+  readyInMinutes?: number;
 }
 
 /**
@@ -87,6 +91,10 @@ interface RecipeSearchResult {
   title?: unknown;
   image?: unknown;
   aggregateLikes?: unknown;
+  summary?: unknown;
+  cuisines?: unknown;
+  diets?: unknown;
+  readyInMinutes?: unknown;
   servings?: unknown;
   sourceName?: unknown;
   sourceUrl?: unknown;
@@ -103,6 +111,32 @@ interface RecipeSearchResult {
 const text = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() !== '' ? value : undefined;
 
+/** Plain display text, not HTML. This deliberately never touches method steps. */
+function summaryText(value: unknown): string | undefined {
+  const entities: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+  };
+  return (
+    text(value)
+      ?.replace(/<[^>]*>/g, ' ')
+      .replace(/&(amp|lt|gt|quot|apos|nbsp|#(?:x[0-9a-f]+|[0-9]+));/gi, (whole, entity: string) => {
+        if (!entity.startsWith('#')) return entities[entity.toLowerCase()];
+        const code =
+          entity[1].toLowerCase() === 'x' ? parseInt(entity.slice(2), 16) : Number(entity.slice(1));
+        return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff)
+          ? String.fromCodePoint(code)
+          : whole;
+      })
+      .replace(/\s+/g, ' ')
+      .trim() || undefined
+  );
+}
+
 function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
   const id = number(result.id);
   const name = text(result.title);
@@ -114,6 +148,26 @@ function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
     name,
     photoUrl: text(result.image),
     aggregateLikes: number(result.aggregateLikes),
+    // Summary markup is rendered as text, never HTML. Keep source wording;
+    // method punctuation and step order are deliberately untouched (#448).
+    description: summaryText(result.summary),
+    cuisines: Array.isArray(result.cuisines)
+      ? result.cuisines.flatMap((value) => text(value) ?? [])
+      : undefined,
+    diets: Array.isArray(result.diets)
+      ? result.diets.flatMap((value) => {
+          const diet = typeof value === 'string' ? value.toLowerCase() : '';
+          const aliases: Record<string, Diet> = {
+            paleolithic: 'paleo',
+            'lacto ovo vegetarian': 'vegetarian',
+            pescatarian: 'pescetarian',
+          };
+          const canonical = aliases[diet] ?? diet;
+          return DIETS.includes(canonical as Diet) ? [canonical as Diet] : [];
+        })
+      : undefined,
+    readyInMinutes:
+      (number(result.readyInMinutes) ?? 0) > 0 ? number(result.readyInMinutes) : undefined,
     servings: number(result.servings),
     sourceName: text(result.sourceName),
     // Spoonacular's own page for the Recipe is the fallback, because this URL

@@ -47,7 +47,9 @@ export function createListsRouter(service: ShoppingListService) {
     '/:listId',
     asyncHandler(async (req, res) => {
       const { listId } = req.params;
-      const list = LIST_ID.test(listId) ? await service.readList(listId) : null;
+      const list = LIST_ID.test(listId)
+        ? await service.readList(listId, req.query.includePending === 'true')
+        : null;
 
       if (!list) {
         req.log?.warn({ listId, reason: 'list_not_found' }, 'Rejected shopping list read');

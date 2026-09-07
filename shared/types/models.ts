@@ -1,4 +1,5 @@
 // Shared TypeScript types for data models
+import type { Diet } from './cook.js';
 
 export const SESSION_CODE_LENGTH = 5;
 export const SESSION_CODE_PATTERN = /^[A-Z0-9]{5}$/;
@@ -40,6 +41,20 @@ export interface Recipe {
    * standing in for a Restaurant's rating.
    */
   aggregateLikes?: number;
+  /** Validated source diet labels; absence means unknown, not unrestricted. */
+  diets?: Diet[];
+  /** Additive: Recipes dealt by an older server still open an honest fallback. */
+  details?: {
+    description?: string;
+    cuisines?: string[];
+    readyInMinutes?: number;
+    ingredients: string[];
+    servings?: number;
+    sourceName?: string;
+    sourceUrl?: string;
+    /** Only Owned Recipes omit the vendor credit (ADR 0012). */
+    provenance?: 'owned';
+  };
 }
 
 /**

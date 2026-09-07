@@ -65,7 +65,7 @@ const IMPLIED: Partial<Record<Diet, readonly Diet[]>> = {
   vegetarian: ['pescetarian'],
 };
 
-const satisfies = (diets: readonly Diet[]): Set<Diet> =>
+export const satisfiedDiets = (diets: readonly Diet[]): Set<Diet> =>
   new Set(diets.flatMap((diet) => [diet, ...(IMPLIED[diet] ?? [])]));
 
 export interface OwnedRecipeStore {
@@ -85,7 +85,7 @@ export interface OwnedRecipeStore {
 }
 
 export function createOwnedRecipeStore(recipes: readonly OwnedRecipe[]): OwnedRecipeStore {
-  const indexed = recipes.map((recipe) => ({ recipe, diets: satisfies(recipe.diets) }));
+  const indexed = recipes.map((recipe) => ({ recipe, diets: satisfiedDiets(recipe.diets) }));
   return {
     forCraving(craving) {
       return indexed

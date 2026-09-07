@@ -6,10 +6,11 @@
 
 import { logger } from '../logger.js';
 import { randomUUID } from 'node:crypto';
-import { shareableLink } from '../config/index.js';
+import { config, shareableLink } from '../config/index.js';
 import { getExpiresAtISO, type SessionStore } from '../store/sessionStore.js';
 import * as RestaurantSearchService from './RestaurantSearchService.js';
 import { DomainError } from './DomainError.js';
+import { createLobbyCommands } from './SessionLobbyService.js';
 import { cravingPoolKey } from './RecipePoolService.js';
 import {
   MAX_RESTAURANT_DECK_SIZE,
@@ -20,6 +21,10 @@ import {
   type Mood,
   type SessionLocation,
   isRestaurant,
+  type SessionLobbyState,
+  type SessionResultsEvent,
+  type TopPick,
+  type Craving as CollaborativeCraving,
 } from '@dinder/shared/types';
 
 /** Maximum participants per session, including the reserved host slot — the cap the join path enforces. */
@@ -33,6 +38,35 @@ export const MAX_PARTICIPANTS = 4;
  */
 function middleRung(entry: DeckEntry): number {
   return (entry.kind === 'recipe' ? entry.aggregateLikes : entry.rating) ?? -1;
+}
+
+/** The same read-only crown rule for completion and completed rejoin. */
+function rankTopPick(
+  results: {
+    allSelections: Record<string, string[]>;
+    overlappingOptions: DeckEntry[];
+    hasOverlap: boolean;
+  },
+  deck: DeckEntry[]
+): TopPick | undefined {
+  const selections = Object.values(results.allSelections);
+  const tally = new Map<string, number>();
+  for (const ids of selections) for (const id of ids) tally.set(id, (tally.get(id) ?? 0) + 1);
+  let pool = results.overlappingOptions;
+  if (!results.hasOverlap) {
+    const selected = deck.filter((e) => (tally.get(e.placeId) ?? 0) > 0);
+    const open = deck.filter((e) => !isRestaurant(e) || e.openNow !== false);
+    pool = selected.length ? selected : open.length ? open : deck;
+  }
+  const crowned = [...pool].sort(
+    (a, b) =>
+      (tally.get(b.placeId) ?? 0) - (tally.get(a.placeId) ?? 0) ||
+      middleRung(b) - middleRung(a) ||
+      a.name.localeCompare(b.name)
+  )[0];
+  return crowned
+    ? { restaurant: crowned, likedBy: tally.get(crowned.placeId) ?? 0, of: selections.length }
+    : undefined;
 }
 
 export interface SessionServiceDeps {
@@ -61,9 +95,20 @@ export interface SessionServiceDeps {
    * The Watch Branch's Deck supply (#369): the corpus Movies matching a Mood,
    * cut to a Deck. Synchronous and never rejects — the corpus is in memory.
    */
-  dealMovieDeck: (mood: Mood, deckSize?: number) => DeckEntry[];
+  dealMovieDeck: (mood: Mood, deckSize?: number, interests?: Mood[]) => DeckEntry[];
   /** A Watch Restart's Deck: the same Mood again, the just-wiped Movies dealt last. */
-  redealMovieDeck: (mood: Mood, current: DeckEntry[], deckSize?: number) => DeckEntry[];
+  redealMovieDeck: (
+    mood: Mood,
+    current: DeckEntry[],
+    deckSize?: number,
+    interests?: Mood[]
+  ) => DeckEntry[];
+  dealCollaborativeRecipeDeck?: (
+    craving: CollaborativeCraving,
+    interests: CollaborativeCraving['cuisines'][],
+    current: DeckEntry[],
+    deckSize?: number
+  ) => Promise<{ entries: DeckEntry[]; recipeSourceDown: boolean }>;
   /**
    * Mints the Shopping List a completed Cook Session's crowned Recipe calls
    * for (#262), returning its id — or undefined when there is nothing to mint.
@@ -109,6 +154,7 @@ export function createSessionService({
   dealMovieDeck,
   redealMovieDeck,
   mintShoppingList,
+  dealCollaborativeRecipeDeck,
 }: SessionServiceDeps) {
   /**
    * Create a new session with the given host
@@ -121,6 +167,7 @@ export function createSessionService({
   async function createSession(
     hostName: string,
     setup: {
+      collaborative?: boolean;
       location?: SessionLocation;
       searchRadiusMiles?: number;
       branch?: Branch;
@@ -134,6 +181,7 @@ export function createSessionService({
       deckSize?: number;
     } = {}
   ): Promise<{
+    lobby?: SessionLobbyState;
     sessionCode: string;
     hostName: string;
     participantCount: number;
@@ -150,7 +198,17 @@ export function createSessionService({
     restaurantCount?: number;
     headcount?: number;
   }> {
-    const { location, searchRadiusMiles, branch, cook, watch, deckSize } = setup;
+    const { location, searchRadiusMiles, branch, cook, watch } = setup;
+    const collaborative = setup.collaborative === true && branch !== undefined;
+    const deckSize =
+      setup.deckSize ??
+      (collaborative
+        ? branch === 'cook'
+          ? config.spoonacular.deckSize
+          : branch === 'watch'
+            ? 15
+            : MAX_RESTAURANT_DECK_SIZE
+        : undefined);
 
     // Generate unique session code
     let sessionCode = generateSessionCode();
@@ -186,78 +244,80 @@ export function createSessionService({
     // Branch searches nearby Restaurants as before.
     let deckEntries: DeckEntry[] = [];
     let recipeSourceDown = false;
-    if (cook) {
-      // The two ways a deal can come back without Recipes are different facts
-      // and get different words (#250): the source answering "none" is about
-      // the Craving, the source not answering is not.
-      //
-      // Every rejection is read as the second, which holds because dealDeck's
-      // one documented failure is the source, and since #333 it only rejects
-      // when the Owned Recipe Store had nothing to deal either. A deal that
-      // ever learns to reject for a reason of its own must say so with a
-      // DomainError and be let through here, or it will be mislabelled.
-      const dealt = await dealRecipeDeck(cook.craving, deckSize).catch((error: unknown) => {
-        logger.error({ err: error, sessionCode }, 'Recipe source failed dealing a Deck');
-        throw new DomainError(
-          'RECIPE_SOURCE_UNAVAILABLE',
-          "Couldn't load recipes just now. Try again in a moment."
-        );
-      });
-      deckEntries = dealt.entries;
-      recipeSourceDown = dealt.recipeSourceDown;
+    if (!collaborative) {
+      if (cook) {
+        // The two ways a deal can come back without Recipes are different facts
+        // and get different words (#250): the source answering "none" is about
+        // the Craving, the source not answering is not.
+        //
+        // Every rejection is read as the second, which holds because dealDeck's
+        // one documented failure is the source, and since #333 it only rejects
+        // when the Owned Recipe Store had nothing to deal either. A deal that
+        // ever learns to reject for a reason of its own must say so with a
+        // DomainError and be let through here, or it will be mislabelled.
+        const dealt = await dealRecipeDeck(cook.craving, deckSize).catch((error: unknown) => {
+          logger.error({ err: error, sessionCode }, 'Recipe source failed dealing a Deck');
+          throw new DomainError(
+            'RECIPE_SOURCE_UNAVAILABLE',
+            "Couldn't load recipes just now. Try again in a moment."
+          );
+        });
+        deckEntries = dealt.entries;
+        recipeSourceDown = dealt.recipeSourceDown;
 
-      if (deckEntries.length === 0) {
-        // The zero-Recipe Craving: the Cook Branch's one refusal, and it lands
-        // at setup with the chips still editable, never on a Session (#260).
-        // Since the blend it is a statement about the *union* — both supplies
-        // empty (#316). Nothing is auto-relaxed — the Host relaxes their own
-        // chips.
-        logger.warn({ sessionCode, craving: cook.craving }, 'No recipes found for Craving');
-        throw new DomainError(
-          'NO_RECIPES_FOUND',
-          'No recipes match those choices. Try removing a filter.'
-        );
-      }
-    } else if (watch) {
-      // The corpus is in memory, so a deal cannot fail — only come up empty,
-      // which like the Cook refusal lands at setup with the chips still
-      // editable, never on a Session (#369).
-      deckEntries = dealMovieDeck(watch.mood, deckSize);
+        if (deckEntries.length === 0) {
+          // The zero-Recipe Craving: the Cook Branch's one refusal, and it lands
+          // at setup with the chips still editable, never on a Session (#260).
+          // Since the blend it is a statement about the *union* — both supplies
+          // empty (#316). Nothing is auto-relaxed — the Host relaxes their own
+          // chips.
+          logger.warn({ sessionCode, craving: cook.craving }, 'No recipes found for Craving');
+          throw new DomainError(
+            'NO_RECIPES_FOUND',
+            'No recipes match those choices. Try removing a filter.'
+          );
+        }
+      } else if (watch) {
+        // The corpus is in memory, so a deal cannot fail — only come up empty,
+        // which like the Cook refusal lands at setup with the chips still
+        // editable, never on a Session (#369).
+        deckEntries = dealMovieDeck(watch.mood, deckSize);
 
-      if (deckEntries.length === 0) {
-        logger.warn({ sessionCode, mood: watch.mood }, 'No movies found for Mood');
-        throw new DomainError(
-          'NO_MOVIES_FOUND',
-          'No movies match those choices. Try removing a genre or decade.'
-        );
-      }
-    } else if (location && searchRadiusMiles) {
-      // Convert miles to meters (1 mile = 1609.34 meters)
-      const radiusMeters = searchRadiusMiles * 1609.34;
+        if (deckEntries.length === 0) {
+          logger.warn({ sessionCode, mood: watch.mood }, 'No movies found for Mood');
+          throw new DomainError(
+            'NO_MOVIES_FOUND',
+            'No movies match those choices. Try removing a genre or decade.'
+          );
+        }
+      } else if (location && searchRadiusMiles) {
+        // Convert miles to meters (1 mile = 1609.34 meters)
+        const radiusMeters = searchRadiusMiles * 1609.34;
 
-      deckEntries = await searchNearbyRestaurants({
-        latitude: location.latitude,
-        longitude: location.longitude,
-        radiusMeters,
-        // A local post-search cap — RestaurantSearchService slices its merged
-        // results to this; nothing is sent to the Places API. One page is 20
-        // and is never paged (#97), so that is also the Host's ceiling here.
-        maxResults: deckSize ?? MAX_RESTAURANT_DECK_SIZE,
-      });
+        deckEntries = await searchNearbyRestaurants({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          radiusMeters,
+          // A local post-search cap — RestaurantSearchService slices its merged
+          // results to this; nothing is sent to the Places API. One page is 20
+          // and is never paged (#97), so that is also the Host's ceiling here.
+          maxResults: deckSize ?? MAX_RESTAURANT_DECK_SIZE,
+        });
 
-      // Throw error if no restaurants found
-      if (deckEntries.length === 0) {
-        logger.warn(
-          {
-            sessionCode,
-            searchRadiusMiles,
-          },
-          'No restaurants found during session creation'
-        );
-        throw new DomainError(
-          'NO_RESTAURANTS_FOUND',
-          'No restaurants found in the specified area. Try expanding your search radius.'
-        );
+        // Throw error if no restaurants found
+        if (deckEntries.length === 0) {
+          logger.warn(
+            {
+              sessionCode,
+              searchRadiusMiles,
+            },
+            'No restaurants found during session creation'
+          );
+          throw new DomainError(
+            'NO_RESTAURANTS_FOUND',
+            'No restaurants found in the specified area. Try expanding your search radius.'
+          );
+        }
       }
     }
 
@@ -265,11 +325,14 @@ export function createSessionService({
     // Note: hostId is temporary and not used since host joins via WebSocket
     const { session, expireAt } = await store.createSession(sessionCode, {
       hostId: `temp-${Date.now()}`,
+      lobby: collaborative
+        ? { revision: 0, mealType: cook?.craving.mealType ?? 'main course' }
+        : undefined,
       hostName,
       location,
       searchRadiusMiles,
       branch,
-      headcount: cook?.headcount,
+      headcount: cook?.headcount ?? (collaborative ? 2 : undefined),
       deckSize,
       cravingKey: cook && cravingPoolKey(cook.craving),
       mood: watch?.mood,
@@ -289,6 +352,7 @@ export function createSessionService({
     );
 
     return {
+      lobby: collaborative ? await lobby.getLobby(sessionCode) : undefined,
       sessionCode,
       hostName,
       participantCount: 1,
@@ -307,6 +371,7 @@ export function createSessionService({
    * Get session details
    */
   async function getSession(sessionCode: string): Promise<{
+    lobby?: SessionLobbyState;
     sessionCode: string;
     hostName: string;
     participantCount: number;
@@ -349,6 +414,7 @@ export function createSessionService({
     const expireAt = Math.floor(Date.now() / 1000) + ttl;
 
     return {
+      lobby: session.lobby ? await lobby.getLobby(sessionCode) : undefined,
       sessionCode,
       hostName: hostName || 'Unknown Host',
       participantCount: session.participantCount,
@@ -380,6 +446,8 @@ export function createSessionService({
     participantId: string;
     sessionCode: string;
     participantName: string;
+    results?: SessionResultsEvent;
+    lobby?: SessionLobbyState;
     participantCount: number;
     isHost: boolean;
     isRejoin: boolean;
@@ -447,12 +515,12 @@ export function createSessionService({
       isHost = prior.isHost;
       participantRejoinToken = prior.rejoinToken!;
     } else {
-      isHost = !hostPresent && displayName === session.hostName;
+      isHost = !session.hostSlotReleased && !hostPresent && displayName === session.hostName;
       participantRejoinToken = randomUUID();
     }
 
     // The host slot stays reserved in the count until the host claims it
-    const reservedHostSlot = Number(!(hostPresent || isHost));
+    const reservedHostSlot = Number(!(hostPresent || isHost || session.hostSlotReleased));
 
     if (!prior) {
       // Check participant limit
@@ -510,7 +578,7 @@ export function createSessionService({
       try {
         leftSession = {
           sessionCode: elsewhere.sessionCode,
-          ...(await leaveSession(elsewhere.sessionCode, participantId)),
+          ...(await guarded(leaveSession)(elsewhere.sessionCode, participantId)),
         };
       } catch (error) {
         // The old Session being gone already is not this join's problem.
@@ -537,6 +605,13 @@ export function createSessionService({
       displayName,
       isHost,
       rejoinToken: participantRejoinToken,
+      ready: prior?.ready,
+      mood: prior?.mood,
+      cuisines: prior?.cuisines,
+      diets: prior?.diets,
+      waitingForNextRound:
+        prior?.waitingForNextRound ??
+        Boolean(session.lobby && session.branch === 'cook' && session.state === 'selecting'),
     });
 
     // Re-check after adding to close the check-then-add race. Rejoins are
@@ -594,7 +669,19 @@ export function createSessionService({
     }
 
     // Sole participantCount writer: set size plus the reserved host slot
-    const participantCount = setSize + reservedHostSlot;
+    const joinedRoster = await store.listParticipants(sessionCode);
+    const participantCount = session.lobby
+      ? joinedRoster.filter((p) => !p.waitingForNextRound).length + reservedHostSlot
+      : setSize + reservedHostSlot;
+    if (session.lobby) {
+      if (!prior && session.state === 'waiting') {
+        for (const p of joinedRoster)
+          await store.writeParticipantChoices(p.participantId, { ready: false });
+      }
+      session.lobby.revision++;
+      session.lobby.starting = false;
+      await store.writeLobbySession(session);
+    }
     await store.setParticipantCount(sessionCode, participantCount);
 
     if (carriedSelections) {
@@ -623,6 +710,8 @@ export function createSessionService({
       participantId,
       sessionCode,
       participantName: displayName,
+      results: session.state === 'complete' ? await readCompletedResults(sessionCode) : undefined,
+      lobby: session.lobby ? await lobby.getLobby(sessionCode) : undefined,
       participantCount,
       isHost,
       isRejoin,
@@ -641,6 +730,20 @@ export function createSessionService({
       branch: session.branch,
       state: session.state,
       leftSession,
+    };
+  }
+
+  async function readCompletedResults(sessionCode: string): Promise<SessionResultsEvent> {
+    const session = await store.readSession(sessionCode);
+    const results = await store.readMatch(sessionCode);
+    return {
+      sessionCode,
+      ...results,
+      topPick: rankTopPick(
+        results,
+        results.hasOverlap ? [] : (await store.getDeck(sessionCode)).entries
+      ),
+      shoppingListId: session?.shoppingListId,
     };
   }
 
@@ -677,28 +780,10 @@ export function createSessionService({
     }
     const nearMissCount = [...tally.values()].filter((n) => n === selections.length - 1).length;
 
-    // Top Pick: crown one entry from the Match, else every entry anyone selected,
-    // else the Deck's open entries.
-    const of = selections.length;
-    let pool = results.overlappingOptions;
-    if (!results.hasOverlap) {
-      const deck = (await store.getDeck(sessionCode)).entries;
-      const selected = deck.filter((e) => (tally.get(e.placeId) ?? 0) > 0);
-      // Nobody selected anything: fall back to the Deck so the screen still answers,
-      // but don't crown a venue Places says is shut when an open one exists. Only a
-      // Restaurant can be shut — every other kind is always in the open pool.
-      const open = deck.filter((e) => !isRestaurant(e) || e.openNow !== false);
-      pool = selected.length > 0 ? selected : open.length > 0 ? open : deck;
-    }
-    const crowned = [...pool].sort(
-      (a, b) =>
-        (tally.get(b.placeId) ?? 0) - (tally.get(a.placeId) ?? 0) ||
-        middleRung(b) - middleRung(a) ||
-        a.name.localeCompare(b.name)
-    )[0];
-    const topPick = crowned
-      ? { restaurant: crowned, likedBy: tally.get(crowned.placeId) ?? 0, of }
-      : undefined;
+    const topPick = rankTopPick(
+      results,
+      results.hasOverlap ? [] : (await store.getDeck(sessionCode)).entries
+    );
     // The Group Order gate is SISMEMBER session:{code}:results — admit the crown there too.
     if (!results.hasOverlap && topPick) {
       await store.addResultPlaceId(sessionCode, topPick.restaurant.placeId);
@@ -733,6 +818,10 @@ export function createSessionService({
       'Session outcome'
     );
 
+    if (current.lobby) {
+      current.lobby.revision++;
+      await store.writeLobbySession(current);
+    }
     return { ...results, topPick, shoppingListId };
   }
 
@@ -743,14 +832,23 @@ export function createSessionService({
   async function submitSelections(
     sessionCode: string,
     participantId: string,
-    placeIds: string[]
+    placeIds: string[],
+    round?: number
   ): Promise<{
     submittedCount: number;
     participantCount: number;
     results?: Awaited<ReturnType<typeof completeSession>>;
   }> {
-    if (!(await store.readSession(sessionCode))) {
+    const session = await store.readSession(sessionCode);
+    if (!session) {
       throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
+    }
+    if (session.lobby && round !== undefined && session.lobby.round !== round) {
+      throw new DomainError('VALIDATION_ERROR', 'That submission belongs to a previous round.');
+    }
+    const submitter = await store.getParticipant(participantId);
+    if (session.lobby && (session.state !== 'selecting' || submitter?.waitingForNextRound)) {
+      throw new DomainError('VALIDATION_ERROR', 'You are waiting for the next round.');
     }
 
     if (!(await store.isParticipant(sessionCode, participantId))) {
@@ -804,15 +902,21 @@ export function createSessionService({
     // whenever no host is currently present — a host who leaves can rejoin
     // into the reserved slot, and the next join would recompute this anyway.
     const hostPresent = remaining.some((p) => p.isHost);
-    const participantCount = remaining.length + (hostPresent ? 0 : 1);
+    const active = remaining.filter((p) => !p.waitingForNextRound);
+    const participantCount = active.length + (hostPresent || session.hostSlotReleased ? 0 : 1);
+    if (session.lobby) {
+      session.lobby.revision++;
+      session.lobby.starting = false;
+      await store.writeLobbySession(session);
+    }
     await store.setParticipantCount(sessionCode, participantCount);
 
     logger.info({ sessionCode, participantId, participantCount }, 'Participant left session');
 
     if (
-      session.state !== 'complete' &&
-      remaining.length > 0 &&
-      remaining.every((p) => p.hasSubmitted)
+      (session.lobby ? session.state === 'selecting' : session.state !== 'complete') &&
+      active.length > 0 &&
+      active.every((p) => p.hasSubmitted)
     ) {
       // The leaver was the last holdout: complete the session for those remaining
       const results = await completeSession(sessionCode);
@@ -858,11 +962,35 @@ export function createSessionService({
     // own dead entry. Keying off the entry alone would freeze that room — the
     // real Host refused, everyone else refused.
     const roster = await store.listParticipants(sessionCode);
+    if (roster.find((p) => p.participantId === participantId)?.waitingForNextRound) {
+      throw new DomainError('NOT_HOST', 'The host must return the group to the lobby.');
+    }
     if (
       roster.some((p) => p.isHost && p.isOnline) &&
       !roster.find((p) => p.participantId === participantId)?.isHost
     ) {
       throw new DomainError('NOT_HOST', 'Only the host can start selecting');
+    }
+
+    if (session.lobby) {
+      await store.resetForRestart(sessionCode, 'waiting');
+      for (const p of roster)
+        await store.writeParticipantChoices(p.participantId, {
+          ready: false,
+          waitingForNextRound: false,
+        });
+      session.lobby = {
+        ...session.lobby,
+        revision: session.lobby.revision + 1,
+        starting: false,
+        notice: undefined,
+      };
+      await store.writeLobbySession(session);
+      await store.setParticipantCount(
+        sessionCode,
+        roster.length + (roster.some((p) => p.isHost) || session.hostSlotReleased ? 0 : 1)
+      );
+      return { restarted: session.state !== 'waiting' };
     }
 
     // The lobby's "Start Selecting" is this same command from 'waiting' — the
@@ -901,7 +1029,54 @@ export function createSessionService({
     return { restarted };
   }
 
-  return { createSession, getSession, joinSession, submitSelections, leaveSession, restartSession };
+  const lobby = createLobbyCommands({
+    store,
+    searchNearbyRestaurants,
+    dealMovieDeck,
+    redealMovieDeck,
+    dealRecipeDeck,
+    dealCollaborativeRecipeDeck,
+  });
+  const guarded =
+    <A extends unknown[], T>(command: (sessionCode: string, ...args: A) => Promise<T>) =>
+    async (sessionCode: string, ...args: A): Promise<T> => {
+      const session = await store.readSession(sessionCode);
+      return session?.lobby
+        ? store.withSessionLock(sessionCode, () => command(sessionCode, ...args))
+        : command(sessionCode, ...args);
+    };
+  async function joinGuarded(
+    sessionCode: string,
+    participantId: string,
+    displayName: string,
+    rejoinToken?: string
+  ) {
+    // A connection can switch Sessions, so lock both in one stable order.
+    // The participant lock serializes simultaneous switches by this connection.
+    return store.withSessionLock(`connection-${participantId}`, async () => {
+      const elsewhere = await store.getParticipant(participantId);
+      const codes = [
+        ...new Set([sessionCode, ...(elsewhere ? [elsewhere.sessionCode] : [])]),
+      ].sort();
+      const enter = async (index: number): Promise<Awaited<ReturnType<typeof joinSession>>> => {
+        if (index === codes.length)
+          return joinSession(sessionCode, participantId, displayName, rejoinToken);
+        return (await store.readSession(codes[index]))?.lobby
+          ? store.withSessionLock(codes[index], () => enter(index + 1))
+          : enter(index + 1);
+      };
+      return enter(0);
+    });
+  }
+  return {
+    createSession,
+    getSession: guarded(getSession),
+    joinSession: joinGuarded,
+    submitSelections: guarded(submitSelections),
+    leaveSession: guarded(leaveSession),
+    restartSession: guarded(restartSession),
+    ...lobby,
+  };
 }
 
 export type SessionService = ReturnType<typeof createSessionService>;

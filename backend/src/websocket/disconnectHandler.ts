@@ -2,6 +2,7 @@
 
 import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
+import type { SessionService } from '../services/SessionService.js';
 import type { SessionStore } from '../store/sessionStore.js';
 import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
@@ -15,7 +16,8 @@ export async function handleDisconnect(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   _io: Server<ClientToServerEvents, ServerToClientEvents>,
   reason: string,
-  store: SessionStore
+  store: SessionStore,
+  service?: SessionService
 ): Promise<void> {
   try {
     logger.info({ socketId: socket.id, reason }, 'Socket disconnected');
@@ -39,7 +41,19 @@ export async function handleDisconnect(
 
     // Server truth for presence: still a current Participant, but anyone who
     // joins or rejoins from here on sees them offline instead of live.
-    await store.markDisconnected(socket.id);
+    if ((await store.readSession(sessionCode))?.lobby) {
+      await store.withSessionLock(sessionCode, async () => {
+        await store.markDisconnected(socket.id);
+        const current = await store.readSession(sessionCode);
+        if (current?.lobby) {
+          current.lobby.revision++;
+          current.lobby.starting = false;
+          await store.writeLobbySession(current);
+        }
+      });
+    } else await store.markDisconnected(socket.id);
+    const lobby = await service?.getLobby(sessionCode);
+    if (lobby) socket.to(sessionCode).emit('session:lobby', lobby);
 
     // Get current participant count (unchanged — a disconnect removes nobody)
     const participantCount = await store.countParticipants(sessionCode);

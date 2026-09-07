@@ -9,3 +9,4 @@ export * from './cook.js';
 export * from './watch.js';
 export * from './comparison-contract.js';
 export * from './grocery.js';
+export * from './session-lobby.js';

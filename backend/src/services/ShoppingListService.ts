@@ -30,16 +30,7 @@ import { deriveSearchTerm, sanitiseIngredientName } from './usToAuTerms.js';
  */
 export const SHOPPING_LIST_TTL_MS = 7 * 24 * 3_600_000;
 
-/**
- * How long an id may stand claimed but unwritten (#274). Long enough for the
- * slowest plausible mint behind the 500 ms politeness floor, short enough that
- * a mint the process never finished — a deploy restart, an OOM — stops being
- * the Session's answer.
- * ponytail: one fixed span, not a heartbeat the minter keeps refreshing.
- * Ceiling: a mint slower than this loses its marker while still running, so a
- * reader gives up early and a second completion may re-price. Upgrade path:
- * re-set the marker from build()'s loop if real mints ever approach it.
- */
+/** A pricing worker has two minutes; its Recipe remains readable for seven days. */
 const MINTING_TTL_MS = 120_000;
 
 /** How often a waiting reader asks Redis whether the mint has landed. */
@@ -48,12 +39,16 @@ const DEFAULT_POLL_MS = 250;
 // --- Keyspace ----------------------------------------------------------
 // shoppinglist:{listId}         string: StoredList, JSON, PX 7 days
 //                               — or MINTING while it is being priced, PX 2 min
+// shoppinglist:{listId}:recipe  string: pending Recipe snapshot, same 7-day clock
 // shoppinglist:{listId}:claims  hash: lineId -> Shopper display name, PXAT the
 //                               same instant the list itself dies
 // shoppinglist:{listId}:swaps   hash: lineId -> ShoppingListLineState, JSON,
 //                               on the same clock as the Claims
 
 const listKey = (listId: string) => `shoppinglist:${listId}`;
+// Additive across rolling deploys: old servers still see their minting marker
+// and wait for the final record. The Recipe has its own durable snapshot.
+const recipeKey = (listId: string) => `shoppinglist:${listId}:recipe`;
 
 /**
  * Claims live beside the list, not inside it (#263). The list is one JSON
@@ -74,14 +69,7 @@ const claimsKey = (listId: string) => `shoppinglist:${listId}:claims`;
  */
 const swapsKey = (listId: string) => `shoppinglist:${listId}:swaps`;
 
-/**
- * Written under the list's own key for as long as it is being priced, so the
- * id has an answer from the moment it is handed out. It does two jobs at once,
- * and they are the same job: a reader on any instance polls it instead of a
- * promise only the minting process holds, and the next completion reads it to
- * tell a live claim from one whose mint died. The finished list overwrites it;
- * a mint that never lands lets it expire, and the claim expires with it.
- */
+/** Shared worker marker: legacy readers wait; new readers can open the Recipe. */
 const MINTING = 'minting';
 
 /**
@@ -167,7 +155,7 @@ export interface ShoppingListService {
    * The minted list, or null. Waits out an in-flight mint of the same list —
    * wherever it is running, and only for as long as it could still be running.
    */
-  readList(listId: string): Promise<ShoppingList | null>;
+  readList(listId: string, includePending?: boolean): Promise<ShoppingList | null>;
   /**
    * Claims one Ingredient Line for a Shopper, and answers with the list as it
    * now stands. The Claim is exclusive and the first tap wins, so the line may
@@ -329,10 +317,36 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     return stored as StoredList;
   }
 
-  /** The finished record only: a mint still in flight has no lines to work on. */
+  async function readRecipeSnapshot(listId: string): Promise<StoredList | null> {
+    const raw = await deps.redis.get(recipeKey(listId));
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as StoredList;
+    if (stored.version !== STORED_VERSION || !stored.list) return null;
+    const current = await deps.redis.get(listKey(listId));
+    if (current && current !== MINTING) {
+      const complete = JSON.parse(current) as StoredList;
+      return complete.version === STORED_VERSION && complete.list ? complete : null;
+    }
+    const live = current === MINTING;
+    return {
+      ...stored,
+      list: {
+        ...stored.list,
+        pricingStatus:
+          live && now() - Date.parse(stored.list.mintedAt) < MINTING_TTL_MS ? 'pending' : 'failed',
+      },
+    };
+  }
+
+  /** Stable line ids let Claims work while prices are still arriving. */
   async function finished(listId: string): Promise<StoredList | null> {
     const stored = await readStored(listId);
-    return stored === MINTING ? null : stored;
+    if (stored && stored !== MINTING) return stored;
+    const snapshot = await readRecipeSnapshot(listId);
+    if (snapshot) return snapshot;
+    // Pricing can replace the marker and remove the preview between reads.
+    const completed = await readStored(listId);
+    return completed && completed !== MINTING ? completed : null;
   }
 
   /**
@@ -382,36 +396,29 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
    */
   const diesAt = (list: ShoppingList) => Date.parse(list.mintedAt) + ttlMs;
 
+  function unpricedLine(index: number, ingredient: MintIngredient, factor: number) {
+    return {
+      id: String(index),
+      text: ingredient.degraded
+        ? ingredient.original
+        : lineText(ingredient.amount * factor, ingredient.unit, ingredient.name),
+      staple: isStaple(ingredient.name),
+      state: 'unmatched' as const,
+      searchTerm: deriveSearchTerm(ingredient.searchTerm ?? ingredient.name),
+    };
+  }
+
   async function buildLine(
     index: number,
     ingredient: MintIngredient,
     factor: number
-  ): Promise<{ line: ShoppingListLine; match?: LineMatch }> {
-    const scaled = ingredient.amount * factor;
-    const fields = {
-      id: String(index),
-      // A line the sanitiser could not clean shows the recipe's own wording,
-      // whole — never a mangled hybrid of two quantity phrases (#286).
-      text: ingredient.degraded
-        ? ingredient.original
-        : lineText(scaled, ingredient.unit, ingredient.name),
-      staple: isStaple(ingredient.name),
-    };
-    // Everything downstream of the card's own text searches the matchable term
-    // — the Matcher, the ladder's ingredient lookup, and the Retailer link a
-    // line falls back to. It is the name, unless an Owned Recipe authored a
-    // searchable one beside a cook-honest one (#336).
-    const matchable = ingredient.searchTerm ?? ingredient.name;
-    // The Retailer search is what an Unmatched line offers instead of a product,
-    // so it is exactly the term the Matcher searched (#285) — measurement junk
-    // dropped, in the local dialect (#241).
-    const searchTerm = deriveSearchTerm(matchable);
+  ): Promise<{ line: ShoppingListLine; match?: LineMatch; failed?: boolean }> {
+    const { id, text, staple, searchTerm } = unpricedLine(index, ingredient, factor);
+    const fields = { id, text, staple };
     const unmatched = { line: { ...fields, state: 'unmatched', searchTerm } as ShoppingListLine };
-
-    // A Staple is assumed already at home and counted by nothing, so it never
-    // costs a Retailer lookup — it renders as its own text, still shoppable.
     if (fields.staple) return unmatched;
-
+    const matchable = ingredient.searchTerm ?? ingredient.name;
+    const scaled = ingredient.amount * factor;
     const outcome = await deps.matchProduct(matchable);
     // A zero or missing amount is not a quantity, and the ladder is explicit
     // that null degrades rather than pricing a line nobody can shop. The
@@ -423,7 +430,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       unit: ingredient.unit,
     };
     const resolution = await deps.resolveLine(amount, outcome);
-    if (outcome.status !== 'matched') return unmatched;
+    if (outcome.status !== 'matched') return { ...unmatched, failed: outcome.status === 'failed' };
 
     return {
       line: { ...fields, ...toLineState(resolution, outcome.match, searchTerm) },
@@ -434,55 +441,61 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     };
   }
 
-  async function build(
-    listId: string,
-    headcount: number,
-    recipe: PooledRecipe
-  ): Promise<ShoppingList> {
-    // The amounts are stated for the source's own servings; the Headcount is
-    // what they are wanted for. A source that never said scales by nothing —
-    // guessing a divisor would silently mis-buy the whole list.
+  function snapshot(listId: string, headcount: number, recipe: PooledRecipe): ShoppingList {
     const factor = recipe.servings && recipe.servings > 0 ? headcount / recipe.servings : 1;
-
-    // Sequential on purpose: every cold Retailer lookup queues behind the same
-    // global politeness queue anyway, so firing them together buys no time and
-    // costs the clarity of a plain loop.
-    const lines: ShoppingListLine[] = [];
-    const matches: Record<string, LineMatch> = {};
-    for (const [index, ingredient] of mintIngredients(recipe.ingredients).entries()) {
-      const built = await buildLine(index, ingredient, factor);
-      lines.push(built.line);
-      if (built.match) matches[built.line.id] = built.match;
-    }
-
-    const list: ShoppingList = {
+    return {
       listId,
       recipeName: recipe.name,
       headcount,
-      // What the amounts were stated for, so the page can only claim "Scaled
-      // for N" when a scale actually happened.
       servings: recipe.servings,
-      lines,
-      // Snapshotted, because cooking happens days after the pool has aged out
-      // and the source may have forgotten the recipe entirely (#247).
+      lines: mintIngredients(recipe.ingredients).map((ingredient, index) =>
+        unpricedLine(index, ingredient, factor)
+      ),
       steps: recipe.steps,
       sourceName: recipe.sourceName,
       sourceUrl: recipe.sourceUrl,
-      // An Owned Recipe has no source to credit, and the Cook View must be
-      // told so rather than inferring it from the absent name — absence is a
-      // data glitch on a Sourced Recipe, and the vendor credit is a licence
-      // obligation (ADR 0012, #314). The `owned:` identity is the fact.
       provenance: recipe.placeId.startsWith('owned:') ? 'owned' : undefined,
       mintedAt: new Date(now()).toISOString(),
+      pricingStatus: 'pending',
     };
+  }
+
+  async function build(preview: ShoppingList, recipe: PooledRecipe): Promise<void> {
+    const factor = recipe.servings && recipe.servings > 0 ? preview.headcount / recipe.servings : 1;
+    const lines: ShoppingListLine[] = [];
+    const matches: Record<string, LineMatch> = {};
+    let failed = false;
+    // Cold lookups already share the app-wide politeness queue. Reads never
+    // enter this loop, and a timed-out worker stops before buying another lookup.
+    for (const [index, ingredient] of mintIngredients(recipe.ingredients).entries()) {
+      if (now() - Date.parse(preview.mintedAt) >= MINTING_TTL_MS) {
+        throw new Error('Shopping List pricing timed out');
+      }
+      const built = await buildLine(index, ingredient, factor);
+      lines.push(built.line);
+      failed ||= built.failed === true;
+      if (built.match) matches[built.line.id] = built.match;
+    }
+    const list: ShoppingList = { ...preview, lines, pricingStatus: failed ? 'failed' : undefined };
+    const remainingMs = diesAt(list) - now();
+    if (remainingMs <= 0) return;
     await deps.redis.set(
-      listKey(listId),
+      listKey(list.listId),
       JSON.stringify({ version: STORED_VERSION, list, matches } satisfies StoredList),
       'PX',
-      ttlMs
+      remainingMs
     );
-    logger.info({ listId, headcount, lineCount: lines.length }, 'Shopping List minted');
-    return list;
+    // A finished record is now the only snapshot. Cleanup failure must never
+    // turn a successfully frozen price record into a failed mint.
+    await deps.redis.del(recipeKey(list.listId)).catch(() => undefined);
+    logger.info(
+      {
+        listId: list.listId,
+        lineCount: lines.length,
+        pricingMs: now() - Date.parse(list.mintedAt),
+      },
+      'Shopping List minted'
+    );
   }
 
   return {
@@ -490,13 +503,14 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       const session = await deps.readSession(sessionCode);
       if (!session?.cravingKey || session.headcount === undefined) return undefined;
 
-      // A Session that already names a list has its answer, and nothing prices
-      // it twice — unless the mint behind that id never landed. A process that
-      // died mid-price leaves the claim pointing at a list nobody will ever
-      // write, and the marker's expiry is the only thing that says so. Then
-      // the id is dead and the claim goes back, so this completion can mint.
+      // A saved Recipe is already a mint, even if pricing failed. Only a
+      // pre-snapshot legacy claim can be abandoned and minted again (#274).
       if (session.shoppingListId) {
-        if ((await readStored(session.shoppingListId)) !== null) return session.shoppingListId;
+        if (
+          (await readStored(session.shoppingListId)) !== null ||
+          (await readRecipeSnapshot(session.shoppingListId)) !== null
+        )
+          return session.shoppingListId;
         logger.warn(
           { sessionCode, listId: session.shoppingListId },
           'Shopping List claim abandoned mid-mint, minting again'
@@ -525,28 +539,39 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       // and marking it — a completion landing in that gap would read the live
       // claim as abandoned and price the same Top Pick a second time.
       const candidate = newListId();
+      const preview = snapshot(candidate, session.headcount, recipe);
+      await deps.redis.set(
+        recipeKey(candidate),
+        JSON.stringify({ version: STORED_VERSION, list: preview } satisfies StoredList),
+        'PX',
+        ttlMs
+      );
       await deps.redis.set(listKey(candidate), MINTING, 'PX', MINTING_TTL_MS);
 
       const listId = await deps.claimShoppingListId(sessionCode, candidate);
-      // Two completions landing together: whoever lost the claim reads the
-      // winner's list. The mark it will never mint under is left to expire —
-      // that id reached no caller, so nothing can ever ask for it.
-      if (listId !== candidate) return listId;
+      // Only the winning completion prices. Discard the unused candidate.
+      if (listId !== candidate) {
+        await deps.redis.del(recipeKey(candidate));
+        await deps.redis.del(listKey(candidate));
+        return listId;
+      }
 
-      void build(listId, session.headcount, recipe).catch(async (error: unknown) => {
-        // A mint that fails leaves no key, so the URL 404s and says so —
-        // better than a half-priced list nobody can tell is half-priced.
-        // Clearing the marker now rather than waiting out its TTL is what
-        // makes the retry immediate: while it stands, the claim reads as live.
-        logger.error({ err: error, sessionCode, listId }, 'Shopping List mint failed');
+      void build(preview, recipe).catch(async (error: unknown) => {
+        // Keep the Recipe and the Session's id: failure must not discard the
+        // useful method or silently price the same chosen Recipe a second time.
+        logger.error({ err: error, sessionCode, listId }, 'Shopping List pricing failed');
         await deps.redis.del(listKey(listId)).catch(() => undefined);
-        await deps.releaseShoppingListId(sessionCode, listId).catch(() => undefined);
       });
 
       return listId;
     },
 
-    async readList(listId: string): Promise<ShoppingList | null> {
+    async readList(listId: string, includePending = false): Promise<ShoppingList | null> {
+      if (includePending) {
+        const current = await finished(listId);
+        if (current) return assemble(current);
+        // A legacy in-flight mint has no preview. Wait for its existing worker.
+      }
       // Polled, not awaited on a local promise: the mint may be running in
       // another process entirely, and the marker is all two of them share. The
       // wait ends when the marker does — overwritten by the finished list, or
@@ -561,7 +586,10 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       }
       // A marker still standing is a mint that died: nothing is coming, and
       // the URL says so rather than waiting on it.
-      if (stored === MINTING || !stored) return null;
+      if (stored === MINTING || !stored) {
+        const preview = await readRecipeSnapshot(listId);
+        return preview ? assemble(preview) : null;
+      }
       return assemble(stored);
     },
 

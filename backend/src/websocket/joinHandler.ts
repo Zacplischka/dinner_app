@@ -24,7 +24,7 @@ const sessionJoinPayloadSchema = z.object({
       SESSION_CODE_PATTERN,
       `Session code must be ${SESSION_CODE_LENGTH} alphanumeric characters`
     ),
-  displayName: z.string().min(1, 'Display name required').max(50, 'Display name too long'),
+  displayName: z.string().trim().min(1, 'Display name required').max(50, 'Display name too long'),
   rejoinToken: z.string().uuid().optional(),
 });
 
@@ -107,6 +107,8 @@ export async function handleSessionJoin(
       participants: result.participants,
       branch: result.branch,
       state: result.state,
+      lobby: result.lobby,
+      results: result.results,
     };
     callback({ success: true, data });
 
@@ -122,6 +124,8 @@ export async function handleSessionJoin(
       // for all of them (#405).
       isHost: result.isHost,
     });
+
+    if (result.lobby) socket.to(sessionCode).emit('session:lobby', result.lobby);
 
     if (result.leftSession) emitDeparture(result.leftSession);
 
