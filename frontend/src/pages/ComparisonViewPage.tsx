@@ -9,6 +9,7 @@ import type {
 import { isComparisonTapSource } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
+import PricePatrol from '../components/PricePatrol';
 import { subscribeToComparison } from '../services/comparisonStream';
 import { formatPrice } from '../utils/money';
 
@@ -260,6 +261,9 @@ export default function ComparisonViewPage() {
         onBack={backToVenues}
       />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
+        {!complete && !error && (
+          <PricePatrol key={`${placeId}-${attempt}`} storefronts={storefronts} />
+        )}
         {heroImageUrl && (
           // RetryingPhoto (#90) starts fresh per URL, so a stale failure must
           // not survive a switch to the other platform's image.

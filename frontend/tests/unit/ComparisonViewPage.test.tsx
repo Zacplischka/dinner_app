@@ -50,6 +50,64 @@ describe('ComparisonViewPage', () => {
 
   afterEach(() => vi.useRealTimers());
 
+  it('keeps Price Patrol tied to streamed results through pause, failure, Retry, and completion', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { name: 'On the prowl for prices.' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Checking Uber Eats and DoorDash…');
+
+    act(() =>
+      handlers.onStorefront?.({
+        type: 'storefront',
+        platform: 'doordash',
+        storefront: { status: 'not_found', deals: [], menu: [] },
+      })
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Still checking Uber Eats…');
+    expect(screen.getByTestId('doordash-column')).toHaveTextContent('Not on DoorDash.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pause animation' }));
+    expect(screen.getByRole('button', { name: 'Play animation' })).toBeInTheDocument();
+    expect(unsubscribe).not.toHaveBeenCalled();
+    act(() =>
+      handlers.onStorefront?.({
+        type: 'storefront',
+        platform: 'ubereats',
+        storefront: { status: 'resolved', deals: [], menu: [] },
+      })
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Putting your comparison together…');
+    expect(screen.getByTestId('ubereats-column')).toHaveTextContent('Ready');
+
+    act(() => handlers.onError?.({ type: 'error', code: 'STREAM_CLOSED', message: 'Try again.' }));
+    expect(
+      screen.queryByRole('heading', { name: 'On the prowl for prices.' })
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Checking Uber Eats and DoorDash…');
+    expect(screen.getByRole('button', { name: 'Pause animation' })).toBeInTheDocument();
+
+    act(() =>
+      handlers.onComparison?.({
+        type: 'comparison',
+        comparison: {
+          placeId: 'place-1',
+          venueName: 'Pizza Place',
+          fetchedAt: new Date().toISOString(),
+          storefronts: {
+            ubereats: { status: 'resolved', deals: [], menu: [] },
+            doordash: { status: 'not_found', deals: [], menu: [] },
+          },
+          matchedItems: [],
+          unmatched: { ubereats: [], doordash: [] },
+        },
+      })
+    );
+    expect(
+      screen.queryByRole('heading', { name: 'On the prowl for prices.' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Only on Uber Eats')).toBeInTheDocument();
+  });
+
   it('forwards a valid tap source from the URL to the Comparison subscribe', () => {
     renderPage('/compare/place-1?source=match_card').unmount();
     renderPage('/compare/place-1?source=bogus').unmount();
