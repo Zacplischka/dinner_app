@@ -4,7 +4,7 @@ Implementation of [spec #459](https://github.com/Zacplischka/dinner_app/issues/4
 
 ## Toolchain and configuration
 
-Use Node 22+, Xcode with the matching iOS platform components, Java 21, and Android SDK platform 36. The current Android Gradle plugin also requests Build-Tools **35.0.0**; the platform/API number and build-tools version are separate. Capacitor and its native plugins are pinned in the workspace lockfile. Install with `npm ci` from the repository root; do not run separate package installs inside native projects.
+Use Node 22 (CI pins 22.23.2), Xcode with the matching iOS platform components, Java 21, and Android SDK platform 36. The current Android Gradle plugin also requests Build-Tools **35.0.0**; the platform/API number and build-tools version are separate. Capacitor and its native plugins are pinned in the workspace lockfile. Install with `npm ci` from the repository root; do not run separate package installs inside native projects.
 
 The current package identity is provisional: `it.com.dinder.app` for release and `it.com.dinder.app.dev` for Debug. Confirm the legal publisher and permanent IDs before signing. Debug and release apps can coexist. The public name is YupCrew and new public links use `https://yupcrew.com`. Existing Dinder links remain supported; internal package and service identifiers are unchanged.
 
