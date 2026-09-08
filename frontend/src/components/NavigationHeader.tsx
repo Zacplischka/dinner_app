@@ -99,6 +99,12 @@ export default function NavigationHeader({
     return () => clearInterval(id);
   }, [showExpiry]);
 
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   // Tap-to-copy Session Code, on every in-Session screen — the lobby's copy
   // button used to be the only one. The badge flashes lime for 1.5s as the
   // pressed cue; the toast says what happened.
@@ -108,7 +114,6 @@ export default function NavigationHeader({
       .then(() => {
         toast.success('Session code copied!');
         setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
       })
       .catch(() => toast.error('Could not copy code'));
   };
