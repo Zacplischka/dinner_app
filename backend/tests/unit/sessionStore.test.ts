@@ -251,6 +251,19 @@ describe('SessionStore', () => {
   });
 
   describe('computeAndStoreResults', () => {
+    it.each(['__proto__', 'constructor', 'toString'])(
+      'serializes %s as an own Selection key',
+      async (displayName) => {
+        await createTestSession();
+        await store.addParticipant(sessionCode, { participantId: 'p1', displayName });
+        await store.recordSubmission(sessionCode, 'p1', ['place1']);
+        const result = JSON.parse(JSON.stringify(await store.computeAndStoreResults(sessionCode)));
+        expect(Object.prototype.hasOwnProperty.call(result.allSelections, displayName)).toBe(true);
+        expect(result.allSelections[displayName]).toEqual(['place1']);
+        expect(result.restaurantNames.place1).toBe('Restaurant 1');
+      }
+    );
+
     it('returns empty results for a session with no participants', async () => {
       await createTestSession();
       const result = await store.computeAndStoreResults(sessionCode);

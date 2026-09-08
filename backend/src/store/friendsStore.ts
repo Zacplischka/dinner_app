@@ -314,10 +314,18 @@ export async function createSessionInvites(invites: SessionInviteInsert[]): Prom
   });
 
   if (error) {
-    // If upsert fails, try inserting individually (ignoring duplicates)
+    // Retry individually; only a unique-constraint duplicate counts as delivered.
+    // A partial failure is an error for the whole request; retrying is idempotent.
     logger.warn({ err: error }, 'Upsert failed, trying individual inserts');
     for (const invite of invites) {
-      await supabase.from('session_invites').insert(invite);
+      const { error: insertError } = await supabase.from('session_invites').insert(invite);
+      if (insertError && insertError.code !== '23505') {
+        logger.error({ err: insertError }, 'Error creating session invite');
+        throw new DomainError(
+          'database_error',
+          'Failed to send all session invites. Please try again.'
+        );
+      }
     }
   }
 }

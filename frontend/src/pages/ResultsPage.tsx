@@ -240,6 +240,12 @@ function MatchCard({
   );
 }
 
+function selectionsFor(allSelections: Record<string, string[]>, displayName: string): string[] {
+  return Object.prototype.hasOwnProperty.call(allSelections, displayName)
+    ? allSelections[displayName]
+    : [];
+}
+
 // The per-Participant Selection lists, shared by the always-visible
 // "Everyone's selections" section and the unanimous-vote disclosure (#85).
 function SelectionsList({
@@ -256,7 +262,7 @@ function SelectionsList({
   return (
     <div className="space-y-4">
       {participants.map((participant, participantIndex) => {
-        const participantSelections = allSelections[participant.displayName] || [];
+        const participantSelections = selectionsFor(allSelections, participant.displayName);
         return (
           <div
             key={participant.participantId}
@@ -450,7 +456,7 @@ export default function ResultsPage() {
     if (hasOverlap || participants.length < 3) return misses;
     const selectionCounts = new Map<string, number>();
     participants.forEach((participant) => {
-      (allSelections[participant.displayName] || []).forEach((placeId) => {
+      selectionsFor(allSelections, participant.displayName).forEach((placeId) => {
         selectionCounts.set(placeId, (selectionCounts.get(placeId) || 0) + 1);
       });
     });
@@ -474,11 +480,11 @@ export default function ResultsPage() {
     const sameSelections = (a: string[], b: string[]) =>
       a.length === b.length && a.every((placeId) => b.includes(placeId));
     const firstSelections =
-      participants.length > 0 ? allSelections[participants[0].displayName] || [] : [];
+      participants.length > 0 ? selectionsFor(allSelections, participants[0].displayName) : [];
     return (
       firstSelections.length > 0 &&
       participants.every((participant) =>
-        sameSelections(allSelections[participant.displayName] || [], firstSelections)
+        sameSelections(selectionsFor(allSelections, participant.displayName), firstSelections)
       )
     );
   }, [participants, allSelections]);

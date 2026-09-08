@@ -322,6 +322,7 @@ export function createSessionStore(redis: Redis) {
 
     const sessionData: Record<string, string | number> = {
       createdAt: session.createdAt,
+      orderRound: randomUUID(),
       hostId: session.hostId,
       state: session.state,
       participantCount: session.participantCount,
@@ -661,13 +662,12 @@ export function createSessionStore(redis: Redis) {
 
     // displayName -> selected placeIds, for the results screen
     const selections = await Promise.all(selectionKeys.map((key) => redis.smembers(key)));
-    const allSelections: Record<string, string[]> = {};
-    participants.forEach((p, i) => {
-      allSelections[p.displayName] = selections[i];
-    });
+    const allSelections = Object.fromEntries(
+      participants.map((p, i) => [p.displayName, selections[i]])
+    );
 
     // Names for every selected placeId (not just the Match)
-    const restaurantNames: Record<string, string> = {};
+    const restaurantNames = Object.create(null) as Record<string, string>;
     const allPlaceIds = [...new Set(Object.values(allSelections).flat())];
     const namedEntries = await readEntries(sessionCode, allPlaceIds);
     allPlaceIds.forEach((placeId, i) => {
@@ -753,6 +753,7 @@ export function createSessionStore(redis: Redis) {
     // the link keeps it.
     pipeline.hdel(sessionKey(sessionCode), 'shoppingListId');
     pipeline.hset(sessionKey(sessionCode), 'state', state);
+    pipeline.hset(sessionKey(sessionCode), 'orderRound', randomUUID());
     if (wasComplete) {
       // Session-outcome metrics: the next completion is a Restart's outcome
       pipeline.hset(sessionKey(sessionCode), 'restartedAfterComplete', '1');
@@ -884,6 +885,11 @@ export function createSessionStore(redis: Redis) {
 
   // --- Group Order -------------------------------------------------------
 
+  /** Private generation invalidates in-flight Snapshot reads, including legacy Sessions. */
+  async function readOrderRound(sessionCode: string): Promise<string | null> {
+    return redis.hget(sessionKey(sessionCode), 'orderRound');
+  }
+
   /** The Group Order's raw hash, or null when none is open. */
   async function readOrder(sessionCode: string): Promise<Record<string, string> | null> {
     const data = await redis.hgetall(orderKey(sessionCode));
@@ -985,6 +991,7 @@ export function createSessionStore(redis: Redis) {
     getDeck,
     readOrder,
     readOrderLines,
+    readOrderRound,
     openOrder,
     addLine,
     isResultPlaceId,
