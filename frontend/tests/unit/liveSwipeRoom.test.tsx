@@ -494,7 +494,7 @@ describe('Resume after submit', () => {
     expect(await screen.findByText('All done!')).toBeInTheDocument();
     expect(screen.queryByText('Ramen Ichiban')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Like' })).not.toBeInTheDocument();
-    expect(screen.getByText(/have swiped/)).toHaveTextContent('1 of 2 have swiped');
+    expect(screen.getByText(/have finished/)).toHaveTextContent('1 of 2 have finished');
   });
 
   it('still deals the Deck when only someone else has submitted', async () => {

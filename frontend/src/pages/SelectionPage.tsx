@@ -83,7 +83,7 @@ function SelectionRound() {
     branch === 'cook'
       ? 'Choose recipes'
       : branch === 'watch'
-        ? 'Choose movies'
+        ? 'Choose something to watch'
         : 'Choose restaurants';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -542,7 +542,8 @@ function SelectionRound() {
                 </div>
                 <p className="text-sm text-muted">
                   <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
-                  <span className="text-cyan font-semibold">{participants.length}</span> have swiped
+                  <span className="text-cyan font-semibold">{participants.length}</span> have
+                  finished
                 </p>
                 <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
                   {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}

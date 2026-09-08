@@ -1,6 +1,6 @@
 .deck-preview {
   position: relative;
-  height: 304px;
+  height: 200px;
   overflow: hidden;
   isolation: isolate;
   pointer-events: none;
@@ -8,10 +8,12 @@
 
 .deck-preview-stack {
   position: absolute;
-  top: 48px;
+  top: 31px;
   left: calc(50% - 103px);
   width: 158px;
   height: 192px;
+  transform: scale(0.65);
+  transform-origin: top center;
 }
 
 .deck-preview-card {
@@ -64,7 +66,7 @@
 
 @media (max-width: 470px) {
   .deck-preview {
-    height: 290px;
+    height: 190px;
   }
   .deck-preview-stack {
     left: calc(50% - 97px);

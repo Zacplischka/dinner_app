@@ -180,10 +180,11 @@ describe('Movie Deck', () => {
     expect(screen.getByText('Heat')).toBeInTheDocument();
   });
 
-  it('titles the Deck "Choose movies"', async () => {
+  it('titles a mixed film and series Deck "Choose something to watch"', async () => {
+    deal.mockResolvedValue([alien, thrones]);
     renderSelectionPage();
     await screen.findByText('Alien');
 
-    expect(screen.getByRole('heading', { name: 'Choose movies' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Choose something to watch' })).toBeInTheDocument();
   });
 });

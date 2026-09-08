@@ -78,6 +78,11 @@ it('gathers people before choices and starts only after everyone confirms Ready'
   expect(screen.queryByText('Waiting for participant…')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Copy shareable link' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Start swiping' })).toBeDisabled();
+  const interests = screen.getByText('Optional interests', { exact: true }).closest('details')!;
+  expect(interests).not.toHaveAttribute('open');
+  const ready = screen.getByRole('button', { name: 'I’m ready' });
+  expect(ready.closest('section')).toContainElement(screen.getByTestId('participants-list'));
+  expect(ready.compareDocumentPosition(interests) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   mocks.setSessionReady.mockResolvedValue({
     success: true,
     data: {
@@ -106,6 +111,7 @@ it('edits only the current person’s positive interests and adopts cleared Read
   const lobby = snapshot();
   lobby.participants.forEach((p) => (p.ready = true));
   renderLobby(lobby, 'guest');
+  fireEvent.click(await screen.findByText('Optional interests', { exact: true }));
   await screen.findByRole('button', { name: 'Comedy' });
   expect(screen.queryByRole('button', { name: 'Start swiping' })).toBeNull();
   mocks.updateSessionChoices.mockResolvedValue({
@@ -131,6 +137,12 @@ it('edits only the current person’s positive interests and adopts cleared Read
   });
   expect(screen.getByRole('button', { name: 'I’m ready' })).toBeEnabled();
   expect(useSessionStore.getState().participants.find((p) => p.isHost)?.ready).toBe(true);
+  const summary = screen.getByText('Optional interests', { exact: true });
+  fireEvent.click(summary);
+  expect(summary.closest('details')).not.toHaveAttribute('open');
+  expect(summary).toHaveTextContent('Comedy');
+  fireEvent.click(summary);
+  expect(screen.getByRole('button', { name: 'Comedy' })).toHaveAttribute('aria-pressed', 'true');
 });
 it('keeps the group together after a failed deal with choices intact and retry available', async () => {
   const lobby = snapshot();
@@ -143,6 +155,7 @@ it('keeps the group together after a failed deal with choices intact and retry a
   fireEvent.click(await screen.findByRole('button', { name: 'Start swiping' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('No movies fit');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Start swiping' })).toBeEnabled());
+  fireEvent.click(screen.getByText('Optional interests', { exact: true }));
   expect(screen.getByRole('button', { name: 'Comedy' })).toBeVisible();
   expect(screen.getByRole('group', { name: 'Getting together' })).toBeInTheDocument();
 });
@@ -228,6 +241,7 @@ const staleChoices = {
 it('retries a personal interest against the latest revision when only another person changed', async () => {
   const lobby = snapshot();
   renderLobby(lobby, 'guest');
+  fireEvent.click(await screen.findByText('Optional interests', { exact: true }));
   await screen.findByRole('button', { name: 'Comedy' });
   const latest: SessionLobbyState = {
     ...lobby,
@@ -265,6 +279,7 @@ it.each(['own choice', 'shared choice', 'round', 'starting'])(
   async (change) => {
     const lobby = snapshot();
     renderLobby(lobby, 'guest');
+    fireEvent.click(await screen.findByText('Optional interests', { exact: true }));
     await screen.findByRole('button', { name: 'Comedy' });
     const latest = { ...lobby, revision: 2 };
     if (change === 'shared choice') latest.deckSize = 5;
@@ -292,6 +307,7 @@ it.each(['eatout', 'takeaway'] as const)('describes actual %s choices', async (b
 it('bounds personal retries while the lobby continues changing', async () => {
   const lobby = snapshot();
   renderLobby(lobby, 'guest');
+  fireEvent.click(await screen.findByText('Optional interests', { exact: true }));
   await screen.findByRole('button', { name: 'Comedy' });
   let revision = 2;
   mocks.getSession.mockImplementation(async () => ({ lobby: { ...lobby, revision: revision++ } }));
@@ -299,4 +315,67 @@ it('bounds personal retries while the lobby continues changing', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Comedy' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('The choices changed');
   expect(mocks.updateSessionChoices).toHaveBeenCalledTimes(4);
+});
+
+it.each(['eatout', 'takeaway'] as const)(
+  'keeps Start disabled for %s without its required location, even when everyone is Ready',
+  async (branch) => {
+    const lobby = snapshot();
+    lobby.branch = branch;
+    lobby.participants.forEach((participant) => (participant.ready = true));
+    renderLobby(lobby);
+    expect(await screen.findByRole('button', { name: 'Start swiping' })).toBeDisabled();
+    expect(
+      screen.getByRole('region', { name: 'Shared search area' }).closest('details')
+    ).toBeNull();
+    expect(screen.getByRole('slider', { name: /Search Radius/ })).toBeVisible();
+    expect(mocks.startSession).not.toHaveBeenCalled();
+  }
+);
+
+it('adopts shared-choice Ready resets without losing the collapsed interests', async () => {
+  const lobby = snapshot();
+  const notice = 'The shared choices changed — everyone confirms Ready again.';
+  lobby.participants.forEach((participant) => (participant.ready = true));
+  lobby.participants[0].mood = { genres: ['Comedy'], decades: [] };
+  renderLobby(lobby);
+  expect(await screen.findByRole('button', { name: 'Start swiping' })).toBeEnabled();
+  mocks.updateSessionChoices.mockResolvedValue({
+    success: true,
+    data: {
+      ...lobby,
+      revision: 2,
+      deckSize: 20,
+      notice,
+      participants: lobby.participants.map((participant) => ({ ...participant, ready: false })),
+    },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Bigger Deck' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Start swiping' })).toBeDisabled());
+  const ready = screen.getByRole('button', { name: 'I’m ready' });
+  expect(ready).toBeEnabled();
+  const explanation = screen.getByText(notice);
+  expect(explanation).toHaveAttribute('role', 'status');
+  expect(
+    explanation.compareDocumentPosition(ready) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
+  const summary = screen.getByText('Optional interests', { exact: true });
+  expect(summary.closest('details')).not.toHaveAttribute('open');
+  expect(summary).toHaveTextContent('Comedy');
+});
+
+it.each([
+  ['watch', 'Watch'],
+  ['cook', 'Cook'],
+  ['eatout', 'Eat out'],
+  ['takeaway', 'Order in'],
+] as const)('names the %s activity in its Lobby heading', async (branch, label) => {
+  renderLobby({ ...snapshot(), branch });
+  expect(await screen.findByRole('heading', { level: 1, name: label })).toBeVisible();
+  if (branch === 'takeaway' || branch === 'eatout')
+    expect(
+      screen.getByRole('heading', {
+        name: branch === 'takeaway' ? 'Where are we ordering in?' : 'Where are we eating out?',
+      })
+    ).toBeVisible();
 });

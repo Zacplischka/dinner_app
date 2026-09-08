@@ -39,6 +39,11 @@ export class WatchSetupPage extends BasePage {
    * Toggle a chip on and confirm it took
    */
   async pickChip(label: string): Promise<void> {
+    const interests = this.page
+      .locator('details')
+      .filter({ has: this.page.locator('summary').filter({ hasText: /^Optional interests/ }) });
+    if (!(await interests.evaluate((element) => element.hasAttribute('open'))))
+      await interests.locator('summary').click();
     await this.chip(label).click();
     await expect(this.chip(label)).toHaveAttribute('aria-pressed', 'true');
   }

@@ -10,7 +10,7 @@ import { SelectionPage, SessionLobbyPage } from './pages';
  */
 
 test.describe('Watch Branch', () => {
-  test('deals a Movie Deck from a Mood', async ({ homePage, watchPage, page }) => {
+  test('deals a Movie Deck from a Mood', async ({ homePage, watchPage, page }, info) => {
     await homePage.goto();
     await homePage.clickWatch();
     await expect(watchPage.heading).toBeVisible();
@@ -23,8 +23,30 @@ test.describe('Watch Branch', () => {
     await new SessionLobbyPage(page).startSession();
 
     const selectionPage = new SelectionPage(page);
-    await expect(selectionPage.heading).toHaveText('Choose movies');
+    await expect(selectionPage.heading).toHaveText('Choose something to watch');
     await expect(selectionPage.swipeCard.first()).toBeVisible();
     await expect(selectionPage.scoreBadge.first()).toBeVisible();
+    for (const width of info.project.name === 'chromium' ? [1280] : [390, 320]) {
+      await page.setViewportSize({ width, height: 844 });
+      await expect(selectionPage.heading).toBeInViewport({ ratio: 1 });
+      expect(
+        await selectionPage.heading.evaluate(
+          (heading) => heading.scrollWidth <= heading.clientWidth
+        )
+      ).toBe(true);
+      await expect(page.getByRole('button', { name: 'Pass', exact: true })).toBeInViewport({
+        ratio: 1,
+      });
+      await expect(page.getByRole('button', { name: 'Like', exact: true })).toBeInViewport({
+        ratio: 1,
+      });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true
+      );
+      await page.screenshot({
+        path: info.outputPath(`watch-selection-${width}.png`),
+        animations: 'disabled',
+      });
+    }
   });
 });

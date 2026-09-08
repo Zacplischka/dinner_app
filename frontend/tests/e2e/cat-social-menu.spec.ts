@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { loadEnv } from 'vite';
 import { Server } from 'socket.io';
 import { test, expect, type Page } from '@playwright/test';
 import type {
@@ -200,6 +201,10 @@ test('a rejected lower lobby choice stays visible below the sticky header', asyn
   try {
     await page.setViewportSize({ width: 320, height: 740 });
     await page.goto('/session/CAT45');
+    await page
+      .locator('summary')
+      .filter({ hasText: /^Optional interests/ })
+      .click();
     await page.getByRole('button', { name: '2020s', exact: true }).click();
     const alert = page.getByRole('alert').filter({ hasText: message });
     await expect(alert).toBeInViewport({ ratio: 1 });
@@ -334,6 +339,7 @@ for (const branch of ['watch', 'takeaway'] as const) {
       const saved = page.getByRole('group', { name: 'Saved you a seat', exact: true });
       await expect(saved).toBeVisible();
       await expect(page.getByRole('status').filter({ hasText: 'Waiting for Bob' })).toBeVisible();
+      await expect(page.getByText('1 of 2 have finished', { exact: true })).toBeVisible();
       await saved.getByRole('button', { name: 'Pause animation' }).click();
       await fits(page);
       await page.screenshot({ path: info.outputPath(`saved-seat-${branch}.png`), fullPage: true });
@@ -479,6 +485,122 @@ test('Menu Delivery pauses independently and yields to the actual pinned menu', 
     await expect(
       page.getByRole('button', { name: 'Add Margherita, $23.00', exact: true })
     ).toBeVisible();
+  } finally {
+    await fixture.close();
+  }
+});
+
+for (const [mediaType, placeId, name] of [
+  ['movie', 'tmdb:movie:22', 'Pirates of the Caribbean: The Curse of the Black Pearl'],
+  ['tv', 'tmdb:tv:1399', 'Game of Thrones'],
+  ['movie', 'Q103569', 'Legacy Movie'],
+] as const) {
+  test(`Watch result brings ${placeId} and its next action into the first viewport`, async ({
+    page,
+  }, info) => {
+    const fixture = await sessionFixture(page, 'watch', {
+      kind: 'movie',
+      mediaType,
+      placeId,
+      name,
+      year: 2003,
+      photoUrl: '/images/tmdb.svg',
+      overview:
+        'A group can act on its shared choice without scrolling through this overview or the celebration.',
+    });
+    fixture.lobby.state = 'complete';
+    try {
+      await page.goto('/session/CAT45/results');
+      const crown = page.locator('[data-movie-crown]');
+      await expect(crown.getByRole('heading', { name, exact: true })).toBeInViewport({ ratio: 1 });
+      const trailer = crown.getByRole('link', { name: 'Watch trailer' });
+      if (placeId.startsWith('tmdb:')) {
+        const where = crown.getByRole('link', { name: 'Where to watch' });
+        await expect(where).toBeInViewport({ ratio: 1 });
+        await expect(where).toHaveClass(/btn-primary/);
+        await expect(where).toHaveAttribute(
+          'href',
+          `https://www.themoviedb.org/${mediaType}/${placeId.split(':')[2]}/watch?locale=AU`
+        );
+        await expect(where).toHaveAttribute('target', '_blank');
+        await expect(trailer).toHaveClass(/btn-secondary/);
+      } else {
+        await expect(crown.getByRole('link', { name: 'Where to watch' })).toHaveCount(0);
+        await expect(trailer).toBeInViewport({ ratio: 1 });
+        await expect(trailer).toHaveClass(/btn-primary/);
+      }
+      await expect(trailer).toHaveAttribute(
+        'href',
+        `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} 2003 trailer`)}`
+      );
+      await fits(page);
+      await page.screenshot({
+        path: info.outputPath(`watch-result-${mediaType}-${placeId.replace(/:/g, '-')}.png`),
+        animations: 'disabled',
+      });
+    } finally {
+      await fixture.close();
+    }
+  });
+}
+
+test('signed-in two-person Watch Lobby keeps Ready in the first mobile viewport', async ({
+  page,
+}, info) => {
+  const fixture = await sessionFixture(page, 'watch');
+  try {
+    fixture.lobby.participants.push({
+      participantId: 'guest',
+      displayName: 'Bob',
+      isHost: false,
+      isOnline: true,
+      hasSubmitted: false,
+      ready: false,
+      waitingForNextRound: false,
+    });
+    // A fake persisted identity exercises the extra Invite Friends row, without
+    // depending on a real account or sending credentials to an auth service.
+    const authUrl =
+      process.env.VITE_SUPABASE_URL ||
+      loadEnv('production', process.cwd(), 'VITE_').VITE_SUPABASE_URL;
+    expect(authUrl, 'Auth must be configured for the signed-in layout check').toBeTruthy();
+    await page.route(`${authUrl}/**`, (route) => route.fulfill({ json: {} }));
+    await page.addInitScript(
+      (storageKey) => {
+        const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            access_token: `${btoa('{"alg":"HS256"}')}.${btoa(JSON.stringify({ sub: 'audit-profile', exp: expiresAt }))}.fixture`,
+            refresh_token: 'fixture',
+            token_type: 'bearer',
+            expires_at: expiresAt,
+            user: {
+              id: 'audit-profile',
+              aud: 'authenticated',
+              email: 'audit@example.test',
+              app_metadata: {},
+              user_metadata: { full_name: 'Alice' },
+              created_at: '2026-09-09T00:00:00Z',
+            },
+          })
+        );
+      },
+      `sb-${new URL(authUrl).hostname.split('.')[0]}-auth-token`
+    );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/session/CAT45');
+    await expect(page.getByRole('button', { name: 'Invite Friends', exact: true })).toBeVisible();
+    await expect(page.getByTestId('participant')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'I’m ready', exact: true })).toBeInViewport({
+      ratio: 1,
+    });
+    await expect(page.getByRole('button', { name: 'Start swiping', exact: true })).toBeDisabled();
+    await fits(page);
+    await page.screenshot({
+      path: info.outputPath('signed-in-two-person-watch-ready.png'),
+      animations: 'disabled',
+    });
   } finally {
     await fixture.close();
   }
