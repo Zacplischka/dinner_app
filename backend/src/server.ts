@@ -1,5 +1,6 @@
 // Express + Socket.IO server initialization
 
+import { command } from './websocket/command.js';
 import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -308,44 +309,58 @@ io.on('connection', (socket) => {
   registerLobbyHandlers(socket, io, sessionService);
 
   // T041: session:join event handler
-  socket.on('session:join', (payload, callback) => {
-    void handleSessionJoin(socket, payload, callback, sessionService);
-  });
+  socket.on(
+    'session:join',
+    command((payload, callback) => handleSessionJoin(socket, payload, callback, sessionService))
+  );
 
   // T042: selection:submit event handler
-  socket.on('selection:submit', (payload, callback) => {
-    void handleSelectionSubmit(socket, io, payload, callback, sessionService);
-  });
+  socket.on(
+    'selection:submit',
+    command((payload, callback) =>
+      handleSelectionSubmit(socket, io, payload, callback, sessionService)
+    )
+  );
 
   // T043: session:restart event handler
-  socket.on('session:restart', (payload, callback) => {
-    void handleSessionRestart(socket, io, payload, callback, sessionService);
-  });
+  socket.on(
+    'session:restart',
+    command((payload, callback) =>
+      handleSessionRestart(socket, io, payload, callback, sessionService)
+    )
+  );
 
   // session:leave event handler - intentional departure
-  socket.on('session:leave', (payload, callback) => {
-    void handleSessionLeave(socket, io, payload, callback, sessionService);
-  });
+  socket.on(
+    'session:leave',
+    command((payload, callback) =>
+      handleSessionLeave(socket, io, payload, callback, sessionService)
+    )
+  );
 
   // Live Selection re-broadcast — no persistence
-  socket.on('selection:live', (payload, callback) => {
-    void handleLiveSelection(socket, payload, callback, sessionStore);
-  });
+  socket.on(
+    'selection:live',
+    command((payload, callback) => handleLiveSelection(socket, payload, callback, sessionStore))
+  );
 
   // order:open event handler - open the Group Order for the crowned Venue
-  socket.on('order:open', (payload, callback) => {
-    void handleOrderOpen(socket, payload, callback, orderService);
-  });
+  socket.on(
+    'order:open',
+    command((payload, callback) => handleOrderOpen(socket, payload, callback, orderService))
+  );
 
   // order:item event handler - add/remove one Order Line, broadcast order:state
-  socket.on('order:item', (payload, callback) => {
-    void handleOrderItem(socket, io, payload, callback, orderService);
-  });
+  socket.on(
+    'order:item',
+    command((payload, callback) => handleOrderItem(socket, io, payload, callback, orderService))
+  );
 
   // order:buy event handler - "I'll order" claims the Buyer and locks the order
-  socket.on('order:buy', (payload, callback) => {
-    void handleOrderBuy(socket, io, payload, callback, orderService);
-  });
+  socket.on(
+    'order:buy',
+    command((payload, callback) => handleOrderBuy(socket, io, payload, callback, orderService))
+  );
 
   // T045: disconnect handler
   socket.on('disconnect', (reason) => {

@@ -1,3 +1,4 @@
+import { command } from './command.js';
 import type { Server, Socket } from 'socket.io';
 import { z } from 'zod';
 import type {
@@ -40,27 +41,40 @@ export function registerLobbyHandlers(
       if (lobby) io.in(lobby.sessionCode).emit('session:lobby', lobby);
     }
   }
-  socket.on('session:choices', (payload, callback) => {
-    void run(choicesPayloadSchema, payload, callback, (data) =>
-      service.updateChoices(data.sessionCode, socket.id, data)
-    );
-  });
-  socket.on('session:ready', (payload, callback) => {
-    void run(lobbyPayloadSchema.extend({ ready: z.boolean() }), payload, callback, (data) =>
-      service.setReady(data.sessionCode, socket.id, data.revision, data.ready)
-    );
-  });
-  socket.on('session:start', (payload, callback) => {
-    void run(lobbyPayloadSchema, payload, callback, (data) =>
-      service.startRound(data.sessionCode, socket.id, data.revision)
-    );
-  });
-  socket.on('session:remove', (payload, callback) => {
-    void run(
-      lobbyPayloadSchema.extend({ participantId: z.string().min(1).max(200) }),
-      payload,
-      callback,
-      (data) => service.removeAbsent(data.sessionCode, socket.id, data.revision, data.participantId)
-    );
-  });
+  socket.on(
+    'session:choices',
+    command((payload, callback) =>
+      run(choicesPayloadSchema, payload, callback, (data) =>
+        service.updateChoices(data.sessionCode, socket.id, data)
+      )
+    )
+  );
+  socket.on(
+    'session:ready',
+    command((payload, callback) =>
+      run(lobbyPayloadSchema.extend({ ready: z.boolean() }), payload, callback, (data) =>
+        service.setReady(data.sessionCode, socket.id, data.revision, data.ready)
+      )
+    )
+  );
+  socket.on(
+    'session:start',
+    command((payload, callback) =>
+      run(lobbyPayloadSchema, payload, callback, (data) =>
+        service.startRound(data.sessionCode, socket.id, data.revision)
+      )
+    )
+  );
+  socket.on(
+    'session:remove',
+    command((payload, callback) =>
+      run(
+        lobbyPayloadSchema.extend({ participantId: z.string().min(1).max(200) }),
+        payload,
+        callback,
+        (data) =>
+          service.removeAbsent(data.sessionCode, socket.id, data.revision, data.participantId)
+      )
+    )
+  );
 }
