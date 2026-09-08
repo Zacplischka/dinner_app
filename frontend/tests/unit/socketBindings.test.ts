@@ -571,6 +571,153 @@ describe('socketBindings', () => {
     );
   });
 
+  it('keeps deliberate admission current while waiting through a transport reconnect', async () => {
+    const { beginSessionIntent, isSessionIntentCurrent } =
+      await import('../../src/services/sessionIntent');
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.getState().resetSession();
+    const intent = beginSessionIntent('AAA11', 'Alice');
+    socket.connected = false;
+    const connected = socketBindings.waitForConnection();
+    socket.trigger('disconnect', 'transport close');
+    socket.connected = true;
+    socket.trigger('connect');
+    await connected;
+    expect(isSessionIntentCurrent(intent)).toBe(true);
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'waiting',
+        rejoinToken: 'capability',
+        participants: [participant],
+      },
+    });
+    expect(await socketBindings.joinSession('AAA11', 'Alice', false, intent)).toMatchObject({
+      success: true,
+    });
+    expect(useSessionStore.getState().sessionCode).toBe('AAA11');
+  });
+
+  it('recovers a successful deliberate join if transport changes during credential persistence', async () => {
+    const storage = await import('../../src/services/nativeStorage');
+    const save = storage.saveRejoinToken;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const saving = vi.spyOn(storage, 'saveRejoinToken').mockImplementationOnce(async (...args) => {
+      await save(...args);
+      await held;
+    });
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.getState().resetSession();
+    const joined = {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'waiting',
+        rejoinToken: 'capability',
+        participants: [{ ...participant, participantId: socket.id }],
+      },
+    };
+    socket.acks.set('session:join', joined);
+    const admission = socketBindings.joinSession('AAA11', 'Alice');
+    try {
+      await vi.waitFor(() => expect(saving).toHaveBeenCalledOnce());
+      socket.connected = false;
+      socket.trigger('disconnect', 'transport close');
+      socket.id = 'new-socket';
+      socket.connected = true;
+      socket.acks.set('session:join', {
+        ...joined,
+        data: {
+          ...joined.data,
+          participantId: socket.id,
+          participants: [{ ...participant, participantId: socket.id }],
+        },
+      });
+      socket.trigger('connect');
+      release();
+      await admission;
+      await vi.waitFor(() =>
+        expect(useSessionStore.getState()).toMatchObject({
+          sessionCode: 'AAA11',
+          currentUserId: 'new-socket',
+          isConnected: true,
+        })
+      );
+    } finally {
+      release();
+      await admission;
+    }
+  });
+
+  it('lets the real Invite Link destination retry an autojoin interrupted by transport loss', async () => {
+    const { createElement: h } = await import('react');
+    const { render, screen, fireEvent, act, cleanup } = await import('@testing-library/react/pure');
+    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
+    const api = await import('../../src/services/apiClient');
+    vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.getState().resetSession();
+    useAuthStore.setState({
+      user: { id: 'profile', user_metadata: { full_name: 'Alice' } } as never,
+      isLoading: false,
+    });
+    let finish!: Handler;
+    const original = socket.emit.bind(socket);
+    const emit = vi.spyOn(socket, 'emit').mockImplementationOnce((_event, _payload, callback) => {
+      finish = callback!;
+      return socket;
+    });
+    try {
+      render(
+        h(
+          MemoryRouter,
+          { initialEntries: ['/join?code=AAA11'] },
+          h(
+            Routes,
+            {},
+            h(Route, { path: '/join', element: h(JoinSessionPage) }),
+            h(Route, { path: '/session/:code', element: h('div', {}, 'Joined after retry') })
+          )
+        )
+      );
+      await vi.waitFor(() => expect(finish).toBeDefined());
+      await act(async () => {
+        socket.connected = false;
+        socket.trigger('disconnect', 'transport close');
+        finish(new Error('transport closed'));
+      });
+      expect(screen.getByRole('button', { name: 'Join session' })).toBeEnabled();
+      expect(screen.getByRole('alert')).toHaveTextContent("The server didn't respond");
+      emit.mockImplementation(original);
+      socket.acks.set('session:join', {
+        success: true,
+        data: {
+          participantId: socket.id,
+          state: 'waiting',
+          rejoinToken: 'capability',
+          participants: [participant],
+        },
+      });
+      await act(async () => {
+        socket.connected = true;
+        socket.trigger('connect');
+        fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
+      });
+      expect(await screen.findByText('Joined after retry')).toBeInTheDocument();
+      expect(useSessionStore.getState().sessionCode).toBe('AAA11');
+    } finally {
+      cleanup();
+    }
+  });
+
   it.each(['success', 'failure'] as const)(
     'serializes admission and suppresses an older %s',
     async (outcome) => {

@@ -19,7 +19,7 @@ import type {
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
 import {
-  sessionIntent as recoveryGeneration,
+  sessionIntent,
   intendedParticipant,
   beginSessionIntent,
   isSessionIntentCurrent,
@@ -42,6 +42,8 @@ const log = (...args: unknown[]) => {
 let hadPreviousConnection = false;
 let recovery: Promise<void> | undefined;
 let recoveryIntent = -1;
+// A transport drop invalidates recovery reads, not the person's Join/Create intent.
+let recoveryGeneration = 0;
 let admissionQueue = Promise.resolve();
 
 const superseded = (): Ack<never> => ({
@@ -122,7 +124,7 @@ const socketConfig: SocketConfig = {
 
     disconnect: (reason: string) => {
       log('Socket disconnected:', reason);
-      beginSessionIntent();
+      recoveryGeneration++;
       recovery = undefined;
       useSessionStore.getState().setConnectionStatus(false);
 
@@ -333,23 +335,27 @@ export async function joinSession(
   sessionCode: string,
   displayName: string,
   resumeOnly = false,
-  generation = resumeOnly ? recoveryGeneration : beginSessionIntent(sessionCode, displayName)
+  generation = resumeOnly ? sessionIntent : beginSessionIntent(sessionCode, displayName)
 ): Promise<Ack<SessionJoinData>> {
-  return queueAdmission(() => admitSession(sessionCode, displayName, resumeOnly, generation));
+  const transportGeneration = recoveryGeneration;
+  return queueAdmission(() =>
+    admitSession(sessionCode, displayName, resumeOnly, generation, transportGeneration)
+  );
 }
 
 async function admitSession(
   sessionCode: string,
   displayName: string,
   resumeOnly: boolean,
-  generation: number
+  generation: number,
+  transportGeneration: number
 ): Promise<Ack<SessionJoinData>> {
   if (!isSessionIntentCurrent(generation)) return superseded();
   const previousParticipantId = useSessionStore.getState().currentUserId;
   const stillResuming = () => {
     const current = useSessionStore.getState();
     return (
-      generation === recoveryGeneration &&
+      transportGeneration === recoveryGeneration &&
       current.sessionCode === sessionCode &&
       current.currentUserId === previousParticipantId
     );
@@ -444,7 +450,7 @@ async function admitSession(
   // connected, so a second join in the same tab — leaveSession resets the store
   // without disconnecting — would otherwise sit on a false "Disconnected" banner.
   // Resume stays inert until reconcileSession has also refreshed the basket.
-  if (!resumeOnly) store.setConnectionStatus(true);
+  if (!resumeOnly) store.setConnectionStatus(transportGeneration === recoveryGeneration);
   store.setBranch(ack.data.branch);
   if (!ack.data.lobby)
     store.updateParticipants(
@@ -468,6 +474,9 @@ async function admitSession(
   )
     applyResults(ack.data.results);
 
+  // The ack may have arrived before a drop while credential storage was pending.
+  // Keep its capability, then recover the new socket before enabling mutations.
+  if (!resumeOnly && transportGeneration !== recoveryGeneration) void reconcileSession();
   return ack;
 }
 
@@ -550,8 +559,9 @@ export async function leaveSession(
 }
 
 export function reconcileSession(): Promise<void> {
-  if (recovery && recoveryIntent === recoveryGeneration) return recovery;
-  recoveryIntent = recoveryGeneration;
+  if (recovery && recoveryIntent === sessionIntent) return recovery;
+  recoveryIntent = sessionIntent;
+  const intent = sessionIntent;
   const store = useSessionStore.getState();
   const code = store.sessionCode;
   const me = store.participants.find((p) => p.participantId === store.currentUserId);
@@ -562,6 +572,7 @@ export function reconcileSession(): Promise<void> {
     const current = useSessionStore.getState();
     return (
       generation === recoveryGeneration &&
+      isSessionIntentCurrent(intent) &&
       current.sessionCode === code &&
       current.currentUserId === participantId
     );
@@ -626,7 +637,7 @@ export function reconcileSession(): Promise<void> {
       if (stillCurrent())
         toast.error('Could not restore your session yet. Check your connection and try again.');
     } finally {
-      if (generation === recoveryGeneration) recovery = undefined;
+      if (generation === recoveryGeneration && isSessionIntentCurrent(intent)) recovery = undefined;
     }
   })();
   return recovery;
@@ -637,6 +648,7 @@ export function reconcileSession(): Promise<void> {
  */
 export function disconnectSocket(): void {
   beginSessionIntent();
+  recoveryGeneration++;
   recovery = undefined;
   socketService.disconnectSocket();
   useSessionStore.getState().setConnectionStatus(false);
