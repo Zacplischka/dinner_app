@@ -326,6 +326,23 @@ export default function SessionLobbyPage() {
           </div>
 
           <div className="mt-4 space-y-3">
+            {lobby?.notice && (
+              <p
+                role="status"
+                className="rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"
+              >
+                {lobby.notice}
+              </p>
+            )}
+            {error && (
+              <p
+                ref={errorRef}
+                role="alert"
+                className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
+              >
+                {error}
+              </p>
+            )}
             {lobby?.state === 'waiting' && me && (
               <div className="space-y-3">
                 <button
@@ -393,23 +410,6 @@ export default function SessionLobbyPage() {
             className="rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"
           >
             Disconnected from server. Your place and choices are saved; reconnect to continue.
-          </p>
-        )}
-        {lobby?.notice && (
-          <p
-            role="status"
-            className="rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"
-          >
-            {lobby.notice}
-          </p>
-        )}
-        {error && (
-          <p
-            ref={errorRef}
-            role="alert"
-            className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
-          >
-            {error}
           </p>
         )}
         {lobby && (

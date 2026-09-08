@@ -335,6 +335,7 @@ it.each(['eatout', 'takeaway'] as const)(
 
 it('adopts shared-choice Ready resets without losing the collapsed interests', async () => {
   const lobby = snapshot();
+  const notice = 'The shared choices changed — everyone confirms Ready again.';
   lobby.participants.forEach((participant) => (participant.ready = true));
   lobby.participants[0].mood = { genres: ['Comedy'], decades: [] };
   renderLobby(lobby);
@@ -345,12 +346,19 @@ it('adopts shared-choice Ready resets without losing the collapsed interests', a
       ...lobby,
       revision: 2,
       deckSize: 20,
+      notice,
       participants: lobby.participants.map((participant) => ({ ...participant, ready: false })),
     },
   });
   fireEvent.click(screen.getByRole('button', { name: 'Bigger Deck' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Start swiping' })).toBeDisabled());
-  expect(screen.getByRole('button', { name: 'I’m ready' })).toBeEnabled();
+  const ready = screen.getByRole('button', { name: 'I’m ready' });
+  expect(ready).toBeEnabled();
+  const explanation = screen.getByText(notice);
+  expect(explanation).toHaveAttribute('role', 'status');
+  expect(
+    explanation.compareDocumentPosition(ready) & Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
   const summary = screen.getByText('Optional interests', { exact: true });
   expect(summary.closest('details')).not.toHaveAttribute('open');
   expect(summary).toHaveTextContent('Comedy');
