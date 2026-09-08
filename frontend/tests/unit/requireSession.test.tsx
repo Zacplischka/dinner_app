@@ -26,6 +26,18 @@ function renderAt(route: string) {
 describe('RequireSession', () => {
   beforeEach(() => {
     act(() => useSessionStore.getState().resetSession());
+    act(() => useSessionStore.setState({ isConnected: true }));
+  });
+
+  it('keeps actions unavailable until the saved Participant is reconciled', () => {
+    useSessionStore.setState({ sessionCode: 'AB123', isConnected: false });
+    renderAt('/session/AB123/select');
+    expect(screen.queryByText('Select route')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
+    act(() => useSessionStore.setState({ isConnected: true }));
+    expect(screen.getByText('Select route')).toBeInTheDocument();
+    act(() => useSessionStore.setState({ sessionCode: null, rejectedSessionCode: 'AB123' }));
+    expect(screen.getByText('Join route?code=AB123&resume=failed')).toBeInTheDocument();
   });
 
   it('renders the Session route when the stored Session matches the URL', () => {

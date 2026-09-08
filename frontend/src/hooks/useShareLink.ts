@@ -1,5 +1,8 @@
 import { useCallback } from 'react';
 import { toast } from './useToast';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
+import { copyText } from '../services/device';
 
 /**
  * The share-or-copy fallback behind every share button: the Invite Link in the
@@ -20,19 +23,21 @@ export function useShareLink(
   return useCallback(async () => {
     if (!url) return;
 
-    if (typeof navigator.share === 'function') {
+    if (Capacitor.isNativePlatform() || typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title: 'Dinder', ...share, url });
+        const options = { title: 'Heykeen', ...share, url };
+        if (Capacitor.isNativePlatform()) await Share.share(options);
+        else await navigator.share(options);
         return;
       } catch (err) {
         // navigator.share rejects with a DOMException, which is not `instanceof Error`
         // in every environment (jsdom included) — match on `.name` alone.
         if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
+        if (err instanceof Error && err.message === 'Share canceled') return;
       }
     }
 
-    await navigator.clipboard
-      .writeText(url)
+    await copyText(url)
       .then(() => toast.success(copiedMessage))
       .catch(() => toast.error('Could not copy link'));
   }, [url, copiedMessage, share]);

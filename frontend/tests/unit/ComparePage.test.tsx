@@ -424,7 +424,7 @@ describe('ComparePage', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Use my location' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Location access is blocked');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter your suburb or postcode');
     expect(screen.getByRole('textbox', { name: 'Suburb or postcode' })).toBeInTheDocument();
     expect(getVenues).not.toHaveBeenCalled();
   });

@@ -1,13 +1,23 @@
 {
-  "name": "Dinder",
-  "short_name": "Dinder",
-  "description": "Find restaurants everyone agrees on",
+  "name": "Heykeen",
+  "short_name": "Heykeen",
+  "description": "Choose somewhere to eat, something to cook, or something to watch together.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#030712",
-  "theme_color": "#030712",
+  "background_color": "#FFF4E8",
+  "theme_color": "#FFF4E8",
   "icons": [
-    { "src": "/dinder-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/heykeen-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/heykeen-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

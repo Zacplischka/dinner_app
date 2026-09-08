@@ -51,7 +51,7 @@ const colorClasses: Record<ToastVariant, { border: string; icon: string; bg: str
   },
   error: {
     border: 'border-l-coral',
-    icon: 'text-coral',
+    icon: 'text-coral-strong',
     bg: 'bg-coral/10',
   },
   warning: {

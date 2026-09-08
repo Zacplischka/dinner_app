@@ -56,6 +56,8 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Allowed origins for CORS (supports multiple origins for dev + production)
 const allowedOrigins = [
+  'capacitor://localhost',
+  'https://localhost',
   'http://localhost:3000',
   'https://www.dinder.it.com',
   'https://dinder.it.com',
@@ -153,6 +155,12 @@ app.use(
 app.use(
   pinoHttp({
     logger,
+    // Full URLs and headers contain list capabilities, OAuth codes and tokens.
+    // Keep request correlation/status; route handlers add operational context.
+    serializers: {
+      req: (req) => ({ id: req.id, method: req.method }),
+      res: (res) => ({ statusCode: res.statusCode }),
+    },
     genReqId: (req, res) => {
       const id = (req.headers['x-request-id'] as string) || randomUUID();
       res.setHeader('X-Request-Id', id);
@@ -228,6 +236,10 @@ const io = new SocketIOServer<
   Record<string, never>,
   SocketData
 >(httpServer, {
+  // CORS alone covers polling, not the WebSocket upgrade. Neither check
+  // replaces Participant capabilities or authenticated social permissions.
+  allowRequest: (request, callback) =>
+    callback(null, !request.headers.origin || allowedOrigins.includes(request.headers.origin)),
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],

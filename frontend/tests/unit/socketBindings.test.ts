@@ -109,8 +109,15 @@ describe('socketBindings', () => {
 
     expect(socketMocks.io).toHaveBeenCalledWith(
       'http://localhost:3001',
-      expect.objectContaining({ auth: { token: 'token' } })
+      expect.objectContaining({ auth: expect.any(Function) })
     );
+    const auth = socketMocks.io.mock.calls[0][1].auth;
+    const handshake = vi.fn();
+    auth(handshake);
+    expect(handshake).toHaveBeenLastCalledWith({ token: 'token' });
+    useAuthStore.setState({ session: null });
+    auth(handshake);
+    expect(handshake).toHaveBeenLastCalledWith({});
     expect(useSessionStore.getState().isConnected).toBe(true);
     expect(useSessionStore.getState().currentUserId).toBe('socket-1');
 
@@ -237,7 +244,7 @@ describe('socketBindings', () => {
     expect(useOrderStore.getState().menu).toEqual(orderState.menu);
   });
 
-  it('leaves orderStore untouched when the reconnect re-fire of order:open fails', async () => {
+  it('clears recovery when the basket read proves the Participant is no longer admitted', async () => {
     const socket = setupSocket();
     window.history.pushState({}, '', '/session/AB123/order');
     sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
@@ -267,7 +274,12 @@ describe('socketBindings', () => {
     socketBindings.initializeSocket();
     socket.trigger('connect');
 
-    await vi.waitFor(() => expect(useSessionStore.getState().currentUserId).toBe(socket.id));
+    await vi.waitFor(() => expect(useSessionStore.getState().rejectedSessionCode).toBe('AB123'));
+    expect(useSessionStore.getState()).toMatchObject({
+      sessionCode: null,
+      currentUserId: null,
+      isConnected: false,
+    });
     expect(useOrderStore.getState().order).toBeNull();
   });
 
@@ -842,10 +854,17 @@ describe('socketBindings', () => {
       orderPlaceId: null,
     });
 
-    // New membership/choice revisions in this same round must preserve progress.
+    // Once selecting, membership revisions in this same round preserve progress.
+    const activeLobby = {
+      ...lobby,
+      ...recovered,
+      state: 'selecting',
+      revision: recovered.revision + 1,
+    };
+    socket.trigger('session:lobby', activeLobby);
     useSessionStore.getState().setSelections(['new-movie']);
     useSessionStore.getState().setDeckCursor(1);
-    socket.trigger('session:lobby', { ...lobby, ...recovered, revision: recovered.revision + 1 });
+    socket.trigger('session:lobby', { ...activeLobby, revision: activeLobby.revision + 1 });
     expect(useSessionStore.getState().selections).toEqual(['new-movie']);
     expect(useSessionStore.getState().deckCursor).toBe(1);
   });
@@ -904,6 +923,7 @@ describe('socketBindings', () => {
     socketBindings.initializeSocket();
     useSessionStore.setState({
       sessionCode: 'AB123',
+      isConnected: true,
       lobby: { sessionCode: 'AB123', round: 7 } as never,
     });
     await socketBindings.submitSelection('AB123', ['movie-1']);
@@ -919,6 +939,106 @@ describe('socketBindings', () => {
       expect.any(Function)
     );
   });
+
+  it.each([
+    ['session:join', 'none'],
+    ['order:open', 'none'],
+    ['session:join', 'different'],
+    ['order:open', 'different'],
+    ['session:join', 'same'],
+    ['order:open', 'same'],
+  ] as const)(
+    'ignores late %s recovery after Leave (replacement Session: %s)',
+    async (pendingEvent, replaced) => {
+      const socket = setupSocket();
+      socketBindings.initializeSocket();
+      useSessionStore.setState({
+        sessionCode: 'AB123',
+        currentUserId: participant.participantId,
+        orderPlaceId: 'pizza',
+        isConnected: true,
+      });
+      sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+      const joined = {
+        success: true,
+        data: {
+          participantId: participant.participantId,
+          rejoinToken: 'rejoin-token',
+          state: 'complete',
+          participants: [participant],
+        },
+      };
+      const basket = {
+        success: true,
+        data: {
+          sessionCode: 'AB123',
+          placeId: 'pizza',
+          venueName: 'Pizza',
+          platform: 'ubereats',
+          pricesAt: '2026-09-08T00:00:00Z',
+          state: 'building',
+          lines: [],
+          menu: [],
+          feeCents: 0,
+          itemsCents: 0,
+          totalCents: 0,
+          shares: [],
+        },
+      };
+      socket.acks.set('session:join', joined);
+      socket.acks.set('order:open', basket);
+      socket.acks.set('session:leave', { success: true, data: null });
+      let completeRead: Handler | undefined;
+      const originalEmit = socket.emit.bind(socket);
+      vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+        if (event === pendingEvent && !completeRead) {
+          completeRead = callback;
+          return socket;
+        }
+        return originalEmit(event, payload, callback);
+      });
+      const recovery = socketBindings.reconcileSession();
+      await vi.waitFor(() => expect(completeRead).toBeDefined());
+      await socketBindings.leaveSession('AB123');
+      expect(useSessionStore.getState().sessionCode).toBeNull();
+      if (replaced === 'different')
+        useSessionStore.setState({
+          sessionCode: 'NEW99',
+          currentUserId: 'new-participant',
+          isConnected: true,
+        });
+      if (replaced === 'same') {
+        socket.acks.set('session:join', {
+          ...joined,
+          data: { ...joined.data, rejoinToken: 'fresh-admission-token' },
+        });
+        await socketBindings.joinSession('AB123', 'Alice');
+      }
+      completeRead!(
+        null,
+        replaced === 'different'
+          ? { success: false, error: { code: 'SESSION_NOT_FOUND', message: 'Expired' } }
+          : pendingEvent === 'session:join'
+            ? joined
+            : basket
+      );
+      await recovery;
+      expect(useSessionStore.getState()).toMatchObject({
+        sessionCode: replaced === 'different' ? 'NEW99' : replaced === 'same' ? 'AB123' : null,
+        currentUserId:
+          replaced === 'different'
+            ? 'new-participant'
+            : replaced === 'same'
+              ? participant.participantId
+              : null,
+        isConnected: replaced !== 'none',
+      });
+      expect(useOrderStore.getState().order).toBeNull();
+      expect(sessionStorage.getItem('dinder:rejoin:AB123:Alice')).toBe(
+        replaced === 'same' ? 'fresh-admission-token' : null
+      );
+    }
+  );
 
   it.each([false, true])(
     'hydrates a completed rejoin without resubmitting (collaborative: %s)',
@@ -974,4 +1094,115 @@ describe('socketBindings', () => {
       expect(emit.mock.calls.map(([event]) => event)).toEqual(['session:join']);
     }
   );
+
+  it.each(['stale', 'no_menu', 'invalid_outcome'])(
+    'returns an authoritative missing basket (%s) to the existing menu recovery UI',
+    async (reason) => {
+      const socket = setupSocket();
+      socketBindings.initializeSocket();
+      useSessionStore.setState({
+        sessionCode: 'AB123',
+        currentUserId: participant.participantId,
+        orderPlaceId: 'pizza',
+        isConnected: true,
+      });
+      sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+      socket.acks.set('session:join', {
+        success: true,
+        data: {
+          participantId: participant.participantId,
+          rejoinToken: 'rejoin-token',
+          state: 'complete',
+          participants: [participant],
+        },
+      });
+      socket.acks.set('order:open', {
+        success: false,
+        error: {
+          code: reason === 'invalid_outcome' ? 'VALIDATION_ERROR' : 'NOT_FOUND',
+          reason,
+          message: 'No current menu',
+        },
+      });
+      const emit = vi.spyOn(socket, 'emit');
+      await socketBindings.reconcileSession();
+      expect(useSessionStore.getState()).toMatchObject({
+        sessionCode: 'AB123',
+        isConnected: reason !== 'invalid_outcome',
+        orderPlaceId: reason === 'invalid_outcome' ? null : 'pizza',
+      });
+      expect(useOrderStore.getState().order).toBeNull();
+      if (reason === 'invalid_outcome') {
+        await socketBindings.reconcileSession();
+        expect(useSessionStore.getState().isConnected).toBe(true);
+        expect(emit.mock.calls.filter(([event]) => event === 'order:open')).toHaveLength(1);
+      }
+    }
+  );
+
+  it('starts fresh recovery when transport reconnects during credential persistence', async () => {
+    const storage = await import('../../src/services/nativeStorage');
+    const save = storage.saveRejoinToken;
+    let finishSave!: () => void;
+    const heldSave = new Promise<void>((resolve) => {
+      finishSave = resolve;
+    });
+    const persist = vi.spyOn(storage, 'saveRejoinToken').mockImplementationOnce(async (...args) => {
+      await save(...args);
+      await heldSave;
+    });
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: participant.participantId,
+      isConnected: true,
+    });
+    sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    const joined = {
+      success: true,
+      data: {
+        participantId: socket.id,
+        rejoinToken: 'rejoin-token',
+        state: 'selecting',
+        participants: [{ ...participant, participantId: socket.id }],
+      },
+    };
+    socket.acks.set('session:join', joined);
+    const emitted = vi.spyOn(socket, 'emit');
+    const oldRecovery = socketBindings.reconcileSession();
+    try {
+      await vi.waitFor(() => expect(persist).toHaveBeenCalledOnce());
+      socket.connected = false;
+      socket.trigger('disconnect', 'transport close');
+      socket.id = 'socket-2';
+      socket.connected = true;
+      socket.acks.set('session:join', {
+        success: true,
+        data: {
+          ...joined.data,
+          participantId: socket.id,
+          rejoinToken: 'newest-token',
+          participants: [{ ...participant, participantId: socket.id }],
+        },
+      });
+      socket.trigger('connect');
+      await vi.waitFor(() =>
+        expect(emitted.mock.calls.filter(([event]) => event === 'session:join')).toHaveLength(2)
+      );
+      finishSave();
+      await oldRecovery;
+      await vi.waitFor(() =>
+        expect(useSessionStore.getState()).toMatchObject({
+          sessionCode: 'AB123',
+          currentUserId: 'socket-2',
+          isConnected: true,
+        })
+      );
+      expect(sessionStorage.getItem('dinder:rejoin:AB123:Alice')).toBe('newest-token');
+    } finally {
+      finishSave();
+      await oldRecovery;
+    }
+  });
 });

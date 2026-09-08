@@ -8,6 +8,7 @@ import Spinner, { LoadingAnnouncer } from './components/Spinner';
 import { useRouteAnnouncement } from './hooks/useRouteAnnouncement';
 import RequireSession from './components/RequireSession';
 import { useSessionStore } from './stores/sessionStore';
+import { Capacitor } from '@capacitor/core';
 
 // Lazy load route components for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -26,6 +27,7 @@ const CookSetupPage = lazy(() => import('./pages/CookSetupPage'));
 const WatchSetupPage = lazy(() => import('./pages/WatchSetupPage'));
 const ShoppingListPage = lazy(() => import('./pages/ShoppingListPage'));
 const CookViewPage = lazy(() => import('./pages/CookViewPage'));
+const NativeLifecycle = lazy(() => import('./components/NativeLifecycle'));
 
 // Loading fallback component - matches dark theme
 function LoadingFallback() {
@@ -148,6 +150,7 @@ function App() {
               publishes into it, or the text arrives with the region. */}
           <LoadingAnnouncer />
           <Suspense fallback={<LoadingFallback />}>
+            {Capacitor.isNativePlatform() && <NativeLifecycle />}
             <AnimatedRoutes />
           </Suspense>
         </ToastProvider>

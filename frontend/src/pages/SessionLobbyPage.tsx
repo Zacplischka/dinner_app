@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Ack, SessionChoicesPayload, SessionLobbyState } from '@dinder/shared/types';
 import { useSessionStore } from '../stores/sessionStore';
@@ -182,7 +183,7 @@ export default function SessionLobbyPage() {
           <h2 id="invite-title" className="label text-center">
             Session code
           </h2>
-          <div className="rounded-market-md border border-cyan bg-[#050d19] p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+          <div className="rounded-market-md border border-cyan bg-surface p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
             {sessionCode}
           </div>
           {shareableLink && (
@@ -190,7 +191,9 @@ export default function SessionLobbyPage() {
               className="btn btn-secondary mt-4 min-h-[48px] w-full text-sm"
               onClick={() => void share()}
             >
-              {typeof navigator.share === 'function' ? 'Share invite link' : 'Copy shareable link'}
+              {Capacitor.isNativePlatform() || typeof navigator.share === 'function'
+                ? 'Share invite link'
+                : 'Copy shareable link'}
             </button>
           )}
           <div className="mt-4">

@@ -313,7 +313,7 @@ export default function SwipeCard({
           />
         )}
         {/* Gradient overlay for text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
         {/* The keyboard and screen-reader route into the details a tap opens.
             It sits on the photo's bottom corner — clear of the LIKE and PASS
@@ -352,7 +352,7 @@ export default function SwipeCard({
 
           {/* LIKE indicator */}
           <div
-            className={`absolute z-10 top-8 left-6 px-4 py-2 border-4 border-lime rounded-lg ${
+            className={`absolute z-10 top-8 left-6 px-4 py-2 border-4 border-lime bg-ink/95 rounded-lg ${
               prefersReducedMotion ? '' : 'transform -rotate-12'
             }`}
             style={{ opacity: likeIntensity }}
@@ -363,7 +363,7 @@ export default function SwipeCard({
           {/* PASS indicator — the badge names the same action as the button
               and the keyboard hint below the Deck (#412). */}
           <div
-            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft rounded-lg ${
+            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft bg-ink/95 rounded-lg ${
               prefersReducedMotion ? '' : 'transform rotate-12'
             }`}
             style={{ opacity: nopeIntensity }}

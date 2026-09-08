@@ -15,12 +15,13 @@ vi.mock('../../src/services/apiClient', async () => {
 });
 
 import { useShoppingList } from '../../src/hooks/useShoppingList';
+import { ApiClientError } from '../../src/services/apiClient';
 
 const list: ShoppingList = {
   listId: 'list-1',
   recipeName: 'Beef Rendang',
   headcount: 4,
-  mintedAt: '2026-08-01T10:00:00.000Z',
+  mintedAt: new Date().toISOString(),
   steps: ['Boil the pasta.'],
   lines: [
     { id: '0', text: '250 g canned tomatoes', staple: false, state: 'unmatched' },
@@ -103,6 +104,44 @@ describe('useShoppingList', () => {
 
     await act(() => vi.advanceTimersByTimeAsync(15_000));
     expect(mocks.getShoppingList).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['read', 'claim'] as const)(
+    'removes an expired list after a failed %s',
+    async (operation) => {
+      vi.useFakeTimers();
+      const { result } = renderHook(() => useShoppingList('list-1', 5_000));
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      expect(result.current.list).toEqual(list);
+      const expired = new ApiClientError(
+        'NOT_FOUND',
+        'This shopping list has expired or does not exist',
+        404
+      );
+      if (operation === 'read') {
+        mocks.getShoppingList.mockRejectedValue(expired);
+        await act(() => vi.advanceTimersByTimeAsync(5_000));
+      } else {
+        await act(() => result.current.applyChange(() => Promise.reject(expired)));
+      }
+      expect(result.current.list).toBeNull();
+      expect(result.current.error).toBe(expired.message);
+    }
+  );
+
+  it('checks a settled cooking method again when its seven-day lifetime ends', async () => {
+    vi.useFakeTimers();
+    mocks.getShoppingList.mockResolvedValue({
+      ...list,
+      mintedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 1_000).toISOString(),
+    });
+    const { result } = renderHook(() => useShoppingList('list-1'));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(result.current.list).not.toBeNull();
+    mocks.getShoppingList.mockRejectedValue(new ApiClientError('NOT_FOUND', 'List expired', 404));
+    await act(() => vi.advanceTimersByTimeAsync(2_000));
+    expect(result.current.list).toBeNull();
+    expect(result.current.error).toBe('List expired');
   });
 
   it('polls the Cook View while pricing is pending and stops once the frozen list arrives', async () => {

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShoppingList } from '@dinder/shared/types';
-import { getShoppingList } from '../services/apiClient';
+import { ApiClientError, getShoppingList } from '../services/apiClient';
+
+const isMissingList = (error: unknown) => error instanceof ApiClientError && error.status === 404;
 
 /**
  * A Shopping List read from its own URL — the whole capability, shared by the
@@ -10,7 +12,7 @@ import { getShoppingList } from '../services/apiClient';
  * Legacy servers hold the first read; current servers return the Recipe while
  * pricing runs. Cook View polls only until pricing settles.
  * `livePollMs` keeps Claims current on the list page; Cook View stops reading
- * once its prices settle because the snapshotted method never changes.
+ * once its prices settle, checking again at its seven-day expiry.
  */
 export function useShoppingList(
   listId: string | undefined,
@@ -66,10 +68,16 @@ export function useShoppingList(
           show(fresh);
         }
       } catch (err: unknown) {
-        // A tick that fails over a list already on screen changes nothing —
-        // the Shopper keeps shopping from what they have.
+        // A definitive expiry removes stale actions; transient failures retain
+        // the recipe. An older read must not erase a successful newer Claim.
+        if (active && at === changes.current && isMissingList(err)) {
+          onScreen.current = null;
+          setList(null);
+          clearInterval(ticker);
+        }
         if (
           active &&
+          at === changes.current &&
           (!onScreen.current ||
             (onScreen.current.pricingStatus === 'pending' &&
               pendingSince !== undefined &&
@@ -90,7 +98,13 @@ export function useShoppingList(
 
     void read();
     const ticker = setInterval(() => {
-      if (livePollMs || onScreen.current?.pricingStatus === 'pending') void read();
+      const current = onScreen.current;
+      if (
+        livePollMs ||
+        current?.pricingStatus === 'pending' ||
+        (current && Date.now() - Date.parse(current.mintedAt) >= 7 * 24 * 60 * 60 * 1000)
+      )
+        void read();
     }, livePollMs ?? 2000);
     return () => {
       active = false;
@@ -104,6 +118,10 @@ export function useShoppingList(
       try {
         show(await action());
       } catch (err: unknown) {
+        if (isMissingList(err)) {
+          onScreen.current = null;
+          setList(null);
+        }
         setError(err instanceof Error ? err.message : 'That did not go through. Try again.');
       }
     },

@@ -26,11 +26,39 @@ export default function RequireSession() {
     lobby,
     participants,
     currentUserId,
+    isConnected,
+    rejectedSessionCode,
   } = useSessionStore();
 
   if (storedSessionCode !== sessionCode) {
-    return <Navigate to={`/join?code=${encodeURIComponent(sessionCode ?? '')}`} replace />;
+    return (
+      <Navigate
+        to={`/join?code=${encodeURIComponent(sessionCode ?? '')}${rejectedSessionCode === sessionCode ? '&resume=failed' : ''}`}
+        replace
+      />
+    );
   }
+
+  if (!isConnected && sessionStatus !== 'expired')
+    return (
+      <main
+        className="min-h-screen p-6 space-y-4"
+        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+      >
+        <h1 className="text-2xl font-display">Reconnecting to your session</h1>
+        <p role="status">Your place is saved. Connect to the internet to continue.</p>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            void import('../services/socketBindings').then(({ reconcileSession }) =>
+              reconcileSession()
+            );
+          }}
+        >
+          Try again
+        </button>
+      </main>
+    );
 
   const lobbyPath = `/session/${sessionCode}`;
   const waitingParticipant = participants.find(

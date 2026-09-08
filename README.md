@@ -1,10 +1,12 @@
 <p align="center">
-  <img src="frontend/public/dinder-logo.png" alt="Dinder logo" width="120" />
+  <img src="frontend/public/heykeen-wordmark.svg" alt="Heykeen logo" width="240" />
 </p>
 
-# Dinder
+# Heykeen
 
-**Swipe. Match. Eat.** Dinder is a real-time app for groups of 2–4 who can't decide where to eat: everyone swipes through nearby restaurants, and the moment the last person submits, Redis computes the overlap and pushes the matches to every phone at once.
+**What are we doing tonight?** Heykeen helps friends, couples and housemates choose somewhere to eat, takeaway, a recipe to cook, or a movie or series to watch. Invite your people with a link, choose together and swipe to find a shared pick. No download or account needed.
+
+Formerly Dinder. The Heykeen visual rebrand is prepared locally; the public domain and service identifiers remain unchanged pending release and name checks.
 
 <p align="center">
   <a href="https://www.dinder.it.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>

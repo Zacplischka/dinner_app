@@ -31,5 +31,5 @@ it('draws only actual Participants’ chairs and reads Ready and offline from th
 
   drawing.rounded.mockClear();
   drawSocialMoment(ctx, 248, 15, { moment: 'gather', seats: [...seats, { ready: false }] });
-  expect(cushions().map((call) => call[5])).toEqual(['#9df3bd', '#637082', '#ff7589']);
+  expect(cushions().map((call) => call[5])).toEqual(['#9df3bd', '#637082', '#EA7058']);
 });

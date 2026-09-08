@@ -14,9 +14,9 @@ export class SessionLobbyPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.participantsList = page.locator('[data-testid="participants-list"]').or(
-      page.locator('[class*="participants"]')
-    );
+    this.participantsList = page
+      .locator('[data-testid="participants-list"]')
+      .or(page.locator('[class*="participants"]'));
     this.startButton = page.getByRole('button', { name: /Start/i });
     this.leaveButton = page.getByRole('button', { name: /Back|Leave|Exit/i });
   }
@@ -25,7 +25,9 @@ export class SessionLobbyPage extends BasePage {
    * Get list of participant names
    */
   async getParticipants(): Promise<string[]> {
-    const participantElements = await this.participantsList.locator('[data-testid="participant-name"]').all();
+    const participantElements = await this.participantsList
+      .locator('[data-testid="participant-name"]')
+      .all();
     const names: string[] = [];
     for (const el of participantElements) {
       const name = await el.textContent();
@@ -46,9 +48,12 @@ export class SessionLobbyPage extends BasePage {
    */
   async ready(): Promise<void> {
     const ready = this.page.getByRole('button', { name: 'I’m ready', exact: true });
+    const confirmed = this.page.getByRole('button', { name: 'Ready — change my confirmation' });
+    // The URL can arrive before the lazy page/reconciliation has finished.
+    await expect(ready.or(confirmed)).toBeVisible();
     if (await ready.isVisible()) {
       await ready.click();
-      await expect(this.page.getByRole('button', { name: 'Ready — change my confirmation' })).toBeEnabled();
+      await expect(confirmed).toBeEnabled();
     }
   }
 
@@ -68,7 +73,9 @@ export class SessionLobbyPage extends BasePage {
     await this.leaveButton.click();
 
     // Handle confirmation modal if present
-    const confirmButton = this.page.getByRole('dialog').getByRole('button', { name: /^Leave session$/i });
+    const confirmButton = this.page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Leave session$/i });
     if (await confirmButton.isVisible()) {
       await confirmButton.click();
     }

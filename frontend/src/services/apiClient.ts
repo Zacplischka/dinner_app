@@ -36,6 +36,8 @@ import type {
   VenueSearchResponse,
 } from '@dinder/shared/types';
 import { useAuthStore } from '../stores/authStore';
+import { Capacitor } from '@capacitor/core';
+import { publicUrl } from './device';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -138,7 +140,13 @@ export function getSessionDefaults(): Promise<SessionDefaultsResponse> {
  * Get session details by code
  */
 export async function getSession(sessionCode: string): Promise<SessionResponse> {
-  return request<SessionResponse>(`/sessions/${sessionCode}`);
+  const session = await request<SessionResponse>(`/sessions/${sessionCode}`);
+  return Capacitor.isNativePlatform()
+    ? {
+        ...session,
+        shareableLink: publicUrl(`/join?code=${encodeURIComponent(session.sessionCode)}`),
+      }
+    : session;
 }
 
 /**

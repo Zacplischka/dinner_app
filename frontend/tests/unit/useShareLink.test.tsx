@@ -2,10 +2,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useShareLink } from '../../src/hooks/useShareLink';
 import { useToastStore } from '../../src/hooks/useToast';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
+vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn() } }));
 
 const LINK = 'http://localhost:3000/join?code=AB123';
 
 describe('useShareLink (#350)', () => {
+  it('treats cancellation of the installed app share sheet as a harmless dismissal', async () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+    vi.mocked(Share.share).mockRejectedValue(new Error('Share canceled'));
+    const { result } = renderHook(() => useShareLink(LINK, 'Copied'));
+    await act(() => result.current());
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    expect(useToastStore.getState().toasts).toHaveLength(0);
+  });
   beforeEach(() => {
     // The global afterEach's vi.restoreAllMocks() drops setup.ts's mockResolvedValue — re-arm it.
     vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
@@ -23,7 +34,7 @@ describe('useShareLink (#350)', () => {
 
     await act(() => result.current());
 
-    expect(share).toHaveBeenCalledWith({ title: 'Dinder', url: LINK });
+    expect(share).toHaveBeenCalledWith({ title: 'Heykeen', url: LINK });
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(useToastStore.getState().toasts).toHaveLength(0);
   });

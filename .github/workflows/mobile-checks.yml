@@ -1,0 +1,113 @@
+name: Native compile checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'shared/**'
+      - '**/package.json'
+      - 'package-lock.json'
+      - '.npmrc'
+      - 'scripts/mobile-*.mjs'
+      - 'scripts/patch-native-storage.mjs'
+      - 'patches/**'
+      - '.github/workflows/mobile-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'shared/**'
+      - '**/package.json'
+      - 'package-lock.json'
+      - '.npmrc'
+      - 'scripts/mobile-*.mjs'
+      - 'scripts/patch-native-storage.mjs'
+      - 'patches/**'
+      - '.github/workflows/mobile-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Compile-only development configuration: no live service or signing credentials.
+env:
+  VITE_BACKEND_URL: http://localhost:3458
+  VITE_API_BASE_URL: http://localhost:3458/api
+  VITE_PUBLIC_ORIGIN: https://www.dinder.it.com
+  VITE_SUPABASE_URL: ''
+  VITE_SUPABASE_ANON_KEY: ''
+
+jobs:
+  compile:
+    name: Compile ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ios
+            os: macos-15
+          - platform: android
+            os: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.23.2'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Set up Java
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21.0.12+8'
+
+      - name: Select Xcode
+        if: matrix.platform == 'ios'
+        run: echo 'DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer' >> "$GITHUB_ENV"
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check mobile configuration and association generation
+        run: node --test scripts/mobile-config.test.mjs scripts/mobile-associations.test.mjs
+
+      - name: Build shared types
+        run: npm run build --workspace=@dinder/shared
+
+      - name: Prepare bundled native projects
+        run: npm run mobile:sync --workspace=@dinder/frontend -- development
+
+      - name: Compile iOS simulator app without signing
+        if: matrix.platform == 'ios'
+        run: |
+          xcodebuild -version
+          xcodebuild -project frontend/ios/App/App.xcodeproj -scheme App \
+            -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/mobile-ios" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - name: Ensure Android SDK packages
+        if: matrix.platform == 'android'
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0"'
+
+      - name: Compile Android Debug app and storage-test APK
+        if: matrix.platform == 'android'
+        working-directory: frontend/android
+        run: ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest

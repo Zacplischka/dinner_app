@@ -1,3 +1,4 @@
+import { publicUrl } from '../services/device';
 // The Shopping List (#262, #263): the priced list minted from a completed Cook
 // Session's Top Pick, read and worked from its own URL. Every line renders in
 // exactly one of #234's four states, every Woolworths link goes through the
@@ -118,16 +119,19 @@ function Line({
   };
 
   return (
-    // A claimed line recedes so the unclaimed ones are what the eye lands on —
-    // what is left to pick up is the whole question the page answers (#229).
+    // Claimed titles recede without fading the price, owner or Release control.
     <li
       data-line-state={line.state}
       data-staple={line.staple || undefined}
-      className={`border-b border-line/30 py-3 last:border-b-0 ${line.staple ? 'text-muted' : ''} ${
-        line.claimedBy ? 'opacity-55' : ''
-      }`}
+      className={`border-b border-line/30 py-3 last:border-b-0 ${line.staple ? 'text-muted' : ''}`}
     >
-      <p className={`font-semibold ${line.staple ? 'text-muted' : 'text-text'}`}>{line.text}</p>
+      <p
+        className={
+          line.claimedBy || line.staple ? 'font-medium text-muted' : 'font-semibold text-text'
+        }
+      >
+        {line.text}
+      </p>
 
       {line.state === 'priced' && (
         <p className="mt-0.5 text-sm text-muted">
@@ -278,7 +282,7 @@ export default function ShoppingListPage() {
   // home and takes it with it. Rebuilt from the list id rather than read off
   // location, so no stray query or hash rides along.
   const shareList = useShareLink(
-    list ? `${window.location.origin}/list/${list.listId}` : undefined,
+    list ? publicUrl(`/list/${list.listId}`) : undefined,
     'List link copied!'
   );
 
@@ -457,6 +461,9 @@ export default function ShoppingListPage() {
                     and the Tally itself would blink out on the first letter. */}
                 <input
                   id="shopper-name"
+                  autoComplete="name"
+                  autoCorrect="off"
+                  spellCheck={false}
                   ref={nameField}
                   defaultValue={shopperName}
                   onBlur={(event) => renameShopper(event.target.value.trim())}

@@ -110,6 +110,7 @@ export default function JoinSessionPage() {
       linkDead ||
       autoJoined.current ||
       !searchParams.get('code') ||
+      searchParams.get('resume') === 'failed' ||
       sessionCode.length !== SESSION_CODE_LENGTH
     )
       return;
@@ -187,7 +188,7 @@ export default function JoinSessionPage() {
               onChange={(e) => setSessionCode(cleanSessionCode(e.target.value))}
               placeholder="7K9M2"
               maxLength={SESSION_CODE_LENGTH}
-              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-[#050d19] px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan transition-all duration-150 placeholder:text-muted/70"
+              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-surface px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan transition-all duration-150 placeholder:text-muted/70"
               autoFocus={!searchParams.get('code')}
               disabled={isLoading}
             />
@@ -212,6 +213,9 @@ export default function JoinSessionPage() {
                 id="participantName"
                 name="displayName"
                 type="text"
+                autoComplete="name"
+                autoCorrect="off"
+                spellCheck={false}
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
                 placeholder="Enter your name"

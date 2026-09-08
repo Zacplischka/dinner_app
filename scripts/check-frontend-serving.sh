@@ -138,6 +138,14 @@ request fallback GET /deep/spa/route text/html 200
 assert_document_headers
 [[ "$(shasum -a 256 "$body" | awk '{print $1}')" == "$root_hash" ]] || fail 'SPA fallback body differs from index.html'
 
+request missing_association GET /.well-known/assetlinks.json application/json 404
+mkdir -p "$dist_dir/.well-known"
+printf '%s\n' '{"applinks":{"details":[]}}' > "$dist_dir/.well-known/apple-app-site-association"
+request apple_association GET /.well-known/apple-app-site-association application/json 200
+assert_header "$headers" Content-Type application/json
+assert_no_header "$headers" Location
+node -e 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$body"
+
 request fallback_head HEAD /another/deep/route text/html 200
 assert_document_headers
 
@@ -188,5 +196,23 @@ assert_no_document_headers
 
 request hidden_git GET /.git/config text/html 404
 assert_no_document_headers
+
+request private_link GET '/list/765ac46e-205f-4fb7-a849-a75913ec4693?code=private-oauth-code' text/html 200
+kill "$caddy_pid"
+wait "$caddy_pid" || true
+caddy_pid=''
+node --input-type=module - "$tmp_dir/caddy.log" <<'JS'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const log = readFileSync(process.argv[2], 'utf8');
+const access = log.trim().split('\n').map(line => JSON.parse(line))
+  .filter(line => line.logger?.startsWith('http.log.access'));
+assert(access.length > 0, 'Access diagnostics must remain available');
+assert(access.some(line => line.status === 200));
+assert(access.some(line => line.status === 404));
+assert(access.every(line => !('request' in line) && !('resp_headers' in line)));
+assert(!log.includes('765ac46e-205f-4fb7-a849-a75913ec4693'));
+assert(!log.includes('private-oauth-code'));
+JS
 
 echo "Frontend serving contract passed with Caddy $actual_caddy_version"

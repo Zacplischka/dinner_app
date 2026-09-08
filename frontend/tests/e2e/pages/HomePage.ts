@@ -22,14 +22,14 @@ export class HomePage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.heading = page.getByRole('heading', { name: /Find something everyone.s into/i });
-    this.eatOutCard = page.getByRole('button', { name: /Eating out/i });
-    this.takeawayCard = page.getByRole('button', { name: /Getting takeaway/i });
-    this.cookCard = page.getByRole('button', { name: /Cooking/i });
-    this.watchCard = page.getByRole('button', { name: /Watching a movie/i });
+    this.heading = page.getByRole('heading', { name: /What are we doing tonight/i });
+    this.eatOutCard = page.getByRole('button', { name: /Eat out/i });
+    this.takeawayCard = page.getByRole('button', { name: /Order in/i });
+    this.cookCard = page.getByRole('button', { name: /Cook together/i });
+    this.watchCard = page.getByRole('button', { name: /Watch something/i });
     this.joinLink = page.getByRole('button', { name: /Join with a code/i });
     this.compareLink = page.getByRole('button', { name: 'Compare delivery prices', exact: true });
-    this.eatOutDescription = page.getByText('Find a table everyone’s into.');
+    this.eatOutDescription = page.getByText('Find somewhere you’re into.');
     this.guestModeText = page.getByText(/No account needed/i);
   }
 

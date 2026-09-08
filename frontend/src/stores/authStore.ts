@@ -35,6 +35,12 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       initialize: async () => {
+        if (!supabase) {
+          set({ isLoading: false });
+          return;
+        }
+        // Optional identity must not hold guest entry hostage to an auth outage.
+        const guestFallback = setTimeout(() => set({ isLoading: false }), 3000);
         try {
           // Get initial session
           const {
@@ -56,6 +62,7 @@ export const useAuthStore = create<AuthState>()(
               session,
               user: session?.user ?? null,
               isAuthenticated: !!session,
+              isLoading: false,
             });
           });
           return subscription;
@@ -63,6 +70,8 @@ export const useAuthStore = create<AuthState>()(
           console.error('Auth initialization error:', error);
           set({ isLoading: false });
           return undefined;
+        } finally {
+          clearTimeout(guestFallback);
         }
       },
 
@@ -70,6 +79,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           await googleSignIn();
+          set({ isLoading: false });
         } catch (error) {
           console.error('Sign in error:', error);
           set({ isLoading: false });

@@ -5,6 +5,8 @@ import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 import type { Branch, DeckEntry, SessionLobbyState } from '@dinder/shared/types';
 import type { Participant, Result } from '../types';
 import { useOrderStore } from './orderStore';
+import { Capacitor } from '@capacitor/core';
+import { nativeStateStorage, clearRejoinToken } from '../services/nativeStorage';
 
 interface Location {
   latitude: number;
@@ -15,12 +17,15 @@ interface Location {
 interface SessionState {
   // Session data
   sessionCode: string | null;
+  rejectedSessionCode: string | null;
   participants: Participant[];
   currentUserId: string | null;
   /** The Session's Branch, from the join ack. Undefined before the entry fork. */
   branch?: Branch;
 
   lobby?: SessionLobbyState;
+  /** Round restored without retaining the old Lobby or other people's data. */
+  recoveryRound?: number;
   setLobby: (lobby?: SessionLobbyState) => void;
 
   // Location data
@@ -109,13 +114,24 @@ const emptyRound = {
   orderPlaceId: null,
 };
 
+function discardCredential(state: SessionState) {
+  const me = state.participants.find((p) => p.participantId === state.currentUserId);
+  if (state.sessionCode && me) {
+    void clearRejoinToken(state.sessionCode, me.displayName).catch(() =>
+      console.warn('Saved session credentials could not be cleared.')
+    );
+  }
+}
+
 const initialState = {
   ...emptyRound,
   sessionCode: null,
+  rejectedSessionCode: null,
   participants: [],
   currentUserId: null,
   branch: undefined,
   lobby: undefined,
+  recoveryRound: undefined,
   location: undefined,
   searchRadiusMiles: undefined,
   sessionStatus: 'waiting' as const,
@@ -126,7 +142,7 @@ const initialState = {
 export const useSessionStore = create<SessionState>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         ...initialState,
 
         setLobby: (lobby) =>
@@ -143,14 +159,18 @@ export const useSessionStore = create<SessionState>()(
               return state;
             // Rejoin and HTTP hydration can recover a Restart whose broadcast
             // this phone missed, even after the next Deck has already started.
-            const restarted =
-              state.lobby &&
-              ((lobby.round !== undefined && lobby.round !== state.lobby.round) ||
-                (lobby.state === 'waiting' && state.lobby.state !== 'waiting'));
-            if (restarted) useOrderStore.getState().clear();
+            // Native hydration omits Lobby. A waiting snapshot has no previous
+            // outcome even when its saved round number already matches.
+            const discardRound =
+              lobby.state === 'waiting' ||
+              ((state.lobby || state.recoveryRound !== undefined) &&
+                lobby.round !== undefined &&
+                lobby.round !== (state.lobby?.round ?? state.recoveryRound));
+            if (discardRound) useOrderStore.getState().clear();
             return {
-              ...(restarted ? emptyRound : {}),
+              ...(discardRound ? emptyRound : {}),
               lobby,
+              recoveryRound: undefined,
               branch: lobby.branch,
               sessionStatus: lobby.state,
               location: lobby.location,
@@ -251,7 +271,10 @@ export const useSessionStore = create<SessionState>()(
         setOrderPlaceId: (placeId) => set({ orderPlaceId: placeId }),
 
         // Status actions
-        setSessionStatus: (status) => set({ sessionStatus: status }),
+        setSessionStatus: (status) => {
+          if (status === 'expired') discardCredential(get());
+          set({ sessionStatus: status });
+        },
 
         setConnectionStatus: (isConnected) => set({ isConnected }),
 
@@ -259,6 +282,7 @@ export const useSessionStore = create<SessionState>()(
 
         // Reset actions
         resetSession: () => {
+          discardCredential(get());
           useOrderStore.getState().clear();
           set(initialState);
         },
@@ -285,10 +309,37 @@ export const useSessionStore = create<SessionState>()(
         // its auto-rejoin evicted the host. sessionStorage is scoped to the
         // tab and survives reload (and iOS background-and-return), which is
         // exactly the case this persistence exists for.
-        storage: createJSONStorage(() => sessionStorage),
+        storage: createJSONStorage(() =>
+          Capacitor.isNativePlatform() ? nativeStateStorage : sessionStorage
+        ),
+        skipHydration: Capacitor.isNativePlatform(),
         // isConnected is live socket state; rehydrating it as true would lie.
-        partialize: ({ isConnected: _isConnected, ...rest }: SessionState): Partial<SessionState> =>
-          rest,
+        partialize: ({
+          isConnected: _isConnected,
+          ...rest
+        }: SessionState): Partial<SessionState> => {
+          if (!Capacitor.isNativePlatform()) return rest;
+          const me = rest.participants.find((p) => p.participantId === rest.currentUserId);
+          if (!rest.sessionCode || !me || rest.sessionStatus === 'expired') return {};
+          return {
+            sessionCode: rest.sessionCode,
+            currentUserId: me.participantId,
+            participants: [
+              {
+                participantId: me.participantId,
+                displayName: me.displayName,
+                sessionCode: rest.sessionCode,
+                joinedAt: me.joinedAt,
+                hasSubmitted: false,
+                isHost: false,
+              },
+            ],
+            selections: rest.selections,
+            deckCursor: rest.deckCursor,
+            recoveryRound: rest.lobby?.round ?? rest.recoveryRound,
+            orderPlaceId: rest.orderPlaceId,
+          };
+        },
         // Pre-v1 blobs have unversioned, possibly stale shapes — discard them.
         migrate: () => ({ ...initialState }),
         merge: (persisted, current) => ({

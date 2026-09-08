@@ -27,7 +27,7 @@ function FailureCard({ label, onRetry }: { label: string; onRetry: () => void })
       <p className="text-sm mt-1 text-muted">Friends are unavailable right now.</p>
       <button
         onClick={onRetry}
-        className="mt-4 min-h-[44px] px-6 py-2 font-medium text-ink bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
+        className="mt-4 min-h-[44px] px-6 py-2 font-medium text-white bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
       >
         Retry
       </button>
@@ -114,7 +114,7 @@ export default function FriendsPage() {
           <h1 className="text-xl font-display font-semibold text-text">Friends</h1>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex min-h-[44px] items-center text-cyan hover:text-white font-medium transition-colors"
+            className="flex min-h-[44px] items-center text-cyan hover:text-text font-medium transition-colors"
           >
             <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -153,7 +153,7 @@ export default function FriendsPage() {
             >
               Requests
               {requestsCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-ink bg-coral rounded-full">
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text bg-coral rounded-full">
                   {requestsCount}
                 </span>
               )}
@@ -168,7 +168,7 @@ export default function FriendsPage() {
             >
               Invites
               {invitesCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-ink bg-cyan rounded-full">
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-cyan rounded-full">
                   {invitesCount}
                 </span>
               )}
@@ -193,7 +193,7 @@ export default function FriendsPage() {
               </p>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="mt-4 min-h-[44px] px-6 py-2 font-medium text-ink bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
+                className="mt-4 min-h-[44px] px-6 py-2 font-medium text-white bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
               >
                 Add a friend
               </button>

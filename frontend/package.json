@@ -4,6 +4,7 @@
   "description": "Dinder frontend with React and Vite",
   "type": "module",
   "scripts": {
+    "mobile:sync": "node scripts/mobile.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
@@ -21,15 +22,27 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@capacitor-community/keep-awake": "8.0.1",
+    "@capacitor/android": "8.5.1",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/browser": "8.0.4",
+    "@capacitor/clipboard": "8.0.1",
+    "@capacitor/core": "8.5.1",
+    "@capacitor/geolocation": "8.2.2",
+    "@capacitor/ios": "8.5.1",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.1",
     "@dinder/shared": "file:../shared",
     "@supabase/supabase-js": "^2.86.2",
+    "capacitor-secure-storage-plugin": "0.13.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.0",
+    "react-router-dom": "7.18.3",
     "socket.io-client": "^4.7.2",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.1",
     "@playwright/test": "^1.40.1",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",

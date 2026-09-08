@@ -5,7 +5,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
 
-const APP_NAME = 'Dinder';
+const APP_NAME = 'Heykeen';
 
 // Route patterns exactly as App.tsx declares them, most specific first so a
 // nested route never loses to its parent.
@@ -16,8 +16,8 @@ const TITLES: ReadonlyArray<readonly [string, string]> = [
   ['/session/:sessionCode', 'Make the Call'],
   ['/list/:listId/cook', 'Method'],
   ['/list/:listId', 'Shopping List'],
-  ['/cook', 'Cooking'],
-  ['/watch', 'Watching a movie'],
+  ['/cook', 'Cook together'],
+  ['/watch', 'Watch something'],
   ['/compare/:placeId', 'Price comparison'],
   ['/compare', 'Compare menu prices'],
   ['/create', 'Create Session'],
@@ -59,7 +59,10 @@ export function useRouteAnnouncement(pageRef: RefObject<HTMLElement | null>) {
 
     const focus = (el: HTMLElement) => {
       el.tabIndex = -1;
-      el.focus();
+      // Announce the heading without scrolling the native header under the
+      // status bar. Every new page starts at its top, including its navigation.
+      window.scrollTo(0, 0);
+      el.focus({ preventScroll: true });
     };
 
     const heading = page.querySelector<HTMLElement>('h1');

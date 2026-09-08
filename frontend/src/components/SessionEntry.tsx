@@ -10,10 +10,10 @@ import { useSessionSwitch } from '../hooks/useSessionSwitch';
 import { validateDisplayName } from '../utils/displayName';
 
 const titles: Record<Branch, string> = {
-  eatout: 'Eating out',
-  takeaway: 'Getting takeaway',
-  cook: 'Cooking',
-  watch: 'Watching a movie',
+  eatout: 'Eat out',
+  takeaway: 'Order in',
+  cook: 'Cook together',
+  watch: 'Watch something',
 };
 
 // Branch entry collects identity only. Everyone settles choices after gathering.
@@ -78,6 +78,8 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
                 name="hostName"
                 className="input"
                 autoComplete="name"
+                autoCorrect="off"
+                spellCheck={false}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 maxLength={50}

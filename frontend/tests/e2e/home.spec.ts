@@ -58,17 +58,15 @@ test('home remains usable with failed images, reduced motion and narrow screens'
   await page.goto('/');
   for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
-    await expect(
-      page.getByRole('heading', { name: /Find something everyone.s into/i })
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /What are we doing tonight/i })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true
     );
     for (const label of [
-      /Eating out/i,
-      /Getting takeaway/i,
-      /Cooking/i,
-      /Watching a movie/i,
+      /Eat out/i,
+      /Order in/i,
+      /Cook together/i,
+      /Watch something/i,
       /Join with a code/i,
       /Compare delivery prices/i,
     ]) {

@@ -1,3 +1,4 @@
+import { currentPosition } from '../services/device';
 import { useState } from 'react';
 import {
   CUISINES,
@@ -112,34 +113,25 @@ export default function LobbyChoices({
       setFinding(false);
     }
   }
-  function currentLocation() {
+  async function currentLocation() {
     setLocationError('');
-    if (!navigator.geolocation) {
-      setMode('manual');
-      setLocationError('Location is unavailable. Enter your suburb or postcode instead.');
-      return;
-    }
     setFinding(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        void (async () => {
-          const { latitude, longitude } = position.coords;
-          const address = await reverseGeocode(latitude, longitude)
-            .then((area) => area.area)
-            .catch(() => undefined);
-          await onChange({ location: { latitude, longitude, address } });
-          setFinding(false);
-        })();
-      },
-      () => {
-        setFinding(false);
-        setMode('manual');
-        setLocationError(
-          'Could not access your location. Enter your suburb or postcode instead, or allow location access and retry.'
-        );
-      },
-      { timeout: 10000 }
-    );
+    try {
+      const {
+        coords: { latitude, longitude },
+      } = await currentPosition();
+      const address = await reverseGeocode(latitude, longitude)
+        .then((area) => area.area)
+        .catch(() => undefined);
+      await onChange({ location: { latitude, longitude, address } });
+    } catch {
+      setMode('manual');
+      setLocationError(
+        'Could not access your location. Enter your suburb or postcode instead, or allow location access and retry.'
+      );
+    } finally {
+      setFinding(false);
+    }
   }
 
   if (!me) return null;
@@ -306,7 +298,7 @@ export default function LobbyChoices({
           </p>
           {lobby.location && (
             <p className="rounded-xl border border-lime/30 bg-lime/10 p-3 text-lime">
-              {lobby.location.address ??
+              {lobby.location.address ||
                 `${lobby.location.latitude.toFixed(4)}, ${lobby.location.longitude.toFixed(4)}`}
             </p>
           )}
