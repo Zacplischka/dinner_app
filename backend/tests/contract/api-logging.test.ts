@@ -70,6 +70,29 @@ describe('Contract Test: API logging', () => {
     });
   });
 
+  it('keeps request diagnostics without credentials or private list capabilities', async () => {
+    const logs = captureLogs();
+    const listId = '765ac46e-205f-4fb7-a849-a75913ec4693';
+    await request(app)
+      .get(`/api/lists/${listId}?code=private-oauth-code`)
+      .set('Authorization', 'Bearer private-access-token')
+      .set('Cookie', 'session=private-cookie')
+      .set('Referer', `https://www.dinder.it.com/list/${listId}`)
+      .set('X-Request-Id', 'privacy-check')
+      .expect(404);
+
+    const lines = logs.lines.filter(
+      (line) => (line.req as { id?: string } | undefined)?.id === 'privacy-check'
+    );
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    expect(lines.some((line) => line.reason === 'list_not_found')).toBe(true);
+    for (const line of lines) expect(line.req).toEqual({ id: 'privacy-check', method: 'GET' });
+    expect(lines.find((line) => line.res)?.res).toEqual({ statusCode: 404 });
+    const output = JSON.stringify(logs.lines);
+    for (const secret of [listId, 'private-oauth-code', 'private-access-token', 'private-cookie'])
+      expect(output).not.toContain(secret);
+  });
+
   it('logs create-session validation rejections without user input values', async () => {
     const logs = captureLogs();
 

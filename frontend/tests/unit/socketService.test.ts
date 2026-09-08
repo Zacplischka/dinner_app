@@ -105,7 +105,7 @@ describe('socketService', () => {
     expect(socketMocks.io).toHaveBeenCalledWith(
       'http://localhost:3001',
       expect.objectContaining({
-        auth: { token: 'token' },
+        auth: expect.any(Function),
       })
     );
 
@@ -248,7 +248,8 @@ describe('socketService', () => {
         success: false,
         error: {
           code: 'UNKNOWN',
-          message: "The server didn't respond. Check your connection and try again.",
+          message:
+            "The server didn't respond. Reconnecting to check what happened before you try again.",
         },
       });
     } finally {
@@ -276,6 +277,136 @@ describe('socketService', () => {
     socketService.disconnectSocket();
     expect(socket.disconnect).toHaveBeenCalled();
     expect(socketService.getSocketId()).toBeUndefined();
+  });
+
+  it('blocks a manual retry after a lost Order Line ack until the basket is reconciled', async () => {
+    const bindings = await import('../../src/services/socketBindings');
+    const { useSessionStore } = await import('../../src/stores/sessionStore');
+    const { useOrderStore } = await import('../../src/stores/orderStore');
+    const participant = {
+      participantId: 'socket-1',
+      displayName: 'Alice',
+      sessionCode: 'AB123',
+      joinedAt: 1,
+      hasSubmitted: true,
+      isHost: true,
+    };
+    const basket = {
+      sessionCode: 'AB123',
+      placeId: 'place-1',
+      venueName: 'Pizza',
+      platform: 'ubereats' as const,
+      state: 'building' as const,
+      pricesAt: '2026-09-08T00:00:00Z',
+      lines: [],
+      feeCents: 0,
+      itemsCents: 0,
+      totalCents: 0,
+      shares: [],
+      menu: [{ name: 'Margherita', price_cents: 2300, tags: [] }],
+    };
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      currentUserId: participant.participantId,
+      participants: [participant],
+      orderPlaceId: basket.placeId,
+      sessionStatus: 'complete',
+      isConnected: true,
+    });
+    useOrderStore.getState().setOrder(basket, basket.menu);
+    sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+    window.history.replaceState({}, '', '/session/AB123/order');
+    const socket = setupSocket();
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: participant.participantId,
+        rejoinToken: 'rejoin-token',
+        state: 'complete',
+        participants: [participant],
+      },
+    });
+    let readBasket: Handler | undefined;
+    const originalEmit = socket.emit.bind(socket);
+    const emitted = vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+      if (event === 'order:open') {
+        readBasket = callback;
+        return socket;
+      }
+      return originalEmit(event, payload, callback);
+    });
+    bindings.initializeSocket();
+    vi.useFakeTimers();
+    try {
+      socket.silent.add('order:item');
+      const first = bindings.addOrderItem('AB123', 0, 1);
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(await first).toMatchObject({ success: false });
+      expect(readBasket).toBeDefined();
+      // No automatic replay occurred, but a second deliberate tap must also
+      // wait: the server may already have added the first pizza.
+      const itemEmits = () => emitted.mock.calls.filter(([event]) => event === 'order:item');
+      expect(itemEmits()).toHaveLength(1);
+      expect.soft(useSessionStore.getState().isConnected).toBe(false);
+      socket.silent.delete('order:item');
+      expect.soft(await bindings.addOrderItem('AB123', 0, 1)).toMatchObject({ success: false });
+      expect.soft(itemEmits()).toHaveLength(1);
+
+      const recovery = bindings.reconcileSession();
+      readBasket!(null, {
+        success: false,
+        error: { code: 'UNKNOWN', message: 'Temporary read failure' },
+      });
+      await recovery;
+      expect.soft(useSessionStore.getState().isConnected).toBe(false);
+      expect.soft(await bindings.addOrderItem('AB123', 0, 1)).toMatchObject({ success: false });
+      expect.soft(itemEmits()).toHaveLength(1);
+
+      // The existing Try again recovery action must remain usable after a
+      // failed read; only its successful snapshot enables a new deliberate tap.
+      readBasket = undefined;
+      const retriedRecovery = bindings.reconcileSession();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(readBasket).toBeDefined();
+      readBasket!(null, {
+        success: true,
+        data: {
+          ...basket,
+          lines: [{ index: 0, name: 'Margherita', priceCents: 2300, qty: 1, by: 'Alice' }],
+          itemsCents: 2300,
+          totalCents: 2300,
+        },
+      });
+      await retriedRecovery;
+      expect(useOrderStore.getState().order?.lines[0].qty).toBe(1);
+      expect(useSessionStore.getState().isConnected).toBe(true);
+      expect.soft(itemEmits()).toHaveLength(1);
+      expect(await bindings.addOrderItem('AB123', 0, 1)).toMatchObject({ success: true });
+      expect.soft(itemEmits()).toHaveLength(2);
+
+      readBasket = undefined;
+      const recoveryBeforeRestart = bindings.reconcileSession();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(readBasket).toBeDefined();
+      socket.trigger('session:restarted', {
+        sessionCode: 'AB123',
+        state: 'waiting',
+        message: 'Restarted',
+      });
+      expect(useSessionStore.getState().orderPlaceId).toBeNull();
+      readBasket!(null, { success: true, data: basket });
+      await recoveryBeforeRestart;
+      expect(useOrderStore.getState().order).toBeNull();
+      expect(useSessionStore.getState()).toMatchObject({
+        sessionStatus: 'waiting',
+        isConnected: true,
+      });
+    } finally {
+      bindings.disconnectSocket();
+      useSessionStore.getState().resetSession();
+      window.history.replaceState({}, '', '/');
+      vi.useRealTimers();
+    }
   });
 
   it('should wait for connection, connection errors, and timeouts', async () => {

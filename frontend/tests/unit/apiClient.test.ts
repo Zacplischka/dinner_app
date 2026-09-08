@@ -3,6 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as apiClient from '../../src/services/apiClient';
+import { Capacitor } from '@capacitor/core';
 
 describe('apiClient', () => {
   beforeEach(() => {
@@ -389,6 +390,12 @@ describe('apiClient', () => {
 
       await expect(apiClient.getSession('AB123')).resolves.toEqual(session);
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/sessions/AB123'));
+      vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+      vi.stubEnv('VITE_PUBLIC_ORIGIN', 'https://www.dinder.it.com');
+      await expect(apiClient.getSession('AB123')).resolves.toMatchObject({
+        shareableLink: 'https://www.dinder.it.com/join?code=AB123',
+      });
+      vi.unstubAllEnvs();
     });
 
     it('should use fallback error message for session lookup failures', async () => {

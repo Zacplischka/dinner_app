@@ -137,6 +137,8 @@ async function sessionFixture(page: Page, branch: Branch, entryOverride?: DeckEn
   );
   await page.addInitScript(
     ({ lobby, entry }) => {
+      // A returning Participant needs both the saved state and its capability.
+      sessionStorage.setItem(`dinder:rejoin:${lobby.sessionCode}:Alice`, 'test-token');
       sessionStorage.setItem(
         'dinner-session-storage',
         JSON.stringify({

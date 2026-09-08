@@ -1,3 +1,13 @@
 # Contracts Evolve Additively Across Deployments
 
 The frontend and backend deploy independently, so a single commit is not an atomic release. Contract changes are additive by default; a breaking change is shipped in two deployments—first the backend accepts old and new shapes, then the frontend switches—before obsolete support is removed. Dinder does not add API versioning until it has independent consumers that require it.
+
+## Installed clients
+
+An installed iOS or Android app can remain in use after a new web or app version ships. The additive contract therefore lasts for every supported installed version; completing the two deployments above does not by itself permit removal of its contract. Deploy compatible server behavior before distributing a client that depends on it. New fields must remain optional or have compatible defaults for older clients, and new capabilities must not make their existing requests, events or acknowledgements unusable. Installed clients alone do not justify speculative whole-API versioning.
+
+There is no released native baseline yet. Local Debug builds, Personal Team installs and the current source tree do not establish one. At the first actual native release, record the platform version/build number, source commit, immutable artifact reference/checksum and corresponding HTTP/Socket.IO contract fixtures in the release evidence. Freeze that released contract; do not regenerate its expectations from the latest implementation and call that an older-client check. Record which released versions remain supported, with separate baselines where the platform contracts differ.
+
+Before a backend change that can affect those clients, test the oldest supported released contract against the candidate backend through the existing HTTP/Socket.IO test boundaries. Include requests without newer optional fields and the older client's handling of new response fields and capabilities. Current shared TypeScript types and current-client tests alone are insufficient evidence. Keep the released artifact available for installed-client verification when a change also affects runtime behavior.
+
+Retiring support requires an explicit recorded decision identifying the affected releases and an update or recovery path demonstrated to be usable from those installed versions. It must explain the necessary update and let the person recover access without trapping them in an unusable Session. Make the replacement available and verify that path before removing backend compatibility; a store submission or web deployment is not enough. No supported-version range or retirement deadline is set until there is a released baseline and evidence for that decision.

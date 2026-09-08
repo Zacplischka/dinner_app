@@ -110,6 +110,7 @@ export default function JoinSessionPage() {
       linkDead ||
       autoJoined.current ||
       !searchParams.get('code') ||
+      searchParams.get('resume') === 'failed' ||
       sessionCode.length !== SESSION_CODE_LENGTH
     )
       return;
@@ -212,6 +213,9 @@ export default function JoinSessionPage() {
                 id="participantName"
                 name="displayName"
                 type="text"
+                autoComplete="name"
+                autoCorrect="off"
+                spellCheck={false}
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
                 placeholder="Enter your name"

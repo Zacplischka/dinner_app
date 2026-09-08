@@ -1,0 +1,13 @@
+// Clean installs must apply the reviewed fail-closed storage patch before compiling.
+def storageSource = file('../../node_modules/capacitor-secure-storage-plugin/android/src/main/java/com/whitestein/securestorage/PasswordStorageHelper.java')
+def storageHash = java.security.MessageDigest.getInstance('SHA-256')
+    .digest(storageSource.getText('UTF-8').replace('\r\n', '\n').getBytes('UTF-8')).encodeHex().toString()
+if (storageHash != 'd9bcf4414dacc2ce3e89cd9d7f02b94df8ae9fca066f8e36a9fc9d789fe752a5') {
+    throw new GradleException('Native storage is not patched. Run npm run mobile:sync --workspace=frontend -- development from the repository root.')
+}
+
+include ':app'
+include ':capacitor-cordova-android-plugins'
+project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
+
+apply from: 'capacitor.settings.gradle'

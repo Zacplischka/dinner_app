@@ -1,8 +1,9 @@
 // AddFriendModal Component
 // Modal to search for users and send friend requests
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useFriendsStore } from '../../stores/friendsStore';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface AddFriendModalProps {
   isOpen: boolean;
@@ -10,6 +11,8 @@ interface AddFriendModalProps {
 }
 
 export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen);
   const [email, setEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const { searchUsers, sendFriendRequest, searchResults, isSearching, error, clearError } =
@@ -46,7 +49,16 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div
+      ref={dialogRef}
+      className="fixed inset-0 z-50 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-friend-title"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') handleClose();
+      }}
+    >
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
@@ -58,11 +70,13 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
         <div className="relative bg-raised rounded-2xl shadow-card border border-line/30 w-full max-w-md p-6 animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-display font-semibold text-text">Add friend</h2>
+            <h2 id="add-friend-title" className="text-xl font-display font-semibold text-text">
+              Add friend
+            </h2>
             <button
               onClick={handleClose}
               aria-label="Close"
-              className="text-muted hover:text-text transition-colors p-1"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-muted hover:text-text transition-colors p-1"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -82,6 +96,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
             </label>
             <div className="flex gap-2">
               <input
+                autoFocus
                 type="email"
                 id="email"
                 value={email}

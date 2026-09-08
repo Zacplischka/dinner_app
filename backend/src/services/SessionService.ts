@@ -490,6 +490,12 @@ export function createSessionService({
       (participant) => rejoinToken !== undefined && participant.rejoinToken === rejoinToken
     );
 
+    // A resume capability is never permission for fresh admission. Check before
+    // claiming a name or leaving another Session, including when a code is reused.
+    if (rejoinToken !== undefined && !prior) {
+      throw new DomainError('NOT_IN_SESSION', 'Your place in this session is no longer available');
+    }
+
     // The Invite Link's rule (CONTEXT.md): anyone holding it can join while the
     // Session lives — 'waiting' and 'selecting' alike (#284). Only the terminal
     // states refuse, named explicitly, each with its own words: the message
@@ -595,7 +601,9 @@ export function createSessionService({
       ? await store.readSelections(sessionCode, prior.participantId)
       : null;
 
-    if (prior) {
+    // Same-socket recovery already owns this name claim. Removing that entry
+    // would release the claim we just retained and break the next rejoin.
+    if (prior && prior.participantId !== participantId) {
       await store.removeParticipant(sessionCode, prior.participantId);
     }
 

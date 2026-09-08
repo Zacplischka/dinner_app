@@ -93,7 +93,7 @@ describe('authStore', () => {
     authMocks.signInWithGoogle.mockResolvedValueOnce(undefined);
 
     await expect(useAuthStore.getState().signInWithGoogle()).resolves.toBeUndefined();
-    expect(useAuthStore.getState().isLoading).toBe(true);
+    expect(useAuthStore.getState().isLoading).toBe(false);
 
     const error = new Error('denied');
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);

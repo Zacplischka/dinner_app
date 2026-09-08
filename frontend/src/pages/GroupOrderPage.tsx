@@ -1,3 +1,4 @@
+import { copyText } from '../services/device';
 // Group Order — the pinned basket: open, add Lines, claim the Buyer, hand off.
 
 import { useEffect, useRef, useState } from 'react';
@@ -105,8 +106,7 @@ function sumQtyByIndex(lines: OrderLine[]): Map<number, number> {
 
 // Clipboard-only copy, reused verbatim by both handoff branches' copy buttons.
 function copyToClipboard(text: string) {
-  navigator.clipboard
-    .writeText(text)
+  copyText(text)
     .then(() => toast.success('Share copied!'))
     .catch(() => toast.error('Could not copy'));
 }
@@ -124,7 +124,7 @@ export default function GroupOrderPage() {
   // The Buyer's delivery-fee input (#179): debounced 400ms, emitted only for
   // a value parseDollarsToCents accepts.
   const feeTimer = useRef<ReturnType<typeof setTimeout>>();
-  const [feeText, setFeeText] = useState('');
+  const [feeText, setFeeText] = useState<string>();
   useEffect(() => () => clearTimeout(feeTimer.current), []);
 
   // Same effect ResultsPage.tsx runs: a Restart flips the Session back to
@@ -237,9 +237,9 @@ export default function GroupOrderPage() {
 
   const handleFeeChange = (raw: string) => {
     setFeeText(raw);
+    clearTimeout(feeTimer.current);
     const feeCents = parseDollarsToCents(raw);
     if (feeCents === null || feeCents > MAX_FEE_CENTS || !sessionCode) return; // rejected before emitting
-    clearTimeout(feeTimer.current);
     feeTimer.current = setTimeout(() => {
       void claimBuyer(sessionCode, feeCents).then((ack) => {
         if (!ack.success) toast.error(ack.error.message);
@@ -390,7 +390,7 @@ export default function GroupOrderPage() {
             id="order-fee"
             inputMode="decimal"
             className="mt-1 w-full rounded-lg border-2 border-line/30 bg-surface/60 px-3 py-2 text-sm text-text"
-            value={feeText}
+            value={feeText ?? (order.feeCents / 100).toFixed(2)}
             onChange={(e) => handleFeeChange(e.target.value)}
           />
 

@@ -78,6 +78,8 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
                 name="hostName"
                 className="input"
                 autoComplete="name"
+                autoCorrect="off"
+                spellCheck={false}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 maxLength={50}

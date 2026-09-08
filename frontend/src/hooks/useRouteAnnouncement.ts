@@ -59,7 +59,10 @@ export function useRouteAnnouncement(pageRef: RefObject<HTMLElement | null>) {
 
     const focus = (el: HTMLElement) => {
       el.tabIndex = -1;
-      el.focus();
+      // Announce the heading without scrolling the native header under the
+      // status bar. Every new page starts at its top, including its navigation.
+      window.scrollTo(0, 0);
+      el.focus({ preventScroll: true });
     };
 
     const heading = page.querySelector<HTMLElement>('h1');

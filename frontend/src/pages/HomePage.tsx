@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Link, useNavigate } from 'react-router-dom';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import ConfirmLeaveModal from '../components/ConfirmLeaveModal';
@@ -114,7 +115,10 @@ export default function HomePage() {
   const notificationCount = friendRequests.length + sessionInvites.length;
 
   return (
-    <main className="home-backdrop min-h-screen px-4 pb-6">
+    <main
+      className="home-backdrop min-h-screen px-4 pb-6"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <header className="mx-auto flex min-h-16 w-full max-w-5xl items-center justify-between gap-4">
         <Link
           to="/"
@@ -236,7 +240,11 @@ export default function HomePage() {
             >
               Compare delivery prices
             </button>
-            <p className="text-center text-xs text-muted">No download. No account needed.</p>
+            <p className="text-center text-xs text-muted">
+              {Capacitor.isNativePlatform()
+                ? 'Free. No account needed.'
+                : 'No download. No account needed.'}
+            </p>
           </div>
         </div>
 

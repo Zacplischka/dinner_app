@@ -313,6 +313,38 @@ describe('RestaurantSearchService', () => {
       vi.unstubAllGlobals();
     });
 
+    it.each([
+      ['3000', 'Melbourne VIC 3000, Australia', -37.8152065, 144.963937],
+      ['0800', 'Darwin City NT 0800, Australia', -12.4614973, 130.844989],
+    ])(
+      'resolves bare Australian postcode %s, preserving leading zeroes',
+      async (postcode, area, latitude, longitude) => {
+        // Live v4 Geocoding returned no result for bare text "3000"; its
+        // structured postal-address request resolved both of these postcodes.
+        const fetchMock = vi.fn(async (input: string) => {
+          const url = new URL(input);
+          return {
+            ok: true,
+            json: async () => ({
+              results:
+                url.searchParams.get('address.postalCode') === postcode &&
+                url.searchParams.get('address.regionCode') === 'AU'
+                  ? [{ location: { latitude, longitude }, formattedAddress: area }]
+                  : [],
+            }),
+          };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(RestaurantSearchService.geocodeArea(postcode)).resolves.toEqual({
+          latitude,
+          longitude,
+          area,
+        });
+        expect(fetchMock).toHaveBeenCalledOnce();
+      }
+    );
+
     it('resolves a suburb/postcode query to coordinates and formatted address', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,

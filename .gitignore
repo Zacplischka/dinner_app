@@ -4,9 +4,7 @@ coverage/
 .DS_Store
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 .specify
 .cursor
 # Backend's tsc build emits these next to the generated-types source (it sits
@@ -21,3 +19,6 @@ output/
 # enter the repository.
 .corpus-images/
 docs/production-cold-load-cdn-plan.md
+
+# TypeScript incremental build cache
+*.tsbuildinfo

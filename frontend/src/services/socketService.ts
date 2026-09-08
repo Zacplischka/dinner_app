@@ -38,11 +38,15 @@ type SocketEventHandlers = Partial<ServerToClientEvents> & {
 
 export interface SocketConfig {
   getAuthToken?: () => string | undefined;
+  canMutate?: () => boolean;
+  onUncertainOutcome?: () => void;
   onEvent?: SocketEventHandlers;
 }
 
 // Typed socket instance
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+let onUncertainOutcome: (() => void) | undefined;
+let canMutate: (() => boolean) | undefined;
 
 /**
  * Initialize Socket.IO client connection.
@@ -57,7 +61,8 @@ export function initializeSocket(config: SocketConfig = {}): void {
     return;
   }
 
-  const authToken = config.getAuthToken?.();
+  onUncertainOutcome = config.onUncertainOutcome;
+  canMutate = config.canMutate;
 
   socket = io(BACKEND_URL, {
     reconnection: true,
@@ -69,7 +74,12 @@ export function initializeSocket(config: SocketConfig = {}): void {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 10000,
-    auth: authToken ? { token: authToken } : undefined,
+    auth: config.getAuthToken
+      ? (callback) => {
+          const token = config.getAuthToken?.();
+          callback(token ? { token } : {});
+        }
+      : undefined,
   });
 
   for (const [event, handler] of Object.entries(config.onEvent ?? {})) {
@@ -104,6 +114,22 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
       });
       return;
     }
+    // A connected transport does not prove an uncertain mutation's outcome.
+    // Recovery reads and deliberate Leave remain usable; never queue a retry.
+    if (
+      canMutate &&
+      !canMutate() &&
+      !['session:join', 'session:leave', 'order:open'].includes(event)
+    ) {
+      resolve({
+        success: false,
+        error: {
+          code: 'UNKNOWN',
+          message: 'Your session is still being checked. Try again once it reconnects.',
+        },
+      });
+      return;
+    }
     // socket.io's typed `emit` can't infer through this generic wrapper; the
     // wire contract is enforced by each caller's declared Ack<T> return type.
     (
@@ -112,19 +138,23 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
         p: unknown,
         cb: (err: Error | null, ack: Ack<T>) => void
       ) => void
-    )(event, payload, (err, ack) =>
+    )(event, payload, (err, ack) => {
+      if (err && !['session:join', 'session:leave', 'selection:live'].includes(event)) {
+        onUncertainOutcome?.();
+      }
       resolve(
         err
           ? {
               success: false,
               error: {
                 code: 'UNKNOWN',
-                message: "The server didn't respond. Check your connection and try again.",
+                message:
+                  "The server didn't respond. Reconnecting to check what happened before you try again.",
               },
             }
           : ack
-      )
-    );
+      );
+    });
   });
 }
 

@@ -11,6 +11,7 @@ import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetu
 import { app, sessionService, sessionStore as store } from '../../src/server.js';
 import { cravingPoolKey } from '../../src/services/RecipePoolService.js';
 import { spoonacularFetchFake, type RecipeSearchHit } from '../helpers/spoonacularFetchFake.js';
+import { captureLogs } from '../helpers/logCapture.js';
 
 const craving = { mealType: 'main course' as const, cuisines: [], diets: [] };
 
@@ -360,6 +361,7 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
 
     it('gives a line to exactly one of two Shoppers tapping it together', async () => {
       const { listId } = await listed();
+      const logs = captureLogs();
 
       const [alice, bob] = await Promise.all([
         claim(listId, '0', 'Alice'),
@@ -374,6 +376,10 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
       expect(['Alice', 'Bob']).toContain(holder);
       expect(bob.body.lines[0].claimedBy).toBe(holder);
       expect((await readList(listId)).body.lines[0].claimedBy).toBe(holder);
+      expect(logs.withMsg('Claimed Ingredient Line')).toHaveLength(2);
+      const output = JSON.stringify(logs.lines);
+      for (const privateValue of [listId, 'Alice', 'Bob'])
+        expect(output).not.toContain(privateValue);
     });
 
     it('lets any Shopper release any Claim, and leaves the line free', async () => {

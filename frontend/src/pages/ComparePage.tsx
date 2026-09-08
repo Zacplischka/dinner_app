@@ -1,3 +1,4 @@
+import { currentPosition } from '../services/device';
 // Venue discovery (#80): choose an area (current location or suburb/postcode),
 // browse nearby Venues with explicit sort and km language, tap a row to compare.
 import { useEffect, useRef, useState } from 'react';
@@ -145,37 +146,21 @@ export default function ComparePage() {
     return () => setComparisonState({ scrollY: window.scrollY });
   }, [scrollY, venues.length]);
 
-  const requestLocation = () => {
+  const requestLocation = async () => {
     setError('');
-    if (!navigator.geolocation) {
-      setError('This browser doesn’t support location. Enter your suburb or postcode instead.');
-      setLocationMode('manual');
-      return;
-    }
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setComparisonState({
-          venues: [],
-          suburb: undefined,
-          location: { latitude: coords.latitude, longitude: coords.longitude },
-        });
-        setIsLocating(false);
-      },
-      (geoError) => {
-        if (geoError.code === 1) {
-          setError(
-            'Location access is blocked for this site. Enter your suburb or postcode instead, or allow location access and try again.'
-          );
-          setLocationMode('manual');
-        } else {
-          setError(
-            'We couldn’t determine your location. Try again, or enter your suburb or postcode instead.'
-          );
-        }
-        setIsLocating(false);
-      }
-    );
+    try {
+      const { coords } = await currentPosition();
+      setComparisonState({
+        venues: [], suburb: undefined,
+        location: { latitude: coords.latitude, longitude: coords.longitude },
+      });
+    } catch {
+      setError('Could not access your location. Enter your suburb or postcode instead, or allow location access and retry.');
+      setLocationMode('manual');
+    } finally {
+      setIsLocating(false);
+    }
   };
 
   const handleResolveArea = async () => {

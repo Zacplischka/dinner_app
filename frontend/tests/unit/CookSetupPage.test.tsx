@@ -162,14 +162,14 @@ it.each(['eatout', 'takeaway'] as const)(
     expect(mocks.geocodeArea).toHaveBeenCalledWith('Richmond');
   }
 );
-it('recovers from denied location permission with manual entry', () => {
+it('recovers from denied location permission with manual entry', async () => {
   Object.defineProperty(navigator, 'geolocation', {
     value: { getCurrentPosition: (_ok: unknown, fail: () => void) => fail() },
     configurable: true,
   });
   renderChoices(lobby('eatout'));
   fireEvent.click(screen.getByRole('button', { name: 'Use my current location' }));
-  expect(screen.getByRole('alert')).toHaveTextContent('Enter your suburb or postcode');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Enter your suburb or postcode');
   expect(screen.getByLabelText('Suburb or postcode')).toBeEnabled();
 });
 it('keeps the query after an unresolvable area', async () => {

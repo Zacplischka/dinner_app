@@ -4,6 +4,16 @@
 import { fireEvent, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWakeLock } from '../../src/hooks/useWakeLock';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
+import { KeepAwake } from '@capacitor-community/keep-awake';
+vi.mock('@capacitor/app', () => ({ App: { addListener: vi.fn() } }));
+vi.mock('@capacitor-community/keep-awake', () => ({
+  KeepAwake: {
+    keepAwake: vi.fn().mockResolvedValue(undefined),
+    allowSleep: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 function mockWakeLock() {
   const sentinel = {
@@ -27,6 +37,24 @@ function setVisibility(state: DocumentVisibilityState) {
 }
 
 describe('useWakeLock', () => {
+  it('holds only the native cooking screen awake, releases in background and on exit', async () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+    let active!: (state: { isActive: boolean }) => void;
+    const remove = vi.fn();
+    vi.mocked(App.addListener).mockImplementation((_event, handler) => {
+      active = handler;
+      return Promise.resolve({ remove });
+    });
+    const { unmount } = renderHook(() => useWakeLock(true));
+    await waitFor(() => expect(KeepAwake.keepAwake).toHaveBeenCalledTimes(1));
+    active({ isActive: false });
+    await waitFor(() => expect(KeepAwake.allowSleep).toHaveBeenCalledTimes(1));
+    active({ isActive: true });
+    await waitFor(() => expect(KeepAwake.keepAwake).toHaveBeenCalledTimes(2));
+    unmount();
+    await waitFor(() => expect(KeepAwake.allowSleep).toHaveBeenCalledTimes(2));
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
   let wakeLock: ReturnType<typeof mockWakeLock>;
 
   beforeEach(() => {

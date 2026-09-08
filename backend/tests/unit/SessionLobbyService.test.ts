@@ -271,7 +271,12 @@ describe('gather-first Sessions', () => {
     const { code, host } = await joined();
     await store.markDisconnected('host');
     await service.removeAbsent(code, 'guest', await revision(code), 'host');
-    const returned = await service.joinSession(code, 'host2', 'Host', host.rejoinToken);
+    await expect(
+      service.joinSession(code, 'host2', 'Host', host.rejoinToken)
+    ).rejects.toMatchObject({
+      code: 'NOT_IN_SESSION',
+    });
+    const returned = await service.joinSession(code, 'host2', 'Host');
     expect(returned.isRejoin).toBe(false);
     expect(returned.isHost).toBe(false);
   });

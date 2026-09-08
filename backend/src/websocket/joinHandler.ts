@@ -35,6 +35,7 @@ const EXPECTED_JOIN_ERRORS = [
   'SESSION_FULL',
   'DISPLAY_NAME_TAKEN',
   'SESSION_ALREADY_STARTED',
+  'NOT_IN_SESSION',
 ];
 
 /** The old-Session departure a join commits, success or not (#284). */

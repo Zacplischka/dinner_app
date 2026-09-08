@@ -578,13 +578,14 @@ describe('GroupOrderPage', () => {
     expect(claimBuyerMock).toHaveBeenCalledWith('AB123', 899);
     expect(claimBuyerMock).toHaveBeenCalledTimes(1);
 
-    // A rejected value never emits.
+    // A rejected value also cancels a valid fee that has not been sent yet.
     claimBuyerMock.mockClear();
+    fireEvent.change(input, { target: { value: '4.00' } });
+    act(() => vi.advanceTimersByTime(200));
     fireEvent.change(input, { target: { value: 'abc' } });
     act(() => vi.advanceTimersByTime(400));
-    expect(claimBuyerMock).not.toHaveBeenCalled();
-
     vi.useRealTimers();
+    expect(claimBuyerMock).not.toHaveBeenCalled();
   });
 
   it('rejects a client-parseable fee that exceeds the server-enforced cap (100000 cents)', async () => {
@@ -645,7 +646,7 @@ describe('GroupOrderPage', () => {
     vi.useRealTimers();
   });
 
-  it('adds the delivery clause to Copy the split once feeCents is non-zero', async () => {
+  it('restores the saved delivery fee in the Buyer form and copied split', async () => {
     seedStore({
       participants: twoParticipants,
       currentUserId: 'p1',
@@ -658,6 +659,7 @@ describe('GroupOrderPage', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText('LOCKED IN')).toBeInTheDocument());
+    expect(screen.getByLabelText('Delivery + fees from the checkout screen')).toHaveValue('8.99');
     fireEvent.click(screen.getByRole('button', { name: 'Copy the split' }));
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       '11 Inch Pizza — Bob $25.00. Alice paid $71.00 + $8.99 delivery.'

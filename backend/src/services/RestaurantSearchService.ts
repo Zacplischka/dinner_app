@@ -152,16 +152,17 @@ export async function geocodeArea(query: string): Promise<GeocodedArea | undefin
     throw new Error('Google Places API configuration missing');
   }
 
+  // A bare postcode is ambiguous as address text, even with an AU region bias.
+  const address = /^\d{4}$/.test(query)
+    ? `?address.postalCode=${query}&address.regionCode=AU`
+    : `/${encodeURIComponent(query)}?regionCode=AU`;
   const response = await fetchWithRateLimitRetry('Geocoding address', () =>
-    fetch(
-      `https://geocode.googleapis.com/v4/geocode/address/${encodeURIComponent(query)}?regionCode=AU&languageCode=en`,
-      {
-        headers: {
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'results.location,results.formattedAddress',
-        },
-      }
-    )
+    fetch(`https://geocode.googleapis.com/v4/geocode/address${address}&languageCode=en`, {
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'results.location,results.formattedAddress',
+      },
+    })
   );
   if (!response) {
     // Blocking: without this the Host cannot resolve an area or create a Session.

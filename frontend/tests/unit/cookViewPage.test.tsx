@@ -6,6 +6,17 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ShoppingList } from '@dinder/shared/types';
+import { Capacitor } from '@capacitor/core';
+import { nativeStateStorage } from '../../src/services/nativeStorage';
+vi.mock('@capacitor/app', () => ({
+  App: { addListener: vi.fn().mockResolvedValue({ remove: vi.fn() }) },
+}));
+vi.mock('@capacitor-community/keep-awake', () => ({
+  KeepAwake: {
+    keepAwake: vi.fn().mockResolvedValue(undefined),
+    allowSleep: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 const serviceMocks = vi.hoisted(() => ({ getShoppingList: vi.fn() }));
 
@@ -70,6 +81,28 @@ function renderPage(listId = 'list-1') {
 }
 
 describe('CookViewPage', () => {
+  it('restores native cooking progress from one bounded list record after reopening', async () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+    const saved = new Map<string, string>();
+    vi.spyOn(nativeStateStorage, 'getItem').mockImplementation(
+      async (key) => saved.get(key) ?? null
+    );
+    vi.spyOn(nativeStateStorage, 'setItem').mockImplementation(async (key, value) => {
+      saved.set(key, value);
+    });
+    serviceMocks.getShoppingList.mockResolvedValue({ ...list, mintedAt: new Date().toISOString() });
+    const first = renderPage();
+    const step = await screen.findByRole('button', { name: /Toast the spice paste/ });
+    fireEvent.click(step);
+    await waitFor(() => expect(saved.get('heykeen.cook-progress')).toContain('"steps":[0]'));
+    first.unmount();
+    renderPage();
+    expect(await screen.findByRole('button', { name: /Toast the spice paste/ })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect([...saved.keys()]).toEqual(['heykeen.cook-progress']);
+  });
   let wakeLock: ReturnType<typeof mockWakeLock>;
 
   beforeEach(() => {

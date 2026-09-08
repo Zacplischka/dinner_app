@@ -1,3 +1,4 @@
+import { publicUrl } from '../services/device';
 // The Shopping List (#262, #263): the priced list minted from a completed Cook
 // Session's Top Pick, read and worked from its own URL. Every line renders in
 // exactly one of #234's four states, every Woolworths link goes through the
@@ -281,7 +282,7 @@ export default function ShoppingListPage() {
   // home and takes it with it. Rebuilt from the list id rather than read off
   // location, so no stray query or hash rides along.
   const shareList = useShareLink(
-    list ? `${window.location.origin}/list/${list.listId}` : undefined,
+    list ? publicUrl(`/list/${list.listId}`) : undefined,
     'List link copied!'
   );
 
@@ -460,6 +461,9 @@ export default function ShoppingListPage() {
                     and the Tally itself would blink out on the first letter. */}
                 <input
                   id="shopper-name"
+                  autoComplete="name"
+                  autoCorrect="off"
+                  spellCheck={false}
                   ref={nameField}
                   defaultValue={shopperName}
                   onBlur={(event) => renameShopper(event.target.value.trim())}

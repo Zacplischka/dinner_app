@@ -24,6 +24,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useAuthStore } from '../stores/authStore';
 import { useOrderStore } from '../stores/orderStore';
 import { toast } from '../hooks/useToast';
+import { getRejoinToken, saveRejoinToken, clearRejoinToken } from './nativeStorage';
 
 // Socket payloads carry display names; keep the chatter out of production
 // consoles. console.error stays unconditional.
@@ -33,6 +34,8 @@ const log = (...args: unknown[]) => {
 
 // Track if we had a previous connection (for showing "Reconnected" toast)
 let hadPreviousConnection = false;
+let recovery: Promise<void> | undefined;
+let recoveryGeneration = 0;
 
 // A Disconnect is not a Leave: the server holds the Participant's place for
 // two minutes of connection-state recovery, and most drops (a locked phone, a
@@ -68,6 +71,10 @@ function applyResults(event: SessionResultsEvent): void {
 
 const socketConfig: SocketConfig = {
   getAuthToken: () => useAuthStore.getState().session?.access_token,
+  canMutate: () => useSessionStore.getState().isConnected,
+  onUncertainOutcome: () => {
+    void reconcileSession();
+  },
 
   onEvent: {
     connect: () => {
@@ -79,45 +86,15 @@ const socketConfig: SocketConfig = {
           participant.sessionCode === store.sessionCode
       );
       log('Socket connected:', socketId);
-      store.setConnectionStatus(true);
-      if (socketId) {
-        store.setCurrentUserId(socketId);
-      }
-
       if (store.sessionCode && previousParticipant) {
-        void joinSession(store.sessionCode, previousParticipant.displayName).then((ack) => {
-          if (!ack.success) {
-            sessionStorage.removeItem(
-              `dinder:rejoin:${store.sessionCode}:${previousParticipant.displayName}`
-            );
-            store.resetSession();
-            toast.error(`Could not rejoin session: ${ack.error.message}`);
-          }
-          // orderStore is deliberately non-persisted: on a hard reload (ordinary
-          // iOS behaviour after backgrounding) it is empty and cannot guard this
-          // re-fire, so the guard is the route instead. Un-guarded, the order
-          // page's own on-mount order:open loses the race against this
-          // un-awaited rejoin and acks NOT_IN_SESSION.
-          if (ack.success && window.location.pathname.endsWith('/order')) {
-            const { sessionCode, orderPlaceId } = useSessionStore.getState();
-            if (sessionCode && orderPlaceId) {
-              // The backend acks order:open directly — it does not also
-              // broadcast order:state — so a successful re-open must feed
-              // orderStore here itself, exactly like GroupOrderPage's own
-              // on-mount open. Otherwise a re-open that wins the race after
-              // the page already rendered a failure screen never clears it.
-              void socketService.openOrder(sessionCode, orderPlaceId).then((openAck) => {
-                if (openAck.success) {
-                  useOrderStore.getState().setOrder(openAck.data, openAck.data.menu);
-                }
-              });
-            }
-          }
-        });
+        void reconcileSession();
+      } else {
+        store.setConnectionStatus(true);
+        if (socketId) store.setCurrentUserId(socketId);
       }
 
       // Show reconnected toast (only if we had a previous connection)
-      if (hadPreviousConnection) {
+      if (hadPreviousConnection && !previousParticipant) {
         toast.success('Reconnected to server');
       }
       hadPreviousConnection = true;
@@ -125,6 +102,8 @@ const socketConfig: SocketConfig = {
 
     disconnect: (reason: string) => {
       log('Socket disconnected:', reason);
+      recoveryGeneration++;
+      recovery = undefined;
       useSessionStore.getState().setConnectionStatus(false);
 
       // Only show toast for unexpected disconnects, not intentional ones
@@ -332,19 +311,59 @@ export function waitForConnection(timeoutMs?: number): Promise<void> {
  */
 export async function joinSession(
   sessionCode: string,
-  displayName: string
+  displayName: string,
+  resumeOnly = false
 ): Promise<Ack<SessionJoinData>> {
+  if (!resumeOnly) {
+    recoveryGeneration++;
+    recovery = undefined;
+  }
+  const generation = recoveryGeneration;
+  const previousParticipantId = useSessionStore.getState().currentUserId;
+  const stillResuming = () => {
+    const current = useSessionStore.getState();
+    return (
+      generation === recoveryGeneration &&
+      current.sessionCode === sessionCode &&
+      current.currentUserId === previousParticipantId
+    );
+  };
   // #304: sessionStorage, not localStorage — the token is this tab's
   // identity. Origin-wide it let a second tab rejoin as the first.
-  const tokenKey = `dinder:rejoin:${sessionCode}:${displayName}`;
-  const ack = await socketService.joinSession(
-    sessionCode,
-    displayName,
-    sessionStorage.getItem(tokenKey) ?? undefined
-  );
-  if (!ack.success) return ack;
+  const token = await getRejoinToken(sessionCode, displayName);
+  if (resumeOnly && !stillResuming())
+    return {
+      success: false,
+      error: { code: 'UNKNOWN', message: 'Your session changed before recovery completed.' },
+    };
+  if (resumeOnly && !token)
+    return {
+      success: false,
+      error: {
+        code: 'NOT_IN_SESSION',
+        message: 'Your saved place is no longer available. Join again to take a new place.',
+      },
+    };
+  const ack = await socketService.joinSession(sessionCode, displayName, token ?? undefined);
+  if (resumeOnly && !stillResuming()) return ack;
+  if (!ack.success) {
+    if (
+      ['SESSION_NOT_FOUND', 'NOT_IN_SESSION', 'SESSION_ALREADY_STARTED'].includes(ack.error.code)
+    ) {
+      await clearRejoinToken(sessionCode, displayName);
+    }
+    return ack;
+  }
 
-  sessionStorage.setItem(tokenKey, ack.data.rejoinToken);
+  try {
+    await saveRejoinToken(sessionCode, displayName, ack.data.rejoinToken);
+  } catch {
+    toast.warning(
+      'Your session is open, but this phone could not save it. Keep YupCrew open to keep your place.'
+    );
+  }
+
+  if (resumeOnly && !stillResuming()) return ack;
 
   const store = useSessionStore.getState();
 
@@ -375,7 +394,8 @@ export async function joinSession(
   // paths meet: the `connect` handler only fires on a socket that wasn't already
   // connected, so a second join in the same tab — leaveSession resets the store
   // without disconnecting — would otherwise sit on a false "Disconnected" banner.
-  store.setConnectionStatus(true);
+  // Resume stays inert until reconcileSession has also refreshed the basket.
+  if (!resumeOnly) store.setConnectionStatus(true);
   store.setBranch(ack.data.branch);
   if (!ack.data.lobby)
     store.updateParticipants(
@@ -454,15 +474,112 @@ export function sendLiveSelection(
  * regardless of ack outcome — every caller navigates away either way.
  */
 export async function leaveSession(sessionCode: string): Promise<Ack<null>> {
+  recoveryGeneration++;
+  recovery = undefined;
   const ack = await socketService.leaveSession(sessionCode);
+  const store = useSessionStore.getState();
+  const me = store.participants.find((p) => p.participantId === store.currentUserId);
+  if (me) {
+    try {
+      await clearRejoinToken(sessionCode, me.displayName);
+    } catch {
+      toast.warning(
+        'Could not clear saved credentials. Your session will not reopen automatically.'
+      );
+    }
+  }
   useSessionStore.getState().resetSession();
   return ack;
+}
+
+export function reconcileSession(): Promise<void> {
+  if (recovery) return recovery;
+  const store = useSessionStore.getState();
+  const code = store.sessionCode;
+  const me = store.participants.find((p) => p.participantId === store.currentUserId);
+  if (!code || !me) return Promise.resolve();
+  const generation = recoveryGeneration;
+  let participantId = me.participantId;
+  const stillCurrent = () => {
+    const current = useSessionStore.getState();
+    return (
+      generation === recoveryGeneration &&
+      current.sessionCode === code &&
+      current.currentUserId === participantId
+    );
+  };
+  store.setConnectionStatus(false);
+  recovery = (async () => {
+    try {
+      await waitForConnection();
+      if (!stillCurrent()) return;
+      const ack = await joinSession(code, me.displayName, true);
+      if (ack.success) participantId = ack.data.participantId;
+      if (!stillCurrent()) return;
+      if (!ack.success) {
+        if (
+          ['SESSION_NOT_FOUND', 'NOT_IN_SESSION', 'SESSION_ALREADY_STARTED'].includes(
+            ack.error.code
+          )
+        ) {
+          store.resetSession();
+          useSessionStore.setState({ rejectedSessionCode: code });
+        }
+        toast.error(`Could not rejoin session: ${ack.error.message}`);
+        return;
+      }
+      const { orderPlaceId, lobby } = useSessionStore.getState();
+      if (orderPlaceId) {
+        const order = await socketService.openOrder(code, orderPlaceId);
+        if (!stillCurrent()) return;
+        const current = useSessionStore.getState();
+        if (current.orderPlaceId !== orderPlaceId || current.lobby?.round !== lobby?.round) {
+          // A Restart's authoritative event already discarded this basket.
+          store.setConnectionStatus(true);
+          return;
+        }
+        if (!order.success) {
+          if (
+            order.error.code === 'NOT_FOUND' &&
+            'reason' in order.error &&
+            (order.error.reason === 'stale' || order.error.reason === 'no_menu')
+          ) {
+            // These verdicts prove no basket exists. Let the page run its
+            // existing Comparison refresh/no-menu fallback instead of trapping Retry.
+            useOrderStore.getState().clear();
+            store.setConnectionStatus(true);
+            return;
+          }
+          if (order.error.code === 'VALIDATION_ERROR') {
+            store.setOrderPlaceId(null);
+            useOrderStore.getState().clear();
+          }
+          if (['SESSION_NOT_FOUND', 'NOT_IN_SESSION'].includes(order.error.code)) {
+            store.resetSession();
+            useSessionStore.setState({ rejectedSessionCode: code });
+          }
+          toast.error(`Could not restore the basket: ${order.error.message}`);
+          return;
+        }
+        useOrderStore.getState().setOrder(order.data, order.data.menu);
+      }
+      store.setConnectionStatus(true);
+    } catch {
+      if (stillCurrent())
+        toast.error('Could not restore your session yet. Check your connection and try again.');
+    } finally {
+      if (generation === recoveryGeneration) recovery = undefined;
+    }
+  })();
+  return recovery;
 }
 
 /**
  * Disconnect socket and mark the session store disconnected.
  */
 export function disconnectSocket(): void {
+  recoveryGeneration++;
+  recovery = undefined;
   socketService.disconnectSocket();
   useSessionStore.getState().setConnectionStatus(false);
   // An intentional teardown is not a lost connection: the next connect is a

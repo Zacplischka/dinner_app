@@ -11,7 +11,7 @@ Formerly Dinder. Public address: [yupcrew.com](https://yupcrew.com). Existing Di
 <p align="center">
   <a href="https://yupcrew.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
-  <img src="https://img.shields.io/badge/node-%E2%89%A520-339933" alt="Node 20+">
+  <img src="https://img.shields.io/badge/node-22-339933" alt="Node 22">
 </p>
 
 <p align="center">
@@ -71,7 +71,7 @@ npm workspaces monorepo, three packages:
 
 | Package | What it is |
 |---|---|
-| `backend/` | Node 20 + TypeScript, Express 4, Socket.IO 4.7, ioredis, Zod validation. One [handler file per socket event](backend/src/websocket/), services for sessions, friends, and restaurant search. |
+| `backend/` | Node 22 + TypeScript, Express 4, Socket.IO 4.7, ioredis, Zod validation. One [handler file per socket event](backend/src/websocket/), services for sessions, friends, and restaurant search. |
 | `frontend/` | React 18 + Vite, Tailwind, Zustand for state, socket.io-client. Mobile-first. |
 | `shared/` | `@dinder/shared` — the typed WebSocket event contract and Zod schemas both sides import. |
 
@@ -81,7 +81,9 @@ REST is deliberately thin — `POST /api/sessions`, `GET /api/sessions/:code` �
 
 ## Local development
 
-Prerequisites: Node 20+, Docker (for Redis), and a [Google Places API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key).
+The mobile foundation bundles this same frontend through Capacitor. Native projects are in [`frontend/ios`](frontend/ios) and [`frontend/android`](frontend/android); see [mobile setup](docs/mobile-development.md) and [verified progress and remaining work](docs/mobile-implementation-status.md). This is partial delivery of [spec #459](https://github.com/Zacplischka/dinner_app/issues/459), not a store-ready release.
+
+Prerequisites: Node 22, Docker (for Redis), and a [Google Places API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key).
 
 ```bash
 git clone https://github.com/Zacplischka/dinner_app.git
