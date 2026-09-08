@@ -1,6 +1,8 @@
 # Dinder / Heykeen: Android and iOS app release plan
 
-Prepared 8 September 2026 as the original planning document. Implementation is now partially delivered; see [current evidence and remaining work](mobile-implementation-status.md). The earlier working-name and timing assumptions below are historical, not a current delivery forecast. Store submission has not started.
+> Archived 8 September 2026. Original planning and research snapshot. Requirements: [mobile specification](../mobile-app-spec.md); commands: [native development](../mobile-development.md); delivery and open gates: [evidence ledger](../mobile-implementation-status.md). Unique release checks were carried into those current documents on 8 September 2026. Original wording below is retained for provenance, not as a current task list or delivery forecast. Historical checks do not verify later revisions.
+
+Prepared 8 September 2026 as the original planning document. Implementation is now partially delivered; see [current evidence and remaining work](../mobile-implementation-status.md). The earlier working-name and timing assumptions below are historical, not a current delivery forecast. Store submission has not started.
 
 Confirmed scope: a **free, Australia-first release** on Google Play and Apple's App Store. Heykeen is the working public brand; Dinder remains the repository/package name. This plan incorporates the existing [rebrand plan](heykeen-rebrand-plan.md) and the current, uncommitted brand changes without changing them.
 
@@ -48,7 +50,7 @@ Audit basis: local checkout at `094c9bd` plus the working-tree changes present d
 | Verification | Vitest, backend contracts, Playwright mobile Chromium; CI's e2e job is not currently a dependency of production verification | Reuse coverage, add real-device evidence and make mobile release gates explicit |
 | Toolchain | Local Node `24.14.1`, Xcode `26.3`; discovered Java installations 17/18; existing CI declares Node 20 | Local iOS tools are promising; choose the correct Gradle JDK and upgrade mobile build CI's Node version |
 
-Relevant design constraints remain [optional auth and guests](adr/0003-auth-is-optional-guests-are-first-class.md), [participant identity](adr/0009-ephemeral-group-state-is-keyed-by-display-name.md), [additive contracts](adr/0007-contracts-evolve-additively-across-deployments.md), and [gathering before dealing](adr/0015-gather-before-choosing-the-deck.md).
+Relevant design constraints remain [optional auth and guests](../adr/0003-auth-is-optional-guests-are-first-class.md), [participant identity](../adr/0009-ephemeral-group-state-is-keyed-by-display-name.md), [additive contracts](../adr/0007-contracts-evolve-additively-across-deployments.md), and [gathering before dealing](../adr/0015-gather-before-choosing-the-deck.md).
 
 ## 3. Target architecture and release boundaries
 
@@ -156,7 +158,7 @@ See [Capacitor link setup](https://capacitorjs.com/docs/guides/deep-links). Keep
 
 ### D. Authentication and account continuity
 
-Keep guest entry first-class. For accounts, retain Google on all platforms and add **Sign in with Apple**, preferably native on iOS. Provide Apple browser sign-in on web/Android as well so an Apple-created account is usable across the product. Apple's equivalent-login requirement is a concrete consideration because Google currently authenticates the primary account; the [store requirements note](mobile-store-requirements.md) records the policy and exceptions.
+Keep guest entry first-class. For accounts, retain Google on all platforms and add **Sign in with Apple**, preferably native on iOS. Provide Apple browser sign-in on web/Android as well so an Apple-created account is usable across the product. Apple's equivalent-login requirement is a concrete consideration because Google currently authenticates the primary account; the [store requirements note](../mobile-store-requirements.md) records the policy and exceptions.
 
 - Replace the native Google redirect-to-`window.location.origin` behavior with a system-browser authentication session and a validated return route. Use Supabase's PKCE code exchange, persist its verifier securely through process recreation, and handle cancelled/failed/repeated callbacks. Do not run Google's authorization page inside the application WebView. [Google OAuth policy](https://developers.google.com/identity/protocols/oauth2/policies), [Supabase PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
 - Reuse Supabase Auth as identity authority. Implement the callback and storage differences in the existing auth service/store; do not introduce another user database. Configure exact production and staging return URLs. [Supabase mobile redirects](https://supabase.com/docs/guides/auth/native-mobile-deep-linking).
@@ -195,7 +197,7 @@ Do not select “no data collected” simply because accounts are optional or no
 
 ## 5. Store preparation and policy gates
 
-The accompanying [current store requirements research](mobile-store-requirements.md) contains source links and detailed applicability. Recheck deadlines and console-specific requirements immediately before submission.
+The accompanying [current store requirements research](../mobile-store-requirements.md) contains source links and detailed applicability. Recheck deadlines and console-specific requirements immediately before submission.
 
 | Item | Plan |
 | --- | --- |

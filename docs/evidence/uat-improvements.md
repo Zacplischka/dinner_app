@@ -1,3 +1,7 @@
+# UAT improvements — implementation evidence
+
+> Historical implementation evidence, recorded 7 September 2026. Results apply only to the implementation described below; they are not verification of later revisions or the current deployment.
+
 ## Scope
 
 Implement the twelve improvements accepted after three-agent production UAT on 7 September 2026. Evidence and exact reproduction steps are recorded in the local UAT reports; the implementation will preserve a checked-in acceptance summary.

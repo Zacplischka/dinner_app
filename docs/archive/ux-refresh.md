@@ -1,6 +1,8 @@
 # Dinder UX refresh
 
-Status: accepted. Shared understanding confirmed by the user on 2026-09-07 after the grill-with-docs interview. This brief records the agreed product direction; remaining implementation and design details are listed below. Implementation is on `codex/epic-434`; validation and the remaining diagnostic evidence are recorded in [the implementation report](epic-434-implementation.md). Delivery is tracked in [epic #434](https://github.com/Zacplischka/dinner_app/issues/434).
+> Archived 8 September 2026. Original accepted brief and pre-implementation observations at `f4c50cd`. Its defect descriptions and remaining-work list are historical. [ADR 0015](../adr/0015-gather-before-choosing-the-deck.md) retains the decision; [implementation disposition](../epic-434-implementation.md) records delivery and the still-unconfirmed Recipe reports. Current public identity is [YupCrew](../yupcrew-rebrand-plan.md). Original wording below is retained for provenance, not as a current task list or delivery forecast. Historical checks do not verify later revisions.
+
+Status: accepted. Shared understanding confirmed by the user on 2026-09-07 after the grill-with-docs interview. This brief records the agreed product direction; remaining implementation and design details are listed below. Implementation is on `codex/epic-434`; validation and the remaining diagnostic evidence are recorded in [the implementation report](../epic-434-implementation.md). Delivery is tracked in [epic #434](https://github.com/Zacplischka/dinner_app/issues/434).
 
 ## Product intent
 
@@ -71,4 +73,4 @@ These are code observations, not claims of production reproduction. Inspected ma
 - Investigate and fix confirmed name, Movie mix, instruction-formatting and image defects, with focused checks of each affected flow.
 - Produce the actual layouts and image treatment against the agreed visual direction.
 
-Architecture rationale: [Gather before choosing the Deck](adr/0015-gather-before-choosing-the-deck.md). Domain vocabulary: [CONTEXT.md](../CONTEXT.md).
+Architecture rationale: [Gather before choosing the Deck](../adr/0015-gather-before-choosing-the-deck.md). Domain vocabulary: [CONTEXT.md](../../CONTEXT.md).
