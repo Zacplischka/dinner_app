@@ -44,8 +44,12 @@ const withClaims = (claims: Record<string, string>): ShoppingList => ({
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => (resolve = r));
-  return { promise, resolve };
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((r, j) => {
+    resolve = r;
+    reject = j;
+  });
+  return { promise, resolve, reject };
 }
 
 describe('useShoppingList', () => {
@@ -210,5 +214,116 @@ describe('useShoppingList', () => {
       await read.promise;
     });
     expect(result.current.list).toEqual(withClaims({ '0': 'Alice' }));
+  });
+});
+
+describe('Shopping List mutation ordering (#471)', () => {
+  beforeEach(() => {
+    mocks.getShoppingList.mockReset().mockResolvedValue(list);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('serializes Claim/release/swap requests so completion order cannot reverse user intent', async () => {
+    const { result } = renderHook(() => useShoppingList('list-1'));
+    await waitFor(() => expect(result.current.list).toEqual(list));
+    const claim = deferred<ShoppingList>();
+    const release = vi.fn(async () => list);
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    act(() => {
+      first = result.current.applyChange(() => claim.promise);
+      second = result.current.applyChange(release);
+    });
+    expect(release).not.toHaveBeenCalled();
+    await act(async () => {
+      claim.resolve(withClaims({ '0': 'Alice' }));
+      await first;
+      await second;
+    });
+    expect(release).toHaveBeenCalledTimes(1);
+    expect(result.current.list).toEqual(list);
+  });
+
+  it.each(['success', 'error', 'expiry'] as const)(
+    'ignores an old-list mutation %s after navigation, and drops queued old-list writes',
+    async (outcome) => {
+      const pending = deferred<ShoppingList>();
+      const { result, rerender } = renderHook(({ id }) => useShoppingList(id), {
+        initialProps: { id: 'list-1' },
+      });
+      await waitFor(() => expect(result.current.list).toEqual(list));
+      let first!: Promise<void>;
+      let second!: Promise<void>;
+      const queued = vi.fn(async () => list);
+      await act(async () => {
+        first = result.current.applyChange(() => pending.promise);
+      });
+      act(() => {
+        second = result.current.applyChange(queued);
+      });
+      const next = { ...list, listId: 'list-2', recipeName: 'Next recipe' };
+      mocks.getShoppingList.mockResolvedValue(next);
+      rerender({ id: 'list-2' });
+      await waitFor(() => expect(result.current.list).toEqual(next));
+      await act(async () => {
+        if (outcome === 'success') pending.resolve(list);
+        else
+          pending.reject(
+            outcome === 'expiry'
+              ? new ApiClientError('NOT_FOUND', 'Expired', 404)
+              : new Error('Old failure')
+          );
+        await first;
+        await second;
+      });
+      expect(queued).not.toHaveBeenCalled();
+      expect(result.current.list).toEqual(next);
+      expect(result.current.error).toBe('');
+    }
+  );
+
+  it('does not poll across an unsettled mutation, then reads the current persisted list', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useShoppingList('list-1', 1000));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    const pending = deferred<ShoppingList>();
+    let change!: Promise<void>;
+    act(() => {
+      change = result.current.applyChange(() => pending.promise);
+    });
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(mocks.getShoppingList).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      pending.resolve(withClaims({ '0': 'Alice' }));
+      await change;
+    });
+    mocks.getShoppingList.mockResolvedValue(withClaims({ '0': 'Alice', '1': 'Bob' }));
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(result.current.list).toEqual(withClaims({ '0': 'Alice', '1': 'Bob' }));
+  });
+
+  it('retains a real failure, allows a queued successful change, and does not revive an expired list', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useShoppingList('list-1', 1000));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    await act(() =>
+      result.current.applyChange(async () => {
+        throw new Error('Write failed');
+      })
+    );
+    expect(result.current.error).toBe('Write failed');
+    expect(result.current.list).toEqual(list);
+    await act(() => result.current.applyChange(async () => withClaims({ '0': 'Alice' })));
+    expect(result.current.error).toBe('');
+    await act(() =>
+      result.current.applyChange(async () => {
+        throw new ApiClientError('NOT_FOUND', 'Expired', 404);
+      })
+    );
+    await act(() => vi.advanceTimersByTimeAsync(2000));
+    expect(result.current.list).toBeNull();
+    expect(result.current.error).toBe('Expired');
   });
 });
