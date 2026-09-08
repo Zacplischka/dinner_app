@@ -203,7 +203,7 @@ export default function NavigationHeader({
             {/* Center - Title only */}
             <div className="min-w-0 shrink text-center">
               <h1
-                className={`font-display font-semibold text-text truncate ${
+                className={`font-display font-semibold text-text break-words ${
                   compact ? 'text-lg' : 'text-xl'
                 }`}
               >

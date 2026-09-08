@@ -319,7 +319,9 @@ export default function LobbyChoices({
       )}
       {restaurant && (
         <section className="space-y-3" aria-label="Shared search area">
-          <h3 className="font-bold">Where are we eating?</h3>
+          <h3 className="font-bold">
+            {lobby.branch === 'takeaway' ? 'Where are we ordering in?' : 'Where are we eating out?'}
+          </h3>
           <p className="text-xs text-muted">
             Only used to find restaurants near your group. Agree on one location together; any
             update asks everyone to confirm Ready again.

@@ -44,10 +44,11 @@ describe('NavigationHeader', () => {
     expect(backAfter.className).toBe(back.className);
   });
 
-  it('centres the title between equal-width edge regions and truncates overflow', () => {
+  it('centres and wraps the title between equal-width edge regions', () => {
     renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     const title = screen.getByRole('heading', { name: 'Join Session' });
-    expect(title.className).toContain('truncate');
+    expect(title.className).toContain('break-words');
+    expect(title.className).not.toContain('truncate');
 
     const centerCell = title.parentElement;
     const row = centerCell?.parentElement;

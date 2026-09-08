@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { loadEnv } from 'vite';
 import { Server } from 'socket.io';
 import { test, expect, type Page } from '@playwright/test';
 import type {
@@ -338,6 +339,7 @@ for (const branch of ['watch', 'takeaway'] as const) {
       const saved = page.getByRole('group', { name: 'Saved you a seat', exact: true });
       await expect(saved).toBeVisible();
       await expect(page.getByRole('status').filter({ hasText: 'Waiting for Bob' })).toBeVisible();
+      await expect(page.getByText('1 of 2 have finished', { exact: true })).toBeVisible();
       await saved.getByRole('button', { name: 'Pause animation' }).click();
       await fits(page);
       await page.screenshot({ path: info.outputPath(`saved-seat-${branch}.png`), fullPage: true });
@@ -533,7 +535,7 @@ for (const [mediaType, placeId, name] of [
       );
       await fits(page);
       await page.screenshot({
-        path: info.outputPath(`watch-result-${mediaType}-${placeId.replaceAll(':', '-')}.png`),
+        path: info.outputPath(`watch-result-${mediaType}-${placeId.replace(/:/g, '-')}.png`),
         animations: 'disabled',
       });
     } finally {
@@ -541,3 +543,65 @@ for (const [mediaType, placeId, name] of [
     }
   });
 }
+
+test('signed-in two-person Watch Lobby keeps Ready in the first mobile viewport', async ({
+  page,
+}, info) => {
+  const fixture = await sessionFixture(page, 'watch');
+  try {
+    fixture.lobby.participants.push({
+      participantId: 'guest',
+      displayName: 'Bob',
+      isHost: false,
+      isOnline: true,
+      hasSubmitted: false,
+      ready: false,
+      waitingForNextRound: false,
+    });
+    // A fake persisted identity exercises the extra Invite Friends row, without
+    // depending on a real account or sending credentials to an auth service.
+    const authUrl =
+      process.env.VITE_SUPABASE_URL ||
+      loadEnv('production', process.cwd(), 'VITE_').VITE_SUPABASE_URL;
+    expect(authUrl, 'Auth must be configured for the signed-in layout check').toBeTruthy();
+    await page.route(`${authUrl}/**`, (route) => route.fulfill({ json: {} }));
+    await page.addInitScript(
+      (storageKey) => {
+        const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            access_token: `${btoa('{"alg":"HS256"}')}.${btoa(JSON.stringify({ sub: 'audit-profile', exp: expiresAt }))}.fixture`,
+            refresh_token: 'fixture',
+            token_type: 'bearer',
+            expires_at: expiresAt,
+            user: {
+              id: 'audit-profile',
+              aud: 'authenticated',
+              email: 'audit@example.test',
+              app_metadata: {},
+              user_metadata: { full_name: 'Alice' },
+              created_at: '2026-09-09T00:00:00Z',
+            },
+          })
+        );
+      },
+      `sb-${new URL(authUrl).hostname.split('.')[0]}-auth-token`
+    );
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/session/CAT45');
+    await expect(page.getByRole('button', { name: 'Invite Friends', exact: true })).toBeVisible();
+    await expect(page.getByTestId('participant')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'I’m ready', exact: true })).toBeInViewport({
+      ratio: 1,
+    });
+    await expect(page.getByRole('button', { name: 'Start swiping', exact: true })).toBeDisabled();
+    await fits(page);
+    await page.screenshot({
+      path: info.outputPath('signed-in-two-person-watch-ready.png'),
+      animations: 'disabled',
+    });
+  } finally {
+    await fixture.close();
+  }
+});

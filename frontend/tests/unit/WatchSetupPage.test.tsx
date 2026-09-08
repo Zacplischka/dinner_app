@@ -355,3 +355,19 @@ it('adopts shared-choice Ready resets without losing the collapsed interests', a
   expect(summary.closest('details')).not.toHaveAttribute('open');
   expect(summary).toHaveTextContent('Comedy');
 });
+
+it.each([
+  ['watch', 'Watch'],
+  ['cook', 'Cook'],
+  ['eatout', 'Eat out'],
+  ['takeaway', 'Order in'],
+] as const)('names the %s activity in its Lobby heading', async (branch, label) => {
+  renderLobby({ ...snapshot(), branch });
+  expect(await screen.findByRole('heading', { level: 1, name: label })).toBeVisible();
+  if (branch === 'takeaway' || branch === 'eatout')
+    expect(
+      screen.getByRole('heading', {
+        name: branch === 'takeaway' ? 'Where are we ordering in?' : 'Where are we eating out?',
+      })
+    ).toBeVisible();
+});

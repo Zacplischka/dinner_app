@@ -169,7 +169,13 @@ export default function SessionLobbyPage() {
   return (
     <main className="market-backdrop min-h-screen">
       <NavigationHeader
-        title="Make the call"
+        title={
+          lobby
+            ? { watch: 'Watch', cook: 'Cook', eatout: 'Eat out', takeaway: 'Order in' }[
+                lobby.branch
+              ]
+            : 'Make the call'
+        }
         subtitle="Invite friends. Choose together. Get ready."
         sessionCode={sessionCode}
         showBackButton

@@ -86,7 +86,7 @@ it('keeps a waiting Cook newcomer outside the active roster, Full House and subm
       );
   });
   await waitFor(() =>
-    expect(screen.getByText(/have swiped/)).toHaveTextContent('1 of 2 have swiped')
+    expect(screen.getByText(/have finished/)).toHaveTextContent('1 of 2 have finished')
   );
   expect(screen.getByText('Waiting for Bob')).toBeInTheDocument();
   expect(screen.queryByLabelText('Carol: still swiping')).not.toBeInTheDocument();
