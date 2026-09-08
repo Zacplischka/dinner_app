@@ -1,4 +1,3 @@
-import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { SessionLobbyState } from '@dinder/shared/types';
@@ -57,9 +56,9 @@ it('keeps Main course as the shared default with the meal-type change optional',
 });
 it('changes only personal cuisine and diet interests', () => {
   renderChoices();
-  fireEvent.click(screen.getByRole('button', { name: 'italian', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'italian' }));
   expect(onChange).toHaveBeenCalledWith({ cuisines: ['italian'] });
-  fireEvent.click(screen.getByRole('button', { name: 'vegetarian', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'vegetarian' }));
   expect(onChange).toHaveBeenCalledWith({ diets: ['vegetarian'] });
   expect(screen.getByText(/Every recipe must meet everyone’s requirements/)).toHaveTextContent(
     'not an allergy-safety guarantee'
@@ -131,8 +130,8 @@ it('collects all requirements before checking admission of a Cook newcomer', asy
   state.state = 'selecting';
   state.participants[0].waitingForNextRound = true;
   renderChoices(state);
-  fireEvent.click(screen.getByRole('button', { name: 'vegetarian', exact: true }));
-  fireEvent.click(screen.getByRole('button', { name: 'gluten free', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'vegetarian' }));
+  fireEvent.click(screen.getByRole('button', { name: 'gluten free' }));
   expect(onChange).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Check requirements' }));
   await waitFor(() =>

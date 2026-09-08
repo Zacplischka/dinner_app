@@ -47,7 +47,9 @@ describe('ComparePage', () => {
   });
 
   // A test that fails mid-fake-timers must not leak them into the next one.
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('uses the guest location to render nearby Venues and navigate to Compare', async () => {
     vi.mocked(getVenues).mockResolvedValue({

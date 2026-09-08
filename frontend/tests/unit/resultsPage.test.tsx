@@ -1,4 +1,3 @@
-import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -123,8 +122,12 @@ describe('ResultsPage', () => {
   });
 
   describe('Match card hero photo (#75, #90)', () => {
-    beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     // The rating-sorted fallback crown (#166) picks Noodle House (4.8 > 4.2),
     // so look each card up by name instead of assuming DOM order. Both names
@@ -590,13 +593,19 @@ describe('ResultsPage', () => {
         lobby: {
           sessionCode: 'AB123',
           branch: 'takeaway',
+          mealType: 'main course',
           state: 'complete',
           revision: 4,
           round: 1,
           headcount: 2,
           deckSize: 5,
           searchRadiusMiles: 5,
-          participants: [alice, bob].map((p) => ({ ...p, ready: true })),
+          participants: [alice, bob].map((p) => ({
+            ...p,
+            ready: true,
+            isOnline: true,
+            waitingForNextRound: false,
+          })),
         },
       });
       vi.mocked(restartSession).mockRejectedValueOnce(

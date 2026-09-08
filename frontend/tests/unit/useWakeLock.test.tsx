@@ -42,7 +42,7 @@ describe('useWakeLock', () => {
     let active!: (state: { isActive: boolean }) => void;
     const remove = vi.fn();
     vi.mocked(App.addListener).mockImplementation((_event, handler) => {
-      active = handler;
+      active = handler as unknown as typeof active;
       return Promise.resolve({ remove });
     });
     const { unmount } = renderHook(() => useWakeLock(true));

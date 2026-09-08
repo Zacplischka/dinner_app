@@ -37,7 +37,7 @@ test.describe('Multi-Participant Session Flow', () => {
   });
 
   test('host can start session and all move to selection', async ({ setupSession }) => {
-    const { sessionCode, host, participants, all } = await setupSession(2);
+    const { sessionCode: _sessionCode, host, participants, all: _all } = await setupSession(2);
 
     // Host starts the session
     await host.lobbyPage.startSession();
@@ -54,7 +54,12 @@ test.describe('Multi-Participant Session Flow', () => {
   });
 
   test('all participants can make selections and submit', async ({ setupSession }) => {
-    const { sessionCode, host, participants, all } = await setupSession(1);
+    const {
+      sessionCode: _sessionCode,
+      host,
+      participants: _participants,
+      all,
+    } = await setupSession(1);
 
     // Host starts session
     await host.lobbyPage.startSession();
@@ -97,7 +102,7 @@ test.describe('Multi-Participant Session Flow', () => {
   });
 
   test('results show matching restaurants', async ({ setupSession }) => {
-    const { sessionCode, host, participants, all } = await setupSession(1);
+    const { sessionCode: _sessionCode, host, participants, all } = await setupSession(1);
 
     // Quick flow: start, like same restaurants, submit
     await host.lobbyPage.startSession();
@@ -180,7 +185,7 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
     // The crowned Top Pick appears on every participant's screen in real time
     // (the crown supersedes the bare Near Miss card on an empty Match).
     for (const p of all) {
-      await expect(p.page.getByText("TOP PICK").first()).toBeVisible({
+      await expect(p.page.getByText('TOP PICK').first()).toBeVisible({
         timeout: 10_000,
       });
       await expect(

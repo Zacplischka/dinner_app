@@ -9,7 +9,19 @@ const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
   inviteFriendsToSession: vi.fn(async () => undefined),
   waitForConnection: vi.fn(async () => undefined),
-  joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
+  joinSession: vi.fn(
+    async (): ReturnType<typeof import('../../src/services/socketBindings').joinSession> => ({
+      success: true,
+      data: {
+        participantId: 'participant-1',
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        participantCount: 1,
+        rejoinToken: 'token',
+        participants: [],
+      },
+    })
+  ),
   navigate: vi.fn(),
 }));
 

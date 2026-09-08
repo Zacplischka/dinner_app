@@ -44,13 +44,15 @@ test('Price Patrol animates while real stream states control progress and comple
   await expect(page.getByRole('heading', { name: 'Tipo 00' })).toBeVisible();
   await expect(scene.getByRole('status')).toHaveText('Checking Uber Eats and DoorDash…');
   const canvas = scene.locator('canvas');
-  const firstFrame = await canvas.evaluate((el) => el.toDataURL());
-  await expect.poll(() => canvas.evaluate((el) => el.toDataURL())).not.toBe(firstFrame);
+  const firstFrame = await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
+  await expect
+    .poll(() => canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL()))
+    .not.toBe(firstFrame);
 
   await page.getByRole('button', { name: 'Pause animation' }).click();
-  const pausedFrame = await canvas.evaluate((el) => el.toDataURL());
+  const pausedFrame = await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
   await page.waitForTimeout(200);
-  expect(await canvas.evaluate((el) => el.toDataURL())).toBe(pausedFrame);
+  expect(await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL())).toBe(pausedFrame);
   const notFound = { status: 'not_found', deals: [], menu: [] };
   await emit(page, 'storefront', {
     type: 'storefront',
@@ -105,9 +107,9 @@ test('Price Patrol respects reduced motion and fits a 320px screen', async ({ pa
   await expect(scene).toBeVisible();
   await expect(scene.getByRole('button')).toHaveCount(0);
   const canvas = scene.locator('canvas');
-  const still = await canvas.evaluate((el) => el.toDataURL());
+  const still = await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
   await page.waitForTimeout(250);
-  expect(await canvas.evaluate((el) => el.toDataURL())).toBe(still);
+  expect(await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL())).toBe(still);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await scene.screenshot({ path: info.outputPath('price-patrol-reduced-motion.png') });
 });
