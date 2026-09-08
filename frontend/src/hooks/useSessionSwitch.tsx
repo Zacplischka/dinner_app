@@ -1,3 +1,4 @@
+import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import { useRef, useState } from 'react';
 import ConfirmLeaveModal from '../components/ConfirmLeaveModal';
 import { useSessionStore } from '../stores/sessionStore';
@@ -32,19 +33,26 @@ export function useSessionSwitch() {
         }}
         onConfirm={() => {
           void (async () => {
+            const intent = beginSessionIntent();
+            const next = action.current;
             setBusy(true);
             try {
               const code = useSessionStore.getState().sessionCode;
               if (code) {
-                const ack = await leaveSession(code);
-                if (!ack.success) {
+                const ack = await leaveSession(code, intent);
+                if (!isSessionIntentCurrent(intent)) return;
+                if (
+                  !ack.success &&
+                  !['NOT_IN_SESSION', 'SESSION_NOT_FOUND'].includes(ack.error.code)
+                ) {
                   toast.error(ack.error.message);
                   return;
                 }
               }
               setOpen(false);
-              await action.current?.();
+              await next?.();
             } catch (error) {
+              if (!isSessionIntentCurrent(intent)) return;
               toast.error(
                 error instanceof Error ? error.message : 'Could not leave session. Try again.'
               );

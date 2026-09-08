@@ -571,6 +571,120 @@ describe('socketBindings', () => {
     );
   });
 
+  it.each(['success', 'failure'] as const)(
+    'serializes admission and suppresses an older %s',
+    async (outcome) => {
+      const socket = setupSocket();
+      socketBindings.initializeSocket();
+      const pending: Array<{ event: string; payload: unknown; callback: Handler }> = [];
+      vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+        if (callback) pending.push({ event, payload, callback });
+        return socket;
+      });
+      const data = (code: string) => ({
+        success: true,
+        data: {
+          sessionCode: code,
+          participantId: socket.id,
+          state: 'waiting',
+          rejoinToken: code,
+          participants: [{ ...participant, participantId: socket.id }],
+        },
+      });
+      const old = socketBindings.joinSession('AAA11', 'Alice');
+      await vi.waitFor(() => expect(pending).toHaveLength(1));
+      const newer = socketBindings.joinSession('BBB22', 'Alice');
+      expect(pending).toHaveLength(1);
+      pending[0].callback(
+        null,
+        outcome === 'success'
+          ? data('AAA11')
+          : {
+              success: false,
+              error: { code: 'SESSION_NOT_FOUND', message: 'Old error' },
+            }
+      );
+      await vi.waitFor(() => expect(pending[1]?.event).toBe('session:leave'));
+      expect(useSessionStore.getState().sessionCode).toBe('OLD11');
+      pending[1].callback(null, { success: true, data: null });
+      await vi.waitFor(() => expect(pending[2]?.event).toBe('session:join'));
+      pending[2].callback(null, data('BBB22'));
+      expect(await old).toMatchObject({ success: false });
+      expect(await newer).toMatchObject({ success: true });
+      expect(useSessionStore.getState().sessionCode).toBe('BBB22');
+      expect(sessionStorage.getItem('dinder:rejoin:AAA11:Alice')).toBeNull();
+      expect(sessionStorage.getItem('dinder:rejoin:BBB22:Alice')).toBe('BBB22');
+    }
+  );
+
+  it('preserves the capability when the latest admission targets the same Participant', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    let finish!: Handler;
+    const original = socket.emit.bind(socket);
+    const emit = vi.spyOn(socket, 'emit').mockImplementationOnce((_event, _payload, callback) => {
+      finish = callback!;
+      return socket;
+    });
+    const joined = {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'complete',
+        rejoinToken: 'existing-capability',
+        participants: [participant],
+      },
+    };
+    socket.acks.set('session:join', joined);
+    const old = socketBindings.joinSession('AAA11', 'Alice');
+    await vi.waitFor(() => expect(finish).toBeDefined());
+    const current = socketBindings.joinSession('AAA11', 'Alice');
+    emit.mockImplementation(original);
+    finish(null, joined);
+    expect(await old).toMatchObject({ success: false });
+    expect(await current).toMatchObject({ success: true });
+    expect(emit).toHaveBeenLastCalledWith(
+      'session:join',
+      {
+        sessionCode: 'AAA11',
+        displayName: 'Alice',
+        rejoinToken: 'existing-capability',
+      },
+      expect.any(Function)
+    );
+    expect(emit.mock.calls.some(([event]) => event === 'session:leave')).toBe(false);
+  });
+
+  it('does not let a delayed Leave reset a newer join', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    let left!: Handler;
+    const original = socket.emit.bind(socket);
+    vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+      if (event === 'session:leave') {
+        left = callback!;
+        return socket;
+      }
+      return original(event, payload, callback);
+    });
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'waiting',
+        rejoinToken: 'new',
+        participants: [participant],
+      },
+    });
+    const leaving = socketBindings.leaveSession('OLD11');
+    await vi.waitFor(() => expect(left).toBeDefined());
+    const joining = socketBindings.joinSession('BBB22', 'Alice');
+    left(null, { success: true, data: null });
+    expect(await leaving).toMatchObject({ success: false });
+    await joining;
+    expect(useSessionStore.getState().sessionCode).toBe('BBB22');
+  });
+
   it('stores session state when joining and resets it when leaving', async () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
@@ -999,7 +1113,9 @@ describe('socketBindings', () => {
       });
       const recovery = socketBindings.reconcileSession();
       await vi.waitFor(() => expect(completeRead).toBeDefined());
-      await socketBindings.leaveSession('AB123');
+      const leaving = socketBindings.leaveSession('AB123');
+      if (pendingEvent === 'session:join') completeRead!(null, joined);
+      await leaving;
       expect(useSessionStore.getState().sessionCode).toBeNull();
       if (replaced === 'different')
         useSessionStore.setState({
@@ -1187,10 +1303,10 @@ describe('socketBindings', () => {
         },
       });
       socket.trigger('connect');
+      finishSave();
       await vi.waitFor(() =>
         expect(emitted.mock.calls.filter(([event]) => event === 'session:join')).toHaveLength(2)
       );
-      finishSave();
       await oldRecovery;
       await vi.waitFor(() =>
         expect(useSessionStore.getState()).toMatchObject({

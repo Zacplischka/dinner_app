@@ -41,12 +41,7 @@ import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import {
-  getSocketAuthToken,
-  getSocketUser,
-  setSocketUser,
-  type SocketData,
-} from './websocket/socketAuth.js';
+import { getSocketUser, type SocketData } from './websocket/socketAuth.js';
 
 // Import shared types
 import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
@@ -265,7 +260,7 @@ import { handleDisconnect } from './websocket/disconnectHandler.js';
 import { handleLiveSelection } from './websocket/liveSelectionHandler.js';
 
 // Import auth middleware
-import { verifyToken, type AuthenticatedRequest } from './middleware/auth.js';
+import type { AuthenticatedRequest } from './middleware/auth.js';
 
 // Import session expiry notifier
 import {
@@ -273,28 +268,8 @@ import {
   disconnectSessionExpiryNotifier,
 } from './redis/sessionExpiryNotifier.js';
 
-// Socket.IO authentication middleware (optional - doesn't reject unauthenticated)
-io.use((socket, next) => {
-  const token = getSocketAuthToken(socket.handshake.auth);
-
-  if (!token) {
-    // Always allow connection (auth is optional for now)
-    next();
-    return;
-  }
-
-  void (async () => {
-    const user = await verifyToken(token);
-    if (user) {
-      // Attach user info to socket for later use
-      setSocketUser(socket, user);
-      logger.info({ socketId: socket.id, userId: user.id }, 'Socket authenticated');
-    }
-
-    // Always allow connection (auth is optional for now)
-    next();
-  })();
-});
+// Profile Auth gates HTTP social routes only (ADR 0003). Socket commands use
+// Participant capabilities; optional remote verification must not stall recovery.
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
@@ -306,12 +281,22 @@ io.on('connection', (socket) => {
     socketLog.info('Socket recovered from disconnect');
   }
 
+  // A socket has one membership. Keep join/Leave ordered through actual server
+  // completion, even when the client's acknowledgement timeout already elapsed.
+  let admission = Promise.resolve();
+  const admit = (action: () => Promise<void>) => {
+    const result = admission.then(action);
+    admission = result.catch(() => undefined);
+    return result;
+  };
   registerLobbyHandlers(socket, io, sessionService);
 
   // T041: session:join event handler
   socket.on(
     'session:join',
-    command((payload, callback) => handleSessionJoin(socket, payload, callback, sessionService))
+    command((payload, callback) =>
+      admit(() => handleSessionJoin(socket, payload, callback, sessionService))
+    )
   );
 
   // T042: selection:submit event handler
@@ -334,7 +319,7 @@ io.on('connection', (socket) => {
   socket.on(
     'session:leave',
     command((payload, callback) =>
-      handleSessionLeave(socket, io, payload, callback, sessionService)
+      admit(() => handleSessionLeave(socket, io, payload, callback, sessionService))
     )
   );
 

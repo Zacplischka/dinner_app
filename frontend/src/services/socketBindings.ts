@@ -18,6 +18,12 @@ import type {
   OrderStateEvent,
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
+import {
+  sessionIntent as recoveryGeneration,
+  intendedParticipant,
+  beginSessionIntent,
+  isSessionIntentCurrent,
+} from './sessionIntent';
 import type { SocketConfig } from './socketService';
 import { resolvePhotoUrls } from './apiClient';
 import { useSessionStore } from '../stores/sessionStore';
@@ -35,7 +41,21 @@ const log = (...args: unknown[]) => {
 // Track if we had a previous connection (for showing "Reconnected" toast)
 let hadPreviousConnection = false;
 let recovery: Promise<void> | undefined;
-let recoveryGeneration = 0;
+let recoveryIntent = -1;
+let admissionQueue = Promise.resolve();
+
+const superseded = (): Ack<never> => ({
+  success: false,
+  error: { code: 'UNKNOWN', message: 'Session action superseded.' },
+});
+function queueAdmission<T>(action: () => Promise<T>): Promise<T> {
+  const result = admissionQueue.then(action);
+  admissionQueue = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
+}
 
 // A Disconnect is not a Leave: the server holds the Participant's place for
 // two minutes of connection-state recovery, and most drops (a locked phone, a
@@ -102,7 +122,7 @@ const socketConfig: SocketConfig = {
 
     disconnect: (reason: string) => {
       log('Socket disconnected:', reason);
-      recoveryGeneration++;
+      beginSessionIntent();
       recovery = undefined;
       useSessionStore.getState().setConnectionStatus(false);
 
@@ -312,13 +332,19 @@ export function waitForConnection(timeoutMs?: number): Promise<void> {
 export async function joinSession(
   sessionCode: string,
   displayName: string,
-  resumeOnly = false
+  resumeOnly = false,
+  generation = resumeOnly ? recoveryGeneration : beginSessionIntent(sessionCode, displayName)
 ): Promise<Ack<SessionJoinData>> {
-  if (!resumeOnly) {
-    recoveryGeneration++;
-    recovery = undefined;
-  }
-  const generation = recoveryGeneration;
+  return queueAdmission(() => admitSession(sessionCode, displayName, resumeOnly, generation));
+}
+
+async function admitSession(
+  sessionCode: string,
+  displayName: string,
+  resumeOnly: boolean,
+  generation: number
+): Promise<Ack<SessionJoinData>> {
+  if (!isSessionIntentCurrent(generation)) return superseded();
   const previousParticipantId = useSessionStore.getState().currentUserId;
   const stillResuming = () => {
     const current = useSessionStore.getState();
@@ -331,7 +357,7 @@ export async function joinSession(
   // #304: sessionStorage, not localStorage — the token is this tab's
   // identity. Origin-wide it let a second tab rejoin as the first.
   const token = await getRejoinToken(sessionCode, displayName);
-  if (resumeOnly && !stillResuming())
+  if (!isSessionIntentCurrent(generation) || (resumeOnly && !stillResuming()))
     return {
       success: false,
       error: { code: 'UNKNOWN', message: 'Your session changed before recovery completed.' },
@@ -345,7 +371,18 @@ export async function joinSession(
       },
     };
   const ack = await socketService.joinSession(sessionCode, displayName, token ?? undefined);
-  if (resumeOnly && !stillResuming()) return ack;
+  if (!isSessionIntentCurrent(generation) || (resumeOnly && !stillResuming())) {
+    // Finish departure before a queued newer join, even if the older ack timed out.
+    if (!resumeOnly) {
+      if (ack.success && intendedParticipant === `${sessionCode}:${displayName}`) {
+        await saveRejoinToken(sessionCode, displayName, ack.data.rejoinToken);
+      } else {
+        await socketService.leaveSession(sessionCode);
+        await clearRejoinToken(sessionCode, displayName);
+      }
+    }
+    return superseded();
+  }
   if (!ack.success) {
     if (
       ['SESSION_NOT_FOUND', 'NOT_IN_SESSION', 'SESSION_ALREADY_STARTED'].includes(ack.error.code)
@@ -358,12 +395,24 @@ export async function joinSession(
   try {
     await saveRejoinToken(sessionCode, displayName, ack.data.rejoinToken);
   } catch {
-    toast.warning(
-      'Your session is open, but this phone could not save it. Keep YupCrew open to keep your place.'
-    );
+    if (isSessionIntentCurrent(generation))
+      toast.warning(
+        'Your session is open, but this phone could not save it. Keep YupCrew open to keep your place.'
+      );
   }
 
-  if (resumeOnly && !stillResuming()) return ack;
+  if (!isSessionIntentCurrent(generation) || (resumeOnly && !stillResuming())) {
+    // Finish departure before a queued newer join, even if the older ack timed out.
+    if (!resumeOnly) {
+      if (ack.success && intendedParticipant === `${sessionCode}:${displayName}`) {
+        await saveRejoinToken(sessionCode, displayName, ack.data.rejoinToken);
+      } else {
+        await socketService.leaveSession(sessionCode);
+        await clearRejoinToken(sessionCode, displayName);
+      }
+    }
+    return superseded();
+  }
 
   const store = useSessionStore.getState();
 
@@ -473,27 +522,36 @@ export function sendLiveSelection(
  * Leave session intentionally and clear local session state. The store is reset
  * regardless of ack outcome — every caller navigates away either way.
  */
-export async function leaveSession(sessionCode: string): Promise<Ack<null>> {
-  recoveryGeneration++;
-  recovery = undefined;
-  const ack = await socketService.leaveSession(sessionCode);
-  const store = useSessionStore.getState();
-  const me = store.participants.find((p) => p.participantId === store.currentUserId);
-  if (me) {
+export async function leaveSession(
+  sessionCode: string,
+  generation = beginSessionIntent()
+): Promise<Ack<null>> {
+  const initial = useSessionStore.getState();
+  const me = initial.participants.find((p) => p.participantId === initial.currentUserId);
+  return queueAdmission(async () => {
+    if (!isSessionIntentCurrent(generation)) return superseded();
     try {
-      await clearRejoinToken(sessionCode, me.displayName);
-    } catch {
-      toast.warning(
-        'Could not clear saved credentials. Your session will not reopen automatically.'
-      );
+      const ack = await socketService.leaveSession(sessionCode);
+      return isSessionIntentCurrent(generation) ? ack : superseded();
+    } finally {
+      if (me) {
+        try {
+          await clearRejoinToken(sessionCode, me.displayName);
+        } catch {
+          if (isSessionIntentCurrent(generation))
+            toast.warning(
+              'Could not clear saved credentials. Your session will not reopen automatically.'
+            );
+        }
+      }
+      if (isSessionIntentCurrent(generation)) useSessionStore.getState().resetSession();
     }
-  }
-  useSessionStore.getState().resetSession();
-  return ack;
+  });
 }
 
 export function reconcileSession(): Promise<void> {
-  if (recovery) return recovery;
+  if (recovery && recoveryIntent === recoveryGeneration) return recovery;
+  recoveryIntent = recoveryGeneration;
   const store = useSessionStore.getState();
   const code = store.sessionCode;
   const me = store.participants.find((p) => p.participantId === store.currentUserId);
@@ -578,7 +636,7 @@ export function reconcileSession(): Promise<void> {
  * Disconnect socket and mark the session store disconnected.
  */
 export function disconnectSocket(): void {
-  recoveryGeneration++;
+  beginSessionIntent();
   recovery = undefined;
   socketService.disconnectSocket();
   useSessionStore.getState().setConnectionStatus(false);
