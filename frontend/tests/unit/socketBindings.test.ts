@@ -600,7 +600,13 @@ describe('socketBindings', () => {
     expect(useSessionStore.getState().sessionCode).toBe('AAA11');
   });
 
-  it('recovers a successful deliberate join if transport changes during credential persistence', async () => {
+  it('recovers across credential persistence and successful Invite Link navigation', async () => {
+    const { createElement: h } = await import('react');
+    const { render, screen, act, cleanup } = await import('@testing-library/react/pure');
+    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
+    const api = await import('../../src/services/apiClient');
+    vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
     const storage = await import('../../src/services/nativeStorage');
     const save = storage.saveRejoinToken;
     let release!: () => void;
@@ -614,6 +620,10 @@ describe('socketBindings', () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
     useSessionStore.getState().resetSession();
+    useAuthStore.setState({
+      user: { id: 'profile', user_metadata: { full_name: 'Alice' } } as never,
+      isLoading: false,
+    });
     const joined = {
       success: true,
       data: {
@@ -624,34 +634,57 @@ describe('socketBindings', () => {
       },
     };
     socket.acks.set('session:join', joined);
-    const admission = socketBindings.joinSession('AAA11', 'Alice');
+    let recovered!: Handler;
+    const original = socket.emit.bind(socket);
+    vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+      if (event === 'session:join' && socket.id === 'new-socket') {
+        recovered = callback!;
+        return socket;
+      }
+      return original(event, payload, callback);
+    });
     try {
+      render(
+        h(
+          MemoryRouter,
+          { initialEntries: ['/join?code=AAA11'] },
+          h(
+            Routes,
+            {},
+            h(Route, { path: '/join', element: h(JoinSessionPage) }),
+            h(Route, { path: '/session/:code', element: h('div', {}, 'Joined destination') })
+          )
+        )
+      );
       await vi.waitFor(() => expect(saving).toHaveBeenCalledOnce());
-      socket.connected = false;
-      socket.trigger('disconnect', 'transport close');
-      socket.id = 'new-socket';
-      socket.connected = true;
-      socket.acks.set('session:join', {
-        ...joined,
-        data: {
-          ...joined.data,
-          participantId: socket.id,
-          participants: [{ ...participant, participantId: socket.id }],
-        },
+      await act(async () => {
+        socket.connected = false;
+        socket.trigger('disconnect', 'transport close');
+        socket.id = 'new-socket';
+        socket.connected = true;
+        socket.trigger('connect');
+        release();
       });
-      socket.trigger('connect');
-      release();
-      await admission;
-      await vi.waitFor(() =>
-        expect(useSessionStore.getState()).toMatchObject({
-          sessionCode: 'AAA11',
-          currentUserId: 'new-socket',
-          isConnected: true,
+      expect(await screen.findByText('Joined destination')).toBeInTheDocument();
+      await vi.waitFor(() => expect(recovered).toBeDefined());
+      await act(async () =>
+        recovered(null, {
+          ...joined,
+          data: {
+            ...joined.data,
+            participantId: socket.id,
+            participants: [{ ...participant, participantId: socket.id }],
+          },
         })
       );
+      expect(useSessionStore.getState()).toMatchObject({
+        sessionCode: 'AAA11',
+        currentUserId: 'new-socket',
+        isConnected: true,
+      });
     } finally {
       release();
-      await admission;
+      cleanup();
     }
   });
 

@@ -97,6 +97,8 @@ function JoinInvitation() {
       if (!current()) return;
 
       if (ack.success) {
+        // Admission is complete. Navigation must not cancel its follow-up recovery.
+        admissionIntent.current = undefined;
         // A Session already selecting admits late joiners (#284) — straight to
         // the Deck; the lobby is only for a Session that hasn't started.
         const pending = ack.data.lobby?.participants.find(
