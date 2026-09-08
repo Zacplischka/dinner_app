@@ -1,21 +1,21 @@
 <p align="center">
-  <img src="frontend/public/heykeen-wordmark.svg" alt="Heykeen logo" width="240" />
+  <img src="frontend/public/yupcrew-wordmark.svg" alt="YupCrew logo" width="240" />
 </p>
 
-# Heykeen
+# YupCrew
 
-**What are we doing tonight?** Heykeen helps friends, couples and housemates choose somewhere to eat, takeaway, a recipe to cook, or a movie or series to watch. Invite your people with a link, choose together and swipe to find a shared pick. No download or account needed.
+**What are we doing tonight?** YupCrew helps friends, couples and housemates choose somewhere to eat, takeaway, a recipe to cook, or a movie or series to watch. Invite your people with a link, choose together and swipe to find a shared pick. No download or account needed.
 
-Formerly Dinder. The Heykeen visual rebrand is prepared locally; the public domain and service identifiers remain unchanged pending release and name checks.
+Formerly Dinder. Public address: [yupcrew.com](https://yupcrew.com). Existing Dinder addresses remain available for current Sessions and Shopping Lists; internal service and storage identifiers are unchanged. See the [rebrand and migration notes](docs/yupcrew-rebrand-plan.md).
 
 <p align="center">
-  <a href="https://www.dinder.it.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
+  <a href="https://yupcrew.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A520-339933" alt="Node 20+">
 </p>
 
 <p align="center">
-  <a href="https://www.dinder.it.com">Live demo</a> ·
+  <a href="https://yupcrew.com">Live demo</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#demo">Demo</a> ·
   <a href="#architecture">Architecture</a> ·
@@ -80,6 +80,8 @@ npm workspaces monorepo, three packages:
 REST is deliberately thin — `POST /api/sessions`, `GET /api/sessions/:code` — everything live goes over the socket.
 
 ## Local development
+
+The mobile foundation bundles this same frontend through Capacitor. Native projects are in [`frontend/ios`](frontend/ios) and [`frontend/android`](frontend/android); see [mobile setup](docs/mobile-development.md) and [verified progress and remaining work](docs/mobile-implementation-status.md). This is partial delivery of [spec #459](https://github.com/Zacplischka/dinner_app/issues/459), not a store-ready release.
 
 Prerequisites: Node 20+, Docker (for Redis), and a [Google Places API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key).
 

@@ -28,6 +28,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" />
+                <data android:host="yupcrew.com" />
+                <data android:host="www.yupcrew.com" />
                 <data android:host="www.dinder.it.com" />
                 <data android:host="dinder.it.com" />
                 <data android:path="/join" />

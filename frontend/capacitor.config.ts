@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'it.com.dinder.app',
-  appName: 'Heykeen',
+  appName: 'YupCrew',
   webDir: 'dist',
   // Native bridge logging includes plugin arguments, including credentials.
   loggingBehavior: 'none',

@@ -25,7 +25,7 @@ export function useShareLink(
 
     if (Capacitor.isNativePlatform() || typeof navigator.share === 'function') {
       try {
-        const options = { title: 'Heykeen', ...share, url };
+        const options = { title: 'YupCrew', ...share, url };
         if (Capacitor.isNativePlatform()) await Share.share(options);
         else await navigator.share(options);
         return;

@@ -25,7 +25,7 @@ export async function currentPosition(): Promise<{
 export function publicUrl(path: string): string {
   const origin =
     import.meta.env.VITE_PUBLIC_ORIGIN ||
-    (Capacitor.isNativePlatform() ? 'https://www.dinder.it.com' : window.location.origin);
+    (Capacitor.isNativePlatform() ? 'https://yupcrew.com' : window.location.origin);
   // Paths come from our router, never a scheme-relative URL supplied in a link.
   if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\'))
     throw new Error('Invalid public path');

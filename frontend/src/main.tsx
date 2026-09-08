@@ -17,7 +17,7 @@ async function start() {
           role="status"
           style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
         >
-          Opening Heykeen…
+          Opening YupCrew…
         </main>
       );
       await initializeNativeStorage();

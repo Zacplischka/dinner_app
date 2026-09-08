@@ -2,7 +2,13 @@
 
 Tracks [spec #459](https://github.com/Zacplischka/dinner_app/issues/459). **Implementation is partial.** Public store publishing is excluded. Native readiness, physical-device verification and release approval are not implied by project generation or simulator checks.
 
-Work runs in the isolated `codex/459-mobile-app` lane, carrying a snapshot of the existing Heykeen rebrand. The shared main checkout is untouched. The local baseline manifest is in ignored `output/mobile-baseline/`; these changes have not been committed, pushed or deployed.
+Work runs in the isolated `codex/459-mobile-app` lane. Checkpoint `2d3c79a` preserves the tested prototype and is backed up on GitHub. Integration with main preserves the YupCrew branding, public privacy page and compatible domain cutover. The shared main checkout is untouched. Older evidence below refers to the Heykeen Test artifacts actually exercised at those checkpoints.
+
+## Foundation milestone boundary — 8 September 2026
+
+The user authorized checkpointing and merging a reviewed foundation while leaving the rest of spec #459 open. This milestone includes bundled native projects, configuration/build checks, shared browser-compatible recovery fixes, permissions/sharing adapters, secure native persistence, logging corrections and the recorded prototype evidence. Existing YupCrew browser behavior, privacy access and legacy-domain continuity must remain intact after integration. A merge requires independent standards/spec review and passing relevant CI, browser and native compile checks.
+
+This is partial delivery, not a passed physical-device prototype gate or a store-ready app. Apple sign-in, verified linking, deletion, new safety controls, verified OS links, complete accessibility/device matrices and signed release operations remain outstanding. Existing Google/browser identity must continue to work. The prototype-first gate remains in force for the remaining expansion. Historical test binaries and their hashes are preserved; new source or branding is not retroactively covered by their device evidence.
 
 ## Implementation status
 
@@ -18,7 +24,7 @@ Work runs in the isolated `codex/459-mobile-app` lane, carrying a snapshot of th
 | Google/Apple and Profile continuity (40–46) | Google system-browser PKCE callback, secure auth storage and bounded guest-first initialization implemented; handshake reads current auth. Apple sign-in, verified linking, discovery identity and actual refresh/revocation validation remain pending. |
 | Deletion and real auth/database evidence (47–49) | Pending implementation and isolated real-auth/database evidence. |
 | Reporting, blocks, Participant and Shopper safety (50–52, 67–71) | Pending the specified ADR amendment, implementation and concurrency/expiry evidence. Existing absent-Participant removal is not the new strict Host-only moderation control. |
-| Privacy, support and accessibility (53–57) | Native Back handling, safe-area corrections, offline text, bridge log suppression and Preferences required-reason privacy manifest added. [Current data/permission inventory](mobile-data-inventory.md) records source and simulator-manifest evidence, storage behavior and open processor/retention questions. HTTP/Caddy logs now exclude automatic URLs/headers and private list/claim fields. Final signed-binary inventory, public policy/support/deletion pages, VoiceOver/TalkBack and full device audit remain pending. |
+| Privacy, support and accessibility (53–57) | Native Back handling, safe-area corrections, offline text, bridge log suppression and Preferences required-reason privacy manifest added. [Current data/permission inventory](mobile-data-inventory.md) records source and simulator-manifest evidence, storage behavior and open processor/retention questions. HTTP/Caddy logs now exclude automatic URLs/headers and private list/claim fields. Main supplies the public privacy page and support contact. Final signed-binary inventory, native disclosure reconciliation, the public deletion route, VoiceOver/TalkBack and the full device audit remain pending. |
 | Reviewer access (59, 72) | Pending ordinary synthetic fixtures, separate deletion accounts and two clean review runs. |
 | CI, compatibility, operations (61–64) | Unsigned Android/iOS compile workflow added and checked locally; hosted execution remains unproved. ADR 0007 now defines compatibility for supported installed clients and requires a baseline at the first release. Signed workflows, release artifact/symbol provenance, an actual released-client baseline and operator runbooks remain pending. |
 
@@ -121,7 +127,7 @@ The production-only audit reports zero advisories after the updates. Development
 - Keep the Mac and iPhone unlocked for initial native setup.
 - The iPhone's guest Branch journeys, native control, granted approximate location, streamed Comparison and Group Order handoff have recorded evidence. The user confirmed no Android phone is available. Emulator evidence does not replace the required physical Android test; real system-browser authentication callbacks and the remaining native matrix are still outstanding.
 - The user confirmed only a free Apple Personal Team. Basic development signing can be prepared, but Associated Domains and Sign in with Apple require paid program access before those checks can pass. [Apple capability availability](https://developer.apple.com/help/account/reference/supported-capabilities-ios/).
-- Confirmed canonical domain, package IDs, legal publishing identity and signing access before distribution builds.
+- The canonical public domain is `https://yupcrew.com`; verify permanent package IDs, legal publishing identity and signing access before distribution builds.
 - Google/Apple/Supabase redirect/provider configuration in an isolated test environment before identity proof. No live provider configuration or production service was changed.
 
 The spec explicitly puts the physical iPhone/Android/browser prototype before expanding into the remaining identity, deletion and safety migration. Complete that gate with the [development checklist](mobile-development.md), then continue the outstanding stories. Store publication remains excluded from this implementation request.

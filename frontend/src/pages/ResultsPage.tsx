@@ -919,7 +919,7 @@ export default function ResultsPage() {
 
         {/* Session Info */}
         <div className="mt-6 text-center text-sm text-muted">
-          <p>Thanks for using Heykeen!</p>
+          <p>Thanks for using YupCrew!</p>
         </div>
       </div>
     </main>

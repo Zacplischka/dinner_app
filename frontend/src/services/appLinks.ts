@@ -5,7 +5,13 @@ import { publicUrl } from './device';
 export function appLink(raw: string): string | null {
   try {
     const url = new URL(raw);
-    const hosts = new Set([new URL(publicUrl('/')).hostname, 'dinder.it.com', 'www.dinder.it.com']);
+    const hosts = new Set([
+      new URL(publicUrl('/')).hostname,
+      'yupcrew.com',
+      'www.yupcrew.com',
+      'dinder.it.com',
+      'www.dinder.it.com',
+    ]);
     if (
       url.protocol !== 'https:' ||
       url.port ||

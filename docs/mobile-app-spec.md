@@ -1,6 +1,6 @@
 ## Problem Statement
 
-People can currently use Dinder, being rebranded as Heykeen, through a browser, but cannot install an officially distributed Android or iPhone app. Existing browser behavior does not yet establish reliable recovery after a phone terminates the app, store-compatible sign-in, verified app-opening Invite Links, or the privacy and safety controls needed for distribution.
+People can currently use YupCrew (formerly Dinder) through a browser, but cannot install an officially distributed Android or iPhone app. Existing browser behavior does not yet establish reliable recovery after a phone terminates the app, store-compatible sign-in, verified app-opening Invite Links, or the privacy and safety controls needed for distribution.
 
 The product depends on a whole group being able to participate. Requiring every invited person to install an app or create a Profile would undermine its existing value. Installation must therefore improve convenience for regular Participants while preserving browser participation, guests, and the same shared Session across devices.
 
@@ -146,7 +146,7 @@ Validate this approach with a small physical-device prototype before the rest of
 
 ## Further Notes
 
-- Scope confirmed with the user: **free, Australia first**. Heykeen is the working public name; final domain/name ownership, developer legal entity, account status, supported-device details and access credentials are implementation prerequisites, not facts already verified.
+- Scope confirmed with the user: **free, Australia first**. YupCrew is the public name and `https://yupcrew.com` is the canonical public origin following #460. Developer legal entity, permanent app IDs, account status, supported-device details and release credentials still require verification.
 - Two independent reviewers approved this specification after revisions. Testing through mixed-client journeys, existing HTTP/Socket.IO contracts and signed real-device checks was confirmed by the user. The specification incorporates strict resume rejection, directional blocking/concurrency, explicit Participant and independent-Shopper safeguards, narrow report retention, repeatable reviewer access and corrected store-artwork/demo-mode requirements from those reviews.
 - Sequence: establish account/domain/toolchain readiness; prove both physical platforms; implement native links/UX and recovery; complete identity, deletion and safety; establish signed delivery; run mixed-client beta; submit and verify launch. Begin enrollment and tester recruitment early because these have external lead times.
 - Initial estimate: **31–46 engineering days before contingency**, approximately **8–12 working weeks with reserve**, with enrollment and review potentially extending elapsed time. Re-estimate after the prototype and detailed safety/deletion design; directional blocks, Shopper remediation, report-retention changes and reviewer access can expand the original allowance. This is not an approved spend or delivery guarantee.

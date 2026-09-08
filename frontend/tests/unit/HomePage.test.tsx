@@ -77,6 +77,24 @@ describe('HomePage entry fork', () => {
     expect(screen.getByText('Watch setup route')).toBeInTheDocument();
   });
 
+  it.each(['dinder.it.com', 'www.dinder.it.com'])(
+    'moves new rounds from %s without clearing the existing participant',
+    (hostname) => {
+      const assign = vi.fn();
+      vi.stubGlobal('location', { hostname, assign });
+      useSessionStore.setState({ currentUserId: 'existing-participant' });
+      renderFork();
+      fireEvent.click(screen.getByRole('button', { name: /eat out/i }));
+      expect(assign).toHaveBeenLastCalledWith('https://yupcrew.com/create?branch=eatout');
+      fireEvent.click(screen.getByRole('button', { name: /watch something/i }));
+      expect(assign).toHaveBeenLastCalledWith('https://yupcrew.com/watch');
+      expect(useSessionStore.getState().currentUserId).toBe('existing-participant');
+      fireEvent.click(screen.getByRole('button', { name: /join with a code/i }));
+      expect(screen.getByText('Join route')).toBeInTheDocument();
+      expect(assign).toHaveBeenCalledTimes(2);
+    }
+  );
+
   it('keeps Join with a code reachable prominently', () => {
     renderFork();
     fireEvent.click(screen.getByRole('button', { name: /join with a code/i }));

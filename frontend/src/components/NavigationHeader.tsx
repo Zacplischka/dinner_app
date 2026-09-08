@@ -162,8 +162,8 @@ export default function NavigationHeader({
             >
               <Link
                 to="/"
-                aria-label="Heykeen home"
-                title="Heykeen home"
+                aria-label="YupCrew home"
+                title="YupCrew home"
                 className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
               >
                 <span className="logo-mark scale-75" aria-hidden="true" />

@@ -359,7 +359,7 @@ export async function joinSession(
     await saveRejoinToken(sessionCode, displayName, ack.data.rejoinToken);
   } catch {
     toast.warning(
-      'Your session is open, but this phone could not save it. Keep Heykeen open to keep your place.'
+      'Your session is open, but this phone could not save it. Keep YupCrew open to keep your place.'
     );
   }
 

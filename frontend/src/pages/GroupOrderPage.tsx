@@ -421,7 +421,7 @@ export default function GroupOrderPage() {
           )}
 
           <p className="mt-4 text-xs text-muted">
-            One of you orders — Heykeen can&apos;t check out for you.
+            One of you orders — YupCrew can&apos;t check out for you.
           </p>
         </div>
       );

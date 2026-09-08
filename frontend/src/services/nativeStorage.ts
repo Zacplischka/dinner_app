@@ -76,7 +76,8 @@ export function clearRejoinToken(code: string, name: string): Promise<void> {
     .then(async () => {
       if (!Capacitor.isNativePlatform()) return credentialStorage.removeItem(key);
       const saved = await credentialStorage.getItem('heykeen.rejoin');
-      if (saved && JSON.parse(saved).key === key)
+      const value: unknown = saved ? JSON.parse(saved) : null;
+      if (value && typeof value === 'object' && 'key' in value && value.key === key)
         await credentialStorage.removeItem('heykeen.rejoin');
     });
   return rejoinWrites;
@@ -91,7 +92,7 @@ export const nativeStateStorage: StateStorage = {
   setItem(key, value) {
     pendingWrite = pendingWrite.catch(() => undefined).then(() => Preferences.set({ key, value }));
     return pendingWrite.catch(() => {
-      toast.warning('Changes could not be saved on this phone. Keep Heykeen open.');
+      toast.warning('Changes could not be saved on this phone. Keep YupCrew open.');
     });
   },
   removeItem(key) {

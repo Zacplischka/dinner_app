@@ -91,14 +91,25 @@ export default function CookViewPage() {
     void (async () => {
       try {
         const saved = await nativeStateStorage.getItem('heykeen.cook-progress');
-        const value = saved ? JSON.parse(saved) : null;
+        const value: unknown = saved ? JSON.parse(saved) : null;
+        const record = value && typeof value === 'object' ? value : null;
+        const expiresAt = record && 'expiresAt' in record ? record.expiresAt : undefined;
+        const steps: unknown[] =
+          record && 'steps' in record && Array.isArray(record.steps) ? record.steps : [];
         if (active)
           setProgress(
-            value?.listId === listId && value.expiresAt > Date.now() && Array.isArray(value.steps)
-              ? value.steps.filter((step: unknown) => Number.isInteger(step) && Number(step) >= 0)
+            record &&
+              'listId' in record &&
+              record.listId === listId &&
+              typeof expiresAt === 'number' &&
+              expiresAt > Date.now()
+              ? steps.filter(
+                  (step): step is number =>
+                    typeof step === 'number' && Number.isInteger(step) && step >= 0
+                )
               : []
           );
-        if (value && value.expiresAt <= Date.now())
+        if (typeof expiresAt === 'number' && expiresAt <= Date.now())
           await nativeStateStorage.removeItem('heykeen.cook-progress');
       } catch {
         if (active) {

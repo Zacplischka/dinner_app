@@ -52,7 +52,7 @@ export default function ConfirmLeaveModal({
       case 'switching':
         return 'Leave this session to create or join another? Your participation and selections in this session will be removed.';
       case 'results':
-        return 'Leave this session and stop participating? Use the Heykeen logo to go home and keep your place.';
+        return 'Leave this session and stop participating? Use the YupCrew logo to go home and keep your place.';
       case 'selecting':
         if (selectionsCount > 0) {
           return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the Match.`;

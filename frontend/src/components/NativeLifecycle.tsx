@@ -34,7 +34,7 @@ export default function NativeLifecycle() {
       lastDelivery = { url, time: Date.now() };
       const path = appLink(url);
       if (!path) {
-        toast.error('This link cannot be opened in Heykeen.');
+        toast.error('This link cannot be opened in YupCrew.');
         return;
       }
       if (path.startsWith('/auth/callback')) {
@@ -115,7 +115,7 @@ export default function NativeLifecycle() {
       );
       const launch = await App.getLaunchUrl();
       if (launch) await openLink(launch.url);
-    })().catch(() => toast.error('Some phone features are unavailable. Try reopening Heykeen.'));
+    })().catch(() => toast.error('Some phone features are unavailable. Try reopening YupCrew.'));
     return () => {
       active = false;
       handles.forEach((handle) => {

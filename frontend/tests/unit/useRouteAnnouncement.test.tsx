@@ -70,20 +70,20 @@ function renderAt(path: string) {
 
 describe('routeTitle', () => {
   it('names every route, params and all', () => {
-    expect(routeTitle('/')).toBe('Heykeen');
-    expect(routeTitle('/cook')).toBe('Cook together · Heykeen');
-    expect(routeTitle('/watch')).toBe('Watch something · Heykeen');
-    expect(routeTitle('/compare')).toBe('Compare menu prices · Heykeen');
-    expect(routeTitle('/compare/ChIJabc123')).toBe('Price comparison · Heykeen');
-    expect(routeTitle('/create')).toBe('Create Session · Heykeen');
-    expect(routeTitle('/join')).toBe('Join Session · Heykeen');
-    expect(routeTitle('/session/ABCDE')).toBe('Make the Call · Heykeen');
-    expect(routeTitle('/session/ABCDE/select')).toBe('Swiping · Heykeen');
-    expect(routeTitle('/session/ABCDE/results')).toBe('Match · Heykeen');
-    expect(routeTitle('/session/ABCDE/order')).toBe('Group Order · Heykeen');
-    expect(routeTitle('/list/7f3a')).toBe('Shopping List · Heykeen');
-    expect(routeTitle('/list/7f3a/cook')).toBe('Method · Heykeen');
-    expect(routeTitle('/friends')).toBe('Friends · Heykeen');
+    expect(routeTitle('/')).toBe('YupCrew');
+    expect(routeTitle('/cook')).toBe('Cook together · YupCrew');
+    expect(routeTitle('/watch')).toBe('Watch something · YupCrew');
+    expect(routeTitle('/compare')).toBe('Compare menu prices · YupCrew');
+    expect(routeTitle('/compare/ChIJabc123')).toBe('Price comparison · YupCrew');
+    expect(routeTitle('/create')).toBe('Create Session · YupCrew');
+    expect(routeTitle('/join')).toBe('Join Session · YupCrew');
+    expect(routeTitle('/session/ABCDE')).toBe('Make the Call · YupCrew');
+    expect(routeTitle('/session/ABCDE/select')).toBe('Swiping · YupCrew');
+    expect(routeTitle('/session/ABCDE/results')).toBe('Match · YupCrew');
+    expect(routeTitle('/session/ABCDE/order')).toBe('Group Order · YupCrew');
+    expect(routeTitle('/list/7f3a')).toBe('Shopping List · YupCrew');
+    expect(routeTitle('/list/7f3a/cook')).toBe('Method · YupCrew');
+    expect(routeTitle('/friends')).toBe('Friends · YupCrew');
   });
 
   it('names a route the way the page names itself on screen', () => {
@@ -94,7 +94,7 @@ describe('routeTitle', () => {
   });
 
   it('falls back to the bare app name on an unknown URL', () => {
-    expect(routeTitle('/nowhere')).toBe('Heykeen');
+    expect(routeTitle('/nowhere')).toBe('YupCrew');
   });
 });
 
@@ -102,7 +102,7 @@ describe('useRouteAnnouncement', () => {
   it('titles the first page without stealing focus from it', () => {
     renderAt('/');
 
-    expect(document.title).toBe('Heykeen');
+    expect(document.title).toBe('YupCrew');
     expect(document.activeElement).toBe(document.body);
   });
 
@@ -111,7 +111,7 @@ describe('useRouteAnnouncement', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Friends' }));
 
-    expect(document.title).toBe('Friends · Heykeen');
+    expect(document.title).toBe('Friends · YupCrew');
     expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Friends' }));
   });
 
@@ -120,7 +120,7 @@ describe('useRouteAnnouncement', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Swipe' }));
 
-    expect(document.title).toBe('Swiping · Heykeen');
+    expect(document.title).toBe('Swiping · YupCrew');
     expect(document.activeElement).toBe(screen.getByTestId('page'));
   });
 
@@ -129,7 +129,7 @@ describe('useRouteAnnouncement', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Lobby' }));
 
-    expect(document.title).toBe('Make the Call · Heykeen');
+    expect(document.title).toBe('Make the Call · YupCrew');
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Make the Call' }))
     );
@@ -140,7 +140,7 @@ describe('useRouteAnnouncement', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Create' }));
 
-    expect(document.title).toBe('Create Session · Heykeen');
+    expect(document.title).toBe('Create Session · YupCrew');
     expect(document.activeElement).toBe(screen.getByLabelText('Your name'));
   });
 });
@@ -188,6 +188,6 @@ describe("useRouteAnnouncement under App's lazy routes", () => {
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Friends' }))
     );
-    expect(document.title).toBe('Friends · Heykeen');
+    expect(document.title).toBe('Friends · YupCrew');
   });
 });

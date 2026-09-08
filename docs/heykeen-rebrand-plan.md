@@ -1,3 +1,5 @@
+> Historical working-name plan retained with the mobile checkpoint. The current public brand is YupCrew; see [the merged rebrand plan](yupcrew-rebrand-plan.md).
+
 # Dinder → Heykeen: rebrand plan
 
 Prepared 8 September 2026. Status: proposed; Heykeen is the working name. This document plans the work; it does not rename the app, buy a domain, change live services or publish marketing.

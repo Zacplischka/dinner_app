@@ -39,6 +39,14 @@ const BRANCH_CARDS = [
 
 export default function HomePage() {
   const navigate = useNavigate();
+  function startSession(path: string) {
+    // New rounds move to YupCrew; existing participants keep their old-origin state.
+    if (['dinder.it.com', 'www.dinder.it.com'].includes(window.location.hostname)) {
+      window.location.assign(`https://yupcrew.com${path}`);
+    } else {
+      navigate(path);
+    }
+  }
   const { sessionCode, sessionStatus } = useSessionStore();
   const [returnError, setReturnError] = useState('');
   const [returning, setReturning] = useState(false);
@@ -114,11 +122,11 @@ export default function HomePage() {
       <header className="mx-auto flex min-h-16 w-full max-w-5xl items-center justify-between gap-4">
         <Link
           to="/"
-          aria-label="Heykeen home"
+          aria-label="YupCrew home"
           className="inline-flex min-h-[44px] min-w-[44px] items-center gap-2 text-2xl font-black tracking-[-0.055em] text-text"
         >
           <span className="logo-mark" aria-hidden="true" />
-          heykeen
+          yupcrew
         </Link>
 
         {isAuthenticated && (
@@ -191,7 +199,7 @@ export default function HomePage() {
               {BRANCH_CARDS.map((card) => (
                 <button
                   key={card.title}
-                  onClick={() => navigate(card.to)}
+                  onClick={() => startSession(card.to)}
                   className="group flex min-h-[88px] w-full items-center overflow-hidden rounded-2xl border border-line bg-surface text-left shadow-card transition-all hover:border-coral motion-safe:hover:-translate-y-0.5"
                 >
                   <span
@@ -251,7 +259,15 @@ export default function HomePage() {
           </div>
         )}
         <p className="mt-6 text-center text-xs text-muted">
-          Dinder is now Heykeen. Same app. A new look.
+          Dinder is now YupCrew. Same app. A new look.
+        </p>
+        <p className="text-center text-xs text-muted">
+          <a
+            href="/privacy.html"
+            className="inline-flex min-h-[44px] items-center underline underline-offset-4"
+          >
+            Privacy policy
+          </a>
         </p>
       </section>
       <ConfirmLeaveModal

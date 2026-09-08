@@ -4,7 +4,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
-import { pinoHttp } from 'pino-http';
+import { pinoHttp, type StdSerializedResults } from 'pino-http';
 import { randomUUID } from 'crypto';
 import { logger } from './logger.js';
 import { redis, pingRedis } from './redis/client.js';
@@ -61,6 +61,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://www.dinder.it.com',
   'https://dinder.it.com',
+  'https://yupcrew.com',
+  'https://www.yupcrew.com',
   FRONTEND_URL,
 ].filter(Boolean);
 
@@ -158,8 +160,8 @@ app.use(
     // Full URLs and headers contain list capabilities, OAuth codes and tokens.
     // Keep request correlation/status; route handlers add operational context.
     serializers: {
-      req: (req) => ({ id: req.id, method: req.method }),
-      res: (res) => ({ statusCode: res.statusCode }),
+      req: (req: StdSerializedResults['req']) => ({ id: req.id, method: req.method }),
+      res: (res: StdSerializedResults['res']) => ({ statusCode: res.statusCode }),
     },
     genReqId: (req, res) => {
       const id = (req.headers['x-request-id'] as string) || randomUUID();

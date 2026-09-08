@@ -6,14 +6,14 @@ Implementation of [spec #459](https://github.com/Zacplischka/dinner_app/issues/4
 
 Use Node 22+, Xcode with the matching iOS platform components, Java 21, and Android SDK platform 36. The current Android Gradle plugin also requests Build-Tools **35.0.0**; the platform/API number and build-tools version are separate. Capacitor and its native plugins are pinned in the workspace lockfile. Install with `npm ci` from the repository root; do not run separate package installs inside native projects.
 
-The current package identity is provisional: `it.com.dinder.app` for release and `it.com.dinder.app.dev` for Debug. Confirm the legal publisher and permanent IDs before signing. Debug and release apps can coexist. The public name is Heykeen and public links still use the existing Dinder domain until its replacement is confirmed.
+The current package identity is provisional: `it.com.dinder.app` for release and `it.com.dinder.app.dev` for Debug. Confirm the legal publisher and permanent IDs before signing. Debug and release apps can coexist. The public name is YupCrew and new public links use `https://yupcrew.com`. Existing Dinder links remain supported; internal package and service identifiers are unchanged.
 
 Create an ignored `frontend/.env.development.local` with the public service settings used by your test environment:
 
 ```dotenv
 VITE_BACKEND_URL=http://localhost:3458
 VITE_API_BASE_URL=http://localhost:3458/api
-VITE_PUBLIC_ORIGIN=https://www.dinder.it.com
+VITE_PUBLIC_ORIGIN=https://yupcrew.com
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```

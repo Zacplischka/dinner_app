@@ -31,7 +31,7 @@ async function expectMobileSafeHeader(page: Page) {
   expect(hasHorizontalScroll).toBe(false);
 
   // Focused flows show no unrelated navigation links
-  await expect(header.getByRole('link', { name: 'Heykeen home' })).toBeVisible();
+  await expect(header.getByRole('link', { name: 'YupCrew home' })).toBeVisible();
 
   // Back action: stable, full-size touch target
   const back = header.getByRole('button', { name: /^(Back|Leave session)$/ });

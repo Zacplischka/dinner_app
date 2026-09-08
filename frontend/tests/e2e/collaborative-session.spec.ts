@@ -34,7 +34,7 @@ test('everyone chooses and confirms Ready, then returns from home to the shared 
     await expect(guest.getByRole('button', { name: 'I’m ready', exact: true })).toBeEnabled();
     await expect(hostLobby.startButton).toBeDisabled();
     await guestLobby.ready();
-    await guest.getByRole('link', { name: 'Heykeen home', exact: true }).click();
+    await guest.getByRole('link', { name: 'YupCrew home', exact: true }).click();
     await expect(guest.getByRole('button', { name: 'Return to session' })).toBeVisible();
     await hostLobby.startSession();
     await guest.getByRole('button', { name: 'Return to session' }).click();

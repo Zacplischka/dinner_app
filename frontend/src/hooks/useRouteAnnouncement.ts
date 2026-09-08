@@ -5,7 +5,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
 
-const APP_NAME = 'Heykeen';
+const APP_NAME = 'YupCrew';
 
 // Route patterns exactly as App.tsx declares them, most specific first so a
 // nested route never loses to its parent.

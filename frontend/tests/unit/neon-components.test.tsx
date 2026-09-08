@@ -41,7 +41,7 @@ import UserMenu from '../../src/components/UserMenu';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
-describe('Heykeen components', () => {
+describe('YupCrew components', () => {
   beforeEach(() => {
     useSessionStore.getState().resetSession();
     useSessionStore.setState({ sessionCode: 'AB123', participants: [] });

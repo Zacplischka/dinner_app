@@ -28,22 +28,22 @@ const rgbStops = async (locator: Locator, property: string): Promise<number[][]>
   return [...value.matchAll(/rgba?\((\d+), (\d+), (\d+)/g)].map((m) => m.slice(1, 4).map(Number));
 };
 
-test('uses the Heykeen foundation', async ({ page }) => {
+test('uses the YupCrew foundation', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#FFF4E8');
 
-  await expect(page).toHaveTitle('Heykeen');
-  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', 'Heykeen');
+  await expect(page).toHaveTitle('YupCrew');
+  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', 'YupCrew');
   const manifest = await (await page.request.get('/manifest.webmanifest')).json();
-  expect(manifest.name).toBe('Heykeen');
+  expect(manifest.name).toBe('YupCrew');
   expect(manifest.theme_color).toBe('#FFF4E8');
   for (const icon of manifest.icons) {
     const response = await page.request.get(icon.src);
     expect(response.ok()).toBe(true);
     expect(response.headers()['content-type']).toContain('image/png');
   }
-  const shareImage = await page.request.get('/images/heykeen-share.png');
+  const shareImage = await page.request.get('/images/yupcrew-share.png');
   expect(shareImage.ok()).toBe(true);
   expect(shareImage.headers()['content-type']).toContain('image/png');
 
@@ -65,7 +65,7 @@ test('uses the Heykeen foundation', async ({ page }) => {
   await expect(primary).toHaveCSS('outline-width', '3px');
 });
 
-test('keeps representative Heykeen text pairs WCAG AA readable', async ({ page }) => {
+test('keeps representative YupCrew text pairs WCAG AA readable', async ({ page }) => {
   const cook = new CookSetupPage(page);
   await cook.goto();
   await cook.nameInput.fill('Zac');
@@ -92,7 +92,7 @@ test('keeps representative Heykeen text pairs WCAG AA readable', async ({ page }
   expect(contrastRatio(labelText, ink)).toBeGreaterThanOrEqual(4.5);
 });
 
-test('uses the Heykeen card and field treatments', async ({ page }) => {
+test('uses the YupCrew card and field treatments', async ({ page }) => {
   await page.goto('/create');
 
   const form = page.locator('form');
@@ -114,7 +114,7 @@ test('renders the warm entry fork at mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
-  await expect(page.getByRole('link', { name: 'Heykeen home' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'YupCrew home' })).toBeVisible();
   await expect(page.getByRole('heading', { name: /What are we doing tonight/i })).toBeVisible();
 
   const eatOut = page.getByRole('button', { name: /eat out/i });
@@ -129,7 +129,7 @@ test('renders the warm entry fork at mobile width', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('uses the five-character Heykeen join field', async ({ page }) => {
+test('uses the five-character YupCrew join field', async ({ page }) => {
   await page.goto('/join');
 
   const label = page.locator('label[for="sessionCode"]');
@@ -146,7 +146,7 @@ test('uses the five-character Heykeen join field', async ({ page }) => {
   await expect(join).toHaveCSS('background-color', 'rgb(234, 112, 88)');
 });
 
-test('uses Heykeen panels and micro-labels on secondary pages', async ({ page }) => {
+test('uses YupCrew panels and micro-labels on secondary pages', async ({ page }) => {
   await page.goto('/compare');
 
   const panel = page.getByRole('heading', { name: 'Find nearby venues' }).locator('..');

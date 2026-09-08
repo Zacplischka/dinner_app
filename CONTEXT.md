@@ -1,6 +1,6 @@
-# Dinder
+# YupCrew (formerly Dinder)
 
-Ephemeral group dinner decision-making: a host opens a short-lived Session, friends join with a code, everyone swipes on nearby Restaurants, and the overlap becomes the group's Match.
+Ephemeral group decision-making across Eat Out, Takeaway, Cook and Watch: a Host opens a short-lived Session, friends join with a code, everyone swipes on Restaurants, Recipes or Movies, and shared Selections form the group's Match.
 
 ## Language
 
