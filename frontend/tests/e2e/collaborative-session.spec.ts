@@ -59,10 +59,11 @@ test('everyone chooses and confirms Ready, then returns from home to the shared 
     const guestSelection = new SelectionPage(guest);
     await hostSelection.likeRestaurant();
     await guestSelection.likeRestaurant();
-    // Full House can offer early completion; dismiss it to exercise Submission.
+    // Both liked the same Movie: wait for each asynchronous Full House broadcast.
     for (const participant of [page, guest]) {
-      const keepChoosing = participant.getByRole('button', { name: 'Keep swiping' });
-      if (await keepChoosing.isVisible()) await keepChoosing.click();
+      const fullHouse = participant.getByRole('dialog', { name: 'EVERYONE LIKED THIS' });
+      await expect(fullHouse).toBeVisible();
+      await fullHouse.getByRole('button', { name: 'Keep swiping' }).click();
     }
     await Promise.all([hostSelection.passAllRemaining(), guestSelection.passAllRemaining()]);
     await hostSelection.submitSelections();
