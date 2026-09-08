@@ -470,7 +470,9 @@ describe('component and hook branch coverage', () => {
     });
     renderAt('/test', <SessionInviteCard invite={invite} />);
     fireEvent.click(screen.getByText('Join'));
-    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('AB123', 'Guest'));
+    await waitFor(() =>
+      expect(joinSession).toHaveBeenCalledWith('AB123', 'Guest', false, expect.any(Number))
+    );
 
     useFriendsStore.setState({
       currentUserProfile: {
@@ -483,7 +485,9 @@ describe('component and hook branch coverage', () => {
     });
     renderAt('/test', <SessionInviteCard invite={{ ...invite, id: 'invite-profile' }} />);
     fireEvent.click(screen.getAllByText('Join').at(-1)!);
-    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('AB123', 'Alice Example'));
+    await waitFor(() =>
+      expect(joinSession).toHaveBeenCalledWith('AB123', 'Alice Example', false, expect.any(Number))
+    );
 
     useFriendsStore.setState({
       acceptSessionInvite: vi.fn(async () => {

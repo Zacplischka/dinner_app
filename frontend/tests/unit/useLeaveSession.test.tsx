@@ -30,7 +30,7 @@ describe('useLeaveSession', () => {
 
     await act(() => result.current());
 
-    expect(mocks.leaveSession).toHaveBeenCalledWith('AB123');
+    expect(mocks.leaveSession).toHaveBeenCalledWith('AB123', expect.any(Number));
     expect(mocks.navigate).toHaveBeenCalledWith('/');
   });
 
@@ -58,4 +58,29 @@ describe('useLeaveSession', () => {
     expect(mocks.leaveSession).not.toHaveBeenCalled();
     expect(mocks.navigate).toHaveBeenCalledWith('/');
   });
+});
+
+it('does not navigate or clear a newer Session when an older Leave fails', async () => {
+  const { beginSessionIntent } = await import('../../src/services/sessionIntent');
+  let reject!: (error: Error) => void;
+  mocks.leaveSession.mockImplementationOnce(
+    () =>
+      new Promise((_resolve, fail) => {
+        reject = fail;
+      })
+  );
+  const { result } = renderHook(() => useLeaveSession('OLD11'));
+  let leaving!: Promise<void>;
+  act(() => {
+    leaving = result.current();
+  });
+  beginSessionIntent('NEW12', 'Alice');
+  useSessionStore.setState({ sessionCode: 'NEW12' });
+  mocks.navigate.mockClear();
+  await act(async () => {
+    reject(new Error('Old leave error'));
+    await leaving;
+  });
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(useSessionStore.getState().sessionCode).toBe('NEW12');
 });

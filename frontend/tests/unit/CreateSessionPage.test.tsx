@@ -121,7 +121,9 @@ describe('gather-first entry and identity', () => {
     expect(mocks.createSession).not.toHaveBeenCalled();
     expect(mocks.leaveSession).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Leave and continue' }));
-    await waitFor(() => expect(mocks.leaveSession).toHaveBeenCalledWith('OLD12'));
+    await waitFor(() =>
+      expect(mocks.leaveSession).toHaveBeenCalledWith('OLD12', expect.any(Number))
+    );
     expect(await screen.findByText('Lobby route')).toBeTruthy();
   });
 });

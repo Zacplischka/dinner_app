@@ -157,7 +157,7 @@ describe('GroupOrderPage', () => {
     );
 
     expect(await screen.findByText('HOME SCREEN')).toBeInTheDocument();
-    expect(leaveSessionMock).toHaveBeenCalledWith('AB123');
+    expect(leaveSessionMock).toHaveBeenCalledWith('AB123', expect.any(Number));
   });
 
   it('still confirms leaving an open order without claiming the viewer has basket items', async () => {

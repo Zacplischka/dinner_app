@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useSessionStore } from '../stores/sessionStore';
+import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import NavigationHeader from '../components/NavigationHeader';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
@@ -17,6 +17,15 @@ const cleanSessionCode = (value: string) =>
     .slice(0, SESSION_CODE_LENGTH);
 
 export default function JoinSessionPage() {
+  const [params] = useSearchParams();
+  return (
+    <JoinInvitation
+      key={`${cleanSessionCode(params.get('code') ?? '')}:${params.get('resume') ?? ''}`}
+    />
+  );
+}
+
+function JoinInvitation() {
   const navigate = useNavigate();
   const { continueTo, switchDialog } = useSessionSwitch();
   const [searchParams] = useSearchParams();
@@ -27,7 +36,17 @@ export default function JoinSessionPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [linkDead, setLinkDead] = useState(false);
-  const { setCurrentUserId } = useSessionStore();
+  const mounted = useRef(true);
+  const admissionIntent = useRef<number>();
+  useEffect(() => {
+    mounted.current = true;
+    admissionIntent.current = beginSessionIntent();
+    return () => {
+      mounted.current = false;
+      if (admissionIntent.current !== undefined && isSessionIntentCurrent(admissionIntent.current))
+        beginSessionIntent();
+    };
+  }, []);
 
   // Pre-fill session code if provided in URL query params, then probe it.
   useEffect(() => {
@@ -37,14 +56,17 @@ export default function JoinSessionPage() {
     setSessionCode(code);
     // ponytail: only a definitive 404 kills the link. Network/5xx/CORS fail open —
     // the session:join ack stays the authority on whether a Session can be joined.
-    // No cancelled-guard: React 18 no-ops setState after unmount, and a StrictMode
-    // double-mount would just set the same `true` twice.
+    let cancelled = false;
     void getSession(code).catch((err: unknown) => {
-      if (err instanceof ApiClientError && err.status === 404) setLinkDead(true);
+      if (!cancelled && err instanceof ApiClientError && err.status === 404) setLinkDead(true);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams]);
 
   const enter = async () => {
+    if (!mounted.current) return;
     setError('');
 
     // Validate inputs
@@ -60,6 +82,9 @@ export default function JoinSessionPage() {
     }
 
     setIsLoading(true);
+    const intent = beginSessionIntent(sessionCode.trim().toUpperCase(), participantName.trim());
+    admissionIntent.current = intent;
+    const current = () => mounted.current && isSessionIntentCurrent(intent);
 
     try {
       const socketBindingsPromise = import('../services/socketBindings');
@@ -67,10 +92,13 @@ export default function JoinSessionPage() {
 
       const { waitForConnection, joinSession } = await socketBindingsPromise;
       await waitForConnection();
-      const ack = await joinSession(code, participantName.trim());
+      if (!current()) return;
+      const ack = await joinSession(code, participantName.trim(), false, intent);
+      if (!current()) return;
 
       if (ack.success) {
-        setCurrentUserId(ack.data.participantId);
+        // Admission is complete. Navigation must not cancel its follow-up recovery.
+        admissionIntent.current = undefined;
         // A Session already selecting admits late joiners (#284) — straight to
         // the Deck; the lobby is only for a Session that hasn't started.
         const pending = ack.data.lobby?.participants.find(
@@ -97,6 +125,7 @@ export default function JoinSessionPage() {
         setIsLoading(false);
       }
     } catch (err: unknown) {
+      if (!current()) return;
       setError(err instanceof Error ? err.message : 'Failed to join session');
 
       setIsLoading(false);

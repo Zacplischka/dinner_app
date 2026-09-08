@@ -571,6 +571,300 @@ describe('socketBindings', () => {
     );
   });
 
+  it('keeps deliberate admission current while waiting through a transport reconnect', async () => {
+    const { beginSessionIntent, isSessionIntentCurrent } =
+      await import('../../src/services/sessionIntent');
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.getState().resetSession();
+    const intent = beginSessionIntent('AAA11', 'Alice');
+    socket.connected = false;
+    const connected = socketBindings.waitForConnection();
+    socket.trigger('disconnect', 'transport close');
+    socket.connected = true;
+    socket.trigger('connect');
+    await connected;
+    expect(isSessionIntentCurrent(intent)).toBe(true);
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'waiting',
+        rejoinToken: 'capability',
+        participants: [participant],
+      },
+    });
+    expect(await socketBindings.joinSession('AAA11', 'Alice', false, intent)).toMatchObject({
+      success: true,
+    });
+    expect(useSessionStore.getState().sessionCode).toBe('AAA11');
+  });
+
+  it('recovers across credential persistence and successful Invite Link navigation', async () => {
+    const { createElement: h } = await import('react');
+    const { render, screen, act, cleanup } = await import('@testing-library/react/pure');
+    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
+    const api = await import('../../src/services/apiClient');
+    vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
+    const storage = await import('../../src/services/nativeStorage');
+    const save = storage.saveRejoinToken;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const saving = vi.spyOn(storage, 'saveRejoinToken').mockImplementationOnce(async (...args) => {
+      await save(...args);
+      await held;
+    });
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.getState().resetSession();
+    useAuthStore.setState({
+      user: { id: 'profile', user_metadata: { full_name: 'Alice' } } as never,
+      isLoading: false,
+    });
+    const joined = {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'waiting',
+        rejoinToken: 'capability',
+        participants: [{ ...participant, participantId: socket.id }],
+      },
+    };
+    socket.acks.set('session:join', joined);
+    let recovered!: Handler;
+    const original = socket.emit.bind(socket);
+    vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+      if (event === 'session:join' && socket.id === 'new-socket') {
+        recovered = callback!;
+        return socket;
+      }
+      return original(event, payload, callback);
+    });
+    try {
+      render(
+        h(
+          MemoryRouter,
+          { initialEntries: ['/join?code=AAA11'] },
+          h(
+            Routes,
+            {},
+            h(Route, { path: '/join', element: h(JoinSessionPage) }),
+            h(Route, { path: '/session/:code', element: h('div', {}, 'Joined destination') })
+          )
+        )
+      );
+      await vi.waitFor(() => expect(saving).toHaveBeenCalledOnce());
+      await act(async () => {
+        socket.connected = false;
+        socket.trigger('disconnect', 'transport close');
+        socket.id = 'new-socket';
+        socket.connected = true;
+        socket.trigger('connect');
+        release();
+      });
+      expect(await screen.findByText('Joined destination')).toBeInTheDocument();
+      await vi.waitFor(() => expect(recovered).toBeDefined());
+      await act(async () =>
+        recovered(null, {
+          ...joined,
+          data: {
+            ...joined.data,
+            participantId: socket.id,
+            participants: [{ ...participant, participantId: socket.id }],
+          },
+        })
+      );
+      expect(useSessionStore.getState()).toMatchObject({
+        sessionCode: 'AAA11',
+        currentUserId: 'new-socket',
+        isConnected: true,
+      });
+    } finally {
+      release();
+      cleanup();
+    }
+  });
+
+  it('lets the real Invite Link destination retry an autojoin interrupted by transport loss', async () => {
+    const { createElement: h } = await import('react');
+    const { render, screen, fireEvent, act, cleanup } = await import('@testing-library/react/pure');
+    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
+    const api = await import('../../src/services/apiClient');
+    vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    useSessionStore.getState().resetSession();
+    useAuthStore.setState({
+      user: { id: 'profile', user_metadata: { full_name: 'Alice' } } as never,
+      isLoading: false,
+    });
+    let finish!: Handler;
+    const original = socket.emit.bind(socket);
+    const emit = vi.spyOn(socket, 'emit').mockImplementationOnce((_event, _payload, callback) => {
+      finish = callback!;
+      return socket;
+    });
+    try {
+      render(
+        h(
+          MemoryRouter,
+          { initialEntries: ['/join?code=AAA11'] },
+          h(
+            Routes,
+            {},
+            h(Route, { path: '/join', element: h(JoinSessionPage) }),
+            h(Route, { path: '/session/:code', element: h('div', {}, 'Joined after retry') })
+          )
+        )
+      );
+      await vi.waitFor(() => expect(finish).toBeDefined());
+      await act(async () => {
+        socket.connected = false;
+        socket.trigger('disconnect', 'transport close');
+        finish(new Error('transport closed'));
+      });
+      expect(screen.getByRole('button', { name: 'Join session' })).toBeEnabled();
+      expect(screen.getByRole('alert')).toHaveTextContent("The server didn't respond");
+      emit.mockImplementation(original);
+      socket.acks.set('session:join', {
+        success: true,
+        data: {
+          participantId: socket.id,
+          state: 'waiting',
+          rejoinToken: 'capability',
+          participants: [participant],
+        },
+      });
+      await act(async () => {
+        socket.connected = true;
+        socket.trigger('connect');
+        fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
+      });
+      expect(await screen.findByText('Joined after retry')).toBeInTheDocument();
+      expect(useSessionStore.getState().sessionCode).toBe('AAA11');
+    } finally {
+      cleanup();
+    }
+  });
+
+  it.each(['success', 'failure'] as const)(
+    'serializes admission and suppresses an older %s',
+    async (outcome) => {
+      const socket = setupSocket();
+      socketBindings.initializeSocket();
+      const pending: Array<{ event: string; payload: unknown; callback: Handler }> = [];
+      vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+        if (callback) pending.push({ event, payload, callback });
+        return socket;
+      });
+      const data = (code: string) => ({
+        success: true,
+        data: {
+          sessionCode: code,
+          participantId: socket.id,
+          state: 'waiting',
+          rejoinToken: code,
+          participants: [{ ...participant, participantId: socket.id }],
+        },
+      });
+      const old = socketBindings.joinSession('AAA11', 'Alice');
+      await vi.waitFor(() => expect(pending).toHaveLength(1));
+      const newer = socketBindings.joinSession('BBB22', 'Alice');
+      expect(pending).toHaveLength(1);
+      pending[0].callback(
+        null,
+        outcome === 'success'
+          ? data('AAA11')
+          : {
+              success: false,
+              error: { code: 'SESSION_NOT_FOUND', message: 'Old error' },
+            }
+      );
+      await vi.waitFor(() => expect(pending[1]?.event).toBe('session:leave'));
+      expect(useSessionStore.getState().sessionCode).toBe('OLD11');
+      pending[1].callback(null, { success: true, data: null });
+      await vi.waitFor(() => expect(pending[2]?.event).toBe('session:join'));
+      pending[2].callback(null, data('BBB22'));
+      expect(await old).toMatchObject({ success: false });
+      expect(await newer).toMatchObject({ success: true });
+      expect(useSessionStore.getState().sessionCode).toBe('BBB22');
+      expect(sessionStorage.getItem('dinder:rejoin:AAA11:Alice')).toBeNull();
+      expect(sessionStorage.getItem('dinder:rejoin:BBB22:Alice')).toBe('BBB22');
+    }
+  );
+
+  it('preserves the capability when the latest admission targets the same Participant', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    let finish!: Handler;
+    const original = socket.emit.bind(socket);
+    const emit = vi.spyOn(socket, 'emit').mockImplementationOnce((_event, _payload, callback) => {
+      finish = callback!;
+      return socket;
+    });
+    const joined = {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'complete',
+        rejoinToken: 'existing-capability',
+        participants: [participant],
+      },
+    };
+    socket.acks.set('session:join', joined);
+    const old = socketBindings.joinSession('AAA11', 'Alice');
+    await vi.waitFor(() => expect(finish).toBeDefined());
+    const current = socketBindings.joinSession('AAA11', 'Alice');
+    emit.mockImplementation(original);
+    finish(null, joined);
+    expect(await old).toMatchObject({ success: false });
+    expect(await current).toMatchObject({ success: true });
+    expect(emit).toHaveBeenLastCalledWith(
+      'session:join',
+      {
+        sessionCode: 'AAA11',
+        displayName: 'Alice',
+        rejoinToken: 'existing-capability',
+      },
+      expect.any(Function)
+    );
+    expect(emit.mock.calls.some(([event]) => event === 'session:leave')).toBe(false);
+  });
+
+  it('does not let a delayed Leave reset a newer join', async () => {
+    const socket = setupSocket();
+    socketBindings.initializeSocket();
+    let left!: Handler;
+    const original = socket.emit.bind(socket);
+    vi.spyOn(socket, 'emit').mockImplementation((event, payload, callback) => {
+      if (event === 'session:leave') {
+        left = callback!;
+        return socket;
+      }
+      return original(event, payload, callback);
+    });
+    socket.acks.set('session:join', {
+      success: true,
+      data: {
+        participantId: socket.id,
+        state: 'waiting',
+        rejoinToken: 'new',
+        participants: [participant],
+      },
+    });
+    const leaving = socketBindings.leaveSession('OLD11');
+    await vi.waitFor(() => expect(left).toBeDefined());
+    const joining = socketBindings.joinSession('BBB22', 'Alice');
+    left(null, { success: true, data: null });
+    expect(await leaving).toMatchObject({ success: false });
+    await joining;
+    expect(useSessionStore.getState().sessionCode).toBe('BBB22');
+  });
+
   it('stores session state when joining and resets it when leaving', async () => {
     const socket = setupSocket();
     socketBindings.initializeSocket();
@@ -999,7 +1293,9 @@ describe('socketBindings', () => {
       });
       const recovery = socketBindings.reconcileSession();
       await vi.waitFor(() => expect(completeRead).toBeDefined());
-      await socketBindings.leaveSession('AB123');
+      const leaving = socketBindings.leaveSession('AB123');
+      if (pendingEvent === 'session:join') completeRead!(null, joined);
+      await leaving;
       expect(useSessionStore.getState().sessionCode).toBeNull();
       if (replaced === 'different')
         useSessionStore.setState({
@@ -1187,10 +1483,10 @@ describe('socketBindings', () => {
         },
       });
       socket.trigger('connect');
+      finishSave();
       await vi.waitFor(() =>
         expect(emitted.mock.calls.filter(([event]) => event === 'session:join')).toHaveLength(2)
       );
-      finishSave();
       await oldRecovery;
       await vi.waitFor(() =>
         expect(useSessionStore.getState()).toMatchObject({

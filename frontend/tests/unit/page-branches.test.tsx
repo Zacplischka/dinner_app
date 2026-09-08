@@ -203,7 +203,9 @@ describe('page branch coverage', () => {
     expect(await screen.findByText('Copy shareable link')).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Leave session'));
     fireEvent.click(await screen.findByText('Leave session'));
-    await waitFor(() => expect(serviceMocks.leaveSession).toHaveBeenCalledWith('AB123'));
+    await waitFor(() =>
+      expect(serviceMocks.leaveSession).toHaveBeenCalledWith('AB123', expect.any(Number))
+    );
     expect(await screen.findByText('YupCrew')).toBeInTheDocument();
   });
 
