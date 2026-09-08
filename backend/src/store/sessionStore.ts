@@ -662,13 +662,12 @@ export function createSessionStore(redis: Redis) {
 
     // displayName -> selected placeIds, for the results screen
     const selections = await Promise.all(selectionKeys.map((key) => redis.smembers(key)));
-    const allSelections: Record<string, string[]> = {};
-    participants.forEach((p, i) => {
-      allSelections[p.displayName] = selections[i];
-    });
+    const allSelections = Object.fromEntries(
+      participants.map((p, i) => [p.displayName, selections[i]])
+    );
 
     // Names for every selected placeId (not just the Match)
-    const restaurantNames: Record<string, string> = {};
+    const restaurantNames: Record<string, string> = Object.create(null);
     const allPlaceIds = [...new Set(Object.values(allSelections).flat())];
     const namedEntries = await readEntries(sessionCode, allPlaceIds);
     allPlaceIds.forEach((placeId, i) => {

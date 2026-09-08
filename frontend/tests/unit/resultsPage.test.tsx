@@ -78,6 +78,21 @@ describe('ResultsPage', () => {
     ).toHaveTextContent('Reconnecting');
   });
 
+  it.each(['__proto__', 'constructor', 'toString'])(
+    'renders %s selections and safely handles a missing entry',
+    (name) => {
+      seedStore({
+        participants: [participant('p1', name), bob, cara],
+        allSelections: JSON.parse(JSON.stringify({ [name]: [pizza.placeId], Bob: [], Cara: [] })),
+      });
+      renderResults();
+      expect(screen.getByText(name)).toBeInTheDocument();
+      expect(screen.getAllByText(pizza.name).length).toBeGreaterThan(0);
+      act(() => useSessionStore.setState({ allSelections: { Bob: [], Cara: [] } }));
+      expect(screen.getByText(name)).toBeInTheDocument();
+    }
+  );
+
   describe('Compare prices link (#71)', () => {
     it('shows a Compare prices link on each Match card targeting the Comparison route', () => {
       seedStore({
