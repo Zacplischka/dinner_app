@@ -10,6 +10,7 @@
 // edge of that migration, whose original tickets (#107/#108) are closed.
 
 import { logger } from '../logger.js';
+import { z } from 'zod';
 import { supabase, type Database } from '../services/supabase.js';
 import { DomainError } from '../services/DomainError.js';
 import type { SessionInvite, UserProfile } from '@dinder/shared/types';
@@ -264,6 +265,11 @@ export async function deletePendingRequestForRecipient(
 }
 
 export async function deleteFriendshipBetween(userId: string, friendId: string): Promise<void> {
+  // Only UUID literals may enter the raw PostgREST grammar. Validate both
+  // identities here so every caller of this privileged deletion is protected.
+  if (!z.tuple([z.string().uuid(), z.string().uuid()]).safeParse([userId, friendId]).success) {
+    throw new DomainError('validation_error', 'Friend identifiers must be valid UUIDs');
+  }
   const { error } = await supabase
     .from('friendships')
     .delete()

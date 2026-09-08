@@ -535,9 +535,10 @@ describe('friends API router', () => {
   });
 
   it('DELETE /friends/:friendId should remove a friend', async () => {
+    mockState.user.id = '00000000-0000-4000-8000-000000000001';
     mockState.responses.push({ data: null, error: null });
 
-    const response = await request(app).delete('/api/friends/user-2').expect(204);
+    const response = await request(app).delete('/api/friends/00000000-0000-4000-8000-000000000002').expect(204);
 
     expect(response.text).toBe('');
   });
@@ -722,7 +723,7 @@ describe('friends API router', () => {
     ['post', '/api/friends/request', { email: 'bob@example.com' }],
     ['post', '/api/friends/request-1/accept', undefined],
     ['post', '/api/friends/request-1/decline', undefined],
-    ['delete', '/api/friends/user-2', undefined],
+    ['delete', '/api/friends/00000000-0000-4000-8000-000000000002', undefined],
     ['post', '/api/sessions/AB123/invite', { friendIds: ['user-2'] }],
     ['get', '/api/invites', undefined],
     ['post', '/api/invites/invite-1/accept', undefined],
@@ -730,6 +731,7 @@ describe('friends API router', () => {
   ] as const)(
     '%s %s should return internal_error when Supabase throws',
     async (method, path, body) => {
+      if (method === 'delete') mockState.user.id = '00000000-0000-4000-8000-000000000001';
       mockState.responses.push(new Error('supabase unavailable'));
 
       let pending = request(app)[method](path);
@@ -883,10 +885,11 @@ describe('friends API router', () => {
         });
       });
 
+    mockState.user.id = '00000000-0000-4000-8000-000000000001';
     mockState.responses.push({ data: null, error: { message: 'delete failed' } });
 
     await request(app)
-      .delete('/api/friends/user-2')
+      .delete('/api/friends/00000000-0000-4000-8000-000000000002')
       .expect(500)
       .expect(({ body }) => {
         expect(body).toEqual({
