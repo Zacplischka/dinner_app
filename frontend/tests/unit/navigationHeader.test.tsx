@@ -171,6 +171,19 @@ describe('NavigationHeader', () => {
     }
   });
 
+  it('cancels the copied cue timer on unmount', async () => {
+    vi.useFakeTimers();
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    const { unmount } = renderHeader(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
+    const baseline = vi.getTimerCount();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copy session code' }));
+    });
+    expect(vi.getTimerCount()).toBe(baseline + 1);
+    unmount();
+    expect(vi.getTimerCount()).toBe(baseline);
+  });
+
   it('keeps page-specific actions in the title row right edge', () => {
     renderHeader(
       <NavigationHeader

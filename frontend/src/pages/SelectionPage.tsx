@@ -292,6 +292,14 @@ function SelectionRound() {
     return () => clearTimeout(timer);
   }, [reveal]);
 
+  useEffect(() => {
+    if (!lastAction) return;
+    // ponytail: repeating the same direction keeps the first 600ms window;
+    // add an action counter only if every swipe must restart the flash.
+    const timer = setTimeout(() => setLastAction(null), 600);
+    return () => clearTimeout(timer);
+  }, [lastAction]);
+
   // One history entry for whichever overlay is up — the Full House takeover or
   // the details sheet — so the hardware back button dismisses it instead of
   // leaving the deck. The dep is the boolean, not which one: a Full House
@@ -330,7 +338,6 @@ function SelectionRound() {
 
   const handleSwipeLeft = useCallback(() => {
     setLastAction('nope');
-    setTimeout(() => setLastAction(null), 600);
     setDeckCursor(deckCursor + 1);
   }, [deckCursor, setDeckCursor]);
 
@@ -345,7 +352,6 @@ function SelectionRound() {
       if (sessionCode) void sendLiveSelection(sessionCode, entry.placeId);
     }
     setLastAction('like');
-    setTimeout(() => setLastAction(null), 600);
     setDeckCursor(deckCursor + 1);
   }, [deckCursor, entries, addSelection, sessionCode, setDeckCursor]);
 
