@@ -304,7 +304,55 @@ describe('Shopping List mutation ordering (#471)', () => {
     expect(result.current.list).toEqual(withClaims({ '0': 'Alice', '1': 'Bob' }));
   });
 
-  it('retains a real failure, allows a queued successful change, and does not revive an expired list', async () => {
+  it('continues to a queued successful mutation after a pending failure', async () => {
+    const { result } = renderHook(() => useShoppingList('list-1'));
+    await waitFor(() => expect(result.current.list).toEqual(list));
+    const pending = deferred<ShoppingList>();
+    const next = withClaims({ '0': 'Alice' });
+    const succeeding = vi.fn(async () => next);
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    await act(async () => {
+      first = result.current.applyChange(() => pending.promise);
+    });
+    act(() => {
+      second = result.current.applyChange(succeeding);
+    });
+    expect(succeeding).not.toHaveBeenCalled();
+    await act(async () => {
+      pending.reject(new Error('Old write failed'));
+      await first;
+      await second;
+    });
+    expect(succeeding).toHaveBeenCalledTimes(1);
+    expect(result.current.list).toEqual(next);
+    expect(result.current.error).toBe('');
+  });
+
+  it('discards a pending mutation and its queued write when unmounted', async () => {
+    const { result, unmount } = renderHook(() => useShoppingList('list-1'));
+    await waitFor(() => expect(result.current.list).toEqual(list));
+    const pending = deferred<ShoppingList>();
+    const queued = vi.fn(async () => list);
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    await act(async () => {
+      first = result.current.applyChange(() => pending.promise);
+    });
+    act(() => {
+      second = result.current.applyChange(queued);
+    });
+    unmount();
+    await act(async () => {
+      pending.resolve(withClaims({ '0': 'Alice' }));
+      await first;
+      await second;
+    });
+    expect(queued).not.toHaveBeenCalled();
+    expect(result.current.list).toEqual(list);
+  });
+
+  it('retains a real failure and does not revive an expired list', async () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => useShoppingList('list-1', 1000));
     await act(() => vi.advanceTimersByTimeAsync(0));
