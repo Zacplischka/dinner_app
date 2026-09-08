@@ -170,6 +170,39 @@ term, so "8 of 8 priced" is a fact about the routing and the scale, not about
 whether store 1101 stocks these — "fully in-tally" is the tally layer's
 measurement and nothing offline can stand in for it.
 
+## Where the batch stands against the allocation
+
+The four gate layers judge one Recipe at a time; nothing judged the batch as a
+whole, so "every bucket reaches its floor" had no number to be checked against.
+`scripts/corpus/allocation.mjs` is that number — the allocation
+[#312](https://github.com/Zacplischka/dinner_app/issues/312) resolved on, as
+data: 915 mains over 15 cuisine buckets (flat floor 30, demand-weighted above
+it, `modern australian` largest at 150), 245 across the other six meal types,
+and the diet targets measured over mains. `report` prints every gap:
+
+```bash
+node scripts/corpus/allocation.mjs report backend/recipes
+```
+
+Today it prints **51 short**, ending `corpus: 50/1160`. Every bucket is short —
+the largest, `modern australian`, stands at 13 of 150, counted through
+[`pending-cuisine.json`](pending-cuisine.json) because the chip is still
+[#340](https://github.com/Zacplischka/dinner_app/issues/340). Only `gluten
+free` (19 of the 22 that 45% of 47 mains asks for) and `vegan` are anywhere
+near their conventions, and no diet chip yet deals a full Deck from owned
+alone — bare, or crossed with a top-six cuisine, which #312 promises for
+`gluten free`, `pescetarian` and `vegetarian`.
+
+`unbucketed mains: 2/0` is the one line closed by tagging rather than
+authoring: two pilot mains carry no `cuisine` and are named in no pending
+list, so they raise every diet target and the corpus total while filling no
+bucket.
+
+That report reaching `allocation met` is what closes
+[#341](https://github.com/Zacplischka/dinner_app/issues/341): one bucket per
+child ticket, one run and one commit each, each run finished when its own line
+is gone. `npm run check:corpus-allocation` holds the arithmetic honest offline.
+
 ## Running the remaining layers
 
 ```bash
