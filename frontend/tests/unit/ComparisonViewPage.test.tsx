@@ -48,7 +48,9 @@ describe('ComparisonViewPage', () => {
     });
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('keeps Price Patrol tied to streamed results through pause, failure, Retry, and completion', () => {
     renderPage();

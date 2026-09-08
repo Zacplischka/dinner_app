@@ -1,3 +1,4 @@
+import type { Ack } from '@dinder/shared/types';
 // Issue #176 — opening a Group Order and the eight §2 failure branches.
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -5,9 +6,18 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const openOrderMock = vi.fn();
-const addOrderItemMock = vi.fn(async () => ({ success: true, data: null }));
-const claimBuyerMock = vi.fn(async () => ({ success: true, data: null }));
-const leaveSessionMock = vi.fn(async () => ({ success: true, data: null }));
+const addOrderItemMock = vi.fn(async (..._args: unknown[]): Promise<Ack<null>> => ({
+  success: true,
+  data: null,
+}));
+const claimBuyerMock = vi.fn(async (..._args: unknown[]): Promise<Ack<null>> => ({
+  success: true,
+  data: null,
+}));
+const leaveSessionMock = vi.fn(async (..._args: unknown[]): Promise<Ack<null>> => ({
+  success: true,
+  data: null,
+}));
 vi.mock('../../src/services/socketBindings', () => ({
   openOrder: (...args: unknown[]) => openOrderMock(...args),
   addOrderItem: (...args: unknown[]) => addOrderItemMock(...args),

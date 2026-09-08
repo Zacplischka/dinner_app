@@ -67,7 +67,7 @@ test.describe('Mobile Layout - Create Session Page', () => {
     expect(inputBox!.x + inputBox!.width).toBeLessThan(390 - 16);
   });
 
-  test('keyboard does not cover submit button', async ({ page, createPage }) => {
+  test('keyboard does not cover submit button', async ({ page: _page, createPage }) => {
     await createPage.goto();
 
     // Focus input to trigger keyboard
@@ -180,7 +180,7 @@ test.describe('Mobile - Landscape Orientation', () => {
 test.describe('Mobile - Performance', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('page loads quickly on mobile', async ({ page, homePage }) => {
+  test('page loads quickly on mobile', async ({ page: _page, homePage }) => {
     const startTime = Date.now();
     await homePage.goto();
     const loadTime = Date.now() - startTime;

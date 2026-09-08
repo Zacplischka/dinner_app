@@ -165,7 +165,10 @@ describe('apiClient', () => {
       global.fetch = mockFetch;
 
       await expect(
-        apiClient.createSession('Alice', { latitude: 37.7749, longitude: -122.4194 }, 5)
+        apiClient.createSession('Alice', {
+          location: { latitude: 37.7749, longitude: -122.4194 },
+          searchRadiusMiles: 5,
+        })
       ).rejects.toThrow('No restaurants found in the specified area');
     });
 

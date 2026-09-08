@@ -44,7 +44,7 @@ const ramen: Restaurant = {
 };
 const carbonara: Recipe = { kind: 'recipe', placeId: 'spoon:1', name: 'Carbonara' };
 
-const deal = vi.fn(async (): Promise<DeckEntry[]> => [alien, heat]);
+const deal = vi.fn(async (..._args: unknown[]): Promise<DeckEntry[]> => [alien, heat]);
 vi.mock('../../src/services/apiClient', () => ({
   getRestaurants: (...args: unknown[]) => deal(...args),
   getSession: vi.fn(async () => ({ shareableLink: 'http://localhost:3000/join?code=AB123' })),
@@ -495,7 +495,7 @@ describe('Deck Entry details sheet — Recipe', () => {
           cuisines: ['Italian'],
           ingredients: ['200 g pasta'],
           steps: ['Boil the pasta.'],
-          provenance: 'owned',
+          provenance: 'owned' as const,
         },
       },
     ]);

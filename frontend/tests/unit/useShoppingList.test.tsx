@@ -24,8 +24,14 @@ const list: ShoppingList = {
   mintedAt: new Date().toISOString(),
   steps: ['Boil the pasta.'],
   lines: [
-    { id: '0', text: '250 g canned tomatoes', staple: false, state: 'unmatched' },
-    { id: '1', text: '2 tsp salt', staple: true, state: 'unmatched' },
+    {
+      id: '0',
+      text: '250 g canned tomatoes',
+      staple: false,
+      state: 'unmatched',
+      searchTerm: 'ingredient',
+    },
+    { id: '1', text: '2 tsp salt', staple: true, state: 'unmatched', searchTerm: 'ingredient' },
   ],
 };
 
