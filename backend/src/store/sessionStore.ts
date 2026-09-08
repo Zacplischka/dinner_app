@@ -667,7 +667,7 @@ export function createSessionStore(redis: Redis) {
     );
 
     // Names for every selected placeId (not just the Match)
-    const restaurantNames: Record<string, string> = Object.create(null);
+    const restaurantNames = Object.create(null) as Record<string, string>;
     const allPlaceIds = [...new Set(Object.values(allSelections).flat())];
     const namedEntries = await readEntries(sessionCode, allPlaceIds);
     allPlaceIds.forEach((placeId, i) => {
