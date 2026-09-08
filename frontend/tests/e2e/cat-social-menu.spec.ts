@@ -200,6 +200,7 @@ test('a rejected lower lobby choice stays visible below the sticky header', asyn
   try {
     await page.setViewportSize({ width: 320, height: 740 });
     await page.goto('/session/CAT45');
+    await page.locator('summary').filter({ hasText: /^Optional interests/ }).click();
     await page.getByRole('button', { name: '2020s', exact: true }).click();
     const alert = page.getByRole('alert').filter({ hasText: message });
     await expect(alert).toBeInViewport({ ratio: 1 });

@@ -28,6 +28,13 @@ export class CookSetupPage extends BasePage {
 
   /** Toggle one Craving chip (a cuisine or a diet) by its label. */
   async pickChip(label: string): Promise<void> {
+    const interests = this.page
+      .locator('details')
+      .filter({
+        has: this.page.locator('summary').filter({ hasText: /^Optional cuisine interests/ }),
+      });
+    if (!(await interests.evaluate((element) => element.hasAttribute('open'))))
+      await interests.locator('summary').click();
     await this.page.getByRole('button', { name: label, exact: true }).click();
   }
 

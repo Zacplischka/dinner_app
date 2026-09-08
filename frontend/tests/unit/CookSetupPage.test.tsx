@@ -56,6 +56,13 @@ it('keeps Main course as the shared default with the meal-type change optional',
 });
 it('changes only personal cuisine and diet interests', () => {
   renderChoices();
+  const interests = screen.getByText('Optional cuisine interests', { exact: true });
+  expect(interests.closest('details')).not.toHaveAttribute('open');
+  expect(
+    screen.getByRole('group', { name: 'Your dietary requirements' }).closest('details')
+  ).toBeNull();
+  expect(screen.getByRole('button', { name: 'vegetarian' })).toBeVisible();
+  fireEvent.click(interests);
   fireEvent.click(screen.getByRole('button', { name: 'italian' }));
   expect(onChange).toHaveBeenCalledWith({ cuisines: ['italian'] });
   fireEvent.click(screen.getByRole('button', { name: 'vegetarian' }));

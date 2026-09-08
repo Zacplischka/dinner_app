@@ -20,7 +20,21 @@ test('everyone chooses and confirms Ready, then returns from home to the shared 
     const hostLobby = new SessionLobbyPage(page);
     const guestLobby = new SessionLobbyPage(guest);
     await hostLobby.waitForParticipant('Guest');
+    for (const person of [page, guest]) {
+      const ready = person.getByRole('button', { name: 'I’m ready', exact: true });
+      await expect(ready).toBeInViewport({ ratio: 1 });
+      await expect(
+        person
+          .locator('summary')
+          .filter({ hasText: /^Optional interests/ })
+          .locator('..')
+      ).not.toHaveAttribute('open');
+    }
     await host.pickChip('Action');
+    await guest
+      .locator('summary')
+      .filter({ hasText: /^Optional interests/ })
+      .click();
     await guest.getByRole('button', { name: 'Mystery', exact: true }).click();
     await expect(guest.getByRole('button', { name: 'Mystery', exact: true })).toHaveAttribute(
       'aria-pressed',
