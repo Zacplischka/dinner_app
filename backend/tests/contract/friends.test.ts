@@ -538,7 +538,9 @@ describe('friends API router', () => {
     mockState.user.id = '00000000-0000-4000-8000-000000000001';
     mockState.responses.push({ data: null, error: null });
 
-    const response = await request(app).delete('/api/friends/00000000-0000-4000-8000-000000000002').expect(204);
+    const response = await request(app)
+      .delete('/api/friends/00000000-0000-4000-8000-000000000002')
+      .expect(204);
 
     expect(response.text).toBe('');
   });
@@ -573,6 +575,59 @@ describe('friends API router', () => {
       .expect(204);
 
     expect(response.body).toEqual({});
+  });
+
+  it.each([false, true])(
+    'POST invite reports failed persistence after mixed success=%s',
+    async (firstSucceeds) => {
+      mockState.responses.push(
+        {
+          data: [
+            { user_id: 'user-1', friend_id: 'user-2' },
+            { user_id: 'user-1', friend_id: 'user-3' },
+          ],
+          error: null,
+        },
+        { data: null, error: { code: '08006', message: 'bulk failed' } },
+        { data: null, error: firstSucceeds ? null : { code: '08006', message: 'insert failed' } },
+        { data: null, error: { code: '08006', message: 'insert failed' } }
+      );
+      const response = await request(app)
+        .post('/api/sessions/AB123/invite')
+        .send({ friendIds: ['user-2', 'user-3'] })
+        .expect(500);
+      expect(response.body).toEqual({
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred. Please try again later.',
+      });
+    }
+  );
+
+  it('the Invite store rejects a failed write instead of reporting success', async () => {
+    mockState.responses.push(
+      { error: { code: '08006', message: 'bulk failed' } },
+      { error: { code: '42501', message: 'permission denied' } }
+    );
+    await expect(
+      friendsStore.createSessionInvites([
+        { session_code: 'AB123', inviter_id: 'user-1', invitee_id: 'user-2' },
+      ])
+    ).rejects.toMatchObject({ code: 'database_error' });
+  });
+
+  it('the Invite store accepts a recognized duplicate followed by a successful insert', async () => {
+    mockState.responses.push(
+      { error: { code: '08006', message: 'bulk failed' } },
+      { error: { code: '23505', message: 'duplicate key' } },
+      { error: null }
+    );
+    await expect(
+      friendsStore.createSessionInvites([
+        { session_code: 'AB123', inviter_id: 'user-1', invitee_id: 'user-2' },
+        { session_code: 'AB123', inviter_id: 'user-1', invitee_id: 'user-3' },
+      ])
+    ).resolves.toBeUndefined();
+    expect(mockState.calls.filter((call) => call.operation === 'insert')).toHaveLength(2);
   });
 
   it('POST /sessions/:code/invite should fall back to individual inserts on upsert failure', async () => {
