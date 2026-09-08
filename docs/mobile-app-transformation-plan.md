@@ -1,6 +1,6 @@
 # Dinder / Heykeen: Android and iOS app release plan
 
-Prepared 8 September 2026. **Planning only; implementation and store submission have not started.**
+Prepared 8 September 2026 as the original planning document. Implementation is now partially delivered; see [current evidence and remaining work](mobile-implementation-status.md). The earlier working-name and timing assumptions below are historical, not a current delivery forecast. Store submission has not started.
 
 Confirmed scope: a **free, Australia-first release** on Google Play and Apple's App Store. Heykeen is the working public brand; Dinder remains the repository/package name. This plan incorporates the existing [rebrand plan](heykeen-rebrand-plan.md) and the current, uncommitted brand changes without changing them.
 

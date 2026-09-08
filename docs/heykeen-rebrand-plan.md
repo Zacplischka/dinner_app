@@ -148,7 +148,7 @@ Sample announcement:
 
 Use “Formerly Dinder” as small transition copy for roughly 30 days, extending it if users still need the explanation. Refresh bios, avatar, demo end cards, link destinations and pinned introduction together. Existing historical posts need not all be edited.
 
-The [marketing plan](marketing-launch-plan.md) now has a broader brand brief. Its budget is still a provisional A$500 learning envelope. Test the three occasion hooks organically, then select one clearly explained branch for the first paid flight; do not split a tiny budget between all branches. Domain/design costs are separately quoted and must not silently consume the advertising envelope.
+The separate, unpublished marketing draft has a broader brand brief. Its budget is still a provisional A$500 learning envelope. Test the three occasion hooks organically, then select one clearly explained branch for the first paid flight; do not split a tiny budget between all branches. Domain/design costs are separately quoted and must not silently consume the advertising envelope.
 
 ## 6. Acceptance and execution order
 

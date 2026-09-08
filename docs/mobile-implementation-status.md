@@ -2,7 +2,7 @@
 
 Tracks [spec #459](https://github.com/Zacplischka/dinner_app/issues/459). **Implementation is partial.** Public store publishing is excluded. Native readiness, physical-device verification and release approval are not implied by project generation or simulator checks.
 
-Work runs in the isolated `codex/459-mobile-app` lane. Checkpoint `2d3c79a` preserves the tested prototype and is backed up on GitHub. Integration with main preserves the YupCrew branding, public privacy page and compatible domain cutover. The shared main checkout is untouched. Older evidence below refers to the Heykeen Test artifacts actually exercised at those checkpoints.
+Work runs in the isolated `codex/459-mobile-app` lane. Checkpoint `2d3c79a` preserves the tested prototype and is backed up on GitHub. Integration with main preserves the YupCrew branding, public privacy page and compatible domain cutover. Older evidence below refers to the Heykeen Test artifacts actually exercised at those checkpoints.
 
 ## Foundation milestone boundary — 8 September 2026
 
@@ -26,7 +26,15 @@ This is partial delivery, not a passed physical-device prototype gate or a store
 | Reporting, blocks, Participant and Shopper safety (50–52, 67–71) | Pending the specified ADR amendment, implementation and concurrency/expiry evidence. Existing absent-Participant removal is not the new strict Host-only moderation control. |
 | Privacy, support and accessibility (53–57) | Native Back handling, safe-area corrections, offline text, bridge log suppression and Preferences required-reason privacy manifest added. [Current data/permission inventory](mobile-data-inventory.md) records source and simulator-manifest evidence, storage behavior and open processor/retention questions. HTTP/Caddy logs now exclude automatic URLs/headers and private list/claim fields. Main supplies the public privacy page and support contact. Final signed-binary inventory, native disclosure reconciliation, the public deletion route, VoiceOver/TalkBack and the full device audit remain pending. |
 | Reviewer access (59, 72) | Pending ordinary synthetic fixtures, separate deletion accounts and two clean review runs. |
-| CI, compatibility, operations (61–64) | Unsigned Android/iOS compile workflow added and checked locally; hosted execution remains unproved. ADR 0007 now defines compatibility for supported installed clients and requires a baseline at the first release. Signed workflows, release artifact/symbol provenance, an actual released-client baseline and operator runbooks remain pending. |
+| CI, compatibility, operations (61–64) | Unsigned Android/iOS compile jobs pass in clean hosted CI on `76f4ca2`; see PR #462 for final checks. ADR 0007 now defines compatibility for supported installed clients and requires a baseline at the first release. Signed workflows, release artifact/symbol provenance, an actual released-client baseline and operator runbooks remain pending. |
+
+## Main integration and review — 8 September 2026
+
+[PR #462](https://github.com/Zacplischka/dinner_app/pull/462) records the foundation merge checks and deployment outcome. The integration preserves main's YupCrew brand, privacy page and legacy-domain cutover. Native link declarations and parsing now include both YupCrew hosts while retaining both Dinder hosts and the existing package/storage identifiers.
+
+Two independent agents reviewed Standards and Spec separately and found no actionable blockers within this partial milestone, including the runtime and fixture corrections through `76f4ca2`. Local verification passes 689 frontend tests, 1,039 backend tests, workspace typecheck, lint (one existing frontend warning), 136 offline checks and the Caddy serving/privacy contract. Browser regression coverage passes 63 scenarios: 56 on the first run and seven on a targeted rerun after fixing a shared fixture to include its rejoin capability. Production recovery checks were retained.
+
+Clean hosted iOS/Android compilation, backend contracts and the complete browser subset pass on `76f4ca2`. CI also exposed a historical-plan link to an unpublished marketing draft; that link is removed without publishing the unrelated draft. The root runtime and CI now use Node 22, matching the installed dependencies and Railway's existing Node 22.23.2 builds. Current required-check and deployment conclusions are recorded on the PR; these compile/browser results do not extend the older physical-device evidence to a new signed artifact.
 
 ## Latest checkpoint — Android recovery and native builds, 8 September 2026
 
