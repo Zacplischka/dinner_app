@@ -185,11 +185,11 @@ export default function SessionLobbyPage() {
         showConnectionStatus
       />
       <div className="mx-auto max-w-md space-y-3 px-4 py-4 animate-fade-in">
-        <section className="card p-4" aria-labelledby="invite-title">
+        <section className="card px-4 py-3" aria-labelledby="invite-title">
           <h2 id="invite-title" className="label text-center">
             Session code
           </h2>
-          <div className="rounded-market-md border border-cyan bg-surface p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+          <div className="rounded-market-md border border-cyan bg-surface px-4 py-2 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
             {sessionCode}
           </div>
           {shareableLink && (
