@@ -139,3 +139,7 @@ The production-only audit reports zero advisories after the updates. Development
 - Google/Apple/Supabase redirect/provider configuration in an isolated test environment before identity proof. No live provider configuration or production service was changed.
 
 The spec explicitly puts the physical iPhone/Android/browser prototype before expanding into the remaining identity, deletion and safety migration. Complete that gate with the [development checklist](mobile-development.md), then continue the outstanding stories. Store publication remains excluded from this implementation request.
+
+## Planning-document consolidation — 8 September 2026
+
+The [original mobile plan](archive/mobile-app-transformation-plan.md) is archived. Its product, identity, deletion and safety requirements are captured by the [specification](mobile-app-spec.md). Its additional fault/update/performance cases are retained under Testing Decisions; endpoint stability, artifact provenance, Settings, credential renewal, cost and support checks are retained in [release preparation](mobile-development.md#release-preparation-still-to-complete). These remain part of the unfinished release gate. No new native, provider or deployment verification was performed by this documentation cleanup.

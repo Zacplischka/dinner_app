@@ -1,3 +1,7 @@
+# YupCrew mobile application specification
+
+Requirements authority for [issue #459](https://github.com/Zacplischka/dinner_app/issues/459). Use [native development](mobile-development.md) for commands and [implementation status](mobile-implementation-status.md) for actual evidence and open gates. The [original release plan](archive/mobile-app-transformation-plan.md) is retained as historical research, not a second specification.
+
 ## Problem Statement
 
 People can currently use YupCrew (formerly Dinder) through a browser, but cannot install an officially distributed Android or iPhone app. Existing browser behavior does not yet establish reliable recovery after a phone terminates the app, store-compatible sign-in, verified app-opening Invite Links, or the privacy and safety controls needed for distribution.
@@ -130,6 +134,7 @@ Validate this approach with a small physical-device prototype before the rest of
 - **Functional matrix:** complete two- and four-Participant mixed-client Sessions across all four Branches with guests and Profiles. Include dietary conflict, changing Ready, all-pass Submission, late arrival, fifth-Participant rejection, Host absence, Undo, Restart, Group Order handoff, Shopping List Claim/release and Cook View progress.
 - **Accessibility and device matrix:** verify VoiceOver/TalkBack, non-gesture controls, large text, keyboard obstruction, safe areas, reduced motion, Android Back, current devices and the oldest supported runtime environments. Test larger device families whenever enabled for distribution.
 - **Release gate:** require recorded passes for all mandatory scenarios, no known ownership/data-loss errors, broken primary access, crashes blocking core flows or unfulfilled store policy requirements. Target at least 20 completed mixed-client beta Sessions across the Branches; this does not replace any store-mandated tester count/duration. Set reference devices and performance thresholds after the prototype and retain repeatable measurements.
+- **Release checks retained from the original plan:** exercise clean install and beta-to-release update with compatible recovery state; disabled/permanently denied location, services off and unavailable external apps; interrupted SSE, provider quota exhaustion, backend/Redis outage, malformed responses and slow/broken images. Record startup, swipe smoothness, memory pressure and return-from-browser behavior on named reference devices. The original three-second shell/two-second local-ack targets remain provisional measurements to evaluate after the prototype, not provider-latency promises.
 - **Review-access evidence:** demonstrate two complete reviewer runs including account deletion, replenish only designated synthetic fixtures, and check current screenshot suitability/fictional data before submission. A supplementary video does not replace working access.
 
 ## Out of Scope

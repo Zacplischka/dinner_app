@@ -149,6 +149,12 @@ CI ([`ci-cd.yml`](.github/workflows/ci-cd.yml)) runs `typecheck`, `lint`, both u
 
 Both services deploy to [Railway](https://railway.app): the backend via Railpack (`npm ci && npm run build && npm run start` from the repo root), the frontend as a static SPA.
 
+## Documentation
+
+[CONTEXT.md](CONTEXT.md) defines domain language; [ADRs](docs/adr/) record architecture decisions. The [mobile specification](docs/mobile-app-spec.md) defines release requirements, [native development](docs/mobile-development.md) supplies commands, and [implementation status](docs/mobile-implementation-status.md) records evidence and unfinished gates. The [UX implementation report](docs/epic-434-implementation.md) maps the accepted brief to delivered behavior and unresolved Recipe reports.
+
+Use the [YupCrew direction](docs/yupcrew-rebrand-plan.md) for public branding and the [marketing plan](docs/marketing-launch-plan.md) with its [research](docs/marketing-channel-research.md) for provisional growth experiments. Superseded plans live in [docs/archive](docs/archive/); scoped [UAT](docs/evidence/uat-improvements.md) and [cat-moment](docs/evidence/cat-moments.md) evidence remains available. Historical research and test results do not certify new revisions or current external settings.
+
 ## License
 
 [MIT](LICENSE) © Zac Plischka

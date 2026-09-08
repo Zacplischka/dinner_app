@@ -1,5 +1,7 @@
 # Cat moments — #453
 
+> Historical implementation evidence, recorded 7 September 2026. Results apply only to the implementation described below; they are not verification of later revisions or the current deployment.
+
 The three implementation agents planned the following page replacements before editing. All use the original Price Patrol ginger cat and shared canvas drawing, with no new dependencies or backend contract changes.
 
 | Moment              | Scene and actual trigger                                                                           | Completion and existing actions                                                                                                                |

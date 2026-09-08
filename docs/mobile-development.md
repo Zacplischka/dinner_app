@@ -97,3 +97,14 @@ Use a physical iPhone, physical Android phone and browser Participant in one Ses
 The native store keeps only the current Participant, local Selection progress/round and Group Order reference; it refetches authoritative data. The single rejoin credential lives in secure storage. Cook View saves one list's progress until that list expires, and releases its native wake lock in the background or on exit. Browser identities remain isolated per tab.
 
 Record physical hardware/OS, exact build and scenario result in the evidence ledger. The full security, social, safety, accessibility, reviewer and release matrices in the spec still apply after this prototype.
+
+## Release preparation still to complete
+
+Carried forward from the [original release plan](archive/mobile-app-transformation-plan.md), alongside the [specification's release gate](mobile-app-spec.md#testing-decisions). These are outstanding checks, not new passes:
+
+- Choose and record a stable production API hostname before distributing binaries; retain endpoint compatibility for installed clients. Record the source revision, dependency/native locks, endpoints, signing identity, version/build, artifact checksum and available symbols for each candidate; tag completed releases.
+- Confirm Settings exposes support, privacy, account actions, third-party credits and version/build. Keep public support and deletion entry points usable without installation. Assign Apple browser OAuth secret renewal to an owner and recheck its expiry during provider setup.
+- Use store crash/vitals and existing scrubbed server logs first; record platform/version/build without treating it as authentication. Model provider cost per Session, Comparison and Shopping List, then check a 10× beta-volume scenario against existing budgets before promotion. These checks do not authorize load tests or provider spend.
+- Record signing recovery, membership and domain/association renewal, provider outages, moderation/deletion response and release recovery. Watch installs, links, authentication, group completion, crashes and costs during the first release week; stop promotion on material failure while preserving browser access and installed-client compatibility.
+
+The old plan's proposed 90-day support window was not adopted: [ADR 0007](adr/0007-contracts-evolve-additively-across-deployments.md#installed-clients) requires an evidence-based support/retirement decision after a released baseline exists. Historical engineering estimates and operating-cost allowances are not commitments.
