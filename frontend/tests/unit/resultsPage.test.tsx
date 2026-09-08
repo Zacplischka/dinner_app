@@ -1145,6 +1145,19 @@ describe('ResultsPage', () => {
       expect(crown.textContent).toContain('1979 · 117 min · 93% on TMDB');
       expect(crown.textContent).toContain('Everyone liked this one.');
       expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
+      const where = within(crown as HTMLElement).getByRole('link', { name: 'Where to watch' });
+      expect(where).toHaveClass('btn-primary');
+      expect(within(crown as HTMLElement).getByRole('link', { name: 'Watch trailer' })).toHaveClass(
+        'btn-secondary'
+      );
+      expect(
+        where.compareDocumentPosition(crown.querySelector('img')!) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        where.compareDocumentPosition(screen.getByRole('heading', { name: 'MATCH!' })) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
       // The crown is where the overview can actually be read, credited where it appears.
       expect(within(crown as HTMLElement).getByText(alien.overview)).toHaveClass('line-clamp-3');
       expect(within(crown as HTMLElement).getByRole('link', { name: 'TMDB' })).toHaveAttribute(
@@ -1245,7 +1258,7 @@ describe('ResultsPage', () => {
       });
       renderResults();
 
-      expect(screen.getByRole('link', { name: 'Watch trailer' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Watch trailer' })).toHaveClass('btn-primary');
       expect(screen.queryByRole('link', { name: 'Where to watch' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'TMDB' })).not.toBeInTheDocument();
     });

@@ -200,7 +200,10 @@ test('a rejected lower lobby choice stays visible below the sticky header', asyn
   try {
     await page.setViewportSize({ width: 320, height: 740 });
     await page.goto('/session/CAT45');
-    await page.locator('summary').filter({ hasText: /^Optional interests/ }).click();
+    await page
+      .locator('summary')
+      .filter({ hasText: /^Optional interests/ })
+      .click();
     await page.getByRole('button', { name: '2020s', exact: true }).click();
     const alert = page.getByRole('alert').filter({ hasText: message });
     await expect(alert).toBeInViewport({ ratio: 1 });
@@ -484,3 +487,57 @@ test('Menu Delivery pauses independently and yields to the actual pinned menu', 
     await fixture.close();
   }
 });
+
+for (const [mediaType, placeId, name] of [
+  ['movie', 'tmdb:movie:22', 'Pirates of the Caribbean: The Curse of the Black Pearl'],
+  ['tv', 'tmdb:tv:1399', 'Game of Thrones'],
+  ['movie', 'Q103569', 'Legacy Movie'],
+] as const) {
+  test(`Watch result brings ${placeId} and its next action into the first viewport`, async ({
+    page,
+  }, info) => {
+    const fixture = await sessionFixture(page, 'watch', {
+      kind: 'movie',
+      mediaType,
+      placeId,
+      name,
+      year: 2003,
+      photoUrl: '/images/tmdb.svg',
+      overview:
+        'A group can act on its shared choice without scrolling through this overview or the celebration.',
+    });
+    fixture.lobby.state = 'complete';
+    try {
+      await page.goto('/session/CAT45/results');
+      const crown = page.locator('[data-movie-crown]');
+      await expect(crown.getByRole('heading', { name, exact: true })).toBeInViewport({ ratio: 1 });
+      const trailer = crown.getByRole('link', { name: 'Watch trailer' });
+      if (placeId.startsWith('tmdb:')) {
+        const where = crown.getByRole('link', { name: 'Where to watch' });
+        await expect(where).toBeInViewport({ ratio: 1 });
+        await expect(where).toHaveClass(/btn-primary/);
+        await expect(where).toHaveAttribute(
+          'href',
+          `https://www.themoviedb.org/${mediaType}/${placeId.split(':')[2]}/watch?locale=AU`
+        );
+        await expect(where).toHaveAttribute('target', '_blank');
+        await expect(trailer).toHaveClass(/btn-secondary/);
+      } else {
+        await expect(crown.getByRole('link', { name: 'Where to watch' })).toHaveCount(0);
+        await expect(trailer).toBeInViewport({ ratio: 1 });
+        await expect(trailer).toHaveClass(/btn-primary/);
+      }
+      await expect(trailer).toHaveAttribute(
+        'href',
+        `https://www.youtube.com/results?search_query=${encodeURIComponent(`${name} 2003 trailer`)}`
+      );
+      await fits(page);
+      await page.screenshot({
+        path: info.outputPath(`watch-result-${mediaType}-${placeId.replaceAll(':', '-')}.png`),
+        animations: 'disabled',
+      });
+    } finally {
+      await fixture.close();
+    }
+  });
+}
