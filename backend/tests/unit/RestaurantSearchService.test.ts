@@ -14,6 +14,10 @@ describe('RestaurantSearchService', () => {
         primaryTypeDisplayName: { text: 'Italian Restaurant' },
         formattedAddress: '123 Main St, San Francisco, CA 94102',
         currentOpeningHours: { openNow: true },
+        regularOpeningHours: { weekdayDescriptions: ['Monday: 9:00 AM – 5:00 PM'] },
+        nationalPhoneNumber: '(03) 5550 1234',
+        websiteUri: 'https://example.com/restaurant',
+        userRatingCount: 1204,
       };
 
       const result = RestaurantSearchService.transformGooglePlaceToRestaurant(googlePlace);
@@ -26,6 +30,10 @@ describe('RestaurantSearchService', () => {
         cuisineType: 'Italian Restaurant',
         address: '123 Main St, San Francisco, CA 94102',
         openNow: true,
+        openingHours: ['Monday: 9:00 AM – 5:00 PM'],
+        phone: '(03) 5550 1234',
+        websiteUrl: 'https://example.com/restaurant',
+        userRatingCount: 1204,
       });
     });
 
@@ -48,6 +56,10 @@ describe('RestaurantSearchService', () => {
         priceLevel: undefined,
         cuisineType: undefined,
         address: undefined,
+        openingHours: undefined,
+        phone: undefined,
+        websiteUrl: undefined,
+        userRatingCount: undefined,
       });
     });
 
@@ -566,7 +578,7 @@ describe('RestaurantSearchService', () => {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': expect.any(String),
           'X-Goog-FieldMask':
-            'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken',
+            'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,places.regularOpeningHours.weekdayDescriptions,places.nationalPhoneNumber,places.websiteUri,places.userRatingCount,nextPageToken',
         },
         body: JSON.stringify({
           textQuery: 'restaurants',
