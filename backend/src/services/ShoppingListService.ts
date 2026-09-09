@@ -18,7 +18,7 @@ import type {
 } from '@dinder/shared/types';
 import { logger } from '../logger.js';
 import type { Session } from '../store/sessionStore.js';
-import type { IngredientAmount } from './quantityLadder.js';
+import { wantedPackForm, type IngredientAmount, type WantedPackForm } from './quantityLadder.js';
 import type { PooledIngredient, PooledRecipe } from './spoonacularClient.js';
 import { isStaple } from './staples.js';
 import { deriveSearchTerm, sanitiseIngredientName } from './usToAuTerms.js';
@@ -129,7 +129,7 @@ interface ShoppingListServiceDeps {
   releaseShoppingListId: (sessionCode: string, listId: string) => Promise<void>;
   /** The crowned Recipe, whole — ingredients, steps, servings, credit. */
   readRecipe: (poolKey: string, placeId: string) => Promise<PooledRecipe | null>;
-  matchProduct: (term: string) => Promise<ProductMatchOutcome>;
+  matchProduct: (term: string, wantedForm?: WantedPackForm) => Promise<ProductMatchOutcome>;
   resolveLine: (
     ingredient: IngredientAmount,
     outcome: ProductMatchOutcome
@@ -427,7 +427,7 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
     if (fields.staple) return unmatched;
     const matchable = ingredient.searchTerm ?? ingredient.name;
     const scaled = ingredient.amount * factor;
-    const outcome = await deps.matchProduct(matchable);
+    const outcome = await deps.matchProduct(matchable, wantedPackForm(ingredient.unit));
     // A zero or missing amount is not a quantity, and the ladder is explicit
     // that null degrades rather than pricing a line nobody can shop. The
     // matchable term is what rides into the stored Match, so a demoted swap

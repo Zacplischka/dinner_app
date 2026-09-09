@@ -287,7 +287,7 @@ async function measure(encoded) {
     { isStaple },
     { createWoolworthsClient },
     { createProductMatchService },
-    { createQuantityLadder },
+    { createQuantityLadder, wantedPackForm },
     { createSpoonacularClient, guardDailyPoints, pointsKey },
     { cupCentsPerGram, parsePack },
   ] = await Promise.all([
@@ -372,7 +372,7 @@ async function measure(encoded) {
           lines.push({ name: ingredient.name, searchTerm: term, staple: true });
           continue;
         }
-        const outcome = await matcher.matchProduct(term);
+        const outcome = await matcher.matchProduct(term, wantedPackForm(ingredient.unit));
         convertFailed = false;
         const resolution = await ladder.resolveLine(
           {

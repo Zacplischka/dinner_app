@@ -30,6 +30,52 @@ function service(answers: Record<string, unknown | number>, overrides: { enqueue
 }
 
 describe('createProductMatchService', () => {
+  it('re-ranks the same cached answer for each line form without fetching or changing the key', async () => {
+    const { redis, service: matcher, searches } = service({});
+    await redis.set(
+      'woolworths:price:1101:lemon',
+      JSON.stringify({
+        status: 'ok',
+        storeId: 1101,
+        fetchedAt: new Date().toISOString(),
+        products: [
+          {
+            stockcode: 1,
+            name: 'Lemon Dressing',
+            sapCategory: 'VEG / FRESHCUTS / HARD PRODUCE',
+            sapSubCategory: 'CONDIMENTS & HERBS',
+            available: true,
+            priceCents: 500,
+            packageSize: '250mL',
+          },
+          {
+            stockcode: 2,
+            name: 'Lemon Loose',
+            sapCategory: 'FRUIT',
+            sapSubCategory: 'CITRUS',
+            available: true,
+            priceCents: 100,
+            packageSize: 'each',
+          },
+        ],
+      })
+    );
+    expect(await matcher.matchProduct('lemon', 'count')).toMatchObject({
+      status: 'matched',
+      match: { stockcode: 2 },
+    });
+    expect(await matcher.matchProduct('lemon', 'volume')).toMatchObject({
+      status: 'matched',
+      match: { stockcode: 1 },
+    });
+    expect(await matcher.matchProduct('lemon')).toMatchObject({
+      status: 'matched',
+      match: { stockcode: 1 },
+    });
+    expect(searches()).toHaveLength(0);
+    expect(await redis.keys('woolworths:price:*')).toEqual(['woolworths:price:1101:lemon']);
+  });
+
   beforeEach(async () => {
     await new RedisMock().flushall();
   });

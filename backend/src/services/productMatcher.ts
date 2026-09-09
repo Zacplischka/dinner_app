@@ -2,7 +2,11 @@
 // search answer into an Ingredient Line's Product Match, or the verdict that
 // no product fulfils it (issue #256). Storefront Resolver pattern; pure —
 // fetch and cache live in ProductMatchService.
+// Sections and pack forms are ranking signals as well as filters. One cached
+// answer can match different lines differently: never memoise by term alone.
 import type { ProductCandidate, ProductMatch } from '@dinder/shared/types';
+import { parsePack } from './packParser.js';
+import type { WantedPackForm } from './quantityLadder.js';
 
 /**
  * A cached Woolworths product: the wire candidate plus the fields that stay
@@ -22,7 +26,12 @@ export interface WoolworthsProduct extends ProductCandidate {
 // tuning), and never product names. SNACKS/BISCUITS are in per #245: those
 // sections beat real sour cream at store 1101.
 const BLOCKED_SECTIONS =
-  /snack|biscuit|confection|chocolate|soft drink|cordial|energy drink|\bpet\b|dog|cat food|hair|skin|beauty|kitchen|cleaning|laundry|bathroom|baby care|toiletr|manchester/i;
+  /snack|biscuit|confection|chocolate|soft drink|cordial|energy drink|vitamins|\bpet\b|dog|cat food|hair|skin|beauty|kitchen|cleaning|laundry|bathroom|baby care|toiletr|manchester/i;
+
+const UNSUITABLE_PENALTY = 1.5;
+const produceNuts = (product: WoolworthsProduct): boolean =>
+  /^VEG(?:\s*\/|$)/i.test(product.sapCategory?.trim() ?? '') &&
+  /^NUTS AND SNACKS$/i.test(product.sapSubCategory?.trim() ?? '');
 
 // Descriptor words that carry no product identity ("fresh", "chopped", …).
 const STOP_WORDS = new Set([
@@ -64,18 +73,32 @@ function identityKeywords(term: string): string[] {
   );
 }
 
-function score(product: WoolworthsProduct, keywords: string[], rank: number): number {
+function score(
+  product: WoolworthsProduct,
+  keywords: string[],
+  rank: number,
+  wantedForm?: WantedPackForm
+) {
   let value = -0.35 * rank; // search rank is a real relevance signal
   const name = product.name.toLowerCase();
+  const identityHits = keywords.filter((word) => name.includes(word)).length;
   if (keywords.length) {
     // Identity has to survive re-ranking, or chicken stock becomes vegetable stock.
-    value += (2 * keywords.filter((word) => name.includes(word)).length) / keywords.length;
+    value += (2 * identityHits) / keywords.length;
   }
   if (!product.available) value -= 2;
   // #245: unavailable-at-store products often carry no price; penalise so a
   // priceable candidate wins when identity ties.
   if (product.priceCents === undefined) value -= 1;
-  return value;
+  const pack = parsePack(product.packageSize);
+  // ponytail: count-vs-volume approximates the ladder's async liquid check;
+  // use verified ingredient consistency if bare-count liquids become common.
+  // Mass-vs-volume stays neutral (#367): the ladder can price liquid ingredients
+  // this way, and a pure matcher cannot decide their consistency.
+  const refusedPack =
+    (pack?.kind === 'fixed' && pack.family === 'volume' && wantedForm === 'count') ||
+    (pack?.kind === 'count' && (wantedForm === 'mass' || wantedForm === 'volume'));
+  return { value, identityHits, penalized: refusedPack || produceNuts(product) };
 }
 
 function toCandidate(product: WoolworthsProduct): ProductCandidate {
@@ -92,7 +115,11 @@ function toCandidate(product: WoolworthsProduct): ProductCandidate {
  * if nothing survives the filter, the search counts as having returned zero
  * results (#243's sapcat guard) and the verdict is a clean miss (`null`).
  */
-export function matchProducts(products: WoolworthsProduct[], term: string): ProductMatch | null {
+export function matchProducts(
+  products: WoolworthsProduct[],
+  term: string,
+  wantedForm?: WantedPackForm
+): ProductMatch | null {
   // Bare garlic/cloves mean a fresh ingredient, not a prepared substitute.
   // Keep explicitly requested paste, powder, etc. on the usual matching path.
   const freshGarlic = /^(?:fresh |whole )?garlic(?: cloves?| bulbs?| heads?| loose)?$/i.test(
@@ -100,22 +127,52 @@ export function matchProducts(products: WoolworthsProduct[], term: string): Prod
   );
   const eligible = products
     .map((product, rank) => ({ product, rank }))
-    .filter(
-      ({ product }) =>
+    .filter(({ product }) => {
+      // Only exempt the measured subcategories. Keep the combined taxonomy
+      // check so phrases such as CAT + FOOD still match across the boundary.
+      const subCategory =
+        produceNuts(product) ||
+        // "soft drink" also matches "SOFT DRINKS": preserve the measured water
+        // shelf explicitly, without admitting carbonated soft drinks (#367).
+        (/^LIFESTYLE\/WATER NON CARBONATED$/i.test(product.sapCategory?.trim() ?? '') &&
+          /^SOFT DRINKS - WATER$/i.test(product.sapSubCategory?.trim() ?? ''))
+          ? ''
+          : (product.sapSubCategory ?? '');
+      return (
         product.sapCategory &&
-        !BLOCKED_SECTIONS.test(`${product.sapCategory} ${product.sapSubCategory ?? ''}`) &&
+        !BLOCKED_SECTIONS.test(`${product.sapCategory} ${subCategory}`) &&
         (!freshGarlic ||
           (/\bgarlic\b/i.test(product.name) &&
             !/\b(pastes?|crushed|minced|chopped|dried|powder|granules?|bread|butter|oil|sauce|dip|aioli|salt|pickled|black|roasted|supplements?)\b/i.test(
               product.name
             )))
-    );
+      );
+    });
   if (eligible.length === 0) return null;
 
   const keywords = identityKeywords(term);
-  const ranked = eligible
-    .map(({ product, rank }) => ({ product, value: score(product, keywords, rank) }))
-    .sort((left, right) => right.value - left.value);
+  const ranked = eligible.map(({ product, rank }) => ({
+    product,
+    rank,
+    ...score(product, keywords, rank, wantedForm),
+  }));
+  // ponytail: pairwise over the small search answer; identity-first ordering
+  // could cross more rank places, but needs a new store tally before adoption.
+  let penalty = Math.min(UNSUITABLE_PENALTY, 2 / Math.max(1, keywords.length) - 0.01);
+  for (const fuller of ranked) {
+    if (!fuller.penalized) continue;
+    for (const other of ranked) {
+      if (other.penalized || fuller.identityHits <= other.identityHits) continue;
+      const gap = fuller.value - other.value;
+      // Rank, stock and price already affect the baseline gap. A penalty must
+      // not reverse an existing fuller-identity lead (including an earlier tie).
+      if (gap > 0 || (gap === 0 && fuller.rank < other.rank)) {
+        penalty = Math.min(penalty, Math.max(0, gap - 0.01));
+      }
+    }
+  }
+  for (const candidate of ranked) if (candidate.penalized) candidate.value -= penalty;
+  ranked.sort((left, right) => right.value - left.value);
 
   return {
     match: toCandidate(ranked[0].product),
