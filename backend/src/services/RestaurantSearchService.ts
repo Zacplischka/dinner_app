@@ -43,6 +43,10 @@ interface GooglePlaceResult {
   photos?: GooglePlacePhoto[];
   location?: { latitude: number; longitude: number };
   currentOpeningHours?: { openNow?: boolean };
+  regularOpeningHours?: { weekdayDescriptions?: string[] };
+  nationalPhoneNumber?: string;
+  websiteUri?: string;
+  userRatingCount?: number;
 }
 
 // Shared 429 handling for every Google API this service spends the key on
@@ -313,6 +317,10 @@ export function transformGooglePlaceToRestaurant(place: GooglePlaceResult): Rest
     address: place.formattedAddress,
     photoUrl: photoName ? getPhotoUrl(photoName) : undefined,
     openNow: place.currentOpeningHours?.openNow,
+    openingHours: place.regularOpeningHours?.weekdayDescriptions,
+    phone: place.nationalPhoneNumber,
+    websiteUrl: place.websiteUri,
+    userRatingCount: place.userRatingCount,
   };
 }
 
@@ -391,7 +399,7 @@ async function fetchTextSearchPage(
   const textSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
 
   const fieldMask =
-    'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,nextPageToken';
+    'places.id,places.displayName,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.formattedAddress,places.photos,places.location,places.currentOpeningHours.openNow,places.regularOpeningHours.weekdayDescriptions,places.nationalPhoneNumber,places.websiteUri,places.userRatingCount,nextPageToken';
 
   const requestBody: Record<string, unknown> = {
     textQuery: 'restaurants',
