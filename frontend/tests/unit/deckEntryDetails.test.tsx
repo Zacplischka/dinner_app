@@ -416,7 +416,66 @@ describe('Deck Entry details sheet — Restaurant', () => {
     );
     expect(maps).toHaveAttribute('target', '_blank');
     expect(maps).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(dialog).queryByRole('region', { name: 'Opening hours' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('link', { name: /^Call / })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('link', { name: 'Visit website' })).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Rating 4.6')).toBeInTheDocument();
   });
+
+  it('shows the weekly hours with today emphasized, phone, website and rating count', async () => {
+    const openingHours = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ].map((day) => `${day}: 9:00 AM – 5:00 PM`);
+    const today = new Date().toLocaleDateString('en-AU', { weekday: 'long' });
+    deal.mockResolvedValue([
+      {
+        ...ramen,
+        openingHours,
+        phone: '(03) 5550 1234',
+        websiteUrl: 'https://example.com/restaurant',
+        userRatingCount: 1204,
+      },
+    ]);
+    renderSelectionPage();
+    const { dialog } = await pressDetails();
+
+    const hours = within(dialog).getByRole('region', { name: 'Opening hours' });
+    expect(within(hours).getAllByRole('listitem')).toHaveLength(7);
+    for (const line of openingHours) expect(within(hours).getByText(line)).toBeInTheDocument();
+    expect(hours.querySelectorAll('strong')).toHaveLength(1);
+    expect(hours.querySelector('strong')).toHaveTextContent(`${today}: 9:00 AM – 5:00 PM`);
+    expect(within(dialog).getByRole('link', { name: 'Call (03) 5550 1234' })).toHaveAttribute(
+      'href',
+      'tel:(03) 5550 1234'
+    );
+    const website = within(dialog).getByRole('link', { name: 'Visit website' });
+    expect(website).toHaveAttribute('href', 'https://example.com/restaurant');
+    expect(website).toHaveAttribute('target', '_blank');
+    expect(website).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(dialog).getByLabelText('Rating 4.6 · 1,204 ratings')).toHaveTextContent(
+      '★ 4.6 · 1,204 ratings'
+    );
+  });
+
+  it.each(['javascript:alert(1)', 'not a URL', 'https://user:secret@example.com/'])(
+    'omits an unsafe website %s and empty hours while retaining a zero rating count',
+    async (websiteUrl) => {
+      deal.mockResolvedValue([{ ...ramen, openingHours: [], websiteUrl, userRatingCount: 0 }]);
+      renderSelectionPage();
+      const { dialog } = await pressDetails();
+      expect(within(dialog).queryByRole('link', { name: 'Visit website' })).not.toBeInTheDocument();
+      expect(
+        within(dialog).queryByRole('region', { name: 'Opening hours' })
+      ).not.toBeInTheDocument();
+      expect(within(dialog).getByLabelText('Rating 4.6 · 0 ratings')).toBeInTheDocument();
+    }
+  );
 
   // #85 again: 0 is a genuinely free Restaurant, not an unknown one, and an
   // empty run of '$' is a blank chip and a meaningless announcement.
