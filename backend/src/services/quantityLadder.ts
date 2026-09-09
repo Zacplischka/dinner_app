@@ -31,6 +31,16 @@ const VOL_ML: Record<string, number> = { ml: 1, l: 1000, tbsp: 20, tsp: 5 };
 // bunch" against a bunch-sold product divides like any other count).
 const COUNT_UNITS = new Set(['', 'packet', 'head', 'loaf', 'punnet', 'bunch']);
 
+export type WantedPackForm = 'count' | 'mass' | 'volume';
+
+export function wantedPackForm(unit: string): WantedPackForm | undefined {
+  const normalised = unit.trim().toLowerCase();
+  if (COUNT_UNITS.has(normalised)) return 'count';
+  if (Object.hasOwn(MASS_G, normalised)) return 'mass';
+  if (Object.hasOwn(VOL_ML, normalised)) return 'volume';
+  return undefined;
+}
+
 // Rung 4: the static vague-unit table, in grams. Per #244 it owns
 // bunch/handful/sprig for fresh herbs *unconditionally*, shadowing
 // Spoonacular — Convert answers confidently and 10× low for them.

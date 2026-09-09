@@ -9,6 +9,7 @@ import { matchProducts, type WoolworthsProduct } from './productMatcher.js';
 import { woolworthsQueue, type Enqueue } from './politenessQueue.js';
 import { deriveSearchTerm } from './usToAuTerms.js';
 import type { WoolworthsClient } from './woolworthsClient.js';
+import type { WantedPackForm } from './quantityLadder.js';
 
 // Keyed (FulfilmentStoreId, term) with the store id read off each response:
 // cardinality is 1 today, but a store flip under us becomes a cache miss that
@@ -40,7 +41,7 @@ interface ProductMatchServiceDeps {
 }
 
 export interface ProductMatchService {
-  matchProduct(term: string): Promise<ProductMatchOutcome>;
+  matchProduct(term: string, wantedForm?: WantedPackForm): Promise<ProductMatchOutcome>;
 }
 
 /**
@@ -136,7 +137,7 @@ export function createProductMatchService(deps: ProductMatchServiceDeps): Produc
   }
 
   return {
-    async matchProduct(term: string): Promise<ProductMatchOutcome> {
+    async matchProduct(term: string, wantedForm?: WantedPackForm): Promise<ProductMatchOutcome> {
       const searchTerm = deriveSearchTerm(term);
       const storeId = await currentStoreId();
       const key = priceKey(storeId, searchTerm);
@@ -150,7 +151,7 @@ export function createProductMatchService(deps: ProductMatchServiceDeps): Produc
       }
 
       if (answer.status === 'failure') return { status: 'failed' };
-      const match = matchProducts(answer.products, searchTerm);
+      const match = matchProducts(answer.products, searchTerm, wantedForm);
       return match ? { status: 'matched', ...match } : { status: 'no_product' };
     },
   };

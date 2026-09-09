@@ -94,7 +94,7 @@ const shoppingListService = createShoppingListService({
   releaseShoppingListId: (sessionCode, listId) =>
     sessionStore.releaseShoppingListId(sessionCode, listId),
   readRecipe: (poolKey, placeId) => recipePoolService.readRecipe(poolKey, placeId),
-  matchProduct: (term) => productMatchService.matchProduct(term),
+  matchProduct: (term, form) => productMatchService.matchProduct(term, form),
   resolveLine: (ingredient, outcome) => quantityLadder.resolveLine(ingredient, outcome),
 });
 const sessionService = createSessionService({
