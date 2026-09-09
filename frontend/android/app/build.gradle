@@ -48,6 +48,16 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
+// No outputs: recheck the copied bytes and intended settings on every Release invocation.
+def verifyReleaseBundle = tasks.register('verifyReleaseBundle', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine providers.environmentVariable('NODE_BINARY').getOrElse('node'),
+        'scripts/mobile.mjs', 'verify-release', 'android'
+}
+tasks.matching { it.name == 'mergeReleaseAssets' }.configureEach {
+    dependsOn verifyReleaseBundle
+}
+
 try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) {
