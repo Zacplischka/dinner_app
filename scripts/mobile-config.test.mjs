@@ -82,6 +82,23 @@ test('a direct Release verification after development or staging preparation is 
   }
 });
 
+test('preparation and Release verification agree across process locales', (t) => {
+  const root = bundle(t);
+  for (const name of ['z.js', 'ä.js']) writeFileSync(join(root, 'public/assets', name), name);
+  const script = `
+    import { recordMobileBundle, verifyMobileBundle } from ${JSON.stringify(new URL('../frontend/scripts/mobile.mjs', import.meta.url).href)};
+    const root = ${JSON.stringify(root)}, env = ${JSON.stringify(production)};
+    if (process.env.MOBILE_TEST_ACTION === 'record') recordMobileBundle(root, 'production', env);
+    else verifyMobileBundle(root, env);
+  `;
+  for (const [action, locale] of [['record', 'de_DE.UTF-8'], ['verify', 'sv_SE.UTF-8']]) {
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      env: { ...process.env, LANG: locale, LC_ALL: locale, MOBILE_TEST_ACTION: action }, encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+  }
+});
+
 test('stale, missing and additional copied bytes cannot pass a production receipt', (t) => {
   for (const file of ['index.html', 'assets/app.js']) {
     const root = bundle(t);

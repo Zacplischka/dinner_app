@@ -55,7 +55,7 @@ function hashFile(path) {
 }
 
 function copiedAssets(root, directory = '') {
-  return readdirSync(join(root, directory), { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))
+  return readdirSync(join(root, directory), { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
     .flatMap((entry) => {
       const path = directory ? `${directory}/${entry.name}` : entry.name;
       if (path === receiptName) return [];
