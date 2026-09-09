@@ -35,30 +35,19 @@ describe('gather-first Sessions', () => {
   let redis: Redis;
   let store: ReturnType<typeof createSessionStore>;
   let service: ReturnType<typeof createSessionService>;
-  let supply: ReturnType<
-    typeof vi.fn<
-      Parameters<SessionServiceDeps['dealRecipeDeck']>,
-      ReturnType<SessionServiceDeps['dealRecipeDeck']>
-    >
-  >;
-  let search: ReturnType<
-    typeof vi.fn<
-      Parameters<SessionServiceDeps['searchNearbyRestaurants']>,
-      ReturnType<SessionServiceDeps['searchNearbyRestaurants']>
-    >
-  >;
+  let supply: ReturnType<typeof vi.fn<SessionServiceDeps['dealRecipeDeck']>>;
+  let search: ReturnType<typeof vi.fn<SessionServiceDeps['searchNearbyRestaurants']>>;
   beforeEach(async () => {
     redis = new RedisMock();
     await redis.flushall();
     store = createSessionStore(redis);
-    supply = vi.fn<
-      Parameters<SessionServiceDeps['dealRecipeDeck']>,
-      ReturnType<SessionServiceDeps['dealRecipeDeck']>
-    >(async (_craving, _deckSize) => ({ entries: [recipe], recipeSourceDown: false }));
-    search = vi.fn<
-      Parameters<SessionServiceDeps['searchNearbyRestaurants']>,
-      ReturnType<SessionServiceDeps['searchNearbyRestaurants']>
-    >(async (_params) => [{ placeId: 'venue', name: 'Cafe' }]);
+    supply = vi.fn<SessionServiceDeps['dealRecipeDeck']>(async (_craving, _deckSize) => ({
+      entries: [recipe],
+      recipeSourceDown: false,
+    }));
+    search = vi.fn<SessionServiceDeps['searchNearbyRestaurants']>(async (_params) => [
+      { placeId: 'venue', name: 'Cafe' },
+    ]);
     service = createSessionService({
       store,
       searchNearbyRestaurants: search,
