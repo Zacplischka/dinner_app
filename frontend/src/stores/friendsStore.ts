@@ -137,7 +137,7 @@ export const useFriendsStore = create<FriendsState>()(
               set({
                 isLoadingProfile: false,
                 profileError:
-                  error instanceof Error && error.name !== 'TimeoutError'
+                  error instanceof Error
                     ? error.message
                     : 'Could not load your profile. Try again.',
               });
@@ -159,9 +159,7 @@ export const useFriendsStore = create<FriendsState>()(
               set({
                 isSavingPhoto: false,
                 profileError:
-                  error instanceof Error && error.name !== 'TimeoutError'
-                    ? error.message
-                    : 'Could not save your photo. Try again.',
+                  error instanceof Error ? error.message : 'Could not save your photo. Try again.',
               });
             return false;
           }
