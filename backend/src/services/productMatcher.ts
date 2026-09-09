@@ -30,8 +30,8 @@ const BLOCKED_SECTIONS =
 
 const UNSUITABLE_PENALTY = 1.5;
 const produceNuts = (product: WoolworthsProduct): boolean =>
-  /^VEG(?:\s*\/|$)/i.test(product.sapCategory ?? '') &&
-  /^NUTS AND SNACKS$/i.test(product.sapSubCategory ?? '');
+  /^VEG(?:\s*\/|$)/i.test(product.sapCategory?.trim() ?? '') &&
+  /^NUTS AND SNACKS$/i.test(product.sapSubCategory?.trim() ?? '');
 
 // Descriptor words that carry no product identity ("fresh", "chopped", …).
 const STOP_WORDS = new Set([
@@ -131,22 +131,27 @@ export function matchProducts(
   );
   const eligible = products
     .map((product, rank) => ({ product, rank }))
-    .filter(
-      ({ product }) =>
+    .filter(({ product }) => {
+      // Only exempt the measured subcategories. Keep the combined taxonomy
+      // check so phrases such as CAT + FOOD still match across the boundary.
+      const subCategory =
+        produceNuts(product) ||
+        // "soft drink" also matches "SOFT DRINKS": preserve the measured water
+        // shelf explicitly, without admitting carbonated soft drinks (#367).
+        (/^LIFESTYLE\/WATER NON CARBONATED$/i.test(product.sapCategory?.trim() ?? '') &&
+          /^SOFT DRINKS - WATER$/i.test(product.sapSubCategory?.trim() ?? ''))
+          ? ''
+          : (product.sapSubCategory ?? '');
+      return (
         product.sapCategory &&
-        !BLOCKED_SECTIONS.test(product.sapCategory) &&
-        (produceNuts(product) ||
-          // "soft drink" also matches "SOFT DRINKS": preserve the measured water
-          // shelf explicitly, without admitting carbonated soft drinks (#367).
-          (product.sapCategory === 'LIFESTYLE/WATER NON CARBONATED' &&
-            product.sapSubCategory === 'SOFT DRINKS - WATER') ||
-          !BLOCKED_SECTIONS.test(product.sapSubCategory ?? '')) &&
+        !BLOCKED_SECTIONS.test(`${product.sapCategory} ${subCategory}`) &&
         (!freshGarlic ||
           (/\bgarlic\b/i.test(product.name) &&
             !/\b(pastes?|crushed|minced|chopped|dried|powder|granules?|bread|butter|oil|sauce|dip|aioli|salt|pickled|black|roasted|supplements?)\b/i.test(
               product.name
             )))
-    );
+      );
+    });
   if (eligible.length === 0) return null;
 
   const keywords = identityKeywords(term);

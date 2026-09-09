@@ -12,6 +12,47 @@ function product(overrides: Partial<WoolworthsProduct> & { stockcode: number }):
 }
 
 describe('matchProducts', () => {
+  it.each([
+    ['CAT', 'FOOD & LITTER'],
+    ['BABY', 'CARE'],
+    ['SOFT', 'DRINKS'],
+  ])(
+    'still blocks phrases spanning category %s and subcategory %s',
+    (sapCategory, sapSubCategory) => {
+      expect(
+        matchProducts([product({ stockcode: 1, sapCategory, sapSubCategory })], 'food')
+      ).toBeNull();
+    }
+  );
+
+  it('recognizes the measured water shelf regardless of casing and surrounding whitespace', () => {
+    const water = product({
+      stockcode: 1,
+      name: 'Coconut Water',
+      packageSize: '1L',
+      sapCategory: ' lifestyle/water non carbonated ',
+      sapSubCategory: ' Soft Drinks - Water ',
+    });
+    expect(matchProducts([water], 'coconut water', 'volume')?.match.stockcode).toBe(1);
+  });
+
+  it('keeps a blocked root blocked even with a nuts subcategory', () => {
+    const snack = product({
+      stockcode: 1,
+      sapCategory: 'VEG / SNACKS',
+      sapSubCategory: 'NUTS AND SNACKS',
+    });
+    expect(matchProducts([snack], 'nuts', 'mass')).toBeNull();
+  });
+
+  it('keeps count against mass neutral because the ladder can convert pieces to grams', () => {
+    const rows = [
+      product({ stockcode: 1, name: 'Onions', packageSize: '1kg' }),
+      product({ stockcode: 2, name: 'Onions', packageSize: 'each' }),
+    ];
+    expect(matchProducts(rows, 'onions', 'count')).toEqual(matchProducts(rows, 'onions'));
+  });
+
   // #367: store 1101 names, sections, packs and original ranks from the ticket;
   // stockcodes are synthetic. No retailer request is made by these regressions.
   it('prefers a loose lemon to the higher-ranked dressing and drink for a count line', () => {
