@@ -17,7 +17,7 @@
     "start": "node backend/dist/server.js",
     "start:backend": "node backend/dist/server.js",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
-    "typecheck": "npm run build --workspace=shared && npx tsc --noEmit -p backend && npx tsc --noEmit -p backend/tsconfig.test.json && npx tsc --noEmit -p frontend",
+    "typecheck": "npm run build --workspace=shared && npx tsc --noEmit -p backend && npx tsc --noEmit -p backend/tsconfig.test.json && npx tsc --noEmit -p frontend && npx tsc --noEmit -p frontend/tsconfig.test.json",
     "test:e2e:live": "npm run test:e2e:live --workspace=frontend --",
     "compare:smoke": "npm run compare:smoke --workspace=backend --",
     "check:production-edge": "node --test scripts/check-production-edge.test.mjs",
@@ -45,7 +45,7 @@
   "license": "MIT",
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
-    "@vitest/coverage-v8": "^1.0.4",
+    "@vitest/coverage-v8": "~4.1.11",
     "fallow": "^3.3.0",
     "typescript": "5.9.3"
   },
@@ -55,7 +55,8 @@
       "body-parser": {
         "qs": "6.16.0"
       }
-    }
+    },
+    "vite": "~6.4.3"
   },
   "engines": {
     "node": "22.x"

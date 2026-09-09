@@ -27,6 +27,10 @@ export interface Restaurant {
   address?: string;
   photoUrl?: string;
   openNow?: boolean;
+  openingHours?: string[];
+  phone?: string;
+  websiteUrl?: string;
+  userRatingCount?: number;
 }
 
 /** A cookable dish a Cook-branch Session deals. Restaurant's counterpart. */

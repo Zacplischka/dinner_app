@@ -9,7 +9,19 @@ const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
   inviteFriendsToSession: vi.fn(async () => undefined),
   waitForConnection: vi.fn(async () => undefined),
-  joinSession: vi.fn(async () => ({ success: true, data: { participantId: 'participant-1' } })),
+  joinSession: vi.fn(
+    async (): ReturnType<typeof import('../../src/services/socketBindings').joinSession> => ({
+      success: true,
+      data: {
+        participantId: 'participant-1',
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        participantCount: 1,
+        rejoinToken: 'token',
+        participants: [],
+      },
+    })
+  ),
   navigate: vi.fn(),
 }));
 
@@ -82,13 +94,13 @@ describe('useCreateAndJoinSession', () => {
       branch: 'eatout',
     });
     expect(mocks.waitForConnection).toHaveBeenCalled();
-    expect(mocks.joinSession).toHaveBeenCalledWith('AB123', 'Alice');
+    expect(mocks.joinSession).toHaveBeenCalledWith('AB123', 'Alice', false, expect.any(Number));
     expect(mocks.navigate).toHaveBeenCalledWith('/session/AB123');
 
     const store = useSessionStore.getState();
     // joinSession owns successful Session adoption; its mock does not mutate the store.
     expect(store.sessionCode).toBeNull();
-    expect(store.currentUserId).toBe('participant-1');
+    expect(store.currentUserId).toBeNull();
     // socketBindings.joinSession owns the connection flag — mocked out here, so
     // it stays false. The hook must not write it a second time.
     expect(store.isConnected).toBe(false);
@@ -241,4 +253,30 @@ describe('useCreateAndJoinSession', () => {
     expect(result.current.isCreating).toBe(false);
     expect(useSessionStore.getState().isConnected).toBe(false);
   });
+});
+
+it('ignores an old create response after a newer admission intent', async () => {
+  const { beginSessionIntent } = await import('../../src/services/sessionIntent');
+  let finish!: (value: unknown) => void;
+  mocks.createSession.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+  );
+  mocks.joinSession.mockClear();
+  mocks.navigate.mockClear();
+  const { result } = renderHook(() => useCreateAndJoinSession());
+  let creating!: ReturnType<typeof result.current.createAndJoin>;
+  act(() => {
+    creating = result.current.createAndJoin('Alice', {}, new Set());
+  });
+  beginSessionIntent('NEW12', 'Alice');
+  await act(async () => {
+    finish({ sessionCode: 'OLD11' });
+    await creating;
+  });
+  expect(mocks.joinSession).not.toHaveBeenCalled();
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(result.current.isCreating).toBe(false);
 });

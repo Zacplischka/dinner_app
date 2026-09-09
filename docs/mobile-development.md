@@ -27,6 +27,25 @@ npm run mobile:sync --workspace=frontend -- development
 
 This applies the pinned Android secure-storage correction, typechecks, builds bundled assets and syncs both projects. It never sets Capacitor `server.url`. Set corresponding public HTTPS endpoints and the Supabase publishable/anon key in `.env.staging.local` or `.env.production.local`, then substitute `staging` or `production`. Release configurations reject missing settings, loopback/private development hosts, embedded URL credentials, and secret/service-role keys. No operator key belongs in a `VITE_` variable.
 
+### Guarding native Release builds
+
+After a successful sync, `mobile:sync` writes a `public/mobile-build.json` receipt into each platform's copied bundle. It records the preparation mode, the five public service settings above plus `VITE_NATIVE_BUILD`, SHA-256 hashes of all copied public files, and the copied Capacitor configuration hash. It never records the full process environment or signing/operator credentials.
+
+Direct Xcode Release builds/archives and Gradle release APK/AAB asset processing run the same guard. They require a **production** receipt, unchanged copied assets/configuration, no Capacitor `server.url`, and an exact match to the intended production settings loaded from `frontend/.env.production.local` or the build environment. Development/staging preparation cannot feed Release. Debug remains available with development settings; staging sync retains its HTTPS/key validation and can be used with Debug for internal development.
+
+Once the production endpoints and public authentication settings are confirmed, prepare and inspect the bundle from the repository root:
+
+```sh
+npm run build --workspace=shared
+npm run mobile:sync --workspace=frontend -- production
+node frontend/scripts/mobile.mjs verify-release ios
+node frontend/scripts/mobile.mjs verify-release android
+```
+
+The native build must have Node 22 on `PATH`; set `NODE_BINARY` to its absolute path when launching Xcode/Gradle from an environment without Node (for example, pass `NODE_BINARY=/opt/homebrew/opt/node@22/bin/node` as an Xcode build setting). A guard failure requires correcting the intended production configuration and rerunning production sync. Do not edit the receipt or disable the guard to bypass a failure. Changing an endpoint/key or copied asset requires a new preparation.
+
+This detects stale or accidentally changed build inputs. The receipt is not a signature or proof of endpoint ownership, provider authentication, physical-device behavior, signing or store readiness. It does not replace the release artifact/contract provenance and signed distribution checks below.
+
 Run `mobile:sync` after every clean `npm ci` before Android compilation. The [storage patch](../patches/capacitor-secure-storage-plugin+0.13.0.patch) removes the upstream dependency's plaintext fallback and makes storage failures observable. The preparation script requires Git and checks the pinned package version; Gradle checks the reviewed source hash and refuses an unpatched or unexpected helper. A web/backend-only install does not need native patch preparation. After any plugin or patch update, review the native source and update the guard deliberately.
 
 With an Android emulator or test phone connected, run `./gradlew connectedDebugAndroidTest` from `frontend/android`. Set `ANDROID_SERIAL` to the intended device when more than one is connected. The storage tests use their own preference file/Keystore alias and verify encryption/corruption, failed initialization and failed disk commits. All three pass on the local `heykeen_api36` AOSP ARM64 emulator. An emulator run does not replace the physical mixed-client and process-termination checklist below.
@@ -58,6 +77,8 @@ Signed archive/AAB automation, signing recovery, build-number and artifact/symbo
 [Native compile checks](../.github/workflows/mobile-checks.yml) runs on pull requests targeting `main`, pushes to `main` and manual dispatch. Automatic runs are restricted to changes in frontend/shared code, workspace manifests and lockfile, npm configuration, mobile scripts, dependency patches and the workflow itself. It uses read-only repository permissions, does not retain checkout credentials and has no signing secrets. A newer run cancels the superseded run for the same PR/ref; failure on one platform does not cancel the other.
 
 Both jobs use Node **22.23.2** and `npm ci` from the repository root. They run `node --test scripts/mobile-config.test.mjs scripts/mobile-associations.test.mjs`, build `@dinder/shared`, then run `npm run mobile:sync --workspace=@dinder/frontend -- development`. That existing command applies the storage patch, typechecks, bundles and syncs both native projects. CI uses public development settings with blank authentication configuration and needs no live backend.
+
+After Debug compilation, each job attempts a direct Release build with synthetic intended production settings and requires the specific guard rejection for the development receipt. An unrelated build error cannot satisfy this check. This proves that the native entrypoint invokes the guard; it does not exercise live endpoints or signing.
 
 | Job     | Runner/toolchain                                                          | Compilation                                                                                                               |
 | ------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -97,3 +118,14 @@ Use a physical iPhone, physical Android phone and browser Participant in one Ses
 The native store keeps only the current Participant, local Selection progress/round and Group Order reference; it refetches authoritative data. The single rejoin credential lives in secure storage. Cook View saves one list's progress until that list expires, and releases its native wake lock in the background or on exit. Browser identities remain isolated per tab.
 
 Record physical hardware/OS, exact build and scenario result in the evidence ledger. The full security, social, safety, accessibility, reviewer and release matrices in the spec still apply after this prototype.
+
+## Release preparation still to complete
+
+Carried forward from the [original release plan](archive/mobile-app-transformation-plan.md), alongside the [specification's release gate](mobile-app-spec.md#testing-decisions). These are outstanding checks, not new passes:
+
+- Choose and record a stable production API hostname before distributing binaries; retain endpoint compatibility for installed clients. Record the source revision, dependency/native locks, endpoints, signing identity, version/build, artifact checksum and available symbols for each candidate; tag completed releases.
+- Confirm Settings exposes support, privacy, account actions, third-party credits and version/build. Keep public support and deletion entry points usable without installation. Assign Apple browser OAuth secret renewal to an owner and recheck its expiry during provider setup.
+- Use store crash/vitals and existing scrubbed server logs first; record platform/version/build without treating it as authentication. Model provider cost per Session, Comparison and Shopping List, then check a 10× beta-volume scenario against existing budgets before promotion. These checks do not authorize load tests or provider spend.
+- Record signing recovery, membership and domain/association renewal, provider outages, moderation/deletion response and release recovery. Watch installs, links, authentication, group completion, crashes and costs during the first release week; stop promotion on material failure while preserving browser access and installed-client compatibility.
+
+The old plan's proposed 90-day support window was not adopted: [ADR 0007](adr/0007-contracts-evolve-additively-across-deployments.md#installed-clients) requires an evidence-based support/retirement decision after a released baseline exists. Historical engineering estimates and operating-cost allowances are not commitments.

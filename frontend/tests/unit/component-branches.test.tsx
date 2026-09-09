@@ -133,8 +133,8 @@ describe('component and hook branch coverage', () => {
       user: { id: 'user-1', email: undefined, user_metadata: {} } as any,
     });
     const { default: UserMenu } = await import('../../src/components/UserMenu');
-    render(<UserMenu />);
-    expect(screen.getByText('User')).toBeInTheDocument();
+    render(<UserMenu />, { wrapper: MemoryRouter });
+    expect(screen.getByText('Your profile')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Sign out'));
     await waitFor(() => expect(signOut).toHaveBeenCalled());
   });
@@ -461,7 +461,10 @@ describe('component and hook branch coverage', () => {
     expect(screen.getByText('Searching…')).toBeInTheDocument();
 
     render(<FriendsList friends={[friend]} />);
-    expect(screen.getByAltText('Bob')).toHaveAttribute('src', friend.avatarUrl);
+    expect(screen.getByRole('img', { name: 'Bob' }).querySelector('img')).toHaveAttribute(
+      'src',
+      friend.avatarUrl
+    );
 
     useFriendsStore.setState({
       currentUserProfile: null,
@@ -470,7 +473,9 @@ describe('component and hook branch coverage', () => {
     });
     renderAt('/test', <SessionInviteCard invite={invite} />);
     fireEvent.click(screen.getByText('Join'));
-    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('AB123', 'Guest'));
+    await waitFor(() =>
+      expect(joinSession).toHaveBeenCalledWith('AB123', 'Guest', false, expect.any(Number))
+    );
 
     useFriendsStore.setState({
       currentUserProfile: {
@@ -483,7 +488,9 @@ describe('component and hook branch coverage', () => {
     });
     renderAt('/test', <SessionInviteCard invite={{ ...invite, id: 'invite-profile' }} />);
     fireEvent.click(screen.getAllByText('Join').at(-1)!);
-    await waitFor(() => expect(joinSession).toHaveBeenCalledWith('AB123', 'Alice Example'));
+    await waitFor(() =>
+      expect(joinSession).toHaveBeenCalledWith('AB123', 'Alice Example', false, expect.any(Number))
+    );
 
     useFriendsStore.setState({
       acceptSessionInvite: vi.fn(async () => {

@@ -51,6 +51,13 @@ const db = {
 };
 
 const fakeStore = {
+  updateProfilePhoto: async (userId: string, photo: string | null) => {
+    const row = db.profiles.get(userId)!;
+    row.avatar_url = photo;
+    return toUserProfile(row);
+  },
+  getProfilePhoto: async () => null,
+
   getProfileById: async (userId: string) => {
     const row = db.profiles.get(userId);
     return row ? toUserProfile(row) : null;

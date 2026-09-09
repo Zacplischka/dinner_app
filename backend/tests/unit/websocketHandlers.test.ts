@@ -101,6 +101,36 @@ describe('websocket handlers', () => {
     });
   }
 
+  it('ignores client Profile IDs and avatar URLs, passing only the optional bearer token to the trusted resolver', async () => {
+    await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+    const testSocket = socket();
+    const callback = vi.fn();
+    const resolve = vi.fn(async () => '/api/profile-photos/verified/version.jpg');
+    await handleSessionJoin(
+      testSocket as any,
+      {
+        sessionCode,
+        displayName: 'Alice',
+        accessToken: 'verified-token',
+        profileId: 'someone-else',
+        avatarUrl: 'https://example.test/spoof.jpg',
+      } as any,
+      callback,
+      service,
+      resolve
+    );
+    expect(resolve).toHaveBeenCalledWith('verified-token');
+    expect((await store.getParticipant(testSocket.id))!.avatarUrl).toBe(
+      '/api/profile-photos/verified/version.jpg'
+    );
+    expect(JSON.stringify(callback.mock.calls)).not.toContain('verified-token');
+    expect(JSON.stringify(callback.mock.calls)).not.toContain('someone-else');
+    expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
+      'participant:joined',
+      expect.objectContaining({ avatarUrl: '/api/profile-photos/verified/version.jpg' })
+    );
+  });
+
   // Shared by the order:* handlers. getLatest defaults to a resolved pizza
   // Snapshot for the open path; the item path seeds the order directly and
   // never calls it.
@@ -209,6 +239,7 @@ describe('websocket handlers', () => {
             {
               participantId: 'socket-1',
               displayName: 'Alice',
+              avatarUrl: null,
               isHost: true,
               hasSubmitted: false,
               isOnline: true,
@@ -223,6 +254,7 @@ describe('websocket handlers', () => {
         sessionCode,
         participantCount: 1,
         isRejoin: false,
+        avatarUrl: null,
         // #405: the room needs to know who the Host is, or the start guard
         // reads a roster that cannot represent one.
         isHost: true,
@@ -306,6 +338,7 @@ describe('websocket handlers', () => {
         participantCount: 1,
         isRejoin: true,
         isHost: true,
+        avatarUrl: null,
       });
       expect(logSpy).toHaveBeenCalledWith(
         { socketId: 'new-socket', sessionCode, isRejoin: true, participantCount: 1 },
@@ -1267,6 +1300,7 @@ describe('websocket handlers', () => {
             {
               participantId: 'socket-1',
               displayName: 'Alice',
+              avatarUrl: null,
               isHost: true,
               hasSubmitted: false,
               isOnline: true,

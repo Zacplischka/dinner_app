@@ -1,6 +1,5 @@
-import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const serviceMocks = vi.hoisted(() => ({
@@ -202,7 +201,12 @@ it('reveals a correction field on a collision while preserving the Invite Link',
   });
   fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
   expect(await screen.findByText('Lobby route')).toBeTruthy();
-  expect(socketMocks.joinSession).toHaveBeenLastCalledWith('AB123', 'Alice N');
+  expect(socketMocks.joinSession).toHaveBeenLastCalledWith(
+    'AB123',
+    'Alice N',
+    false,
+    expect.any(Number)
+  );
 });
 it('routes a pending Cook newcomer to choices during a selecting Session', async () => {
   socketMocks.joinSession.mockResolvedValueOnce({
@@ -218,4 +222,72 @@ it('routes a pending Cook newcomer to choices during a selecting Session', async
   fireEvent.change(screen.getByLabelText('Your Name'), { target: { value: 'Bob' } });
   fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
   expect(await screen.findByText('Lobby route')).toBeTruthy();
+});
+
+function WarmLink() {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate('/join?code=NEW12')}>Next invite</button>;
+}
+function renderWarmLink() {
+  return render(
+    <MemoryRouter initialEntries={['/join?code=OLD12']}>
+      <WarmLink />
+      <Routes>
+        <Route path="/join" element={<JoinSessionPage />} />
+        <Route path="/session/:code" element={<div>Joined destination</div>} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+it('resets an expired warm invitation when another valid link arrives', async () => {
+  serviceMocks.getSession
+    .mockRejectedValueOnce(new ApiClientError('SESSION_NOT_FOUND', 'Expired', 404))
+    .mockResolvedValue({});
+  renderWarmLink();
+  await screen.findByText('This link has expired');
+  fireEvent.click(screen.getByText('Next invite'));
+  expect(await screen.findByLabelText('Session code')).toHaveValue('NEW12');
+  expect(screen.queryByText('This link has expired')).toBeNull();
+});
+it('ignores an old invitation probe after a newer warm link', async () => {
+  let rejectOld!: (error: unknown) => void;
+  serviceMocks.getSession
+    .mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectOld = reject;
+        })
+    )
+    .mockResolvedValue({});
+  renderWarmLink();
+  fireEvent.click(screen.getByText('Next invite'));
+  await act(async () => rejectOld(new ApiClientError('SESSION_NOT_FOUND', 'Expired', 404)));
+  expect(screen.getByLabelText('Session code')).toHaveValue('NEW12');
+  expect(screen.queryByText('This link has expired')).toBeNull();
+});
+it('retries autojoin by invitation identity and ignores the old completion', async () => {
+  useAuthStore.setState({
+    user: { id: 'profile', user_metadata: { full_name: 'Alice' } } as never,
+    isAuthenticated: true,
+    isLoading: false,
+  });
+  serviceMocks.getSession.mockResolvedValue({});
+  let finishOld!: (ack: unknown) => void;
+  socketMocks.joinSession
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishOld = resolve;
+        })
+    )
+    .mockResolvedValue({ success: false, error: { code: 'SESSION_FULL', message: 'full' } });
+  renderWarmLink();
+  await waitFor(() => expect(finishOld).toBeDefined());
+  fireEvent.click(screen.getByText('Next invite'));
+  await screen.findByText('This session is full (maximum 4 participants)');
+  await act(async () =>
+    finishOld({ success: true, data: { participantId: 'old', state: 'waiting' } })
+  );
+  expect(screen.getByLabelText('Session code')).toHaveValue('NEW12');
+  expect(screen.queryByText('Joined destination')).toBeNull();
 });

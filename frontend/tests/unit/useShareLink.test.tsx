@@ -18,8 +18,6 @@ describe('useShareLink (#350)', () => {
     expect(useToastStore.getState().toasts).toHaveLength(0);
   });
   beforeEach(() => {
-    // The global afterEach's vi.restoreAllMocks() drops setup.ts's mockResolvedValue — re-arm it.
-    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
     useToastStore.setState({ toasts: [] });
   });
 

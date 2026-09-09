@@ -5,7 +5,7 @@
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const restaurant = {
   placeId: 'place-1',
@@ -494,7 +494,7 @@ describe('Resume after submit', () => {
     expect(await screen.findByText('All done!')).toBeInTheDocument();
     expect(screen.queryByText('Ramen Ichiban')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Like' })).not.toBeInTheDocument();
-    expect(screen.getByText(/have swiped/)).toHaveTextContent('1 of 2 have swiped');
+    expect(screen.getByText(/have finished/)).toHaveTextContent('1 of 2 have finished');
   });
 
   it('still deals the Deck when only someone else has submitted', async () => {
@@ -752,4 +752,46 @@ describe('Undo retracts a Live Selection', () => {
     store.retractLiveSelection('place-1', 'Dana');
     expect(useSessionStore.getState().liveSelections['place-1']).toEqual(['Bob']);
   });
+});
+
+describe('Selection flash timer (#426)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    seedParticipants('Alice');
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('cancels the extra flash timer on unmount', async () => {
+    const { unmount } = renderSelectionPage();
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    const baseline = vi.getTimerCount();
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(vi.getTimerCount()).toBe(baseline + 1);
+    unmount();
+    expect(vi.getTimerCount()).toBe(baseline);
+  });
+
+  it.each(['Pass', 'Like'])(
+    'a second %s keeps one timer with the accepted flash timing',
+    async (direction) => {
+      const { container, unmount } = renderSelectionPage();
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      const baseline = vi.getTimerCount();
+      fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      act(() => vi.advanceTimersByTime(300));
+      fireEvent.click(screen.getByRole('button', { name: direction }));
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      expect(vi.getTimerCount()).toBe(baseline + 1);
+      act(() => vi.advanceTimersByTime(direction === 'Like' ? 299 : 599));
+      expect(container.querySelector('.animate-pulse-glow')).not.toBeNull();
+      act(() => vi.advanceTimersByTime(1));
+      expect(container.querySelector('.animate-pulse-glow')).toBeNull();
+      expect(vi.getTimerCount()).toBe(baseline);
+      unmount();
+    }
+  );
 });

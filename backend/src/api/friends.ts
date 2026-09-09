@@ -1,7 +1,10 @@
 // Friends API Router
 // Handles user profiles, friendships, and session invites
 
-import { Router, Response } from 'express';
+import { Router, Response, raw } from 'express';
+import { PHOTO_UPLOAD_BYTES } from '../services/profilePhoto.js';
+import { DomainError } from '../services/DomainError.js';
+import { admitRequest, type RequestWindow } from './rateWindow.js';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
@@ -26,8 +29,63 @@ export function createFriendsRouter(friendsService: FriendsService) {
     friendIds: z.array(z.string().min(1)).min(1),
   });
 
-  // All routes require authentication
+  const photoRequests = new Map<string, RequestWindow>();
+  // The versioned image URL is a public capability, like other avatar URLs. It exposes no Profile fields.
+  router.get(
+    '/profile-photos/:userId/:version.jpg',
+    asyncHandler(async (req, res) => {
+      res.set('Cache-Control', 'private, max-age=60');
+      if (
+        !z.string().uuid().safeParse(req.params.userId).success ||
+        !/^[a-f0-9]{64}$/.test(req.params.version)
+      )
+        throw new DomainError('not_found', 'Photo not found');
+      const photo = await friendsService.getProfilePhoto(req.params.userId, req.params.version);
+      if (!photo) throw new DomainError('not_found', 'Photo not found');
+      return res.type('image/jpeg').set('X-Content-Type-Options', 'nosniff').send(photo);
+    })
+  );
+
+  // Profile mutations and every social route require verified authentication.
   router.use(requireAuth);
+  router.put(
+    '/users/me/photo',
+    (req: AuthenticatedRequest, res, next) => {
+      if (!admitRequest(photoRequests, req.user!.id, 6, 60_000)) {
+        res.set('Retry-After', '60');
+        return next(
+          new DomainError(
+            'TOO_MANY_REQUESTS',
+            'Please wait a minute before changing your photo again.'
+          )
+        );
+      }
+      next();
+    },
+    raw({
+      type: ['image/jpeg', 'image/png', 'image/webp'],
+      limit: PHOTO_UPLOAD_BYTES,
+      inflate: false,
+    }),
+    asyncHandler(async (req: AuthenticatedRequest, res) => {
+      if (!Buffer.isBuffer(req.body))
+        throw new DomainError('validation_error', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
+      return res.json(
+        await friendsService.saveProfilePhoto(
+          req.user!.id,
+          req.user!.email,
+          req.body,
+          req.get('content-type')?.split(';')[0]
+        )
+      );
+    })
+  );
+  router.delete(
+    '/users/me/photo',
+    asyncHandler(async (req: AuthenticatedRequest, res) =>
+      res.json(await friendsService.saveProfilePhoto(req.user!.id, req.user!.email, null))
+    )
+  );
 
   // Zod schema for the one friend mutation that carries a body
   const sendFriendRequestSchema = z.object({

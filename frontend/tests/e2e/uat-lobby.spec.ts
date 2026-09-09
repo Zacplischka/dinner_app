@@ -127,6 +127,11 @@ test('four people can choose personal interests together without losing edits', 
       await expect(person.getByTestId('participants-list').getByTestId('participant')).toHaveCount(
         4
       );
+    for (const person of people)
+      await person
+        .locator('summary')
+        .filter({ hasText: /^Optional interests/ })
+        .click();
     const genres = ['Action', 'Comedy', 'Drama', 'Mystery'];
     await Promise.all(
       people.map((person, i) =>

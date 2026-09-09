@@ -163,7 +163,7 @@ function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
             pescatarian: 'pescetarian',
           };
           const canonical = aliases[diet] ?? diet;
-          return DIETS.includes(canonical as Diet) ? [canonical as Diet] : [];
+          return DIETS.includes(canonical) ? [canonical] : [];
         })
       : undefined,
     readyInMinutes:
@@ -259,7 +259,7 @@ export function guardDailyPoints(
       await redis.set(key, String(used + 1), 'PX', POINTS_TTL_MS);
       logger.warn(
         // The path only — the query string carries the API key.
-        { used, path: new URL(String(input)).pathname, err: error },
+        { used, path: new URL(input instanceof Request ? input.url : input).pathname, err: error },
         'Spoonacular call failed before any quota header'
       );
       throw error;
@@ -268,7 +268,11 @@ export function guardDailyPoints(
     if (Number.isNaN(reported)) {
       // The path only — the query string carries the API key.
       logger.warn(
-        { used, path: new URL(String(input)).pathname, status: response.status },
+        {
+          used,
+          path: new URL(input instanceof Request ? input.url : input).pathname,
+          status: response.status,
+        },
         'Spoonacular response carried no quota header'
       );
     }

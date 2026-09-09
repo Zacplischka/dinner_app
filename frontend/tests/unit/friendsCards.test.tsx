@@ -86,7 +86,7 @@ describe('Friends cards', () => {
     fireEvent.click(screen.getByText('Join'));
 
     await waitFor(() => expect(screen.getByText('Lobby')).toBeInTheDocument());
-    expect(mocks.joinSession).toHaveBeenCalledWith('AB123', 'Cara');
+    expect(mocks.joinSession).toHaveBeenCalledWith('AB123', 'Cara', false, expect.any(Number));
     expect(mocks.waitForConnection.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.joinSession.mock.invocationCallOrder[0]
     );

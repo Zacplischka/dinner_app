@@ -58,7 +58,7 @@ const pirates: Movie = {
     'Pirates of the Caribbean: The Curse of the Black Pearl is a 2003 American swashbuckler film directed by Gore Verbinski. Produced by Jerry Bruckheimer and distributed by Buena Vista Pictures via the Walt Disney Pictures label, the film is based on the Pirates of the Caribbean attraction at Disney…',
 };
 
-const deal = vi.fn(async (): Promise<Movie[]> => [alien, heat]);
+const deal = vi.fn(async (..._args: unknown[]): Promise<Movie[]> => [alien, heat]);
 vi.mock('../../src/services/apiClient', () => ({
   getRestaurants: (...args: unknown[]) => deal(...args),
   getSession: vi.fn(async () => ({ shareableLink: 'http://localhost:3000/join?code=AB123' })),
@@ -180,10 +180,11 @@ describe('Movie Deck', () => {
     expect(screen.getByText('Heat')).toBeInTheDocument();
   });
 
-  it('titles the Deck "Choose movies"', async () => {
+  it('titles a mixed film and series Deck "Choose something to watch"', async () => {
+    deal.mockResolvedValue([alien, thrones]);
     renderSelectionPage();
     await screen.findByText('Alien');
 
-    expect(screen.getByRole('heading', { name: 'Choose movies' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Choose something to watch' })).toBeInTheDocument();
   });
 });

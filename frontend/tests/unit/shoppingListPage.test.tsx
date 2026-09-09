@@ -333,7 +333,9 @@ describe('ShoppingListPage claims', () => {
 
   // Only the two live-channel tests fake the clock; the rest would rather not
   // wait out an interval that exists for real phones.
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   const withClaims = (claims: Record<string, string>): ShoppingList => ({
     ...list,

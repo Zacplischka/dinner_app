@@ -4,6 +4,7 @@
 // Takeaway, a Craving and Headcount for Cook, a Mood for Watch — so the pages
 // own their forms and share this.
 
+import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -34,11 +35,7 @@ interface SessionSetup {
 export function useCreateAndJoinSession() {
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
-  const {
-    setLocation: setStoreLocation,
-    setSearchRadiusMiles: setStoreRadius,
-    setCurrentUserId,
-  } = useSessionStore();
+  const { setLocation: setStoreLocation, setSearchRadiusMiles: setStoreRadius } = useSessionStore();
   const { inviteFriendsToSession } = useFriendsStore();
 
   /**
@@ -52,6 +49,7 @@ export function useCreateAndJoinSession() {
     setup: SessionSetup,
     friendIds: Set<string>
   ): Promise<ApiError | null> {
+    const intent = beginSessionIntent();
     setIsCreating(true);
     try {
       const [response, { waitForConnection, joinSession }] = await Promise.all([
@@ -61,14 +59,15 @@ export function useCreateAndJoinSession() {
 
       // Connect WebSocket and wait for connection, then join as host
       await waitForConnection();
-      const ack = await joinSession(response.sessionCode, hostName);
+      if (!isSessionIntentCurrent(intent)) return null;
+      const ack = await joinSession(response.sessionCode, hostName, false, intent);
+      if (!isSessionIntentCurrent(intent)) return null;
 
       if (!ack.success) {
         setIsCreating(false);
         return ack.error;
       }
 
-      setCurrentUserId(ack.data.participantId);
       if (setup.location) setStoreLocation(setup.location);
       if (setup.searchRadiusMiles !== undefined) setStoreRadius(setup.searchRadiusMiles);
 
@@ -78,10 +77,13 @@ export function useCreateAndJoinSession() {
         friendIds.size > 0 &&
         !(await inviteFriendsToSession(response.sessionCode, [...friendIds]))
       ) {
+        if (!isSessionIntentCurrent(intent)) return null;
         toast.error(
           `Couldn't invite your friends. Share the code ${response.sessionCode} so they can join.`
         );
       }
+
+      if (!isSessionIntentCurrent(intent)) return null;
 
       // Reset before navigating too: today navigate() unmounts the setup page
       // immediately, but a caller that stays mounted (a modal, say) would
@@ -90,6 +92,7 @@ export function useCreateAndJoinSession() {
       navigate(`/session/${response.sessionCode}`);
       return null;
     } catch (err: unknown) {
+      if (!isSessionIntentCurrent(intent)) return null;
       setIsCreating(false);
       // An ApiClientError carries the public code the backend sent (#104); a
       // transport failure carries none, and `isApiError` is what tells them
@@ -97,6 +100,8 @@ export function useCreateAndJoinSession() {
       const message = err instanceof Error ? err.message : 'Failed to create session';
       const failure = { code: (err as { code?: unknown } | null)?.code, message };
       return isApiError(failure) ? failure : { code: 'UNKNOWN', message };
+    } finally {
+      setIsCreating(false);
     }
   }
 

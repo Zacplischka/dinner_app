@@ -32,8 +32,15 @@ export function useShoppingList(
 
   /** The list on screen, readable from inside the ticker. */
   const onScreen = useRef<ShoppingList | null>(null);
-  /** Bumped per change, so a read begun before it cannot overwrite its answer. */
-  const changes = useRef(0);
+  // Each mounted list owns its queue. A previous URL can finish its request,
+  // but cannot publish into this list or dispatch its queued writes.
+  const scope = useRef({
+    listId: undefined as string | undefined,
+    active: false,
+    pending: 0,
+    changes: 0,
+    queue: Promise.resolve(),
+  });
 
   const show = useCallback((fresh: ShoppingList) => {
     onScreen.current = fresh;
@@ -42,8 +49,8 @@ export function useShoppingList(
   }, []);
 
   useEffect(() => {
-    if (!listId) return;
-    let active = true;
+    const current = { listId, active: true, pending: 0, changes: 0, queue: Promise.resolve() };
+    scope.current = current;
     // A read of ours is out: a tick that stacks on it buys nothing. Scoped to
     // this effect run, not a ref — a guard that outlives the mount would eat
     // the remount's only read under StrictMode's dev double-mount (#303),
@@ -54,15 +61,19 @@ export function useShoppingList(
     onScreen.current = null;
     setList(null);
     setError('');
+    if (!listId) {
+      current.active = false;
+      return;
+    }
 
     const read = async () => {
-      if (reading) return;
+      if (reading || current.pending || !current.active) return;
       reading = true;
-      const at = changes.current;
+      const at = current.changes;
       try {
         const fresh = await getShoppingList(listId);
         // A Claim made while this read was in flight is newer than this read.
-        if (active && at === changes.current) {
+        if (current.active && at === current.changes) {
           pendingSince =
             fresh.pricingStatus === 'pending' ? (pendingSince ?? Date.now()) : undefined;
           show(fresh);
@@ -70,14 +81,14 @@ export function useShoppingList(
       } catch (err: unknown) {
         // A definitive expiry removes stale actions; transient failures retain
         // the recipe. An older read must not erase a successful newer Claim.
-        if (active && at === changes.current && isMissingList(err)) {
+        if (current.active && at === current.changes && isMissingList(err)) {
           onScreen.current = null;
           setList(null);
           clearInterval(ticker);
         }
         if (
-          active &&
-          at === changes.current &&
+          current.active &&
+          at === current.changes &&
           (!onScreen.current ||
             (onScreen.current.pricingStatus === 'pending' &&
               pendingSince !== undefined &&
@@ -91,6 +102,7 @@ export function useShoppingList(
                 : 'This shopping list could not be loaded.'
           );
         }
+        if (current.active && at === current.changes && isMissingList(err)) current.active = false;
       } finally {
         reading = false;
       }
@@ -107,25 +119,40 @@ export function useShoppingList(
         void read();
     }, livePollMs ?? 2000);
     return () => {
-      active = false;
+      current.active = false;
       clearInterval(ticker);
     };
   }, [listId, livePollMs, show]);
 
   const applyChange = useCallback(
-    async (action: () => Promise<ShoppingList>) => {
-      changes.current += 1;
-      try {
-        show(await action());
-      } catch (err: unknown) {
-        if (isMissingList(err)) {
-          onScreen.current = null;
-          setList(null);
+    (action: () => Promise<ShoppingList>) => {
+      const current = scope.current;
+      if (!current.active || current.listId !== listId) return Promise.resolve();
+      // Serialize requests, not just their displayed answers: otherwise an old
+      // request can still commit after the newer intent on the server.
+      current.pending += 1;
+      current.changes += 1;
+      current.queue = current.queue.then(async () => {
+        try {
+          if (!current.active) return;
+          const fresh = await action();
+          if (current.active) show(fresh);
+        } catch (err: unknown) {
+          if (!current.active) return;
+          if (isMissingList(err)) {
+            current.active = false;
+            onScreen.current = null;
+            setList(null);
+          }
+          setError(err instanceof Error ? err.message : 'That did not go through. Try again.');
+        } finally {
+          current.pending -= 1;
+          current.changes += 1;
         }
-        setError(err instanceof Error ? err.message : 'That did not go through. Try again.');
-      }
+      });
+      return current.queue;
     },
-    [show]
+    [listId, show]
   );
 
   return { list, error, applyChange };

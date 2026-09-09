@@ -1,3 +1,4 @@
+import { beginSessionIntent, isSessionIntentCurrent } from '../../services/sessionIntent';
 // SessionInviteCard Component
 // Displays a session invite with accept/decline actions
 
@@ -19,6 +20,10 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleAccept = async () => {
+    const intent = beginSessionIntent(
+      invite.sessionCode,
+      currentUserProfile?.displayName || 'Guest'
+    );
     setIsLoading(true);
     setError(null);
     try {
@@ -32,7 +37,9 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
       // socketBindings.joinSession owns those, and only once the ack succeeds.
       await waitForConnection();
       const displayName = currentUserProfile?.displayName || 'Guest';
-      const ack = await joinSession(invite.sessionCode, displayName);
+      if (!isSessionIntentCurrent(intent)) return;
+      const ack = await joinSession(invite.sessionCode, displayName, false, intent);
+      if (!isSessionIntentCurrent(intent)) return;
       if (!ack.success) {
         setError(ack.error.message);
         return;
@@ -41,11 +48,14 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
       // The join acked, so the Session is joined either way. A failed accept
       // only leaves the row pending — say so and go, rather than stranding a
       // joined user on /friends or dropping a card the server still lists.
-      if (!(await acceptSessionInvite(invite.id))) {
+      const accepted = await acceptSessionInvite(invite.id);
+      if (!isSessionIntentCurrent(intent)) return;
+      if (!accepted) {
         toast.error('Joined — but the invite still shows on your Friends list.');
       }
-      navigate(`/session/${invite.sessionCode}`);
+      if (isSessionIntentCurrent(intent)) navigate(`/session/${invite.sessionCode}`);
     } catch (err) {
+      if (!isSessionIntentCurrent(intent)) return;
       console.error('Error joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
     } finally {
@@ -113,7 +123,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           <button
             onClick={handleDecline}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-muted bg-surface rounded-xl border border-line/30 hover:bg-line hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-muted bg-surface rounded-xl border border-line/30 hover:bg-line hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Decline
           </button>

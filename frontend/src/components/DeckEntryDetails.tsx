@@ -33,6 +33,24 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
   const recipe = isRecipe(entry) ? entry : undefined;
+  // ponytail: highlight the viewer's weekday for the local pilot; venue-local
+  // dates need timezone data if planning across timezones becomes a requirement.
+  const today = new Date().toLocaleDateString('en-AU', { weekday: 'long' });
+  const ratingCount =
+    restaurant?.userRatingCount === undefined
+      ? ''
+      : `${restaurant.userRatingCount.toLocaleString('en-AU')} rating${restaurant.userRatingCount === 1 ? '' : 's'}`;
+  let websiteHref: string | undefined;
+  if (restaurant?.websiteUrl) {
+    try {
+      const url = new URL(restaurant.websiteUrl);
+      if (url.protocol === 'https:' && !url.username && !url.password) {
+        websiteHref = url.href;
+      }
+    } catch {
+      // Older Session snapshots may contain an invalid vendor URL; omit the link.
+    }
+  }
   const steps = recipe?.details?.steps ?? [];
   const meta = movie && movieMeta(movie);
   const tmdb = movie && tmdbPath(movie.placeId);
@@ -112,8 +130,12 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
           {restaurant && (
             <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-text/80">
               {restaurant.rating !== undefined && (
-                <span aria-label={`Rating ${restaurant.rating.toFixed(1)}`} className="text-amber">
+                <span
+                  aria-label={`Rating ${restaurant.rating.toFixed(1)}${ratingCount ? ` · ${ratingCount}` : ''}`}
+                  className="text-amber"
+                >
                   ★ {restaurant.rating.toFixed(1)}
+                  {ratingCount && ` · ${ratingCount}`}
                 </span>
               )}
               {restaurant.priceLevel !== undefined && (
@@ -211,6 +233,41 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
           {movie && <TmdbCredit placeId={movie.placeId} />}
 
           {restaurant?.address && <p className="mt-3 text-sm text-muted">{restaurant.address}</p>}
+
+          {!!restaurant?.openingHours?.length && (
+            <section className="mt-3 text-sm text-muted" aria-label="Opening hours">
+              <h3 className="font-bold text-text">Opening hours</h3>
+              <ul className="mt-2 space-y-1">
+                {restaurant.openingHours.map((hours, index) => (
+                  <li key={index}>
+                    {hours.startsWith(`${today}:`) ? (
+                      <strong className="text-text">{hours}</strong>
+                    ) : (
+                      hours
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {restaurant?.phone && (
+            <a
+              href={`tel:${restaurant.phone}`}
+              className="mt-2 flex min-h-[44px] items-center text-sm text-cyan underline"
+            >
+              Call {restaurant.phone}
+            </a>
+          )}
+          {websiteHref && (
+            <a
+              href={websiteHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 flex min-h-[44px] items-center text-sm text-cyan underline"
+            >
+              Visit website
+            </a>
+          )}
 
           {movie && <MovieLinks movie={movie} />}
 

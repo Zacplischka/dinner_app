@@ -81,6 +81,13 @@ export default defineConfig({
       },
     },
     {
+      name: 'mobile-webkit',
+      // Shared Lobby, fixed Deck and reload recovery, plus a complete Watch round.
+      // Browser engine coverage only; this does not execute a native app.
+      testMatch: ['**/collaborative-session.spec.ts', '**/watch.spec.ts'],
+      use: { ...devices['iPhone 12 Pro'], browserName: 'webkit' },
+    },
+    {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
@@ -93,7 +100,7 @@ export default defineConfig({
   // Same two entries locally and in CI; the CI e2e job only supplies Redis.
   webServer: [
     {
-      command: 'npm run build && npm run preview -- --port 3000',
+      command: `npm run build && npm run preview -- --port ${new URL(BASE_URL).port || '3000'}`,
       // `vite build` reads .env.production, which points the bundle at the
       // production backend; pin it to the backend started below instead.
       env: { VITE_API_BASE_URL: `${BACKEND_URL}/api`, VITE_BACKEND_URL: BACKEND_URL },

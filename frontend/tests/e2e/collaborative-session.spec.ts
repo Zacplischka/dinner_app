@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { WatchSetupPage, JoinSessionPage, SessionLobbyPage } from './pages';
+import { WatchSetupPage, JoinSessionPage, SessionLobbyPage, SelectionPage } from './pages';
 
 test('everyone chooses and confirms Ready, then returns from home to the shared round', async ({
   page,
   browser,
   baseURL,
 }) => {
+  test.setTimeout(60_000);
   const host = new WatchSetupPage(page);
   await host.goto();
   await host.enterName('Host');
@@ -19,7 +20,21 @@ test('everyone chooses and confirms Ready, then returns from home to the shared 
     const hostLobby = new SessionLobbyPage(page);
     const guestLobby = new SessionLobbyPage(guest);
     await hostLobby.waitForParticipant('Guest');
+    for (const person of [page, guest]) {
+      const ready = person.getByRole('button', { name: 'I’m ready', exact: true });
+      await expect(ready).toBeInViewport({ ratio: 1 });
+      await expect(
+        person
+          .locator('summary')
+          .filter({ hasText: /^Optional interests/ })
+          .locator('..')
+      ).not.toHaveAttribute('open');
+    }
     await host.pickChip('Action');
+    await guest
+      .locator('summary')
+      .filter({ hasText: /^Optional interests/ })
+      .click();
     await guest.getByRole('button', { name: 'Mystery', exact: true }).click();
     await expect(guest.getByRole('button', { name: 'Mystery', exact: true })).toHaveAttribute(
       'aria-pressed',
@@ -52,6 +67,29 @@ test('everyone chooses and confirms Ready, then returns from home to the shared 
     await guest.reload();
     await expect(guest.locator('[data-swipe-card]').first().getByRole('heading')).toHaveText(title);
     await expect(page.getByLabel('Guest is choosing', { exact: true })).toBeVisible();
+
+    // Both Participants choose the same first Movie, then complete the round.
+    const hostSelection = new SelectionPage(page);
+    const guestSelection = new SelectionPage(guest);
+    await hostSelection.likeRestaurant();
+    await guestSelection.likeRestaurant();
+    // Both liked the same Movie: wait for each asynchronous Full House broadcast.
+    for (const participant of [page, guest]) {
+      const fullHouse = participant.getByRole('dialog', { name: 'EVERYONE LIKED THIS' });
+      await expect(fullHouse).toBeVisible();
+      await fullHouse.getByRole('button', { name: 'Keep swiping' }).click();
+    }
+    await Promise.all([hostSelection.passAllRemaining(), guestSelection.passAllRemaining()]);
+    await hostSelection.submitSelections();
+    await guestSelection.submitSelections();
+    await expect(page).toHaveURL(new RegExp(`/session/${code}/results$`));
+    await expect(guest).toHaveURL(new RegExp(`/session/${code}/results$`));
+    await expect(page.getByText(title, { exact: true }).first()).toBeVisible();
+    await expect(guest.getByText(title, { exact: true }).first()).toBeVisible();
+    await expect(guest.getByRole('link', { name: 'Where to watch' })).toHaveAttribute(
+      'href',
+      /https:\/\/www\.themoviedb\.org\/(movie|tv)\/\d+\/watch/
+    );
   } finally {
     await guestContext.close();
   }

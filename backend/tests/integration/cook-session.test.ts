@@ -3,7 +3,7 @@
 // rule crowns a Recipe outright. Solo and group, no solo/group question.
 // Spoonacular is faked at the fetch boundary; everything else is the real
 // service over real Redis. The second supply is substituted at its own seam:
-// `OWNED_RECIPES_DIR` (vitest.workspace.ts) points the app's corpus at three
+// `OWNED_RECIPES_DIR` (vitest.config.ts) points the app's corpus at three
 // italian mains under tests/fixtures/owned-recipes/, so the owned counts below
 // are about the blend and not about what the shipped batch holds this week.
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';

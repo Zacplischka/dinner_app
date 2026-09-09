@@ -1,5 +1,7 @@
 # Epic #434 implementation
 
+Historical implementation record from 7 September 2026. Checks below apply to that implementation, not later revisions or the current deployment.
+
 Work branch: `codex/epic-434`. Review baseline: `f4c50cd` (the starting `main`).
 
 | Issue      | Delivered behavior                                                                                                                                                           |
@@ -44,3 +46,11 @@ Independent spec and standards reviews used `f4c50cd` as the baseline. All six a
 Live paid-Places Restaurant browser flows and Redis failover/lease-loss behavior were not exercised. Restaurant command/service paths were covered locally. The exact reported Recipe instruction defect and Armenian stew image remain unconfirmed under the explicitly permitted diagnostic outcome for #448/#449; their evidence and reproduction inputs are recorded in the Recipe document. No deployment, production latency claim, or issue closure is implied by these local checks.
 
 Local screenshots are under `output/playwright/` (not committed). The actual local cold/warm grocery probe and limitations are in the Recipe evidence document; production latency was not measured.
+
+## Brief disposition and unresolved reports — 8 September 2026
+
+The [accepted UX brief](archive/ux-refresh.md) is retained for original acceptance details and design provenance. [ADR 0015](adr/0015-gather-before-choosing-the-deck.md) remains the architecture decision and [CONTEXT.md](../CONTEXT.md) the domain authority. The delivered-behavior table above replaces the brief's old current-defect and remaining-work list; those observations were against `f4c50cd`, before this implementation. Current public copy and visuals follow the [YupCrew direction](yupcrew-rebrand-plan.md), superseding the brief's working slogans.
+
+Deck allocation/scarcity, name entry, collaborative choices, return-home/rejoin, Watch Match presentation and Recipe access during pricing have scoped implementation evidence above. Subsequent [UAT improvements](evidence/uat-improvements.md) record method previews and related corrections; [cat moments](evidence/cat-moments.md) retain motion/accessibility behavior and their own test scope. None of these historical checks proves a later build passes.
+
+The reported instruction spacing/order (#448) and Armenian stew image (#449) remain **unconfirmed**, not resolved by archiving. Their [diagnostic record](recipe-ux-validation.md) preserves what was inspected and the missing reproduction inputs: an affected Recipe/source or Shopping List reference, exact text or identifying screenshot, and source payload/image. Investigate the actual affected data before normalizing instructions or replacing imagery. Missing source descriptions/times must remain honest unavailable states; no invented data or blanket image repair is authorized.

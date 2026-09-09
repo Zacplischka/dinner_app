@@ -83,6 +83,14 @@ export default function LobbyChoices({
 }) {
   const me = lobby.participants.find((p) => p.participantId === participantId);
   const mood = me?.mood ?? emptyMood;
+  const interestSummary =
+    lobby.branch === 'watch'
+      ? [
+          ...(mood.mediaTypes ?? []).map((type) => (type === 'tv' ? 'Series' : 'Movies')),
+          ...mood.genres,
+          ...mood.decades,
+        ]
+      : (me?.cuisines ?? []);
   const [mode, setMode] = useState<LocationMode>('current');
   const [query, setQuery] = useState('');
   const [finding, setFinding] = useState(false);
@@ -180,34 +188,44 @@ export default function LobbyChoices({
         <p className="mt-2 text-sm text-muted">
           {restaurant
             ? 'Choose the shared search area and radius. The host can change how many restaurants to swipe. Changes ask everyone to confirm Ready again.'
-            : 'Choices are optional. Everyone’s interests contribute; choosing nothing means you’re happy with anything. Changes ask you to confirm Ready again.'}
+            : lobby.branch === 'cook'
+              ? 'Cuisine interests are optional. Dietary requirements apply to every recipe. Changes ask you to confirm Ready again.'
+              : 'Choices are optional. Everyone’s interests contribute; choosing nothing means you’re happy with anything. Changes ask you to confirm Ready again.'}
         </p>
       </div>
       {lobby.branch === 'watch' && (
-        <>
-          <Chips
-            label="Movies or series"
-            values={MEDIA_TYPES}
-            selected={mood.mediaTypes ?? []}
-            onChange={(mediaTypes) => void onChange({ mood: { ...mood, mediaTypes } })}
-            disabled={busy}
-            labels={{ movie: 'Movies', tv: 'Series' }}
-          />
-          <Chips
-            label="Your genres"
-            values={GENRES}
-            selected={mood.genres}
-            onChange={(genres) => void onChange({ mood: { ...mood, genres } })}
-            disabled={busy}
-          />
-          <Chips
-            label="Your decades"
-            values={DECADES}
-            selected={mood.decades}
-            onChange={(decades) => void onChange({ mood: { ...mood, decades } })}
-            disabled={busy}
-          />
-        </>
+        <details className="rounded-xl border border-line p-3">
+          <summary className="min-h-[44px] cursor-pointer py-2 font-bold">
+            Optional interests
+            <span className="mt-1 block text-sm font-normal text-muted">
+              {interestSummary.length ? interestSummary.join(', ') : 'Happy with anything'}
+            </span>
+          </summary>
+          <div className="mt-3 space-y-6">
+            <Chips
+              label="Movies or series"
+              values={MEDIA_TYPES}
+              selected={mood.mediaTypes ?? []}
+              onChange={(mediaTypes) => void onChange({ mood: { ...mood, mediaTypes } })}
+              disabled={busy}
+              labels={{ movie: 'Movies', tv: 'Series' }}
+            />
+            <Chips
+              label="Your genres"
+              values={GENRES}
+              selected={mood.genres}
+              onChange={(genres) => void onChange({ mood: { ...mood, genres } })}
+              disabled={busy}
+            />
+            <Chips
+              label="Your decades"
+              values={DECADES}
+              selected={mood.decades}
+              onChange={(decades) => void onChange({ mood: { ...mood, decades } })}
+              disabled={busy}
+            />
+          </div>
+        </details>
       )}
       {lobby.branch === 'cook' && (
         <>
@@ -241,14 +259,6 @@ export default function LobbyChoices({
             </details>
           </div>
           <Chips
-            label="Your cuisine interests"
-            values={CUISINES}
-            selected={me.cuisines ?? []}
-            onChange={(cuisines) => void onChange({ cuisines })}
-            disabled={busy}
-            warm
-          />
-          <Chips
             label="Your dietary requirements"
             values={DIETS}
             selected={me.diets ?? []}
@@ -259,6 +269,24 @@ export default function LobbyChoices({
             Every recipe must meet everyone’s requirements. Recipe labels are not an allergy-safety
             guarantee; always check ingredients.
           </p>
+          <details className="rounded-xl border border-line p-3">
+            <summary className="min-h-[44px] cursor-pointer py-2 font-bold">
+              Optional cuisine interests
+              <span className="mt-1 block text-sm font-normal capitalize text-muted">
+                {interestSummary.length ? interestSummary.join(', ') : 'Happy with anything'}
+              </span>
+            </summary>
+            <div className="mt-3">
+              <Chips
+                label="Your cuisine interests"
+                values={CUISINES}
+                selected={me.cuisines ?? []}
+                onChange={(cuisines) => void onChange({ cuisines })}
+                disabled={busy}
+                warm
+              />
+            </div>
+          </details>
           {isHost ? (
             <div>
               <label htmlFor="headcount" className="label">
@@ -291,7 +319,9 @@ export default function LobbyChoices({
       )}
       {restaurant && (
         <section className="space-y-3" aria-label="Shared search area">
-          <h3 className="font-bold">Where are we eating?</h3>
+          <h3 className="font-bold">
+            {lobby.branch === 'takeaway' ? 'Where are we ordering in?' : 'Where are we eating out?'}
+          </h3>
           <p className="text-xs text-muted">
             Only used to find restaurants near your group. Agree on one location together; any
             update asks everyone to confirm Ready again.

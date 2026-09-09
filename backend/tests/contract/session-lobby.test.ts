@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, afterEach, describe, expect, it } from 'vitest';
+import { beforeAll, afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
 import request from 'supertest';
 import type {
@@ -12,6 +12,8 @@ import type {
 import { startSocketServer, stopSocketServer } from '../helpers/socketServer.js';
 import { cleanupTestData, getTestRedis, waitForRedis } from '../helpers/testSetup.js';
 import { createSessionStore } from '../../src/store/sessionStore.js';
+import { sessionService } from '../../src/server.js';
+import { supabase } from '../../src/services/supabase.js';
 import { randomUUID } from 'node:crypto';
 
 function value<T>(ack: Ack<T>): T {
@@ -35,10 +37,12 @@ describe('gather-first Session wire contract', () => {
   afterAll(async () => {
     await stopSocketServer();
   });
-  async function client(origin?: string) {
+  async function client(origin?: string, token?: string) {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> = connect(url, {
       transports: ['websocket'],
       reconnection: false,
+      auth: token ? { token } : undefined,
+      timeout: 500,
       extraHeaders: origin ? { Origin: origin } : undefined,
     });
     sockets.push(socket);
@@ -54,6 +58,89 @@ describe('gather-first Session wire contract', () => {
     if (!body.lobby) throw new Error('Expected collaborative Lobby');
     return body.lobby;
   }
+
+  it('orders delayed admission and Leave through server completion on the same socket', async () => {
+    const create = () =>
+      request(url)
+        .post('/api/sessions')
+        .send({ hostName: 'Host', branch: 'watch', collaborative: true })
+        .expect(201);
+    const firstCode: string = (await create()).body.sessionCode;
+    const nextCode: string = (await create()).body.sessionCode;
+    const socket = await client();
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = sessionService.joinSession;
+    const join = vi.spyOn(sessionService, 'joinSession').mockImplementationOnce(async (...args) => {
+      await held;
+      return original(...args);
+    });
+    try {
+      const first = socket.emitWithAck('session:join', {
+        sessionCode: firstCode,
+        displayName: 'Host',
+      });
+      await vi.waitFor(() => expect(join).toHaveBeenCalledOnce());
+      const leave = socket.emitWithAck('session:leave', { sessionCode: firstCode });
+      const next = socket.emitWithAck('session:join', {
+        sessionCode: nextCode,
+        displayName: 'Host',
+      });
+      // Ordered packet barrier: an unrelated command acks while admission is held.
+      await socket.emitWithAck('selection:submit', { sessionCode: 'bad', selections: [] });
+      expect(join).toHaveBeenCalledOnce();
+      release();
+      value(await first);
+      value(await leave);
+      value(await next);
+      expect((await lobby(firstCode)).participants).toHaveLength(0);
+      expect((await lobby(nextCode)).participants.map((p) => p.participantId)).toEqual([socket.id]);
+    } finally {
+      release();
+      join.mockRestore();
+    }
+  });
+
+  it('recovers a Participant with cached Profile auth while verification never settles', async () => {
+    const created = await request(url)
+      .post('/api/sessions')
+      .send({ hostName: 'Host', branch: 'watch', collaborative: true })
+      .expect(201);
+    const sessionCode: string = created.body.sessionCode;
+    const original = await client();
+    const joined = value(
+      await original.emitWithAck('session:join', { sessionCode, displayName: 'Host' })
+    );
+    original.close();
+    const verification = vi
+      .spyOn(supabase.auth, 'getUser')
+      .mockImplementation(() => new Promise(() => {}));
+    try {
+      const reopened = await client(undefined, 'cached-profile-token');
+      const recovered = value(
+        await reopened.emitWithAck('session:join', {
+          sessionCode,
+          displayName: 'Host',
+          rejoinToken: joined.rejoinToken,
+        })
+      );
+      expect(recovered.rejoinToken).toBe(joined.rejoinToken);
+      expect(verification).not.toHaveBeenCalled();
+      const stranger = await client(undefined, 'another-cached-token');
+      expect(
+        await stranger.emitWithAck('session:join', {
+          sessionCode,
+          displayName: 'Host',
+          rejoinToken: randomUUID(),
+        })
+      ).toMatchObject({ success: false, error: { code: 'NOT_IN_SESSION' } });
+      await request(url).get('/api/friends').expect(401);
+    } finally {
+      verification.mockRestore();
+    }
+  });
 
   it('accepts the exact bundled WebView origins for HTTP and sockets and rejects an unrelated origin', async () => {
     for (const origin of ['capacitor://localhost', 'https://localhost']) {

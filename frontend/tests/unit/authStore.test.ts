@@ -48,7 +48,8 @@ describe('authStore', () => {
   });
 
   it('should initialize from the current Supabase session and auth change events', async () => {
-    let authStateCallback: ((_event: string, session: typeof session | null) => void) | undefined;
+    let authStateCallback:
+      ((_event: string, nextSession: typeof session | null) => void) | undefined;
     const unsubscribe = vi.fn();
     authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
     authMocks.onAuthStateChange.mockImplementationOnce((callback) => {
@@ -150,7 +151,8 @@ describe('authStore', () => {
       sessionInvites: [{ id: 'invite-1' }],
     } as any;
     const empty = { friends: [], friendRequests: [], sessionInvites: [] };
-    let authStateCallback: ((_event: string, session: typeof session | null) => void) | undefined;
+    let authStateCallback:
+      ((_event: string, nextSession: typeof session | null) => void) | undefined;
     authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
     authMocks.onAuthStateChange.mockImplementationOnce((callback) => {
       authStateCallback = callback;

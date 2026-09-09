@@ -106,73 +106,83 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     participantId: string,
     placeId: string
   ): Promise<OrderState | OrderUnavailable> {
-    if (!(await store.readSession(sessionCode))) {
-      throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
+    async function validateOpening() {
+      if (!(await store.readSession(sessionCode))) {
+        throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
+      }
+      if (!(await store.isParticipant(sessionCode, participantId))) {
+        throw new DomainError('NOT_IN_SESSION', 'You are not in this session');
+      }
+      if (!(await store.isResultPlaceId(sessionCode, placeId))) {
+        throw new DomainError('VALIDATION_ERROR', 'That Venue was not this Session outcome');
+      }
+      const hash = await store.readOrder(sessionCode);
+      return hash ? toOrderState(hash, await store.readOrderLines(sessionCode)) : null;
     }
-    if (!(await store.isParticipant(sessionCode, participantId))) {
-      throw new DomainError('NOT_IN_SESSION', 'You are not in this session');
-    }
-    if (!(await store.isResultPlaceId(sessionCode, placeId))) {
-      throw new DomainError('VALIDATION_ERROR', 'That Venue was not this Session outcome');
-    }
+    const initial = await store.withSessionLock(sessionCode, async () => ({
+      existing: await validateOpening(),
+      round: await store.readOrderRound(sessionCode),
+    }));
+    if (initial.existing) return initial.existing;
 
-    // Rejoin / reload / late-join recovery: an open order is returned untouched,
-    // even when its placeId differs from the requested one. No re-derive, no read.
-    const existing = await store.readOrder(sessionCode);
-    if (existing) {
-      return toOrderState(existing, await store.readOrderLines(sessionCode));
-    }
-
+    // Snapshot IO must not hold up Leave, Restart, or another Participant's order.
     const snapshot = await snapshotStore.getLatest(placeId);
-    if (!snapshot || !isFresh(snapshot, freshnessMs, failureFreshnessMs)) {
-      return { reason: 'stale', message: 'Prices for this Venue are stale. Please try again.' };
-    }
+    return store.withSessionLock(sessionCode, async () => {
+      const existing = await validateOpening();
+      if ((await store.readOrderRound(sessionCode)) !== initial.round) {
+        throw new DomainError(
+          'VALIDATION_ERROR',
+          'This Session restarted. Open the current outcome.'
+        );
+      }
+      if (existing) return existing;
+      if (!snapshot || !isFresh(snapshot, freshnessMs, failureFreshnessMs)) {
+        return { reason: 'stale', message: 'Prices for this Venue are stale. Please try again.' };
+      }
 
-    // `failed` is retryable (short freshness), not a permanent no-menu verdict.
-    if (
-      snapshot.payload.ubereats.status === 'failed' ||
-      snapshot.payload.doordash.status === 'failed'
-    ) {
-      return { reason: 'stale', message: 'Prices for this Venue are stale. Please try again.' };
-    }
-    if (
-      snapshot.payload.ubereats.status === 'not_found' &&
-      snapshot.payload.doordash.status === 'not_found'
-    ) {
-      return { reason: 'no_menu', message: 'This Venue has no menu to order from.' };
-    }
+      // `failed` is retryable (short freshness), not a permanent no-menu verdict.
+      if (
+        snapshot.payload.ubereats.status === 'failed' ||
+        snapshot.payload.doordash.status === 'failed'
+      ) {
+        return { reason: 'stale', message: 'Prices for this Venue are stale. Please try again.' };
+      }
+      if (
+        snapshot.payload.ubereats.status === 'not_found' &&
+        snapshot.payload.doordash.status === 'not_found'
+      ) {
+        return { reason: 'no_menu', message: 'This Venue has no menu to order from.' };
+      }
 
-    // deriveComparison is pure and in-process, called only for cheaperMenu.
-    const comparison = deriveComparison(snapshot);
-    const platform: OrderPlatform =
-      comparison.cheaperMenu?.platform ??
-      (snapshot.payload.ubereats.status === 'resolved' ? 'ubereats' : 'doordash');
-    const menu = snapshot.payload[platform].menu; // the RAW capture, never deriveComparison's output
-    if (menu.length === 0) {
-      return { reason: 'no_menu', message: 'This Venue has no menu to order from.' };
-    }
+      // deriveComparison is pure and in-process, called only for cheaperMenu.
+      const comparison = deriveComparison(snapshot);
+      const platform: OrderPlatform =
+        comparison.cheaperMenu?.platform ??
+        (snapshot.payload.ubereats.status === 'resolved' ? 'ubereats' : 'doordash');
+      const menu = snapshot.payload[platform].menu; // the RAW capture, never deriveComparison's output
+      if (menu.length === 0) {
+        return { reason: 'no_menu', message: 'This Venue has no menu to order from.' };
+      }
 
-    const fields: Record<string, string> = {
-      sessionCode,
-      placeId,
-      venueName: snapshot.venueName,
-      platform,
-      pricesAt: snapshot.fetchedAt,
-      menu: JSON.stringify(menu),
-      feeCents: '0',
-      state: 'building',
-    };
-    const storeUrl = snapshot.payload[platform].storeUrl;
-    if (storeUrl) fields.storeUrl = storeUrl; // hset rejects undefined
-    if (comparison.cheaperMenu?.platform === platform) {
-      fields.cheaperPercent = String(comparison.cheaperMenu.percent);
-    }
+      const fields: Record<string, string> = {
+        sessionCode,
+        placeId,
+        venueName: snapshot.venueName,
+        platform,
+        pricesAt: snapshot.fetchedAt,
+        menu: JSON.stringify(menu),
+        feeCents: '0',
+        state: 'building',
+      };
+      const storeUrl = snapshot.payload[platform].storeUrl;
+      if (storeUrl) fields.storeUrl = storeUrl; // hset rejects undefined
+      if (comparison.cheaperMenu?.platform === platform) {
+        fields.cheaperPercent = String(comparison.cheaperMenu.percent);
+      }
 
-    // ponytail: identical concurrent opens, no lock — both writers HSET byte-identical metadata derived
-    // from the same Snapshot row, and no Order Line can exist before the open. If a Session ever needs two
-    // live baskets, key the order hash by placeId.
-    await store.openOrder(sessionCode, fields);
-    return toOrderState(fields, {});
+      await store.openOrder(sessionCode, fields);
+      return toOrderState(fields, {});
+    });
   }
 
   /**
@@ -261,5 +271,11 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
     );
   }
 
-  return { open, addItem, claimBuyer };
+  return {
+    open,
+    addItem: (sessionCode, participantId, index, delta) =>
+      store.withSessionLock(sessionCode, () => addItem(sessionCode, participantId, index, delta)),
+    claimBuyer: (sessionCode, participantId, feeCents) =>
+      store.withSessionLock(sessionCode, () => claimBuyer(sessionCode, participantId, feeCents)),
+  };
 }

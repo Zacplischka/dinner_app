@@ -1,4 +1,3 @@
-import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -79,6 +78,21 @@ describe('ResultsPage', () => {
     ).toHaveTextContent('Reconnecting');
   });
 
+  it.each(['__proto__', 'constructor', 'toString'])(
+    'renders %s selections and safely handles a missing entry',
+    (name) => {
+      seedStore({
+        participants: [participant('p1', name), bob, cara],
+        allSelections: JSON.parse(JSON.stringify({ [name]: [pizza.placeId], Bob: [], Cara: [] })),
+      });
+      renderResults();
+      expect(screen.getByText(name)).toBeInTheDocument();
+      expect(screen.getAllByText(pizza.name).length).toBeGreaterThan(0);
+      act(() => useSessionStore.setState({ allSelections: { Bob: [], Cara: [] } }));
+      expect(screen.getByText(name)).toBeInTheDocument();
+    }
+  );
+
   describe('Compare prices link (#71)', () => {
     it('shows a Compare prices link on each Match card targeting the Comparison route', () => {
       seedStore({
@@ -123,8 +137,12 @@ describe('ResultsPage', () => {
   });
 
   describe('Match card hero photo (#75, #90)', () => {
-    beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     // The rating-sorted fallback crown (#166) picks Noodle House (4.8 > 4.2),
     // so look each card up by name instead of assuming DOM order. Both names
@@ -590,13 +608,19 @@ describe('ResultsPage', () => {
         lobby: {
           sessionCode: 'AB123',
           branch: 'takeaway',
+          mealType: 'main course',
           state: 'complete',
           revision: 4,
           round: 1,
           headcount: 2,
           deckSize: 5,
           searchRadiusMiles: 5,
-          participants: [alice, bob].map((p) => ({ ...p, ready: true })),
+          participants: [alice, bob].map((p) => ({
+            ...p,
+            ready: true,
+            isOnline: true,
+            waitingForNextRound: false,
+          })),
         },
       });
       vi.mocked(restartSession).mockRejectedValueOnce(
@@ -1121,6 +1145,19 @@ describe('ResultsPage', () => {
       expect(crown.textContent).toContain('1979 · 117 min · 93% on TMDB');
       expect(crown.textContent).toContain('Everyone liked this one.');
       expect(crown.querySelector('img')).toHaveAttribute('src', alien.photoUrl);
+      const where = within(crown as HTMLElement).getByRole('link', { name: 'Where to watch' });
+      expect(where).toHaveClass('btn-primary');
+      expect(within(crown as HTMLElement).getByRole('link', { name: 'Watch trailer' })).toHaveClass(
+        'btn-secondary'
+      );
+      expect(
+        where.compareDocumentPosition(crown.querySelector('img')!) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        where.compareDocumentPosition(screen.getByRole('heading', { name: 'MATCH!' })) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
       // The crown is where the overview can actually be read, credited where it appears.
       expect(within(crown as HTMLElement).getByText(alien.overview)).toHaveClass('line-clamp-3');
       expect(within(crown as HTMLElement).getByRole('link', { name: 'TMDB' })).toHaveAttribute(
@@ -1221,7 +1258,7 @@ describe('ResultsPage', () => {
       });
       renderResults();
 
-      expect(screen.getByRole('link', { name: 'Watch trailer' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Watch trailer' })).toHaveClass('btn-primary');
       expect(screen.queryByRole('link', { name: 'Where to watch' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'TMDB' })).not.toBeInTheDocument();
     });

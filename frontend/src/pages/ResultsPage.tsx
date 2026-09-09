@@ -84,12 +84,9 @@ function RecipeCrown({
   );
 }
 
-// The Watch ending: one prominent crown, followed by the other unanimous matches.
-// The trailer is the one continuation — a YouTube
-// search when the corpus has no trailer, so every crown has a next step — the
-// score is a 0-100 figure, never the Restaurant's stars, and where to watch is
-// TMDB's own page for the title in Australia (ADR 0014): JustWatch's data,
-// shown where its licence already covers it, at the cost of no API call.
+// The Watch ending leads with the chosen title and the Australia viewing link
+// (ADR 0014), before its poster and celebration. Legacy Movies without a TMDB
+// identity still have the trailer/search continuation in MovieLinks.
 // ponytail: MovieCrown beside RecipeCrown; fold both into one EntryCrown on a fourth kind.
 function MovieCrown({
   movie,
@@ -108,19 +105,23 @@ function MovieCrown({
       data-movie-crown={isCrown || undefined}
       className={`p-4 border rounded-market-md ${isCrown ? 'bg-lime/10 border-lime shadow-glow-lime' : 'bg-surface border-line'}`}
     >
-      {/* A poster is portrait, so it gets a 2:3 frame rather than the landscape hero strip. */}
-      {movie.photoUrl && (
-        <RetryingPhoto
-          url={movie.photoUrl}
-          className="mx-auto mb-3 h-48 w-32 rounded-market-md object-cover"
-        />
-      )}
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">
         {isCrown ? 'TONIGHT’S ' : ''}
         {series ? 'SERIES' : 'MOVIE'}
         {isCrown ? '' : ' · MATCH'}
       </p>
-      <p className="text-lg font-semibold text-text">{movie.name}</p>
+      <h2 className="break-words text-xl font-semibold text-text">{movie.name}</h2>
+      <p className="text-sm text-muted mt-2">{reason}</p>
+      <MovieLinks movie={movie} />
+      <div className="mt-4">
+        {/* A poster is portrait, so it gets a 2:3 frame rather than the landscape hero strip. */}
+        {movie.photoUrl && (
+          <RetryingPhoto
+            url={movie.photoUrl}
+            className="mx-auto mb-3 h-48 w-32 rounded-market-md object-cover"
+          />
+        )}
+      </div>
       {meta && <p className="text-sm text-muted mt-1">{meta}</p>}
       {movie.overview && (
         <>
@@ -128,9 +129,6 @@ function MovieCrown({
         </>
       )}
       <TmdbCredit placeId={movie.placeId} />
-      <p className="text-sm text-muted mt-2">{reason}</p>
-
-      <MovieLinks movie={movie} />
     </div>
   );
 }
@@ -240,6 +238,12 @@ function MatchCard({
   );
 }
 
+function selectionsFor(allSelections: Record<string, string[]>, displayName: string): string[] {
+  return Object.prototype.hasOwnProperty.call(allSelections, displayName)
+    ? allSelections[displayName]
+    : [];
+}
+
 // The per-Participant Selection lists, shared by the always-visible
 // "Everyone's selections" section and the unanimous-vote disclosure (#85).
 function SelectionsList({
@@ -256,7 +260,7 @@ function SelectionsList({
   return (
     <div className="space-y-4">
       {participants.map((participant, participantIndex) => {
-        const participantSelections = allSelections[participant.displayName] || [];
+        const participantSelections = selectionsFor(allSelections, participant.displayName);
         return (
           <div
             key={participant.participantId}
@@ -450,7 +454,7 @@ export default function ResultsPage() {
     if (hasOverlap || participants.length < 3) return misses;
     const selectionCounts = new Map<string, number>();
     participants.forEach((participant) => {
-      (allSelections[participant.displayName] || []).forEach((placeId) => {
+      selectionsFor(allSelections, participant.displayName).forEach((placeId) => {
         selectionCounts.set(placeId, (selectionCounts.get(placeId) || 0) + 1);
       });
     });
@@ -474,11 +478,11 @@ export default function ResultsPage() {
     const sameSelections = (a: string[], b: string[]) =>
       a.length === b.length && a.every((placeId) => b.includes(placeId));
     const firstSelections =
-      participants.length > 0 ? allSelections[participants[0].displayName] || [] : [];
+      participants.length > 0 ? selectionsFor(allSelections, participants[0].displayName) : [];
     return (
       firstSelections.length > 0 &&
       participants.every((participant) =>
-        sameSelections(allSelections[participant.displayName] || [], firstSelections)
+        sameSelections(selectionsFor(allSelections, participant.displayName), firstSelections)
       )
     );
   }, [participants, allSelections]);
@@ -558,6 +562,30 @@ export default function ResultsPage() {
       : crownedMovie
         ? { title: crownedMovie.movie.name, text: crownReason(crownedMovie, movieWords) }
         : pick && { title: pick.restaurant.name, text: crownReason(pick, restaurantWords) }
+  );
+
+  const celebration = (
+    <>
+      {crownPlaceId && !allPassed && sessionStatus === 'complete' && (
+        <div className="mx-auto mb-3 max-w-sm">
+          <SocialMoment
+            key={`${sessionCode}:${lobby?.round ?? ''}:${crownPlaceId}`}
+            moment="pick"
+            watch={deckKind === 'movie'}
+          />
+          {!hasOverlap && <p className="text-center text-sm text-muted">Tonight’s pick.</p>}
+        </div>
+      )}
+      {/* Only an actual Match gets the unanimity celebration. */}
+      {hasOverlap && (
+        <div className="match-celebration mb-6 text-center">
+          <h2 className="relative inline-block animate-match-pop rounded-market-md px-5 py-2 text-4xl font-black tracking-[0.14em] text-lime shadow-match">
+            MATCH!
+          </h2>
+          <p className="relative mt-4 text-muted">Everyone found the same spark.</p>
+        </div>
+      )}
+    </>
   );
 
   return (
@@ -643,25 +671,7 @@ export default function ResultsPage() {
             )}
           </section>
         )}
-        {crownPlaceId && !allPassed && sessionStatus === 'complete' && (
-          <div className="mx-auto mb-3 max-w-sm">
-            <SocialMoment
-              key={`${sessionCode}:${lobby?.round ?? ''}:${crownPlaceId}`}
-              moment="pick"
-              watch={deckKind === 'movie'}
-            />
-            {!hasOverlap && <p className="text-center text-sm text-muted">Tonight’s pick.</p>}
-          </div>
-        )}
-        {/* Only an actual Match gets the unanimity celebration. */}
-        {hasOverlap && (
-          <div className="match-celebration mb-6 text-center">
-            <h2 className="relative inline-block animate-match-pop rounded-market-md px-5 py-2 text-4xl font-black tracking-[0.14em] text-lime shadow-match">
-              MATCH!
-            </h2>
-            <p className="relative mt-4 text-muted">Everyone found the same spark.</p>
-          </div>
-        )}
+        {!crownedMovie && celebration}
 
         <PickContainer className={allPassed ? 'card mb-6' : undefined}>
           {allPassed && (
@@ -683,6 +693,7 @@ export default function ResultsPage() {
                 movie={crownedMovie.movie}
                 reason={crownReason(crownedMovie, movieWords)}
               />
+              {!allPassed && <div className="mt-6">{celebration}</div>}
               {otherMovieMatches.length > 0 && (
                 <section aria-labelledby="other-watch-matches" className="mt-6 space-y-4">
                   <h2 id="other-watch-matches" className="text-xl font-semibold text-text">

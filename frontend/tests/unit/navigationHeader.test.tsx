@@ -44,10 +44,11 @@ describe('NavigationHeader', () => {
     expect(backAfter.className).toBe(back.className);
   });
 
-  it('centres the title between equal-width edge regions and truncates overflow', () => {
+  it('centres and wraps the title between equal-width edge regions', () => {
     renderHeader(<NavigationHeader title="Join Session" showBackButton />);
     const title = screen.getByRole('heading', { name: 'Join Session' });
-    expect(title.className).toContain('truncate');
+    expect(title.className).toContain('break-words');
+    expect(title.className).not.toContain('truncate');
 
     const centerCell = title.parentElement;
     const row = centerCell?.parentElement;
@@ -169,6 +170,19 @@ describe('NavigationHeader', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('cancels the copied cue timer on unmount', async () => {
+    vi.useFakeTimers();
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    const { unmount } = renderHeader(<NavigationHeader title="Lobby" sessionCode="7K9M2" />);
+    const baseline = vi.getTimerCount();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copy session code' }));
+    });
+    expect(vi.getTimerCount()).toBe(baseline + 1);
+    unmount();
+    expect(vi.getTimerCount()).toBe(baseline);
   });
 
   it('keeps page-specific actions in the title row right edge', () => {

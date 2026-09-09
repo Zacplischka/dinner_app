@@ -1,3 +1,5 @@
+import { profileAvatarUrl } from '../services/profilePhoto.js';
+
 type AuthProfileDefaults = {
   displayName: string;
   avatarUrl: string | null;
@@ -7,16 +9,15 @@ export function getAuthProfileDefaults(
   metadata: unknown,
   email: string | undefined
 ): AuthProfileDefaults {
+  const avatar =
+    getMetadataString(metadata, 'avatar_url') ?? getMetadataString(metadata, 'picture') ?? null;
   return {
     displayName:
       getMetadataString(metadata, 'full_name') ??
       getMetadataString(metadata, 'name') ??
       getEmailName(email) ??
       'User',
-    avatarUrl:
-      getMetadataString(metadata, 'avatar_url') ??
-      getMetadataString(metadata, 'picture') ??
-      null,
+    avatarUrl: avatar?.startsWith('https://') ? profileAvatarUrl('', avatar) : null,
   };
 }
 

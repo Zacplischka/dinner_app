@@ -1,3 +1,4 @@
+import ProfileAvatar from '../ProfileAvatar';
 // FriendsList Component
 // Displays the user's friends with remove action
 
@@ -81,20 +82,11 @@ export default function FriendsList({
               )}
 
               {/* Avatar */}
-              {friend.avatarUrl ? (
-                <img
-                  src={friend.avatarUrl}
-                  alt={friend.displayName}
-                  referrerPolicy="no-referrer"
-                  className="w-10 h-10 rounded-full ring-2 ring-cyan/20"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
-                  <span className="text-white font-medium text-lg">
-                    {friend.displayName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <ProfileAvatar
+                name={friend.displayName}
+                url={friend.avatarUrl}
+                className="w-10 h-10 ring-2 ring-cyan/20"
+              />
 
               {/* Name and email */}
               <div>

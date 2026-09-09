@@ -1,4 +1,6 @@
-> Historical working-name plan retained with the mobile checkpoint. The current public brand is YupCrew; see [the merged rebrand plan](yupcrew-rebrand-plan.md).
+> Historical working-name plan retained with the mobile checkpoint. The current public brand is YupCrew; see [the merged rebrand plan](../yupcrew-rebrand-plan.md).
+
+> Archived 8 September 2026. Superseded brand proposal. Current public direction: [YupCrew rebrand](../yupcrew-rebrand-plan.md). Original wording below is retained for provenance, not as a current task list or delivery forecast. Historical checks do not verify later revisions.
 
 # Dinder → Heykeen: rebrand plan
 
@@ -60,7 +62,7 @@ Review a mobile home page, lobby, swipe card, result page and one dense Shopping
 
 ## 3. Apply the identity across the actual experience
 
-Preserve the current journey: choose a branch → gather in the lobby → preferences and Ready → swipe → submit → shared outcome → next action. The user's previous collaborative-lobby decision remains in force ([ADR 0015](adr/0015-gather-before-choosing-the-deck.md)).
+Preserve the current journey: choose a branch → gather in the lobby → preferences and Ready → swipe → submit → shared outcome → next action. The user's previous collaborative-lobby decision remains in force ([ADR 0015](../adr/0015-gather-before-choosing-the-deck.md)).
 
 Suggested home copy:
 
@@ -116,7 +118,7 @@ Do not promise seamless sign-in or active-session transfer. Keep people already 
 ### Release sequence
 
 - **A: Brand deployment on the existing address.** Ship reviewed visuals/copy and the small “Dinder is now Heykeen” explanation. Establish a good version before introducing a domain change. Keep the relevant previous frontend build for recovery.
-- **B: Compatibility and new-host verification.** Deploy additive origin support, prepare auth configuration, and verify the same branded build at the new domain. Keep API contracts compatible across independently deployed services ([ADR 0007](adr/0007-contracts-evolve-additively-across-deployments.md)). Avoid indexing the duplicate preview until canonical cutover; ensure preview noindex does not leak into the old live site.
+- **B: Compatibility and new-host verification.** Deploy additive origin support, prepare auth configuration, and verify the same branded build at the new domain. Keep API contracts compatible across independently deployed services ([ADR 0007](../adr/0007-contracts-evolve-additively-across-deployments.md)). Avoid indexing the duplicate preview until canonical cutover; ensure preview noindex does not leak into the old live site.
 - **C: New sessions move to Heykeen.** Switch generated links to the new canonical domain. On the old site, route new-start actions to the new origin while continuing to serve existing Session and list routes. Do not globally redirect every old request yet. Test an old-origin host with a new-origin invitee before announcing the move.
 - **D: Drain and redirect.** Once old-origin Sessions have finished/expired, pending auth returns have been handled, and the last list that could be minted by a legacy Session has had its seven-day lifetime, redirect the legacy frontend routes to equivalent new paths. Use observed state and the last possible legacy mint time; an arbitrary 30-minute sleep is insufficient because activity refreshes Session TTL. Preserve paths and relevant query strings for join/list/campaign links; retain old-origin OAuth handling through the transition instead of forwarding auth payloads to another domain.
 

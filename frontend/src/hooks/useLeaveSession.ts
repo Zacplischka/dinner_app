@@ -1,3 +1,4 @@
+import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { leaveSession } from '../services/socketBindings';
@@ -17,12 +18,13 @@ export function useLeaveSession(sessionCode: string | undefined): () => Promise<
   const navigate = useNavigate();
 
   return useCallback(async () => {
+    const intent = beginSessionIntent();
     try {
-      if (sessionCode) await leaveSession(sessionCode);
+      if (sessionCode) await leaveSession(sessionCode, intent);
     } catch (err) {
       console.error('Failed to leave session:', err);
-      useSessionStore.getState().resetSession();
+      if (isSessionIntentCurrent(intent)) useSessionStore.getState().resetSession();
     }
-    navigate('/');
+    if (isSessionIntentCurrent(intent)) navigate('/');
   }, [sessionCode, navigate]);
 }

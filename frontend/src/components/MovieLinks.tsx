@@ -10,7 +10,7 @@ import { tmdbPath } from '../utils/tmdb';
 
 export default function MovieLinks({ movie }: { movie: Movie }) {
   const trailerHref =
-    movie.trailerUrl ??
+    movie.trailerUrl ||
     `https://www.youtube.com/results?search_query=${encodeURIComponent(
       [movie.name, movie.year, 'trailer'].filter(Boolean).join(' ')
     )}`;
@@ -19,32 +19,31 @@ export default function MovieLinks({ movie }: { movie: Movie }) {
 
   return (
     <>
+      {whereToWatchHref && (
+        <a
+          href={whereToWatchHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-primary mt-3 flex min-h-[48px] w-full items-center justify-center"
+        >
+          Where to watch
+        </a>
+      )}
       <a
         href={trailerHref}
         target="_blank"
         rel="noopener noreferrer"
-        // An anchor is inline; .btn assumes a button's box, so give it one.
-        className="btn btn-primary mt-3 flex min-h-[48px] w-full items-center justify-center"
+        className={`btn ${whereToWatchHref ? 'btn-secondary' : 'btn-primary'} mt-3 flex min-h-[48px] w-full items-center justify-center`}
       >
         Watch trailer
       </a>
       <div className="mt-2 flex justify-center gap-6">
-        {whereToWatchHref && (
-          <a
-            href={whereToWatchHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block py-2 text-center text-sm text-cyan underline"
-          >
-            Where to watch
-          </a>
-        )}
         {movie.imdbId && (
           <a
             href={`https://www.imdb.com/title/${movie.imdbId}/`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block py-2 text-center text-sm text-cyan underline"
+            className="flex min-h-[44px] items-center py-2 text-center text-sm text-cyan underline"
           >
             IMDb
           </a>

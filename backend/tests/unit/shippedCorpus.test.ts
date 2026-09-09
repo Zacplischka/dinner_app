@@ -1,5 +1,5 @@
 // The shipped batch, dealt and cooked (#338). Every suite that boots the app is
-// pointed at the fixture corpus by `OWNED_RECIPES_DIR` (vitest.workspace.ts), on
+// pointed at the fixture corpus by `OWNED_RECIPES_DIR` (vitest.config.ts), on
 // purpose — those tests state what the blend does, not what ships this week. So
 // this is the only place the records under `backend/recipes/` themselves go
 // through the real deal and the real mint: `loadOwnedCorpus()` here reads the

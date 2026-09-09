@@ -1,3 +1,4 @@
+import ProfileAvatar from '../components/ProfileAvatar';
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -169,7 +170,13 @@ export default function SessionLobbyPage() {
   return (
     <main className="market-backdrop min-h-screen">
       <NavigationHeader
-        title="Make the call"
+        title={
+          lobby
+            ? { watch: 'Watch', cook: 'Cook', eatout: 'Eat out', takeaway: 'Order in' }[
+                lobby.branch
+              ]
+            : 'Make the call'
+        }
         subtitle="Invite friends. Choose together. Get ready."
         sessionCode={sessionCode}
         showBackButton
@@ -178,12 +185,12 @@ export default function SessionLobbyPage() {
         confirmContext="lobby"
         showConnectionStatus
       />
-      <div className="mx-auto max-w-md space-y-5 px-4 py-6 animate-fade-in">
-        <section className="card" aria-labelledby="invite-title">
+      <div className="mx-auto max-w-md space-y-3 px-4 py-4 animate-fade-in">
+        <section className="card px-4 py-3" aria-labelledby="invite-title">
           <h2 id="invite-title" className="label text-center">
             Session code
           </h2>
-          <div className="rounded-market-md border border-cyan bg-surface p-4 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+          <div className="rounded-market-md border border-cyan bg-surface px-4 py-2 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
             {sessionCode}
           </div>
           {shareableLink && (
@@ -231,11 +238,11 @@ export default function SessionLobbyPage() {
           )}
         </section>
 
-        <section className="card" aria-labelledby="participants-title">
-          <h2 id="participants-title" className="mb-4 text-lg font-display font-semibold">
+        <section className="card p-4" aria-labelledby="participants-title">
+          <h2 id="participants-title" className="mb-3 text-lg font-display font-semibold">
             Participants <span className="text-cyan">({participants.length})</span>
           </h2>
-          <div className="space-y-3" data-testid="participants-list" aria-live="polite">
+          <div className="space-y-2" data-testid="participants-list" aria-live="polite">
             {participants.map((participant, index) => {
               const offline = participant.isOnline === false;
               const choices = lobby?.participants.find(
@@ -255,15 +262,15 @@ export default function SessionLobbyPage() {
                 <div
                   key={participant.participantId}
                   data-testid="participant"
-                  className="rounded-xl border border-line bg-surface/70 p-3"
+                  className="rounded-xl border border-line bg-surface/70 p-2"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      aria-label={`${participant.displayName}${participant.isHost ? ', host' : ''}, ${offline ? 'offline' : 'live'}`}
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 bg-raised font-black ${participantRingClass(index)}`}
-                    >
-                      {participant.displayName.charAt(0).toUpperCase()}
-                    </div>
+                    <ProfileAvatar
+                      name={participant.displayName}
+                      url={participant.avatarUrl}
+                      label={`${participant.displayName}${participant.isHost ? ', host' : ''}, ${offline ? 'offline' : 'live'}`}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 bg-raised font-black ${participantRingClass(index)}`}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         <span data-testid="participant-name">{participant.displayName}</span>
@@ -318,19 +325,84 @@ export default function SessionLobbyPage() {
               );
             })}
           </div>
-          {sessionStatus === 'waiting' && !lobby?.starting && (
-            <div className="mt-3 text-center">
-              <SocialMoment
-                moment="gather"
-                seats={participants.map((participant) => ({
-                  ready: participant.ready,
-                  offline: participant.isOnline === false,
-                }))}
-              />
-              <p className="mt-2 text-sm font-medium">Getting together.</p>
-              <p className="mt-1 text-xs text-muted">Choose with whoever’s here.</p>
-            </div>
-          )}
+
+          <div className="mt-4 space-y-3">
+            {lobby?.notice && (
+              <p
+                role="status"
+                className="rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"
+              >
+                {lobby.notice}
+              </p>
+            )}
+            {error && (
+              <p
+                ref={errorRef}
+                role="alert"
+                className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
+              >
+                {error}
+              </p>
+            )}
+            {lobby?.state === 'waiting' && me && (
+              <div className="space-y-3">
+                <button
+                  className="btn btn-secondary min-h-[48px] w-full"
+                  aria-pressed={!!me.ready}
+                  disabled={disabled}
+                  onClick={() =>
+                    void run(() =>
+                      setSessionReady({
+                        sessionCode: lobby.sessionCode,
+                        revision: lobby.revision,
+                        ready: !me.ready,
+                      })
+                    )
+                  }
+                >
+                  {me.ready ? 'Ready — change my confirmation' : 'I’m ready'}
+                </button>
+                <p className="text-center text-xs text-muted">
+                  {lobby.participants.filter((p) => p.ready).length} of {lobby.participants.length}{' '}
+                  ready. Everyone, including the host, confirms.
+                </p>
+              </div>
+            )}
+
+            {(!lobby || lobby.state === 'waiting') &&
+              (isHost ? (
+                <button
+                  className="btn btn-primary min-h-[48px] w-full text-lg"
+                  disabled={
+                    lobby
+                      ? disabled ||
+                        !lobby.participants.length ||
+                        !lobby.participants.every((p) => p.ready) ||
+                        ((lobby.branch === 'eatout' || lobby.branch === 'takeaway') &&
+                          !lobby.location)
+                      : participants.length === 0
+                  }
+                  onClick={() => {
+                    if (!sessionCode) return;
+                    void run(() =>
+                      lobby
+                        ? startSession({ sessionCode, revision: lobby.revision })
+                        : restartSession(sessionCode)
+                    );
+                  }}
+                >
+                  {lobby?.starting
+                    ? 'Finding your shared deck…'
+                    : lobby
+                      ? 'Start swiping'
+                      : 'Start Selecting'}
+                </button>
+              ) : (
+                <p className="rounded-xl border border-dashed border-line py-4 text-center text-sm text-muted">
+                  Waiting for the host to start
+                </p>
+              ))}
+          </div>
         </section>
 
         {!isConnected && (
@@ -339,23 +411,6 @@ export default function SessionLobbyPage() {
             className="rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"
           >
             Disconnected from server. Your place and choices are saved; reconnect to continue.
-          </p>
-        )}
-        {lobby?.notice && (
-          <p
-            role="status"
-            className="rounded-xl border border-amber/30 bg-amber/10 p-3 text-sm text-amber"
-          >
-            {lobby.notice}
-          </p>
-        )}
-        {error && (
-          <p
-            ref={errorRef}
-            role="alert"
-            className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
-          >
-            {error}
           </p>
         )}
         {lobby && (
@@ -368,64 +423,6 @@ export default function SessionLobbyPage() {
             onChange={change}
           />
         )}
-
-        {lobby?.state === 'waiting' && me && (
-          <div className="space-y-3">
-            <button
-              className="btn btn-secondary min-h-[48px] w-full"
-              aria-pressed={!!me.ready}
-              disabled={disabled}
-              onClick={() =>
-                void run(() =>
-                  setSessionReady({
-                    sessionCode: lobby.sessionCode,
-                    revision: lobby.revision,
-                    ready: !me.ready,
-                  })
-                )
-              }
-            >
-              {me.ready ? 'Ready — change my confirmation' : 'I’m ready'}
-            </button>
-            <p className="text-center text-xs text-muted">
-              {lobby.participants.filter((p) => p.ready).length} of {lobby.participants.length}{' '}
-              ready. Everyone, including the host, confirms.
-            </p>
-          </div>
-        )}
-
-        {(!lobby || lobby.state === 'waiting') &&
-          (isHost ? (
-            <button
-              className="btn btn-primary min-h-[48px] w-full text-lg"
-              disabled={
-                lobby
-                  ? disabled ||
-                    !lobby.participants.length ||
-                    !lobby.participants.every((p) => p.ready) ||
-                    ((lobby.branch === 'eatout' || lobby.branch === 'takeaway') && !lobby.location)
-                  : participants.length === 0
-              }
-              onClick={() => {
-                if (!sessionCode) return;
-                void run(() =>
-                  lobby
-                    ? startSession({ sessionCode, revision: lobby.revision })
-                    : restartSession(sessionCode)
-                );
-              }}
-            >
-              {lobby?.starting
-                ? 'Finding your shared deck…'
-                : lobby
-                  ? 'Start swiping'
-                  : 'Start Selecting'}
-            </button>
-          ) : (
-            <p className="rounded-xl border border-dashed border-line py-4 text-center text-sm text-muted">
-              Waiting for the host to start
-            </p>
-          ))}
 
         {lobby && lobby.state !== 'waiting' && reviewingWaiting && (
           <section className="card space-y-3">
@@ -460,6 +457,19 @@ export default function SessionLobbyPage() {
               Keep this round
             </button>
           </section>
+        )}
+        {sessionStatus === 'waiting' && !lobby?.starting && (
+          <div className="mt-3 text-center">
+            <SocialMoment
+              moment="gather"
+              seats={participants.map((participant) => ({
+                ready: participant.ready,
+                offline: participant.isOnline === false,
+              }))}
+            />
+            <p className="mt-2 text-sm font-medium">Getting together.</p>
+            <p className="mt-1 text-xs text-muted">Choose with whoever’s here.</p>
+          </div>
         )}
         {lobby?.branch === 'watch' && <TmdbCredit />}
       </div>

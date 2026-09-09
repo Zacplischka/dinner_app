@@ -3,7 +3,7 @@
 // the seam #253 names, and the only new external source in this flow.
 //
 // The second supply is substituted at its own seam: `OWNED_RECIPES_DIR` (set
-// for this project in vitest.workspace.ts) points the app's corpus at three
+// for this project in vitest.config.ts) points the app's corpus at three
 // italian vegetarian mains under tests/fixtures/owned-recipes/. Every count
 // below is therefore about the blend, and a PR that grows the shipped batch
 // cannot turn these red (#331).

@@ -29,7 +29,7 @@ describe('AnimatedScene motion lifecycle', () => {
       setTransform: vi.fn(),
     } as unknown as CanvasRenderingContext2D);
     disconnect = vi.fn();
-    vi.spyOn(window, 'ResizeObserver').mockImplementation((callback) => {
+    vi.spyOn(window, 'ResizeObserver').mockImplementation(function (callback) {
       resize = callback;
       return { observe: vi.fn(), unobserve: vi.fn(), disconnect };
     });

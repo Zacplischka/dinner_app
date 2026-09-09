@@ -14,6 +14,7 @@ export { isMovie, isRecipe, isRestaurant } from '@dinder/shared/types';
 export interface Participant {
   participantId: string;
   displayName: string;
+  avatarUrl?: string | null;
   sessionCode: string;
   joinedAt: number;
   hasSubmitted: boolean;

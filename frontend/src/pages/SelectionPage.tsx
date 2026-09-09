@@ -1,3 +1,4 @@
+import ProfileAvatar from '../components/ProfileAvatar';
 // Selection page - Tinder-style swipeable selection of tonight's Deck, which
 // deals every Deck Entry kind: Restaurants (Eat Out/Takeaway), Recipes (Cook)
 // and Movies (Watch).
@@ -83,7 +84,7 @@ function SelectionRound() {
     branch === 'cook'
       ? 'Choose recipes'
       : branch === 'watch'
-        ? 'Choose movies'
+        ? 'Choose something to watch'
         : 'Choose restaurants';
   const [entries, setEntries] = useState<DeckEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -292,6 +293,14 @@ function SelectionRound() {
     return () => clearTimeout(timer);
   }, [reveal]);
 
+  useEffect(() => {
+    if (!lastAction) return;
+    // ponytail: repeating the same direction keeps the first 600ms window;
+    // add an action counter only if every swipe must restart the flash.
+    const timer = setTimeout(() => setLastAction(null), 600);
+    return () => clearTimeout(timer);
+  }, [lastAction]);
+
   // One history entry for whichever overlay is up — the Full House takeover or
   // the details sheet — so the hardware back button dismisses it instead of
   // leaving the deck. The dep is the boolean, not which one: a Full House
@@ -330,7 +339,6 @@ function SelectionRound() {
 
   const handleSwipeLeft = useCallback(() => {
     setLastAction('nope');
-    setTimeout(() => setLastAction(null), 600);
     setDeckCursor(deckCursor + 1);
   }, [deckCursor, setDeckCursor]);
 
@@ -345,7 +353,6 @@ function SelectionRound() {
       if (sessionCode) void sendLiveSelection(sessionCode, entry.placeId);
     }
     setLastAction('like');
-    setTimeout(() => setLastAction(null), 600);
     setDeckCursor(deckCursor + 1);
   }, [deckCursor, entries, addSelection, sessionCode, setDeckCursor]);
 
@@ -536,7 +543,8 @@ function SelectionRound() {
                 </div>
                 <p className="text-sm text-muted">
                   <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
-                  <span className="text-cyan font-semibold">{participants.length}</span> have swiped
+                  <span className="text-cyan font-semibold">{participants.length}</span> have
+                  finished
                 </p>
                 <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
                   {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}
@@ -723,13 +731,13 @@ function SelectionRound() {
             {participants.map((participant, index) => {
               const isOffline = participant.isOnline === false;
               return (
-                <div
+                <ProfileAvatar
                   key={participant.participantId}
-                  aria-label={`${participant.displayName} is ${isOffline ? 'offline' : 'choosing'}`}
+                  name={participant.displayName}
+                  url={participant.avatarUrl}
+                  label={`${participant.displayName} is ${isOffline ? 'offline' : 'choosing'}`}
                   className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-surface text-xs font-black text-text ${participantRingClass(index)}${isOffline ? ' opacity-40' : ''}`}
-                >
-                  {participant.displayName.charAt(0).toUpperCase()}
-                </div>
+                />
               );
             })}
           </div>
