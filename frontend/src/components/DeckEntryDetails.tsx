@@ -33,6 +33,8 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
   const restaurant = isRestaurant(entry) ? entry : undefined;
   const movie = isMovie(entry) ? entry : undefined;
   const recipe = isRecipe(entry) ? entry : undefined;
+  // ponytail: highlight the viewer's weekday for the local pilot; venue-local
+  // dates need timezone data if planning across timezones becomes a requirement.
   const today = new Date().toLocaleDateString('en-AU', { weekday: 'long' });
   const ratingCount =
     restaurant?.userRatingCount === undefined
@@ -42,7 +44,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
   if (restaurant?.websiteUrl) {
     try {
       const url = new URL(restaurant.websiteUrl);
-      if (['https:', 'http:'].includes(url.protocol) && !url.username && !url.password) {
+      if (url.protocol === 'https:' && !url.username && !url.password) {
         websiteHref = url.href;
       }
     } catch {

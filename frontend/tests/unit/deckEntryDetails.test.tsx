@@ -463,7 +463,12 @@ describe('Deck Entry details sheet — Restaurant', () => {
     );
   });
 
-  it.each(['javascript:alert(1)', 'not a URL', 'https://user:secret@example.com/'])(
+  it.each([
+    'http://example.com/',
+    'javascript:alert(1)',
+    'not a URL',
+    'https://user:secret@example.com/',
+  ])(
     'omits an unsafe website %s and empty hours while retaining a zero rating count',
     async (websiteUrl) => {
       deal.mockResolvedValue([{ ...ramen, openingHours: [], websiteUrl, userRatingCount: 0 }]);
