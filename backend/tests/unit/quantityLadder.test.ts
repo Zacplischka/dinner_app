@@ -7,7 +7,7 @@
 import RedisMock from 'ioredis-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductCandidate, ProductMatchOutcome } from '@dinder/shared/types';
-import { createQuantityLadder } from '../../src/services/quantityLadder.js';
+import { createQuantityLadder, wantedPackForm } from '../../src/services/quantityLadder.js';
 import {
   createSpoonacularClient,
   guardDailyPoints,
@@ -15,6 +15,18 @@ import {
 } from '../../src/services/spoonacularClient.js';
 import { captureLogs } from '../helpers/logCapture.js';
 import { spoonacularFetchFake } from '../helpers/spoonacularFetchFake.js';
+
+it('classifies Matcher forms using the ladder units, leaving unknown units neutral', () => {
+  for (const unit of ['', 'packet', 'head', 'loaf', 'punnet', 'bunch']) {
+    expect(wantedPackForm(unit)).toBe('count');
+  }
+  for (const unit of ['g', 'kg', ' G ']) expect(wantedPackForm(unit)).toBe('mass');
+  for (const unit of ['ml', 'l', 'tbsp', 'tsp', ' ML '])
+    expect(wantedPackForm(unit)).toBe('volume');
+  for (const unit of ['handful', 'sprigs', 'cloves', 'cup', 'constructor']) {
+    expect(wantedPackForm(unit)).toBeUndefined();
+  }
+});
 
 const SPOON = {
   ingredients: {

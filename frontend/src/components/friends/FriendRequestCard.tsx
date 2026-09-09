@@ -66,7 +66,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
           <button
             onClick={() => void handleDecline()}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-muted bg-surface rounded-xl hover:bg-line hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-line/30"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-muted bg-surface rounded-xl hover:bg-line hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-line/30"
           >
             Decline
           </button>

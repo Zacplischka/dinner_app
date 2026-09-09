@@ -12,6 +12,232 @@ function product(overrides: Partial<WoolworthsProduct> & { stockcode: number }):
 }
 
 describe('matchProducts', () => {
+  it.each(['1L', '10 pack'])(
+    'keeps full ingredient identity when a lower-identity %s product starts first',
+    (packageSize) => {
+      const rows = [
+        product({ stockcode: 1, name: 'Chicken Stock', packageSize }),
+        product({ stockcode: 2, name: 'Vegetable Stock Cubes', packageSize: '10 pack' }),
+      ];
+      expect(matchProducts(rows, 'vegetable stock')?.match.stockcode).toBe(2);
+      expect(matchProducts(rows, 'vegetable stock', 'volume')?.match.stockcode).toBe(2);
+    }
+  );
+
+  it('preserves earlier fuller-identity ties without promoting later fuller-identity ties', () => {
+    const term = 'alpha bravo charlie delta echo foxtrot golf hotel';
+    const fillers = Array.from({ length: 4 }, (_, index) =>
+      product({ stockcode: 10 + index, sapCategory: undefined })
+    );
+    const fullerFirst = [
+      product({ stockcode: 1, name: term, packageSize: '10 pack', available: false }),
+      ...fillers,
+      product({
+        stockcode: 2,
+        name: 'alpha bravo charlie delta echo foxtrot golf',
+        packageSize: '1L',
+      }),
+    ];
+    const fullerLast = [
+      product({ stockcode: 2, name: 'alpha', packageSize: '1L' }),
+      ...fillers,
+      product({ stockcode: 1, name: term, packageSize: '10 pack' }),
+    ];
+    for (const rows of [fullerFirst, fullerLast]) {
+      expect(matchProducts(rows, term, 'volume')?.match.stockcode).toBe(
+        matchProducts(rows, term)?.match.stockcode
+      );
+    }
+  });
+
+  it.each([
+    ['CAT', 'FOOD & LITTER'],
+    ['BABY', 'CARE'],
+    ['SOFT', 'DRINKS'],
+  ])(
+    'still blocks phrases spanning category %s and subcategory %s',
+    (sapCategory, sapSubCategory) => {
+      expect(
+        matchProducts([product({ stockcode: 1, sapCategory, sapSubCategory })], 'food')
+      ).toBeNull();
+    }
+  );
+
+  it('recognizes the measured water shelf regardless of casing and surrounding whitespace', () => {
+    const water = product({
+      stockcode: 1,
+      name: 'Coconut Water',
+      packageSize: '1L',
+      sapCategory: ' lifestyle/water non carbonated ',
+      sapSubCategory: ' Soft Drinks - Water ',
+    });
+    expect(matchProducts([water], 'coconut water', 'volume')?.match.stockcode).toBe(1);
+  });
+
+  it('keeps a blocked root blocked even with a nuts subcategory', () => {
+    const snack = product({
+      stockcode: 1,
+      sapCategory: 'VEG / SNACKS',
+      sapSubCategory: 'NUTS AND SNACKS',
+    });
+    expect(matchProducts([snack], 'nuts', 'mass')).toBeNull();
+  });
+
+  it('keeps count against mass neutral because the ladder can convert pieces to grams', () => {
+    const rows = [
+      product({ stockcode: 1, name: 'Onions', packageSize: '1kg' }),
+      product({ stockcode: 2, name: 'Onions', packageSize: 'each' }),
+    ];
+    expect(matchProducts(rows, 'onions', 'count')).toEqual(matchProducts(rows, 'onions'));
+  });
+
+  // #367: store 1101 names, sections, packs and original ranks from the ticket;
+  // stockcodes are synthetic. No retailer request is made by these regressions.
+  it('prefers a loose lemon to the higher-ranked dressing and drink for a count line', () => {
+    const rows = [
+      [
+        'Remedy Sodaly Yuzu Lemon',
+        'CARBONATED SOFT DRINKS',
+        'SOFT DRINKS - MIXERS',
+        '250mL x 4 pack',
+      ],
+      [
+        'Fever-Tree Sicilian Lemon Soda',
+        'CARBONATED SOFT DRINKS',
+        'SOFT DRINKS - MIXERS',
+        '250mL x 4 pack',
+      ],
+      [
+        'Birch & Waite Greek Lemon Dressing',
+        'VEG / FRESHCUTS / HARD PRODUCE',
+        'CONDIMENTS & HERBS',
+        '250mL',
+      ],
+      [
+        'Remedy Sodaly Yuzu Lemon',
+        'DAIRY - CHILLED JUICES & DRINKS',
+        'DAIRY - CHILLED JUICES & DRINKS',
+        '330mL',
+      ],
+      ['Lemon Loose', 'FRUIT', 'CITRUS', 'each'],
+      ['The Odd Bunch Lemon Prepacked', 'FRUIT', 'CITRUS', '500g'],
+      ['Lemon Lemon Bag', 'FRUIT', 'CITRUS', '500g'],
+      ['Woolworths Lemon Juice', 'CONDIMENTS', 'SAUCES', '250mL'],
+      ['Sun Harvest Lemon Juice', 'CONDIMENTS', 'SAUCES', '500mL'],
+      ['Woolworths Lemon Juice', 'CONDIMENTS', 'SAUCES', '200mL'],
+    ].map(([name, sapCategory, sapSubCategory, packageSize], stockcode) =>
+      product({ stockcode, name, sapCategory, sapSubCategory, packageSize })
+    );
+    expect(matchProducts(rows, 'lemon')?.match.stockcode).toBe(2);
+    expect(matchProducts(rows, 'lemon', 'count')?.match.stockcode).toBe(4);
+  });
+
+  it('refuses vitamin gummies even when they lead real vinegar in the search answer', () => {
+    const gummies = [45, 90].map((count, stockcode) =>
+      product({
+        stockcode,
+        name: 'Swisse Apple Cider Vinegar + Fibre Gummies',
+        sapCategory: 'HEALTH CARE',
+        sapSubCategory: 'VITAMINS',
+        packageSize: `${count} pack`,
+      })
+    );
+    const vinegar = product({
+      stockcode: 2,
+      name: 'Macro Organic Apple Cider Vinegar',
+      sapCategory: 'CONDIMENTS',
+      sapSubCategory: 'VINEGAR MAYO & DRESSINGS',
+      packageSize: '500mL',
+    });
+    const pantry = product({
+      stockcode: 3,
+      name: 'Bragg Apple Cider Vinegar',
+      sapCategory: 'HEALTH FOODS',
+      sapSubCategory: 'HEALTH FOOD PANTRY',
+      packageSize: '946mL',
+    });
+    const result = matchProducts([...gummies, vinegar, pantry], 'apple cider vinegar', 'volume');
+    expect(result?.match.stockcode).toBe(2);
+    expect(result?.runnersUp.map((p) => p.stockcode)).toEqual([3]);
+    expect(matchProducts(gummies, 'apple cider vinegar', 'volume')).toBeNull();
+  });
+
+  it('matches the only produce-shelf unsalted cashews instead of declaring them not ranged', () => {
+    const result = matchProducts(
+      [
+        product({
+          stockcode: 1,
+          name: 'Woolworths Cashews Roasted & Unsalted',
+          packageSize: '750g',
+          sapCategory: 'VEG / FRESHCUTS / HARD PRODUCE',
+          sapSubCategory: 'NUTS AND SNACKS',
+        }),
+      ],
+      'cashews unsalted',
+      'mass'
+    );
+    expect(result?.match.stockcode).toBe(1);
+  });
+
+  it.each(['mass', 'volume'] as const)('demotes count packs for a %s line', (form) => {
+    const rows = [
+      product({ stockcode: 1, name: 'Pumpkin Whole', packageSize: 'each' }),
+      product({ stockcode: 2, name: 'Pumpkin Cut', packageSize: '500g' }),
+    ];
+    expect(matchProducts(rows, 'pumpkin', form)?.match.stockcode).toBe(2);
+  });
+
+  it('leaves mass against volume neutral for the ladder to check liquid consistency', () => {
+    const rows = [
+      product({ stockcode: 1, name: 'Coconut Milk', packageSize: '400mL' }),
+      product({ stockcode: 2, name: 'Coconut Milk', packageSize: '400g' }),
+    ];
+    expect(matchProducts(rows, 'coconut milk', 'mass')).toEqual(
+      matchProducts(rows, 'coconut milk')
+    );
+    expect(matchProducts(rows, 'coconut milk', 'mass')?.match.stockcode).toBe(1);
+  });
+
+  it('caps a demotion below one identity keyword and applies it only once', () => {
+    const rows = [
+      product({
+        stockcode: 1,
+        name: 'Cashews Unsalted',
+        packageSize: 'each',
+        sapCategory: 'VEG / FRESHCUTS / HARD PRODUCE',
+        sapSubCategory: 'NUTS AND SNACKS',
+      }),
+      product({ stockcode: 2, name: 'Cashews Salted', packageSize: '750g' }),
+    ];
+    expect(matchProducts(rows, 'cashews unsalted', 'mass')?.match.stockcode).toBe(1);
+  });
+
+  it.each([undefined, 'unknown size', 'per 190g', '750g - 2.2kg'])(
+    'leaves %s packs neutral',
+    (packageSize) => {
+      const rows = [
+        product({ stockcode: 1, name: 'Lemon', packageSize }),
+        product({ stockcode: 2, name: 'Lemon Loose', packageSize: 'each' }),
+      ];
+      expect(matchProducts(rows, 'lemon', 'count')).toEqual(matchProducts(rows, 'lemon'));
+    }
+  );
+
+  it.each([
+    ['coconut water', 'LIFESTYLE/WATER NON CARBONATED', 'SOFT DRINKS - WATER', '1L'],
+    ['tomato juice', 'LONGLIFE JUICE / DRINKS', 'FRUIT JUICE - LONG LIFE', '1L'],
+    ['coconut milk', 'ETHNIC / GOURMET FOOD', 'ASIAN FOODS', '400mL'],
+  ])(
+    'retains the rank-zero %s as a cooking ingredient',
+    (name, sapCategory, sapSubCategory, packageSize) => {
+      const rows = [
+        product({ stockcode: 1, name, sapCategory, sapSubCategory, packageSize }),
+        product({ stockcode: 2, name, sapCategory, sapSubCategory, packageSize }),
+      ];
+      expect(matchProducts(rows, name, 'volume')?.match.stockcode).toBe(1);
+    }
+  );
+
   it('returns the match plus runner-ups for the swap picker', () => {
     const result = matchProducts(
       [
@@ -149,24 +375,22 @@ describe('matchProducts', () => {
     ).toBeNull();
   });
 
-  it('accepts the one measured cost of "snack": the produce section\'s own nuts (#328)', () => {
-    // Same probe, same caveat (not store-1101 verified). "peanuts" is the one
-    // term where the blocklist costs anything: "NUTS AND SNACKS" under a
-    // produce section is evicted with the crisps. Kept anyway — loosening
-    // "snack" to section level lets that product back in and it outranks the
-    // ingredient, which is AC2 backwards. Stockcodes are synthetic; only the
-    // section strings and the ranking came off the probe.
+  it('prefers cooking-aisle peanuts while offering the produce pack as a swap (#328, #367)', () => {
+    // The produce shelf is now demoted instead of evicted: the swap picker
+    // should offer its legitimate 750 g pack alongside the cooking ingredient.
     const result = matchProducts(
       [
         product({
           stockcode: 1,
           name: 'Woolworths Peanuts Roasted & Salted',
+          packageSize: '750g',
           sapCategory: 'VEG / FRESHCUTS / HARD PRODUCE',
           sapSubCategory: 'NUTS AND SNACKS',
         }),
         product({
           stockcode: 2,
           name: 'Woolworths Blanched Peanuts',
+          packageSize: '375g',
           sapCategory: 'COOKING NEEDS',
           sapSubCategory: 'DRIED FRUIT & NUTS',
         }),
@@ -175,7 +399,7 @@ describe('matchProducts', () => {
     );
 
     expect(result?.match.stockcode).toBe(2);
-    expect(result?.runnersUp).toEqual([]);
+    expect(result?.runnersUp.map((candidate) => candidate.stockcode)).toEqual([1]);
   });
 
   it('prefers the candidate whose name carries the term identity over a higher-ranked stranger', () => {

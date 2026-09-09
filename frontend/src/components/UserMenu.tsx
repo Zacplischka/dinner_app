@@ -27,7 +27,7 @@ export default function UserMenu() {
       <button
         onClick={() => void signOut().catch((error) => console.error('Failed to sign out:', error))}
         disabled={isLoading}
-        className="min-h-[48px] px-2 text-sm text-muted hover:text-coral-soft disabled:opacity-50"
+        className="min-h-[48px] px-2 text-sm text-muted hover:text-coral-soft transition-colors disabled:opacity-50"
       >
         Sign out
       </button>

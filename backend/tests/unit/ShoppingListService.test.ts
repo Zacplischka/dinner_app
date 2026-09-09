@@ -348,7 +348,7 @@ describe('ShoppingListService.mint', () => {
 
     const list = await service.readList((await service.mint('AB123', '11'))!);
 
-    expect(matchProduct).toHaveBeenCalledWith('vegetable stock');
+    expect(matchProduct).toHaveBeenCalledWith('vegetable stock', 'volume');
     expect(resolveLine).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'vegetable stock' }),
       expect.anything()
@@ -368,7 +368,7 @@ describe('ShoppingListService.mint', () => {
 
     const list = await service.readList((await service.mint('AB123', 'owned:gf-stew'))!);
 
-    expect(matchProduct).toHaveBeenCalledWith('vegetable stock');
+    expect(matchProduct).toHaveBeenCalledWith('vegetable stock', 'volume');
     expect(list?.lines[0]).toMatchObject({
       text: '500 ml gluten free vegetable stock',
       state: 'priced',
@@ -441,8 +441,8 @@ describe('ShoppingListService.mint', () => {
     expect(list?.lines[1].text).toBe('0.5 cloves garlic');
     // The cleaned name is also what the Matcher is asked for — the polluted
     // one finds a frozen snack instead of the fillet (#287).
-    expect(matchProduct).toHaveBeenCalledWith('chicken breasts');
-    expect(matchProduct).toHaveBeenCalledWith('garlic');
+    expect(matchProduct).toHaveBeenCalledWith('chicken breasts', undefined);
+    expect(matchProduct).toHaveBeenCalledWith('garlic', undefined);
   });
 
   it('mints the #305 corpus lines with a single unit, never the doubled pair', async () => {
@@ -542,7 +542,7 @@ describe('ShoppingListService.mint', () => {
 
     expect(list?.lines[1]).toMatchObject({ staple: true, state: 'unmatched', text: '3 tsp salt' });
     expect(matchProduct).toHaveBeenCalledTimes(1);
-    expect(matchProduct).toHaveBeenCalledWith('canned tomatoes');
+    expect(matchProduct).toHaveBeenCalledWith('canned tomatoes', 'mass');
   });
 
   it('snapshots the steps and the source credit into the payload', async () => {
@@ -1192,7 +1192,7 @@ it('preserves an explicitly written garlic clove count when parsed source units 
   });
   const list = await service.readList((await service.mint('AB123', '11'))!);
   expect(list?.lines[0].text).toBe('9 garlic cloves');
-  expect(matchProduct).toHaveBeenCalledWith('garlic cloves');
+  expect(matchProduct).toHaveBeenCalledWith('garlic cloves', 'count');
   expect(resolveLine).toHaveBeenCalledWith(
     { name: 'garlic cloves', amount: 9, unit: '' },
     expect.anything()
