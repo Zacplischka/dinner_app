@@ -23,6 +23,8 @@ export type Ack<T> = { success: true; data: T } | { success: false; error: ApiEr
 // ============= Client → Server Events =============
 
 export interface SessionJoinPayload {
+  /** Optional bearer token, verified at join; never retained in Session state. */
+  accessToken?: string;
   sessionCode: string;
   displayName: string;
   rejoinToken?: string;
@@ -41,6 +43,7 @@ export interface SessionJoinData {
   participants: Array<{
     participantId: string;
     displayName: string;
+    avatarUrl?: string | null;
     isHost: boolean;
     /**
      * Whether this Participant has already submitted, so a late joiner's
@@ -117,6 +120,7 @@ export type SelectionLiveResponse = Ack<null>;
 // ============= Server → Client Events =============
 
 export interface ParticipantJoinedEvent {
+  avatarUrl?: string | null;
   participantId: string;
   displayName: string;
   /**

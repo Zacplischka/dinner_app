@@ -47,6 +47,7 @@ export interface SocketConfig {
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 let onUncertainOutcome: (() => void) | undefined;
 let canMutate: (() => boolean) | undefined;
+let getAuthToken: (() => string | undefined) | undefined;
 
 /**
  * Initialize Socket.IO client connection.
@@ -63,6 +64,7 @@ export function initializeSocket(config: SocketConfig = {}): void {
 
   onUncertainOutcome = config.onUncertainOutcome;
   canMutate = config.canMutate;
+  getAuthToken = config.getAuthToken;
 
   socket = io(BACKEND_URL, {
     reconnection: true,
@@ -166,7 +168,12 @@ export function joinSession(
   displayName: string,
   rejoinToken?: string
 ): Promise<Ack<SessionJoinData>> {
-  const payload: SessionJoinPayload = { sessionCode, displayName, rejoinToken };
+  const payload: SessionJoinPayload = {
+    sessionCode,
+    displayName,
+    rejoinToken,
+    accessToken: getAuthToken?.(),
+  };
   return emitAck<SessionJoinData>('session:join', payload);
 }
 

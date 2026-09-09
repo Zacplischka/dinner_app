@@ -133,8 +133,8 @@ describe('component and hook branch coverage', () => {
       user: { id: 'user-1', email: undefined, user_metadata: {} } as any,
     });
     const { default: UserMenu } = await import('../../src/components/UserMenu');
-    render(<UserMenu />);
-    expect(screen.getByText('User')).toBeInTheDocument();
+    render(<UserMenu />, { wrapper: MemoryRouter });
+    expect(screen.getByText('Your profile')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Sign out'));
     await waitFor(() => expect(signOut).toHaveBeenCalled());
   });
@@ -461,7 +461,10 @@ describe('component and hook branch coverage', () => {
     expect(screen.getByText('Searching…')).toBeInTheDocument();
 
     render(<FriendsList friends={[friend]} />);
-    expect(screen.getByAltText('Bob')).toHaveAttribute('src', friend.avatarUrl);
+    expect(screen.getByRole('img', { name: 'Bob' }).querySelector('img')).toHaveAttribute(
+      'src',
+      friend.avatarUrl
+    );
 
     useFriendsStore.setState({
       currentUserProfile: null,

@@ -7,6 +7,7 @@
 
 import type * as friendsStore from '../store/friendsStore.js';
 import { getAuthProfileDefaults } from '../api/authMetadata.js';
+import { encodeProfilePhoto } from './profilePhoto.js';
 import { DomainError } from './DomainError.js';
 import type { Friend, FriendRequest, SessionInvite, UserProfile } from '@dinder/shared/types';
 
@@ -42,6 +43,18 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
       displayName: profileDefaults.displayName,
       avatarUrl: profileDefaults.avatarUrl,
     });
+  }
+
+  async function saveProfilePhoto(
+    userId: string,
+    email: string | undefined,
+    input: Buffer | null,
+    contentType = ''
+  ): Promise<UserProfile> {
+    // Decode before touching the row: a failed replacement preserves the saved photo.
+    const photo = input === null ? null : await encodeProfilePhoto(input, contentType);
+    await getCurrentProfile(userId, email);
+    return store.updateProfilePhoto(userId, photo);
   }
 
   async function searchUsers(email: string, userId: string): Promise<UserProfile[]> {
@@ -227,6 +240,8 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
 
   return {
     getCurrentProfile,
+    saveProfilePhoto,
+    getProfilePhoto: store.getProfilePhoto,
     searchUsers,
     listFriends,
     listFriendRequests,

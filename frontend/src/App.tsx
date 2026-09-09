@@ -23,6 +23,7 @@ const ResultsPage = lazy(() => import('./pages/ResultsPage'));
 const GroupOrderPage = lazy(() => import('./pages/GroupOrderPage'));
 
 const FriendsPage = lazy(() => import('./pages/FriendsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CookSetupPage = lazy(() => import('./pages/CookSetupPage'));
 const WatchSetupPage = lazy(() => import('./pages/WatchSetupPage'));
 const ShoppingListPage = lazy(() => import('./pages/ShoppingListPage'));
@@ -97,6 +98,7 @@ function AnimatedRoutes() {
 
         {/* Friends page */}
         <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* 404 - render Home in place; the unknown URL stays in the bar */}
         <Route path="*" element={<HomePage />} />

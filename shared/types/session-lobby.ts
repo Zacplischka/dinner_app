@@ -7,6 +7,7 @@ import type { Mood } from './watch.js';
 export interface LobbyParticipant {
   participantId: string;
   displayName: string;
+  avatarUrl?: string | null;
   isHost: boolean;
   isOnline: boolean;
   hasSubmitted: boolean;

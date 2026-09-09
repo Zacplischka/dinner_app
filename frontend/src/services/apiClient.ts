@@ -321,11 +321,32 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return handleResponse<T>(await (init ? fetch(url, init) : fetch(url)));
 }
 
-/**
- * Get the current user's profile (created on first sight server-side)
- */
-export async function getCurrentProfile(): Promise<GetProfileResponse> {
-  return authedRequest<GetProfileResponse>('/users/me');
+// AbortController also works in the older WebViews supported by our native targets.
+async function requestProfile(path: string, init?: RequestInit): Promise<GetProfileResponse> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  try {
+    return await authedRequest<GetProfileResponse>(path, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('Profile request timed out. Try again.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Get the current user's profile (created on first sight server-side). */
+export function getCurrentProfile(): Promise<GetProfileResponse> {
+  return requestProfile('/users/me');
+}
+
+export function saveProfilePhoto(file: File | null): Promise<GetProfileResponse> {
+  return requestProfile(
+    '/users/me/photo',
+    file
+      ? { method: 'PUT', headers: { 'Content-Type': file.type }, body: file }
+      : { method: 'DELETE' }
+  );
 }
 
 /**

@@ -441,7 +441,8 @@ export function createSessionService({
     sessionCode: string,
     participantId: string,
     displayName: string,
-    rejoinToken?: string
+    rejoinToken?: string,
+    avatarUrl: string | null = null
   ): Promise<{
     participantId: string;
     sessionCode: string;
@@ -455,6 +456,7 @@ export function createSessionService({
     participants: {
       participantId: string;
       displayName: string;
+      avatarUrl?: string | null;
       isHost: boolean;
       hasSubmitted: boolean;
       isOnline: boolean;
@@ -613,6 +615,7 @@ export function createSessionService({
       displayName,
       isHost,
       rejoinToken: participantRejoinToken,
+      avatarUrl,
       ready: prior?.ready,
       mood: prior?.mood,
       cuisines: prior?.cuisines,
@@ -727,6 +730,7 @@ export function createSessionService({
       participants: participants.map((p) => ({
         participantId: p.participantId,
         displayName: p.displayName,
+        avatarUrl: p.avatarUrl,
         isHost: p.isHost,
         // A late joiner must see who has already submitted, or "x of y have
         // swiped" starts at zero in a room where it isn't (#284).
@@ -1057,7 +1061,8 @@ export function createSessionService({
     sessionCode: string,
     participantId: string,
     displayName: string,
-    rejoinToken?: string
+    rejoinToken?: string,
+    avatarUrl: string | null = null
   ) {
     // A connection can switch Sessions, so lock both in one stable order.
     // The participant lock serializes simultaneous switches by this connection.
@@ -1068,7 +1073,7 @@ export function createSessionService({
       ].sort();
       const enter = async (index: number): Promise<Awaited<ReturnType<typeof joinSession>>> => {
         if (index === codes.length)
-          return joinSession(sessionCode, participantId, displayName, rejoinToken);
+          return joinSession(sessionCode, participantId, displayName, rejoinToken, avatarUrl);
         return (await store.readSession(codes[index]))?.lobby
           ? store.withSessionLock(codes[index], () => enter(index + 1))
           : enter(index + 1);

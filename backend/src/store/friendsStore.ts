@@ -9,6 +9,7 @@
 // single columns (e.g. acceptSessionInvite's session_code) — the leftover
 // edge of that migration, whose original tickets (#107/#108) are closed.
 
+import { ownedPhotoBytes, photoVersion, profileAvatarUrl } from '../services/profilePhoto.js';
 import { logger } from '../logger.js';
 import { z } from 'zod';
 import { supabase, type Database } from '../services/supabase.js';
@@ -22,6 +23,7 @@ type Tables = Database['public']['Tables'];
 type FriendshipStatus = 'pending' | 'accepted' | 'blocked';
 type InviteStatus = SessionInvite['status'];
 
+// ponytail: app photos add at most 86 KiB to each selected row; move bytes to object storage if Profile read bandwidth warrants it.
 const profileSelect = 'id, display_name, avatar_url, email';
 
 type ProfileRow = Pick<Tables['profiles']['Row'], 'id' | 'display_name' | 'avatar_url' | 'email'>;
@@ -33,7 +35,7 @@ function toUserProfile(row: ProfileRow): UserProfile {
   return {
     id: row.id || '',
     displayName: row.display_name || 'Unknown User',
-    avatarUrl: row.avatar_url || null,
+    avatarUrl: profileAvatarUrl(row.id, row.avatar_url),
     email: row.email || null,
   };
 }
@@ -101,6 +103,36 @@ export async function createProfile(profile: {
     throw new DomainError('database_error', 'Failed to create user profile');
   }
   return toUserProfile(data);
+}
+
+/** One row update atomically discards the superseded app-owned image, including on removal. */
+export async function updateProfilePhoto(
+  userId: string,
+  photo: string | null
+): Promise<UserProfile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ avatar_url: photo })
+    .eq('id', userId)
+    .select(profileSelect)
+    .single();
+  if (error) throw new DomainError('database_error', 'Failed to save Profile photo');
+  return toUserProfile(data);
+}
+
+/** Public image capability only: no Profile fields, no redirect to external images. */
+export async function getProfilePhoto(userId: string, version: string): Promise<Buffer | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('avatar_url')
+    .eq('id', userId)
+    .single();
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw new DomainError('database_error', 'Failed to load Profile photo');
+  }
+  const bytes = ownedPhotoBytes(data.avatar_url);
+  return bytes && photoVersion(bytes) === version ? bytes : null;
 }
 
 // Exact email match only (privacy protection)

@@ -11,6 +11,53 @@ describe('apiClient', () => {
     vi.clearAllMocks();
   });
 
+  it('bounds Profile requests and clears timers without requiring AbortSignal.timeout', async () => {
+    vi.useFakeTimers();
+    const unsupported = vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
+      throw new Error('Unsupported WebView API');
+    });
+    try {
+      const fetchProfile = vi.fn().mockImplementationOnce(
+        (_url, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal!.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError'))
+            );
+          })
+      );
+      global.fetch = fetchProfile;
+      const timedOut = expect(apiClient.getCurrentProfile()).rejects.toThrow(
+        'Profile request timed out. Try again.'
+      );
+      await vi.advanceTimersByTimeAsync(15_000);
+      await timedOut;
+      expect(vi.getTimerCount()).toBe(0);
+      const profile = { id: 'alice', displayName: 'Alice', avatarUrl: null, email: null };
+      fetchProfile.mockResolvedValue({ ok: true, json: async () => profile });
+      await expect(apiClient.getCurrentProfile()).resolves.toEqual(profile);
+      const file = new File(['raster fixture'], 'photo.png', { type: 'image/png' });
+      await expect(apiClient.saveProfilePhoto(file)).resolves.toEqual(profile);
+      expect(fetchProfile).toHaveBeenLastCalledWith(
+        expect.stringContaining('/users/me/photo'),
+        expect.objectContaining({
+          method: 'PUT',
+          body: file,
+          headers: expect.objectContaining({ 'Content-Type': 'image/png' }),
+        })
+      );
+      await expect(apiClient.saveProfilePhoto(null)).resolves.toEqual(profile);
+      expect(fetchProfile).toHaveBeenLastCalledWith(
+        expect.stringContaining('/users/me/photo'),
+        expect.objectContaining({ method: 'DELETE' })
+      );
+      expect(unsupported).not.toHaveBeenCalled();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      unsupported.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   describe('createSession with location', () => {
     it('should send location and radius to backend', async () => {
       const mockFetch = vi.fn().mockResolvedValue({

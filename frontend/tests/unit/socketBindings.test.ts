@@ -165,7 +165,12 @@ describe('socketBindings', () => {
     await vi.waitFor(() =>
       expect(emitSpy).toHaveBeenCalledWith(
         'session:join',
-        { sessionCode: 'AB123', displayName: 'Alice', rejoinToken: 'rejoin-token' },
+        {
+          sessionCode: 'AB123',
+          displayName: 'Alice',
+          rejoinToken: 'rejoin-token',
+          accessToken: 'token',
+        },
         expect.any(Function)
       )
     );
@@ -812,6 +817,7 @@ describe('socketBindings', () => {
         participantId: socket.id,
         state: 'complete',
         rejoinToken: 'existing-capability',
+        accessToken: 'token',
         participants: [participant],
       },
     };
@@ -829,6 +835,7 @@ describe('socketBindings', () => {
         sessionCode: 'AAA11',
         displayName: 'Alice',
         rejoinToken: 'existing-capability',
+        accessToken: 'token',
       },
       expect.any(Function)
     );
@@ -888,7 +895,12 @@ describe('socketBindings', () => {
     await socketBindings.joinSession('AB123', 'Alice');
     expect(emitSpy).toHaveBeenCalledWith(
       'session:join',
-      { sessionCode: 'AB123', displayName: 'Alice', rejoinToken: 'rejoin-token' },
+      {
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        rejoinToken: 'rejoin-token',
+        accessToken: 'token',
+      },
       expect.any(Function)
     );
 
