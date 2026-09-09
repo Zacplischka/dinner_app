@@ -41,7 +41,7 @@ import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { getSocketUser, type SocketData } from './websocket/socketAuth.js';
+import { getSocketUser, resolveSessionAvatar, type SocketData } from './websocket/socketAuth.js';
 
 // Import shared types
 import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
@@ -295,7 +295,11 @@ io.on('connection', (socket) => {
   socket.on(
     'session:join',
     command((payload, callback) =>
-      admit(() => handleSessionJoin(socket, payload, callback, sessionService))
+      admit(() =>
+        handleSessionJoin(socket, payload, callback, sessionService, (token) =>
+          resolveSessionAvatar(token, friendsService)
+        )
+      )
     )
   );
 

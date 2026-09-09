@@ -1,47 +1,33 @@
-// User Menu component
-// Shows user avatar and sign out option when authenticated
-
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useFriendsStore } from '../stores/friendsStore';
+import ProfileAvatar from './ProfileAvatar';
 
 export default function UserMenu() {
   const { user, signOut, isLoading } = useAuthStore();
-
+  const { currentUserProfile: profile, fetchCurrentProfile } = useFriendsStore();
+  const userId = user?.id;
+  useEffect(() => {
+    if (userId) void fetchCurrentProfile();
+  }, [userId, fetchCurrentProfile]);
   if (!user) return null;
-
-  const meta = (user.user_metadata ?? {}) as { avatar_url?: string; full_name?: string };
-  const avatarUrl = meta.avatar_url;
-  const displayName = meta.full_name || user.email || 'User';
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Failed to sign out:', error);
-    }
-  };
-
+  const current = profile?.id === user.id ? profile : null;
+  const name = current?.displayName ?? 'Your profile';
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-line bg-raised p-2 shadow-card">
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={`${displayName} profile`}
-          referrerPolicy="no-referrer"
-          className="w-8 h-8 rounded-full ring-2 ring-cyan shadow-glow-cyan"
-        />
-      ) : (
-        <div
-          aria-label={`${displayName} profile`}
-          className="w-8 h-8 rounded-full ring-2 ring-cyan bg-raised flex items-center justify-center text-cyan font-bold shadow-glow-cyan"
-        >
-          {displayName.charAt(0).toUpperCase()}
-        </div>
-      )}
-      <span className="text-sm text-text font-medium truncate max-w-[120px]">{displayName}</span>
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-line bg-raised p-2 shadow-card">
+      <Link
+        to="/profile"
+        aria-label="Profile settings"
+        className="flex min-h-[48px] min-w-0 items-center gap-2 rounded-lg px-1 text-sm font-medium"
+      >
+        <ProfileAvatar name={name} url={current?.avatarUrl} className="h-8 w-8 ring-2 ring-cyan" />
+        <span className="max-w-[120px] truncate">{name}</span>
+      </Link>
       <button
-        onClick={handleSignOut}
+        onClick={() => void signOut().catch((error) => console.error('Failed to sign out:', error))}
         disabled={isLoading}
-        className="text-sm text-muted hover:text-coral-soft transition-colors disabled:opacity-50"
+        className="min-h-[48px] px-2 text-sm text-muted hover:text-coral-soft disabled:opacity-50"
       >
         Sign out
       </button>

@@ -85,6 +85,7 @@ export interface Session {
 }
 
 export interface Participant {
+  avatarUrl?: string | null;
   ready?: boolean;
   waitingForNextRound?: boolean;
   mood?: LobbyParticipant['mood'];
@@ -457,6 +458,7 @@ export function createSessionStore(redis: Redis) {
     participant: {
       participantId: string;
       displayName: string;
+      avatarUrl?: string | null;
       isHost?: boolean;
       rejoinToken?: string;
       ready?: boolean;
@@ -478,6 +480,7 @@ export function createSessionStore(redis: Redis) {
       isHost: isHost ? '1' : '0',
       hasSubmitted: '0',
       isOnline: '1',
+      avatarUrl: participant.avatarUrl ?? '',
     };
     if (rejoinToken) participantData.rejoinToken = rejoinToken;
     for (const field of ['ready', 'waitingForNextRound', 'mood', 'cuisines', 'diets'] as const) {
@@ -530,6 +533,7 @@ export function createSessionStore(redis: Redis) {
     return {
       participantId,
       displayName: data.displayName,
+      avatarUrl: data.avatarUrl || null,
       sessionCode: data.sessionCode,
       joinedAt: parseInt(data.joinedAt, 10),
       hasSubmitted: data.hasSubmitted === '1',

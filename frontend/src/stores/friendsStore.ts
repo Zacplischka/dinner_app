@@ -31,7 +31,11 @@ interface FriendsState {
   invitesError: string | null;
 
   // Actions - Profile
+  isLoadingProfile: boolean;
+  isSavingPhoto: boolean;
+  profileError: string | null;
   fetchCurrentProfile: () => Promise<void>;
+  saveProfilePhoto: (file: File | null) => Promise<boolean>;
 
   // Actions - Friends
   fetchFriends: () => Promise<void>;
@@ -57,6 +61,8 @@ interface FriendsState {
 
 type LoadingKey = 'isLoadingFriends' | 'isLoadingRequests' | 'isLoadingInvites' | 'isSearching';
 type FetchErrorKey = 'friendsError' | 'requestsError' | 'invitesError';
+
+let profileRequest = 0;
 
 export const useFriendsStore = create<FriendsState>()(
   devtools(
@@ -113,11 +119,52 @@ export const useFriendsStore = create<FriendsState>()(
         requestsError: null,
         invitesError: null,
 
-        // Profile actions
+        // Requests are scoped to both identity and operation: late reads cannot undo a save/sign-out.
+        isLoadingProfile: false,
+        isSavingPhoto: false,
+        profileError: null,
         fetchCurrentProfile: async () => {
-          await run('fetching profile', 'Failed to fetch profile', async () => {
-            set({ currentUserProfile: await apiClient.getCurrentProfile() });
-          });
+          const userId = useAuthStore.getState().user?.id;
+          if (!userId || get().isSavingPhoto) return;
+          const request = ++profileRequest;
+          set({ isLoadingProfile: true, profileError: null });
+          try {
+            const profile = await apiClient.getCurrentProfile();
+            if (request === profileRequest && useAuthStore.getState().user?.id === userId)
+              set({ currentUserProfile: profile, isLoadingProfile: false });
+          } catch (error) {
+            if (request === profileRequest && useAuthStore.getState().user?.id === userId)
+              set({
+                isLoadingProfile: false,
+                profileError:
+                  error instanceof Error && error.name !== 'TimeoutError'
+                    ? error.message
+                    : 'Could not load your profile. Try again.',
+              });
+          }
+        },
+        saveProfilePhoto: async (file) => {
+          const userId = useAuthStore.getState().user?.id;
+          if (!userId || get().isSavingPhoto) return false;
+          const request = ++profileRequest;
+          set({ isSavingPhoto: true, isLoadingProfile: false, profileError: null });
+          try {
+            const profile = await apiClient.saveProfilePhoto(file);
+            if (request !== profileRequest || useAuthStore.getState().user?.id !== userId)
+              return false;
+            set({ currentUserProfile: profile, isSavingPhoto: false });
+            return true;
+          } catch (error) {
+            if (request === profileRequest && useAuthStore.getState().user?.id === userId)
+              set({
+                isSavingPhoto: false,
+                profileError:
+                  error instanceof Error && error.name !== 'TimeoutError'
+                    ? error.message
+                    : 'Could not save your photo. Try again.',
+              });
+            return false;
+          }
         },
 
         // Friends actions
@@ -237,8 +284,12 @@ export const useFriendsStore = create<FriendsState>()(
         // Utility actions
         clearError: () => set({ error: null }),
 
-        reset: () =>
+        reset: () => {
+          profileRequest++;
           set({
+            isLoadingProfile: false,
+            isSavingPhoto: false,
+            profileError: null,
             friends: [],
             friendRequests: [],
             sessionInvites: [],
@@ -252,7 +303,8 @@ export const useFriendsStore = create<FriendsState>()(
             friendsError: null,
             requestsError: null,
             invitesError: null,
-          }),
+          });
+        },
       };
     },
     { name: 'FriendsStore' }
@@ -265,5 +317,6 @@ export const useFriendsStore = create<FriendsState>()(
 // Subscribed from this side because authStore importing this store would close
 // the cycle authStore → friendsStore → apiClient → authStore.
 useAuthStore.subscribe((state, prev) => {
-  if (prev.isAuthenticated && !state.isAuthenticated) useFriendsStore.getState().reset();
+  if (prev.user?.id !== state.user?.id || (prev.isAuthenticated && !state.isAuthenticated))
+    useFriendsStore.getState().reset();
 });

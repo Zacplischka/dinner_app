@@ -14,6 +14,12 @@ const restaurant = {
 };
 
 vi.mock('../../src/services/apiClient', () => ({
+  getCurrentProfile: vi.fn(async () => ({
+    id: 'user-1',
+    displayName: 'Alice',
+    avatarUrl: null,
+    email: 'alice@example.com',
+  })),
   getRestaurants: vi.fn(async () => [restaurant]),
   getSession: vi.fn(async () => ({
     sessionCode: 'AB123',
@@ -39,6 +45,7 @@ import Toast from '../../src/components/Toast/Toast';
 import ConfirmLeaveModal from '../../src/components/ConfirmLeaveModal';
 import UserMenu from '../../src/components/UserMenu';
 import { useAuthStore } from '../../src/stores/authStore';
+import { useFriendsStore } from '../../src/stores/friendsStore';
 import { useSessionStore } from '../../src/stores/sessionStore';
 
 describe('YupCrew components', () => {
@@ -248,8 +255,16 @@ describe('YupCrew components', () => {
       isLoading: false,
     });
 
-    render(<UserMenu />);
+    useFriendsStore.setState({
+      currentUserProfile: {
+        id: 'user-1',
+        displayName: 'Alice',
+        avatarUrl: null,
+        email: 'alice@example.com',
+      },
+    });
+    render(<UserMenu />, { wrapper: MemoryRouter });
 
-    expect(screen.getByLabelText('Alice profile')).toHaveClass('ring-cyan');
+    expect(screen.getByRole('img', { name: 'Alice' })).toHaveClass('ring-cyan');
   });
 });

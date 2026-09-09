@@ -1,3 +1,4 @@
+import ProfileAvatar from '../ProfileAvatar';
 // AddFriendModal Component
 // Modal to search for users and send friend requests
 
@@ -139,20 +140,11 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                     className="flex items-center justify-between p-3 bg-surface/50 rounded-xl border border-line/20"
                   >
                     <div className="flex items-center gap-3">
-                      {user.avatarUrl ? (
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.displayName}
-                          referrerPolicy="no-referrer"
-                          className="w-8 h-8 rounded-full ring-2 ring-cyan/20"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
-                          <span className="text-white font-medium">
-                            {user.displayName.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
+                      <ProfileAvatar
+                        name={user.displayName}
+                        url={user.avatarUrl}
+                        className="w-8 h-8 ring-2 ring-cyan/20"
+                      />
                       <div>
                         <p className="font-medium text-text">{user.displayName}</p>
                         <p className="text-xs text-muted">{user.email}</p>

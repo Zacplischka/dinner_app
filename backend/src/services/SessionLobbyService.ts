@@ -39,6 +39,7 @@ export function createLobbyCommands(
       participants: participants.map((p) => ({
         participantId: p.participantId,
         displayName: p.displayName,
+        avatarUrl: p.avatarUrl,
         isHost: p.isHost,
         isOnline: p.isOnline,
         hasSubmitted: p.hasSubmitted,

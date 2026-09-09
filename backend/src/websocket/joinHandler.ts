@@ -26,6 +26,7 @@ const sessionJoinPayloadSchema = z.object({
     ),
   displayName: z.string().trim().min(1, 'Display name required').max(50, 'Display name too long'),
   rejoinToken: z.string().uuid().optional(),
+  accessToken: z.string().min(1).max(8192).optional(),
 });
 
 // Domain rejections that are expected transport outcomes, not handler bugs -
@@ -45,7 +46,8 @@ export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionJoinPayload,
   callback: (response: SessionJoinResponse) => void,
-  service: SessionService
+  service: SessionService,
+  resolveAvatar: (token?: string) => Promise<string | null> = () => Promise.resolve(null)
 ): Promise<void> {
   // Joining pulled them out of another Session (#284): tell that room they
   // left, and deliver the Match when their departure completed it.
@@ -84,7 +86,14 @@ export async function handleSessionJoin(
 
     const { sessionCode, displayName, rejoinToken } = validation.data;
 
-    const result = await service.joinSession(sessionCode, socket.id, displayName, rejoinToken);
+    const avatarUrl = await resolveAvatar(validation.data.accessToken);
+    const result = await service.joinSession(
+      sessionCode,
+      socket.id,
+      displayName,
+      rejoinToken,
+      avatarUrl
+    );
 
     // A socket carries at most one Session: leave any other Session's room,
     // or its broadcasts keep reaching this client as phantom Participants
@@ -124,6 +133,7 @@ export async function handleSessionJoin(
       // ordinary Participant on every other client and the start guard fires
       // for all of them (#405).
       isHost: result.isHost,
+      avatarUrl,
     });
 
     if (result.lobby) socket.to(sessionCode).emit('session:lobby', result.lobby);

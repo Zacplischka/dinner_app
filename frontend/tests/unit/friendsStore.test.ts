@@ -90,6 +90,45 @@ describe('friendsStore', () => {
     );
   });
 
+  it('keeps a saved photo through failed replacement and ignores a read from before a save or sign-out', async () => {
+    useFriendsStore.setState({ currentUserProfile: profile });
+    let finishRead!: (value: Response) => void;
+    const saved = { ...profile, avatarUrl: '/api/profile-photos/photo.jpg' };
+    global.fetch = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishRead = resolve;
+          })
+      )
+      .mockResolvedValueOnce(response(saved));
+    const pending = useFriendsStore.getState().fetchCurrentProfile();
+    await expect(
+      useFriendsStore
+        .getState()
+        .saveProfilePhoto(new File(['photo'], 'photo.png', { type: 'image/png' }))
+    ).resolves.toBe(true);
+    finishRead(response(profile));
+    await pending;
+    expect(useFriendsStore.getState().currentUserProfile).toEqual(saved);
+    global.fetch = vi.fn().mockResolvedValueOnce(response({ message: 'Try again' }, false));
+    await expect(useFriendsStore.getState().saveProfilePhoto(null)).resolves.toBe(false);
+    expect(useFriendsStore.getState().currentUserProfile).toEqual(saved);
+    expect(useFriendsStore.getState().profileError).toBe('Try again');
+    global.fetch = vi.fn().mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishRead = resolve;
+        })
+    );
+    const oldAccount = useFriendsStore.getState().fetchCurrentProfile();
+    useAuthStore.setState({ user: null, session: null, isAuthenticated: false });
+    finishRead(response(saved));
+    await oldAccount;
+    expect(useFriendsStore.getState().currentUserProfile).toBeNull();
+  });
+
   it('should send, remove, accept, decline, invite, and reset local state', async () => {
     useFriendsStore.setState({
       friends: [friend],
@@ -162,7 +201,7 @@ describe('friendsStore', () => {
     await expect(useFriendsStore.getState().declineSessionInvite('invite-1')).resolves.toBe(false);
 
     expect(useFriendsStore.getState().error).toBe('failed');
-    expect(errorSpy).toHaveBeenCalledWith('Error fetching profile:', expect.any(Error));
+    expect(useFriendsStore.getState().profileError).toBe('failed');
     expect(errorSpy).toHaveBeenCalledWith('Error fetching friends:', expect.any(Error));
     expect(errorSpy).toHaveBeenCalledWith('Error fetching friend requests:', expect.any(Error));
     expect(errorSpy).toHaveBeenCalledWith('Error fetching session invites:', expect.any(Error));
@@ -223,7 +262,7 @@ describe('friendsStore', () => {
     } as unknown as Response);
 
     await useFriendsStore.getState().fetchCurrentProfile();
-    expect(useFriendsStore.getState().error).toBe('HTTP error 418');
+    expect(useFriendsStore.getState().profileError).toBe('HTTP error 418');
 
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
@@ -241,10 +280,6 @@ describe('friendsStore', () => {
       expectedError: string;
       expectedResult?: unknown;
     }> = [
-      {
-        run: () => useFriendsStore.getState().fetchCurrentProfile(),
-        expectedError: 'Failed to fetch profile',
-      },
       {
         run: () => useFriendsStore.getState().fetchFriends(),
         expectedError: 'Failed to fetch friends',

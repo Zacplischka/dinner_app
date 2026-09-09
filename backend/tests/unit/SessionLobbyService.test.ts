@@ -66,6 +66,64 @@ describe('gather-first Sessions', () => {
     redis.disconnect();
     vi.restoreAllMocks();
   });
+  for (const branch of ['eatout', 'takeaway', 'cook', 'watch'] as const) {
+    it(`keeps verified photo references attached through four-participant ${branch} lifecycle and guest rejoin`, async () => {
+      const created = await service.createSession('Alice', {
+        branch,
+        collaborative: true,
+        deckSize: 5,
+      });
+      const code = created.sessionCode;
+      const names = ['Alice', 'Bob', 'Cara', 'Dan'];
+      const avatars = names.map((name) => `https://example.test/${name}.jpg`);
+      const joins = [];
+      for (let i = 0; i < 4; i++)
+        joins.push(await service.joinSession(code, `p${i}`, names[i], undefined, avatars[i]));
+      expect(joins[3].participants.map((p) => p.avatarUrl)).toEqual(avatars);
+      const lobby = (await service.getLobby(code))!;
+      expect(lobby.participants.map((p) => p.avatarUrl)).toEqual(avatars);
+      // Same-socket recovery also overwrites a removed photo, never leaves stale Redis fields.
+      await service.joinSession(code, 'p2', 'Cara', joins[2].rejoinToken, null);
+      expect((await store.getParticipant('p2'))!.avatarUrl).toBeNull();
+      await store.markDisconnected('p1');
+      await service.joinSession(code, 'p1-new', 'Bob', joins[1].rejoinToken, avatars[1]);
+      expect(await store.getParticipant('p1')).toBeNull();
+      const ids = ['p0', 'p1-new', 'p2', 'p3'];
+      if (branch === 'eatout' || branch === 'takeaway')
+        await service.updateChoices(code, 'p0', {
+          sessionCode: code,
+          revision: (await service.getLobby(code))!.revision,
+          location: { latitude: -37.81, longitude: 144.96 },
+        });
+      for (const id of ids)
+        await service.setReady(code, id, (await service.getLobby(code))!.revision, true);
+      await service.startRound(code, 'p0', (await service.getLobby(code))!.revision);
+      expect(
+        (await service.getLobby(code))!.participants.find((p) => p.displayName === 'Bob')!.avatarUrl
+      ).toBe(avatars[1]);
+      const entry = (await store.getDeck(code)).entries[0];
+      for (const id of ids)
+        await service.submitSelections(
+          code,
+          id,
+          [entry.placeId],
+          (await service.getLobby(code))!.round
+        );
+      expect((await store.readSession(code))!.state).toBe('complete');
+      await service.restartSession(code, 'p0');
+      const restarted = (await service.getLobby(code))!;
+      expect(restarted.participants).toHaveLength(4);
+      expect(restarted.participants.every((p) => !p.ready && !p.hasSubmitted)).toBe(true);
+      expect(restarted.participants.find((p) => p.displayName === 'Bob')!.avatarUrl).toBe(
+        avatars[1]
+      );
+      await service.leaveSession(code, 'p3');
+      expect((await service.getLobby(code))!.participants.map((p) => p.displayName)).not.toContain(
+        'Dan'
+      );
+    });
+  }
+
   async function joined(branch: Branch = 'watch') {
     const created = await service.createSession('Host', {
       branch,

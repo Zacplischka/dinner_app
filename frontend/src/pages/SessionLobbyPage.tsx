@@ -1,3 +1,4 @@
+import ProfileAvatar from '../components/ProfileAvatar';
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -264,12 +265,12 @@ export default function SessionLobbyPage() {
                   className="rounded-xl border border-line bg-surface/70 p-2"
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      aria-label={`${participant.displayName}${participant.isHost ? ', host' : ''}, ${offline ? 'offline' : 'live'}`}
+                    <ProfileAvatar
+                      name={participant.displayName}
+                      url={participant.avatarUrl}
+                      label={`${participant.displayName}${participant.isHost ? ', host' : ''}, ${offline ? 'offline' : 'live'}`}
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 bg-raised font-black ${participantRingClass(index)}`}
-                    >
-                      {participant.displayName.charAt(0).toUpperCase()}
-                    </div>
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         <span data-testid="participant-name">{participant.displayName}</span>

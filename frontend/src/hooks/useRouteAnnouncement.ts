@@ -23,6 +23,7 @@ const TITLES: ReadonlyArray<readonly [string, string]> = [
   ['/create', 'Create Session'],
   ['/join', 'Join Session'],
   ['/friends', 'Friends'],
+  ['/profile', 'Profile settings'],
 ];
 
 /** The document title for a pathname. Unknown URLs render Home, so they read as Home. */

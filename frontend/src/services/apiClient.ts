@@ -325,7 +325,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
  * Get the current user's profile (created on first sight server-side)
  */
 export async function getCurrentProfile(): Promise<GetProfileResponse> {
-  return authedRequest<GetProfileResponse>('/users/me');
+  return authedRequest<GetProfileResponse>('/users/me', { signal: AbortSignal.timeout(15_000) });
+}
+
+export function saveProfilePhoto(file: File | null): Promise<GetProfileResponse> {
+  return authedRequest<GetProfileResponse>(
+    '/users/me/photo',
+    file
+      ? {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+          signal: AbortSignal.timeout(15_000),
+        }
+      : { method: 'DELETE', signal: AbortSignal.timeout(15_000) }
+  );
 }
 
 /**

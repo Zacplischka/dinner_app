@@ -70,6 +70,19 @@ export function toApiError(err: unknown): { status: number; body: ApiError } {
     }
   }
 
+  if (err && typeof err === 'object' && 'type' in err && err.type === 'entity.too.large') {
+    return {
+      status: 413,
+      body: { code: 'VALIDATION_ERROR', message: 'Request body is too large.' },
+    };
+  }
+  if (err && typeof err === 'object' && 'type' in err && err.type === 'encoding.unsupported') {
+    return {
+      status: 415,
+      body: { code: 'VALIDATION_ERROR', message: 'Request content encoding is not supported.' },
+    };
+  }
+
   // express.json() throws a SyntaxError with status 400 for malformed bodies.
   if (
     err instanceof SyntaxError &&

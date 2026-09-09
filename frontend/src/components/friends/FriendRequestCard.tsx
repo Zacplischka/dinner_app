@@ -1,3 +1,4 @@
+import ProfileAvatar from '../ProfileAvatar';
 // FriendRequestCard Component
 // Displays a friend request with accept/decline actions
 
@@ -39,20 +40,11 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Avatar */}
-          {fromUser.avatarUrl ? (
-            <img
-              src={fromUser.avatarUrl}
-              alt={fromUser.displayName}
-              referrerPolicy="no-referrer"
-              className="w-10 h-10 rounded-full ring-2 ring-cyan/20"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
-              <span className="text-white font-medium text-lg">
-                {fromUser.displayName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
+          <ProfileAvatar
+            name={fromUser.displayName}
+            url={fromUser.avatarUrl}
+            className="w-10 h-10 ring-2 ring-cyan/20"
+          />
 
           {/* Name and email */}
           <div>

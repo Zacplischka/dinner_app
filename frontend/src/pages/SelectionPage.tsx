@@ -1,3 +1,4 @@
+import ProfileAvatar from '../components/ProfileAvatar';
 // Selection page - Tinder-style swipeable selection of tonight's Deck, which
 // deals every Deck Entry kind: Restaurants (Eat Out/Takeaway), Recipes (Cook)
 // and Movies (Watch).
@@ -730,13 +731,13 @@ function SelectionRound() {
             {participants.map((participant, index) => {
               const isOffline = participant.isOnline === false;
               return (
-                <div
+                <ProfileAvatar
                   key={participant.participantId}
-                  aria-label={`${participant.displayName} is ${isOffline ? 'offline' : 'choosing'}`}
+                  name={participant.displayName}
+                  url={participant.avatarUrl}
+                  label={`${participant.displayName} is ${isOffline ? 'offline' : 'choosing'}`}
                   className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-surface text-xs font-black text-text ${participantRingClass(index)}${isOffline ? ' opacity-40' : ''}`}
-                >
-                  {participant.displayName.charAt(0).toUpperCase()}
-                </div>
+                />
               );
             })}
           </div>
