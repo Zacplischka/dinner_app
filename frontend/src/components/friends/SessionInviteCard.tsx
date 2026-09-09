@@ -123,7 +123,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           <button
             onClick={handleDecline}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-muted bg-surface rounded-xl border border-line/30 hover:bg-line hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-muted bg-surface rounded-xl border border-line/30 hover:bg-line hover:text-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Decline
           </button>
