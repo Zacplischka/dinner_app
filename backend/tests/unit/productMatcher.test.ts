@@ -108,6 +108,17 @@ describe('matchProducts', () => {
     expect(matchProducts(rows, 'pumpkin', form)?.match.stockcode).toBe(2);
   });
 
+  it('leaves mass against volume neutral for the ladder to check liquid consistency', () => {
+    const rows = [
+      product({ stockcode: 1, name: 'Coconut Milk', packageSize: '400mL' }),
+      product({ stockcode: 2, name: 'Coconut Milk', packageSize: '400g' }),
+    ];
+    expect(matchProducts(rows, 'coconut milk', 'mass')).toEqual(
+      matchProducts(rows, 'coconut milk')
+    );
+    expect(matchProducts(rows, 'coconut milk', 'mass')?.match.stockcode).toBe(1);
+  });
+
   it('caps a demotion below one identity keyword and applies it only once', () => {
     const rows = [
       product({

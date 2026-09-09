@@ -92,6 +92,8 @@ function score(
   const pack = parsePack(product.packageSize);
   // ponytail: count-vs-volume approximates the ladder's async liquid check;
   // use verified ingredient consistency if bare-count liquids become common.
+  // Mass-vs-volume stays neutral (#367): the ladder can price liquid ingredients
+  // this way, and a pure matcher cannot decide their consistency.
   const refusedPack =
     (pack?.kind === 'fixed' && pack.family === 'volume' && wantedForm === 'count') ||
     (pack?.kind === 'count' && (wantedForm === 'mass' || wantedForm === 'volume'));
