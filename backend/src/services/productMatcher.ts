@@ -78,12 +78,13 @@ function score(
   keywords: string[],
   rank: number,
   wantedForm?: WantedPackForm
-): number {
+) {
   let value = -0.35 * rank; // search rank is a real relevance signal
   const name = product.name.toLowerCase();
+  const identityHits = keywords.filter((word) => name.includes(word)).length;
   if (keywords.length) {
     // Identity has to survive re-ranking, or chicken stock becomes vegetable stock.
-    value += (2 * keywords.filter((word) => name.includes(word)).length) / keywords.length;
+    value += (2 * identityHits) / keywords.length;
   }
   if (!product.available) value -= 2;
   // #245: unavailable-at-store products often carry no price; penalise so a
@@ -97,12 +98,7 @@ function score(
   const refusedPack =
     (pack?.kind === 'fixed' && pack.family === 'volume' && wantedForm === 'count') ||
     (pack?.kind === 'count' && (wantedForm === 'mass' || wantedForm === 'volume'));
-  if (refusedPack || produceNuts(product)) {
-    // ponytail: stay below one identity keyword's weight; identity-first ordering
-    // could cross more rank places, but needs a new store tally before adoption.
-    value -= Math.min(UNSUITABLE_PENALTY, 2 / Math.max(1, keywords.length) - 0.01);
-  }
-  return value;
+  return { value, identityHits, penalized: refusedPack || produceNuts(product) };
 }
 
 function toCandidate(product: WoolworthsProduct): ProductCandidate {
@@ -155,9 +151,28 @@ export function matchProducts(
   if (eligible.length === 0) return null;
 
   const keywords = identityKeywords(term);
-  const ranked = eligible
-    .map(({ product, rank }) => ({ product, value: score(product, keywords, rank, wantedForm) }))
-    .sort((left, right) => right.value - left.value);
+  const ranked = eligible.map(({ product, rank }) => ({
+    product,
+    rank,
+    ...score(product, keywords, rank, wantedForm),
+  }));
+  // ponytail: pairwise over the small search answer; identity-first ordering
+  // could cross more rank places, but needs a new store tally before adoption.
+  let penalty = Math.min(UNSUITABLE_PENALTY, 2 / Math.max(1, keywords.length) - 0.01);
+  for (const fuller of ranked) {
+    if (!fuller.penalized) continue;
+    for (const other of ranked) {
+      if (other.penalized || fuller.identityHits <= other.identityHits) continue;
+      const gap = fuller.value - other.value;
+      // Rank, stock and price already affect the baseline gap. A penalty must
+      // not reverse an existing fuller-identity lead (including an earlier tie).
+      if (gap > 0 || (gap === 0 && fuller.rank < other.rank)) {
+        penalty = Math.min(penalty, Math.max(0, gap - 0.01));
+      }
+    }
+  }
+  for (const candidate of ranked) if (candidate.penalized) candidate.value -= penalty;
+  ranked.sort((left, right) => right.value - left.value);
 
   return {
     match: toCandidate(ranked[0].product),

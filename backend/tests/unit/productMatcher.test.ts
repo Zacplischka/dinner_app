@@ -12,6 +12,44 @@ function product(overrides: Partial<WoolworthsProduct> & { stockcode: number }):
 }
 
 describe('matchProducts', () => {
+  it.each(['1L', '10 pack'])(
+    'keeps full ingredient identity when a lower-identity %s product starts first',
+    (packageSize) => {
+      const rows = [
+        product({ stockcode: 1, name: 'Chicken Stock', packageSize }),
+        product({ stockcode: 2, name: 'Vegetable Stock Cubes', packageSize: '10 pack' }),
+      ];
+      expect(matchProducts(rows, 'vegetable stock')?.match.stockcode).toBe(2);
+      expect(matchProducts(rows, 'vegetable stock', 'volume')?.match.stockcode).toBe(2);
+    }
+  );
+
+  it('preserves earlier fuller-identity ties without promoting later fuller-identity ties', () => {
+    const term = 'alpha bravo charlie delta echo foxtrot golf hotel';
+    const fillers = Array.from({ length: 4 }, (_, index) =>
+      product({ stockcode: 10 + index, sapCategory: undefined })
+    );
+    const fullerFirst = [
+      product({ stockcode: 1, name: term, packageSize: '10 pack', available: false }),
+      ...fillers,
+      product({
+        stockcode: 2,
+        name: 'alpha bravo charlie delta echo foxtrot golf',
+        packageSize: '1L',
+      }),
+    ];
+    const fullerLast = [
+      product({ stockcode: 2, name: 'alpha', packageSize: '1L' }),
+      ...fillers,
+      product({ stockcode: 1, name: term, packageSize: '10 pack' }),
+    ];
+    for (const rows of [fullerFirst, fullerLast]) {
+      expect(matchProducts(rows, term, 'volume')?.match.stockcode).toBe(
+        matchProducts(rows, term)?.match.stockcode
+      );
+    }
+  });
+
   it.each([
     ['CAT', 'FOOD & LITTER'],
     ['BABY', 'CARE'],
