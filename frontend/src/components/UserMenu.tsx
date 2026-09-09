@@ -41,7 +41,7 @@ export default function UserMenu() {
       <button
         onClick={handleSignOut}
         disabled={isLoading}
-        className="text-sm text-muted hover:text-coral-soft transition-colors disabled:opacity-50"
+        className="min-h-[44px] text-sm text-muted hover:text-coral-soft transition-colors disabled:opacity-50"
       >
         Sign out
       </button>

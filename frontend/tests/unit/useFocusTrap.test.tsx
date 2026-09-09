@@ -2,14 +2,50 @@
 // Tab and Shift+Tab wrap within the dialog, Tab stays put while every button is
 // disabled, and the element that had focus before the dialog opened gets it
 // back when the dialog closes.
-import { useRef } from 'react';
+import { StrictMode, useRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import ConfirmLeaveModal from '../../src/components/ConfirmLeaveModal';
 import DeckEntryDetails from '../../src/components/DeckEntryDetails';
 import { useFocusTrap } from '../../src/hooks/useFocusTrap';
+import AddFriendModal from '../../src/components/friends/AddFriendModal';
 
 describe('useFocusTrap', () => {
+  it('keeps Add Friend keyboard focus inside its dialog and restores the opener after Escape', () => {
+    function FriendsDialog() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button onClick={() => setOpen(true)}>Find a friend</button>
+          <AddFriendModal isOpen={open} onClose={() => setOpen(false)} />
+        </>
+      );
+    }
+    render(
+      <StrictMode>
+        <FriendsDialog />
+      </StrictMode>
+    );
+    const opener = screen.getByRole('button', { name: 'Find a friend' });
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = screen.getByRole('dialog', { name: 'Add friend' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    const email = screen.getByRole('textbox', { name: 'Search by email' });
+    expect(email).toHaveFocus();
+    fireEvent.change(email, { target: { value: 'friend@example.com' } });
+    const close = screen.getByRole('button', { name: 'Close' });
+    const search = screen.getByRole('button', { name: 'Search' });
+    search.focus();
+    fireEvent.keyDown(search, { key: 'Tab' });
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
+    expect(search).toHaveFocus();
+    fireEvent.keyDown(search, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+  });
+
   it('wraps Tab inside the dialog and hands focus back to the opener on close', () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener);

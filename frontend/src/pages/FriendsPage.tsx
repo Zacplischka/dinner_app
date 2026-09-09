@@ -10,6 +10,7 @@ import FriendRequestCard from '../components/friends/FriendRequestCard';
 import SessionInviteCard from '../components/friends/SessionInviteCard';
 import AddFriendModal from '../components/friends/AddFriendModal';
 import Spinner from '../components/Spinner';
+import NavigationHeader from '../components/NavigationHeader';
 
 function LoadingCard({ label }: { label: string }) {
   return (
@@ -94,24 +95,11 @@ export default function FriendsPage() {
 
   return (
     <main className="shared-table-backdrop min-h-screen">
-      {/* Header */}
-      <header className="bg-raised/95 border-b border-line/30 backdrop-blur-md">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center text-muted hover:text-cyan transition-colors"
-          >
-            <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back
-          </button>
-          <h1 className="text-xl font-display font-semibold text-text">Friends</h1>
+      <NavigationHeader
+        title="Friends"
+        showBackButton
+        onBack={() => navigate('/')}
+        rightAction={
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex min-h-[44px] items-center text-cyan hover:text-text font-medium transition-colors"
@@ -126,8 +114,9 @@ export default function FriendsPage() {
             </svg>
             Add
           </button>
-        </div>
-
+        }
+      />
+      <div className="bg-raised/95 border-b border-line/30">
         {/* Tabs */}
         <div className="max-w-2xl mx-auto px-4">
           <div className="flex border-b border-line/30">
@@ -175,7 +164,7 @@ export default function FriendsPage() {
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
