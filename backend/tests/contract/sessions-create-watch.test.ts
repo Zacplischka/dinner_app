@@ -1,7 +1,7 @@
 // Contract Test: POST /api/sessions in the Watch Branch (#369).
 // Drives the real app over HTTP. Nothing is faked at a boundary because there
 // is none: the Movie supply is a committed corpus, read in memory — here the
-// 24-title fixture MOVIES_FILE points at (vitest.workspace.ts), so what a
+// 24-title fixture MOVIES_FILE points at (vitest.config.ts), so what a
 // Mood can deal is a fact about the repository and deterministic run to run.
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import request from 'supertest';
