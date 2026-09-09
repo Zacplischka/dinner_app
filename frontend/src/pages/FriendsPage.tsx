@@ -95,73 +95,75 @@ export default function FriendsPage() {
 
   return (
     <main className="shared-table-backdrop min-h-screen">
-      <NavigationHeader
-        title="Friends"
-        showBackButton
-        onBack={() => navigate('/')}
-        rightAction={
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex min-h-[44px] items-center text-cyan hover:text-text font-medium transition-colors"
-          >
-            <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add
-          </button>
-        }
-      />
-      <div className="bg-raised/95 border-b border-line/30">
-        {/* Tabs */}
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="flex border-b border-line/30">
+      <div className="sticky top-0 z-40">
+        <NavigationHeader
+          title="Friends"
+          showBackButton
+          onBack={() => navigate('/')}
+          rightAction={
             <button
-              onClick={() => setActiveTab('friends')}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'friends'
-                  ? 'border-cyan text-cyan'
-                  : 'border-transparent text-muted hover:text-text/80'
-              }`}
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex min-h-[44px] items-center text-cyan hover:text-text font-medium transition-colors"
             >
-              {/* Hide the count until it's known, so a failed or in-flight
-                  fetch never advertises "(0)" as fact */}
-              {isLoadingFriends || friendsError ? 'Friends' : `Friends (${friends.length})`}
+              <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add
             </button>
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                activeTab === 'requests'
-                  ? 'border-cyan text-cyan'
-                  : 'border-transparent text-muted hover:text-text/80'
-              }`}
-            >
-              Requests
-              {requestsCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text bg-coral rounded-full">
-                  {requestsCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('invites')}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                activeTab === 'invites'
-                  ? 'border-cyan text-cyan'
-                  : 'border-transparent text-muted hover:text-text/80'
-              }`}
-            >
-              Invites
-              {invitesCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-cyan rounded-full">
-                  {invitesCount}
-                </span>
-              )}
-            </button>
+          }
+        />
+        <div className="bg-raised/95 backdrop-blur-md border-b border-line/30">
+          {/* Tabs */}
+          <div className="max-w-2xl mx-auto px-4">
+            <div className="flex border-b border-line/30">
+              <button
+                onClick={() => setActiveTab('friends')}
+                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'friends'
+                    ? 'border-cyan text-cyan'
+                    : 'border-transparent text-muted hover:text-text/80'
+                }`}
+              >
+                {/* Hide the count until it's known, so a failed or in-flight
+                    fetch never advertises "(0)" as fact */}
+                {isLoadingFriends || friendsError ? 'Friends' : `Friends (${friends.length})`}
+              </button>
+              <button
+                onClick={() => setActiveTab('requests')}
+                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
+                  activeTab === 'requests'
+                    ? 'border-cyan text-cyan'
+                    : 'border-transparent text-muted hover:text-text/80'
+                }`}
+              >
+                Requests
+                {requestsCount > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text bg-coral rounded-full">
+                    {requestsCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('invites')}
+                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
+                  activeTab === 'invites'
+                    ? 'border-cyan text-cyan'
+                    : 'border-transparent text-muted hover:text-text/80'
+                }`}
+              >
+                Invites
+                {invitesCount > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-cyan rounded-full">
+                    {invitesCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
