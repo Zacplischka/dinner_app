@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { defineWorkspace } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 
 const unitEnv = {
   GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || 'test-google-places-key',
@@ -29,35 +29,43 @@ const serviceEnv = {
   MOVIES_FILE: fileURLToPath(new URL('tests/fixtures/movies.json', import.meta.url)),
 };
 
-export default defineWorkspace([
-  {
-    test: {
-      name: 'unit',
-      include: ['tests/unit/**/*.test.ts'],
-      fileParallelism: true,
-      testTimeout: 5000,
-      env: unitEnv,
-    },
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name: 'unit',
+          pool: 'threads',
+          include: ['tests/unit/**/*.test.ts'],
+          fileParallelism: true,
+          testTimeout: 5000,
+          env: unitEnv,
+        },
+      },
+      {
+        test: {
+          name: 'integration',
+          pool: 'threads',
+          include: ['tests/integration/**/*.test.ts'],
+          // Keep the explicit threads pool and serialized files: the shared-Redis
+          // cleanupTestData() wildcard cannot run across parallel test files.
+          maxWorkers: 1,
+          fileParallelism: false,
+          testTimeout: 15000,
+          env: serviceEnv,
+        },
+      },
+      {
+        test: {
+          name: 'contract',
+          pool: 'threads',
+          include: ['tests/contract/**/*.test.ts'],
+          maxWorkers: 1,
+          fileParallelism: false,
+          testTimeout: 10000,
+          env: serviceEnv,
+        },
+      },
+    ],
   },
-  {
-    test: {
-      name: 'integration',
-      include: ['tests/integration/**/*.test.ts'],
-      // fileParallelism is ignored inside workspace projects on vitest 1.x;
-      // singleThread is the knob that actually serializes files, which the
-      // shared-Redis cleanupTestData() wildcard requires.
-      poolOptions: { threads: { singleThread: true } },
-      testTimeout: 15000,
-      env: serviceEnv,
-    },
-  },
-  {
-    test: {
-      name: 'contract',
-      include: ['tests/contract/**/*.test.ts'],
-      poolOptions: { threads: { singleThread: true } },
-      testTimeout: 10000,
-      env: serviceEnv,
-    },
-  },
-]);
+});

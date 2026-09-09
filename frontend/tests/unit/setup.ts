@@ -5,12 +5,14 @@ import { cleanup } from '@testing-library/react';
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  // Vitest 4 restores spies separately from standalone mock state/implementations.
+  vi.resetAllMocks();
   vi.restoreAllMocks();
 });
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation((query: string) => ({
+  value: vi.fn((query: string) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -53,7 +55,7 @@ Object.defineProperty(window, 'scrollTo', {
 Object.defineProperty(navigator, 'clipboard', {
   configurable: true,
   value: {
-    writeText: vi.fn().mockResolvedValue(undefined),
+    writeText: vi.fn(async () => undefined),
   },
 });
 

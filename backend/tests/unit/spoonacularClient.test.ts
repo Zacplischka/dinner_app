@@ -286,6 +286,34 @@ describe('guardDailyPoints', () => {
     expect(JSON.stringify(warned[0])).not.toContain('test-key');
   });
 
+  it.each([false, true])(
+    'counts and redacts Request inputs when the provider fails: %s',
+    async (fails) => {
+      const logs = captureLogs();
+      const redis = new RedisMock();
+      const failure = new Error('Provider unavailable');
+      const response = new Response('{}');
+      const request = new Request('https://api.spoonacular.com/recipes/convert?apiKey=test-key');
+      const guardedFetch = guardDailyPoints(
+        redis,
+        () => (fails ? Promise.reject(failure) : Promise.resolve(response)),
+        CEILING
+      );
+
+      if (fails) await expect(guardedFetch(request)).rejects.toBe(failure);
+      else await expect(guardedFetch(request)).resolves.toBe(response);
+      expect(await redis.get(key)).toBe('1');
+      const warned = logs.withMsg(
+        fails
+          ? 'Spoonacular call failed before any quota header'
+          : 'Spoonacular response carried no quota header'
+      );
+      expect(warned).toHaveLength(1);
+      expect(warned[0]).toMatchObject({ used: 0, path: '/recipes/convert' });
+      expect(JSON.stringify(warned[0])).not.toContain('test-key');
+    }
+  );
+
   it('counts a point for a call that never came back, rather than freezing', async () => {
     const logs = captureLogs();
     const redis = new RedisMock();
