@@ -72,7 +72,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
         <div className="relative bg-raised rounded-2xl shadow-card border border-line/30 w-full max-w-md p-6 animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 id="add-friend-title" className="text-xl font-display font-semibold text-text">
+            <h2 id="add-friend-title" className="text-xl font-semibold text-text">
               Add friend
             </h2>
             <button
@@ -109,7 +109,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
               <button
                 type="submit"
                 disabled={isSearching || !email.trim()}
-                className="min-h-[44px] px-4 py-2 bg-coral text-text font-semibold rounded-xl hover:brightness-110 disabled:bg-line disabled:text-muted disabled:cursor-not-allowed transition-all shadow-glow-coral disabled:shadow-none"
+                className="min-h-[44px] px-4 py-2 bg-coral text-text font-semibold rounded-xl hover:brightness-110 disabled:bg-line disabled:text-muted disabled:cursor-not-allowed transition-all shadow-glow disabled:shadow-none"
               >
                 {isSearching ? 'Searching…' : 'Search'}
               </button>
@@ -140,7 +140,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                       <ProfileAvatar
                         name={user.displayName}
                         url={user.avatarUrl}
-                        className="w-8 h-8 ring-2 ring-cyan/20"
+                        className="w-8 h-8 ring-2 ring-text/20"
                       />
                       <div>
                         <p className="font-medium text-text">{user.displayName}</p>
@@ -149,7 +149,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
                     </div>
                     <button
                       onClick={() => user.email && handleSendRequest(user.email)}
-                      className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-text hover:bg-cyan/10 rounded-lg transition-colors"
+                      className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-text hover:text-text hover:bg-text/10 rounded-lg transition-colors"
                     >
                       Add friend
                     </button>

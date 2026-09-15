@@ -18,7 +18,7 @@ export default function GoogleSignInButton() {
     <button
       onClick={handleClick}
       disabled={isLoading}
-      className="flex items-center justify-center gap-3 w-full min-h-[44px] px-6 py-3 text-base font-medium text-text bg-raised rounded-xl hover:border-cyan active:scale-[0.98] transition-all shadow-card border border-line disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center justify-center gap-3 w-full min-h-[44px] px-6 py-3 text-base font-medium text-text bg-raised rounded-xl hover:border-text active:scale-[0.98] transition-all shadow-card border border-line disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {/* Google Icon */}
       <svg className="w-5 h-5" viewBox="0 0 24 24">

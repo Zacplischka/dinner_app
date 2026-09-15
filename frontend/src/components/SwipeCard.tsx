@@ -175,7 +175,7 @@ export default function SwipeCard({
     if (swipeDirection === 'left') {
       return {
         transform: releaseTransform,
-        animation: `${prefersReducedMotion ? 'swipeLeftFlat' : 'swipeLeft'} 0.25s ease-out forwards`,
+        animation: 'swipeLeft 0.25s ease-out forwards',
         opacity: 1,
         zIndex: 10,
       };
@@ -183,7 +183,7 @@ export default function SwipeCard({
     if (swipeDirection === 'right') {
       return {
         transform: releaseTransform,
-        animation: `${prefersReducedMotion ? 'swipeRightFlat' : 'swipeRight'} 0.25s ease-out forwards`,
+        animation: 'swipeRight 0.25s ease-out forwards',
         opacity: 1,
         zIndex: 10,
       };
@@ -335,30 +335,28 @@ export default function SwipeCard({
             }`}
             style={{ opacity: likeIntensity }}
           >
-            <span className="text-lime font-display font-bold text-3xl tracking-wider">LIKE</span>
+            <span className="text-lime font-bold text-3xl tracking-wider">LIKE</span>
           </div>
 
           {/* PASS indicator — the badge names the same action as the button
               and the keyboard hint below the Deck (#412). */}
           <div
-            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft bg-ink/95 rounded-lg ${
+            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-strong bg-ink/95 rounded-lg ${
               prefersReducedMotion ? '' : 'transform rotate-12'
             }`}
             style={{ opacity: nopeIntensity }}
           >
-            <span className="text-coral-soft font-display font-bold text-3xl tracking-wider">
-              PASS
-            </span>
+            <span className="text-coral-strong font-bold text-3xl tracking-wider">PASS</span>
           </div>
         </>
       )}
 
       {/* DeckEntry Info */}
       <div className="relative flex-1 min-h-0 overflow-hidden p-5 text-text">
-        <h2 className="font-display text-2xl font-black mb-1 line-clamp-2">{entry.name}</h2>
+        <h2 className="text-2xl font-black mb-1 line-clamp-2">{entry.name}</h2>
 
         {restaurant?.cuisineType && (
-          <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
+          <p className="mb-3 text-sm font-bold text-coral-strong">{restaurant.cuisineType}</p>
         )}
 
         {movie && <GenrePills genres={movie.genres} className="mb-3" />}

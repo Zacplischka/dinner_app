@@ -196,7 +196,7 @@ export default function ComparePage() {
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {!location ? (
           <section className="card text-center">
-            <h2 className="font-display text-2xl font-black">Find nearby venues</h2>
+            <h2 className="text-2xl font-black">Find nearby venues</h2>
             <p className="mt-2 text-muted">
               Pick an area to browse venues near you, then tap one to compare its listed menu prices
               and current deals on Uber Eats and DoorDash. We only show what each app lists.
@@ -257,14 +257,14 @@ export default function ComparePage() {
                   type="button"
                   onClick={() => void handleResolveArea()}
                   disabled={busy || manualQuery.trim().length < 2}
-                  className="btn whitespace-nowrap border border-cyan/60 bg-cyan/10 text-cyan"
+                  className="btn whitespace-nowrap border border-text/60 bg-text/10 text-text"
                 >
                   {isResolvingArea ? 'Finding…' : 'Find area'}
                 </button>
               </div>
             )}
             {error && (
-              <p role="alert" className="mt-4 text-sm text-coral-soft">
+              <p role="alert" className="mt-4 text-sm text-coral-strong">
                 {error}
               </p>
             )}
@@ -274,7 +274,7 @@ export default function ComparePage() {
             <button
               type="button"
               onClick={changeArea}
-              className="min-h-[44px] rounded-full border border-cyan/40 bg-surface px-4 py-2 text-sm text-cyan"
+              className="min-h-[44px] rounded-full border border-text/40 bg-surface px-4 py-2 text-sm text-text"
             >
               near {suburb || 'your location'} · change
             </button>
@@ -287,14 +287,14 @@ export default function ComparePage() {
                   label="Neighbourhood Scout"
                   loadingLabel="Finding nearby venues…"
                 />
-                <h2 className="mt-2 text-center font-display text-2xl font-semibold">
+                <h2 className="mt-2 text-center text-2xl font-semibold">
                   Scouting the neighbourhood.
                 </h2>
                 <p className="mt-2 text-center text-sm text-muted">Finding nearby venues…</p>
               </section>
             )}
             {error && (
-              <div role="alert" className="rounded-xl bg-coral/10 p-4 text-coral-soft">
+              <div role="alert" className="rounded-xl bg-coral/10 p-4 text-coral-strong">
                 <p>{error}</p>
                 <button
                   type="button"
@@ -317,7 +317,7 @@ export default function ComparePage() {
                   label="A Little Further"
                   duration={3}
                 />
-                <h2 className="mt-2 font-display text-2xl font-semibold">A little further?</h2>
+                <h2 className="mt-2 text-2xl font-semibold">A little further?</h2>
                 <p className="mt-3 font-semibold">No venues within {radiusKm} km</p>
                 <p className="mt-2 text-sm text-muted">Try a wider radius or a different area.</p>
                 <button
@@ -408,7 +408,7 @@ export default function ComparePage() {
 
             {venues.length > 0 && filteredVenues.length === 0 && (
               <section className="rounded-market-md border border-line bg-raised p-6 text-center">
-                <p className="font-display text-lg font-semibold">No venues match</p>
+                <p className="text-lg font-semibold">No venues match</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -432,7 +432,7 @@ export default function ComparePage() {
                   }
                   className="flex min-h-[96px] w-full items-center gap-4 rounded-market-md border border-line bg-gradient-to-br from-raised to-surface p-4 text-left shadow-card"
                 >
-                  <span className="relative flex h-20 w-20 flex-none items-center justify-center overflow-hidden rounded-xl bg-ink font-display text-2xl font-black text-coral-soft">
+                  <span className="relative flex h-20 w-20 flex-none items-center justify-center overflow-hidden rounded-xl bg-ink text-2xl font-black text-coral-strong">
                     <span aria-hidden>{venue.name.charAt(0).toUpperCase()}</span>
                     {venue.photoUrl && (
                       <RetryingPhoto
@@ -443,7 +443,7 @@ export default function ComparePage() {
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 break-words font-display text-lg font-semibold">
+                    <span className="line-clamp-2 break-words text-lg font-semibold">
                       {venue.name}
                     </span>
                     <span className="mt-1 block text-sm text-muted">

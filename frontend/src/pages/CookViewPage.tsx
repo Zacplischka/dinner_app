@@ -60,7 +60,7 @@ function Step({
         onClick={onToggle}
         className="flex w-full items-start gap-4 border-b border-line/30 py-5 text-left"
       >
-        <span className="shrink-0 font-display text-lg font-black text-lime">{index + 1}</span>
+        <span className="shrink-0 text-lg font-black text-lime">{index + 1}</span>
         <span
           className={`text-lg leading-relaxed ${checked ? 'text-muted line-through' : 'text-text'}`}
         >
@@ -133,7 +133,7 @@ export default function CookViewPage() {
 
         {!list && !error && (
           <div className="card p-8 text-center">
-            <Spinner size="lg" className="text-cyan" label="Fetching the method…" />
+            <Spinner size="lg" className="text-text" label="Fetching the method…" />
             <p className="mt-4 text-muted">Fetching the method…</p>
           </div>
         )}

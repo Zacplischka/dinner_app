@@ -51,7 +51,7 @@ export default function FriendsList({
           key={friend.id}
           className={`py-3 px-3 rounded-xl transition-all ${
             selectable ? 'cursor-pointer hover:bg-surface/50' : ''
-          } ${selectedIds.has(friend.id) ? 'bg-cyan/10 border border-cyan/30' : ''}`}
+          } ${selectedIds.has(friend.id) ? 'bg-text/10 border border-text/30' : ''}`}
           onClick={() => selectable && onToggleSelect?.(friend.id)}
         >
           <div className="flex items-center justify-between">
@@ -60,7 +60,7 @@ export default function FriendsList({
               {selectable && (
                 <div
                   className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                    selectedIds.has(friend.id) ? 'border-cyan bg-cyan' : 'border-muted/30'
+                    selectedIds.has(friend.id) ? 'border-text bg-text' : 'border-muted/30'
                   }`}
                 >
                   {selectedIds.has(friend.id) && (
@@ -83,7 +83,7 @@ export default function FriendsList({
               <ProfileAvatar
                 name={friend.displayName}
                 url={friend.avatarUrl}
-                className="w-10 h-10 ring-2 ring-cyan/20"
+                className="w-10 h-10 ring-2 ring-text/20"
               />
 
               {/* Name and email */}
@@ -100,7 +100,7 @@ export default function FriendsList({
                   e.stopPropagation();
                   void handleRemoveFriend(friend.id, friend.displayName);
                 }}
-                className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-soft hover:text-text hover:bg-coral/10 rounded-lg transition-colors"
+                className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-strong hover:text-text hover:bg-coral/10 rounded-lg transition-colors"
               >
                 Remove
               </button>
@@ -108,7 +108,7 @@ export default function FriendsList({
           </div>
 
           {removeError?.id === friend.id && (
-            <p role="alert" className="mt-2 text-xs text-coral-soft">
+            <p role="alert" className="mt-2 text-xs text-coral-strong">
               {removeError.message}
             </p>
           )}

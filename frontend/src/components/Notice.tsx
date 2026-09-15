@@ -10,7 +10,7 @@ export const ErrorNote = forwardRef<HTMLParagraphElement, ComponentPropsWithoutR
       <p
         ref={ref}
         {...props}
-        className={`rounded-xl border border-coral/30 bg-coral/10 text-sm text-coral-soft ${className}`}
+        className={`rounded-xl border border-coral/30 bg-coral/10 text-sm text-coral-strong ${className}`}
       />
     );
   }

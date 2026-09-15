@@ -13,7 +13,6 @@
 
   body {
     @apply antialiased;
-    @apply font-body;
     @apply text-text bg-ink;
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
@@ -22,7 +21,6 @@
   h1,
   h2,
   h3 {
-    @apply font-display;
     letter-spacing: -0.04em;
   }
 
@@ -32,7 +30,6 @@
   textarea,
   button {
     font-size: 16px; /* Prevents iOS zoom */
-    @apply font-body;
   }
 
   *:focus-visible {
@@ -57,12 +54,12 @@
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-cyan;
+    @apply bg-text;
   }
 
   /* Selection color */
   ::selection {
-    @apply bg-cyan/30 text-text;
+    @apply bg-text/30 text-text;
   }
 }
 
@@ -79,15 +76,15 @@
 
   .btn-primary {
     @apply bg-coral;
-    @apply text-text shadow-glow-coral;
+    @apply text-text shadow-glow;
     @apply hover:brightness-95;
     @apply disabled:bg-none disabled:bg-raised disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-transparent text-cyan;
-    @apply border border-cyan;
-    @apply hover:bg-cyan/10;
+    @apply bg-transparent text-text;
+    @apply border border-text;
+    @apply hover:bg-text/10;
     @apply disabled:border-line disabled:text-muted disabled:shadow-none disabled:cursor-not-allowed;
   }
 
@@ -114,13 +111,13 @@
     @apply text-base text-text;
     @apply bg-surface border border-muted rounded-xl;
     @apply placeholder:text-muted;
-    @apply focus:border-cyan;
+    @apply focus:border-text;
     @apply transition-all duration-150;
   }
 
   /* Label styling */
   .label {
-    @apply block text-xs font-extrabold text-cyan mb-2 uppercase tracking-[0.14em];
+    @apply block text-xs font-extrabold text-text mb-2 uppercase tracking-[0.14em];
   }
 
   /* Badge styles */
@@ -136,30 +133,11 @@
     height: 32px;
     background: url('/yupcrew-mark.svg') center / contain no-repeat;
   }
-
-  .live-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    @apply bg-lime animate-glow-pulse;
-  }
 }
 
 @layer utilities {
-  .market-backdrop,
-  .shared-table-backdrop {
-    @apply bg-ink;
-  }
-
   .safe-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-
-  /* Full visible height on mobile: dvh tracks the dynamic browser chrome,
-     vh is the fallback for browsers without dvh support. */
-  .h-screen-dvh {
-    height: 100vh;
-    height: 100dvh;
   }
 }
 
@@ -178,28 +156,7 @@
   }
 }
 
-/* Reduced-motion variants: same fly-off, no tilt. The transform function list
-   matches the reduced-motion base transform so it interpolates per-function
-   instead of falling back to matrix interpolation (which reintroduces rotation). */
-@keyframes swipeLeftFlat {
-  to {
-    transform: translateX(-150%);
-    opacity: 0;
-  }
-}
-
-@keyframes swipeRightFlat {
-  to {
-    transform: translateX(150%);
-    opacity: 0;
-  }
-}
-
 /* Existing celebration hooks keep their motion and layout contracts. */
-.neon-outline {
-  color: #a63d2d;
-}
-
 .match-celebration {
   position: relative;
   isolation: isolate;
@@ -261,23 +218,8 @@
     scroll-behavior: auto !important;
   }
 
-  .animate-pulse {
-    animation: none;
-  }
-
-  /* Celebration rays freeze to a faint static glow under reduced motion */
+  /* Celebration rays fade to a faint static glow under reduced motion */
   .match-rays {
-    animation: none;
     opacity: 0.35;
   }
-}
-
-/* Warm surfaces and reserved image frames keep the home fork readable before images load. */
-.home-backdrop {
-  background: #fff4e8;
-}
-
-/* Route announcements focus this non-interactive heading; controls retain visible keyboard focus. */
-.home-backdrop h1[tabindex='-1']:focus {
-  outline: none;
 }

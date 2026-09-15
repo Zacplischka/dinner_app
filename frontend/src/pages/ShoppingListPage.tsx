@@ -91,7 +91,7 @@ function WoolworthsLink({
       href={retailerRedirectUrl(target)}
       target="_blank"
       rel="noopener noreferrer"
-      className="min-w-0 break-words text-sm font-semibold text-cyan hover:underline"
+      className="min-w-0 break-words text-sm font-semibold text-text hover:underline"
     >
       {children}
     </a>
@@ -222,7 +222,7 @@ function Line({
           <button
             type="button"
             onClick={onClaim}
-            className="min-h-[44px] shrink-0 rounded-full bg-cyan/15 px-3 py-1 text-xs font-semibold text-cyan"
+            className="min-h-[44px] shrink-0 rounded-full bg-text/15 px-3 py-1 text-xs font-semibold text-text"
           >
             Claim
           </button>
@@ -361,7 +361,7 @@ export default function ShoppingListPage() {
               <button
                 type="button"
                 onClick={() => void shareList()}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center text-cyan hover:text-cyan/80"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center text-text hover:text-text/80"
                 aria-label="Share shopping list"
                 title="Share shopping list"
               >
@@ -369,7 +369,7 @@ export default function ShoppingListPage() {
               </button>
               <Link
                 to={`/list/${list.listId}/cook`}
-                className="text-sm font-semibold text-cyan hover:underline"
+                className="text-sm font-semibold text-text hover:underline"
               >
                 Cook
               </Link>
@@ -385,7 +385,7 @@ export default function ShoppingListPage() {
           <div className="card p-8 text-center">
             <Spinner
               size="lg"
-              className="text-cyan"
+              className="text-text"
               label="Fetching your recipe and shopping list…"
             />
             <p className="mt-4 text-muted">Fetching your recipe and shopping list…</p>
@@ -484,7 +484,7 @@ export default function ShoppingListPage() {
 
             {pantry.length > 0 && (
               <div className="card mb-6">
-                <h2 className="font-display text-xl font-semibold text-text">From your pantry</h2>
+                <h2 className="text-xl font-semibold text-text">From your pantry</h2>
                 <p className="mb-2 text-sm text-muted">
                   Assumed already at home — nothing here counts toward the total.
                 </p>

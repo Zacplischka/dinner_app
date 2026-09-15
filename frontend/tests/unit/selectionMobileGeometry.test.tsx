@@ -194,7 +194,7 @@ describe('SelectionPage mobile geometry', () => {
     await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
 
     const main = screen.getByRole('main');
-    expect(main).toHaveClass('h-screen-dvh', 'overflow-hidden', 'flex', 'flex-col');
+    expect(main).toHaveClass('h-dvh', 'overflow-hidden', 'flex', 'flex-col');
 
     const stack = screen.getByTestId('card-stack');
     expect(stack).toHaveClass('flex-1', 'min-h-0');
@@ -317,7 +317,7 @@ describe('GroupOrderPage mobile geometry', () => {
     await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
 
     const main = screen.getByRole('main');
-    expect(main).toHaveClass('h-screen-dvh', 'overflow-hidden', 'flex', 'flex-col');
+    expect(main).toHaveClass('h-dvh', 'overflow-hidden', 'flex', 'flex-col');
 
     const menuBand = screen.getByText('In the basket').parentElement as HTMLElement;
     expect(menuBand).toHaveClass('flex-1', 'min-h-0', 'overflow-y-auto');

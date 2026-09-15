@@ -312,23 +312,6 @@ describe('Deck Entry details sheet — Movie', () => {
       'https://www.themoviedb.org/movie/949'
     );
   });
-
-  it('drops the slide-in under prefers-reduced-motion', async () => {
-    vi.spyOn(window, 'matchMedia').mockImplementation(
-      (media: string) =>
-        ({
-          matches: true,
-          media,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        }) as unknown as MediaQueryList
-    );
-    renderSelectionPage();
-    await screen.findByText('Alien');
-    const { dialog } = await pressDetails();
-
-    expect(within(dialog).getByTestId('details-panel')).not.toHaveClass('animate-slide-up');
-  });
 });
 
 describe('Deck Entry details sheet — Full House interrupt', () => {

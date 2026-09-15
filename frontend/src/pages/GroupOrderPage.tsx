@@ -352,7 +352,7 @@ export default function GroupOrderPage() {
       content = (
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
           {celebration}
-          <h2 className="text-lg font-display font-semibold text-text">
+          <h2 className="text-lg font-semibold text-text">
             You&apos;re ordering from {order.venueName} on {platformLabel}
           </h2>
 
@@ -514,7 +514,7 @@ export default function GroupOrderPage() {
 
         {/* SCROLLS — the only overflow on the page */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
-          <h2 className="text-lg font-display font-semibold text-text">In the basket</h2>
+          <h2 className="text-lg font-semibold text-text">In the basket</h2>
 
           {/* Live region holds ONLY the sr-only sentence, kept out of the
               visible list so a new row isn't announced twice (its own text
@@ -619,7 +619,7 @@ export default function GroupOrderPage() {
               Items <span className="font-semibold text-text">{formatPrice(order.itemsCents)}</span>
             </span>
             <span className="text-sm text-muted">
-              You owe <span className="font-semibold text-cyan">{formatPrice(youOwe)}</span>
+              You owe <span className="font-semibold text-text">{formatPrice(youOwe)}</span>
             </span>
           </div>
           <button
@@ -640,7 +640,7 @@ export default function GroupOrderPage() {
   }
 
   return (
-    <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
+    <main className="h-dvh overflow-hidden bg-ink flex flex-col">
       <NavigationHeader
         title="Group order"
         sessionCode={sessionCode}

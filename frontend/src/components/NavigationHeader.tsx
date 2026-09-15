@@ -161,7 +161,7 @@ export default function NavigationHeader({
               </Link>
               <button
                 onClick={handleBackClick}
-                className="flex shrink-0 items-center gap-1 text-muted hover:text-cyan transition-colors min-h-[44px] min-w-[44px] pl-2 pr-1"
+                className="flex shrink-0 items-center gap-1 text-muted hover:text-text transition-colors min-h-[44px] min-w-[44px] pl-2 pr-1"
                 aria-label={confirmOnBack && sessionCode ? 'Leave session' : backLabel}
               >
                 <svg
@@ -187,9 +187,7 @@ export default function NavigationHeader({
             {/* Center - Title only */}
             <div className="min-w-0 shrink text-center">
               <h1
-                className={`font-display font-semibold text-text break-words ${
-                  compact ? 'text-lg' : 'text-xl'
-                }`}
+                className={`font-semibold text-text break-words ${compact ? 'text-lg' : 'text-xl'}`}
               >
                 {title}
               </h1>
@@ -215,7 +213,7 @@ export default function NavigationHeader({
               <button
                 type="button"
                 onClick={() => void leaveSession()}
-                className="-my-2 inline-flex min-h-[44px] items-center text-sm font-medium text-cyan underline underline-offset-2"
+                className="-my-2 inline-flex min-h-[44px] items-center text-sm font-medium text-text underline underline-offset-2"
               >
                 Start over
               </button>
@@ -264,11 +262,11 @@ export default function NavigationHeader({
                 >
                   <span
                     className={`inline-flex items-center px-2 py-0.5 border rounded-full transition-colors ${
-                      copied ? 'bg-lime/10 border-lime/30' : 'bg-cyan/10 border-cyan/30'
+                      copied ? 'bg-lime/10 border-lime/30' : 'bg-text/10 border-text/30'
                     }`}
                   >
                     <span
-                      className={`text-xs font-mono font-medium tracking-wider ${copied ? 'text-lime' : 'text-cyan'}`}
+                      className={`text-xs font-mono font-medium tracking-wider ${copied ? 'text-lime' : 'text-text'}`}
                     >
                       {sessionCode}
                     </span>

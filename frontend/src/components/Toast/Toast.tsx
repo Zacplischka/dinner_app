@@ -60,9 +60,9 @@ const colorClasses: Record<ToastVariant, { border: string; icon: string; bg: str
     bg: 'bg-amber/10',
   },
   info: {
-    border: 'border-l-cyan',
-    icon: 'text-cyan',
-    bg: 'bg-cyan/10',
+    border: 'border-l-text',
+    icon: 'text-text',
+    bg: 'bg-text/10',
   },
 };
 

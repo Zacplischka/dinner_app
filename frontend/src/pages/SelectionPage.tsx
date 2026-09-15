@@ -400,7 +400,7 @@ function SelectionRound() {
   const inviteAction = shareableLink ? (
     <button
       onClick={() => void handleShareInvite()}
-      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-cyan hover:text-cyan/80 transition-colors"
+      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-text hover:text-text/80 transition-colors"
       aria-label="Invite to session"
       title="Invite to session"
     >
@@ -490,7 +490,7 @@ function SelectionRound() {
         {sessionStatus === 'selecting' && stillSwiping.length > 0 && (
           <SocialMoment moment="seat" watch={branch === 'watch'} />
         )}
-        <h2 className="text-3xl font-display font-black text-text mb-3">All done!</h2>
+        <h2 className="text-3xl font-black text-text mb-3">All done!</h2>
         <p className="text-muted mb-6 text-lg">
           {sessionStatus === 'expired'
             ? 'This session has expired.'
@@ -510,7 +510,7 @@ function SelectionRound() {
                   aria-label={label}
                   title={label}
                   className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                    p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
+                    p.hasSubmitted ? 'bg-lime shadow-glow scale-110' : 'bg-line'
                   }`}
                 />
               );
@@ -518,7 +518,7 @@ function SelectionRound() {
           </div>
           <p className="text-sm text-muted">
             <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
-            <span className="text-cyan font-semibold">{participants.length}</span> have finished
+            <span className="text-text font-semibold">{participants.length}</span> have finished
           </p>
           <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
             {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}
@@ -535,9 +535,7 @@ function SelectionRound() {
     return shell(
       deckTitle,
       <div className="card p-8">
-        <h2 className="text-3xl font-display font-black text-text mb-3">
-          Couldn&apos;t load the Deck
-        </h2>
+        <h2 className="text-3xl font-black text-text mb-3">Couldn&apos;t load the Deck</h2>
         <p role="alert" className="text-muted mb-8">
           {error || `No ${deckNoun}s came back this time.`}
         </p>
@@ -572,9 +570,7 @@ function SelectionRound() {
           </svg>
         </div>
 
-        <h2 className="text-3xl font-display font-black text-text mb-3">
-          You&apos;ve seen them all!
-        </h2>
+        <h2 className="text-3xl font-black text-text mb-3">You&apos;ve seen them all!</h2>
         <p className="text-muted mb-6">
           You liked <span className="text-lime font-semibold">{selections.length}</span> {deckNoun}
           {selections.length !== 1 ? 's' : ''}
@@ -618,7 +614,7 @@ function SelectionRound() {
   const visibleEntries = entries.slice(deckCursor, deckCursor + 3);
 
   return (
-    <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
+    <main className="h-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
         {...headerProps}
@@ -666,7 +662,7 @@ function SelectionRound() {
             data-testid="strip-status"
             role="status"
             aria-live="polite"
-            className="ml-2 min-w-0 truncate text-xs font-bold uppercase tracking-[0.12em] text-cyan"
+            className="ml-2 min-w-0 truncate text-xs font-bold uppercase tracking-[0.12em] text-text"
           >
             {reveal
               ? `${reveal.count} of ${reveal.total} liked ${reveal.name}`
@@ -759,7 +755,7 @@ function SelectionRound() {
           <button
             onClick={handleUndo}
             disabled={!canUndo || deckInert}
-            className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-cyan hover:text-cyan disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
+            className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-text hover:text-text disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             aria-label="Undo"
           >
             <svg
@@ -781,7 +777,7 @@ function SelectionRound() {
           <button
             onClick={handleSwipeRight}
             disabled={deckInert}
-            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-coral border-2 border-coral text-text flex items-center justify-center shadow-glow-coral hover:brightness-95 active:scale-95 transition-all duration-150"
+            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-coral border-2 border-coral text-text flex items-center justify-center shadow-glow hover:brightness-95 active:scale-95 transition-all duration-150"
             aria-label="Like"
           >
             <svg
@@ -829,12 +825,10 @@ function SelectionRound() {
                 <HeartIcon key={i} className="w-8 h-8 text-lime" />
               ))}
             </div>
-            <h2 id="full-house-title" className="text-2xl font-display font-black text-lime mb-3">
+            <h2 id="full-house-title" className="text-2xl font-black text-lime mb-3">
               EVERYONE LIKED THIS
             </h2>
-            <p className="text-3xl font-display font-black text-text mb-3 line-clamp-2">
-              {fullHouseName}
-            </p>
+            <p className="text-3xl font-black text-text mb-3 line-clamp-2">{fullHouseName}</p>
             <p className="text-muted mb-6">Lock it in now, or keep going for more.</p>
 
             {error && <ErrorNote className="mb-4 p-3">Could not submit — try again</ErrorNote>}

@@ -1,8 +1,8 @@
 const PARTICIPANT_RING_CLASSES = [
-  'border-coral shadow-glow-coral',
+  'border-coral shadow-glow',
   'border-violet shadow-card',
-  'border-cyan shadow-glow-cyan',
-  'border-lime shadow-glow-lime',
+  'border-text shadow-glow',
+  'border-lime shadow-glow',
 ];
 
 export function participantRingClass(index: number): string {

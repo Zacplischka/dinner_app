@@ -74,7 +74,7 @@ export function LoadingFallback({ label = 'Loading…' }: { label?: string }) {
   return (
     <div className="flex items-center justify-center min-h-screen bg-ink">
       <div className="text-center">
-        <Spinner size="xl" className="text-cyan" label={label} />
+        <Spinner size="xl" className="text-text" label={label} />
         <p className="mt-4 text-muted">{label}</p>
       </div>
     </div>

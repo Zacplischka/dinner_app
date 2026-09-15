@@ -36,7 +36,7 @@ export default function ProfilePage() {
   };
   return (
     <main className="mx-auto min-h-screen w-full max-w-lg px-4 py-6 text-text">
-      <Link to="/" className="inline-flex min-h-[48px] items-center text-cyan">
+      <Link to="/" className="inline-flex min-h-[48px] items-center text-text">
         ← Home
       </Link>
       <h1 className="mt-3 text-3xl font-bold">Profile settings</h1>
@@ -59,7 +59,7 @@ export default function ProfilePage() {
               name={profile?.displayName ?? 'Your profile'}
               url={profile?.avatarUrl}
               label="Saved profile photo"
-              className="h-24 w-24 ring-2 ring-cyan text-3xl"
+              className="h-24 w-24 ring-2 ring-text text-3xl"
             />
             <p className="min-w-0 break-words font-semibold">
               {profile?.displayName ?? 'Your profile'}
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                 : notice}
           </p>
           {profileError && (
-            <div role="alert" className="space-y-3 text-coral-soft">
+            <div role="alert" className="space-y-3 text-coral-strong">
               <p>{profileError}</p>
               {!profile && (
                 <button

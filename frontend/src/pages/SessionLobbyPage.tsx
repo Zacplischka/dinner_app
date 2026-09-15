@@ -170,7 +170,7 @@ export default function SessionLobbyPage() {
     );
 
   return (
-    <main className="market-backdrop min-h-screen">
+    <main className="bg-ink min-h-screen">
       <NavigationHeader
         title={
           lobby
@@ -191,7 +191,7 @@ export default function SessionLobbyPage() {
           <h2 id="invite-title" className="label text-center">
             Session code
           </h2>
-          <div className="rounded-market-md border border-cyan bg-surface px-4 py-2 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+          <div className="rounded-market-md border border-text bg-surface px-4 py-2 text-center font-mono text-3xl font-black tracking-[0.28em] text-text shadow-glow">
             {sessionCode}
           </div>
           {shareableLink && (
@@ -240,8 +240,8 @@ export default function SessionLobbyPage() {
         </section>
 
         <section className="card p-4" aria-labelledby="participants-title">
-          <h2 id="participants-title" className="mb-3 text-lg font-display font-semibold">
-            Participants <span className="text-cyan">({participants.length})</span>
+          <h2 id="participants-title" className="mb-3 text-lg font-semibold">
+            Participants <span className="text-text">({participants.length})</span>
           </h2>
           <div className="space-y-2" data-testid="participants-list" aria-live="polite">
             {participants.map((participant, index) => {
@@ -276,7 +276,7 @@ export default function SessionLobbyPage() {
                       <p className="font-medium">
                         <span data-testid="participant-name">{participant.displayName}</span>
                         {participant.isHost && (
-                          <span className="ml-2 text-xs font-semibold text-cyan">Host</span>
+                          <span className="ml-2 text-xs font-semibold text-text">Host</span>
                         )}
                       </p>
                       <p className="text-xs text-muted">
@@ -302,7 +302,7 @@ export default function SessionLobbyPage() {
                     !participant.ready &&
                     participant.participantId !== currentUserId && (
                       <button
-                        className="mt-2 min-h-[44px] text-sm font-bold text-coral-soft"
+                        className="mt-2 min-h-[44px] text-sm font-bold text-coral-strong"
                         disabled={disabled}
                         onClick={() => {
                           if (

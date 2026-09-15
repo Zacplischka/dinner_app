@@ -14,7 +14,7 @@ import NavigationHeader from '../components/NavigationHeader';
 import { Notice } from '../components/Notice';
 
 const ACTION =
-  'mt-4 min-h-[44px] px-6 py-2 font-medium text-white bg-cyan rounded-xl hover:bg-cyan/90 transition-colors';
+  'mt-4 min-h-[44px] px-6 py-2 font-medium text-white bg-text rounded-xl hover:bg-text/90 transition-colors';
 
 export default function FriendsPage() {
   const navigate = useNavigate();
@@ -100,7 +100,7 @@ export default function FriendsPage() {
       id: 'invites' as const,
       label: 'Invites',
       badge: sessionInvites.length
-        ? { count: sessionInvites.length, className: 'text-white bg-cyan' }
+        ? { count: sessionInvites.length, className: 'text-white bg-text' }
         : undefined,
       isLoading: isLoadingInvites,
       error: invitesError,
@@ -118,7 +118,7 @@ export default function FriendsPage() {
   const tab = tabs.find((t) => t.id === activeTab)!;
 
   return (
-    <main className="shared-table-backdrop min-h-screen">
+    <main className="bg-ink min-h-screen">
       <div className="sticky top-0 z-40">
         <NavigationHeader
           title="Friends"
@@ -126,7 +126,7 @@ export default function FriendsPage() {
           rightAction={
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex min-h-[44px] items-center text-cyan hover:text-text font-medium transition-colors"
+              className="flex min-h-[44px] items-center text-text hover:text-text font-medium transition-colors"
             >
               <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -150,7 +150,7 @@ export default function FriendsPage() {
                   onClick={() => setActiveTab(id)}
                   className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                     activeTab === id
-                      ? 'border-cyan text-cyan'
+                      ? 'border-text text-text'
                       : 'border-transparent text-muted hover:text-text/80'
                   }`}
                 >
@@ -174,7 +174,7 @@ export default function FriendsPage() {
         <div className="space-y-3">
           {tab.isLoading ? (
             <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
-              <Spinner className="text-cyan" label={`Loading ${tab.id}…`} />
+              <Spinner className="text-text" label={`Loading ${tab.id}…`} />
               <p className="mt-2 text-muted">Loading {tab.id}…</p>
             </div>
           ) : tab.error ? (

@@ -50,7 +50,7 @@ function RecipeCrown({
     <div
       data-match-card
       data-recipe-crown
-      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow"
     >
       {recipe.photoUrl && (
         <RetryingPhoto
@@ -100,7 +100,7 @@ function MovieCrown({
     <div
       data-match-card
       data-movie-crown={isCrown || undefined}
-      className={`p-4 border rounded-market-md ${isCrown ? 'bg-lime/10 border-lime shadow-glow-lime' : 'bg-surface border-line'}`}
+      className={`p-4 border rounded-market-md ${isCrown ? 'bg-lime/10 border-lime shadow-glow' : 'bg-surface border-line'}`}
     >
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">
         {isCrown ? 'TONIGHT’S ' : ''}
@@ -161,7 +161,7 @@ function MatchCard({
   return (
     <div
       data-match-card
-      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow"
     >
       {/* The hero (#75): a real photo or none — RetryingPhoto (#90) hides a failed
           load at once, retries once, and keeps the text-only layout if that fails too. */}
@@ -588,7 +588,7 @@ export default function ResultsPage() {
           !allPassed && (
             <button
               onClick={() => void handleShareTopPick()}
-              className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-cyan transition-colors"
+              className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-text transition-colors"
               title="Share Top Pick"
               aria-label="Share Top Pick"
             >
@@ -601,7 +601,7 @@ export default function ResultsPage() {
       <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
         {allPassed && (
           <section aria-labelledby="no-likes-heading" className="card mb-6 text-center">
-            <h2 id="no-likes-heading" className="text-2xl font-display font-bold text-text mb-3">
+            <h2 id="no-likes-heading" className="text-2xl font-bold text-text mb-3">
               None of these worked
             </h2>
             <p className="text-muted mb-4">Nobody liked any of these {deckNoun}.</p>
@@ -626,7 +626,7 @@ export default function ResultsPage() {
               </p>
             )}
             {error && (
-              <p role="alert" className="mt-3 text-sm text-coral-soft">
+              <p role="alert" className="mt-3 text-sm text-coral-strong">
                 {error}
               </p>
             )}
@@ -757,7 +757,7 @@ export default function ResultsPage() {
             The crowned placeId is already excluded (see nearMisses above). */}
         {!hasOverlap && nearMisses.length > 0 && (
           <div className="card mb-6">
-            <h2 className="text-xl font-display font-semibold text-text mb-1">So close</h2>
+            <h2 className="text-xl font-semibold text-text mb-1">So close</h2>
             <p className="text-sm text-muted mb-4">
               All but one of you liked these — worth a second look?
             </p>
@@ -814,9 +814,7 @@ export default function ResultsPage() {
           </details>
         ) : (
           <div className="card mb-6">
-            <h2 className="text-xl font-display font-semibold text-text mb-4">
-              Everyone&apos;s selections
-            </h2>
+            <h2 className="text-xl font-semibold text-text mb-4">Everyone&apos;s selections</h2>
             <SelectionsList
               participants={participants}
               allSelections={allSelections}

@@ -149,7 +149,7 @@ describe('NavigationHeader', () => {
     renderHeader(<NavigationHeader title="Lobby" onBack={noop} sessionCode="7K9M2" />);
     const code = screen.getByText('7K9M2');
     const badge = code.closest('span')!.parentElement as HTMLElement;
-    expect(badge.className).not.toContain('shadow-glow-cyan');
+    expect(badge.className).not.toContain('shadow-glow');
   });
 
   it('copies the Session Code from the badge and flashes it copied for 1.5s', async () => {
@@ -171,7 +171,7 @@ describe('NavigationHeader', () => {
       expect(code.className).toContain('text-lime');
 
       act(() => vi.advanceTimersByTime(1500));
-      expect(code.className).toContain('text-cyan');
+      expect(code.className).toContain('text-text');
     } finally {
       vi.useRealTimers();
     }

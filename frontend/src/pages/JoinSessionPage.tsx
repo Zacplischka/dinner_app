@@ -163,7 +163,7 @@ function JoinInvitation() {
             <p className="text-4xl" aria-hidden="true">
               ⏳
             </p>
-            <h2 className="text-lg font-display font-semibold text-text">This link has expired</h2>
+            <h2 className="text-lg font-semibold text-text">This link has expired</h2>
             <p className="text-sm text-muted">
               A session closes once everyone stops using it. This one is over — or the code was
               mistyped.
@@ -202,7 +202,7 @@ function JoinInvitation() {
                 onChange={(e) => setSessionCode(cleanSessionCode(e.target.value))}
                 placeholder="7K9M2"
                 maxLength={SESSION_CODE_LENGTH}
-                className="w-full min-h-[56px] rounded-market-md border border-cyan bg-surface px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan transition-all duration-150 placeholder:text-muted/70"
+                className="w-full min-h-[56px] rounded-market-md border border-text bg-surface px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-text shadow-glow transition-all duration-150 placeholder:text-muted/70"
                 autoFocus={!searchParams.get('code')}
                 disabled={isLoading}
               />

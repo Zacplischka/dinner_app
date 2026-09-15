@@ -87,13 +87,13 @@ export function DeliveryActions({
       {comparePath && (
         <Link
           to={comparePath}
-          className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-cyan/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] transition-all duration-300 active:scale-[0.98]"
+          className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-surface/80 border border-line/40 hover:border-text/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] transition-all duration-300 active:scale-[0.98]"
         >
           <span className="text-sm font-medium text-text/80 group-hover:text-text transition-colors duration-300">
             Compare prices
           </span>
           <svg
-            className="w-3 h-3 text-muted/50 group-hover:text-cyan/70 group-hover:translate-x-0.5 transition-all duration-300"
+            className="w-3 h-3 text-muted/50 group-hover:text-text/70 group-hover:translate-x-0.5 transition-all duration-300"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

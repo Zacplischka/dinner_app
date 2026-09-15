@@ -103,13 +103,10 @@ export default function ConfirmLeaveModal({
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="card relative w-full max-w-sm shadow-glow-coral animate-fade-in">
+        <div className="card relative w-full max-w-sm shadow-glow animate-fade-in">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h2
-                id="confirm-leave-title"
-                className="text-2xl font-display font-black text-text mb-2"
-              >
+              <h2 id="confirm-leave-title" className="text-2xl font-black text-text mb-2">
                 {copy.title}
               </h2>
               <p className="text-muted">{message}</p>
@@ -129,7 +126,7 @@ export default function ConfirmLeaveModal({
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 min-h-[48px] rounded-xl bg-lime px-4 py-3 font-extrabold text-white shadow-glow-lime transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 min-h-[48px] rounded-xl bg-lime px-4 py-3 font-extrabold text-white shadow-glow transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
               autoFocus
             >
               {copy.stay}
@@ -137,7 +134,7 @@ export default function ConfirmLeaveModal({
             <button
               onClick={onConfirm}
               disabled={isLoading}
-              className="flex-1 min-h-[48px] rounded-xl border border-coral bg-transparent px-4 py-3 font-bold text-coral-soft transition-all duration-150 hover:bg-coral/10 disabled:opacity-50 active:scale-[0.98]"
+              className="flex-1 min-h-[48px] rounded-xl border border-coral bg-transparent px-4 py-3 font-bold text-coral-strong transition-all duration-150 hover:bg-coral/10 disabled:opacity-50 active:scale-[0.98]"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
