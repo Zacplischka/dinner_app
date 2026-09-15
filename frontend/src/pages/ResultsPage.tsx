@@ -1,7 +1,7 @@
 import { publicUrl } from '../services/device';
 // Results page - Show overlapping selections and all participants' choices
 
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import type { Movie, Restaurant } from '@dinder/shared/types';
 import { isMovie, isRecipe, isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';
@@ -9,7 +9,7 @@ import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
 import { DisclosureChevron, ShareIcon, StarRating } from '../components/icons';
 import { ErrorNote } from '../components/Notice';
@@ -32,16 +32,6 @@ import {
 const nearMissRedirectUrl = (platform: 'ubereats' | 'doordash', placeId: string): string =>
   `${API_BASE_URL}/redirect?platform=${platform}&placeId=${encodeURIComponent(placeId)}&source=near_miss`;
 
-// Match card hero (#75): real photo or no hero — RetryingPhoto (#90) hides a
-// failed load at once, retries it once, and restores the text-only layout for
-// good if the retry fails too.
-const MatchHero = ({ photoUrl }: { photoUrl: string }) => (
-  <RetryingPhoto
-    url={photoUrl}
-    className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
-  />
-);
-
 // The Cook ending (#259): the crowned Recipe, outright. Title and image are
 // all a Recipe carries, and there is no second chooser — no other-matches list,
 // no delivery links, nothing to compare. What follows is the Shopping List
@@ -62,7 +52,12 @@ function RecipeCrown({
       data-recipe-crown
       className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
     >
-      {recipe.photoUrl && <MatchHero photoUrl={recipe.photoUrl} />}
+      {recipe.photoUrl && (
+        <RetryingPhoto
+          url={recipe.photoUrl}
+          className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
+        />
+      )}
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">TONIGHT&rsquo;S COOK</p>
       <p className="text-lg font-semibold text-text">{recipe.name}</p>
       <p className="text-sm text-muted mt-1">{reason}</p>
@@ -168,7 +163,14 @@ function MatchCard({
       data-match-card
       className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
     >
-      {restaurant.photoUrl && <MatchHero photoUrl={restaurant.photoUrl} />}
+      {/* The hero (#75): a real photo or none — RetryingPhoto (#90) hides a failed
+          load at once, retries once, and keeps the text-only layout if that fails too. */}
+      {restaurant.photoUrl && (
+        <RetryingPhoto
+          url={restaurant.photoUrl}
+          className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
+        />
+      )}
       {eyebrow && (
         <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">{eyebrow}</p>
       )}
@@ -328,17 +330,16 @@ export default function ResultsPage() {
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
-  const participants = useMemo(
-    () => sessionParticipants.filter((participant) => !participant.waitingForNextRound),
-    [sessionParticipants]
+  const participants = sessionParticipants.filter(
+    (participant) => !participant.waitingForNextRound
   );
 
   // Everything below the crown — other matches, Near Misses, delivery links —
   // is restaurant chrome, so Recipes and Movies are filtered out of it. The
   // crown itself renders every kind: a Cook Session ends at the crowned Recipe
   // (#259), a Watch Session at the crowned Movie (#369).
-  const overlappingOptions = useMemo(() => matchedEntries.filter(isRestaurant), [matchedEntries]);
-  const restaurants = useMemo(() => deckEntries.filter(isRestaurant), [deckEntries]);
+  const overlappingOptions = matchedEntries.filter(isRestaurant);
+  const restaurants = deckEntries.filter(isRestaurant);
   const topPick =
     crownedEntry && isRestaurant(crownedEntry.restaurant)
       ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
@@ -401,38 +402,13 @@ export default function ResultsPage() {
       ? { restaurant: fallbackCrown, likedBy: participants.length, of: participants.length }
       : undefined);
 
-  // #14: a Restart from any Participant flips the Session back to selecting —
-  // every tab still on results follows, not just the one that tapped the button.
-  useEffect(() => {
-    if (sessionStatus === 'waiting' && lobby && sessionCode) {
-      navigate(`/session/${sessionCode}`);
-    }
-    if (sessionStatus === 'selecting' && sessionCode) {
-      navigate(`/session/${sessionCode}/select`);
-    }
-  }, [sessionStatus, sessionCode, navigate, lobby]);
-
-  // Create a lookup map for restaurant names by placeId. This, the Near Misses
-  // and the unanimity check below are memoised so a socket tick that touches
-  // none of their inputs doesn't rebuild them on the re-render.
-  const restaurantNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    // First, populate from restaurantNames received from backend (most complete source)
-    if (restaurantNames) {
-      Object.entries(restaurantNames).forEach(([placeId, name]) => {
-        map.set(placeId, name);
-      });
-    }
-    // Also add from local restaurants array (what current user searched)
-    restaurants.forEach((r) => {
-      map.set(r.placeId, r.name);
-    });
-    // Also add from overlappingOptions (in case restaurants array isn't populated)
-    overlappingOptions.forEach((o) => {
-      map.set(o.placeId, o.name);
-    });
-    return map;
-  }, [restaurantNames, restaurants, overlappingOptions]);
+  // Restaurant names by placeId: the backend's map, then what this phone
+  // searched, then the Match itself — later sources win.
+  const restaurantNameMap = new Map<string, string>([
+    ...Object.entries(restaurantNames),
+    ...restaurants.map((r) => [r.placeId, r.name] as const),
+    ...overlappingOptions.map((o) => [o.placeId, o.name] as const),
+  ]);
 
   // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
   // the tier's counts read off the same "of" the crown does, and Select again
@@ -444,9 +420,8 @@ export default function ResultsPage() {
   // Selections already in the results payload. Empty Match, 3+ Participants
   // only. A Recipe or Movie can be a Near Miss too (CONTEXT.md), shown as name
   // and count — only the rating and delivery actions are restaurant chrome.
-  const nearMisses = useMemo(() => {
-    const misses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
-    if (hasOverlap || participants.length < 3) return misses;
+  const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
+  if (!hasOverlap && participants.length >= 3) {
     const selectionCounts = new Map<string, number>();
     participants.forEach((participant) => {
       selectionsFor(allSelections, participant.displayName).forEach((placeId) => {
@@ -457,30 +432,26 @@ export default function ResultsPage() {
     selectionCounts.forEach((count, placeId) => {
       if (count !== participants.length - 1) return;
       if (placeId === crownPlaceId) return;
-      misses.push(
+      nearMisses.push(
         restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
       );
     });
-    misses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
-    return misses;
-  }, [hasOverlap, participants, allSelections, restaurants, crownPlaceId, restaurantNameMap]);
+    nearMisses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+  }
 
   // Unanimous Selections (#85): when every Participant selected the same
   // non-empty set, the per-Participant copies are redundant — collapse them
   // behind a disclosure. Identical empty lists don't count: an empty Match
   // keeps its transparency lists visible.
-  const isUnanimous = useMemo(() => {
-    const sameSelections = (a: string[], b: string[]) =>
-      a.length === b.length && a.every((placeId) => b.includes(placeId));
-    const firstSelections =
-      participants.length > 0 ? selectionsFor(allSelections, participants[0].displayName) : [];
-    return (
-      firstSelections.length > 0 &&
-      participants.every((participant) =>
-        sameSelections(selectionsFor(allSelections, participant.displayName), firstSelections)
-      )
+  const sameSelections = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((placeId) => b.includes(placeId));
+  const firstSelections =
+    participants.length > 0 ? selectionsFor(allSelections, participants[0].displayName) : [];
+  const isUnanimous =
+    firstSelections.length > 0 &&
+    participants.every((participant) =>
+      sameSelections(selectionsFor(allSelections, participant.displayName), firstSelections)
     );
-  }, [participants, allSelections]);
 
   const handleRestart = async () => {
     if (!sessionCode) return;
@@ -507,10 +478,6 @@ export default function ResultsPage() {
       setError(err instanceof Error ? err.message : 'Failed to restart session');
       setIsRestarting(false);
     }
-  };
-
-  const handleNewSession = () => {
-    navigate('/');
   };
 
   const handleLeaveSession = useLeaveSession(sessionCode);
@@ -558,6 +525,13 @@ export default function ResultsPage() {
         ? { title: crownedMovie.movie.name, text: crownReason(crownedMovie, movieWords) }
         : pick && { title: pick.restaurant.name, text: crownReason(pick, restaurantWords) }
   );
+
+  // #14: a Restart from any Participant flips the Session back to selecting —
+  // every tab still on results follows, not just the one that tapped the button.
+  if (sessionStatus === 'waiting' && lobby && sessionCode)
+    return <Navigate to={`/session/${sessionCode}`} replace />;
+  if (sessionStatus === 'selecting' && sessionCode)
+    return <Navigate to={`/session/${sessionCode}/select`} replace />;
 
   const celebration = (
     <>
@@ -878,7 +852,7 @@ export default function ResultsPage() {
 
           {/* Leaves for the entry fork — a new Session, not a Restart. The
               Restart lives above as "Select again" (#289). */}
-          <button onClick={handleNewSession} className="btn btn-ghost w-full">
+          <button onClick={() => navigate('/')} className="btn btn-ghost w-full">
             New session
           </button>
         </div>

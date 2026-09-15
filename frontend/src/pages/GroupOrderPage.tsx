@@ -2,7 +2,7 @@ import { copyText } from '../services/device';
 // Group Order — the pinned basket: open, add Lines, claim the Buyer, hand off.
 
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import type { MenuItemCapture, OrderLine } from '@dinder/shared/types';
 import { openOrder, addOrderItem, claimBuyer } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
@@ -127,14 +127,6 @@ export default function GroupOrderPage() {
   const [feeText, setFeeText] = useState<string>();
   useEffect(() => () => clearTimeout(feeTimer.current), []);
 
-  // Same effect ResultsPage.tsx runs: a Restart flips the Session back to
-  // selecting for every tab, including this one.
-  useEffect(() => {
-    if (sessionStatus === 'selecting' && sessionCode) {
-      navigate(`/session/${sessionCode}/select`);
-    }
-  }, [sessionStatus, sessionCode, navigate]);
-
   useEffect(() => {
     if (!sessionCode) return;
     const placeId = useSessionStore.getState().orderPlaceId;
@@ -223,6 +215,11 @@ export default function GroupOrderPage() {
   // lookup has no basket to leave, so its header returns to the Match.
   const handleHeaderBack = useLeaveSession(sessionCode);
   const hasOrder = Boolean(order && !failure);
+
+  // As on the results screen: a Restart flips the Session back to selecting
+  // for every tab, including this one.
+  if (sessionStatus === 'selecting' && sessionCode)
+    return <Navigate to={`/session/${sessionCode}/select`} replace />;
 
   const handleClaimBuyer = async () => {
     if (!sessionCode) return;

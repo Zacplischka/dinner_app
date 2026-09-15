@@ -1,7 +1,7 @@
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import type { Ack, SessionChoicesPayload, SessionLobbyState } from '@dinder/shared/types';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
@@ -73,12 +73,6 @@ export default function SessionLobbyPage() {
       active = false;
     };
   }, [sessionCode, roster, setExpiresAt, setLobby, toast]);
-
-  useEffect(() => {
-    if (!sessionCode || me?.waitingForNextRound || reviewingWaiting) return;
-    if (sessionStatus === 'selecting') navigate(`/session/${sessionCode}/select`);
-    if (sessionStatus === 'complete') navigate(`/session/${sessionCode}/results`);
-  }, [navigate, sessionCode, sessionStatus, me?.waitingForNextRound, reviewingWaiting]);
 
   const share = useShareLink(shareableLink, 'Link copied to clipboard!');
   const leave = useLeaveSession(sessionCode);
@@ -160,6 +154,14 @@ export default function SessionLobbyPage() {
   useEffect(() => {
     if (error) errorRef.current?.scrollIntoView?.({ block: 'center' });
   }, [error]);
+
+  // Follow the room once it starts or finishes, unless I am waiting for the
+  // next round or reviewing who is.
+  const follow = sessionCode && !me?.waitingForNextRound && !reviewingWaiting;
+  if (follow && sessionStatus === 'selecting')
+    return <Navigate to={`/session/${sessionCode}/select`} replace />;
+  if (follow && sessionStatus === 'complete')
+    return <Navigate to={`/session/${sessionCode}/results`} replace />;
 
   if (isLoading)
     return (

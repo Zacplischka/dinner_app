@@ -2,7 +2,7 @@
 // Features: Friends list, pending requests, session invites, add friends
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import FriendsList from '../components/friends/FriendsList';
@@ -37,13 +37,6 @@ export default function FriendsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'invites'>('friends');
 
-  // Redirect to home if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/');
-    }
-  }, [authLoading, isAuthenticated, navigate]);
-
   // Fetch data on mount
   useEffect(() => {
     if (isAuthenticated) {
@@ -57,9 +50,7 @@ export default function FriendsPage() {
 
   if (authLoading) return <LoadingFallback />;
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return <Navigate to="/" replace />;
 
   const tabs = [
     {

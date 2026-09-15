@@ -5,7 +5,7 @@ import ProfileAvatar from '../components/ProfileAvatar';
 // Swipe right to like, swipe left to pass
 
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useParams } from 'react-router';
 import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
@@ -66,7 +66,6 @@ export default function SelectionPage() {
 }
 
 function SelectionRound() {
-  const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const {
     selections,
@@ -324,13 +323,7 @@ function SelectionRound() {
   // URL, nothing re-renders). Ceiling: one dead back-tap. Upgrade: history.back()
   // in the effect cleanup when the entry was not consumed by popstate.
 
-  // Navigate to results when session is complete
   const sessionStatus = useSessionStore((state) => state.sessionStatus);
-  useEffect(() => {
-    if (sessionStatus === 'complete') {
-      navigate(`/session/${sessionCode}/results`);
-    }
-  }, [sessionStatus, sessionCode, navigate]);
 
   const handleSwipeLeft = useCallback(() => {
     setLastAction('nope');
@@ -479,6 +472,10 @@ function SelectionRound() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [deckLive, isDone, canUndo, handleSwipeLeft, handleSwipeRight, handleUndo]);
+
+  // Results, once the whole room has submitted.
+  if (sessionStatus === 'complete')
+    return <Navigate to={`/session/${sessionCode}/results`} replace />;
 
   if (isLoading) return <LoadingFallback label={`Finding ${deckNoun}s…`} />;
 
