@@ -40,10 +40,6 @@ interface ProductMatchServiceDeps {
   now?: () => number;
 }
 
-export interface ProductMatchService {
-  matchProduct(term: string, wantedForm?: WantedPackForm): Promise<ProductMatchOutcome>;
-}
-
 /**
  * A successful answer (including a clean zero-result miss) stays fresh for
  * `min(cap, time to Wednesday 6 am AEST)` — the weekly specials rollover is
@@ -65,7 +61,7 @@ export function successWindowMs(nowMs: number, capMs: number): number {
   return Math.min(capMs, rollover - local);
 }
 
-export function createProductMatchService(deps: ProductMatchServiceDeps): ProductMatchService {
+export function createProductMatchService(deps: ProductMatchServiceDeps) {
   const now = deps.now ?? Date.now;
   const enqueue = deps.enqueue ?? woolworthsQueue;
   const defaultStoreId = deps.defaultStoreId ?? config.woolworths.defaultStoreId;

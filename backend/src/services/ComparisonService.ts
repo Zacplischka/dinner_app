@@ -49,15 +49,7 @@ interface ComparisonSubscriptionOptions {
   beginColdCompare?: () => boolean;
 }
 
-export interface ComparisonService {
-  subscribe(
-    placeId: string,
-    subscriber: (event: ComparisonStreamEvent) => void,
-    options?: ComparisonSubscriptionOptions
-  ): () => void;
-}
-
-export function createComparisonService(deps: ComparisonServiceDeps): ComparisonService {
+export function createComparisonService(deps: ComparisonServiceDeps) {
   // ponytail: in-memory dedupe assumes the single Railway backend instance.
   const flights = new Map<string, Flight>();
 
@@ -129,7 +121,11 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
   };
 
   return {
-    subscribe(placeId, subscriber, options) {
+    subscribe(
+      placeId: string,
+      subscriber: (event: ComparisonStreamEvent) => void,
+      options?: ComparisonSubscriptionOptions
+    ): () => void {
       let flight = flights.get(placeId);
       if (flight) {
         flight.subscribers.add(subscriber);
@@ -146,6 +142,8 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
     },
   };
 }
+
+export type ComparisonService = ReturnType<typeof createComparisonService>;
 
 async function fetchStorefront(
   deps: ComparisonServiceDeps,
