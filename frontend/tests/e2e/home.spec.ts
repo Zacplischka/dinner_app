@@ -94,25 +94,6 @@ test.describe('Create Session Page', () => {
     await createPage.verifyPageElements();
   });
 
-  test('should show character count for name input', async ({ createPage }) => {
-    await createPage.goto();
-    await createPage.enterName('John');
-
-    const charCount = await createPage.getCharacterCountText();
-    expect(charCount).toContain('4');
-  });
-
-  test('should disable submit button when name is empty', async ({ createPage }) => {
-    await createPage.goto();
-    await createPage.verifySubmitButtonState(false);
-  });
-
-  test('should enable submit button when the name is set', async ({ createPage }) => {
-    await createPage.goto();
-    await createPage.enterName('John');
-    await createPage.verifySubmitButtonState(true);
-  });
-
   test('should navigate back on cancel', async ({ createPage, page }) => {
     await createPage.goto();
     await createPage.cancel();

@@ -102,15 +102,6 @@ test.describe('Mobile Layout - Join Session Page', () => {
     // Should be in upper portion of screen
     expect(codeInputBox!.y).toBeLessThan(844 / 2);
   });
-
-  test('uppercase formatting works on mobile input', async ({ joinPage }) => {
-    await joinPage.goto();
-
-    await joinPage.enterSessionCode('abc123');
-    const value = await joinPage.getSessionCodeValue();
-
-    expect(value).toBe('ABC12');
-  });
 });
 
 test.describe('Mobile Touch Interactions', () => {

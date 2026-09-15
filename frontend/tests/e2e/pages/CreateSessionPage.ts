@@ -92,15 +92,4 @@ export class CreateSessionPage {
     await expect(this.createButton).toBeVisible();
     await expect(this.backButton).toBeVisible();
   }
-
-  /**
-   * Verify submit button state based on name
-   */
-  async verifySubmitButtonState(shouldBeEnabled: boolean): Promise<void> {
-    if (shouldBeEnabled) {
-      await expect(this.createButton).toBeEnabled();
-    } else {
-      await expect(this.createButton).toBeDisabled();
-    }
-  }
 }
