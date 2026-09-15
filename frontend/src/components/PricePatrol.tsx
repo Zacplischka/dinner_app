@@ -41,7 +41,7 @@ export default function PricePatrol({ storefronts }: { storefronts: Partial<Snap
           DoorDash
         </span>
       </div>
-      <h2 className="mt-1 text-center font-display text-2xl font-semibold tracking-tight">
+      <h2 className="mt-1 text-center text-2xl font-semibold tracking-tight">
         On the prowl for prices.
       </h2>
       <p role="status" className="mt-2 text-center text-sm text-muted">

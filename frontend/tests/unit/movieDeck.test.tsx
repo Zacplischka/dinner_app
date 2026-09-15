@@ -6,7 +6,7 @@
 // no fork anywhere.
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Movie } from '@dinder/shared/types';
 
@@ -96,7 +96,6 @@ describe('Movie Deck', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: true,
         },

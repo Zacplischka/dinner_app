@@ -146,7 +146,7 @@ export default function LobbyChoices({
   if (me.waitingForNextRound && lobby.state !== 'waiting')
     return (
       <section className="card space-y-4" aria-labelledby="diet-check-title">
-        <h2 id="diet-check-title" className="text-xl font-display font-bold">
+        <h2 id="diet-check-title" className="text-xl font-bold">
           Before you join the swiping
         </h2>
         <p className="text-sm text-muted">
@@ -182,7 +182,7 @@ export default function LobbyChoices({
   return (
     <section className="card space-y-6" aria-labelledby="choices-title">
       <div>
-        <h2 id="choices-title" className="text-xl font-display font-bold">
+        <h2 id="choices-title" className="text-xl font-bold">
           Make it your kind of night
         </h2>
         <p className="mt-2 text-sm text-muted">
@@ -369,7 +369,7 @@ export default function LobbyChoices({
             </div>
           )}
           {locationError && (
-            <p role="alert" className="text-sm text-coral-soft">
+            <p role="alert" className="text-sm text-coral-strong">
               {locationError}
             </p>
           )}

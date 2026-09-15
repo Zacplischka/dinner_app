@@ -1,7 +1,7 @@
 import { publicUrl } from '../services/device';
 // Results page - Show overlapping selections and all participants' choices
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import type { Movie, Restaurant } from '@dinder/shared/types';
 import { isMovie, isRecipe, isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';
@@ -9,8 +9,10 @@ import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
 import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
+import { DisclosureChevron, ShareIcon, StarRating } from '../components/icons';
+import { ErrorNote } from '../components/Notice';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { useShareLink } from '../hooks/useShareLink';
 import TmdbCredit from '../components/TmdbCredit';
@@ -30,16 +32,6 @@ import {
 const nearMissRedirectUrl = (platform: 'ubereats' | 'doordash', placeId: string): string =>
   `${API_BASE_URL}/redirect?platform=${platform}&placeId=${encodeURIComponent(placeId)}&source=near_miss`;
 
-// Match card hero (#75): real photo or no hero — RetryingPhoto (#90) hides a
-// failed load at once, retries it once, and restores the text-only layout for
-// good if the retry fails too.
-const MatchHero = ({ photoUrl }: { photoUrl: string }) => (
-  <RetryingPhoto
-    url={photoUrl}
-    className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
-  />
-);
-
 // The Cook ending (#259): the crowned Recipe, outright. Title and image are
 // all a Recipe carries, and there is no second chooser — no other-matches list,
 // no delivery links, nothing to compare. What follows is the Shopping List
@@ -58,9 +50,14 @@ function RecipeCrown({
     <div
       data-match-card
       data-recipe-crown
-      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow"
     >
-      {recipe.photoUrl && <MatchHero photoUrl={recipe.photoUrl} />}
+      {recipe.photoUrl && (
+        <RetryingPhoto
+          url={recipe.photoUrl}
+          className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
+        />
+      )}
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">TONIGHT&rsquo;S COOK</p>
       <p className="text-lg font-semibold text-text">{recipe.name}</p>
       <p className="text-sm text-muted mt-1">{reason}</p>
@@ -103,7 +100,7 @@ function MovieCrown({
     <div
       data-match-card
       data-movie-crown={isCrown || undefined}
-      className={`p-4 border rounded-market-md ${isCrown ? 'bg-lime/10 border-lime shadow-glow-lime' : 'bg-surface border-line'}`}
+      className={`p-4 border rounded-market-md ${isCrown ? 'bg-lime/10 border-lime shadow-glow' : 'bg-surface border-line'}`}
     >
       <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">
         {isCrown ? 'TONIGHT’S ' : ''}
@@ -164,9 +161,16 @@ function MatchCard({
   return (
     <div
       data-match-card
-      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow-lime"
+      className="p-4 bg-lime/10 border border-lime rounded-market-md shadow-glow"
     >
-      {restaurant.photoUrl && <MatchHero photoUrl={restaurant.photoUrl} />}
+      {/* The hero (#75): a real photo or none — RetryingPhoto (#90) hides a failed
+          load at once, retries once, and keeps the text-only layout if that fails too. */}
+      {restaurant.photoUrl && (
+        <RetryingPhoto
+          url={restaurant.photoUrl}
+          className="w-full h-32 sm:h-40 object-cover rounded-market-md mb-3"
+        />
+      )}
       {eyebrow && (
         <p className="text-xs font-semibold tracking-[0.14em] text-lime mb-1">{eyebrow}</p>
       )}
@@ -175,14 +179,7 @@ function MatchCard({
 
       <div className="mt-2 space-y-2">
         <div className="flex items-center space-x-3 text-sm">
-          {restaurant.rating !== undefined && (
-            <span className="flex items-center text-amber gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              {restaurant.rating.toFixed(1)}
-            </span>
-          )}
+          {restaurant.rating !== undefined && <StarRating rating={restaurant.rating} />}
           {restaurant.priceLevel !== undefined && (
             <span className="text-muted font-medium">
               {formatPriceLevel(restaurant.priceLevel)}
@@ -333,17 +330,16 @@ export default function ResultsPage() {
   } = useSessionStore();
   const [isRestarting, setIsRestarting] = useState(false);
   const [error, setError] = useState('');
-  const participants = useMemo(
-    () => sessionParticipants.filter((participant) => !participant.waitingForNextRound),
-    [sessionParticipants]
+  const participants = sessionParticipants.filter(
+    (participant) => !participant.waitingForNextRound
   );
 
   // Everything below the crown — other matches, Near Misses, delivery links —
   // is restaurant chrome, so Recipes and Movies are filtered out of it. The
   // crown itself renders every kind: a Cook Session ends at the crowned Recipe
   // (#259), a Watch Session at the crowned Movie (#369).
-  const overlappingOptions = useMemo(() => matchedEntries.filter(isRestaurant), [matchedEntries]);
-  const restaurants = useMemo(() => deckEntries.filter(isRestaurant), [deckEntries]);
+  const overlappingOptions = matchedEntries.filter(isRestaurant);
+  const restaurants = deckEntries.filter(isRestaurant);
   const topPick =
     crownedEntry && isRestaurant(crownedEntry.restaurant)
       ? { ...crownedEntry, restaurant: crownedEntry.restaurant }
@@ -406,38 +402,13 @@ export default function ResultsPage() {
       ? { restaurant: fallbackCrown, likedBy: participants.length, of: participants.length }
       : undefined);
 
-  // #14: a Restart from any Participant flips the Session back to selecting —
-  // every tab still on results follows, not just the one that tapped the button.
-  useEffect(() => {
-    if (sessionStatus === 'waiting' && lobby && sessionCode) {
-      navigate(`/session/${sessionCode}`);
-    }
-    if (sessionStatus === 'selecting' && sessionCode) {
-      navigate(`/session/${sessionCode}/select`);
-    }
-  }, [sessionStatus, sessionCode, navigate, lobby]);
-
-  // Create a lookup map for restaurant names by placeId. This, the Near Misses
-  // and the unanimity check below are memoised so a socket tick that touches
-  // none of their inputs doesn't rebuild them on the re-render.
-  const restaurantNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    // First, populate from restaurantNames received from backend (most complete source)
-    if (restaurantNames) {
-      Object.entries(restaurantNames).forEach(([placeId, name]) => {
-        map.set(placeId, name);
-      });
-    }
-    // Also add from local restaurants array (what current user searched)
-    restaurants.forEach((r) => {
-      map.set(r.placeId, r.name);
-    });
-    // Also add from overlappingOptions (in case restaurants array isn't populated)
-    overlappingOptions.forEach((o) => {
-      map.set(o.placeId, o.name);
-    });
-    return map;
-  }, [restaurantNames, restaurants, overlappingOptions]);
+  // Restaurant names by placeId: the backend's map, then what this phone
+  // searched, then the Match itself — later sources win.
+  const restaurantNameMap = new Map<string, string>([
+    ...Object.entries(restaurantNames),
+    ...restaurants.map((r) => [r.placeId, r.name] as const),
+    ...overlappingOptions.map((o) => [o.placeId, o.name] as const),
+  ]);
 
   // The crown, kind-agnostic — a Near Miss is never the thing already crowned,
   // the tier's counts read off the same "of" the crown does, and Select again
@@ -449,9 +420,8 @@ export default function ResultsPage() {
   // Selections already in the results payload. Empty Match, 3+ Participants
   // only. A Recipe or Movie can be a Near Miss too (CONTEXT.md), shown as name
   // and count — only the rating and delivery actions are restaurant chrome.
-  const nearMisses = useMemo(() => {
-    const misses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
-    if (hasOverlap || participants.length < 3) return misses;
+  const nearMisses: Pick<Restaurant, 'placeId' | 'name' | 'rating'>[] = [];
+  if (!hasOverlap && participants.length >= 3) {
     const selectionCounts = new Map<string, number>();
     participants.forEach((participant) => {
       selectionsFor(allSelections, participant.displayName).forEach((placeId) => {
@@ -462,30 +432,26 @@ export default function ResultsPage() {
     selectionCounts.forEach((count, placeId) => {
       if (count !== participants.length - 1) return;
       if (placeId === crownPlaceId) return;
-      misses.push(
+      nearMisses.push(
         restaurantsById.get(placeId) ?? { placeId, name: restaurantNameMap.get(placeId) || placeId }
       );
     });
-    misses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
-    return misses;
-  }, [hasOverlap, participants, allSelections, restaurants, crownPlaceId, restaurantNameMap]);
+    nearMisses.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+  }
 
   // Unanimous Selections (#85): when every Participant selected the same
   // non-empty set, the per-Participant copies are redundant — collapse them
   // behind a disclosure. Identical empty lists don't count: an empty Match
   // keeps its transparency lists visible.
-  const isUnanimous = useMemo(() => {
-    const sameSelections = (a: string[], b: string[]) =>
-      a.length === b.length && a.every((placeId) => b.includes(placeId));
-    const firstSelections =
-      participants.length > 0 ? selectionsFor(allSelections, participants[0].displayName) : [];
-    return (
-      firstSelections.length > 0 &&
-      participants.every((participant) =>
-        sameSelections(selectionsFor(allSelections, participant.displayName), firstSelections)
-      )
+  const sameSelections = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((placeId) => b.includes(placeId));
+  const firstSelections =
+    participants.length > 0 ? selectionsFor(allSelections, participants[0].displayName) : [];
+  const isUnanimous =
+    firstSelections.length > 0 &&
+    participants.every((participant) =>
+      sameSelections(selectionsFor(allSelections, participant.displayName), firstSelections)
     );
-  }, [participants, allSelections]);
 
   const handleRestart = async () => {
     if (!sessionCode) return;
@@ -494,7 +460,7 @@ export default function ResultsPage() {
     setError('');
 
     try {
-      const ack = await restartSession(sessionCode);
+      const ack = await restartSession({ sessionCode });
       if (ack.success) {
         // Reset local store selections/results
         if (lobby) {
@@ -512,10 +478,6 @@ export default function ResultsPage() {
       setError(err instanceof Error ? err.message : 'Failed to restart session');
       setIsRestarting(false);
     }
-  };
-
-  const handleNewSession = () => {
-    navigate('/');
   };
 
   const handleLeaveSession = useLeaveSession(sessionCode);
@@ -564,6 +526,13 @@ export default function ResultsPage() {
         : pick && { title: pick.restaurant.name, text: crownReason(pick, restaurantWords) }
   );
 
+  // #14: a Restart from any Participant flips the Session back to selecting —
+  // every tab still on results follows, not just the one that tapped the button.
+  if (sessionStatus === 'waiting' && lobby && sessionCode)
+    return <Navigate to={`/session/${sessionCode}`} replace />;
+  if (sessionStatus === 'selecting' && sessionCode)
+    return <Navigate to={`/session/${sessionCode}/select`} replace />;
+
   const celebration = (
     <>
       {crownPlaceId && !allPassed && sessionStatus === 'complete' && (
@@ -611,7 +580,6 @@ export default function ResultsPage() {
               : `No ${deckNoun} got a like from everyone`
         }
         sessionCode={sessionCode}
-        showBackButton
         onBack={handleLeaveSession}
         confirmOnBack
         confirmContext="results"
@@ -620,18 +588,11 @@ export default function ResultsPage() {
           !allPassed && (
             <button
               onClick={() => void handleShareTopPick()}
-              className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-cyan transition-colors"
+              className="min-h-[44px] min-w-[44px] p-2 text-muted hover:text-text transition-colors"
               title="Share Top Pick"
               aria-label="Share Top Pick"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                />
-              </svg>
+              <ShareIcon />
             </button>
           )
         }
@@ -640,7 +601,7 @@ export default function ResultsPage() {
       <div className="max-w-2xl mx-auto px-4 py-6 animate-fade-in">
         {allPassed && (
           <section aria-labelledby="no-likes-heading" className="card mb-6 text-center">
-            <h2 id="no-likes-heading" className="text-2xl font-display font-bold text-text mb-3">
+            <h2 id="no-likes-heading" className="text-2xl font-bold text-text mb-3">
               None of these worked
             </h2>
             <p className="text-muted mb-4">Nobody liked any of these {deckNoun}.</p>
@@ -665,7 +626,7 @@ export default function ResultsPage() {
               </p>
             )}
             {error && (
-              <p role="alert" className="mt-3 text-sm text-coral-soft">
+              <p role="alert" className="mt-3 text-sm text-coral-strong">
                 {error}
               </p>
             )}
@@ -740,19 +701,7 @@ export default function ResultsPage() {
                 <details className="card group mb-6 mt-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
                     Other matches ({overlappingOptions.length - 1})
-                    <svg
-                      className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                      />
-                    </svg>
+                    <DisclosureChevron />
                   </summary>
                   <div className="mt-4 space-y-4">
                     {overlappingOptions
@@ -808,7 +757,7 @@ export default function ResultsPage() {
             The crowned placeId is already excluded (see nearMisses above). */}
         {!hasOverlap && nearMisses.length > 0 && (
           <div className="card mb-6">
-            <h2 className="text-xl font-display font-semibold text-text mb-1">So close</h2>
+            <h2 className="text-xl font-semibold text-text mb-1">So close</h2>
             <p className="text-sm text-muted mb-4">
               All but one of you liked these — worth a second look?
             </p>
@@ -827,12 +776,7 @@ export default function ResultsPage() {
                   <div className="mt-2 space-y-2">
                     {restaurant.rating !== undefined && (
                       <div className="flex items-center space-x-3 text-sm">
-                        <span className="flex items-center text-amber gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          {restaurant.rating.toFixed(1)}
-                        </span>
+                        <StarRating rating={restaurant.rating} />
                       </div>
                     )}
                     {/* Nothing to order or compare about a dish you cook, and an
@@ -857,19 +801,7 @@ export default function ResultsPage() {
           <details data-unanimous-selections className="card group mb-6">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
               See everyone&apos;s selections
-              <svg
-                className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                />
-              </svg>
+              <DisclosureChevron />
             </summary>
             <div className="mt-4">
               <SelectionsList
@@ -882,9 +814,7 @@ export default function ResultsPage() {
           </details>
         ) : (
           <div className="card mb-6">
-            <h2 className="text-xl font-display font-semibold text-text mb-4">
-              Everyone&apos;s selections
-            </h2>
+            <h2 className="text-xl font-semibold text-text mb-4">Everyone&apos;s selections</h2>
             <SelectionsList
               participants={participants}
               allSelections={allSelections}
@@ -895,11 +825,7 @@ export default function ResultsPage() {
         )}
 
         {/* Error message */}
-        {error && !allPassed && (
-          <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
-            <p className="text-sm text-coral-soft">{error}</p>
-          </div>
-        )}
+        {error && !allPassed && <ErrorNote className="mb-4 p-3">{error}</ErrorNote>}
 
         {/* Action Buttons */}
         <div className="space-y-3">
@@ -923,7 +849,7 @@ export default function ResultsPage() {
 
           {/* Leaves for the entry fork — a new Session, not a Restart. The
               Restart lives above as "Select again" (#289). */}
-          <button onClick={handleNewSession} className="btn btn-ghost w-full">
+          <button onClick={() => navigate('/')} className="btn btn-ghost w-full">
             New session
           </button>
         </div>

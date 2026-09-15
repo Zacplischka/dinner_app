@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import SessionEntry from '../components/SessionEntry';
 
 export default function CreateSessionPage() {

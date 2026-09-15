@@ -1,5 +1,5 @@
 import { act, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import RequireSession from '../../src/components/RequireSession';
@@ -99,7 +99,6 @@ describe('RequireSession', () => {
           participantId: 'newcomer',
           displayName: 'Newcomer',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: false,
           waitingForNextRound: true,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import NativeLifecycle from '../../src/components/NativeLifecycle';
 import AddFriendModal from '../../src/components/friends/AddFriendModal';
@@ -159,7 +159,6 @@ describe('Android Back', () => {
             participantId: 'alice',
             displayName: 'Alice',
             sessionCode: 'AB123',
-            joinedAt: 1,
             hasSubmitted: false,
             isHost: true,
             ready: true,

@@ -26,15 +26,11 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex items-center justify-center min-h-screen bg-ink px-6">
           <div className="card text-center">
-            <h1 className="text-xl font-semibold text-text font-body">
-              Something went wrong
-            </h1>
-            <p className="mt-2 text-muted font-body">
-              Please reload the app to continue.
-            </p>
+            <h1 className="text-xl font-semibold text-text">Something went wrong</h1>
+            <p className="mt-2 text-muted">Please reload the app to continue.</p>
             <button
               onClick={() => window.location.reload()}
-              className="btn btn-primary mt-6 px-6 py-3 font-body"
+              className="btn btn-primary mt-6 px-6 py-3"
             >
               Reload
             </button>

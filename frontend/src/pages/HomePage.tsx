@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import ConfirmLeaveModal from '../components/ConfirmLeaveModal';
 import { getSession, ApiClientError } from '../services/apiClient';
@@ -116,7 +116,7 @@ export default function HomePage() {
 
   return (
     <main
-      className="home-backdrop min-h-screen px-4 pb-6"
+      className="bg-ink min-h-screen px-4 pb-6"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <header className="mx-auto flex min-h-16 w-full max-w-5xl items-center justify-between gap-4">
@@ -157,7 +157,7 @@ export default function HomePage() {
 
       <section className="mx-auto w-full max-w-5xl pb-6 pt-3 md:pt-12">
         {activeSession && (
-          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-cyan/50 bg-raised p-3">
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-text/50 bg-raised p-3">
             <button
               onClick={() => void returnToSession()}
               disabled={returning}
@@ -185,7 +185,8 @@ export default function HomePage() {
             <p className="mb-3 text-xs font-semibold tracking-wide text-muted">
               A good night starts together
             </p>
-            <h1 className="max-w-xl text-[clamp(2.25rem,7vw,4.5rem)] font-black leading-[1.04] tracking-[-0.055em] text-text">
+            {/* Route announcements focus this heading; only controls keep a visible focus ring. */}
+            <h1 className="max-w-xl text-[clamp(2.25rem,7vw,4.5rem)] font-black leading-[1.04] tracking-[-0.055em] text-text focus:outline-none">
               What are we doing tonight?
             </h1>
             <p className="mt-4 max-w-sm text-base leading-relaxed text-muted">

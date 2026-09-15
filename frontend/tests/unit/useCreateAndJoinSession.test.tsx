@@ -1,13 +1,11 @@
 // Creating a Session is one sequence whatever Branch the Host picked: create,
-// connect, join as Host, invite, land in the lobby. The setup pages own their
-// forms; this is the shared sequence and the failures it hands back.
+// connect, join as Host, land in the lobby. This is the shared sequence and the
+// failures it hands back.
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Craving, SessionLocation } from '@dinder/shared/types';
 
 const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
-  inviteFriendsToSession: vi.fn(async () => undefined),
   waitForConnection: vi.fn(async () => undefined),
   joinSession: vi.fn(
     async (): ReturnType<typeof import('../../src/services/socketBindings').joinSession> => ({
@@ -29,11 +27,7 @@ vi.mock('../../src/services/apiClient', async () => {
   const actual = await vi.importActual<typeof import('../../src/services/apiClient')>(
     '../../src/services/apiClient'
   );
-  return {
-    ...actual,
-    createSession: mocks.createSession,
-    inviteFriendsToSession: mocks.inviteFriendsToSession,
-  };
+  return { ...actual, createSession: mocks.createSession };
 });
 
 vi.mock('../../src/services/socketBindings', () => ({
@@ -41,22 +35,13 @@ vi.mock('../../src/services/socketBindings', () => ({
   joinSession: mocks.joinSession,
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   useNavigate: () => mocks.navigate,
 }));
 
 import { ApiClientError } from '../../src/services/apiClient';
 import { useCreateAndJoinSession } from '../../src/hooks/useCreateAndJoinSession';
-import { useToastStore } from '../../src/hooks/useToast';
 import { useSessionStore } from '../../src/stores/sessionStore';
-
-const richmond: SessionLocation = {
-  latitude: -37.8238936,
-  longitude: 144.9982667,
-  address: 'Richmond VIC 3121, Australia',
-};
-
-const craving: Craving = { mealType: 'main course', cuisines: ['italian'], diets: [] };
 
 const created = {
   sessionCode: 'AB123',
@@ -72,26 +57,23 @@ describe('useCreateAndJoinSession', () => {
     vi.clearAllMocks();
     mocks.createSession.mockResolvedValue(created);
     useSessionStore.getState().resetSession();
-    useToastStore.getState().clearAll();
   });
 
-  it('creates an Eat Out Session, joins as Host and lands in the lobby', async () => {
+  it('creates a Session, joins as Host and lands in the lobby', async () => {
     const { result } = renderHook(() => useCreateAndJoinSession());
 
     let failure: unknown;
     await act(async () => {
-      failure = await result.current.createAndJoin(
-        'Alice',
-        { location: richmond, searchRadiusMiles: 3, branch: 'eatout' },
-        new Set()
-      );
+      failure = await result.current.createAndJoin('Alice', {
+        branch: 'eatout',
+        collaborative: true,
+      });
     });
 
     expect(failure).toBeNull();
     expect(mocks.createSession).toHaveBeenCalledWith('Alice', {
-      location: richmond,
-      searchRadiusMiles: 3,
       branch: 'eatout',
+      collaborative: true,
     });
     expect(mocks.waitForConnection).toHaveBeenCalled();
     expect(mocks.joinSession).toHaveBeenCalledWith('AB123', 'Alice', false, expect.any(Number));
@@ -105,66 +87,6 @@ describe('useCreateAndJoinSession', () => {
     // it stays false. The hook must not write it a second time.
     expect(store.isConnected).toBe(false);
     expect(store.sessionStatus).toBe('waiting');
-    expect(store.location).toEqual(richmond);
-    expect(store.searchRadiusMiles).toBe(3);
-  });
-
-  it('creates a Cook Session from a Craving and Headcount, with no location to remember', async () => {
-    const { result } = renderHook(() => useCreateAndJoinSession());
-
-    await act(async () => {
-      await result.current.createAndJoin(
-        'Alice',
-        { branch: 'cook', craving, headcount: 4 },
-        new Set()
-      );
-    });
-
-    expect(mocks.createSession).toHaveBeenCalledWith('Alice', {
-      branch: 'cook',
-      craving,
-      headcount: 4,
-    });
-    expect(mocks.navigate).toHaveBeenCalledWith('/session/AB123');
-    expect(useSessionStore.getState().location).toBeUndefined();
-    expect(useSessionStore.getState().searchRadiusMiles).toBeUndefined();
-  });
-
-  it('invites the selected Friends once the Host is in, and nobody when none were picked', async () => {
-    const { result } = renderHook(() => useCreateAndJoinSession());
-
-    await act(async () => {
-      await result.current.createAndJoin('Alice', { branch: 'cook', craving }, new Set());
-    });
-    expect(mocks.inviteFriendsToSession).not.toHaveBeenCalled();
-
-    await act(async () => {
-      await result.current.createAndJoin(
-        'Alice',
-        { branch: 'cook', craving },
-        new Set(['friend-1', 'friend-2'])
-      );
-    });
-    expect(mocks.inviteFriendsToSession).toHaveBeenCalledWith('AB123', ['friend-1', 'friend-2']);
-    expect(mocks.inviteFriendsToSession.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.navigate.mock.invocationCallOrder[1]
-    );
-  });
-
-  // The Session exists either way, so the Host is not blocked — but they have to
-  // learn the Friends never got the invite, and that the code is the way in.
-  it('tells the Host to share the Session Code when the invites fail', async () => {
-    mocks.inviteFriendsToSession.mockRejectedValueOnce(new Error('invite service down'));
-    const { result } = renderHook(() => useCreateAndJoinSession());
-
-    await act(async () => {
-      await result.current.createAndJoin('Alice', { branch: 'cook', craving }, new Set(['f-1']));
-    });
-
-    const [toast] = useToastStore.getState().toasts;
-    expect(toast.type).toBe('error');
-    expect(toast.message).toContain('AB123');
-    expect(mocks.navigate).toHaveBeenCalledWith('/session/AB123');
   });
 
   it('is creating only while the sequence is in flight', async () => {
@@ -175,7 +97,7 @@ describe('useCreateAndJoinSession', () => {
 
     let pending!: Promise<unknown>;
     await act(async () => {
-      pending = result.current.createAndJoin('Alice', { branch: 'cook', craving }, new Set());
+      pending = result.current.createAndJoin('Alice', { branch: 'cook' });
     });
     expect(result.current.isCreating).toBe(true);
 
@@ -186,27 +108,20 @@ describe('useCreateAndJoinSession', () => {
     await waitFor(() => expect(result.current.isCreating).toBe(false));
   });
 
-  // The refusal Cook setup answers with a Nearest Craving (#334): the caller
-  // needs the public code, not just a message, and must be left on its screen.
+  // The caller needs the public code, not just a message (DISPLAY_NAME_TAKEN
+  // re-asks for a name), and must be left on its screen.
   it('hands back the backend refusal by code and stays on the setup screen', async () => {
     mocks.createSession.mockRejectedValue(
-      new ApiClientError('NO_RECIPES_FOUND', 'No recipes match that craving.', 404)
+      new ApiClientError('DISPLAY_NAME_TAKEN', 'That name is taken.', 409)
     );
     const { result } = renderHook(() => useCreateAndJoinSession());
 
     let failure: unknown;
     await act(async () => {
-      failure = await result.current.createAndJoin(
-        'Alice',
-        { branch: 'cook', craving, headcount: 2 },
-        new Set()
-      );
+      failure = await result.current.createAndJoin('Alice', { branch: 'cook' });
     });
 
-    expect(failure).toEqual({
-      code: 'NO_RECIPES_FOUND',
-      message: 'No recipes match that craving.',
-    });
+    expect(failure).toEqual({ code: 'DISPLAY_NAME_TAKEN', message: 'That name is taken.' });
     expect(mocks.joinSession).not.toHaveBeenCalled();
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(result.current.isCreating).toBe(false);
@@ -219,11 +134,7 @@ describe('useCreateAndJoinSession', () => {
 
     let failure: unknown;
     await act(async () => {
-      failure = await result.current.createAndJoin(
-        'Alice',
-        { location: richmond, searchRadiusMiles: 3, branch: 'eatout' },
-        new Set()
-      );
+      failure = await result.current.createAndJoin('Alice', { branch: 'eatout' });
     });
 
     expect(failure).toEqual({ code: 'UNKNOWN', message: 'Failed to fetch' });
@@ -240,15 +151,10 @@ describe('useCreateAndJoinSession', () => {
 
     let failure: unknown;
     await act(async () => {
-      failure = await result.current.createAndJoin(
-        'Alice',
-        { location: richmond, searchRadiusMiles: 3, branch: 'eatout' },
-        new Set(['friend-1'])
-      );
+      failure = await result.current.createAndJoin('Alice', { branch: 'eatout' });
     });
 
     expect(failure).toEqual({ code: 'SESSION_FULL', message: 'This session is full.' });
-    expect(mocks.inviteFriendsToSession).not.toHaveBeenCalled();
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(result.current.isCreating).toBe(false);
     expect(useSessionStore.getState().isConnected).toBe(false);
@@ -269,7 +175,7 @@ it('ignores an old create response after a newer admission intent', async () => 
   const { result } = renderHook(() => useCreateAndJoinSession());
   let creating!: ReturnType<typeof result.current.createAndJoin>;
   act(() => {
-    creating = result.current.createAndJoin('Alice', {}, new Set());
+    creating = result.current.createAndJoin('Alice', {});
   });
   beginSessionIntent('NEW12', 'Alice');
   await act(async () => {

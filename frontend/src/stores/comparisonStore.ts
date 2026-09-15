@@ -25,27 +25,23 @@ interface ComparisonState {
   searchQuery: string;
   // Single-field writes go through useComparisonStore.setState — zustand already
   // exposes it, so ten one-line setters would only restate the field list.
-  reset: () => void;
 }
 
-const initialState = {
+const initialState: ComparisonState = {
   location: undefined,
   suburb: undefined,
   radiusKm: 8,
   venues: [],
   scrollY: 0,
   visibleCount: VENUE_PAGE_SIZE,
-  sortBy: 'nearest' as VenueSort,
+  sortBy: 'nearest',
   selectedCuisine: undefined,
   searchQuery: '',
 };
 
 export const useComparisonStore = create<ComparisonState>()(
   persist(
-    (set) => ({
-      ...initialState,
-      reset: () => set(initialState),
-    }),
+    () => initialState,
     {
       name: 'dinder-comparison',
       partialize: ({ location, radiusKm, suburb }) => ({ location, radiusKm, suburb }),

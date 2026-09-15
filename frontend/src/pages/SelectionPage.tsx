@@ -4,8 +4,8 @@ import ProfileAvatar from '../components/ProfileAvatar';
 // and Movies (Watch).
 // Swipe right to like, swipe left to pass
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
+import { Navigate, useParams } from 'react-router';
 import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
@@ -15,9 +15,11 @@ import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import DeckEntryDetails from '../components/DeckEntryDetails';
 import NavigationHeader from '../components/NavigationHeader';
-import type { DeckEntry } from '@dinder/shared/types';
+import { HeartIcon, ShareIcon } from '../components/icons';
+import { ErrorNote } from '../components/Notice';
+import type { Branch, DeckEntry } from '@dinder/shared/types';
 import { participantRingClass } from '../utils/participantStyles';
-import Spinner from '../components/Spinner';
+import Spinner, { LoadingFallback } from '../components/Spinner';
 import SocialMoment from '../components/SocialMoment';
 
 interface LiveRevealInput {
@@ -46,10 +48,16 @@ export function liveReveal({ selectorNames, likedByMe, participantNames }: LiveR
 
 // "Sam", "Sam and Priya", "Sam, Priya and Lee". Names are fine here: CONTEXT.md
 // forbids them only in Near Miss counts, and the lobby already shows the roster.
-export const listNames = (names: string[]): string =>
-  names.length <= 1
-    ? names.join('')
-    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+export const listNames = (names: string[]): string => new Intl.ListFormat('en-AU').format(names);
+
+// The Deck is shared with every Branch, but its copy must not be: a Cook
+// Session deals Recipes and said "Choose Restaurants" over them (#253).
+const DECK_COPY: Record<Branch, { noun: string; title: string }> = {
+  eatout: { noun: 'restaurant', title: 'Choose restaurants' },
+  takeaway: { noun: 'restaurant', title: 'Choose restaurants' },
+  cook: { noun: 'recipe', title: 'Choose recipes' },
+  watch: { noun: 'movie', title: 'Choose something to watch' },
+};
 
 export default function SelectionPage() {
   const roundKey = useSessionStore((state) => `${state.sessionCode}:${state.lobby?.round ?? ''}`);
@@ -58,7 +66,6 @@ export default function SelectionPage() {
 }
 
 function SelectionRound() {
-  const navigate = useNavigate();
   const { sessionCode } = useParams<{ sessionCode: string }>();
   const {
     selections,
@@ -77,21 +84,12 @@ function SelectionRound() {
     () => sessionParticipants.filter((participant) => !participant.waitingForNextRound),
     [sessionParticipants]
   );
-  // The Deck is shared with every Branch, but its copy must not be: a Cook
-  // Session deals Recipes and said "Choose Restaurants" over them (#253).
-  const deckNoun = branch === 'cook' ? 'recipe' : branch === 'watch' ? 'movie' : 'restaurant';
-  const deckTitle =
-    branch === 'cook'
-      ? 'Choose recipes'
-      : branch === 'watch'
-        ? 'Choose something to watch'
-        : 'Choose restaurants';
+  const { noun: deckNoun, title: deckTitle } = DECK_COPY[branch ?? 'eatout'];
   const [entries, setEntries] = useState<DeckEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [error, setError] = useState('');
-  const [submittedCount, setSubmittedCount] = useState(0);
   const [lastAction, setLastAction] = useState<'like' | 'nope' | null>(null);
   // placeId rides along so a retraction (#410) can pull down the announcement it
   // is taking back — the strip is showing a like that no longer exists.
@@ -180,11 +178,7 @@ function SelectionRound() {
       .catch(() => {});
   }, [sessionCode, participants, setExpiresAt]);
 
-  // Listen for participant submissions
-  useEffect(() => {
-    const count = participants.filter((p) => p.hasSubmitted).length;
-    setSubmittedCount(count);
-  }, [participants]);
+  const submittedCount = participants.filter((p) => p.hasSubmitted).length;
 
   // A Submission survives a reload: the join ack's roster carries hasSubmitted
   // per Participant (#284) and "me" is the entry keyed by this socket's id.
@@ -329,13 +323,7 @@ function SelectionRound() {
   // URL, nothing re-renders). Ceiling: one dead back-tap. Upgrade: history.back()
   // in the effect cleanup when the entry was not consumed by popstate.
 
-  // Navigate to results when session is complete
   const sessionStatus = useSessionStore((state) => state.sessionStatus);
-  useEffect(() => {
-    if (sessionStatus === 'complete') {
-      navigate(`/session/${sessionCode}/results`);
-    }
-  }, [sessionStatus, sessionCode, navigate]);
 
   const handleSwipeLeft = useCallback(() => {
     setLastAction('nope');
@@ -412,26 +400,33 @@ function SelectionRound() {
   const inviteAction = shareableLink ? (
     <button
       onClick={() => void handleShareInvite()}
-      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-cyan hover:text-cyan/80 transition-colors"
+      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-text hover:text-text/80 transition-colors"
       aria-label="Invite to session"
       title="Invite to session"
     >
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 12.632a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-        />
-      </svg>
+      <ShareIcon />
     </button>
   ) : null;
+
+  const headerProps = {
+    sessionCode,
+    onBack: handleLeaveSession,
+    confirmOnBack: true,
+    confirmContext: 'selecting' as const,
+    selectionsCount: selections.length,
+    showConnectionStatus: true,
+    compact: true,
+    rightAction: inviteAction,
+  };
+  // The off-deck screens: the header, then one centred card.
+  const shell = (title: string, card: ReactNode) => (
+    <div className="min-h-screen bg-ink">
+      <NavigationHeader {...headerProps} title={title} />
+      <div className="flex flex-col items-center justify-center px-4 py-8">
+        <div className="max-w-md w-full text-center animate-fade-in">{card}</div>
+      </div>
+    </div>
+  );
 
   // Check if we've gone through the whole Deck
   const isDone = deckCursor >= entries.length;
@@ -477,16 +472,11 @@ function SelectionRound() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [deckLive, isDone, canUndo, handleSwipeLeft, handleSwipeRight, handleUndo]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-ink">
-        <div className="text-center">
-          <Spinner size="xl" className="text-cyan" label={`Finding ${deckNoun}s…`} />
-          <p className="mt-4 text-muted font-display text-lg">Finding {deckNoun}s…</p>
-        </div>
-      </div>
-    );
-  }
+  // Results, once the whole room has submitted.
+  if (sessionStatus === 'complete')
+    return <Navigate to={`/session/${sessionCode}/results`} replace />;
+
+  if (isLoading) return <LoadingFallback label={`Finding ${deckNoun}s…`} />;
 
   if (hasSubmitted) {
     // The submit ack lands before the participant:submitted echo, so for one
@@ -494,64 +484,45 @@ function SelectionRound() {
     const stillSwiping = participants
       .filter((p) => !p.hasSubmitted && p.participantId !== currentUserId)
       .map((p) => p.displayName);
-    return (
-      <div className="min-h-screen bg-ink">
-        <NavigationHeader
-          title="Waiting for others…"
-          sessionCode={sessionCode}
-          showBackButton
-          onBack={handleLeaveSession}
-          confirmOnBack
-          confirmContext="selecting"
-          selectionsCount={selections.length}
-          showConnectionStatus
-          compact
-          rightAction={inviteAction}
-        />
+    return shell(
+      'Waiting for others…',
+      <div className="card p-5 sm:p-8">
+        {sessionStatus === 'selecting' && stillSwiping.length > 0 && (
+          <SocialMoment moment="seat" watch={branch === 'watch'} />
+        )}
+        <h2 className="text-3xl font-black text-text mb-3">All done!</h2>
+        <p className="text-muted mb-6 text-lg">
+          {sessionStatus === 'expired'
+            ? 'This session has expired.'
+            : stillSwiping.length > 0
+              ? 'Saved you a seat.'
+              : 'Your selections are submitted.'}
+        </p>
 
-        <div className="flex items-center justify-center px-4 py-8">
-          <div className="max-w-md w-full text-center animate-fade-in">
-            <div className="card p-5 sm:p-8">
-              {sessionStatus === 'selecting' && stillSwiping.length > 0 && (
-                <SocialMoment moment="seat" watch={branch === 'watch'} />
-              )}
-              <h2 className="text-3xl font-display font-black text-text mb-3">All done!</h2>
-              <p className="text-muted mb-6 text-lg">
-                {sessionStatus === 'expired'
-                  ? 'This session has expired.'
-                  : stillSwiping.length > 0
-                    ? 'Saved you a seat.'
-                    : 'Your selections are submitted.'}
-              </p>
-
-              <div className="mb-6">
-                <div className="flex justify-center gap-2 mb-3">
-                  {participants.map((p) => {
-                    const label = `${p.displayName}: ${p.hasSubmitted ? 'submitted' : 'still swiping'}`;
-                    return (
-                      <div
-                        key={p.participantId}
-                        role="img"
-                        aria-label={label}
-                        title={label}
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                          p.hasSubmitted ? 'bg-lime shadow-glow-lime scale-110' : 'bg-line'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
-                <p className="text-sm text-muted">
-                  <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
-                  <span className="text-cyan font-semibold">{participants.length}</span> have
-                  finished
-                </p>
-                <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
-                  {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}
-                </p>
-              </div>
-            </div>
+        <div className="mb-6">
+          <div className="flex justify-center gap-2 mb-3">
+            {participants.map((p) => {
+              const label = `${p.displayName}: ${p.hasSubmitted ? 'submitted' : 'still swiping'}`;
+              return (
+                <div
+                  key={p.participantId}
+                  role="img"
+                  aria-label={label}
+                  title={label}
+                  className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                    p.hasSubmitted ? 'bg-lime shadow-glow scale-110' : 'bg-line'
+                  }`}
+                />
+              );
+            })}
           </div>
+          <p className="text-sm text-muted">
+            <span className="text-lime font-semibold">{submittedCount}</span> of{' '}
+            <span className="text-text font-semibold">{participants.length}</span> have finished
+          </p>
+          <p role="status" aria-live="polite" className="mt-2 text-sm text-muted">
+            {stillSwiping.length > 0 && `Waiting for ${listNames(stillSwiping)}`}
+          </p>
         </div>
       </div>
     );
@@ -561,125 +532,80 @@ function SelectionRound() {
   // end-of-deck screen would offer to submit zero Selections as if it were
   // (#404). Retry is the only honest action.
   if (entries.length === 0) {
-    return (
-      <div className="min-h-screen bg-ink">
-        <NavigationHeader
-          title={deckTitle}
-          sessionCode={sessionCode}
-          showBackButton
-          onBack={handleLeaveSession}
-          confirmOnBack
-          confirmContext="selecting"
-          selectionsCount={selections.length}
-          showConnectionStatus
-          compact
-          rightAction={inviteAction}
-        />
+    return shell(
+      deckTitle,
+      <div className="card p-8">
+        <h2 className="text-3xl font-black text-text mb-3">Couldn&apos;t load the Deck</h2>
+        <p role="alert" className="text-muted mb-8">
+          {error || `No ${deckNoun}s came back this time.`}
+        </p>
 
-        <div className="flex flex-col items-center justify-center px-4 py-8">
-          <div className="max-w-md w-full text-center animate-fade-in">
-            <div className="card p-8">
-              <h2 className="text-3xl font-display font-black text-text mb-3">
-                Couldn&apos;t load the Deck
-              </h2>
-              <p role="alert" className="text-muted mb-8">
-                {error || `No ${deckNoun}s came back this time.`}
-              </p>
-
-              <button
-                onClick={() => void loadDeck()}
-                className="btn btn-primary w-full min-h-[56px] px-8 py-4 text-xl"
-              >
-                Try again
-              </button>
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={() => void loadDeck()}
+          className="btn btn-primary w-full min-h-[56px] px-8 py-4 text-xl"
+        >
+          Try again
+        </button>
       </div>
     );
   }
 
   if (isDone) {
-    return (
-      <div className="min-h-screen bg-ink">
-        <NavigationHeader
-          title="Submit your selections"
-          sessionCode={sessionCode}
-          showBackButton
-          onBack={handleLeaveSession}
-          confirmOnBack
-          confirmContext="selecting"
-          selectionsCount={selections.length}
-          showConnectionStatus
-          compact
-          rightAction={inviteAction}
-        />
-
-        <div className="flex flex-col items-center justify-center px-4 py-8">
-          <div className="max-w-md w-full text-center animate-fade-in">
-            <div className="card p-8">
-              <div className="w-20 h-20 mx-auto mb-6 bg-lime/10 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-10 h-10 text-lime"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </div>
-
-              <h2 className="text-3xl font-display font-black text-text mb-3">
-                You&apos;ve seen them all!
-              </h2>
-              <p className="text-muted mb-6">
-                You liked <span className="text-lime font-semibold">{selections.length}</span>{' '}
-                {deckNoun}
-                {selections.length !== 1 ? 's' : ''}
-              </p>
-
-              {error && (
-                <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
-                  <p className="text-sm text-coral-soft">{error}</p>
-                </div>
-              )}
-
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="btn btn-primary w-full min-h-[56px] px-8 py-4 text-xl"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Spinner size="sm" label="Submitting…" />
-                    Submitting…
-                  </span>
-                ) : (
-                  'Submit selections'
-                )}
-              </button>
-
-              <button
-                onClick={handleUndo}
-                disabled={!canUndo}
-                className="btn btn-secondary w-full min-h-[48px] mt-3"
-              >
-                Undo last choice
-              </button>
-
-              {selections.length === 0 && (
-                <p className="mt-4 text-sm text-muted">
-                  You didn&apos;t like any {deckNoun}s, but you can still submit!
-                </p>
-              )}
-            </div>
-          </div>
+    return shell(
+      'Submit your selections',
+      <div className="card p-8">
+        <div className="w-20 h-20 mx-auto mb-6 bg-lime/10 rounded-full flex items-center justify-center">
+          <svg
+            className="w-10 h-10 text-lime"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
         </div>
+
+        <h2 className="text-3xl font-black text-text mb-3">You&apos;ve seen them all!</h2>
+        <p className="text-muted mb-6">
+          You liked <span className="text-lime font-semibold">{selections.length}</span> {deckNoun}
+          {selections.length !== 1 ? 's' : ''}
+        </p>
+
+        {error && <ErrorNote className="mb-4 p-3">{error}</ErrorNote>}
+
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="btn btn-primary w-full min-h-[56px] px-8 py-4 text-xl"
+        >
+          {isSubmitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <Spinner size="sm" label="Submitting…" />
+              Submitting…
+            </span>
+          ) : (
+            'Submit selections'
+          )}
+        </button>
+
+        <button
+          onClick={handleUndo}
+          disabled={!canUndo}
+          className="btn btn-secondary w-full min-h-[48px] mt-3"
+        >
+          Undo last choice
+        </button>
+
+        {selections.length === 0 && (
+          <p className="mt-4 text-sm text-muted">
+            You didn&apos;t like any {deckNoun}s, but you can still submit!
+          </p>
+        )}
       </div>
     );
   }
@@ -688,18 +614,11 @@ function SelectionRound() {
   const visibleEntries = entries.slice(deckCursor, deckCursor + 3);
 
   return (
-    <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
+    <main className="h-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
+        {...headerProps}
         title={deckTitle}
-        sessionCode={sessionCode}
-        showBackButton
-        onBack={handleLeaveSession}
-        confirmOnBack
-        confirmContext="selecting"
-        selectionsCount={selections.length}
-        showConnectionStatus
-        compact
         progress={{
           current: deckCursor + 1,
           total: entries.length,
@@ -712,9 +631,7 @@ function SelectionRound() {
               role="status"
               aria-label={`${selections.length} liked`}
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-              </svg>
+              <HeartIcon />
               <span className="font-semibold">{selections.length}</span>
             </div>
           </div>
@@ -745,7 +662,7 @@ function SelectionRound() {
             data-testid="strip-status"
             role="status"
             aria-live="polite"
-            className="ml-2 min-w-0 truncate text-xs font-bold uppercase tracking-[0.12em] text-cyan"
+            className="ml-2 min-w-0 truncate text-xs font-bold uppercase tracking-[0.12em] text-text"
           >
             {reveal
               ? `${reveal.count} of ${reveal.total} liked ${reveal.name}`
@@ -792,13 +709,7 @@ function SelectionRound() {
                 }`}
               >
                 {lastAction === 'like' ? (
-                  <svg
-                    className="w-12 h-12 text-lime animate-heart-pop"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                  </svg>
+                  <HeartIcon className="w-12 h-12 text-lime animate-heart-pop" />
                 ) : (
                   <svg
                     className="w-12 h-12 text-coral-strong"
@@ -844,7 +755,7 @@ function SelectionRound() {
           <button
             onClick={handleUndo}
             disabled={!canUndo || deckInert}
-            className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-cyan hover:text-cyan disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
+            className="w-12 h-12 rounded-full bg-raised border border-line text-muted flex items-center justify-center shadow-card hover:border-text hover:text-text disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all duration-150"
             aria-label="Undo"
           >
             <svg
@@ -866,7 +777,7 @@ function SelectionRound() {
           <button
             onClick={handleSwipeRight}
             disabled={deckInert}
-            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-coral border-2 border-coral text-text flex items-center justify-center shadow-glow-coral hover:brightness-95 active:scale-95 transition-all duration-150"
+            className="min-h-[48px] min-w-[48px] w-[76px] h-[76px] rounded-full bg-coral border-2 border-coral text-text flex items-center justify-center shadow-glow hover:brightness-95 active:scale-95 transition-all duration-150"
             aria-label="Like"
           >
             <svg
@@ -911,24 +822,16 @@ function SelectionRound() {
           <div className="card w-full max-w-sm text-center animate-fade-in">
             <div className="mb-3 flex justify-center gap-1" aria-hidden="true">
               {[0, 1, 2].map((i) => (
-                <svg key={i} className="w-8 h-8 text-lime" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                </svg>
+                <HeartIcon key={i} className="w-8 h-8 text-lime" />
               ))}
             </div>
-            <h2 id="full-house-title" className="text-2xl font-display font-black text-lime mb-3">
+            <h2 id="full-house-title" className="text-2xl font-black text-lime mb-3">
               EVERYONE LIKED THIS
             </h2>
-            <p className="text-3xl font-display font-black text-text mb-3 line-clamp-2">
-              {fullHouseName}
-            </p>
+            <p className="text-3xl font-black text-text mb-3 line-clamp-2">{fullHouseName}</p>
             <p className="text-muted mb-6">Lock it in now, or keep going for more.</p>
 
-            {error && (
-              <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
-                <p className="text-sm text-coral-soft">Could not submit — try again</p>
-              </div>
-            )}
+            {error && <ErrorNote className="mb-4 p-3">Could not submit — try again</ErrorNote>}
 
             <button
               onClick={handleSubmit}

@@ -7,7 +7,7 @@ import { publicUrl } from '../services/device';
 // is the same URL's other face; the swap picker is #264.
 
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 import {
   MAX_SHOPPER_NAME,
   shoppingListTotal,
@@ -15,6 +15,8 @@ import {
   type ShoppingListLine,
 } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
+import { ShareIcon } from '../components/icons';
+import { ErrorNote } from '../components/Notice';
 import { useShareLink } from '../hooks/useShareLink';
 import { useShoppingList } from '../hooks/useShoppingList';
 import {
@@ -89,7 +91,7 @@ function WoolworthsLink({
       href={retailerRedirectUrl(target)}
       target="_blank"
       rel="noopener noreferrer"
-      className="min-w-0 break-words text-sm font-semibold text-cyan hover:underline"
+      className="min-w-0 break-words text-sm font-semibold text-text hover:underline"
     >
       {children}
     </a>
@@ -220,7 +222,7 @@ function Line({
           <button
             type="button"
             onClick={onClaim}
-            className="min-h-[44px] shrink-0 rounded-full bg-cyan/15 px-3 py-1 text-xs font-semibold text-cyan"
+            className="min-h-[44px] shrink-0 rounded-full bg-text/15 px-3 py-1 text-xs font-semibold text-text"
           >
             Claim
           </button>
@@ -352,7 +354,6 @@ export default function ShoppingListPage() {
       <NavigationHeader
         title="Shopping list"
         subtitle={list ? list.recipeName : 'Everything for tonight'}
-        showBackButton
         onBack={() => navigate('/')}
         rightAction={
           list ? (
@@ -360,28 +361,15 @@ export default function ShoppingListPage() {
               <button
                 type="button"
                 onClick={() => void shareList()}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center text-cyan hover:text-cyan/80"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center text-text hover:text-text/80"
                 aria-label="Share shopping list"
                 title="Share shopping list"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 12.632a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                  />
-                </svg>
+                <ShareIcon />
               </button>
               <Link
                 to={`/list/${list.listId}/cook`}
-                className="text-sm font-semibold text-cyan hover:underline"
+                className="text-sm font-semibold text-text hover:underline"
               >
                 Cook
               </Link>
@@ -391,17 +379,13 @@ export default function ShoppingListPage() {
       />
 
       <div className="mx-auto max-w-2xl px-4 py-6 animate-fade-in">
-        {error && (
-          <div className="mb-6 rounded-xl border border-coral/30 bg-coral/10 p-4">
-            <p className="text-sm text-coral-soft">{error}</p>
-          </div>
-        )}
+        {error && <ErrorNote className="mb-6 p-4">{error}</ErrorNote>}
 
         {!list && !error && (
           <div className="card p-8 text-center">
             <Spinner
               size="lg"
-              className="text-cyan"
+              className="text-text"
               label="Fetching your recipe and shopping list…"
             />
             <p className="mt-4 text-muted">Fetching your recipe and shopping list…</p>
@@ -500,7 +484,7 @@ export default function ShoppingListPage() {
 
             {pantry.length > 0 && (
               <div className="card mb-6">
-                <h2 className="font-display text-xl font-semibold text-text">From your pantry</h2>
+                <h2 className="text-xl font-semibold text-text">From your pantry</h2>
                 <p className="mb-2 text-sm text-muted">
                   Assumed already at home — nothing here counts toward the total.
                 </p>

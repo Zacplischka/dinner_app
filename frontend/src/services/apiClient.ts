@@ -3,9 +3,7 @@
 
 import type {
   AcceptSessionInviteResponse,
-  Branch,
   DeckEntry,
-  Craving,
   ClaimLineRequest,
   ClaimLineResponse,
   CreateSessionRequest,
@@ -17,17 +15,12 @@ import type {
   GeocodedArea,
   GetProfileResponse,
   LoadRestaurantsResponse,
-  Mood,
-  NearestCraving,
-  NearestCravingResponse,
   SearchUsersResponse,
   SendFriendRequestPayload,
   SendSessionInviteRequest,
   SessionInvite,
   SessionInvitesResponse,
-  SessionLocation,
   SessionResponse,
-  SessionDefaultsResponse,
   ShoppingListResponse,
   SwapLineRequest,
   SwapLineResponse,
@@ -47,75 +40,12 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
  * Headcount for Cook, a Mood for Watch. Absent fields are simply left off the
  * wire (ADR 0007).
  */
-export async function createSession(
+export function createSession(
   hostName: string,
-  setup: {
-    collaborative?: boolean;
-    location?: SessionLocation;
-    searchRadiusMiles?: number;
-    branch?: Branch;
-    craving?: Craving;
-    headcount?: number;
-    mood?: Mood;
-    deckSize?: number;
-  } = {}
+  setup: Omit<CreateSessionRequest, 'hostName'> = {}
 ): Promise<CreateSessionResponse> {
-  const body: CreateSessionRequest = { hostName };
-  if (setup.collaborative) body.collaborative = true;
-
-  if (setup.location) {
-    body.location = setup.location;
-  }
-
-  if (setup.searchRadiusMiles !== undefined) {
-    body.searchRadiusMiles = setup.searchRadiusMiles;
-  }
-
-  if (setup.branch) {
-    body.branch = setup.branch;
-  }
-
-  if (setup.craving) {
-    body.craving = setup.craving;
-  }
-
-  if (setup.headcount !== undefined) {
-    body.headcount = setup.headcount;
-  }
-
-  if (setup.mood) {
-    body.mood = setup.mood;
-  }
-
-  if (setup.deckSize !== undefined) {
-    body.deckSize = setup.deckSize;
-  }
-
-  return request<CreateSessionResponse>('/sessions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-}
-
-/**
- * The Nearest Craving to one that just dealt nothing (#334) — cuisine widened
- * or dropped, with the count it can actually deal. Null when even the widest
- * step is empty. Asking is not accepting: minting the offer is another
- * `createSession` with the Craving it names.
- */
-export async function fetchNearestCraving(craving: Craving): Promise<NearestCraving | null> {
-  const query = new URLSearchParams({
-    mealType: craving.mealType,
-    cuisines: craving.cuisines.join(','),
-    diets: craving.diets.join(','),
-  });
-  const { nearest } = await request<NearestCravingResponse>(
-    `/cravings/nearest?${query.toString()}`
-  );
-  return nearest;
+  const body: CreateSessionRequest = { hostName, ...setup };
+  return postJson<CreateSessionResponse>('/sessions', body);
 }
 
 /**
@@ -130,10 +60,6 @@ export async function geocodeArea(query: string): Promise<GeocodedArea> {
  */
 export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodedArea> {
   return request<GeocodedArea>(`/geocode?latitude=${latitude}&longitude=${longitude}`);
-}
-
-export function getSessionDefaults(): Promise<SessionDefaultsResponse> {
-  return request<SessionDefaultsResponse>('/sessions/defaults');
 }
 
 /**
@@ -178,11 +104,9 @@ export async function claimShoppingListLine(
   lineId: string,
   displayName: string
 ): Promise<ClaimLineResponse> {
-  return request<ClaimLineResponse>(claimPath(listId, lineId), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ displayName } satisfies ClaimLineRequest),
-  });
+  return postJson<ClaimLineResponse>(claimPath(listId, lineId), {
+    displayName,
+  } satisfies ClaimLineRequest);
 }
 
 /** Release the Claim on one line, whoever holds it (#229). */
@@ -204,13 +128,9 @@ export async function swapShoppingListLine(
   lineId: string,
   stockcode: number | null
 ): Promise<SwapLineResponse> {
-  return request<SwapLineResponse>(
+  return postJson<SwapLineResponse>(
     `/lists/${encodeURIComponent(listId)}/lines/${encodeURIComponent(lineId)}/swap`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stockcode } satisfies SwapLineRequest),
-    }
+    { stockcode } satisfies SwapLineRequest
   );
 }
 
@@ -319,6 +239,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
   return handleResponse<T>(await (init ? fetch(url, init) : fetch(url)));
+}
+
+function postJson<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 // AbortController also works in the older WebViews supported by our native targets.

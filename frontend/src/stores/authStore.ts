@@ -23,7 +23,6 @@ interface AuthState {
   initialize: () => Promise<Subscription | undefined>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  setSession: (session: Session | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -102,14 +101,6 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           throw error;
         }
-      },
-
-      setSession: (session) => {
-        set({
-          session,
-          user: session?.user ?? null,
-          isAuthenticated: !!session,
-        });
       },
     }),
     { name: 'AuthStore' }

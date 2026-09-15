@@ -2,7 +2,7 @@ import { copyText } from '../services/device';
 // Group Order — the pinned basket: open, add Lines, claim the Buyer, hand off.
 
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import type { MenuItemCapture, OrderLine } from '@dinder/shared/types';
 import { openOrder, addOrderItem, claimBuyer } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
@@ -127,14 +127,6 @@ export default function GroupOrderPage() {
   const [feeText, setFeeText] = useState<string>();
   useEffect(() => () => clearTimeout(feeTimer.current), []);
 
-  // Same effect ResultsPage.tsx runs: a Restart flips the Session back to
-  // selecting for every tab, including this one.
-  useEffect(() => {
-    if (sessionStatus === 'selecting' && sessionCode) {
-      navigate(`/session/${sessionCode}/select`);
-    }
-  }, [sessionStatus, sessionCode, navigate]);
-
   useEffect(() => {
     if (!sessionCode) return;
     const placeId = useSessionStore.getState().orderPlaceId;
@@ -148,7 +140,7 @@ export default function GroupOrderPage() {
     retriedRef.current = false;
 
     async function attemptOpen() {
-      const ack = await openOrder(sessionCode!, placeId!);
+      const ack = await openOrder({ sessionCode: sessionCode!, placeId: placeId! });
       if (cancelled) return;
 
       if (ack.success) {
@@ -224,9 +216,14 @@ export default function GroupOrderPage() {
   const handleHeaderBack = useLeaveSession(sessionCode);
   const hasOrder = Boolean(order && !failure);
 
+  // As on the results screen: a Restart flips the Session back to selecting
+  // for every tab, including this one.
+  if (sessionStatus === 'selecting' && sessionCode)
+    return <Navigate to={`/session/${sessionCode}/select`} replace />;
+
   const handleClaimBuyer = async () => {
     if (!sessionCode) return;
-    const ack = await claimBuyer(sessionCode);
+    const ack = await claimBuyer({ sessionCode });
     if (!ack.success) toast.error(ack.error.message);
   };
 
@@ -241,7 +238,7 @@ export default function GroupOrderPage() {
     const feeCents = parseDollarsToCents(raw);
     if (feeCents === null || feeCents > MAX_FEE_CENTS || !sessionCode) return; // rejected before emitting
     feeTimer.current = setTimeout(() => {
-      void claimBuyer(sessionCode, feeCents).then((ack) => {
+      void claimBuyer({ sessionCode, feeCents }).then((ack) => {
         if (!ack.success) toast.error(ack.error.message);
       });
     }, 400);
@@ -355,7 +352,7 @@ export default function GroupOrderPage() {
       content = (
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
           {celebration}
-          <h2 className="text-lg font-display font-semibold text-text">
+          <h2 className="text-lg font-semibold text-text">
             You&apos;re ordering from {order.venueName} on {platformLabel}
           </h2>
 
@@ -517,7 +514,7 @@ export default function GroupOrderPage() {
 
         {/* SCROLLS — the only overflow on the page */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
-          <h2 className="text-lg font-display font-semibold text-text">In the basket</h2>
+          <h2 className="text-lg font-semibold text-text">In the basket</h2>
 
           {/* Live region holds ONLY the sr-only sentence, kept out of the
               visible list so a new row isn't announced twice (its own text
@@ -555,7 +552,13 @@ export default function GroupOrderPage() {
                           type="button"
                           className="flex min-h-[44px] min-w-[44px] items-center justify-center text-lg text-muted"
                           aria-label={`Remove one ${line.name}`}
-                          onClick={() => void addOrderItem(sessionCode!, line.index, -1)}
+                          onClick={() =>
+                            void addOrderItem({
+                              sessionCode: sessionCode!,
+                              index: line.index,
+                              delta: -1,
+                            })
+                          }
                         >
                           ×
                         </button>
@@ -587,7 +590,13 @@ export default function GroupOrderPage() {
                           type="button"
                           className="flex min-h-[44px] w-full items-center justify-between gap-4 text-left text-sm text-text/90"
                           aria-label={`Add ${item.name}, ${formatPrice(item.price_cents)}`}
-                          onClick={() => void addOrderItem(sessionCode!, flatIndex, 1)}
+                          onClick={() =>
+                            void addOrderItem({
+                              sessionCode: sessionCode!,
+                              index: flatIndex,
+                              delta: 1,
+                            })
+                          }
                         >
                           <span>{item.name}</span>
                           <span className="text-muted">{formatPrice(item.price_cents)}</span>
@@ -610,7 +619,7 @@ export default function GroupOrderPage() {
               Items <span className="font-semibold text-text">{formatPrice(order.itemsCents)}</span>
             </span>
             <span className="text-sm text-muted">
-              You owe <span className="font-semibold text-cyan">{formatPrice(youOwe)}</span>
+              You owe <span className="font-semibold text-text">{formatPrice(youOwe)}</span>
             </span>
           </div>
           <button
@@ -631,11 +640,10 @@ export default function GroupOrderPage() {
   }
 
   return (
-    <main className="h-screen-dvh overflow-hidden bg-ink flex flex-col">
+    <main className="h-dvh overflow-hidden bg-ink flex flex-col">
       <NavigationHeader
         title="Group order"
         sessionCode={sessionCode}
-        showBackButton
         onBack={hasOrder ? handleHeaderBack : handleBack}
         confirmOnBack={hasOrder}
         confirmContext={order?.lines.some((line) => line.by === me) ? 'ordering' : 'lobby'}

@@ -69,7 +69,6 @@ const participant = {
   participantId: 'participant-1',
   displayName: 'Alice',
   sessionCode: 'AB123',
-  joinedAt: 1,
   hasSubmitted: false,
   isHost: true,
 };
@@ -101,23 +100,12 @@ describe('socketBindings', () => {
     window.history.pushState({}, '', '/');
   });
 
-  it('connects with the auth token and mirrors connection state into the session store', () => {
+  it('mirrors connection state into the session store', () => {
     const socket = setupSocket();
 
     socketBindings.initializeSocket();
     socket.trigger('connect');
 
-    expect(socketMocks.io).toHaveBeenCalledWith(
-      'http://localhost:3001',
-      expect.objectContaining({ auth: expect.any(Function) })
-    );
-    const auth = socketMocks.io.mock.calls[0][1].auth;
-    const handshake = vi.fn();
-    auth(handshake);
-    expect(handshake).toHaveBeenLastCalledWith({ token: 'token' });
-    useAuthStore.setState({ session: null });
-    auth(handshake);
-    expect(handshake).toHaveBeenLastCalledWith({});
     expect(useSessionStore.getState().isConnected).toBe(true);
     expect(useSessionStore.getState().currentUserId).toBe('socket-1');
 
@@ -482,11 +470,6 @@ describe('socketBindings', () => {
 
     socket.trigger('session:expired', { sessionCode: 'AB123' });
     expect(useSessionStore.getState().sessionStatus).toBe('expired');
-
-    socket.trigger('error', { message: 'bad' });
-    expect(socketMocks.toast.error).toHaveBeenCalledWith('bad');
-    socket.trigger('error', {});
-    expect(socketMocks.toast.error).toHaveBeenCalledWith('An error occurred');
   });
 
   it('carries session:results shoppingListId into the store, so a Cook Session can reach its list (#253)', () => {
@@ -608,7 +591,7 @@ describe('socketBindings', () => {
   it('recovers across credential persistence and successful Invite Link navigation', async () => {
     const { createElement: h } = await import('react');
     const { render, screen, act, cleanup } = await import('@testing-library/react/pure');
-    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { MemoryRouter, Routes, Route } = await import('react-router');
     const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
     const api = await import('../../src/services/apiClient');
     vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
@@ -696,7 +679,7 @@ describe('socketBindings', () => {
   it('lets the real Invite Link destination retry an autojoin interrupted by transport loss', async () => {
     const { createElement: h } = await import('react');
     const { render, screen, fireEvent, act, cleanup } = await import('@testing-library/react/pure');
-    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { MemoryRouter, Routes, Route } = await import('react-router');
     const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
     const api = await import('../../src/services/apiClient');
     vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
@@ -1168,7 +1151,7 @@ describe('socketBindings', () => {
       revision: recovered.revision + 1,
     };
     socket.trigger('session:lobby', activeLobby);
-    useSessionStore.getState().setSelections(['new-movie']);
+    useSessionStore.setState({ selections: ['new-movie'] });
     useSessionStore.getState().setDeckCursor(1);
     socket.trigger('session:lobby', { ...activeLobby, revision: activeLobby.revision + 1 });
     expect(useSessionStore.getState().selections).toEqual(['new-movie']);

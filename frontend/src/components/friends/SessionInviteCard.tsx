@@ -7,7 +7,7 @@ import { useFriendsStore } from '../../stores/friendsStore';
 import { joinSession, waitForConnection } from '../../services/socketBindings';
 import { toast } from '../../hooks/useToast';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface SessionInviteCardProps {
   invite: SessionInvite;
@@ -78,11 +78,11 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
   const { inviter } = invite;
 
   return (
-    <div className="p-4 bg-gradient-to-r from-raised to-surface rounded-2xl border border-cyan/20 shadow-card mb-2">
+    <div className="p-4 bg-gradient-to-r from-raised to-surface rounded-2xl border border-text/20 shadow-card mb-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Session icon */}
-          <div className="w-10 h-10 rounded-full bg-cyan flex items-center justify-center shadow-glow-cyan">
+          <div className="w-10 h-10 rounded-full bg-text flex items-center justify-center shadow-glow">
             <svg
               className="w-5 h-5 text-white"
               fill="none"
@@ -101,11 +101,11 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           {/* Invite info */}
           <div>
             <p className="font-medium text-text">
-              <span className="text-cyan">{inviter.displayName}</span> invited you
+              <span className="text-text">{inviter.displayName}</span> invited you
             </p>
             <p className="text-sm text-muted">
               Session:{' '}
-              <span className="font-mono font-semibold text-cyan">{invite.sessionCode}</span>
+              <span className="font-mono font-semibold text-text">{invite.sessionCode}</span>
             </p>
             <p className="text-xs text-muted">{new Date(invite.createdAt).toLocaleDateString()}</p>
           </div>
@@ -116,7 +116,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
           <button
             onClick={handleAccept}
             disabled={isLoading}
-            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-white bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
+            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-white bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow"
           >
             {isLoading ? 'Joining…' : 'Join'}
           </button>
@@ -132,7 +132,7 @@ export default function SessionInviteCard({ invite }: SessionInviteCardProps) {
 
       {/* The failure stays with the card that caused it, in flow under the row */}
       {error && (
-        <p role="alert" className="mt-2 text-xs text-coral-soft">
+        <p role="alert" className="mt-2 text-xs text-coral-strong">
           {error}
         </p>
       )}

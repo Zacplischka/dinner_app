@@ -3,7 +3,7 @@
 // end-of-deck screen's "you liked 0, submit".
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Branch } from '@dinder/shared/types';
 
@@ -62,7 +62,6 @@ beforeEach(() => {
         participantId: 'p1',
         displayName: 'Alice',
         sessionCode: 'AB123',
-        joinedAt: 1,
         hasSubmitted: false,
         isHost: true,
       },
@@ -178,7 +177,6 @@ describe('the Deck cursor survives a reload', () => {
         participantId: `p${i + 1}`,
         displayName,
         sessionCode: 'AB123',
-        joinedAt: i + 1,
         hasSubmitted: false,
         isHost: i === 0,
       }));

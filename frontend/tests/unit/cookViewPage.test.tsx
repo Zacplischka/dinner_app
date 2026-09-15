@@ -3,7 +3,7 @@
 // end-of-method credit that doubles as the degrade path when steps are empty.
 import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ShoppingList } from '@dinder/shared/types';
 import { Capacitor } from '@capacitor/core';
@@ -40,7 +40,8 @@ const list: ShoppingList = {
   recipeName: 'Beef Rendang',
   headcount: 4,
   servings: 2,
-  mintedAt: '2026-08-01T10:00:00.000Z',
+  // Fresh: cooking progress rides the list's 7-day clock on both platforms.
+  mintedAt: new Date().toISOString(),
   steps,
   sourceName: 'Serious Eats',
   sourceUrl: 'https://example.com/rendang',

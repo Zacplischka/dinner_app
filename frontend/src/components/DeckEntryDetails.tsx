@@ -9,7 +9,6 @@
 import type { RefObject } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRecipe, isRestaurant } from '../types';
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import { movieMeta, tmdbPath } from '../utils/tmdb';
 import RetryingPhoto from './RetryingPhoto';
@@ -26,8 +25,6 @@ interface DeckEntryDetailsProps {
 }
 
 export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntryDetailsProps) {
-  const prefersReducedMotion = usePrefersReducedMotion();
-
   if (!entry) return null;
 
   const restaurant = isRestaurant(entry) ? entry : undefined;
@@ -83,15 +80,10 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
       <div className="pointer-events-none flex min-h-full items-end justify-center p-4 sm:items-center">
         <div
           data-testid="details-panel"
-          className={`card pointer-events-auto relative max-h-[85vh] w-full max-w-sm overflow-y-auto ${
-            prefersReducedMotion ? '' : 'animate-slide-up'
-          }`}
+          className="card pointer-events-auto relative max-h-[85vh] w-full max-w-sm overflow-y-auto animate-slide-up"
         >
           <div className="flex items-start justify-between gap-4">
-            <h2
-              id="deck-entry-details-title"
-              className="font-display text-2xl font-black text-text"
-            >
+            <h2 id="deck-entry-details-title" className="text-2xl font-black text-text">
               {entry.name}
             </h2>
             <button
@@ -120,7 +112,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
           )}
 
           {restaurant?.cuisineType && (
-            <p className="mt-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
+            <p className="mt-3 text-sm font-bold text-coral-strong">{restaurant.cuisineType}</p>
           )}
 
           {movie && <GenrePills genres={movie.genres} className="mt-3" />}
@@ -156,7 +148,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
           {recipe && (
             <section className="mt-3 space-y-3 text-sm text-muted" aria-label="Recipe details">
               {recipe.details?.cuisines?.length ? (
-                <p className="font-bold capitalize text-coral-soft">
+                <p className="font-bold capitalize text-coral-strong">
                   {recipe.details.cuisines.join(' · ')}
                 </p>
               ) : null}
@@ -183,7 +175,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
               )}
               {steps.length > 0 && (
                 <details>
-                  <summary className="min-h-[44px] cursor-pointer py-2 font-bold text-cyan">
+                  <summary className="min-h-[44px] cursor-pointer py-2 font-bold text-text">
                     Preview the method
                   </summary>
                   <ol className="mt-2 list-decimal space-y-3 pl-5 text-text">
@@ -221,7 +213,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
               href={`https://www.themoviedb.org/${tmdb}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-flex min-h-[44px] items-center text-sm text-cyan underline"
+              className="mt-2 inline-flex min-h-[44px] items-center text-sm text-text underline"
             >
               Read full synopsis on TMDB
             </a>
@@ -253,7 +245,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
           {restaurant?.phone && (
             <a
               href={`tel:${restaurant.phone}`}
-              className="mt-2 flex min-h-[44px] items-center text-sm text-cyan underline"
+              className="mt-2 flex min-h-[44px] items-center text-sm text-text underline"
             >
               Call {restaurant.phone}
             </a>
@@ -263,7 +255,7 @@ export default function DeckEntryDetails({ entry, onClose, dialogRef }: DeckEntr
               href={websiteHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 flex min-h-[44px] items-center text-sm text-cyan underline"
+              className="mt-2 flex min-h-[44px] items-center text-sm text-text underline"
             >
               Visit website
             </a>

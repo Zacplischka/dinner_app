@@ -1,15 +1,10 @@
-// ToastProvider Component
-// Renders toast notifications at the bottom of the screen
-// Wrap your app with this component to enable toast notifications
+// Toaster: the toast stack at the bottom of the screen and its polite live
+// region. Mount it once, beside the app; it holds no context.
 
 import { useToastStore } from '../../hooks/useToast';
 import Toast from './Toast';
 
-interface ToastProviderProps {
-  children: React.ReactNode;
-}
-
-export default function ToastProvider({ children }: ToastProviderProps) {
+export default function Toaster() {
   const { toasts, removeToast, politeSeq } = useToastStore();
 
   // A polite live region is only announced when text changes inside a node
@@ -24,8 +19,6 @@ export default function ToastProvider({ children }: ToastProviderProps) {
 
   return (
     <>
-      {children}
-
       <p role="status" aria-live="polite" className="sr-only">
         {politeMessage}
       </p>

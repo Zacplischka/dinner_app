@@ -3,8 +3,6 @@
 // wire contracts and are not shared with the backend, whose Redis persistence
 // shapes live in backend/src/store/sessionStore.ts.
 
-import type { DeckEntry } from '@dinder/shared/types';
-
 // The screens after the Match — Compare, the delivery links, the Group Order —
 // are the restaurant ending, and the Shopping List is the Cook ending, so they
 // narrow on these. The guards ship with the type (a shared/ rule) so both
@@ -16,7 +14,6 @@ export interface Participant {
   displayName: string;
   avatarUrl?: string | null;
   sessionCode: string;
-  joinedAt: number;
   hasSubmitted: boolean;
   isHost: boolean;
   /**
@@ -26,15 +23,4 @@ export interface Participant {
   isOnline?: boolean;
   ready?: boolean;
   waitingForNextRound?: boolean;
-}
-
-export interface Result {
-  sessionCode: string;
-  overlappingOptions: DeckEntry[];
-  allSelections: Record<string, string[]>; // displayName -> placeIds
-  restaurantNames?: Record<string, string>; // placeId -> name mapping for display
-  hasOverlap: boolean;
-  topPick?: { restaurant: DeckEntry; likedBy: number; of: number };
-  /** The Shopping List a completed Cook Session minted (#262); absent elsewhere. */
-  shoppingListId?: string;
 }

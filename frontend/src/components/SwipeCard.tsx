@@ -5,6 +5,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { DeckEntry } from '@dinder/shared/types';
 import { isMovie, isRestaurant } from '../types';
 import RetryingPhoto from './RetryingPhoto';
+import { StarIcon } from './icons';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { formatPriceLevel, priceLevelLabel } from '../utils/money';
 import TmdbCredit from './TmdbCredit';
@@ -60,7 +61,6 @@ export default function SwipeCard({
     currentX: 0,
   });
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const detailsButtonRef = useRef<HTMLButtonElement>(null);
   // Only the top card is interactive; every kind supports details.
   const openDetails = isTop ? onOpenDetails : undefined;
@@ -69,30 +69,24 @@ export default function SwipeCard({
   const prefersReducedMotion = usePrefersReducedMotion();
   const { rotation, likeIntensity, nopeIntensity } = swipeVisuals(deltaX, prefersReducedMotion);
 
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (!isTop || (e.target as Element).closest('a, button')) return;
-      const touch = e.touches[0];
-      setDragState({
-        isDragging: true,
-        startX: touch.clientX,
-        currentX: touch.clientX,
-      });
-    },
-    [isTop]
-  );
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isTop || (e.target as Element).closest('a, button')) return;
+    const touch = e.touches[0];
+    setDragState({
+      isDragging: true,
+      startX: touch.clientX,
+      currentX: touch.clientX,
+    });
+  };
 
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (!dragState.isDragging) return;
-      const touch = e.touches[0];
-      setDragState((prev) => ({
-        ...prev,
-        currentX: touch.clientX,
-      }));
-    },
-    [dragState.isDragging]
-  );
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragState.isDragging) return;
+    const touch = e.touches[0];
+    setDragState((prev) => ({
+      ...prev,
+      currentX: touch.clientX,
+    }));
+  };
 
   const handleTouchEnd = useCallback(
     (e?: React.TouchEvent) => {
@@ -125,10 +119,6 @@ export default function SwipeCard({
         // backdrop is mounted there, and its click closes what this tap just
         // opened. React's touchend listener is not passive, so this takes.
         e?.preventDefault();
-        // A mouse release runs this twice — React's onMouseUp and the window
-        // listener share one stale isDragging — so the open must be
-        // idempotent. It is: the caller only stores this entry as the open
-        // one, and storing the same entry twice is one open.
         detailsButtonRef.current?.focus();
         openDetails?.();
       }
@@ -139,37 +129,27 @@ export default function SwipeCard({
   // A cancelled touch (a system gesture taking over, a call arriving) never
   // delivers touchend, so without this the card stays stuck mid-drag and the
   // next release reads as a tap on a gesture that was abandoned.
-  const handleTouchCancel = useCallback(() => {
+  const handleTouchCancel = () => {
     setDragState({ isDragging: false, startX: 0, currentX: 0 });
-  }, []);
+  };
 
   // Mouse event handlers for desktop
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isTop || (e.target as Element).closest('a, button')) return;
-      setDragState({
-        isDragging: true,
-        startX: e.clientX,
-        currentX: e.clientX,
-      });
-    },
-    [isTop]
-  );
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isTop || (e.target as Element).closest('a, button')) return;
+    setDragState({
+      isDragging: true,
+      startX: e.clientX,
+      currentX: e.clientX,
+    });
+  };
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!dragState.isDragging) return;
-      setDragState((prev) => ({
-        ...prev,
-        currentX: e.clientX,
-      }));
-    },
-    [dragState.isDragging]
-  );
-
-  const handleMouseUp = useCallback(() => {
-    handleTouchEnd();
-  }, [handleTouchEnd]);
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragState.isDragging) return;
+    setDragState((prev) => ({
+      ...prev,
+      currentX: e.clientX,
+    }));
+  };
 
   // Handle mouse leaving the card while dragging
   useEffect(() => {
@@ -195,7 +175,7 @@ export default function SwipeCard({
     if (swipeDirection === 'left') {
       return {
         transform: releaseTransform,
-        animation: `${prefersReducedMotion ? 'swipeLeftFlat' : 'swipeLeft'} 0.25s ease-out forwards`,
+        animation: 'swipeLeft 0.25s ease-out forwards',
         opacity: 1,
         zIndex: 10,
       };
@@ -203,7 +183,7 @@ export default function SwipeCard({
     if (swipeDirection === 'right') {
       return {
         transform: releaseTransform,
-        animation: `${prefersReducedMotion ? 'swipeRightFlat' : 'swipeRight'} 0.25s ease-out forwards`,
+        animation: 'swipeRight 0.25s ease-out forwards',
         opacity: 1,
         zIndex: 10,
       };
@@ -244,7 +224,6 @@ export default function SwipeCard({
 
   return (
     <div
-      ref={cardRef}
       data-swipe-card
       className={`absolute inset-0 flex flex-col rounded-market-lg overflow-hidden shadow-card border border-line bg-raised select-none ${
         isTop ? 'cursor-grab' : 'pointer-events-none'
@@ -256,7 +235,6 @@ export default function SwipeCard({
       onTouchCancel={handleTouchCancel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
     >
       {/* DeckEntry Photo: letter tile behind, RetryingPhoto layered on top
           (#290, same arrangement as the Compare page). The container fixes the
@@ -357,30 +335,28 @@ export default function SwipeCard({
             }`}
             style={{ opacity: likeIntensity }}
           >
-            <span className="text-lime font-display font-bold text-3xl tracking-wider">LIKE</span>
+            <span className="text-lime font-bold text-3xl tracking-wider">LIKE</span>
           </div>
 
           {/* PASS indicator — the badge names the same action as the button
               and the keyboard hint below the Deck (#412). */}
           <div
-            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-soft bg-ink/95 rounded-lg ${
+            className={`absolute z-10 top-8 right-6 px-4 py-2 border-4 border-coral-strong bg-ink/95 rounded-lg ${
               prefersReducedMotion ? '' : 'transform rotate-12'
             }`}
             style={{ opacity: nopeIntensity }}
           >
-            <span className="text-coral-soft font-display font-bold text-3xl tracking-wider">
-              PASS
-            </span>
+            <span className="text-coral-strong font-bold text-3xl tracking-wider">PASS</span>
           </div>
         </>
       )}
 
       {/* DeckEntry Info */}
       <div className="relative flex-1 min-h-0 overflow-hidden p-5 text-text">
-        <h2 className="font-display text-2xl font-black mb-1 line-clamp-2">{entry.name}</h2>
+        <h2 className="text-2xl font-black mb-1 line-clamp-2">{entry.name}</h2>
 
         {restaurant?.cuisineType && (
-          <p className="mb-3 text-sm font-bold text-coral-soft">{restaurant.cuisineType}</p>
+          <p className="mb-3 text-sm font-bold text-coral-strong">{restaurant.cuisineType}</p>
         )}
 
         {movie && <GenrePills genres={movie.genres} className="mb-3" />}
@@ -399,9 +375,7 @@ export default function SwipeCard({
               aria-label={`Rating ${restaurant.rating.toFixed(1)}`}
               className="flex items-center gap-1.5 text-amber"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
+              <StarIcon />
               <span className="font-semibold">{restaurant.rating.toFixed(1)}</span>
             </div>
           )}

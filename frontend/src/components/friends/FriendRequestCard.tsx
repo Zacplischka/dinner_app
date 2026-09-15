@@ -43,7 +43,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
           <ProfileAvatar
             name={fromUser.displayName}
             url={fromUser.avatarUrl}
-            className="w-10 h-10 ring-2 ring-cyan/20"
+            className="w-10 h-10 ring-2 ring-text/20"
           />
 
           {/* Name and email */}
@@ -59,7 +59,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
           <button
             onClick={() => void handleAccept()}
             disabled={isLoading}
-            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-white bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow-lime"
+            className="min-h-[44px] px-4 py-2 text-sm font-semibold text-white bg-lime rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-glow"
           >
             Accept
           </button>
@@ -74,7 +74,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
       </div>
 
       {error && (
-        <p role="alert" className="mt-2 text-xs text-coral-soft">
+        <p role="alert" className="mt-2 text-xs text-coral-strong">
           {error}
         </p>
       )}
