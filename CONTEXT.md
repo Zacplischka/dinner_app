@@ -260,10 +260,6 @@ _Avoid_: corpus — the pipeline's word for the authored collection, not the run
 The structured artefact the corpus pipeline's reading stage emits — a dish's identity, canonical ingredient set, per-source quantity ranges and observed servings, causal step sequence, technique facts, and source URLs — and the only artefact of reading that may persist. It also records the candidates the stage refused to read and why (a robots.txt disallow, a robots.txt it could not read, a UK/EU publisher), so the audit trail carries the refusals as well as the reads. It holds no coverage plan: which cuisine or diet cell a dish was read for belongs to the stage that plans the corpus, not to the reading of the dish. Authoring writes from the Fact Record with every source closed; that separation is the re-authoring standard's spine, not a pipeline convenience.
 _Avoid_: notes, extract, research summary
 
-**Nearest Craving**:
-The neighbouring Craving offered inline when a Craving's deal comes up empty: cuisine widened or dropped — never diet, never meal type — shown with the Recipe count it can actually deal. Accepting mints it as a genuinely new Craving with its own pool; the original Craving is never silently widened.
-_Avoid_: relaxed craving, suggestion, fallback
-
 ### Watch
 
 **Movie**:

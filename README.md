@@ -129,21 +129,9 @@ npm run gen:types    # regenerate supabase/database.types.ts
 
 Narrower runs go through the workspace: `npm run test:unit --workspace=backend`, `npm run test:contract --workspace=backend` (Redis required), `npm run test:e2e --workspace=frontend` (Playwright; `mobile-chrome` is the primary project). The WebSocket contract is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts) and the [contract tests](backend/tests/contract/) assert the backend against it — they are the source of truth for the realtime protocol.
 
-The `check:*` scripts are repo-level checkers with no build step (Node, one bash script); the corpus ones cover the Owned Recipe pipeline in [`scripts/corpus/`](scripts/corpus/) ([ADR 0012](docs/adr/0012-owned-recipes-are-authored-from-fact-records.md)). All but `check:frontend-serving` run in CI's lint job:
+`npm run check` runs every `scripts/**/*.test.mjs` self-check under `node --test`: the comment-path linter, the production-edge validator (its `verify` step needs a CI-only cache purge first), the corpus pipeline stages in [`scripts/corpus/`](scripts/corpus/) ([ADR 0012](docs/adr/0012-owned-recipes-are-authored-from-fact-records.md)), the movie corpus builder and the mobile config checks. No build step, no network. `check:frontend-serving` is the one bash checker — the `Caddyfile` serves a fresh frontend build correctly — and needs Caddy installed, so it does not run in CI.
 
-| Script | What it checks |
-|---|---|
-| `check:comment-paths` | Documentation paths cited in `backend/src`, `frontend/src` and `shared/types` comments still resolve on disk |
-| `check:production-edge` | The production edge's cache and health contracts — document and fingerprinted-asset headers, purge responses, the declared Cloudflare rollout state. Its `verify` step needs a CI-only cache purge first |
-| `check:frontend-serving` | The `Caddyfile` serves a fresh frontend build correctly — needs Caddy installed |
-| `check:reading-stage` | Corpus reading stage: robots.txt refusal, the UK/EU publisher skip, the three-publisher floor |
-| `check:authoring-stage` | Corpus authoring stage: a draft that lifts text from a source capture is caught |
-| `check:corpus-images` | Corpus image pipeline: prompts, crops, R2 URLs and cost accounting |
-| `check:gate-layers` | Corpus gate: the structural rules and the two-model-family culinary judges |
-| `check:tally-gate` | Corpus tally layer: grading what Woolworths store 1101 can price |
-| `check:human-gate` | Corpus human-review layer: the sample is stratified, deterministic and a tenth of the batch |
-
-CI ([`ci-cd.yml`](.github/workflows/ci-cd.yml)) runs `typecheck`, `lint`, both unit suites and the `check:*` scripts in one job and the contract suite against a Redis service in another; a green `main` auto-deploys.
+CI ([`ci-cd.yml`](.github/workflows/ci-cd.yml)) runs `typecheck`, `lint`, both unit suites and `check` in one job and the contract suite against a Redis service in another; a green `main` auto-deploys.
 
 ## Deployment
 

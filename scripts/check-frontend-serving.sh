@@ -168,7 +168,7 @@ assert_header "$headers" Cache-Control "$asset_cache_control"
 assert_header "$headers" Content-Encoding gzip
 assert_no_document_headers
 
-cp "$dist_dir/favicon.png" "$dist_dir/assets/plain.png"
+cp "$dist_dir/yupcrew-icon-192.png" "$dist_dir/assets/plain.png"
 request non_fingerprinted_asset GET /assets/plain.png text/html 200
 assert_no_header "$headers" Cache-Control
 assert_no_document_headers
@@ -183,7 +183,7 @@ assert_no_document_headers
 assert_header "$headers" X-Content-Type-Options nosniff
 assert_no_header "$headers" Server
 
-request non_html_file GET /favicon.png text/html 200
+request non_html_file GET /yupcrew-icon-192.png text/html 200
 assert_no_header "$headers" Cache-Control
 assert_no_document_headers
 
