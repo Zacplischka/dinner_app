@@ -301,7 +301,9 @@ describe('page branch coverage', () => {
     renderApp('/session/AB123');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Start Selecting' }));
-    await waitFor(() => expect(serviceMocks.restartSession).toHaveBeenCalledWith('AB123'));
+    await waitFor(() =>
+      expect(serviceMocks.restartSession).toHaveBeenCalledWith({ sessionCode: 'AB123' })
+    );
 
     act(() => useSessionStore.setState({ sessionStatus: 'selecting' }));
     expect(await screen.findByText('Select route')).toBeInTheDocument();

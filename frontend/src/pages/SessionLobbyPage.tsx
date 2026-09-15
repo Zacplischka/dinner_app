@@ -387,7 +387,7 @@ export default function SessionLobbyPage() {
                     void run(() =>
                       lobby
                         ? startSession({ sessionCode, revision: lobby.revision })
-                        : restartSession(sessionCode)
+                        : restartSession({ sessionCode })
                     );
                   }}
                 >
@@ -441,7 +441,7 @@ export default function SessionLobbyPage() {
                     'Return everyone to choices? This round’s selections and Match will be discarded. Everyone must confirm Ready again.'
                   )
                 )
-                  void run(() => restartSession(lobby.sessionCode));
+                  void run(() => restartSession({ sessionCode: lobby.sessionCode }));
               }}
             >
               Return everyone to choices

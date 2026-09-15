@@ -95,7 +95,6 @@ describe('socketService', () => {
     const onJoined = vi.fn();
 
     socketService.initializeSocket({
-      getAuthToken: () => 'token',
       onEvent: {
         connect: onConnect,
         'participant:joined': onJoined,
@@ -166,7 +165,13 @@ describe('socketService', () => {
       participants: [{ participantId: 'p9', displayName: 'Alice', isHost: false }],
     };
     socket.acks.set('session:join', { success: true, data: joinData });
-    await expect(socketService.joinSession('AB123', 'Alice', 'rejoin-token')).resolves.toEqual({
+    await expect(
+      socketService.joinSession({
+        sessionCode: 'AB123',
+        displayName: 'Alice',
+        rejoinToken: 'rejoin-token',
+      })
+    ).resolves.toEqual({
       success: true,
       data: joinData,
     });
@@ -181,7 +186,9 @@ describe('socketService', () => {
       success: false,
       error: { code: 'SESSION_NOT_FOUND', message: 'No such session' },
     });
-    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual({
+    await expect(
+      socketService.joinSession({ sessionCode: 'AB123', displayName: 'Alice' })
+    ).resolves.toEqual({
       success: false,
       error: { code: 'SESSION_NOT_FOUND', message: 'No such session' },
     });
@@ -192,9 +199,12 @@ describe('socketService', () => {
     socketService.initializeSocket();
 
     for (const [event, call] of [
-      ['selection:submit', () => socketService.submitSelection('AB123', ['place-1'])],
-      ['session:restart', () => socketService.restartSession('AB123')],
-      ['session:leave', () => socketService.leaveSession('AB123')],
+      [
+        'selection:submit',
+        () => socketService.submitSelection({ sessionCode: 'AB123', selections: ['place-1'] }),
+      ],
+      ['session:restart', () => socketService.restartSession({ sessionCode: 'AB123' })],
+      ['session:leave', () => socketService.leaveSession({ sessionCode: 'AB123' })],
     ] as const) {
       // Canonical success acknowledges `data: null`.
       socket.acks.set(event, { success: true, data: null });
@@ -220,7 +230,9 @@ describe('socketService', () => {
       socket.silent.add('selection:submit');
 
       const settled = vi.fn();
-      void socketService.submitSelection('AB123', ['place-1']).then(settled);
+      void socketService
+        .submitSelection({ sessionCode: 'AB123', selections: ['place-1'] })
+        .then(settled);
 
       // Still in flight just short of the window...
       await vi.advanceTimersByTimeAsync(9_999);
@@ -252,10 +264,18 @@ describe('socketService', () => {
       // a dead server too, so it must not claim the user is offline (#409).
       error: { code: 'UNKNOWN', message: 'Not connected. Check your connection and try again.' },
     };
-    await expect(socketService.joinSession('AB123', 'Alice')).resolves.toEqual(notConnected);
-    await expect(socketService.submitSelection('AB123', [])).resolves.toEqual(notConnected);
-    await expect(socketService.restartSession('AB123')).resolves.toEqual(notConnected);
-    await expect(socketService.leaveSession('AB123')).resolves.toEqual(notConnected);
+    await expect(
+      socketService.joinSession({ sessionCode: 'AB123', displayName: 'Alice' })
+    ).resolves.toEqual(notConnected);
+    await expect(
+      socketService.submitSelection({ sessionCode: 'AB123', selections: [] })
+    ).resolves.toEqual(notConnected);
+    await expect(socketService.restartSession({ sessionCode: 'AB123' })).resolves.toEqual(
+      notConnected
+    );
+    await expect(socketService.leaveSession({ sessionCode: 'AB123' })).resolves.toEqual(
+      notConnected
+    );
 
     expect(socketService.getSocketId()).toBe('socket-1');
 
@@ -323,7 +343,7 @@ describe('socketService', () => {
     vi.useFakeTimers();
     try {
       socket.silent.add('order:item');
-      const first = bindings.addOrderItem('AB123', 0, 1);
+      const first = bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 });
       await vi.advanceTimersByTimeAsync(10_000);
       expect(await first).toMatchObject({ success: false });
       expect(readBasket).toBeDefined();
@@ -333,7 +353,9 @@ describe('socketService', () => {
       expect(itemEmits()).toHaveLength(1);
       expect.soft(useSessionStore.getState().isConnected).toBe(false);
       socket.silent.delete('order:item');
-      expect.soft(await bindings.addOrderItem('AB123', 0, 1)).toMatchObject({ success: false });
+      expect
+        .soft(await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 }))
+        .toMatchObject({ success: false });
       expect.soft(itemEmits()).toHaveLength(1);
 
       const recovery = bindings.reconcileSession();
@@ -343,7 +365,9 @@ describe('socketService', () => {
       });
       await recovery;
       expect.soft(useSessionStore.getState().isConnected).toBe(false);
-      expect.soft(await bindings.addOrderItem('AB123', 0, 1)).toMatchObject({ success: false });
+      expect
+        .soft(await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 }))
+        .toMatchObject({ success: false });
       expect.soft(itemEmits()).toHaveLength(1);
 
       // The existing Try again recovery action must remain usable after a
@@ -365,7 +389,9 @@ describe('socketService', () => {
       expect(useOrderStore.getState().order?.lines[0].qty).toBe(1);
       expect(useSessionStore.getState().isConnected).toBe(true);
       expect.soft(itemEmits()).toHaveLength(1);
-      expect(await bindings.addOrderItem('AB123', 0, 1)).toMatchObject({ success: true });
+      expect(
+        await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 })
+      ).toMatchObject({ success: true });
       expect.soft(itemEmits()).toHaveLength(2);
 
       readBasket = undefined;

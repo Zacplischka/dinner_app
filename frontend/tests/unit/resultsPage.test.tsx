@@ -644,7 +644,7 @@ describe('ResultsPage', () => {
       );
       fireEvent.click(screen.getByRole('button', { name: 'Try another deck' }));
       expect(await screen.findByText('Choose the next round')).toBeVisible();
-      expect(restartSession).toHaveBeenLastCalledWith('AB123');
+      expect(restartSession).toHaveBeenLastCalledWith({ sessionCode: 'AB123' });
     });
 
     it('explains the host action to guests without offering an unauthorized restart', () => {

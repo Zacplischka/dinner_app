@@ -191,7 +191,11 @@ describe('native recovery through the shared socket boundary', () => {
       isConnected: false,
     });
     expect(device.credentials.size).toBe(1);
-    expect(device.join).toHaveBeenLastCalledWith('AB123', 'Alice', 'secret-capability');
+    expect(device.join).toHaveBeenLastCalledWith({
+      sessionCode: 'AB123',
+      displayName: 'Alice',
+      rejoinToken: 'secret-capability',
+    });
 
     device.join.mockResolvedValue({
       success: true,

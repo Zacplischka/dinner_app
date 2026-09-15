@@ -494,7 +494,7 @@ export default function ResultsPage() {
     setError('');
 
     try {
-      const ack = await restartSession(sessionCode);
+      const ack = await restartSession({ sessionCode });
       if (ack.success) {
         // Reset local store selections/results
         if (lobby) {

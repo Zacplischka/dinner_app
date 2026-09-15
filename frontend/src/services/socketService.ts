@@ -37,7 +37,6 @@ type SocketEventHandlers = Partial<ServerToClientEvents> & {
 };
 
 export interface SocketConfig {
-  getAuthToken?: () => string | undefined;
   canMutate?: () => boolean;
   onUncertainOutcome?: () => void;
   onEvent?: SocketEventHandlers;
@@ -47,7 +46,6 @@ export interface SocketConfig {
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 let onUncertainOutcome: (() => void) | undefined;
 let canMutate: (() => boolean) | undefined;
-let getAuthToken: (() => string | undefined) | undefined;
 
 /**
  * Initialize Socket.IO client connection.
@@ -64,7 +62,6 @@ export function initializeSocket(config: SocketConfig = {}): void {
 
   onUncertainOutcome = config.onUncertainOutcome;
   canMutate = config.canMutate;
-  getAuthToken = config.getAuthToken;
 
   socket = io(BACKEND_URL, {
     reconnection: true,
@@ -154,93 +151,23 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
   });
 }
 
-/**
- * Join a session
- */
-export function joinSession(
-  sessionCode: string,
-  displayName: string,
-  rejoinToken?: string
-): Promise<Ack<SessionJoinData>> {
-  const payload: SessionJoinPayload = {
-    sessionCode,
-    displayName,
-    rejoinToken,
-    accessToken: getAuthToken?.(),
-  };
-  return emitAck<SessionJoinData>('session:join', payload);
-}
-
-/**
- * Submit selections
- */
-export function submitSelection(
-  sessionCode: string,
-  optionIds: string[],
-  round?: number
-): Promise<Ack<null>> {
-  const payload: SelectionSubmitPayload = { sessionCode, selections: optionIds, round };
-  return emitAck<null>('selection:submit', payload);
-}
-
-/**
- * Live Selection: fire-and-forget chrome. The Selection is NOT persisted here —
- * the Match is still computed from `selection:submit`. `retract` takes one back
- * (an Undo), so the other phones stop counting it (#410).
- */
-export function sendLiveSelection(
-  sessionCode: string,
-  placeId: string,
-  retract?: boolean,
-  round?: number
-): Promise<Ack<null>> {
-  const payload: SelectionLivePayload = { sessionCode, placeId, retract, round };
-  return emitAck<null>('selection:live', payload);
-}
-
-/**
- * Open (or rejoin) the Group Order for the crowned Restaurant.
- */
-export function openOrder(sessionCode: string, placeId: string): Promise<OrderOpenResponse> {
-  const payload: OrderOpenPayload = { sessionCode, placeId };
-  // ponytail: emitAck<T> resolves Ack<T>, whose failure arm is the plain ApiError;
-  // OrderUnavailableError adds `reason`, so widen at this one call site. If a second
-  // command ever carries an extended error, make emitAck generic over the whole ack.
-  return emitAck<OrderState>('order:open', payload) as Promise<OrderOpenResponse>;
-}
-
-/**
- * Add (delta 1) or remove (delta -1) one Order Line. The server resolves the
- * name, price and who from the caller — the payload carries only what to change.
- */
-export function addOrderItem(
-  sessionCode: string,
-  index: number,
-  delta: 1 | -1
-): Promise<Ack<null>> {
-  const payload: OrderItemPayload = { sessionCode, index, delta };
-  return emitAck<null>('order:item', payload);
-}
-
-/**
- * "I'll order": claim the Buyer and lock the Group Order. First tap wins.
- * `feeCents`, when present, is the Buyer's debounced delivery-fee edit riding
- * the same event (#179).
- */
-export function claimBuyer(sessionCode: string, feeCents?: number): Promise<OrderBuyResponse> {
-  // Socket.IO's serializer drops undefined-valued keys, so an absent feeCents
-  // arrives at the server as if the key were never sent - no ternary needed.
-  const payload: OrderBuyPayload = { sessionCode, feeCents };
-  return emitAck<null>('order:buy', payload);
-}
-
-/**
- * Restart session
- */
-export function restartSession(sessionCode: string): Promise<Ack<null>> {
-  const payload: SessionRestartPayload = { sessionCode };
-  return emitAck<null>('session:restart', payload);
-}
+export const joinSession = (p: SessionJoinPayload) => emitAck<SessionJoinData>('session:join', p);
+export const submitSelection = (p: SelectionSubmitPayload) => emitAck<null>('selection:submit', p);
+// Live Selection: fire-and-forget chrome, never persisted — the Match is still
+// computed from selection:submit. `retract` takes one back (an Undo, #410).
+export const sendLiveSelection = (p: SelectionLivePayload) => emitAck<null>('selection:live', p);
+// ponytail: emitAck<T> resolves Ack<T>, whose failure arm is the plain ApiError;
+// OrderUnavailableError adds `reason`, so widen at this one call site. If a second
+// command ever carries an extended error, make emitAck generic over the whole ack.
+export const openOrder = (p: OrderOpenPayload) =>
+  emitAck<OrderState>('order:open', p) as Promise<OrderOpenResponse>;
+export const addOrderItem = (p: OrderItemPayload) => emitAck<null>('order:item', p);
+// "I'll order": first tap wins. A present `feeCents` is the Buyer's debounced
+// delivery-fee edit riding the same event (#179).
+export const claimBuyer = (p: OrderBuyPayload): Promise<OrderBuyResponse> =>
+  emitAck<null>('order:buy', p);
+export const restartSession = (p: SessionRestartPayload) => emitAck<null>('session:restart', p);
+export const leaveSession = (p: SessionLeavePayload) => emitAck<null>('session:leave', p);
 
 export function updateSessionChoices(
   payload: SessionChoicesPayload
@@ -258,15 +185,6 @@ export function removeSessionParticipant(
 ): Promise<Ack<SessionLobbyState>> {
   return emitAck<SessionLobbyState>('session:remove', payload);
 }
-
-/**
- * Leave session intentionally (removes participant from session)
- */
-export function leaveSession(sessionCode: string): Promise<Ack<null>> {
-  const payload: SessionLeavePayload = { sessionCode };
-  return emitAck<null>('session:leave', payload);
-}
-
 /**
  * Disconnect socket
  */

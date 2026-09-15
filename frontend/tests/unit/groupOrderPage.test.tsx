@@ -520,7 +520,7 @@ describe('GroupOrderPage', () => {
     const button = screen.getByRole('button', { name: "I'll order" });
     fireEvent.click(button);
 
-    expect(claimBuyerMock).toHaveBeenCalledWith('AB123');
+    expect(claimBuyerMock).toHaveBeenCalledWith({ sessionCode: 'AB123' });
     await waitFor(() =>
       expect(useToastStore.getState().toasts).toContainEqual(
         expect.objectContaining({ type: 'error', message: 'Bob is already ordering' })
@@ -578,9 +578,9 @@ describe('GroupOrderPage', () => {
 
     fireEvent.change(input, { target: { value: '8.99' } });
     act(() => vi.advanceTimersByTime(399));
-    expect(claimBuyerMock).not.toHaveBeenCalledWith('AB123', 899);
+    expect(claimBuyerMock).not.toHaveBeenCalledWith({ sessionCode: 'AB123', feeCents: 899 });
     act(() => vi.advanceTimersByTime(1));
-    expect(claimBuyerMock).toHaveBeenCalledWith('AB123', 899);
+    expect(claimBuyerMock).toHaveBeenCalledWith({ sessionCode: 'AB123', feeCents: 899 });
     expect(claimBuyerMock).toHaveBeenCalledTimes(1);
 
     // A rejected value also cancels a valid fee that has not been sent yet.
@@ -615,7 +615,7 @@ describe('GroupOrderPage', () => {
     // A fee right at the server cap still emits.
     fireEvent.change(input, { target: { value: '1000' } });
     act(() => vi.advanceTimersByTime(400));
-    expect(claimBuyerMock).toHaveBeenCalledWith('AB123', 100000);
+    expect(claimBuyerMock).toHaveBeenCalledWith({ sessionCode: 'AB123', feeCents: 100000 });
 
     vi.useRealTimers();
   });

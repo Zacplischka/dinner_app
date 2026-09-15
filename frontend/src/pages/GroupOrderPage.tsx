@@ -148,7 +148,7 @@ export default function GroupOrderPage() {
     retriedRef.current = false;
 
     async function attemptOpen() {
-      const ack = await openOrder(sessionCode!, placeId!);
+      const ack = await openOrder({ sessionCode: sessionCode!, placeId: placeId! });
       if (cancelled) return;
 
       if (ack.success) {
@@ -226,7 +226,7 @@ export default function GroupOrderPage() {
 
   const handleClaimBuyer = async () => {
     if (!sessionCode) return;
-    const ack = await claimBuyer(sessionCode);
+    const ack = await claimBuyer({ sessionCode });
     if (!ack.success) toast.error(ack.error.message);
   };
 
@@ -241,7 +241,7 @@ export default function GroupOrderPage() {
     const feeCents = parseDollarsToCents(raw);
     if (feeCents === null || feeCents > MAX_FEE_CENTS || !sessionCode) return; // rejected before emitting
     feeTimer.current = setTimeout(() => {
-      void claimBuyer(sessionCode, feeCents).then((ack) => {
+      void claimBuyer({ sessionCode, feeCents }).then((ack) => {
         if (!ack.success) toast.error(ack.error.message);
       });
     }, 400);
@@ -555,7 +555,13 @@ export default function GroupOrderPage() {
                           type="button"
                           className="flex min-h-[44px] min-w-[44px] items-center justify-center text-lg text-muted"
                           aria-label={`Remove one ${line.name}`}
-                          onClick={() => void addOrderItem(sessionCode!, line.index, -1)}
+                          onClick={() =>
+                            void addOrderItem({
+                              sessionCode: sessionCode!,
+                              index: line.index,
+                              delta: -1,
+                            })
+                          }
                         >
                           ×
                         </button>
@@ -587,7 +593,13 @@ export default function GroupOrderPage() {
                           type="button"
                           className="flex min-h-[44px] w-full items-center justify-between gap-4 text-left text-sm text-text/90"
                           aria-label={`Add ${item.name}, ${formatPrice(item.price_cents)}`}
-                          onClick={() => void addOrderItem(sessionCode!, flatIndex, 1)}
+                          onClick={() =>
+                            void addOrderItem({
+                              sessionCode: sessionCode!,
+                              index: flatIndex,
+                              delta: 1,
+                            })
+                          }
                         >
                           <span>{item.name}</span>
                           <span className="text-muted">{formatPrice(item.price_cents)}</span>
