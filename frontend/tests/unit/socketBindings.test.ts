@@ -69,7 +69,6 @@ const participant = {
   participantId: 'participant-1',
   displayName: 'Alice',
   sessionCode: 'AB123',
-  joinedAt: 1,
   hasSubmitted: false,
   isHost: true,
 };
@@ -1152,7 +1151,7 @@ describe('socketBindings', () => {
       revision: recovered.revision + 1,
     };
     socket.trigger('session:lobby', activeLobby);
-    useSessionStore.getState().setSelections(['new-movie']);
+    useSessionStore.setState({ selections: ['new-movie'] });
     useSessionStore.getState().setDeckCursor(1);
     socket.trigger('session:lobby', { ...activeLobby, revision: activeLobby.revision + 1 });
     expect(useSessionStore.getState().selections).toEqual(['new-movie']);

@@ -45,7 +45,6 @@ const participant = (id: string, displayName: string) => ({
   participantId: id,
   displayName,
   sessionCode: 'AB123',
-  joinedAt: 1,
   hasSubmitted: false,
   isHost: id === 'p1',
 });

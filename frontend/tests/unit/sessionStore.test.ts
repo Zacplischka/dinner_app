@@ -92,53 +92,18 @@ describe('sessionStore', () => {
   });
 
   describe('restaurant state', () => {
-    it('should store restaurants', () => {
-      const { setRestaurants } = useSessionStore.getState();
-
-      const restaurants = [
-        {
-          placeId: 'place1',
-          name: 'Pizza Palace',
-          rating: 4.5,
-          priceLevel: 2,
-          cuisineType: 'Italian',
-          address: '123 Main St',
-        },
-        {
-          placeId: 'place2',
-          name: 'Sushi Spot',
-          rating: 4.8,
-          priceLevel: 3,
-        },
-      ];
-
-      setRestaurants(restaurants);
-
-      expect(useSessionStore.getState().restaurants).toEqual(restaurants);
-    });
-
     it('should default to empty array', () => {
       expect(useSessionStore.getState().restaurants).toEqual([]);
     });
 
     it('should clear restaurants on reset', () => {
-      const { setRestaurants, resetSession } = useSessionStore.getState();
-
-      setRestaurants([{ placeId: 'place1', name: 'Test', rating: 4.0, priceLevel: 2 }]);
+      useSessionStore.setState({
+        restaurants: [{ placeId: 'place1', name: 'Test', rating: 4.0, priceLevel: 2 }],
+      });
       expect(useSessionStore.getState().restaurants).toHaveLength(1);
 
-      resetSession();
+      useSessionStore.getState().resetSession();
       expect(useSessionStore.getState().restaurants).toEqual([]);
-    });
-  });
-
-  describe('selections with Place IDs', () => {
-    it('should store Place IDs as selections', () => {
-      const { setSelections } = useSessionStore.getState();
-
-      setSelections(['ChIJplace1', 'ChIJplace2']);
-
-      expect(useSessionStore.getState().selections).toEqual(['ChIJplace1', 'ChIJplace2']);
     });
   });
 
@@ -217,7 +182,6 @@ describe('sessionStore', () => {
                 participantId: 'other-tab-socket',
                 displayName: 'Alice',
                 sessionCode: 'AB123',
-                joinedAt: 1,
                 hasSubmitted: false,
                 isHost: true,
               },
@@ -240,7 +204,6 @@ describe('sessionStore', () => {
         participantId: 'participant-1',
         displayName: 'Alice',
         sessionCode: 'AB123',
-        joinedAt: 1,
         hasSubmitted: false,
         isHost: true,
       };
@@ -278,12 +241,13 @@ describe('sessionStore', () => {
     });
 
     it('should set results and reset only selection state', () => {
-      useSessionStore.getState().setSelections(['place-1']);
+      useSessionStore.setState({ selections: ['place-1'] });
       useSessionStore.getState().setResults({
         sessionCode: 'AB123',
         hasOverlap: true,
         overlappingOptions: [{ placeId: 'place-1', name: 'Pasta House' }],
         allSelections: { Alice: ['place-1'] },
+        restaurantNames: {},
       });
 
       expect(useSessionStore.getState().sessionStatus).toBe('complete');
@@ -304,7 +268,6 @@ describe('sessionStore', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: true,
           isHost: true,
         },
@@ -312,7 +275,6 @@ describe('sessionStore', () => {
           participantId: 'p2',
           displayName: 'Bob',
           sessionCode: 'AB123',
-          joinedAt: 2,
           hasSubmitted: false,
           isHost: false,
         },

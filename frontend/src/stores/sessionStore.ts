@@ -2,8 +2,8 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
-import type { Branch, DeckEntry, SessionLobbyState } from '@dinder/shared/types';
-import type { Participant, Result } from '../types';
+import type { Branch, DeckEntry, SessionLobbyState, SessionResultsEvent } from '@dinder/shared/types';
+import type { Participant } from '../types';
 import { useOrderStore } from './orderStore';
 import { Capacitor } from '@capacitor/core';
 import { nativeStateStorage, clearRejoinToken } from '../services/nativeStorage';
@@ -75,10 +75,8 @@ interface SessionState {
   // Location actions
   setLocation: (location: Location) => void;
   setSearchRadiusMiles: (miles: number) => void;
-  setRestaurants: (restaurants: DeckEntry[]) => void;
 
   // Selection actions
-  setSelections: (placeIds: string[]) => void;
   addSelection: (placeId: string) => void;
   removeSelection: (placeId: string) => void;
   recordLiveSelection: (placeId: string, displayName: string) => void;
@@ -86,7 +84,7 @@ interface SessionState {
   setDeckCursor: (index: number) => void;
 
   // Results actions
-  setResults: (results: Result) => void;
+  setResults: (results: SessionResultsEvent) => void;
 
   // Group Order actions
   setOrderPlaceId: (placeId: string | null) => void;
@@ -178,9 +176,6 @@ export const useSessionStore = create<SessionState>()(
               participants: lobby.participants.map((participant) => ({
                 ...participant,
                 sessionCode: lobby.sessionCode,
-                joinedAt:
-                  state.participants.find((old) => old.displayName === participant.displayName)
-                    ?.joinedAt ?? Date.now(),
               })),
             };
           }),
@@ -209,11 +204,7 @@ export const useSessionStore = create<SessionState>()(
 
         setSearchRadiusMiles: (miles) => set({ searchRadiusMiles: miles }),
 
-        setRestaurants: (restaurants) => set({ restaurants }),
-
         // Selection actions
-        setSelections: (placeIds) => set({ selections: placeIds }),
-
         addSelection: (placeId) =>
           set((state) => {
             if (state.selections.includes(placeId)) {
@@ -261,7 +252,7 @@ export const useSessionStore = create<SessionState>()(
           set((state) => ({
             lobby: state.lobby ? { ...state.lobby, state: 'complete' } : undefined,
             allSelections: results.allSelections,
-            restaurantNames: results.restaurantNames || {},
+            restaurantNames: results.restaurantNames,
             overlappingOptions: results.overlappingOptions,
             topPick: results.topPick,
             shoppingListId: results.shoppingListId,
@@ -329,7 +320,6 @@ export const useSessionStore = create<SessionState>()(
                 participantId: me.participantId,
                 displayName: me.displayName,
                 sessionCode: rest.sessionCode,
-                joinedAt: me.joinedAt,
                 hasSubmitted: false,
                 isHost: false,
               },

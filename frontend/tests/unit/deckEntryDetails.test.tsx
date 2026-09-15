@@ -78,7 +78,6 @@ const seed = (branch: 'watch' | 'eatout' | 'cook', ...names: string[]) => {
       participantId: `p${i}`,
       displayName,
       sessionCode: 'AB123',
-      joinedAt: i,
       hasSubmitted: false,
       isHost: i === 0,
     })),

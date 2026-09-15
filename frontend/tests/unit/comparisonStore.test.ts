@@ -4,7 +4,7 @@ import { useComparisonStore } from '../../src/stores/comparisonStore';
 describe('comparisonStore', () => {
   beforeEach(() => {
     localStorage.clear();
-    useComparisonStore.getState().reset();
+    useComparisonStore.setState(useComparisonStore.getInitialState());
   });
 
   it('persists location and radius but keeps Venue results and scroll position in memory', () => {

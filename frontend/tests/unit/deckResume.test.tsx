@@ -62,7 +62,6 @@ beforeEach(() => {
         participantId: 'p1',
         displayName: 'Alice',
         sessionCode: 'AB123',
-        joinedAt: 1,
         hasSubmitted: false,
         isHost: true,
       },
@@ -178,7 +177,6 @@ describe('the Deck cursor survives a reload', () => {
         participantId: `p${i + 1}`,
         displayName,
         sessionCode: 'AB123',
-        joinedAt: i + 1,
         hasSubmitted: false,
         isHost: i === 0,
       }));

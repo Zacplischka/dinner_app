@@ -19,7 +19,6 @@ function participant(id: string, name: string) {
     participantId: id,
     displayName: name,
     sessionCode: 'AB123',
-    joinedAt: 1,
     hasSubmitted: true,
     isHost: id === 'p1',
   };

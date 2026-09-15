@@ -58,7 +58,6 @@ describe('Recipe Deck', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: true,
         },

@@ -272,7 +272,6 @@ describe('socketService', () => {
       participantId: 'socket-1',
       displayName: 'Alice',
       sessionCode: 'AB123',
-      joinedAt: 1,
       hasSubmitted: true,
       isHost: true,
     };

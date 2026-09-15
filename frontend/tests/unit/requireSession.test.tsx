@@ -99,7 +99,6 @@ describe('RequireSession', () => {
           participantId: 'newcomer',
           displayName: 'Newcomer',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: false,
           waitingForNextRound: true,

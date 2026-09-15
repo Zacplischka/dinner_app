@@ -77,16 +77,12 @@ function cancelDisconnectToast(displayName: string): boolean {
 
 function applyResults(event: SessionResultsEvent): void {
   useSessionStore.getState().setResults({
-    sessionCode: event.sessionCode,
+    ...event,
     overlappingOptions: resolvePhotoUrls(event.overlappingOptions),
-    allSelections: event.allSelections,
-    restaurantNames: event.restaurantNames,
-    hasOverlap: event.hasOverlap,
     topPick: event.topPick && {
       ...event.topPick,
       restaurant: resolvePhotoUrls([event.topPick.restaurant])[0],
     },
-    shoppingListId: event.shoppingListId,
   });
 }
 
@@ -183,7 +179,6 @@ const socketConfig: SocketConfig = {
           participantId: event.participantId,
           displayName: event.displayName,
           sessionCode: '',
-          joinedAt: Date.now(),
           hasSubmitted: false,
           // A Host who left and came back joins as a new entry here, and the
           // start guard reads this flag — assuming false leaves every roster
@@ -455,7 +450,6 @@ async function admitSession(
       ack.data.participants.map((p) => ({
         ...p,
         sessionCode,
-        joinedAt: Date.now(),
         // The server says who already submitted (#284); absent on older backends.
         hasSubmitted: p.hasSubmitted ?? false,
       }))

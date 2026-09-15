@@ -77,7 +77,6 @@ describe('NavigationHeader', () => {
           participantId: 'alice',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: true,
           ready: true,

@@ -43,7 +43,7 @@ function venueList(count: number) {
 describe('ComparePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useComparisonStore.getState().reset();
+    useComparisonStore.setState(useComparisonStore.getInitialState());
   });
 
   // A test that fails mid-fake-timers must not leak them into the next one.

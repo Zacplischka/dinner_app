@@ -27,7 +27,6 @@ const authActions = {
   initialize: useAuthStore.getState().initialize,
   signInWithGoogle: useAuthStore.getState().signInWithGoogle,
   signOut: useAuthStore.getState().signOut,
-  setSession: useAuthStore.getState().setSession,
 };
 
 function renderAt(route: string, element: React.ReactElement) {
