@@ -232,7 +232,6 @@ describe('gather-first Session wire contract', () => {
     await request(url).get(`/api/sessions/${target}`).expect(404);
     expect(await lobby(current)).toEqual(currentBefore);
     await store.createSession(target, {
-      hostId: 'new-host',
       hostName: 'Host',
       branch: 'watch',
       deckSize: 6,

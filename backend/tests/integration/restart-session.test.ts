@@ -22,7 +22,6 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
   beforeEach(async () => {
     await cleanupTestData(redis);
     await store.createSession(sessionCode, {
-      hostId: 'alice',
       hostName: 'Alice',
       entries: restaurants,
     });

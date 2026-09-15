@@ -27,7 +27,6 @@ const runnersUp = [
 
 const session: Session = {
   sessionCode: 'AB123',
-  hostId: 'host',
   state: 'complete',
   participantCount: 2,
   createdAt: 0,

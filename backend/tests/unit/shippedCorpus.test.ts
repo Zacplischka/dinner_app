@@ -83,7 +83,6 @@ async function cook(recipe: OwnedRecipe, headcount = 6) {
   const searched: string[] = [];
   const session: Session = {
     sessionCode: 'AB123',
-    hostId: 'host',
     state: 'complete',
     participantCount: 1,
     createdAt: 0,

@@ -22,7 +22,6 @@ describe('Integration Test: Results with Overlap (FR-009, FR-010, FR-011)', () =
   beforeEach(async () => {
     await cleanupTestData(redis);
     await store.createSession(sessionCode, {
-      hostId: 'alice',
       hostName: 'Alice',
       entries: restaurants,
     });
@@ -55,9 +54,7 @@ describe('Integration Test: Results with Overlap (FR-009, FR-010, FR-011)', () =
   it('should store the Match ids', async () => {
     await store.computeAndStoreResults(sessionCode);
 
-    await expect(redis.smembers(`session:${sessionCode}:results`)).resolves.toEqual([
-      'place2',
-    ]);
+    await expect(redis.smembers(`session:${sessionCode}:results`)).resolves.toEqual(['place2']);
   });
 
   it('should reveal all selections and restaurant names after completion', async () => {

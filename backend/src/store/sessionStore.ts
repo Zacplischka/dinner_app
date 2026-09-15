@@ -30,7 +30,6 @@ export const SESSION_TTL_SECONDS = 30 * 60;
 
 export interface Session {
   sessionCode: string;
-  hostId: string;
   state: 'waiting' | 'selecting' | 'complete' | 'expired';
   participantCount: number;
   createdAt: number;
@@ -285,7 +284,6 @@ export function createSessionStore(redis: Redis) {
   async function createSession(
     sessionCode: string,
     opts: {
-      hostId: string;
       lobby?: Session['lobby'];
       hostName?: string;
       branch?: Branch;
@@ -305,7 +303,6 @@ export function createSessionStore(redis: Redis) {
     const session: Session = {
       sessionCode,
       lobby: opts.lobby,
-      hostId: opts.hostId,
       state: 'waiting',
       participantCount: 1,
       createdAt: now,
@@ -324,7 +321,6 @@ export function createSessionStore(redis: Redis) {
     const sessionData: Record<string, string | number> = {
       createdAt: session.createdAt,
       orderRound: randomUUID(),
-      hostId: session.hostId,
       state: session.state,
       participantCount: session.participantCount,
       lastActivityAt: session.lastActivityAt,
@@ -367,7 +363,6 @@ export function createSessionStore(redis: Redis) {
 
     const session: Session = {
       sessionCode,
-      hostId: data.hostId,
       state: data.state as Session['state'],
       participantCount: parseInt(data.participantCount, 10),
       createdAt: parseInt(data.createdAt, 10),

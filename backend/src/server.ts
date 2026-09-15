@@ -327,7 +327,7 @@ io.on('connection', (socket) => {
 
   // T045: disconnect handler
   socket.on('disconnect', (reason) => {
-    void handleDisconnect(socket, io, reason, sessionStore, sessionService);
+    void handleDisconnect(socket, reason, sessionStore, sessionService);
   });
 });
 

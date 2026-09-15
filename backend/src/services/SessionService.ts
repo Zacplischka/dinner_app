@@ -322,9 +322,7 @@ export function createSessionService({
     }
 
     // Create session (host will be added when they join via WebSocket)
-    // Note: hostId is temporary and not used since host joins via WebSocket
     const { session, expireAt } = await store.createSession(sessionCode, {
-      hostId: `temp-${Date.now()}`,
       lobby: collaborative
         ? { revision: 0, mealType: cook?.craving.mealType ?? 'main course' }
         : undefined,

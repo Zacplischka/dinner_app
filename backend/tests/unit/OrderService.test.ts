@@ -37,7 +37,7 @@ let redis: Redis;
 let store: ReturnType<typeof createSessionStore>;
 
 async function seedCompletedSession(crownPlaceId = placeId) {
-  await store.createSession(sessionCode, { hostId: 'p1', hostName: 'Alice' });
+  await store.createSession(sessionCode, { hostName: 'Alice' });
   await store.addParticipant(sessionCode, {
     participantId: 'p1',
     displayName: 'Alice',
@@ -250,7 +250,7 @@ describe('OrderService.addItem', () => {
   // Seed an open order with a chosen fee, plus three Participants (Carol adds
   // nothing) so the share sum can be checked against items + fee directly.
   async function seedOpenOrder(feeCents: number) {
-    await store.createSession(sessionCode, { hostId: 'pA', hostName: 'Alice' });
+    await store.createSession(sessionCode, { hostName: 'Alice' });
     for (const [participantId, displayName] of [
       ['pA', 'Alice'],
       ['pB', 'Bob'],
@@ -355,7 +355,7 @@ describe('OrderService.claimBuyer fee', () => {
   const menu = [item('Margherita', 1500), item('Pepperoni', 1800)];
 
   async function seedLockedOrder() {
-    await store.createSession(sessionCode, { hostId: 'pA', hostName: 'Alice' });
+    await store.createSession(sessionCode, { hostName: 'Alice' });
     for (const [participantId, displayName] of [
       ['pA', 'Alice'],
       ['pB', 'Bob'],
