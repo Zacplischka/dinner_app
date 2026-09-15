@@ -40,7 +40,7 @@ import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { getSocketUser, resolveSessionAvatar, type SocketData } from './websocket/socketAuth.js';
+import { resolveSessionAvatar } from './websocket/socketAuth.js';
 
 // Import shared types
 import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
@@ -226,12 +226,7 @@ app.use(errorHandler);
 const httpServer = createServer(app);
 
 // Initialize Socket.IO with typed events
-const io = new SocketIOServer<
-  ClientToServerEvents,
-  ServerToClientEvents,
-  Record<string, never>,
-  SocketData
->(httpServer, {
+const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   // CORS alone covers polling, not the WebSocket upgrade. Neither check
   // replaces Participant capabilities or authenticated social permissions.
   allowRequest: (request, callback) =>
@@ -271,9 +266,8 @@ import {
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
-  const user = getSocketUser(socket);
   const socketLog = logger.child({ socketId: socket.id });
-  socketLog.info({ userId: user?.id }, 'Socket connected');
+  socketLog.info('Socket connected');
 
   if (socket.recovered) {
     socketLog.info('Socket recovered from disconnect');
