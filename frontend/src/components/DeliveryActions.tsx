@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 // Helper functions to generate delivery app deep links
 export const generateUberEatsUrl = (restaurantName: string, address?: string): string => {

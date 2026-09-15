@@ -5,7 +5,7 @@ import { copyText } from '../services/device';
 // Secondary region: session code, progress, connection state and subtitle.
 
 import { ReactNode, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useSessionStore } from '../stores/sessionStore';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { toast } from '../hooks/useToast';

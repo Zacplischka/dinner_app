@@ -7,7 +7,7 @@ import { publicUrl } from '../services/device';
 // is the same URL's other face; the swap picker is #264.
 
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 import {
   MAX_SHOPPER_NAME,
   shoppingListTotal,

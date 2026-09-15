@@ -14,7 +14,7 @@
 // one, and it makes a rejected rejoin redirect for free — socketBindings
 // resets the store and toasts the server's reason, and this re-renders.
 
-import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useParams } from 'react-router';
 import { useSessionStore } from '../stores/sessionStore';
 
 export default function RequireSession() {

@@ -2,7 +2,7 @@ import type { Ack } from '@dinder/shared/types';
 // Issue #176 — opening a Group Order and the eight §2 failure branches.
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const openOrderMock = vi.fn();

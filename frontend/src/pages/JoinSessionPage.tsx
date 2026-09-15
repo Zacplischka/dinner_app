@@ -1,7 +1,7 @@
 // Join Session page - Join an existing session via code
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import NavigationHeader from '../components/NavigationHeader';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';

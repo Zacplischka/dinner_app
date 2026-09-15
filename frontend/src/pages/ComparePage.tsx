@@ -2,7 +2,7 @@ import { currentPosition } from '../services/device';
 // Venue discovery (#80): choose an area (current location or suburb/postcode),
 // browse nearby Venues with explicit sort and km language, tap a row to compare.
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import NavigationHeader from '../components/NavigationHeader';
 import LocationModeToggle, { type LocationMode } from '../components/LocationModeToggle';
 import RetryingPhoto from '../components/RetryingPhoto';

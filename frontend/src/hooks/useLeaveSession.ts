@@ -1,6 +1,6 @@
 import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { leaveSession } from '../services/socketBindings';
 import { useSessionStore } from '../stores/sessionStore';
 

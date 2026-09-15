@@ -3,7 +3,7 @@
 // end-of-deck screen's "you liked 0, submit".
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Branch } from '@dinder/shared/types';
 

@@ -41,7 +41,7 @@ vi.mock('../../src/services/socketBindings', () => ({
   joinSession: mocks.joinSession,
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   useNavigate: () => mocks.navigate,
 }));
 

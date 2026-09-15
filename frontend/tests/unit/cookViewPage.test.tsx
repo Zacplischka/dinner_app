@@ -3,7 +3,7 @@
 // end-of-method credit that doubles as the degrade path when steps are empty.
 import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ShoppingList } from '@dinder/shared/types';
 import { Capacitor } from '@capacitor/core';

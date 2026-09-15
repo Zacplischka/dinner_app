@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { SessionLobbyState } from '@dinder/shared/types';
 const mocks = vi.hoisted(() => ({

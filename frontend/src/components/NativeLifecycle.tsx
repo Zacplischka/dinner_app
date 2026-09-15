@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';

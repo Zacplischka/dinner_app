@@ -10,7 +10,7 @@ vi.mock('../../src/services/socketBindings', () => ({
   leaveSession: mocks.leaveSession,
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   useNavigate: () => mocks.navigate,
 }));
 

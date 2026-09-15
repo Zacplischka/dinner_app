@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import NavigationHeader from '../../src/components/NavigationHeader';
 import { useSessionStore } from '../../src/stores/sessionStore';

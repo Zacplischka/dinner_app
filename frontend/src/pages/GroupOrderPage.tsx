@@ -2,7 +2,7 @@ import { copyText } from '../services/device';
 // Group Order — the pinned basket: open, add Lines, claim the Buyer, hand off.
 
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import type { MenuItemCapture, OrderLine } from '@dinder/shared/types';
 import { openOrder, addOrderItem, claimBuyer } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';

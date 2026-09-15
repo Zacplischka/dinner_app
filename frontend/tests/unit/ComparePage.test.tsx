@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparePage from '../../src/pages/ComparePage';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, Link } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, Link } from 'react-router';
 import { routeTitle, useRouteAnnouncement } from '../../src/hooks/useRouteAnnouncement';
 
 function Links() {

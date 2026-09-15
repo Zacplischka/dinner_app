@@ -608,7 +608,7 @@ describe('socketBindings', () => {
   it('recovers across credential persistence and successful Invite Link navigation', async () => {
     const { createElement: h } = await import('react');
     const { render, screen, act, cleanup } = await import('@testing-library/react/pure');
-    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { MemoryRouter, Routes, Route } = await import('react-router');
     const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
     const api = await import('../../src/services/apiClient');
     vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
@@ -696,7 +696,7 @@ describe('socketBindings', () => {
   it('lets the real Invite Link destination retry an autojoin interrupted by transport loss', async () => {
     const { createElement: h } = await import('react');
     const { render, screen, fireEvent, act, cleanup } = await import('@testing-library/react/pure');
-    const { MemoryRouter, Routes, Route } = await import('react-router-dom');
+    const { MemoryRouter, Routes, Route } = await import('react-router');
     const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
     const api = await import('../../src/services/apiClient');
     vi.spyOn(api, 'getSession').mockResolvedValue({} as never);

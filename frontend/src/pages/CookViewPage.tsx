@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { nativeStateStorage } from '../services/nativeStorage';
 import { toast } from '../hooks/useToast';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import NavigationHeader from '../components/NavigationHeader';
 import { useShoppingList } from '../hooks/useShoppingList';
 import { useWakeLock } from '../hooks/useWakeLock';

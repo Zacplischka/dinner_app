@@ -2,7 +2,7 @@
 // Features: Friends list, pending requests, session invites, add friends
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import FriendsList from '../components/friends/FriendsList';

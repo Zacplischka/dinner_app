@@ -1,7 +1,7 @@
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import type { Ack, SessionChoicesPayload, SessionLobbyState } from '@dinder/shared/types';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';

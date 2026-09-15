@@ -1,7 +1,7 @@
 // The entry fork (#255): `/` asks the only question that matters — "Tonight
 // you're…" — with four Branch cards, and demotes Join/Compare to a text row.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from '@testing-library/react';
 import { useSessionStore } from '../../src/stores/sessionStore';

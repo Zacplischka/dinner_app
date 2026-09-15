@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import ProfileAvatar from './ProfileAvatar';

@@ -5,7 +5,7 @@ import ProfileAvatar from '../components/ProfileAvatar';
 // Swipe right to like, swipe left to pass
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { getRestaurants, getSession } from '../services/apiClient';
 import { submitSelection, sendLiveSelection } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';

@@ -1,7 +1,7 @@
 // React Router configuration and main App component
 
 import { Suspense, lazy, useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router';
 import ToastProvider from './components/Toast/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import Spinner, { LoadingAnnouncer } from './components/Spinner';

@@ -1,7 +1,7 @@
 import { publicUrl } from '../services/device';
 // Results page - Show overlapping selections and all participants' choices
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import type { Movie, Restaurant } from '@dinder/shared/types';
 import { isMovie, isRecipe, isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';

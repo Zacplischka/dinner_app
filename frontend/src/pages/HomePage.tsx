@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import ConfirmLeaveModal from '../components/ConfirmLeaveModal';
 import { getSession, ApiClientError } from '../services/apiClient';

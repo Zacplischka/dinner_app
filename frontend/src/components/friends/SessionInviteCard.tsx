@@ -7,7 +7,7 @@ import { useFriendsStore } from '../../stores/friendsStore';
 import { joinSession, waitForConnection } from '../../services/socketBindings';
 import { toast } from '../../hooks/useToast';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface SessionInviteCardProps {
   invite: SessionInvite;

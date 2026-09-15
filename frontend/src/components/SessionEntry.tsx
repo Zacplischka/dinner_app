@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { Branch } from '@dinder/shared/types';
 import NavigationHeader from './NavigationHeader';
 import TmdbCredit from './TmdbCredit';
