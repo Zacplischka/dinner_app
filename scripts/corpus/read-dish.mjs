@@ -30,6 +30,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 
 const MIN_PUBLISHERS = 3;
 
@@ -297,7 +298,7 @@ async function tryGet(get, url) {
   }
 }
 
-const MODEL = 'claude-opus-5';
+export const MODEL = 'claude-opus-5';
 
 /**
  * Default search: the dish name, nothing else. Only the result URLs are used —
@@ -371,51 +372,58 @@ wording:
 Nothing you write here is ever published. A later stage authors the recipe from this record
 with every source closed, so anything you copy verbatim becomes a defect there.`;
 
-/** Default extraction: the facts, from the captured text, in one call. */
-async function extractFacts(dish, captures, client = new Anthropic()) {
-  // Streamed: three full pages in, and thinking shares the output budget, so a
-  // non-streaming call is the one most likely to trip the request timeout.
+/**
+ * One streamed, schema-constrained call, parsed — the reading and authoring
+ * stages' shared shape. Streamed because thinking shares the output budget,
+ * so a non-streaming call is the one most likely to trip the request timeout.
+ * A truncation (`max_tokens`) or a refusal arrives as a 200 with a half-written
+ * body; parsing it blind blames JSON for tokens already spent, so `label`
+ * names the stage that stopped instead.
+ */
+export async function structured(client, { system, content, schema, label }) {
   const response = await client.messages
     .stream({
       model: MODEL,
       max_tokens: 64000,
       thinking: { type: 'adaptive' },
-      system: EXTRACTION_RULES,
-      output_config: { format: { type: 'json_schema', schema: FACT_SCHEMA } },
-      messages: [
-        {
-          role: 'user',
-          content:
-            `Dish: ${dish}\n\n` +
-            captures.map((c, i) => `=== s${i} ${c.url} ===\n${c.text}`).join('\n\n'),
-        },
-      ],
+      system,
+      output_config: { format: { type: 'json_schema', schema } },
+      messages: [{ role: 'user', content }],
     })
     .finalMessage();
-
-  // A truncation (`max_tokens`) or a refusal arrives as a 200 with a half-written
-  // body. Parsing it blind blames JSON for reads that are already spent.
   if (response.stop_reason !== 'end_turn') {
-    throw new Error(`EXTRACTION_INCOMPLETE: ${dish} stopped on ${response.stop_reason}`);
+    throw new Error(`${label} stopped on ${response.stop_reason}`);
   }
-
-  const text = response.content
-    .filter((block) => block.type === 'text')
-    .map((block) => block.text)
-    .join('');
-  return JSON.parse(text);
+  return JSON.parse(
+    response.content
+      .filter((block) => block.type === 'text')
+      .map((block) => block.text)
+      .join('')
+  );
 }
+
+/** Default extraction: the facts, from the captured text, in one call. */
+const extractFacts = (dish, captures, client = new Anthropic()) =>
+  structured(client, {
+    system: EXTRACTION_RULES,
+    schema: FACT_SCHEMA,
+    label: `EXTRACTION_INCOMPLETE: ${dish}`,
+    content:
+      `Dish: ${dish}\n\n` +
+      captures.map((c, i) => `=== s${i} ${c.url} ===\n${c.text}`).join('\n\n'),
+  });
 
 // CLI: read-dish.mjs "<dish>" [--out path]
 // Without --out the Fact Record goes to stdout, so a run writes nothing at all.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [dish, ...rest] = process.argv.slice(2);
+  const {
+    positionals: [dish],
+    values: { out },
+  } = parseArgs({ allowPositionals: true, options: { out: { type: 'string' } } });
   if (!dish) {
     console.error('usage: read-dish.mjs "<dish>" [--out path]');
     process.exit(2);
   }
-  const flag = rest.indexOf('--out');
-  const out = flag === -1 ? undefined : rest[flag + 1];
 
   const { record } = await readDish(dish);
   const json = `${JSON.stringify(record, null, 2)}\n`;

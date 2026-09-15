@@ -14,7 +14,7 @@
 // same convention as a code comment. URLs, same-page anchors and fenced code
 // are skipped; a link's `#fragment` is dropped before resolving.
 
-import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 
@@ -44,21 +44,18 @@ export function extractDocPaths(comment) {
 /** Every { file, ref } where a comment cites a path that does not exist. */
 export function findDanglingDocPaths(repoRoot, roots = SOURCE_ROOTS) {
   const dangling = [];
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir)) {
-      const full = join(dir, entry);
-      if (statSync(full).isDirectory()) walk(full);
-      else if (/\.(ts|tsx)$/.test(entry)) {
-        const text = readFileSync(full, 'utf8');
-        for (const comment of extractComments(text)) {
-          for (const ref of extractDocPaths(comment)) {
-            if (!existsSync(join(repoRoot, ref))) dangling.push({ file: full, ref });
-          }
+  for (const root of roots) {
+    const dir = join(repoRoot, root);
+    for (const entry of readdirSync(dir, { recursive: true })) {
+      if (!/\.(ts|tsx)$/.test(entry)) continue;
+      const file = join(dir, entry);
+      for (const comment of extractComments(readFileSync(file, 'utf8'))) {
+        for (const ref of extractDocPaths(comment)) {
+          if (!existsSync(join(repoRoot, ref))) dangling.push({ file, ref });
         }
       }
     }
-  };
-  for (const root of roots) walk(join(repoRoot, root));
+  }
   return dangling;
 }
 

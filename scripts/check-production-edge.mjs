@@ -20,6 +20,7 @@
 // reports the fixed-Melbourne performance gate.
 
 import { createHash } from 'node:crypto';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -206,12 +207,6 @@ export function assertNonHtmlBypass(label, headers, { proxied }) {
   }
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function headerMap(headers) {
-  return Object.fromEntries([...headers].map(([name, value]) => [name.toLowerCase(), value]));
-}
-
 async function request(url, { accept = 'text/html', cookie = null, expect = 200, method = 'GET' } = {}) {
   const headers = { accept };
   if (cookie) {
@@ -223,7 +218,7 @@ async function request(url, { accept = 'text/html', cookie = null, expect = 200,
   if (response.status !== expect) {
     throw new Error(`${method} ${url} returned ${response.status}, expected ${expect}`);
   }
-  const map = headerMap(response.headers);
+  const map = Object.fromEntries(response.headers);
   return {
     url,
     headers: map,

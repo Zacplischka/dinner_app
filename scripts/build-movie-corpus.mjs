@@ -26,6 +26,7 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const OUT = join(here, '..', 'backend', 'movies', 'movies.json');
@@ -36,7 +37,6 @@ const FLOOR = '1950-01-01';
 export const TARGETS = { movie: 5000, tv: 1000 };
 /** TV genres a table does not sit down to, excluded at the query: News, Reality, Soap, Talk. */
 const TV_EXCLUDED_GENRE_IDS = '10763,10764,10766,10767';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const chunk = (a, n) =>
   Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, (i + 1) * n));
 
