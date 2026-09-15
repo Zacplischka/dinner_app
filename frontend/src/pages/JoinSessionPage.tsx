@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import NavigationHeader from '../components/NavigationHeader';
+import { ErrorNote } from '../components/Notice';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
 import { validateDisplayName } from '../utils/displayName';
@@ -258,9 +259,9 @@ function JoinInvitation() {
 
           {/* Error message */}
           {error && (
-            <div role="alert" className="p-3 bg-coral/10 border border-coral/30 rounded-xl">
-              <p className="text-sm text-coral-soft">{error}</p>
-            </div>
+            <ErrorNote role="alert" className="p-3">
+              {error}
+            </ErrorNote>
           )}
 
           {/* Submit Button */}

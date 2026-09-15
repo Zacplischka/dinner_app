@@ -1,4 +1,5 @@
 import ProfileAvatar from '../ProfileAvatar';
+import { ErrorNote } from '../Notice';
 // AddFriendModal Component
 // Modal to search for users and send friend requests
 
@@ -116,11 +117,7 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
           </form>
 
           {/* Error message */}
-          {error && (
-            <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
-              <p className="text-sm text-coral-soft">{error}</p>
-            </div>
-          )}
+          {error && <ErrorNote className="mb-4 p-3">{error}</ErrorNote>}
 
           {/* Success message */}
           {successMessage && (

@@ -4,7 +4,7 @@ import { Suspense, lazy, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router';
 import ToastProvider from './components/Toast/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
-import Spinner, { LoadingAnnouncer } from './components/Spinner';
+import { LoadingAnnouncer, LoadingFallback } from './components/Spinner';
 import { useRouteAnnouncement } from './hooks/useRouteAnnouncement';
 import RequireSession from './components/RequireSession';
 import { useSessionStore } from './stores/sessionStore';
@@ -29,18 +29,6 @@ const WatchSetupPage = lazy(() => import('./pages/WatchSetupPage'));
 const ShoppingListPage = lazy(() => import('./pages/ShoppingListPage'));
 const CookViewPage = lazy(() => import('./pages/CookViewPage'));
 const NativeLifecycle = lazy(() => import('./components/NativeLifecycle'));
-
-// Loading fallback component - matches dark theme
-function LoadingFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-ink">
-      <div className="text-center">
-        <Spinner size="xl" className="text-cyan" label="Loading…" />
-        <p className="mt-4 text-muted font-body">Loading…</p>
-      </div>
-    </div>
-  );
-}
 
 // Routes wrapper - provides smooth page transitions
 function AnimatedRoutes() {

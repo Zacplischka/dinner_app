@@ -18,6 +18,7 @@ import { useShareLink } from '../hooks/useShareLink';
 import { useToast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
 import NavigationHeader from '../components/NavigationHeader';
+import { ErrorNote } from '../components/Notice';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import LobbyChoices from '../components/LobbyChoices';
 import Spinner from '../components/Spinner';
@@ -336,13 +337,9 @@ export default function SessionLobbyPage() {
               </p>
             )}
             {error && (
-              <p
-                ref={errorRef}
-                role="alert"
-                className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
-              >
+              <ErrorNote ref={errorRef} role="alert" className="p-3">
                 {error}
-              </p>
+              </ErrorNote>
             )}
             {lobby?.state === 'waiting' && me && (
               <div className="space-y-3">

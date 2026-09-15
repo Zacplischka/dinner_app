@@ -9,7 +9,7 @@ import FriendsList from '../components/friends/FriendsList';
 import FriendRequestCard from '../components/friends/FriendRequestCard';
 import SessionInviteCard from '../components/friends/SessionInviteCard';
 import AddFriendModal from '../components/friends/AddFriendModal';
-import Spinner from '../components/Spinner';
+import Spinner, { LoadingFallback } from '../components/Spinner';
 import NavigationHeader from '../components/NavigationHeader';
 
 function LoadingCard({ label }: { label: string }) {
@@ -75,16 +75,7 @@ export default function FriendsPage() {
     }
   }, [isAuthenticated, fetchFriends, fetchFriendRequests, fetchSessionInvites]);
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-ink">
-        <div className="text-center">
-          <Spinner size="lg" className="text-cyan" label="Loading…" />
-          <p className="mt-4 text-muted">Loading…</p>
-        </div>
-      </div>
-    );
-  }
+  if (authLoading) return <LoadingFallback />;
 
   if (!isAuthenticated) {
     return null;

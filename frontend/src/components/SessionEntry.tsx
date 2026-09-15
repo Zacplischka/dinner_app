@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Branch } from '@dinder/shared/types';
 import NavigationHeader from './NavigationHeader';
+import { ErrorNote } from './Notice';
 import TmdbCredit from './TmdbCredit';
 import Spinner from './Spinner';
 import { useProfileName } from '../hooks/useProfileName';
@@ -95,12 +96,9 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
             </p>
           )}
           {error && (
-            <p
-              role="alert"
-              className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
-            >
+            <ErrorNote role="alert" className="p-3">
               {error}
-            </p>
+            </ErrorNote>
           )}
           <button
             type="submit"

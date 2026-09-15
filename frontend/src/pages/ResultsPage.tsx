@@ -11,6 +11,8 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useOrderStore } from '../stores/orderStore';
 import { useEffect, useMemo, useState } from 'react';
 import NavigationHeader from '../components/NavigationHeader';
+import { DisclosureChevron, ShareIcon, StarRating } from '../components/icons';
+import { ErrorNote } from '../components/Notice';
 import RetryingPhoto from '../components/RetryingPhoto';
 import { useShareLink } from '../hooks/useShareLink';
 import TmdbCredit from '../components/TmdbCredit';
@@ -175,14 +177,7 @@ function MatchCard({
 
       <div className="mt-2 space-y-2">
         <div className="flex items-center space-x-3 text-sm">
-          {restaurant.rating !== undefined && (
-            <span className="flex items-center text-amber gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              {restaurant.rating.toFixed(1)}
-            </span>
-          )}
+          {restaurant.rating !== undefined && <StarRating rating={restaurant.rating} />}
           {restaurant.priceLevel !== undefined && (
             <span className="text-muted font-medium">
               {formatPriceLevel(restaurant.priceLevel)}
@@ -624,14 +619,7 @@ export default function ResultsPage() {
               title="Share Top Pick"
               aria-label="Share Top Pick"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                />
-              </svg>
+              <ShareIcon />
             </button>
           )
         }
@@ -740,19 +728,7 @@ export default function ResultsPage() {
                 <details className="card group mb-6 mt-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
                     Other matches ({overlappingOptions.length - 1})
-                    <svg
-                      className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                      />
-                    </svg>
+                    <DisclosureChevron />
                   </summary>
                   <div className="mt-4 space-y-4">
                     {overlappingOptions
@@ -827,12 +803,7 @@ export default function ResultsPage() {
                   <div className="mt-2 space-y-2">
                     {restaurant.rating !== undefined && (
                       <div className="flex items-center space-x-3 text-sm">
-                        <span className="flex items-center text-amber gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          {restaurant.rating.toFixed(1)}
-                        </span>
+                        <StarRating rating={restaurant.rating} />
                       </div>
                     )}
                     {/* Nothing to order or compare about a dish you cook, and an
@@ -857,19 +828,7 @@ export default function ResultsPage() {
           <details data-unanimous-selections className="card group mb-6">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-muted transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
               See everyone&apos;s selections
-              <svg
-                className="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 8.25l-7.5 7.5-7.5-7.5"
-                />
-              </svg>
+              <DisclosureChevron />
             </summary>
             <div className="mt-4">
               <SelectionsList
@@ -895,11 +854,7 @@ export default function ResultsPage() {
         )}
 
         {/* Error message */}
-        {error && !allPassed && (
-          <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
-            <p className="text-sm text-coral-soft">{error}</p>
-          </div>
-        )}
+        {error && !allPassed && <ErrorNote className="mb-4 p-3">{error}</ErrorNote>}
 
         {/* Action Buttons */}
         <div className="space-y-3">

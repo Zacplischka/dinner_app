@@ -15,9 +15,11 @@ import { useSessionStore } from '../stores/sessionStore';
 import SwipeCard from '../components/SwipeCard';
 import DeckEntryDetails from '../components/DeckEntryDetails';
 import NavigationHeader from '../components/NavigationHeader';
+import { HeartIcon, ShareIcon } from '../components/icons';
+import { ErrorNote } from '../components/Notice';
 import type { DeckEntry } from '@dinder/shared/types';
 import { participantRingClass } from '../utils/participantStyles';
-import Spinner from '../components/Spinner';
+import Spinner, { LoadingFallback } from '../components/Spinner';
 import SocialMoment from '../components/SocialMoment';
 
 interface LiveRevealInput {
@@ -416,20 +418,7 @@ function SelectionRound() {
       aria-label="Invite to session"
       title="Invite to session"
     >
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 12.632a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-        />
-      </svg>
+      <ShareIcon />
     </button>
   ) : null;
 
@@ -477,16 +466,7 @@ function SelectionRound() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [deckLive, isDone, canUndo, handleSwipeLeft, handleSwipeRight, handleUndo]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-ink">
-        <div className="text-center">
-          <Spinner size="xl" className="text-cyan" label={`Finding ${deckNoun}s…`} />
-          <p className="mt-4 text-muted font-display text-lg">Finding {deckNoun}s…</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingFallback label={`Finding ${deckNoun}s…`} />;
 
   if (hasSubmitted) {
     // The submit ack lands before the participant:submitted echo, so for one
@@ -643,11 +623,7 @@ function SelectionRound() {
                 {selections.length !== 1 ? 's' : ''}
               </p>
 
-              {error && (
-                <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
-                  <p className="text-sm text-coral-soft">{error}</p>
-                </div>
-              )}
+              {error && <ErrorNote className="mb-4 p-3">{error}</ErrorNote>}
 
               <button
                 onClick={handleSubmit}
@@ -712,9 +688,7 @@ function SelectionRound() {
               role="status"
               aria-label={`${selections.length} liked`}
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-              </svg>
+              <HeartIcon />
               <span className="font-semibold">{selections.length}</span>
             </div>
           </div>
@@ -792,13 +766,7 @@ function SelectionRound() {
                 }`}
               >
                 {lastAction === 'like' ? (
-                  <svg
-                    className="w-12 h-12 text-lime animate-heart-pop"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                  </svg>
+                  <HeartIcon className="w-12 h-12 text-lime animate-heart-pop" />
                 ) : (
                   <svg
                     className="w-12 h-12 text-coral-strong"
@@ -911,9 +879,7 @@ function SelectionRound() {
           <div className="card w-full max-w-sm text-center animate-fade-in">
             <div className="mb-3 flex justify-center gap-1" aria-hidden="true">
               {[0, 1, 2].map((i) => (
-                <svg key={i} className="w-8 h-8 text-lime" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                </svg>
+                <HeartIcon key={i} className="w-8 h-8 text-lime" />
               ))}
             </div>
             <h2 id="full-house-title" className="text-2xl font-display font-black text-lime mb-3">
@@ -924,11 +890,7 @@ function SelectionRound() {
             </p>
             <p className="text-muted mb-6">Lock it in now, or keep going for more.</p>
 
-            {error && (
-              <div className="mb-4 p-3 bg-coral/10 border border-coral/30 rounded-xl">
-                <p className="text-sm text-coral-soft">Could not submit — try again</p>
-              </div>
-            )}
+            {error && <ErrorNote className="mb-4 p-3">Could not submit — try again</ErrorNote>}
 
             <button
               onClick={handleSubmit}

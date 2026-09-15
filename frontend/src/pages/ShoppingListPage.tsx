@@ -15,6 +15,8 @@ import {
   type ShoppingListLine,
 } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
+import { ShareIcon } from '../components/icons';
+import { ErrorNote } from '../components/Notice';
 import { useShareLink } from '../hooks/useShareLink';
 import { useShoppingList } from '../hooks/useShoppingList';
 import {
@@ -364,20 +366,7 @@ export default function ShoppingListPage() {
                 aria-label="Share shopping list"
                 title="Share shopping list"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 12.632a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                  />
-                </svg>
+                <ShareIcon />
               </button>
               <Link
                 to={`/list/${list.listId}/cook`}
@@ -391,11 +380,7 @@ export default function ShoppingListPage() {
       />
 
       <div className="mx-auto max-w-2xl px-4 py-6 animate-fade-in">
-        {error && (
-          <div className="mb-6 rounded-xl border border-coral/30 bg-coral/10 p-4">
-            <p className="text-sm text-coral-soft">{error}</p>
-          </div>
-        )}
+        {error && <ErrorNote className="mb-6 p-4">{error}</ErrorNote>}
 
         {!list && !error && (
           <div className="card p-8 text-center">

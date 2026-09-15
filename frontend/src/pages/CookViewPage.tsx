@@ -11,6 +11,7 @@ import { nativeStateStorage } from '../services/nativeStorage';
 import { toast } from '../hooks/useToast';
 import { useNavigate, useParams } from 'react-router';
 import NavigationHeader from '../components/NavigationHeader';
+import { ErrorNote } from '../components/Notice';
 import { useShoppingList } from '../hooks/useShoppingList';
 import { useWakeLock } from '../hooks/useWakeLock';
 import Spinner from '../components/Spinner';
@@ -155,11 +156,7 @@ export default function CookViewPage() {
       />
 
       <div className="mx-auto max-w-2xl px-4 py-6 animate-fade-in">
-        {error && (
-          <div className="rounded-xl border border-coral/30 bg-coral/10 p-4">
-            <p className="text-sm text-coral-soft">{error}</p>
-          </div>
-        )}
+        {error && <ErrorNote className="p-4">{error}</ErrorNote>}
 
         {!list && !error && (
           <div className="card p-8 text-center">
