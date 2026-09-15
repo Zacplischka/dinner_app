@@ -452,6 +452,15 @@ export function createSessionStore(redis: Redis) {
     return claimed === 1;
   }
 
+  /** A Participant's lobby choices as hash fields, JSON-encoded; absent ones left out. */
+  function choiceFields(choices: Partial<LobbyParticipant>): Record<string, string> {
+    const fields: Record<string, string> = {};
+    for (const field of ['ready', 'waitingForNextRound', 'mood', 'cuisines', 'diets'] as const) {
+      if (choices[field] !== undefined) fields[field] = JSON.stringify(choices[field]);
+    }
+    return fields;
+  }
+
   /** Adds a Participant and returns the new participant set size. Touches TTL. */
   async function addParticipant(
     sessionCode: string,
@@ -483,10 +492,7 @@ export function createSessionStore(redis: Redis) {
       avatarUrl: participant.avatarUrl ?? '',
     };
     if (rejoinToken) participantData.rejoinToken = rejoinToken;
-    for (const field of ['ready', 'waitingForNextRound', 'mood', 'cuisines', 'diets'] as const) {
-      if (participant[field] !== undefined)
-        participantData[field] = JSON.stringify(participant[field]);
-    }
+    Object.assign(participantData, choiceFields(participant));
     pipeline.hset(participantKey(participantId), participantData);
     await pipeline.exec();
 
@@ -845,10 +851,7 @@ export function createSessionStore(redis: Redis) {
     participantId: string,
     choices: Partial<LobbyParticipant>
   ): Promise<void> {
-    const fields: Record<string, string> = {};
-    for (const field of ['ready', 'waitingForNextRound', 'mood', 'cuisines', 'diets'] as const) {
-      if (choices[field] !== undefined) fields[field] = JSON.stringify(choices[field]);
-    }
+    const fields = choiceFields(choices);
     if (Object.keys(fields).length) await redis.hset(participantKey(participantId), fields);
   }
 
