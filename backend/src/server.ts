@@ -40,12 +40,12 @@ import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
 import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { asyncHandler } from './api/asyncHandler.js';
 import { resolveSessionAvatar } from './websocket/socketAuth.js';
 
 import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Allowed origins for CORS (supports multiple origins for dev + production)
 const allowedOrigins = [
@@ -56,8 +56,8 @@ const allowedOrigins = [
   'https://dinder.it.com',
   'https://yupcrew.com',
   'https://www.yupcrew.com',
-  FRONTEND_URL,
-].filter(Boolean);
+  config.frontendUrl,
+];
 
 // Composition root: the only place production stores and services are
 // constructed. Everything else receives them by injection.
@@ -127,19 +127,7 @@ const app = express();
 app.set('trust proxy', 1); // Railway terminates requests at one edge proxy.
 
 // Middleware
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-  })
-);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 // Request logging: request IDs, per-request child loggers (req.log).
 // Must precede express.json() so body-parse errors still get an X-Request-Id.
 app.use(
@@ -202,15 +190,16 @@ app.use('/api/lists', createListsRouter(shoppingListService));
 app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes
 
 // Health check endpoint
-app.get('/health', (_req, res) => {
-  void (async () => {
+app.get(
+  '/health',
+  asyncHandler(async (_req, res) => {
     const redisHealthy = await pingRedis();
     res.status(redisHealthy ? 200 : 503).json({
       status: redisHealthy ? 'healthy' : 'unhealthy',
       redis: redisHealthy,
     });
-  })();
-});
+  })
+);
 
 // Global error safety net (must come after all routes)
 app.use(errorHandler);
@@ -342,26 +331,20 @@ io.on('connection', (socket) => {
   });
 });
 
-// Startup validation
-async function validateStartup(): Promise<void> {
-  // Validate Redis connection
-  const redisHealthy = await pingRedis();
-  if (!redisHealthy) {
-    throw new Error('Redis connection failed');
-  }
-  logger.info('Redis connection validated');
-}
-
 // Start server
 async function startServer() {
   try {
-    await validateStartup();
+    if (!(await pingRedis())) throw new Error('Redis connection failed');
+    logger.info('Redis connection validated');
 
     // Initialize session expiry notifier
     await initializeSessionExpiryNotifier(io);
 
     httpServer.listen(PORT, () => {
-      logger.info({ port: PORT, frontendUrl: FRONTEND_URL }, 'Server running, WebSocket ready');
+      logger.info(
+        { port: PORT, frontendUrl: config.frontendUrl },
+        'Server running, WebSocket ready'
+      );
     });
   } catch (error) {
     logger.error({ err: error }, 'Server startup failed');
