@@ -24,12 +24,10 @@ import type {
   DeckEntry,
   Diet,
   MealType,
-  NearestCraving,
   Recipe,
 } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
-import { relaxationLadder } from './cuisineGroups.js';
 import { satisfiedDiets, type OwnedRecipeStore } from './ownedRecipeStore.js';
 import { SpoonacularRefusal } from './spoonacularClient.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
@@ -180,13 +178,6 @@ export interface RecipePoolService {
     current: DeckEntry[],
     deckSize?: number
   ): Promise<DealtDeck>;
-  /**
-   * The Nearest Craving to offer a Craving that dealt nothing (#334), or null
-   * when even the widest step of the ladder is empty. Priced from the corpus in
-   * memory plus whatever pools are already warm — never a vendor call, so an
-   * offer costs nothing to make and none of it can fail.
-   */
-  nearestCraving(craving: Craving): Promise<NearestCraving | null>;
   /**
    * A Restart's Deck (#246, #260): a fresh cut of the pool `current` was dealt
    * from. A pool that has aged out degrades to reshuffling `current` rather
@@ -488,19 +479,6 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
         entries: shuffle(picked.map(toDeckEntry)),
         recipeSourceDown: sourceDown && picked.length < deckSize,
       };
-    },
-
-    async nearestCraving(craving: Craving): Promise<NearestCraving | null> {
-      for (const step of relaxationLadder(craving)) {
-        // `readPool`, never `sourcedSupply`: a cold pool prices as the zero it
-        // is rather than filling itself from the vendor. What the offer is
-        // worth is what is already here — the corpus, and the pools tonight's
-        // other Sessions have warmed.
-        const pooled = await readPool(cravingPoolKey(step.craving));
-        const recipeCount = deps.owned.forCraving(step.craving).length + (pooled?.length ?? 0);
-        if (recipeCount > 0) return { ...step, recipeCount };
-      }
-      return null;
     },
 
     async redeal(
