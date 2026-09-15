@@ -11,8 +11,6 @@ import { test, expect } from './fixtures/test-fixtures';
  */
 
 test.describe('Mobile Layout - Home Page', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('all content fits within mobile viewport', async ({ homePage }) => {
     await homePage.goto();
 
@@ -54,8 +52,6 @@ test.describe('Mobile Layout - Home Page', () => {
 });
 
 test.describe('Mobile Layout - Create Session Page', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('form is centered and properly padded', async ({ createPage }) => {
     await createPage.goto();
 
@@ -91,8 +87,6 @@ test.describe('Mobile Layout - Create Session Page', () => {
 });
 
 test.describe('Mobile Layout - Join Session Page', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('session code input is prominent', async ({ joinPage }) => {
     await joinPage.goto();
 
@@ -105,8 +99,6 @@ test.describe('Mobile Layout - Join Session Page', () => {
 });
 
 test.describe('Mobile Touch Interactions', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
-
   test('buttons respond to touch', async ({ page, homePage }) => {
     await homePage.goto();
 
@@ -169,8 +161,6 @@ test.describe('Mobile - Landscape Orientation', () => {
 });
 
 test.describe('Mobile - Performance', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('page loads quickly on mobile', async ({ page: _page, homePage }) => {
     const startTime = Date.now();
     await homePage.goto();

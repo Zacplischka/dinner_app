@@ -28,7 +28,7 @@ test.describe('Watch Branch', () => {
     await expect(selectionPage.heading).toHaveText('Choose something to watch');
     await expect(selectionPage.swipeCard.first()).toBeVisible();
     await expect(selectionPage.scoreBadge.first()).toBeVisible();
-    for (const width of info.project.name === 'chromium' ? [1280] : [390, 320]) {
+    for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 844 });
       await expect(selectionPage.heading).toBeInViewport({ ratio: 1 });
       expect(
