@@ -25,8 +25,7 @@ test.describe('Accessibility - Home Page', () => {
     await homePage.goto();
     await expect(homePage.heading).toBeVisible();
 
-    const result = await checkAccessibility(page);
-    expect(result.issues).toEqual([]);
+    expect(await checkAccessibility(page)).toEqual([]);
   });
 
   test('focus is visible on interactive elements', async ({ page, homePage }) => {
@@ -159,8 +158,7 @@ test.describe('Accessibility - Screen Reader Support', () => {
       await expect(page.getByRole('main')).toBeVisible();
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-      const result = await checkAccessibility(page);
-      expect(result.issues).toEqual([]);
+      expect(await checkAccessibility(page)).toEqual([]);
     });
   }
 
