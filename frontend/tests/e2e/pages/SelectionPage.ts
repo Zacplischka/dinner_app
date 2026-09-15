@@ -20,12 +20,8 @@ export class SelectionPage {
     this.heading = page.locator('header').getByRole('heading').first();
     this.swipeCard = page.locator('[data-swipe-card]');
     this.scoreBadge = this.swipeCard.getByText(/\d+% on TMDB/);
-    this.likeButton = page
-      .getByRole('button', { name: /Like/i })
-      .or(page.locator('button[aria-label="Like"]'));
-    this.passButton = page
-      .getByRole('button', { name: /Pass|Nope/i })
-      .or(page.locator('button[aria-label="Pass"]'));
+    this.likeButton = page.getByRole('button', { name: /Like/i });
+    this.passButton = page.getByRole('button', { name: /Pass|Nope/i });
     this.submitButton = page.getByRole('button', { name: /Submit/i });
 
     // The waiting screen's heading, not a /Waiting for/ text match: any other
