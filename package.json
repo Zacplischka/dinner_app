@@ -35,9 +35,13 @@
   "license": "MIT",
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
-    "@vitest/coverage-v8": "~4.1.11",
+    "@typescript-eslint/eslint-plugin": "~8.39.0",
+    "@typescript-eslint/parser": "~8.39.0",
+    "eslint": "^8.56.0",
     "fallow": "^3.3.0",
-    "typescript": "5.9.3"
+    "prettier": "^3.1.1",
+    "typescript": "5.9.3",
+    "vitest": "~4.1.11"
   },
   "overrides": {
     "express": {
