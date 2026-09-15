@@ -16,16 +16,16 @@ test.describe('Mobile Layout - Home Page', () => {
   test('all content fits within mobile viewport', async ({ homePage }) => {
     await homePage.goto();
 
+    // Verify main elements are visible without scrolling
+    await expect(homePage.heading).toBeVisible();
+    await expect(homePage.eatOutCard).toBeVisible();
+    await expect(homePage.joinLink).toBeVisible();
+
     // Verify no horizontal scroll
     const hasHorizontalScroll = await homePage.page.evaluate(() => {
       return document.documentElement.scrollWidth > document.documentElement.clientWidth;
     });
     expect(hasHorizontalScroll).toBe(false);
-
-    // Verify main elements are visible without scrolling
-    await expect(homePage.heading).toBeVisible();
-    await expect(homePage.eatOutCard).toBeVisible();
-    await expect(homePage.joinLink).toBeVisible();
   });
 
   test('buttons are properly sized for touch (min 44x44)', async ({ homePage }) => {
@@ -183,6 +183,7 @@ test.describe('Mobile - Performance', () => {
   test('page loads quickly on mobile', async ({ page: _page, homePage }) => {
     const startTime = Date.now();
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
     const loadTime = Date.now() - startTime;
 
     // Should load within 3 seconds
@@ -191,6 +192,7 @@ test.describe('Mobile - Performance', () => {
 
   test('no layout shift during load', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
     // Check Cumulative Layout Shift
     const cls = await page.evaluate(() => {

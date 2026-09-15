@@ -1,12 +1,11 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * SelectionPage - Page object for Tinder-style Deck selection (Restaurants, Recipes or Movies)
  *
  * Routes: /session/:sessionCode/select
  */
-export class SelectionPage extends BasePage {
+export class SelectionPage {
   readonly heading: Locator;
   readonly swipeCard: Locator;
   readonly scoreBadge: Locator;
@@ -18,9 +17,7 @@ export class SelectionPage extends BasePage {
   readonly finishHereButton: Locator;
   readonly progress: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.heading = page.locator('header').getByRole('heading').first();
     this.swipeCard = page.locator('[data-swipe-card]');
     this.scoreBadge = this.swipeCard.getByText(/\d+% on TMDB/);

@@ -1,12 +1,11 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * CreateSessionPage - Page object for session creation
  *
  * Routes: /create
  */
-export class CreateSessionPage extends BasePage {
+export class CreateSessionPage {
   readonly heading: Locator;
   readonly nameInput: Locator;
   readonly nameCharacterCount: Locator;
@@ -14,9 +13,7 @@ export class CreateSessionPage extends BasePage {
   readonly backButton: Locator;
   readonly useMyLocationButton: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.heading = page.getByRole('heading', { name: /New session|Eat out|Order in/i });
     this.nameInput = page.getByLabel(/Your Name/i);
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
@@ -27,7 +24,6 @@ export class CreateSessionPage extends BasePage {
 
   async goto(): Promise<void> {
     await this.page.goto('/create');
-    await this.waitForPageLoad();
   }
 
   /**

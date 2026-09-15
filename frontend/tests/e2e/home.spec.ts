@@ -38,16 +38,6 @@ test.describe('Home Page', () => {
     await homePage.goto();
     await homePage.verifyButtonsEnabled();
   });
-
-  test('should display mobile-friendly layout', async ({ homePage }) => {
-    await homePage.setMobileViewport();
-    await homePage.goto();
-
-    // Verify content is visible in mobile viewport
-    await expect(homePage.heading).toBeVisible();
-    await expect(homePage.eatOutCard).toBeVisible();
-    await expect(homePage.joinLink).toBeVisible();
-  });
 });
 
 test('home remains usable with failed images, reduced motion and narrow screens', async ({

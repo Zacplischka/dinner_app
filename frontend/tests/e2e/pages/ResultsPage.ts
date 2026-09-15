@@ -1,20 +1,17 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * ResultsPage - Page object for session results display
  *
  * Routes: /session/:sessionCode/results
  */
-export class ResultsPage extends BasePage {
+export class ResultsPage {
   readonly restaurantCards: Locator;
   readonly noMatchesMessage: Locator;
   readonly startNewSessionButton: Locator;
   readonly goHomeButton: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.restaurantCards = page.locator('[data-match-card]');
     this.noMatchesMessage = page.getByText(/everyone liked|No matches|No overlaps|Try again/i);
     this.startNewSessionButton = page.getByRole('button', {

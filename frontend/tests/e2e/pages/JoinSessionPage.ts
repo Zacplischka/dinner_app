@@ -1,21 +1,18 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * JoinSessionPage - Page object for joining existing sessions
  *
  * Routes: /join
  */
-export class JoinSessionPage extends BasePage {
+export class JoinSessionPage {
   readonly heading: Locator;
   readonly sessionCodeInput: Locator;
   readonly nameInput: Locator;
   readonly joinButton: Locator;
   readonly backButton: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.heading = page.getByRole('heading', { name: /Join a session/i });
     this.sessionCodeInput = page.getByLabel(/Session code/i);
     this.nameInput = page.getByLabel(/Your Name/i);
@@ -25,7 +22,6 @@ export class JoinSessionPage extends BasePage {
 
   async goto(): Promise<void> {
     await this.page.goto('/join');
-    await this.waitForPageLoad();
   }
 
   /**

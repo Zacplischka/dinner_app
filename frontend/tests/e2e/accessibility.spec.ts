@@ -23,6 +23,7 @@ test.describe('Accessibility - Home Page', () => {
 
   test('page passes accessibility checks', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
     const result = await checkAccessibility(page);
     expect(result.issues).toEqual([]);
@@ -30,6 +31,7 @@ test.describe('Accessibility - Home Page', () => {
 
   test('focus is visible on interactive elements', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
     // Tab through elements and verify focus visibility
     await page.keyboard.press('Tab');
@@ -102,6 +104,7 @@ test.describe('Accessibility - Join Session Page', () => {
 test.describe('Accessibility - Keyboard Navigation', () => {
   test('can navigate entire home page with keyboard', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
     // Tab through all interactive elements
     const interactiveElements: string[] = [];

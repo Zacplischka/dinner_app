@@ -1,19 +1,16 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * SessionLobbyPage - Page object for session waiting room
  *
  * Routes: /session/:sessionCode
  */
-export class SessionLobbyPage extends BasePage {
+export class SessionLobbyPage {
   readonly participantsList: Locator;
   readonly startButton: Locator;
   readonly leaveButton: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.participantsList = page
       .locator('[data-testid="participants-list"]')
       .or(page.locator('[class*="participants"]'));

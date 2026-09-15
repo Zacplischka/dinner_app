@@ -1,5 +1,4 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * HomePage - Page object for the entry fork (#255)
@@ -8,7 +7,7 @@ import { BasePage } from './BasePage';
  * `/` explains the shared choice with four Branch cards; Join-with-code and
  * Compare are prominent actions.
  */
-export class HomePage extends BasePage {
+export class HomePage {
   readonly heading: Locator;
   readonly eatOutCard: Locator;
   readonly takeawayCard: Locator;
@@ -19,9 +18,7 @@ export class HomePage extends BasePage {
   readonly eatOutDescription: Locator;
   readonly guestModeText: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.heading = page.getByRole('heading', { name: /What are we doing tonight/i });
     this.eatOutCard = page.getByRole('button', { name: /Eat out/i });
     this.takeawayCard = page.getByRole('button', { name: /Order in/i });
@@ -35,7 +32,6 @@ export class HomePage extends BasePage {
 
   async goto(): Promise<void> {
     await this.page.goto('/');
-    await this.waitForPageLoad();
   }
 
   /**
