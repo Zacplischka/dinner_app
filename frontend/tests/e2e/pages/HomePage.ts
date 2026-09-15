@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 /**
  * HomePage - Page object for the entry fork (#255)
@@ -32,54 +32,5 @@ export class HomePage {
 
   async goto(): Promise<void> {
     await this.page.goto('/');
-  }
-
-  /**
-   * Pick the Eat Out Branch card and land on the create flow
-   */
-  async clickCreateSession(): Promise<void> {
-    await this.eatOutCard.click();
-    await this.page.waitForURL(/\/create/);
-  }
-
-  /**
-   * Pick the Watch Branch card and land on the Mood setup (#369)
-   */
-  async clickWatch(): Promise<void> {
-    await this.watchCard.click();
-    await this.page.waitForURL(/\/watch/);
-  }
-
-  /**
-   * Open Join with a code from the text row
-   */
-  async clickJoinSession(): Promise<void> {
-    await this.joinLink.click();
-    await this.page.waitForURL(/\/join/);
-  }
-
-  /**
-   * Verify all expected elements are visible
-   */
-  async verifyPageElements(): Promise<void> {
-    await expect(this.heading).toBeVisible();
-    await expect(this.eatOutCard).toBeVisible();
-    await expect(this.takeawayCard).toBeVisible();
-    await expect(this.cookCard).toBeVisible();
-    await expect(this.watchCard).toBeVisible();
-    await expect(this.joinLink).toBeVisible();
-    await expect(this.compareLink).toBeVisible();
-    await expect(this.guestModeText).toBeVisible();
-  }
-
-  /**
-   * Verify buttons are enabled and clickable
-   */
-  async verifyButtonsEnabled(): Promise<void> {
-    await expect(this.eatOutCard).toBeEnabled();
-    await expect(this.takeawayCard).toBeEnabled();
-    await expect(this.cookCard).toBeEnabled();
-    await expect(this.watchCard).toBeEnabled();
-    await expect(this.joinLink).toBeEnabled();
   }
 }

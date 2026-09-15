@@ -12,7 +12,8 @@ import { SelectionPage, SessionLobbyPage } from './pages';
 test.describe('Watch Branch', () => {
   test('deals a Movie Deck from a Mood', async ({ homePage, watchPage, page }, info) => {
     await homePage.goto();
-    await homePage.clickWatch();
+    await homePage.watchCard.click();
+    await expect(page).toHaveURL(/\/watch/);
     await expect(watchPage.heading).toBeVisible();
 
     await watchPage.enterName('Host');

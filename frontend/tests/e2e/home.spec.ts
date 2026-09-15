@@ -16,27 +16,38 @@ test.describe('Home Page', () => {
   test('should display welcome screen with navigation options', async ({ homePage }) => {
     await homePage.goto();
 
-    // Verify all key elements using page object
-    await homePage.verifyPageElements();
+    await expect(homePage.heading).toBeVisible();
+    await expect(homePage.eatOutCard).toBeVisible();
+    await expect(homePage.takeawayCard).toBeVisible();
+    await expect(homePage.cookCard).toBeVisible();
+    await expect(homePage.watchCard).toBeVisible();
+    await expect(homePage.joinLink).toBeVisible();
+    await expect(homePage.compareLink).toBeVisible();
+    await expect(homePage.guestModeText).toBeVisible();
   });
 
   test('should navigate to create session page', async ({ homePage, page }) => {
     await homePage.goto();
-    await homePage.clickCreateSession();
+    await homePage.eatOutCard.click();
 
     await expect(page).toHaveURL(/\/create/);
   });
 
   test('should navigate to join session page', async ({ homePage, page }) => {
     await homePage.goto();
-    await homePage.clickJoinSession();
+    await homePage.joinLink.click();
 
     await expect(page).toHaveURL(/\/join/);
   });
 
   test('should have accessible button elements', async ({ homePage }) => {
     await homePage.goto();
-    await homePage.verifyButtonsEnabled();
+
+    await expect(homePage.eatOutCard).toBeEnabled();
+    await expect(homePage.takeawayCard).toBeEnabled();
+    await expect(homePage.cookCard).toBeEnabled();
+    await expect(homePage.watchCard).toBeEnabled();
+    await expect(homePage.joinLink).toBeEnabled();
   });
 });
 
