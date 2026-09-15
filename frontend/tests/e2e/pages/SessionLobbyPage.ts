@@ -11,26 +11,9 @@ export class SessionLobbyPage {
   readonly leaveButton: Locator;
 
   constructor(readonly page: Page) {
-    this.participantsList = page
-      .locator('[data-testid="participants-list"]')
-      .or(page.locator('[class*="participants"]'));
+    this.participantsList = page.locator('[data-testid="participants-list"]');
     this.startButton = page.getByRole('button', { name: /Start/i });
     this.leaveButton = page.getByRole('button', { name: /Back|Leave|Exit/i });
-  }
-
-  /**
-   * Get list of participant names
-   */
-  async getParticipants(): Promise<string[]> {
-    const participantElements = await this.participantsList
-      .locator('[data-testid="participant-name"]')
-      .all();
-    const names: string[] = [];
-    for (const el of participantElements) {
-      const name = await el.textContent();
-      if (name) names.push(name.trim());
-    }
-    return names;
   }
 
   /**

@@ -32,8 +32,9 @@ test.describe('Multi-Participant Session Flow', () => {
     }
 
     // Verify host can see all participants
-    const participantNames = await host.lobbyPage.getParticipants();
-    expect(participantNames.length).toBeGreaterThanOrEqual(all.length);
+    await expect(
+      host.lobbyPage.participantsList.locator('[data-testid="participant-name"]')
+    ).toHaveCount(all.length);
   });
 
   test('host can start session and all move to selection', async ({ setupSession }) => {
