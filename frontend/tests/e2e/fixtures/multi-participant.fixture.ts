@@ -1,5 +1,4 @@
 import { test as base, Page, BrowserContext } from '@playwright/test';
-import { HomePage } from '../pages/HomePage';
 import { CreateSessionPage } from '../pages/CreateSessionPage';
 import { JoinSessionPage } from '../pages/JoinSessionPage';
 import { SessionLobbyPage } from '../pages/SessionLobbyPage';
@@ -21,9 +20,6 @@ export type Participant = {
   context: BrowserContext;
   page: Page;
   name: string;
-  homePage: HomePage;
-  createPage: CreateSessionPage;
-  joinPage: JoinSessionPage;
   lobbyPage: SessionLobbyPage;
   selectionPage: SelectionPage;
 };
@@ -41,60 +37,39 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
   setupSession: async ({ browser, baseURL }, use) => {
     const allContexts: BrowserContext[] = [];
 
-    const setup = async (participantCount: number) => {
-      // Create host context. Manually-created contexts do NOT inherit the config
-      // baseURL, so pass it explicitly or the page objects' relative navigations
-      // resolve against about:blank.
-      const hostContext = await browser.newContext({
-        baseURL,
-        viewport: { width: 390, height: 844 },
-      });
-      const hostPage = await hostContext.newPage();
-      allContexts.push(hostContext);
-
-      const host: Participant = {
-        context: hostContext,
-        page: hostPage,
-        name: 'Host',
-        homePage: new HomePage(hostPage),
-        createPage: new CreateSessionPage(hostPage),
-        joinPage: new JoinSessionPage(hostPage),
-        lobbyPage: new SessionLobbyPage(hostPage),
-        selectionPage: new SelectionPage(hostPage),
+    // One phone per person. Manually-created contexts do NOT inherit the config
+    // baseURL, so pass it explicitly or the page objects' relative navigations
+    // resolve against about:blank.
+    const participant = async (name: string): Promise<Participant> => {
+      const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } });
+      allContexts.push(context);
+      const page = await context.newPage();
+      return {
+        context,
+        page,
+        name,
+        lobbyPage: new SessionLobbyPage(page),
+        selectionPage: new SelectionPage(page),
       };
+    };
+
+    const setup = async (participantCount: number) => {
+      const host = await participant('Host');
 
       // Host creates session
-      await host.createPage.goto();
-      const sessionCode = await host.createPage.createSession('Host');
-      await host.createPage.setCurrentLocation();
+      const createPage = new CreateSessionPage(host.page);
+      await createPage.goto();
+      const sessionCode = await createPage.createSession('Host');
+      await createPage.setCurrentLocation();
 
-      // Create participant contexts
+      // Participants join session
       const participants: Participant[] = [];
       for (let i = 0; i < participantCount; i++) {
-        const context = await browser.newContext({
-          baseURL,
-          viewport: { width: 390, height: 844 },
-        });
-        const page = await context.newPage();
-        allContexts.push(context);
-
-        const name = `Guest${i + 1}`;
-        const participant: Participant = {
-          context,
-          page,
-          name,
-          homePage: new HomePage(page),
-          createPage: new CreateSessionPage(page),
-          joinPage: new JoinSessionPage(page),
-          lobbyPage: new SessionLobbyPage(page),
-          selectionPage: new SelectionPage(page),
-        };
-
-        // Participant joins session
-        await participant.joinPage.goto();
-        await participant.joinPage.joinSession(sessionCode, name);
-
-        participants.push(participant);
+        const guest = await participant(`Guest${i + 1}`);
+        const joinPage = new JoinSessionPage(guest.page);
+        await joinPage.goto();
+        await joinPage.joinSession(sessionCode, guest.name);
+        participants.push(guest);
       }
 
       // Wait for all participants to appear in host's lobby
@@ -102,7 +77,7 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
         await host.lobbyPage.waitForParticipant(p.name);
       }
 
-      for (const participant of participants) await participant.lobbyPage.ready();
+      for (const p of participants) await p.lobbyPage.ready();
 
       return {
         sessionCode,
