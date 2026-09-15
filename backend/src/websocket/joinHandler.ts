@@ -10,10 +10,11 @@ import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_LENGTH,
   SESSION_CODE_PATTERN,
+  type Ack,
   type ClientToServerEvents,
   type ServerToClientEvents,
+  type SessionJoinData,
   type SessionJoinPayload,
-  type SessionJoinResponse,
 } from '@dinder/shared/types';
 
 // Zod schema for validation
@@ -45,7 +46,7 @@ type LeftSession = NonNullable<Awaited<ReturnType<SessionService['joinSession']>
 export async function handleSessionJoin(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionJoinPayload,
-  callback: (response: SessionJoinResponse) => void,
+  callback: (response: Ack<SessionJoinData>) => void,
   service: SessionService,
   resolveAvatar: (token?: string) => Promise<string | null> = () => Promise.resolve(null)
 ): Promise<void> {

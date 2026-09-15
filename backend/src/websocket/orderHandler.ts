@@ -11,12 +11,12 @@ import { DomainError } from '../services/DomainError.js';
 import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
+  type Ack,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type OrderOpenPayload,
   type OrderOpenResponse,
   type OrderItemPayload,
-  type OrderItemResponse,
   type OrderBuyPayload,
   type OrderBuyResponse,
   type OrderState,
@@ -104,7 +104,7 @@ export async function handleOrderItem(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: OrderItemPayload,
-  callback: (response: OrderItemResponse) => void,
+  callback: (response: Ack<null>) => void,
   service: OrderService
 ): Promise<void> {
   try {

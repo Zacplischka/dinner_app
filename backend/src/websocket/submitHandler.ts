@@ -9,10 +9,10 @@ import { DomainError } from '../services/DomainError.js';
 import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
+  type Ack,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type SelectionSubmitPayload,
-  type SelectionSubmitResponse,
 } from '@dinder/shared/types';
 
 // Zod schema for validation
@@ -28,7 +28,7 @@ export async function handleSelectionSubmit(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SelectionSubmitPayload,
-  callback: (response: SelectionSubmitResponse) => void,
+  callback: (response: Ack<null>) => void,
   service: SessionService
 ): Promise<void> {
   try {

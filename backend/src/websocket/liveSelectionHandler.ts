@@ -12,10 +12,10 @@ import type { SessionStore } from '../store/sessionStore.js';
 import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
+  type Ack,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type SelectionLivePayload,
-  type SelectionLiveResponse,
 } from '@dinder/shared/types';
 
 const selectionLivePayloadSchema = z.object({
@@ -30,7 +30,7 @@ const selectionLivePayloadSchema = z.object({
 export async function handleLiveSelection(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   payload: SelectionLivePayload,
-  callback: (response: SelectionLiveResponse) => void,
+  callback: (response: Ack<null>) => void,
   store: SessionStore
 ): Promise<void> {
   try {

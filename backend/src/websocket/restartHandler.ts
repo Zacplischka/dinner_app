@@ -9,10 +9,10 @@ import { DomainError } from '../services/DomainError.js';
 import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
+  type Ack,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type SessionRestartPayload,
-  type SessionRestartResponse,
 } from '@dinder/shared/types';
 
 // Zod schema for validation
@@ -24,7 +24,7 @@ export async function handleSessionRestart(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionRestartPayload,
-  callback: (response: SessionRestartResponse) => void,
+  callback: (response: Ack<null>) => void,
   service: SessionService
 ): Promise<void> {
   try {

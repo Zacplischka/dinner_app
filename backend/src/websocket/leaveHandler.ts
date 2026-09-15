@@ -10,10 +10,10 @@ import { DomainError } from '../services/DomainError.js';
 import { toApiError } from '../api/toApiError.js';
 import {
   SESSION_CODE_PATTERN,
+  type Ack,
   type ClientToServerEvents,
   type ServerToClientEvents,
   type SessionLeavePayload,
-  type SessionLeaveResponse,
 } from '@dinder/shared/types';
 
 // Zod schema for validation
@@ -25,7 +25,7 @@ export async function handleSessionLeave(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   payload: SessionLeavePayload,
-  callback: (response: SessionLeaveResponse) => void,
+  callback: (response: Ack<null>) => void,
   service: SessionService
 ): Promise<void> {
   try {

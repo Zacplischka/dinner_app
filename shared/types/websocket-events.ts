@@ -71,31 +71,19 @@ export interface SessionJoinData {
   state?: string;
 }
 
-/** session:join acknowledges the canonical success data or a public error. */
-export type SessionJoinResponse = Ack<SessionJoinData>;
-
 export interface SelectionSubmitPayload {
   round?: number;
   sessionCode: string;
   selections: string[]; // placeIds — the Deck Entry identity, both kinds
 }
 
-/** No-data command: success acknowledges `data: null`. */
-export type SelectionSubmitResponse = Ack<null>;
-
 export interface SessionRestartPayload {
   sessionCode: string;
 }
 
-/** No-data command: success acknowledges `data: null`. */
-export type SessionRestartResponse = Ack<null>;
-
 export interface SessionLeavePayload {
   sessionCode: string;
 }
-
-/** No-data command: success acknowledges `data: null`. */
-export type SessionLeaveResponse = Ack<null>;
 
 /**
  * A Live Selection: this Participant just swiped yes on placeId, mid-deck.
@@ -113,9 +101,6 @@ export interface SelectionLivePayload {
    */
   retract?: boolean;
 }
-
-/** No-data command: success acknowledges `data: null`. */
-export type SelectionLiveResponse = Ack<null>;
 
 // ============= Server → Client Events =============
 
@@ -206,12 +191,6 @@ export interface ParticipantDisconnectedEvent {
   participantCount: number; // Count unchanged - participant still in session
 }
 
-export interface ErrorEvent {
-  code: string;
-  message: string;
-  details?: Record<string, unknown>;
-}
-
 /**
  * Another Participant made a Live Selection. The UI renders counts only — `displayName`
  * is never shown; it is the reconnect-stable key the receiver's buffer is indexed by
@@ -285,7 +264,6 @@ export interface OrderItemPayload {
   index: number;
   delta: 1 | -1;
 }
-export type OrderItemResponse = Ack<null>;
 
 export interface OrderBuyPayload {
   sessionCode: string;
@@ -321,31 +299,28 @@ export interface ClientToServerEvents {
   ) => void;
   'session:join': (
     payload: SessionJoinPayload,
-    callback: (response: SessionJoinResponse) => void
+    callback: (response: Ack<SessionJoinData>) => void
   ) => void;
 
   'selection:submit': (
     payload: SelectionSubmitPayload,
-    callback: (response: SelectionSubmitResponse) => void
+    callback: (response: Ack<null>) => void
   ) => void;
 
   'session:restart': (
     payload: SessionRestartPayload,
-    callback: (response: SessionRestartResponse) => void
+    callback: (response: Ack<null>) => void
   ) => void;
 
-  'session:leave': (
-    payload: SessionLeavePayload,
-    callback: (response: SessionLeaveResponse) => void
-  ) => void;
+  'session:leave': (payload: SessionLeavePayload, callback: (response: Ack<null>) => void) => void;
 
   'selection:live': (
     payload: SelectionLivePayload,
-    callback: (response: SelectionLiveResponse) => void
+    callback: (response: Ack<null>) => void
   ) => void;
 
   'order:open': (payload: OrderOpenPayload, callback: (r: OrderOpenResponse) => void) => void;
-  'order:item': (payload: OrderItemPayload, callback: (r: OrderItemResponse) => void) => void;
+  'order:item': (payload: OrderItemPayload, callback: (r: Ack<null>) => void) => void;
   'order:buy': (payload: OrderBuyPayload, callback: (r: OrderBuyResponse) => void) => void;
 }
 
@@ -360,7 +335,6 @@ export interface ServerToClientEvents {
   'participant:disconnected': (data: ParticipantDisconnectedEvent) => void;
   'participant:selected': (data: ParticipantSelectedEvent) => void;
   'order:state': (data: OrderStateEvent) => void;
-  error: (data: ErrorEvent) => void;
 }
 
 // ============= Typed Socket Instances =============
