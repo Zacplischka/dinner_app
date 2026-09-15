@@ -67,20 +67,3 @@ export interface Craving {
   diets: Diet[];
 }
 
-/**
- * The neighbouring Craving offered inline when a Craving's deal comes up empty
- * (#334): cuisine widened or dropped — never diet, never meal type — with the
- * Recipe count it can actually deal. An offer, not an act: accepting mints
- * `craving` as a genuinely new Craving, and declining changes nothing.
- */
-export interface NearestCraving {
-  craving: Craving;
-  /** What widened, in the Host's words: "Asian", or "any cuisine". */
-  label: string;
-  recipeCount: number;
-}
-
-/** `null` when even the widest step is empty — then the refusal stands. */
-export interface NearestCravingResponse {
-  nearest: NearestCraving | null;
-}

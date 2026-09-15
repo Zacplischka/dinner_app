@@ -10,6 +10,7 @@ vi.mock('ioredis', () => ({
   default: class MockRedis extends EventEmitter {
     options: unknown;
     subscribe = vi.fn(async () => 1);
+    duplicate = vi.fn(() => new MockRedis(this.options));
     quit = vi.fn(async () => 'OK');
 
     constructor(options: unknown) {
@@ -69,9 +70,8 @@ describe('session expiry notifier', () => {
   it('should log notifier initialization and disconnection', async () => {
     const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     const { io } = ioMock();
-    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
-      '../../src/redis/sessionExpiryNotifier.js'
-    );
+    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } =
+      await import('../../src/redis/sessionExpiryNotifier.js');
 
     await initializeSessionExpiryNotifier(io as any);
 
@@ -89,9 +89,8 @@ describe('session expiry notifier', () => {
   it('should emit and log valid expired session keys', async () => {
     const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     const { io, emit } = ioMock();
-    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
-      '../../src/redis/sessionExpiryNotifier.js'
-    );
+    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } =
+      await import('../../src/redis/sessionExpiryNotifier.js');
 
     await initializeSessionExpiryNotifier(io as any);
     subscriber().emit('message', '__keyevent@0__:expired', 'session:AB123');
@@ -108,24 +107,16 @@ describe('session expiry notifier', () => {
   });
 
   it('should continue when Redis config is disabled and log subscriber errors', async () => {
-    delete process.env.REDIS_HOST;
-    delete process.env.REDIS_PORT;
-    delete process.env.REDIS_PASSWORD;
     redisState.configError = new Error('CONFIG disabled');
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     const { io } = ioMock();
-    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
-      '../../src/redis/sessionExpiryNotifier.js'
-    );
+    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } =
+      await import('../../src/redis/sessionExpiryNotifier.js');
 
     await initializeSessionExpiryNotifier(io as any);
 
-    expect(subscriber().options).toEqual({
-      host: 'localhost',
-      port: 6379,
-      password: undefined,
-      family: 0,
-    });
+    // The subscriber is the client's duplicate, so it shares its options.
+    expect(subscriber()).toBe(redisState.instances[0].duplicate.mock.results[0].value);
     expect(errorSpy).toHaveBeenCalledWith(
       { err: redisState.configError },
       'Failed to enable Redis keyspace notifications'
@@ -142,9 +133,8 @@ describe('session expiry notifier', () => {
 
   it('should silently ignore malformed and sub-key expirations', async () => {
     const { io } = ioMock();
-    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } = await import(
-      '../../src/redis/sessionExpiryNotifier.js'
-    );
+    const { initializeSessionExpiryNotifier, disconnectSessionExpiryNotifier } =
+      await import('../../src/redis/sessionExpiryNotifier.js');
 
     await initializeSessionExpiryNotifier(io as any);
     subscriber().emit('message', '__keyevent@0__:expired', 'session:INVALID');

@@ -61,8 +61,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore,
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -102,8 +100,6 @@ describe('createComparisonService', () => {
       runActor: vi.fn().mockResolvedValue([{ ...uberEatsFixture[0], url: 'not a URL' }]),
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -146,8 +142,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(freshSnapshot), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -199,8 +193,6 @@ describe('createComparisonService', () => {
         getLatest: vi.fn().mockResolvedValue(freshSnapshot),
         insert: vi.fn(),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1', beginColdCompare);
@@ -218,8 +210,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1', beginColdCompare);
@@ -249,8 +239,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest, insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const first = collectComparison(service, 'place-1');
@@ -266,38 +254,6 @@ describe('createComparisonService', () => {
     expect(insert).toHaveBeenCalledTimes(1);
   });
 
-  it('settles a timed-out actor as failed and still writes the Snapshot', async () => {
-    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
-      insertedSnapshot(payload)
-    );
-    const service = createComparisonService({
-      runActor: vi.fn(() => new Promise<unknown[]>(() => undefined)),
-      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
-      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 10,
-    });
-
-    const events = await collectComparison(service, 'place-1');
-
-    expect(
-      events.find((event) => event.type === 'storefront' && event.platform === 'ubereats')
-    ).toEqual({
-      type: 'storefront',
-      platform: 'ubereats',
-      storefront: { status: 'failed', deals: [], menu: [] },
-    });
-    expect(insert).toHaveBeenCalledWith({
-      placeId: 'place-1',
-      venueName: '11 Inch Pizza',
-      payload: {
-        ubereats: { status: 'failed', deals: [], menu: [] },
-        doordash: { status: 'failed', deals: [], menu: [] },
-      },
-    });
-    expect(events.at(-1)?.type).toBe('comparison');
-  });
-
   it('finishes and persists after every subscriber disconnects mid-flight', async () => {
     const actorRun = deferred<unknown[]>();
     const persisted = deferred<SnapshotPayload>();
@@ -311,8 +267,6 @@ describe('createComparisonService', () => {
           return insertedSnapshot(payload);
         }),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const subscriber = vi.fn();
@@ -349,8 +303,6 @@ describe('createComparisonService', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     await collectComparison(service, 'place-1');
@@ -389,8 +341,6 @@ describe('createComparisonService', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');

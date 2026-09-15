@@ -47,7 +47,6 @@ describe('Integration Test: Create Session Flow (FR-001, FR-002, FR-003)', () =>
       state: 'waiting',
       participantCount: '1',
     });
-    expect(sessionData.hostId).toMatch(/^temp-/);
     expect(sessionData.createdAt).toBeTruthy();
     expect(sessionData.lastActivityAt).toBeTruthy();
   });
@@ -95,10 +94,7 @@ describe('Integration Test: Create Session Flow (FR-001, FR-002, FR-003)', () =>
   it('should preserve accepted hostName characters and length', async () => {
     const hostName = "Alice O'Brien " + 'A'.repeat(35);
 
-    const response = await request(app)
-      .post('/api/sessions')
-      .send({ hostName })
-      .expect(201);
+    const response = await request(app).post('/api/sessions').send({ hostName }).expect(201);
 
     expect(response.body.hostName).toBe(hostName);
   });

@@ -20,11 +20,7 @@ import {
   handleOrderBuy,
 } from '../../src/websocket/orderHandler.js';
 import { createOrderService } from '../../src/services/OrderService.js';
-import {
-  SNAPSHOT_FRESHNESS_MS,
-  SNAPSHOT_FAILURE_FRESHNESS_MS,
-  type Snapshot,
-} from '@dinder/shared/types';
+import type { Snapshot } from '@dinder/shared/types';
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
@@ -91,7 +87,7 @@ describe('websocket handlers', () => {
   }
 
   async function createSessionWithParticipant(participantId = 'socket-1') {
-    await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+    await store.createSession(sessionCode, { hostName: 'Alice' });
     await store.claimDisplayName(sessionCode, 'Alice', participantId, rejoinToken);
     await store.addParticipant(sessionCode, {
       participantId,
@@ -102,7 +98,7 @@ describe('websocket handlers', () => {
   }
 
   it('ignores client Profile IDs and avatar URLs, passing only the optional bearer token to the trusted resolver', async () => {
-    await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+    await store.createSession(sessionCode, { hostName: 'Alice' });
     const testSocket = socket();
     const callback = vi.fn();
     const resolve = vi.fn(async () => '/api/profile-photos/verified/version.jpg');
@@ -158,8 +154,6 @@ describe('websocket handlers', () => {
     return createOrderService({
       store,
       snapshotStore: { getLatest },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
     });
   }
 
@@ -216,7 +210,7 @@ describe('websocket handlers', () => {
 
     it('should add a new participant and log the join', async () => {
       const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const testSocket = socket('socket-1');
       const callback = vi.fn();
 
@@ -269,7 +263,7 @@ describe('websocket handlers', () => {
     // by an earlier Session turns its broadcasts into phantom Participants on
     // this client, which inflates the roster and suppresses the Full House.
     it('should leave any previous Session room when joining a new one', async () => {
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const testSocket = socket('socket-1', ['OLD42']);
       const callback = vi.fn();
 
@@ -413,7 +407,7 @@ describe('websocket handlers', () => {
     // Redis too, and the old room hears about it.
     it('should broadcast participant:left to the old session when a socket joins a new one', async () => {
       await createSessionWithParticipant('socket-1');
-      await store.createSession('NEW42', { hostId: 'host2', hostName: 'Ava' });
+      await store.createSession('NEW42', { hostName: 'Ava' });
       const testSocket = socket('socket-1', [sessionCode]);
       const callback = vi.fn();
 
@@ -493,7 +487,7 @@ describe('websocket handlers', () => {
       await createSessionWithParticipant('socket-1');
       await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Bob' });
       await store.recordSubmission(sessionCode, 'socket-2', []);
-      await store.createSession('NEW42', { hostId: 'host2', hostName: 'Ava' });
+      await store.createSession('NEW42', { hostName: 'Ava' });
       const testSocket = socket('socket-1', [sessionCode]);
       const callback = vi.fn();
 
@@ -518,7 +512,7 @@ describe('websocket handlers', () => {
 
     it('should reject full sessions before adding and log the rejection', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       await Promise.all([
         store.addParticipant(sessionCode, {
           participantId: 'socket-1',
@@ -626,7 +620,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionLeave(
@@ -730,7 +724,7 @@ describe('websocket handlers', () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       const testSocket = socket('missing');
 
-      await handleDisconnect(testSocket as any, {} as any, 'transport close', store);
+      await handleDisconnect(testSocket as any, 'transport close', store, service);
 
       expect(testSocket.to).not.toHaveBeenCalled();
       expect(logSpy).toHaveBeenCalledWith(
@@ -751,7 +745,7 @@ describe('websocket handlers', () => {
       await createSessionWithParticipant('socket-1');
       const testSocket = socket('socket-1');
 
-      await handleDisconnect(testSocket as any, {} as any, 'transport close', store);
+      await handleDisconnect(testSocket as any, 'transport close', store, service);
 
       // Still a current Participant, now flagged offline for later joiners.
       expect(await store.countParticipants(sessionCode)).toBe(1);
@@ -778,7 +772,7 @@ describe('websocket handlers', () => {
       vi.spyOn(store, 'getParticipant').mockRejectedValueOnce(error);
 
       await expect(
-        handleDisconnect(socket('socket-1') as any, {} as any, 'transport close', store)
+        handleDisconnect(socket('socket-1') as any, 'transport close', store, service)
       ).resolves.toBeUndefined();
       expect(errorSpy).toHaveBeenCalledWith(
         { err: error, socketId: 'socket-1' },
@@ -836,7 +830,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionRestart(
@@ -992,7 +986,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSelectionSubmit(
@@ -1260,7 +1254,7 @@ describe('websocket handlers', () => {
       });
       expect(testSocket.roomEmitter.emit).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
-        { socketId: 'socket-1', reason: expect.any(String) },
+        { socketId: 'socket-1', sessionCode: 'nope', reason: expect.any(String) },
         'Rejected selection:live'
       );
     });
@@ -1277,7 +1271,7 @@ describe('websocket handlers', () => {
     });
 
     it('join success is exactly { success, data } with no flattened fields', async () => {
-      await store.createSession(sessionCode, { hostId: 'host', hostName: 'Alice' });
+      await store.createSession(sessionCode, { hostName: 'Alice' });
       const callback = vi.fn();
 
       await handleSessionJoin(

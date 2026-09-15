@@ -21,7 +21,6 @@ describe('Integration Test: Results with No Overlap (FR-016)', () => {
   beforeEach(async () => {
     await cleanupTestData(redis);
     await store.createSession(sessionCode, {
-      hostId: 'alice',
       hostName: 'Alice',
       entries: restaurants,
     });
@@ -50,8 +49,6 @@ describe('Integration Test: Results with No Overlap (FR-016)', () => {
 
     expect(results.hasOverlap).toBe(false);
 
-    await expect(redis.smembers(`session:${sessionCode}:results`)).resolves.toEqual([
-      '__empty__',
-    ]);
+    await expect(redis.smembers(`session:${sessionCode}:results`)).resolves.toEqual(['__empty__']);
   });
 });

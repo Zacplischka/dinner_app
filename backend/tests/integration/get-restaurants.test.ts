@@ -10,7 +10,6 @@ describe('GET /api/options/:sessionCode', () => {
     // Set up test session with restaurants
     await redis.hset(`session:${sessionCode}`, {
       state: 'waiting',
-      hostId: 'host-123',
       participantCount: '1',
       createdAt: Math.floor(Date.now() / 1000).toString(),
       lastActivityAt: Math.floor(Date.now() / 1000).toString(),
@@ -26,11 +25,7 @@ describe('GET /api/options/:sessionCode', () => {
     };
 
     await redis.sadd(`session:${sessionCode}:restaurant_ids`, 'place1');
-    await redis.hset(
-      `session:${sessionCode}:restaurants`,
-      'place1',
-      JSON.stringify(restaurant1)
-    );
+    await redis.hset(`session:${sessionCode}:restaurants`, 'place1', JSON.stringify(restaurant1));
   });
 
   afterEach(async () => {
@@ -40,9 +35,7 @@ describe('GET /api/options/:sessionCode', () => {
   });
 
   it('should return restaurants for valid session', async () => {
-    const response = await request(app)
-      .get(`/api/options/${sessionCode}`)
-      .expect(200);
+    const response = await request(app).get(`/api/options/${sessionCode}`).expect(200);
 
     expect(response.body).toEqual({
       restaurants: [
@@ -60,17 +53,13 @@ describe('GET /api/options/:sessionCode', () => {
   });
 
   it('should return 404 for invalid session code format', async () => {
-    const response = await request(app)
-      .get('/api/options/invalid')
-      .expect(404);
+    const response = await request(app).get('/api/options/invalid').expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
   });
 
   it('should return 404 for non-existent session', async () => {
-    const response = await request(app)
-      .get('/api/options/NOTFN')
-      .expect(404);
+    const response = await request(app).get('/api/options/NOTFN').expect(404);
 
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
   });
@@ -79,9 +68,7 @@ describe('GET /api/options/:sessionCode', () => {
     await redis.del(`session:${sessionCode}:restaurants`);
     await redis.del(`session:${sessionCode}:restaurant_ids`);
 
-    const response = await request(app)
-      .get(`/api/options/${sessionCode}`)
-      .expect(404);
+    const response = await request(app).get(`/api/options/${sessionCode}`).expect(404);
 
     expect(response.body.code).toBe('NO_RESTAURANTS');
   });
@@ -97,15 +84,9 @@ describe('GET /api/options/:sessionCode', () => {
     };
 
     await redis.sadd(`session:${sessionCode}:restaurant_ids`, 'place2');
-    await redis.hset(
-      `session:${sessionCode}:restaurants`,
-      'place2',
-      JSON.stringify(restaurant2)
-    );
+    await redis.hset(`session:${sessionCode}:restaurants`, 'place2', JSON.stringify(restaurant2));
 
-    const response = await request(app)
-      .get(`/api/options/${sessionCode}`)
-      .expect(200);
+    const response = await request(app).get(`/api/options/${sessionCode}`).expect(200);
 
     expect(response.body.restaurants).toHaveLength(2);
     expect(response.body.restaurants.map((r: any) => r.placeId)).toContain('place1');

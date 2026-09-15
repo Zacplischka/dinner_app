@@ -73,11 +73,14 @@ async function fetchWithRateLimitRetry(
   return undefined;
 }
 
-export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> {
+function placesApiKey(): string {
   const apiKey = config.googlePlaces.apiKey;
-  if (!apiKey) {
-    throw new Error('Google Places API configuration missing');
-  }
+  if (!apiKey) throw new Error('Google Places API configuration missing');
+  return apiKey;
+}
+
+export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> {
+  const apiKey = placesApiKey();
 
   const response = await fetchWithRateLimitRetry('Places details', () =>
     fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
@@ -117,10 +120,7 @@ export async function reverseGeocodeSuburb(
   latitude: number,
   longitude: number
 ): Promise<string | undefined> {
-  const apiKey = config.googlePlaces.apiKey;
-  if (!apiKey) {
-    throw new Error('Google Places API configuration missing');
-  }
+  const apiKey = placesApiKey();
 
   const response = await fetchWithRateLimitRetry('Geocoding reverse lookup', () =>
     fetch(
@@ -151,10 +151,7 @@ export async function reverseGeocodeSuburb(
 }
 
 export async function geocodeArea(query: string): Promise<GeocodedArea | undefined> {
-  const apiKey = config.googlePlaces.apiKey;
-  if (!apiKey) {
-    throw new Error('Google Places API configuration missing');
-  }
+  const apiKey = placesApiKey();
 
   // A bare postcode is ambiguous as address text, even with an AU region bias.
   const address = /^\d{4}$/.test(query)
@@ -218,8 +215,7 @@ export async function fetchPlacePhoto(photoName: string): Promise<string> {
   if (!/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/.test(photoName)) {
     throw new Error('Invalid Google Places photo name');
   }
-  const apiKey = config.googlePlaces.apiKey;
-  if (!apiKey) throw new Error('Google Places API configuration missing');
+  const apiKey = placesApiKey();
 
   const response = await fetchWithRateLimitRetry('Places photo', () =>
     fetch(
@@ -366,24 +362,11 @@ export function normalizeRestaurantName(name: string): string {
  * Deduplicate restaurants by chain name, keeping highest-rated instance.
  */
 export function deduplicateRestaurants(restaurants: Restaurant[]): Restaurant[] {
-  const groupedByName = new Map<string, Restaurant[]>();
-
-  for (const restaurant of restaurants) {
-    const normalizedName = normalizeRestaurantName(restaurant.name);
-    if (!groupedByName.has(normalizedName)) {
-      groupedByName.set(normalizedName, []);
-    }
-    groupedByName.get(normalizedName)!.push(restaurant);
-  }
-
-  const deduplicated: Restaurant[] = [];
-  for (const [, group] of groupedByName) {
-    // Keep highest-rated instance from each group
-    const best = group.sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
-    deduplicated.push(best);
-  }
-
-  return deduplicated;
+  // Keep the highest-rated instance of each name; a tie keeps the first seen.
+  const byName = Map.groupBy(restaurants, (restaurant) => normalizeRestaurantName(restaurant.name));
+  return [...byName.values()].map(
+    (group) => group.toSorted((a, b) => (b.rating || 0) - (a.rating || 0))[0]
+  );
 }
 
 /**
@@ -455,11 +438,7 @@ async function fetchTextSearchPage(
 async function fetchNearbyPlaces(params: GooglePlacesSearchParams): Promise<GooglePlaceResult[]> {
   const { latitude, longitude, radiusMeters } = params;
 
-  const apiKey = config.googlePlaces.apiKey;
-
-  if (!apiKey) {
-    throw new Error('Google Places API configuration missing');
-  }
+  const apiKey = placesApiKey();
 
   // Fetch exactly one page and never follow nextPageToken: every extra page
   // is a full-price Enterprise Text Search call, and 20 results is enough for

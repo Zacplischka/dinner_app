@@ -24,8 +24,6 @@ export const redis = new Redis({
     return delay;
   },
   maxRetriesPerRequest: 3,
-  enableReadyCheck: true,
-  lazyConnect: false,
 });
 
 // Event listeners for monitoring
@@ -43,10 +41,6 @@ redis.on('error', (error) => {
 
 redis.on('close', () => {
   logger.info('Redis connection closed');
-});
-
-redis.on('reconnecting', () => {
-  logger.info('Redis reconnecting...');
 });
 
 // Health check utility

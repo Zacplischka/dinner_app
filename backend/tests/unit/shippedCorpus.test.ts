@@ -67,6 +67,8 @@ function fakeRedis() {
     get: async (key: string) => keys.get(key) ?? null,
     set: async (key: string, value: string) => void keys.set(key, value),
     del: async (key: string) => void keys.delete(key),
+    incr: async () => 0,
+    pexpire: async () => 1,
     hdel: async () => 0,
     hgetall: async () => ({}),
     multi: () => chain,
@@ -81,7 +83,6 @@ async function cook(recipe: OwnedRecipe, headcount = 6) {
   const searched: string[] = [];
   const session: Session = {
     sessionCode: 'AB123',
-    hostId: 'host',
     state: 'complete',
     participantCount: 1,
     createdAt: 0,

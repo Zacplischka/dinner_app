@@ -6,6 +6,7 @@
 import { DIETS, type Craving, type Diet, type Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
+import type { RedisLike } from '../redis/redisLike.js';
 import { number } from './storefrontResolution.js';
 
 const BASE = 'https://api.spoonacular.com';
@@ -197,11 +198,6 @@ function toPooledRecipe(result: RecipeSearchResult): PooledRecipe | null {
 // --- The daily-points guard (#261) -------------------------------------
 // Redis: spoonacular:points:{YYYY-MM-DD}  string, the points the source has
 //        reported spent on that UTC quota day, as of its last response.
-
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
-}
 
 /** Two days, so a counter outlives its quota day and nothing else. */
 const POINTS_TTL_MS = 48 * 3_600_000;

@@ -5,6 +5,7 @@
 import type { ProductMatchOutcome } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
+import type { RedisLike } from '../redis/redisLike.js';
 import { matchProducts, type WoolworthsProduct } from './productMatcher.js';
 import { woolworthsQueue, type Enqueue } from './politenessQueue.js';
 import { deriveSearchTerm } from './usToAuTerms.js';
@@ -21,12 +22,6 @@ type CachedAnswer =
   | { status: 'ok'; storeId: number; fetchedAt: string; products: WoolworthsProduct[] }
   | { status: 'failure'; fetchedAt: string };
 
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
-  set(key: string, value: string): Promise<unknown>;
-}
-
 interface ProductMatchServiceDeps {
   redis: RedisLike;
   client: WoolworthsClient;
@@ -38,10 +33,6 @@ interface ProductMatchServiceDeps {
   successWindowCapMs?: number;
   failureWindowMs?: number;
   now?: () => number;
-}
-
-export interface ProductMatchService {
-  matchProduct(term: string, wantedForm?: WantedPackForm): Promise<ProductMatchOutcome>;
 }
 
 /**
@@ -65,7 +56,7 @@ export function successWindowMs(nowMs: number, capMs: number): number {
   return Math.min(capMs, rollover - local);
 }
 
-export function createProductMatchService(deps: ProductMatchServiceDeps): ProductMatchService {
+export function createProductMatchService(deps: ProductMatchServiceDeps) {
   const now = deps.now ?? Date.now;
   const enqueue = deps.enqueue ?? woolworthsQueue;
   const defaultStoreId = deps.defaultStoreId ?? config.woolworths.defaultStoreId;

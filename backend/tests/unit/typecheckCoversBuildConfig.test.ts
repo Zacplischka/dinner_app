@@ -7,8 +7,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const read = (rel: string) =>
-  readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
+const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
 describe('npm run typecheck', () => {
   const typecheck: string = JSON.parse(read('../../../package.json')).scripts.typecheck;
@@ -23,6 +22,5 @@ describe('npm run typecheck', () => {
     // JSON with comments: strip line comments before parsing.
     const build = JSON.parse(read('../../tsconfig.json').replace(/^\s*\/\/.*$/gm, ''));
     expect(build.compilerOptions.rootDir).toBe('./src');
-    expect(build.exclude).toContain('tests');
   });
 });

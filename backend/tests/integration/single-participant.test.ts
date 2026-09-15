@@ -21,7 +21,6 @@ describe('Integration Test: Single Participant Session (FR-021)', () => {
   beforeEach(async () => {
     await cleanupTestData(redis);
     await store.createSession(sessionCode, {
-      hostId: 'alice',
       hostName: 'Alice',
       entries: restaurants,
     });

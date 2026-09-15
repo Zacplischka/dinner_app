@@ -1,7 +1,7 @@
 // WebSocket disconnect handler
 
 import { logger } from '../logger.js';
-import type { Socket, Server } from 'socket.io';
+import type { Socket } from 'socket.io';
 import type { SessionService } from '../services/SessionService.js';
 import type { SessionStore } from '../store/sessionStore.js';
 import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
@@ -14,10 +14,9 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/
  */
 export async function handleDisconnect(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
-  _io: Server<ClientToServerEvents, ServerToClientEvents>,
   reason: string,
   store: SessionStore,
-  service?: SessionService
+  service: SessionService
 ): Promise<void> {
   try {
     logger.info({ socketId: socket.id, reason }, 'Socket disconnected');
@@ -52,7 +51,7 @@ export async function handleDisconnect(
         }
       });
     } else await store.markDisconnected(socket.id);
-    const lobby = await service?.getLobby(sessionCode);
+    const lobby = await service.getLobby(sessionCode);
     if (lobby) socket.to(sessionCode).emit('session:lobby', lobby);
 
     // Get current participant count (unchanged — a disconnect removes nobody)

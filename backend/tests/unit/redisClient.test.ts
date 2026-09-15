@@ -65,13 +65,11 @@ describe('redis client helpers', () => {
     const eventError = new Error('event error');
     expect(() => redis.emit('error', eventError)).not.toThrow();
     expect(() => redis.emit('close')).not.toThrow();
-    expect(() => redis.emit('reconnecting')).not.toThrow();
 
     expect(logSpy).toHaveBeenCalledWith('✓ Redis connected');
     expect(logSpy).toHaveBeenCalledWith('✓ Redis ready');
     expect(errorSpy).toHaveBeenCalledWith({ err: eventError }, 'Redis error');
     expect(logSpy).toHaveBeenCalledWith('Redis connection closed');
-    expect(logSpy).toHaveBeenCalledWith('Redis reconnecting...');
   });
 
   it('should initialize Redis with default connection options when env is missing', async () => {
@@ -104,8 +102,6 @@ describe('redis client helpers', () => {
       password: undefined,
       family: 0,
       maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      lazyConnect: false,
     });
   });
 });
