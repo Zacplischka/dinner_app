@@ -88,7 +88,7 @@ describe('socketService', () => {
     vi.restoreAllMocks();
   });
 
-  it('connects with the injected auth token and registers injected event handlers', () => {
+  it('registers injected event handlers and sends no handshake auth', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const socket = setupSocket();
     const onConnect = vi.fn();
@@ -102,12 +102,8 @@ describe('socketService', () => {
       },
     });
 
-    expect(socketMocks.io).toHaveBeenCalledWith(
-      'http://localhost:3001',
-      expect.objectContaining({
-        auth: expect.any(Function),
-      })
-    );
+    expect(socketMocks.io).toHaveBeenCalledWith('http://localhost:3001', expect.any(Object));
+    expect(socketMocks.io.mock.calls[0][1]).not.toHaveProperty('auth');
 
     socket.trigger('connect');
     expect(onConnect).toHaveBeenCalled();
@@ -152,17 +148,6 @@ describe('socketService', () => {
     expect(socketMocks.io).toHaveBeenCalledWith(
       'http://localhost:3001',
       expect.objectContaining({ reconnection: true, reconnectionAttempts: Infinity })
-    );
-  });
-
-  it('connects without auth when no token provider is given', () => {
-    setupSocket();
-
-    socketService.initializeSocket();
-
-    expect(socketMocks.io).toHaveBeenCalledWith(
-      'http://localhost:3001',
-      expect.objectContaining({ auth: undefined })
     );
   });
 
@@ -447,7 +432,7 @@ describe('socketService', () => {
 
     expect(socketMocks.io).toHaveBeenLastCalledWith(
       'https://socket.example.test',
-      expect.objectContaining({ auth: undefined })
+      expect.any(Object)
     );
     freshSocketService.disconnectSocket();
     vi.unstubAllEnvs();

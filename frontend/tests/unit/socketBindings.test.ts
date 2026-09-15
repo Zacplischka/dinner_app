@@ -101,23 +101,12 @@ describe('socketBindings', () => {
     window.history.pushState({}, '', '/');
   });
 
-  it('connects with the auth token and mirrors connection state into the session store', () => {
+  it('mirrors connection state into the session store', () => {
     const socket = setupSocket();
 
     socketBindings.initializeSocket();
     socket.trigger('connect');
 
-    expect(socketMocks.io).toHaveBeenCalledWith(
-      'http://localhost:3001',
-      expect.objectContaining({ auth: expect.any(Function) })
-    );
-    const auth = socketMocks.io.mock.calls[0][1].auth;
-    const handshake = vi.fn();
-    auth(handshake);
-    expect(handshake).toHaveBeenLastCalledWith({ token: 'token' });
-    useAuthStore.setState({ session: null });
-    auth(handshake);
-    expect(handshake).toHaveBeenLastCalledWith({});
     expect(useSessionStore.getState().isConnected).toBe(true);
     expect(useSessionStore.getState().currentUserId).toBe('socket-1');
 
@@ -482,11 +471,6 @@ describe('socketBindings', () => {
 
     socket.trigger('session:expired', { sessionCode: 'AB123' });
     expect(useSessionStore.getState().sessionStatus).toBe('expired');
-
-    socket.trigger('error', { message: 'bad' });
-    expect(socketMocks.toast.error).toHaveBeenCalledWith('bad');
-    socket.trigger('error', {});
-    expect(socketMocks.toast.error).toHaveBeenCalledWith('An error occurred');
   });
 
   it('carries session:results shoppingListId into the store, so a Cook Session can reach its list (#253)', () => {

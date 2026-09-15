@@ -14,7 +14,6 @@ import type {
   SessionResultsEvent,
   SessionRestartedEvent,
   SessionExpiredEvent,
-  ErrorEvent,
   OrderStateEvent,
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
@@ -308,12 +307,6 @@ const socketConfig: SocketConfig = {
       log('Session expired:', event);
       useSessionStore.getState().setSessionStatus('expired');
       toast.error('This session has expired');
-    },
-
-    // error - Server-side error
-    error: (event: ErrorEvent) => {
-      console.error('Socket error:', event);
-      toast.error(event.message || 'An error occurred');
     },
   },
 };

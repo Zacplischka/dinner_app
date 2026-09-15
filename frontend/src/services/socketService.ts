@@ -51,7 +51,7 @@ let getAuthToken: (() => string | undefined) | undefined;
 
 /**
  * Initialize Socket.IO client connection.
- * Includes an auth token and event handlers when the config provides them.
+ * Registers event handlers when the config provides them.
  */
 export function initializeSocket(config: SocketConfig = {}): void {
   // Guard on existence, not on connected: a call mid-reconnect used to open a
@@ -76,12 +76,6 @@ export function initializeSocket(config: SocketConfig = {}): void {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 10000,
-    auth: config.getAuthToken
-      ? (callback) => {
-          const token = config.getAuthToken?.();
-          callback(token ? { token } : {});
-        }
-      : undefined,
   });
 
   for (const [event, handler] of Object.entries(config.onEvent ?? {})) {
