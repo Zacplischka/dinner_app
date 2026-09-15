@@ -3,7 +3,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
-import { moodSchema } from './lobbySchema.js';
+import { locationSchema, moodSchema } from './lobbySchema.js';
 import { cravingSchema } from './cravingSchema.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
@@ -14,7 +14,6 @@ import {
   MAX_HEADCOUNT,
   MIN_DECK_SIZE,
   SESSION_CODE_PATTERN,
-  type ApiError,
   type CreateSessionRequest,
   type CreateSessionResponse,
   type SessionResponse,
@@ -37,13 +36,7 @@ export function createSessionsRouter(sessionService: SessionService) {
     .object({
       hostName: z.string().trim().min(1).max(50),
       collaborative: z.boolean().optional(),
-      location: z
-        .object({
-          latitude: z.number().min(-90).max(90),
-          longitude: z.number().min(-180).max(180),
-          address: z.string().optional(),
-        })
-        .optional(),
+      location: locationSchema.optional(),
       searchRadiusMiles: z.number().min(1).max(15).optional(),
       branch: z.enum(BRANCHES).optional(),
       craving: cravingSchema.optional(),
@@ -106,10 +99,10 @@ export function createSessionsRouter(sessionService: SessionService) {
       const ip = requestIp(req);
       if (!admitRequest(createRequests, ip, CREATE_LIMIT, CREATE_WINDOW_MS)) {
         res.setHeader('Retry-After', retryAfterSeconds(createRequests, ip, CREATE_WINDOW_MS));
-        return res.status(429).json({
-          code: 'RATE_LIMITED',
-          message: 'Too many Sessions created. Please try again shortly.',
-        } satisfies ApiError);
+        throw new DomainError(
+          'TOO_MANY_REQUESTS',
+          'Too many Sessions created. Please try again shortly.'
+        );
       }
 
       // Annotated, not cast: this is what checks the Zod schema still agrees
