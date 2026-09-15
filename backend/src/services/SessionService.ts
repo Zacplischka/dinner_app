@@ -118,13 +118,13 @@ export interface SessionServiceDeps {
 }
 
 /** What Cook setup captured: the Craving to deal from, and who's eating. */
-export interface CookSetup {
+interface CookSetup {
   craving: Craving;
   headcount: number;
 }
 
 /** What Watch setup captured: the Mood to deal from. */
-export interface WatchSetup {
+interface WatchSetup {
   mood: Mood;
 }
 

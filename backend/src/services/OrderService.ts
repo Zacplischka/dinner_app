@@ -21,7 +21,7 @@ export interface OrderServiceDeps {
   snapshotStore: { getLatest: (placeId: string) => Promise<Snapshot | null> };
 }
 
-export type OrderUnavailable = { reason: 'stale' | 'no_menu'; message: string };
+type OrderUnavailable = { reason: 'stale' | 'no_menu'; message: string };
 
 export function createOrderService(deps: OrderServiceDeps) {
   const { store, snapshotStore } = deps;

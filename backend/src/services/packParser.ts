@@ -4,7 +4,7 @@
 // into a $62 line; variable and range packs are named so the ladder can price
 // them from the unit price instead.
 
-export type ParsedPack =
+type ParsedPack =
   | { kind: 'fixed'; quantity: number; family: 'mass' | 'volume' } // grams or mL
   | { kind: 'count'; units: number }
   | { kind: 'variable' } // "per 190g", "approx. 170g" — weight varies per item

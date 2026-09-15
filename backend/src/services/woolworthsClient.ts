@@ -23,7 +23,7 @@ const IDENTITY_HEADERS = {
 // doubles to ~2-4 KB per term.
 const TOP_N = 10;
 
-export interface WoolworthsSearchResult {
+interface WoolworthsSearchResult {
   /** The FulfilmentStoreId read off the response; null when absent. */
   storeId: number | null;
   products: WoolworthsProduct[];

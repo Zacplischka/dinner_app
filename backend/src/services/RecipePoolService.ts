@@ -22,6 +22,7 @@ import type { Craving, Cuisine, DeckEntry, Diet, MealType, Recipe } from '@dinde
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import type { RedisLike } from '../redis/redisLike.js';
+import { shuffled } from './MovieDeckService.js';
 import { satisfiedDiets, type OwnedRecipeStore } from './ownedRecipeStore.js';
 import { SpoonacularRefusal } from './spoonacularClient.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
@@ -139,7 +140,7 @@ interface RecipePoolServiceDeps {
  * product — and a thin Craving on a healthy vendor never carries it either,
  * because that is a fact about the catalogue, not about us (#250).
  */
-export interface DealtDeck {
+interface DealtDeck {
   entries: Recipe[];
   recipeSourceDown: boolean;
 }
@@ -182,16 +183,6 @@ export interface RecipePoolService {
    * rather than paying a lookup. An Owned Recipe never ages out.
    */
   readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null>;
-}
-
-/** Fisher-Yates over a copy — the caller's pool is never reordered. */
-function shuffleInPlace<T>(entries: T[]): T[] {
-  const shuffled = [...entries];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 /** The Deck Entry half: what a Participant swipes, and all the wire carries. */
@@ -279,7 +270,7 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   const ownedFloor = deps.ownedFloor ?? OWNED_FLOOR;
   const vendorDarkTtlMs = deps.vendorDarkTtlMs ?? VENDOR_DARK_TTL_MS;
   const dealBudgetMs = deps.dealBudgetMs ?? config.spoonacular.dealBudgetMs;
-  const shuffle = deps.shuffle ?? shuffleInPlace;
+  const shuffle = deps.shuffle ?? shuffled;
 
   /** Latch the vendor dark. The blip run is over — the outage subsumes it. */
   async function latchDark(): Promise<void> {

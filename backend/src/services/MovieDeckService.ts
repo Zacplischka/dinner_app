@@ -78,7 +78,7 @@ export function loadMovieCorpus(file: URL = config.moviesFile): Movie[] {
 }
 
 /** What a Mood deals from. One implementation, the corpus; the seam a live source would take. */
-export type MovieSource = (mood: Mood) => Movie[];
+type MovieSource = (mood: Mood) => Movie[];
 
 /**
  * Every corpus Movie carrying any chosen genre, released in any chosen decade
@@ -98,7 +98,8 @@ export const corpusMovieSource =
     );
   };
 
-function shuffled<T>(entries: readonly T[]): T[] {
+/** Fisher-Yates over a copy — the caller's pool is never reordered. */
+export function shuffled<T>(entries: readonly T[]): T[] {
   const copy = [...entries];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -107,12 +108,11 @@ function shuffled<T>(entries: readonly T[]): T[] {
   return copy;
 }
 
-export interface DealOptions {
+interface DealOptions {
   source: MovieSource;
   /** Injectable so tests can assert the cut rather than luck. */
   shuffle?: <T>(entries: readonly T[]) => T[];
   deckSize?: number;
-  poolCap?: number;
   /** Equal turns per Participant, irrespective of how many interests they chose. */
   interests?: readonly Mood[];
 }
@@ -127,7 +127,7 @@ export interface DealOptions {
 export function redealMovieDeck(
   mood: Mood,
   current: readonly DeckEntry[],
-  { source, shuffle = shuffled, deckSize = DECK_SIZE, poolCap = POOL_CAP, interests }: DealOptions
+  { source, shuffle = shuffled, deckSize = DECK_SIZE, interests }: DealOptions
 ): DeckEntry[] {
   const contributions = interests?.length ? interests : [mood];
   const wiped = new Set(current.map((entry) => entry.placeId));
@@ -136,7 +136,7 @@ export function redealMovieDeck(
   const queues = contributions.map((contribution) => {
     const eligible = source(contribution);
     return MEDIA_TYPES.map((type) => {
-      const pool = eligible.filter((m) => (m.mediaType ?? 'movie') === type).slice(0, poolCap);
+      const pool = eligible.filter((m) => (m.mediaType ?? 'movie') === type).slice(0, POOL_CAP);
       return [
         ...shuffle(pool.filter((m) => !wiped.has(m.placeId))),
         ...shuffle(pool.filter((m) => wiped.has(m.placeId))),
