@@ -8,7 +8,6 @@ import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
 import {
   SNAPSHOT_FRESHNESS_MS,
-  SNAPSHOT_FAILURE_FRESHNESS_MS,
   type MenuItemCapture,
   type Snapshot,
   type SnapshotPayload,
@@ -51,8 +50,6 @@ function makeService(getLatest: OrderServiceDeps['snapshotStore']['getLatest']) 
   return createOrderService({
     store,
     snapshotStore: { getLatest },
-    freshnessMs: SNAPSHOT_FRESHNESS_MS,
-    failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
   });
 }
 

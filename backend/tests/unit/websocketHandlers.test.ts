@@ -20,11 +20,7 @@ import {
   handleOrderBuy,
 } from '../../src/websocket/orderHandler.js';
 import { createOrderService } from '../../src/services/OrderService.js';
-import {
-  SNAPSHOT_FRESHNESS_MS,
-  SNAPSHOT_FAILURE_FRESHNESS_MS,
-  type Snapshot,
-} from '@dinder/shared/types';
+import type { Snapshot } from '@dinder/shared/types';
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
@@ -158,8 +154,6 @@ describe('websocket handlers', () => {
     return createOrderService({
       store,
       snapshotStore: { getLatest },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
     });
   }
 

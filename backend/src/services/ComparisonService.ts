@@ -4,7 +4,7 @@ import type {
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
-import { SNAPSHOT_FAILURE_FRESHNESS_MS } from '@dinder/shared/types';
+import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import type { VenueDetails } from './RestaurantSearchService.js';
 import { deriveComparison } from './comparisonMatcher.js';
 import { doorDashStorefront } from './doorDashStorefront.js';
@@ -26,8 +26,6 @@ interface ComparisonServiceDeps {
   doorDashActorId?: string;
   fetchPlaceDetails(placeId: string): Promise<VenueDetails>;
   snapshotStore: SnapshotStore;
-  freshnessMs: number;
-  failureFreshnessMs?: number;
 }
 
 export interface StorefrontResolver {
@@ -64,7 +62,7 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
   ) => {
     try {
       const latest = await deps.snapshotStore.getLatest(placeId);
-      if (latest && isFresh(latest, deps.freshnessMs, deps.failureFreshnessMs)) {
+      if (latest && isFresh(latest)) {
         emitSnapshot(flight, latest, emit);
         return;
       }
@@ -188,15 +186,11 @@ function emitSnapshot(
   emit(flight, { type: 'comparison', comparison: deriveComparison(snapshot) });
 }
 
-export function isFresh(
-  snapshot: Snapshot,
-  freshnessMs: number,
-  failureFreshnessMs = SNAPSHOT_FAILURE_FRESHNESS_MS
-): boolean {
-  const ageMs = Date.now() - Date.parse(snapshot.fetchedAt);
+export function isFresh(snapshot: Snapshot, now = Date.now()): boolean {
+  const ageMs = now - Date.parse(snapshot.fetchedAt);
   const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash].some(
     (storefront) => storefront?.status === 'failed'
   );
-  const maxAgeMs = hasFailure ? Math.min(freshnessMs, failureFreshnessMs) : freshnessMs;
+  const maxAgeMs = hasFailure ? SNAPSHOT_FAILURE_FRESHNESS_MS : SNAPSHOT_FRESHNESS_MS;
   return ageMs >= 0 && ageMs < maxAgeMs;
 }

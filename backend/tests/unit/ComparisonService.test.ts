@@ -61,7 +61,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore,
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -101,7 +100,6 @@ describe('createComparisonService', () => {
       runActor: vi.fn().mockResolvedValue([{ ...uberEatsFixture[0], url: 'not a URL' }]),
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -144,7 +142,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(freshSnapshot), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -196,7 +193,6 @@ describe('createComparisonService', () => {
         getLatest: vi.fn().mockResolvedValue(freshSnapshot),
         insert: vi.fn(),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const events = await collectComparison(service, 'place-1', beginColdCompare);
@@ -214,7 +210,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const events = await collectComparison(service, 'place-1', beginColdCompare);
@@ -244,7 +239,6 @@ describe('createComparisonService', () => {
       runActor,
       fetchPlaceDetails,
       snapshotStore: { getLatest, insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const first = collectComparison(service, 'place-1');
@@ -273,7 +267,6 @@ describe('createComparisonService', () => {
           return insertedSnapshot(payload);
         }),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const subscriber = vi.fn();
@@ -310,7 +303,6 @@ describe('createComparisonService', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     await collectComparison(service, 'place-1');
@@ -349,7 +341,6 @@ describe('createComparisonService', () => {
           insertedSnapshot(payload)
         ),
       },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
     });
 
     const events = await collectComparison(service, 'place-1');

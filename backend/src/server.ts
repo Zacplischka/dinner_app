@@ -42,8 +42,6 @@ import { config } from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { resolveSessionAvatar } from './websocket/socketAuth.js';
 
-// Import shared types
-import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -118,14 +116,10 @@ const comparisonService = createComparisonService({
   doorDashActorId: config.apify.doorDashActorId,
   fetchPlaceDetails: (...args) => RestaurantSearchService.fetchPlaceDetails(...args),
   snapshotStore: comparisonSnapshotStore,
-  freshnessMs: SNAPSHOT_FRESHNESS_MS,
-  failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
 });
 const orderService = createOrderService({
   store: sessionStore,
   snapshotStore: comparisonSnapshotStore,
-  freshnessMs: SNAPSHOT_FRESHNESS_MS,
-  failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
 });
 
 // Initialize Express app

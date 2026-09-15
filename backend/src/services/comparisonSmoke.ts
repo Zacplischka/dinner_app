@@ -1,10 +1,6 @@
 import type { ComparisonStreamEvent, Snapshot, Venue } from '@dinder/shared/types';
-import {
-  isComparisonStreamEventName,
-  parseComparisonStreamEvent,
-  SNAPSHOT_FAILURE_FRESHNESS_MS,
-  SNAPSHOT_FRESHNESS_MS,
-} from '@dinder/shared/types';
+import { isComparisonStreamEventName, parseComparisonStreamEvent } from '@dinder/shared/types';
+import { isFresh } from './ComparisonService.js';
 
 export function selectSmokeVenue(
   venues: Venue[],
@@ -72,13 +68,7 @@ export function assertResolvedStorefronts(events: ComparisonStreamEvent[]): void
 }
 
 export function assertColdSnapshot(snapshot: Snapshot | null, now = Date.now()): void {
-  if (!snapshot) return;
-  const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash].some(
-    (storefront) => storefront.status === 'failed'
-  );
-  const maxAgeMs = hasFailure ? SNAPSHOT_FAILURE_FRESHNESS_MS : SNAPSHOT_FRESHNESS_MS;
-  const ageMs = now - Date.parse(snapshot.fetchedAt);
-  if (ageMs >= 0 && ageMs < maxAgeMs) {
+  if (snapshot && isFresh(snapshot, now)) {
     throw new Error(
       'Selected Venue already has a fresh Snapshot; choose an uncached or stale ' +
         'COMPARE_PLACE_ID/COMPARE_VENUE_NAME so this gate exercises live credentials.'

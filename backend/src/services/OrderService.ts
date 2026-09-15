@@ -19,14 +19,12 @@ import { isFresh } from './ComparisonService.js';
 export interface OrderServiceDeps {
   store: SessionStore;
   snapshotStore: { getLatest: (placeId: string) => Promise<Snapshot | null> };
-  freshnessMs: number;
-  failureFreshnessMs: number;
 }
 
 export type OrderUnavailable = { reason: 'stale' | 'no_menu'; message: string };
 
 export function createOrderService(deps: OrderServiceDeps) {
-  const { store, snapshotStore, freshnessMs, failureFreshnessMs } = deps;
+  const { store, snapshotStore } = deps;
 
   /**
    * Builds the wire state from the stored order hash and its Order Lines. The
@@ -121,7 +119,7 @@ export function createOrderService(deps: OrderServiceDeps) {
         );
       }
       if (existing) return existing;
-      if (!snapshot || !isFresh(snapshot, freshnessMs, failureFreshnessMs)) {
+      if (!snapshot || !isFresh(snapshot)) {
         return { reason: 'stale', message: 'Prices for this Venue are stale. Please try again.' };
       }
 

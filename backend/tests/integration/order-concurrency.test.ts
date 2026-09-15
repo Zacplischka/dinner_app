@@ -40,8 +40,6 @@ function service(index: number, getLatest = async () => snapshot) {
   return createOrderService({
     store: stores[index],
     snapshotStore: { getLatest },
-    freshnessMs: 60000,
-    failureFreshnessMs: 1000,
   });
 }
 async function cleanup() {
