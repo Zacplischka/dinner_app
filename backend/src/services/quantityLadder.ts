@@ -13,6 +13,7 @@ import type {
   QuantityResolution,
 } from '@dinder/shared/types';
 import { logger } from '../logger.js';
+import type { RedisLike } from '../redis/redisLike.js';
 import { cupCentsPerGram, parsePack } from './packParser.js';
 import type { IngredientInfo, SpoonacularClient } from './spoonacularClient.js';
 
@@ -65,11 +66,6 @@ const SUB_GRAM_TELL = 0.5;
 // not a price; the keys have no TTL.
 const convertKey = (name: string, unit: string) => `spoonacular:convert:${name}:${unit}`;
 const ingredientKey = (name: string) => `spoonacular:ingredient:${name}`;
-
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string): Promise<unknown>;
-}
 
 interface QuantityLadderDeps {
   redis: RedisLike;

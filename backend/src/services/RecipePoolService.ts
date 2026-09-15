@@ -18,16 +18,10 @@
 // and the two supplies meet only in `blendDeck`. Nothing downstream of the
 // cut knows which source a card came from — Deck, Selection and Top Pick all
 // see Recipes.
-import type {
-  Craving,
-  Cuisine,
-  DeckEntry,
-  Diet,
-  MealType,
-  Recipe,
-} from '@dinder/shared/types';
+import type { Craving, Cuisine, DeckEntry, Diet, MealType, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
+import type { RedisLike } from '../redis/redisLike.js';
 import { satisfiedDiets, type OwnedRecipeStore } from './ownedRecipeStore.js';
 import { SpoonacularRefusal } from './spoonacularClient.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
@@ -116,14 +110,6 @@ const VENDOR_DARK_TTL_MS = 5 * 60_000;
  * timeout or 5xx is per-call best-effort (#316); three in a row are a fact.
  */
 const BLIP_LATCH = 3;
-
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
-  incr(key: string): Promise<number>;
-  pexpire(key: string, ttlMs: number): Promise<unknown>;
-  del(key: string): Promise<unknown>;
-}
 
 interface RecipePoolServiceDeps {
   redis: RedisLike;

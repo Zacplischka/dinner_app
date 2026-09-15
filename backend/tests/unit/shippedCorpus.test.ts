@@ -67,6 +67,8 @@ function fakeRedis() {
     get: async (key: string) => keys.get(key) ?? null,
     set: async (key: string, value: string) => void keys.set(key, value),
     del: async (key: string) => void keys.delete(key),
+    incr: async () => 0,
+    pexpire: async () => 1,
     hdel: async () => 0,
     hgetall: async () => ({}),
     multi: () => chain,

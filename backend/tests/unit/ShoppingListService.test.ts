@@ -87,11 +87,13 @@ function fakeRedis() {
     hashes,
     diesAt,
     get: vi.fn(async (key: string) => keys.get(key)?.value ?? null),
-    set: vi.fn(async (key: string, value: string, _mode: 'PX', ttlMs: number) => {
+    set: vi.fn(async (key: string, value: string, _mode?: 'PX', ttlMs = 0) => {
       keys.set(key, { value, ttlMs });
       return 'OK' as const;
     }),
     del: vi.fn(async (key: string) => (keys.delete(key) ? 1 : 0)),
+    incr: vi.fn(async () => 0),
+    pexpire: vi.fn(async () => 1),
     hdel: vi.fn(async (key: string, field: string) => (hash(key).delete(field) ? 1 : 0)),
     hgetall: vi.fn(async (key: string) => Object.fromEntries(hash(key))),
     // The chained MULTI: queued on the way in, run together on exec, exactly
