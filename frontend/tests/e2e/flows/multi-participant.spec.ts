@@ -133,8 +133,12 @@ test.describe('Multi-Participant Session Flow', () => {
     // Wait for results
     await Promise.all(all.map((p) => expect(p.page).toHaveURL(/\/results/, { timeout: 30_000 })));
 
-    // Verify results page shows matches
-    await host.resultsPage.verifyPageElements();
+    // Verify the Match: a Match card MUST be shown. The no-match fallback is a
+    // failure here — an either/or check would let a broken Match silently pass
+    // as "no matches". Case-sensitive: "Everyone liked this one." is Match copy.
+    await expect(host.page.locator('[data-match-card]').first()).toBeVisible();
+    await expect(host.page.getByText(/everyone liked/)).toBeHidden();
+    await expect(host.page.getByRole('button', { name: 'New session' })).toBeVisible();
   });
 });
 

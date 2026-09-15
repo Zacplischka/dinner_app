@@ -5,7 +5,6 @@ import {
   JoinSessionPage,
   SessionLobbyPage,
   SelectionPage,
-  ResultsPage,
 } from '../pages';
 
 /**
@@ -29,7 +28,6 @@ export type Participant = {
   joinPage: JoinSessionPage;
   lobbyPage: SessionLobbyPage;
   selectionPage: SelectionPage;
-  resultsPage: ResultsPage;
 };
 
 type MultiParticipantFixture = {
@@ -65,7 +63,6 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
         joinPage: new JoinSessionPage(hostPage),
         lobbyPage: new SessionLobbyPage(hostPage),
         selectionPage: new SelectionPage(hostPage),
-        resultsPage: new ResultsPage(hostPage),
       };
 
       // Host creates session
@@ -93,7 +90,6 @@ export const multiParticipantTest = base.extend<MultiParticipantFixture>({
           joinPage: new JoinSessionPage(page),
           lobbyPage: new SessionLobbyPage(page),
           selectionPage: new SelectionPage(page),
-          resultsPage: new ResultsPage(page),
         };
 
         // Participant joins session

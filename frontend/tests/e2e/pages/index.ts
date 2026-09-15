@@ -11,4 +11,3 @@ export { WatchSetupPage } from './WatchSetupPage';
 export { JoinSessionPage } from './JoinSessionPage';
 export { SessionLobbyPage } from './SessionLobbyPage';
 export { SelectionPage } from './SelectionPage';
-export { ResultsPage } from './ResultsPage';
