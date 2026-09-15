@@ -83,10 +83,7 @@ export function createSessionsRouter(sessionService: SessionService) {
 
       if (!validation.success) {
         req.log.warn(
-          {
-            reason: 'validation_error',
-            fields: validationFields(validation.error),
-          },
+          { reason: 'validation_error', fields: validationFields(validation.error) },
           'Rejected REST session create'
         );
 
@@ -188,13 +185,7 @@ export function createSessionsRouter(sessionService: SessionService) {
 
       // Validate session code format
       if (!SESSION_CODE_PATTERN.test(sessionCode)) {
-        req.log.warn(
-          {
-            sessionCode,
-            reason: 'invalid_session_code',
-          },
-          'Rejected REST session get'
-        );
+        req.log.warn({ sessionCode, reason: 'invalid_session_code' }, 'Rejected REST session get');
 
         throw notFound();
       }
@@ -203,23 +194,13 @@ export function createSessionsRouter(sessionService: SessionService) {
       const session = await sessionService.getSession(sessionCode);
 
       if (!session) {
-        req.log.warn(
-          {
-            sessionCode,
-            reason: 'session_not_found',
-          },
-          'Rejected REST session get'
-        );
+        req.log.warn({ sessionCode, reason: 'session_not_found' }, 'Rejected REST session get');
 
         throw notFound();
       }
 
       req.log.info(
-        {
-          sessionCode,
-          state: session.state,
-          participantCount: session.participantCount,
-        },
+        { sessionCode, state: session.state, participantCount: session.participantCount },
         'Returned REST session'
       );
 
