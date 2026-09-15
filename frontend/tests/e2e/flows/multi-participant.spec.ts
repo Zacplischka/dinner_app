@@ -66,11 +66,7 @@ test.describe('Multi-Participant Session Flow', () => {
 
     // Wait for selection pages to load
     await Promise.all(
-      all.map(async (p) => {
-        await p.selectionPage.loadingState
-          .waitFor({ state: 'hidden', timeout: 30_000 })
-          .catch(() => {});
-      })
+      all.map((p) => expect(p.selectionPage.swipeCard.first()).toBeVisible({ timeout: 30_000 }))
     );
 
     // All participants make selections. Likes are DISJOINT (participant i
@@ -109,11 +105,7 @@ test.describe('Multi-Participant Session Flow', () => {
 
     // Wait for restaurants to load
     await Promise.all(
-      all.map(async (p) => {
-        await p.selectionPage.loadingState
-          .waitFor({ state: 'hidden', timeout: 30_000 })
-          .catch(() => {});
-      })
+      all.map((p) => expect(p.selectionPage.swipeCard.first()).toBeVisible({ timeout: 30_000 }))
     );
 
     // Host likes the first restaurant and finishes the deck the long way.
@@ -151,11 +143,7 @@ test.describe('Top Pick crown on empty match (#165/#166, supersedes #72)', () =>
     await host.lobbyPage.startSession();
 
     await Promise.all(
-      all.map(async (p) => {
-        await p.selectionPage.loadingState
-          .waitFor({ state: 'hidden', timeout: 30_000 })
-          .catch(() => {});
-      })
+      all.map((p) => expect(p.selectionPage.swipeCard.first()).toBeVisible({ timeout: 30_000 }))
     );
 
     // Host and Guest1 like only the first restaurant; Guest2 passes it and
@@ -208,11 +196,7 @@ test.describe('Live Swipe Room (#183-#187)', () => {
     await host.lobbyPage.startSession();
 
     await Promise.all(
-      all.map(async (p) => {
-        await p.selectionPage.loadingState
-          .waitFor({ state: 'hidden', timeout: 30_000 })
-          .catch(() => {});
-      })
+      all.map((p) => expect(p.selectionPage.swipeCard.first()).toBeVisible({ timeout: 30_000 }))
     );
 
     // Everyone likes the first restaurant. Each phone's own like is the last
@@ -249,11 +233,7 @@ test.describe('Live Swipe Room (#183-#187)', () => {
     await host.lobbyPage.startSession();
 
     await Promise.all(
-      all.map(async (p) => {
-        await p.selectionPage.loadingState
-          .waitFor({ state: 'hidden', timeout: 30_000 })
-          .catch(() => {});
-      })
+      all.map((p) => expect(p.selectionPage.swipeCard.first()).toBeVisible({ timeout: 30_000 }))
     );
 
     // Guest2 passes the first card (deciding it), then host and guest1 like
@@ -280,11 +260,7 @@ test.describe('Select Again restart (#14, #85)', () => {
     await host.lobbyPage.startSession();
 
     await Promise.all(
-      all.map(async (p) => {
-        await p.selectionPage.loadingState
-          .waitFor({ state: 'hidden', timeout: 30_000 })
-          .catch(() => {});
-      })
+      all.map((p) => expect(p.selectionPage.swipeCard.first()).toBeVisible({ timeout: 30_000 }))
     );
 
     // Everyone selects the first restaurant so the session produces a Match.

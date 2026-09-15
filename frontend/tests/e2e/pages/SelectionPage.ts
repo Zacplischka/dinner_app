@@ -12,7 +12,6 @@ export class SelectionPage {
   readonly likeButton: Locator;
   readonly passButton: Locator;
   readonly submitButton: Locator;
-  readonly loadingState: Locator;
   readonly waitingState: Locator;
   readonly finishHereButton: Locator;
   readonly progress: Locator;
@@ -29,7 +28,6 @@ export class SelectionPage {
       .or(page.locator('button[aria-label="Pass"]'));
     this.submitButton = page.getByRole('button', { name: /Submit/i });
 
-    this.loadingState = page.getByText(/Finding (restaurants|recipes|movies)/i);
     // The waiting screen's heading, not a /Waiting for/ text match: any other
     // sentence starting "Waiting for" would make that locator ambiguous.
     this.waitingState = page.getByRole('heading', { name: 'All done!' });

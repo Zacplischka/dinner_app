@@ -96,11 +96,7 @@ test.describe('Mobile-safe focused-flow header (#78)', () => {
 
     await host.lobbyPage.startSession();
     await Promise.all(
-      all.map(async (p) => {
-        await p.selectionPage.loadingState
-          .waitFor({ state: 'hidden', timeout: 30_000 })
-          .catch(() => {});
-      })
+      all.map((p) => expect(p.selectionPage.swipeCard.first()).toBeVisible({ timeout: 30_000 }))
     );
     await expect(host.page).toHaveURL(/\/session\/[A-Z0-9]+\/select/);
 
