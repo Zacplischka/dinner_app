@@ -18,8 +18,6 @@ import type {
   GetProfileResponse,
   LoadRestaurantsResponse,
   Mood,
-  NearestCraving,
-  NearestCravingResponse,
   SearchUsersResponse,
   SendFriendRequestPayload,
   SendSessionInviteRequest,
@@ -27,7 +25,6 @@ import type {
   SessionInvitesResponse,
   SessionLocation,
   SessionResponse,
-  SessionDefaultsResponse,
   ShoppingListResponse,
   SwapLineRequest,
   SwapLineResponse,
@@ -101,24 +98,6 @@ export async function createSession(
 }
 
 /**
- * The Nearest Craving to one that just dealt nothing (#334) — cuisine widened
- * or dropped, with the count it can actually deal. Null when even the widest
- * step is empty. Asking is not accepting: minting the offer is another
- * `createSession` with the Craving it names.
- */
-export async function fetchNearestCraving(craving: Craving): Promise<NearestCraving | null> {
-  const query = new URLSearchParams({
-    mealType: craving.mealType,
-    cuisines: craving.cuisines.join(','),
-    diets: craving.diets.join(','),
-  });
-  const { nearest } = await request<NearestCravingResponse>(
-    `/cravings/nearest?${query.toString()}`
-  );
-  return nearest;
-}
-
-/**
  * Resolve a suburb or postcode to coordinates and a human-readable area
  */
 export async function geocodeArea(query: string): Promise<GeocodedArea> {
@@ -130,10 +109,6 @@ export async function geocodeArea(query: string): Promise<GeocodedArea> {
  */
 export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodedArea> {
   return request<GeocodedArea>(`/geocode?latitude=${latitude}&longitude=${longitude}`);
-}
-
-export function getSessionDefaults(): Promise<SessionDefaultsResponse> {
-  return request<SessionDefaultsResponse>('/sessions/defaults');
 }
 
 /**
