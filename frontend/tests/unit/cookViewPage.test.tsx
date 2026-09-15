@@ -40,7 +40,8 @@ const list: ShoppingList = {
   recipeName: 'Beef Rendang',
   headcount: 4,
   servings: 2,
-  mintedAt: '2026-08-01T10:00:00.000Z',
+  // Fresh: cooking progress rides the list's 7-day clock on both platforms.
+  mintedAt: new Date().toISOString(),
   steps,
   sourceName: 'Serious Eats',
   sourceUrl: 'https://example.com/rendang',

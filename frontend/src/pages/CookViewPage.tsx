@@ -18,59 +18,51 @@ import Spinner from '../components/Spinner';
 import RecipeSourceCredit from '../components/RecipeSourceCredit';
 import RecipePricingStatus from '../components/RecipePricingStatus';
 
-// This tab's fallback when browser storage is blocked or full. Progress is
-// never a shared fact about the Shopping List.
-const unsavedProgress = new Map<string, boolean>();
+// One record for whichever list was last cooked, on that list's 7-day clock.
+const PROGRESS_KEY = 'heykeen.cook-progress';
+const storage = () => (Capacitor.isNativePlatform() ? nativeStateStorage : sessionStorage);
+// Progress not yet in storage: mid-write, or when storage is blocked or full.
+// Never a shared fact about the Shopping List.
+const unsavedProgress = new Map<string, number[]>();
+
+async function readProgress(listId: string): Promise<number[]> {
+  const unsaved = unsavedProgress.get(listId);
+  if (unsaved) return unsaved;
+  const saved = await storage().getItem(PROGRESS_KEY);
+  const record: unknown = saved ? JSON.parse(saved) : null;
+  const {
+    listId: savedId,
+    steps,
+    expiresAt,
+  } = record && typeof record === 'object' ? (record as Record<string, unknown>) : {};
+  const live = typeof expiresAt === 'number' && expiresAt > Date.now();
+  if (typeof expiresAt === 'number' && !live) await storage().removeItem(PROGRESS_KEY);
+  if (!live || savedId !== listId || !Array.isArray(steps)) return [];
+  return steps.filter((step): step is number => Number.isInteger(step) && step >= 0);
+}
 
 function Step({
   text,
   index,
-  listId,
   checked,
   onToggle,
 }: {
   text: string;
   index: number;
-  listId: string;
-  checked?: boolean;
-  onToggle?: () => void;
+  checked: boolean;
+  onToggle: () => void;
 }) {
-  const storageKey = `dinder.cookProgress.${listId}.${index}`;
-  const [dimmed, setDimmed] = useState(() => {
-    if (unsavedProgress.has(storageKey)) return unsavedProgress.get(storageKey)!;
-    try {
-      return sessionStorage.getItem(storageKey) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  function toggle() {
-    if (onToggle) {
-      onToggle();
-      return;
-    }
-    const next = !dimmed;
-    setDimmed(next);
-    try {
-      sessionStorage.setItem(storageKey, String(next));
-      unsavedProgress.delete(storageKey);
-    } catch {
-      unsavedProgress.set(storageKey, next);
-    }
-  }
-
   return (
     <li>
       <button
         type="button"
-        aria-pressed={checked ?? dimmed}
-        onClick={toggle}
+        aria-pressed={checked}
+        onClick={onToggle}
         className="flex w-full items-start gap-4 border-b border-line/30 py-5 text-left"
       >
         <span className="shrink-0 font-display text-lg font-black text-lime">{index + 1}</span>
         <span
-          className={`text-lg leading-relaxed ${(checked ?? dimmed) ? 'text-muted line-through' : 'text-text'}`}
+          className={`text-lg leading-relaxed ${checked ? 'text-muted line-through' : 'text-text'}`}
         >
           {text}
         </span>
@@ -83,63 +75,45 @@ export default function CookViewPage() {
   const navigate = useNavigate();
   const { listId } = useParams<{ listId: string }>();
   const { list, error } = useShoppingList(listId);
-  const native = Capacitor.isNativePlatform();
-  const [progress, setProgress] = useState<number[] | null>(native ? null : []);
+  const [progress, setProgress] = useState<number[] | null>(null);
   useEffect(() => {
-    if (!native) return;
     let active = true;
     setProgress(null);
-    void (async () => {
-      try {
-        const saved = await nativeStateStorage.getItem('heykeen.cook-progress');
-        const value: unknown = saved ? JSON.parse(saved) : null;
-        const record = value && typeof value === 'object' ? value : null;
-        const expiresAt = record && 'expiresAt' in record ? record.expiresAt : undefined;
-        const steps: unknown[] =
-          record && 'steps' in record && Array.isArray(record.steps) ? record.steps : [];
-        if (active)
-          setProgress(
-            record &&
-              'listId' in record &&
-              record.listId === listId &&
-              typeof expiresAt === 'number' &&
-              expiresAt > Date.now()
-              ? steps.filter(
-                  (step): step is number =>
-                    typeof step === 'number' && Number.isInteger(step) && step >= 0
-                )
-              : []
-          );
-        if (typeof expiresAt === 'number' && expiresAt <= Date.now())
-          await nativeStateStorage.removeItem('heykeen.cook-progress');
-      } catch {
-        if (active) {
-          setProgress([]);
+    readProgress(listId ?? '')
+      .then((steps) => active && setProgress(steps))
+      .catch(() => {
+        if (!active) return;
+        setProgress([]);
+        if (Capacitor.isNativePlatform())
           toast.warning('Saved cooking progress could not be opened.');
-        }
-      }
-    })();
+      });
     return () => {
       active = false;
     };
-  }, [listId, native]);
+  }, [listId]);
 
-  function toggleNativeStep(index: number) {
+  function toggleStep(index: number) {
     if (!list || !progress) return;
     const next = progress.includes(index)
       ? progress.filter((step) => step !== index)
       : [...progress, index];
     setProgress(next);
-    void Promise.resolve(
-      nativeStateStorage.setItem(
-        'heykeen.cook-progress',
-        JSON.stringify({
-          listId: list.listId,
-          steps: next,
-          expiresAt: Date.parse(list.mintedAt) + 7 * 24 * 60 * 60 * 1000,
-        })
-      )
-    ).catch(() => toast.warning('Cooking progress could not be saved. Keep this screen open.'));
+    // Set before the write, so a reopen mid-write reads it.
+    unsavedProgress.set(list.listId, next);
+    const record = JSON.stringify({
+      listId: list.listId,
+      steps: next,
+      expiresAt: Date.parse(list.mintedAt) + 7 * 24 * 60 * 60 * 1000,
+    });
+    Promise.resolve()
+      .then(() => storage().setItem(PROGRESS_KEY, record))
+      .then(() => {
+        if (unsavedProgress.get(list.listId) === next) unsavedProgress.delete(list.listId);
+      })
+      .catch(() => {
+        if (Capacitor.isNativePlatform())
+          toast.warning('Cooking progress could not be saved. Keep this screen open.');
+      });
   }
   // Only once there is something to cook: an expired list is not a stove, and
   // holding a dead URL's screen awake is just a flat battery.
@@ -179,11 +153,10 @@ export default function CookViewPage() {
                     list.steps.map((step, index) => (
                       <Step
                         key={`${list.listId}:${index}`}
-                        listId={list.listId}
                         text={step}
                         index={index}
-                        checked={native ? progress.includes(index) : undefined}
-                        onToggle={native ? () => toggleNativeStep(index) : undefined}
+                        checked={progress.includes(index)}
+                        onToggle={() => toggleStep(index)}
                       />
                     ))}
                 </ol>
