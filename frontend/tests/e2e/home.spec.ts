@@ -91,7 +91,12 @@ test('home remains usable with failed images, reduced motion and narrow screens'
 test.describe('Create Session Page', () => {
   test('should display create session form', async ({ createPage }) => {
     await createPage.goto();
-    await createPage.verifyPageElements();
+
+    await expect(createPage.heading).toBeVisible();
+    await expect(createPage.nameInput).toBeVisible();
+    await expect(createPage.useMyLocationButton).toHaveCount(0);
+    await expect(createPage.createButton).toBeVisible();
+    await expect(createPage.backButton).toBeVisible();
   });
 
   test('should navigate back on cancel', async ({ createPage, page }) => {
@@ -105,26 +110,29 @@ test.describe('Create Session Page', () => {
 test.describe('Join Session Page', () => {
   test('should display join session form', async ({ joinPage }) => {
     await joinPage.goto();
-    await joinPage.verifyPageElements();
+
+    await expect(joinPage.heading).toBeVisible();
+    await expect(joinPage.sessionCodeInput).toBeVisible();
+    await expect(joinPage.nameInput).toBeVisible();
+    await expect(joinPage.joinButton).toBeVisible();
+    await expect(joinPage.backButton).toBeVisible();
   });
 
   test('should format session code to uppercase', async ({ joinPage }) => {
     await joinPage.goto();
-    await joinPage.enterSessionCode('abc123');
-    await joinPage.verifySessionCodeUppercase('ABC12');
+    await joinPage.sessionCodeInput.fill('abc123');
+    await expect(joinPage.sessionCodeInput).toHaveValue('ABC12');
   });
 
   test('should limit session code to 5 characters', async ({ joinPage }) => {
     await joinPage.goto();
-    await joinPage.enterSessionCode('ABCDEGHIJ');
-
-    const value = await joinPage.getSessionCodeValue();
-    expect(value).toBe('ABCDE');
+    await joinPage.sessionCodeInput.fill('ABCDEGHIJ');
+    await expect(joinPage.sessionCodeInput).toHaveValue('ABCDE');
   });
 
   test('should show character count for name input', async ({ joinPage, page }) => {
     await joinPage.goto();
-    await joinPage.enterName('Alice');
+    await joinPage.nameInput.fill('Alice');
 
     await expect(page.getByText(/5\/50 characters/i)).toBeVisible();
   });

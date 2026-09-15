@@ -8,7 +8,7 @@ test('corrects the final swipe, then recovers an all-pass Watch round through sh
 }, info) => {
   const host = new WatchSetupPage(page);
   await host.goto();
-  await host.enterName('UAT Host');
+  await host.nameInput.fill('UAT Host');
   const code = await host.createSession();
   await page.getByRole('button', { name: 'Smaller Deck' }).click();
   await expect(page.getByText('10 titles', { exact: true })).toBeVisible();

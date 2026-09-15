@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 
 /**
  * JoinSessionPage - Page object for joining existing sessions
@@ -25,25 +25,11 @@ export class JoinSessionPage {
   }
 
   /**
-   * Fill in session code (auto-uppercased)
-   */
-  async enterSessionCode(code: string): Promise<void> {
-    await this.sessionCodeInput.fill(code);
-  }
-
-  /**
-   * Fill in name
-   */
-  async enterName(name: string): Promise<void> {
-    await this.nameInput.fill(name);
-  }
-
-  /**
    * Join a session with given code and name
    */
   async joinSession(sessionCode: string, name: string): Promise<void> {
-    await this.enterSessionCode(sessionCode);
-    await this.enterName(name);
+    await this.sessionCodeInput.fill(sessionCode);
+    await this.nameInput.fill(name);
     await this.joinButton.click();
 
     // Wait for navigation to session lobby
@@ -56,31 +42,5 @@ export class JoinSessionPage {
   async cancel(): Promise<void> {
     await this.backButton.click();
     await this.page.waitForURL('/');
-  }
-
-  /**
-   * Get the current value of session code input
-   */
-  async getSessionCodeValue(): Promise<string> {
-    return await this.sessionCodeInput.inputValue();
-  }
-
-  /**
-   * Verify session code is uppercase
-   */
-  async verifySessionCodeUppercase(expectedCode: string): Promise<void> {
-    const value = await this.getSessionCodeValue();
-    expect(value).toBe(expectedCode.toUpperCase());
-  }
-
-  /**
-   * Verify page elements
-   */
-  async verifyPageElements(): Promise<void> {
-    await expect(this.heading).toBeVisible();
-    await expect(this.sessionCodeInput).toBeVisible();
-    await expect(this.nameInput).toBeVisible();
-    await expect(this.joinButton).toBeVisible();
-    await expect(this.backButton).toBeVisible();
   }
 }

@@ -27,18 +27,11 @@ export class CreateSessionPage {
   }
 
   /**
-   * Fill in the name field
-   */
-  async enterName(name: string): Promise<void> {
-    await this.nameInput.fill(name);
-  }
-
-  /**
    * Create a session with the given name
    * Returns the session code from the URL
    */
   async createSession(name: string): Promise<string> {
-    await this.enterName(name);
+    await this.nameInput.fill(name);
     await this.createButton.click();
 
     // Wait for navigation to session lobby
@@ -73,23 +66,5 @@ export class CreateSessionPage {
         .getByRole('region', { name: 'Shared search area' })
         .getByText(/37.7749|San Francisco/)
     ).toBeVisible();
-  }
-
-  /**
-   * Get current character count display
-   */
-  async getCharacterCountText(): Promise<string> {
-    return (await this.nameCharacterCount.textContent()) || '';
-  }
-
-  /**
-   * Verify page elements are visible
-   */
-  async verifyPageElements(): Promise<void> {
-    await expect(this.heading).toBeVisible();
-    await expect(this.nameInput).toBeVisible();
-    await expect(this.useMyLocationButton).toHaveCount(0);
-    await expect(this.createButton).toBeVisible();
-    await expect(this.backButton).toBeVisible();
   }
 }

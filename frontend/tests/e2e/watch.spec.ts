@@ -16,7 +16,7 @@ test.describe('Watch Branch', () => {
     await expect(page).toHaveURL(/\/watch/);
     await expect(watchPage.heading).toBeVisible();
 
-    await watchPage.enterName('Host');
+    await watchPage.nameInput.fill('Host');
     const sessionCode = await watchPage.createSession();
     expect(sessionCode).toMatch(/^[A-Z0-9]{5}$/);
     await watchPage.pickChip('Comedy');

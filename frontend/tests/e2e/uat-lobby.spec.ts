@@ -109,7 +109,7 @@ test('four people can choose personal interests together without losing edits', 
 }, info) => {
   const host = new WatchSetupPage(page);
   await host.goto();
-  await host.enterName('UAT Host');
+  await host.nameInput.fill('UAT Host');
   const code = await host.createSession();
   const contexts = [];
   const people = [page];

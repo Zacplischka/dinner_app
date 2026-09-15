@@ -9,7 +9,7 @@ test('everyone chooses and confirms Ready, then returns from home to the shared 
   test.setTimeout(60_000);
   const host = new WatchSetupPage(page);
   await host.goto();
-  await host.enterName('Host');
+  await host.nameInput.fill('Host');
   const code = await host.createSession();
   const guestContext = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } });
   try {

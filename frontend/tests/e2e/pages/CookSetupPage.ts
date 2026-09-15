@@ -32,10 +32,6 @@ export class CookSetupPage {
     await this.page.getByRole('button', { name: label, exact: true }).click();
   }
 
-  async enterName(name: string): Promise<void> {
-    await this.nameInput.fill(name);
-  }
-
   /** Deal the Deck and land in the lobby; resolves to the Session code. */
   async createSession(): Promise<string> {
     await this.startButton.click();

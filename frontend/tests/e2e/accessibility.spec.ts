@@ -55,17 +55,16 @@ test.describe('Accessibility - Create Session Page', () => {
     await expect(createPage.createButton).toBeDisabled();
 
     // After entering the required name, button should be enabled
-    await createPage.enterName('TestUser');
+    await createPage.nameInput.fill('TestUser');
     await expect(createPage.createButton).toBeEnabled();
   });
 
   test('character count is accessible', async ({ createPage }) => {
     await createPage.goto();
-    await createPage.enterName('Test');
+    await createPage.nameInput.fill('Test');
 
     // Character count should be present
-    const charCount = await createPage.getCharacterCountText();
-    expect(charCount).toContain('4');
+    await expect(createPage.nameCharacterCount).toContainText('4');
   });
 });
 
@@ -90,8 +89,8 @@ test.describe('Accessibility - Join Session Page', () => {
     await joinPage.goto();
 
     // A well-formed code that names no Session — the join must fail visibly.
-    await joinPage.enterSessionCode('AAAAA');
-    await joinPage.enterName('Test');
+    await joinPage.sessionCodeInput.fill('AAAAA');
+    await joinPage.nameInput.fill('Test');
     await joinPage.joinButton.click();
 
     // The failure must surface as visible text a screen reader reaches, not a

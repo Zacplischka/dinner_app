@@ -44,10 +44,6 @@ export class WatchSetupPage {
     await expect(this.chip(label)).toHaveAttribute('aria-pressed', 'true');
   }
 
-  async enterName(name: string): Promise<void> {
-    await this.nameInput.fill(name);
-  }
-
   /**
    * Start swiping and land in the lobby
    * Returns the session code from the URL
