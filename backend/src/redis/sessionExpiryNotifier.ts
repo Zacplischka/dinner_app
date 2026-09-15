@@ -2,15 +2,11 @@
 // Emits session:expired events via Socket.IO when sessions expire
 
 import { logger } from '../logger.js';
-import Redis from 'ioredis';
+import type { Redis } from 'ioredis';
 import type { Server } from 'socket.io';
 import { sessionCodeFromExpiredKey } from '../store/sessionStore.js';
-import { KEY_PREFIX } from './client.js';
+import { KEY_PREFIX, redis } from './client.js';
 import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/types';
-
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 
 let subscriber: Redis | null = null;
 
@@ -22,12 +18,7 @@ export async function initializeSessionExpiryNotifier(
   io: Server<ClientToServerEvents, ServerToClientEvents>
 ): Promise<void> {
   // Create dedicated Redis subscriber connection (required for pub/sub)
-  subscriber = new Redis({
-    host: REDIS_HOST,
-    port: REDIS_PORT,
-    password: REDIS_PASSWORD,
-    family: 0,
-  });
+  subscriber = redis.duplicate();
 
   // Enable keyspace notifications for expired events
   // 'Ex' = keyspace events for expired keys
