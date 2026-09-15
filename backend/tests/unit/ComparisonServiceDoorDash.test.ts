@@ -73,7 +73,6 @@ describe('createComparisonService DoorDash actor', () => {
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
       failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service).terminal;
@@ -121,7 +120,6 @@ describe('createComparisonService DoorDash actor', () => {
         ),
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service).terminal;
@@ -165,7 +163,6 @@ describe('createComparisonService DoorDash actor', () => {
         ),
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service).terminal;
@@ -200,7 +197,6 @@ describe('createComparisonService DoorDash actor', () => {
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
       failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service).terminal;
@@ -226,7 +222,6 @@ describe('createComparisonService DoorDash actor', () => {
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
     const firstEvents: ComparisonStreamEvent[] = [];
     const unsubscribe = service.subscribe('place-1', (event) => firstEvents.push(event));
@@ -273,7 +268,6 @@ describe('createComparisonService DoorDash actor', () => {
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
       failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
-      settleCapMs: 100,
     });
     const notFoundFetch = vi.fn();
     const notFoundService = createComparisonService({
@@ -285,7 +279,6 @@ describe('createComparisonService DoorDash actor', () => {
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
       failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     await collectComparison(failedService).terminal;

@@ -62,7 +62,6 @@ describe('createComparisonService', () => {
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore,
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -103,7 +102,6 @@ describe('createComparisonService', () => {
       fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -147,7 +145,6 @@ describe('createComparisonService', () => {
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(freshSnapshot), insert },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');
@@ -200,7 +197,6 @@ describe('createComparisonService', () => {
         insert: vi.fn(),
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1', beginColdCompare);
@@ -219,7 +215,6 @@ describe('createComparisonService', () => {
       fetchPlaceDetails,
       snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1', beginColdCompare);
@@ -250,7 +245,6 @@ describe('createComparisonService', () => {
       fetchPlaceDetails,
       snapshotStore: { getLatest, insert },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const first = collectComparison(service, 'place-1');
@@ -264,38 +258,6 @@ describe('createComparisonService', () => {
     expect(fetchPlaceDetails).toHaveBeenCalledTimes(1);
     expect(runActor).toHaveBeenCalledTimes(2);
     expect(insert).toHaveBeenCalledTimes(1);
-  });
-
-  it('settles a timed-out actor as failed and still writes the Snapshot', async () => {
-    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
-      insertedSnapshot(payload)
-    );
-    const service = createComparisonService({
-      runActor: vi.fn(() => new Promise<unknown[]>(() => undefined)),
-      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
-      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
-      freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 10,
-    });
-
-    const events = await collectComparison(service, 'place-1');
-
-    expect(
-      events.find((event) => event.type === 'storefront' && event.platform === 'ubereats')
-    ).toEqual({
-      type: 'storefront',
-      platform: 'ubereats',
-      storefront: { status: 'failed', deals: [], menu: [] },
-    });
-    expect(insert).toHaveBeenCalledWith({
-      placeId: 'place-1',
-      venueName: '11 Inch Pizza',
-      payload: {
-        ubereats: { status: 'failed', deals: [], menu: [] },
-        doordash: { status: 'failed', deals: [], menu: [] },
-      },
-    });
-    expect(events.at(-1)?.type).toBe('comparison');
   });
 
   it('finishes and persists after every subscriber disconnects mid-flight', async () => {
@@ -312,7 +274,6 @@ describe('createComparisonService', () => {
         }),
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const subscriber = vi.fn();
@@ -350,7 +311,6 @@ describe('createComparisonService', () => {
         ),
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     await collectComparison(service, 'place-1');
@@ -390,7 +350,6 @@ describe('createComparisonService', () => {
         ),
       },
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
 
     const events = await collectComparison(service, 'place-1');

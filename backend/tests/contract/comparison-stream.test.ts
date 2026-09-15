@@ -195,7 +195,6 @@ describe('per-IP rate limit on cold Comparisons', () => {
       })),
       snapshotStore,
       freshnessMs: SNAPSHOT_FRESHNESS_MS,
-      settleCapMs: 100,
     });
     const app = express();
     app.use(

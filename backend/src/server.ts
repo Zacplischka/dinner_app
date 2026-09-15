@@ -120,7 +120,6 @@ const comparisonService = createComparisonService({
   snapshotStore: comparisonSnapshotStore,
   freshnessMs: SNAPSHOT_FRESHNESS_MS,
   failureFreshnessMs: SNAPSHOT_FAILURE_FRESHNESS_MS,
-  settleCapMs: 300_000,
 });
 const orderService = createOrderService({
   store: sessionStore,

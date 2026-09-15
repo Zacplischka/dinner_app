@@ -28,7 +28,6 @@ interface ComparisonServiceDeps {
   snapshotStore: SnapshotStore;
   freshnessMs: number;
   failureFreshnessMs?: number;
-  settleCapMs: number;
 }
 
 export interface StorefrontResolver {
@@ -154,10 +153,7 @@ async function fetchStorefront(
 ): Promise<StorefrontCapture> {
   if (storedUrl) {
     try {
-      const output = await settleWithin(
-        deps.runActor(actorId, resolver.urlInput(storedUrl)),
-        deps.settleCapMs
-      );
+      const output = await deps.runActor(actorId, resolver.urlInput(storedUrl));
       const capture = resolver.resolve(output, venue);
       if (capture.status === 'resolved') return capture;
     } catch {
@@ -166,10 +162,7 @@ async function fetchStorefront(
   }
 
   try {
-    const output = await settleWithin(
-      deps.runActor(actorId, resolver.searchInput(venue)),
-      deps.settleCapMs
-    );
+    const output = await deps.runActor(actorId, resolver.searchInput(venue));
     return resolver.resolve(output, venue);
   } catch {
     return emptyCapture('failed');
@@ -206,20 +199,4 @@ export function isFresh(
   );
   const maxAgeMs = hasFailure ? Math.min(freshnessMs, failureFreshnessMs) : freshnessMs;
   return ageMs >= 0 && ageMs < maxAgeMs;
-}
-
-function settleWithin<T>(promise: Promise<T>, settleCapMs: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Actor run exceeded settle cap')), settleCapMs);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error: unknown) => {
-        clearTimeout(timer);
-        reject(error instanceof Error ? error : new Error('Actor run failed'));
-      }
-    );
-  });
 }
