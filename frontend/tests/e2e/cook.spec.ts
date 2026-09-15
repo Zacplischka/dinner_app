@@ -1,6 +1,7 @@
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures/test-fixtures';
 import { CookSetupPage } from './pages/CookSetupPage';
-import { SelectionPage, SessionLobbyPage } from './pages';
+import { SelectionPage } from './pages/SelectionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
 
 /**
  * Cook Branch E2E (#259)

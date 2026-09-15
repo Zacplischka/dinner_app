@@ -1,5 +1,6 @@
-import { test, expect } from './fixtures';
-import { SelectionPage, SessionLobbyPage } from './pages';
+import { test, expect } from './fixtures/test-fixtures';
+import { SelectionPage } from './pages/SelectionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
 
 /**
  * Watch Branch E2E (#369)

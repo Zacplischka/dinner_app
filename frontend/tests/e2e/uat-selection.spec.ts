@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { JoinSessionPage, SelectionPage, SessionLobbyPage, WatchSetupPage } from './pages';
+import { JoinSessionPage } from './pages/JoinSessionPage';
+import { SelectionPage } from './pages/SelectionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
+import { WatchSetupPage } from './pages/WatchSetupPage';
 
 test('corrects the final swipe, then recovers an all-pass Watch round through shared choices', async ({
   page,

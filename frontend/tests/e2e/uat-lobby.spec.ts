@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { WatchSetupPage, JoinSessionPage, SessionLobbyPage } from './pages';
+import { WatchSetupPage } from './pages/WatchSetupPage';
+import { JoinSessionPage } from './pages/JoinSessionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
 
 for (const [branch, unit, max] of [
   ['watch', 'titles', 50],

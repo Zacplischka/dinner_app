@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { WatchSetupPage, JoinSessionPage, SessionLobbyPage, SelectionPage } from './pages';
+import { WatchSetupPage } from './pages/WatchSetupPage';
+import { JoinSessionPage } from './pages/JoinSessionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
+import { SelectionPage } from './pages/SelectionPage';
 
 test('everyone chooses and confirms Ready, then returns from home to the shared round', async ({
   page,

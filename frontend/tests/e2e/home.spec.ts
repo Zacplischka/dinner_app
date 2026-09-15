@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures/test-fixtures';
 
 /**
  * Home Page E2E Tests

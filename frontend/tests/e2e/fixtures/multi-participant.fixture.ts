@@ -1,11 +1,9 @@
 import { test as base, Page, BrowserContext } from '@playwright/test';
-import {
-  HomePage,
-  CreateSessionPage,
-  JoinSessionPage,
-  SessionLobbyPage,
-  SelectionPage,
-} from '../pages';
+import { HomePage } from '../pages/HomePage';
+import { CreateSessionPage } from '../pages/CreateSessionPage';
+import { JoinSessionPage } from '../pages/JoinSessionPage';
+import { SessionLobbyPage } from '../pages/SessionLobbyPage';
+import { SelectionPage } from '../pages/SelectionPage';
 
 /**
  * Multi-Participant Test Fixture

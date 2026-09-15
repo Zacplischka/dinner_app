@@ -1,5 +1,5 @@
 import { expect, Page } from '@playwright/test';
-import { multiParticipantTest as test } from './fixtures';
+import { multiParticipantTest as test } from './fixtures/multi-participant.fixture';
 
 /**
  * Mobile-safe focused-flow header tests (#78)

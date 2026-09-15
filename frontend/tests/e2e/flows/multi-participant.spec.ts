@@ -1,4 +1,4 @@
-import { multiParticipantTest as test } from '../fixtures';
+import { multiParticipantTest as test } from '../fixtures/multi-participant.fixture';
 import { expect } from '@playwright/test';
 
 /**
