@@ -5,8 +5,7 @@ import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
-import { DomainError } from '../services/DomainError.js';
-import { toApiError } from '../api/toApiError.js';
+import { runCommand } from './runCommand.js';
 import {
   SESSION_CODE_PATTERN,
   type Ack,
@@ -31,81 +30,42 @@ export async function handleSelectionSubmit(
   callback: (response: Ack<null>) => void,
   service: SessionService
 ): Promise<void> {
-  try {
-    // Validate payload
-    const validation = selectionSubmitPayloadSchema.safeParse(payload);
-    if (!validation.success) {
-      const reason = validation.error.errors[0].message;
-      logger.warn(
-        {
-          socketId: socket.id,
-          sessionCode: (payload as Partial<SelectionSubmitPayload>).sessionCode,
-          reason,
-        },
-        'Rejected selection:submit'
-      );
-      return callback({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: reason },
-      });
-    }
-
-    const { sessionCode, selections, round } = validation.data;
-
-    let submittedCount: number;
-    let participantCount: number;
-    let results: Awaited<ReturnType<SessionService['submitSelections']>>['results'];
-    try {
-      ({ submittedCount, participantCount, results } = await service.submitSelections(
+  await runCommand(
+    'selection:submit',
+    socket.id,
+    selectionSubmitPayloadSchema,
+    payload,
+    callback,
+    async ({ sessionCode, selections, round }, ack) => {
+      const { submittedCount, participantCount, results } = await service.submitSelections(
         sessionCode,
         socket.id,
         selections,
         round
-      ));
-    } catch (error) {
-      if (!(error instanceof DomainError)) {
-        throw error;
-      }
-      logger.warn(
-        {
-          socketId: socket.id,
-          sessionCode,
-          reason: error.code,
-        },
-        'Rejected selection:submit'
       );
-      return callback({ success: false, error: toApiError(error).body });
-    }
 
-    // Send acknowledgment. No-data command → canonical data is null.
-    callback({ success: true, data: null });
+      // Send acknowledgment. No-data command → canonical data is null.
+      ack(null);
 
-    // Broadcast participant:submitted to ALL participants — count only, never
-    // the selections themselves, which stay private until everyone submits.
-    io.in(sessionCode).emit('participant:submitted', {
-      participantId: socket.id,
-      submittedCount,
-      participantCount,
-    });
-
-    const lobby = await service.getLobby(sessionCode);
-    if (lobby) io.in(sessionCode).emit('session:lobby', lobby);
-
-    logger.info(
-      { socketId: socket.id, sessionCode, submittedCount, participantCount },
-      'Participant submitted selections'
-    );
-
-    // When everyone has submitted, the service returns the computed Match
-    if (results) {
-      // Broadcast results to ALL participants (including sender)
-      io.in(sessionCode).emit('session:results', {
-        sessionCode,
-        ...results,
+      // Broadcast participant:submitted to ALL participants — count only, never
+      // the selections themselves, which stay private until everyone submits.
+      io.in(sessionCode).emit('participant:submitted', {
+        participantId: socket.id,
+        submittedCount,
+        participantCount,
       });
+
+      const lobby = await service.getLobby(sessionCode);
+      if (lobby) io.in(sessionCode).emit('session:lobby', lobby);
+
+      logger.info(
+        { socketId: socket.id, sessionCode, submittedCount, participantCount },
+        'Participant submitted selections'
+      );
+
+      // When everyone has submitted, the service returns the computed Match:
+      // broadcast it to ALL participants (including sender)
+      if (results) io.in(sessionCode).emit('session:results', { sessionCode, ...results });
     }
-  } catch (error) {
-    logger.error({ err: error, socketId: socket.id }, 'Error in selection:submit handler');
-    callback({ success: false, error: toApiError(error).body });
-  }
+  );
 }

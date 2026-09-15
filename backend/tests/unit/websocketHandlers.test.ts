@@ -1260,7 +1260,7 @@ describe('websocket handlers', () => {
       });
       expect(testSocket.roomEmitter.emit).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
-        { socketId: 'socket-1', reason: expect.any(String) },
+        { socketId: 'socket-1', sessionCode: 'nope', reason: expect.any(String) },
         'Rejected selection:live'
       );
     });

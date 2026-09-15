@@ -1,12 +1,10 @@
 // WebSocket handler for session:restart event - pure transport over
 // SessionService.restartSession (payload validation, ack/broadcasts).
 
-import { logger } from '../logger.js';
 import type { Socket, Server } from 'socket.io';
 import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
-import { DomainError } from '../services/DomainError.js';
-import { toApiError } from '../api/toApiError.js';
+import { runCommand } from './runCommand.js';
 import {
   SESSION_CODE_PATTERN,
   type Ack,
@@ -27,62 +25,30 @@ export async function handleSessionRestart(
   callback: (response: Ack<null>) => void,
   service: SessionService
 ): Promise<void> {
-  try {
-    // Validate payload
-    const validation = sessionRestartPayloadSchema.safeParse(payload);
-    if (!validation.success) {
-      const reason = validation.error.errors[0].message;
-      logger.warn(
-        {
-          socketId: socket.id,
-          sessionCode: (payload as Partial<SessionRestartPayload>).sessionCode,
-          reason,
-        },
-        'Rejected session:restart'
-      );
-      return callback({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: reason },
+  await runCommand(
+    'session:restart',
+    socket.id,
+    sessionRestartPayloadSchema,
+    payload,
+    callback,
+    async ({ sessionCode }, ack) => {
+      const { restarted } = await service.restartSession(sessionCode, socket.id);
+
+      // Send acknowledgment. No-data command → canonical data is null.
+      ack(null);
+
+      // Broadcast to ALL participants (including sender). The lobby's
+      // start rides the same event; only the message says which it was (#289).
+      const lobby = await service.getLobby(sessionCode);
+      io.in(sessionCode).emit('session:restarted', {
+        ...(lobby ? { state: 'waiting' as const, lobby } : {}),
+        sessionCode,
+        message: lobby
+          ? 'Back in the lobby. Review your choices and confirm Ready.'
+          : restarted
+            ? 'Session restarted. Make new selections.'
+            : 'Selection started.',
       });
     }
-
-    const { sessionCode } = validation.data;
-
-    let restarted: boolean;
-    try {
-      ({ restarted } = await service.restartSession(sessionCode, socket.id));
-    } catch (error) {
-      if (!(error instanceof DomainError)) {
-        throw error;
-      }
-      logger.warn(
-        {
-          socketId: socket.id,
-          sessionCode,
-          reason: error.code,
-        },
-        'Rejected session:restart'
-      );
-      return callback({ success: false, error: toApiError(error).body });
-    }
-
-    // Send acknowledgment. No-data command → canonical data is null.
-    callback({ success: true, data: null });
-
-    // Broadcast to ALL participants (including sender). The lobby's
-    // start rides the same event; only the message says which it was (#289).
-    const lobby = await service.getLobby(sessionCode);
-    io.in(sessionCode).emit('session:restarted', {
-      ...(lobby ? { state: 'waiting' as const, lobby } : {}),
-      sessionCode,
-      message: lobby
-        ? 'Back in the lobby. Review your choices and confirm Ready.'
-        : restarted
-          ? 'Session restarted. Make new selections.'
-          : 'Selection started.',
-    });
-  } catch (error) {
-    logger.error({ err: error, socketId: socket.id }, 'Error in session:restart handler');
-    callback({ success: false, error: toApiError(error).body });
-  }
+  );
 }
