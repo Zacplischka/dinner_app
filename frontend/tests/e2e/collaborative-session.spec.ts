@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { WatchSetupPage, JoinSessionPage, SessionLobbyPage, SelectionPage } from './pages';
+import { WatchSetupPage } from './pages/WatchSetupPage';
+import { JoinSessionPage } from './pages/JoinSessionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
+import { SelectionPage } from './pages/SelectionPage';
 
 test('everyone chooses and confirms Ready, then returns from home to the shared round', async ({
   page,
@@ -9,7 +12,7 @@ test('everyone chooses and confirms Ready, then returns from home to the shared 
   test.setTimeout(60_000);
   const host = new WatchSetupPage(page);
   await host.goto();
-  await host.enterName('Host');
+  await host.nameInput.fill('Host');
   const code = await host.createSession();
   const guestContext = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } });
   try {

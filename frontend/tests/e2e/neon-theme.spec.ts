@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
-import { CookSetupPage } from './pages';
+import { CookSetupPage } from './pages/CookSetupPage';
 
 const contrastRatio = (foreground: number[], background: number[]) => {
   const luminance = ([red, green, blue]: number[]) => {

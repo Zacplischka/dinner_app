@@ -3,7 +3,9 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { loadEnv } from 'vite';
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { WatchSetupPage, SessionLobbyPage, SelectionPage } from './pages';
+import { WatchSetupPage } from './pages/WatchSetupPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
+import { SelectionPage } from './pages/SelectionPage';
 
 // Four isolated identities against a disposable backend running production handlers.
 // Supabase Auth/Profile HTTP responses are fixtures: no real Google/Supabase accounts.

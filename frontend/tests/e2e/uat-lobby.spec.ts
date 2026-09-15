@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { WatchSetupPage, JoinSessionPage, SessionLobbyPage } from './pages';
+import { WatchSetupPage } from './pages/WatchSetupPage';
+import { JoinSessionPage } from './pages/JoinSessionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
 
 for (const [branch, unit, max] of [
   ['watch', 'titles', 50],
@@ -109,7 +111,7 @@ test('four people can choose personal interests together without losing edits', 
 }, info) => {
   const host = new WatchSetupPage(page);
   await host.goto();
-  await host.enterName('UAT Host');
+  await host.nameInput.fill('UAT Host');
   const code = await host.createSession();
   const contexts = [];
   const people = [page];

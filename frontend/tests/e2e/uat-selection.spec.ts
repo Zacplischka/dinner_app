@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { JoinSessionPage, SelectionPage, SessionLobbyPage, WatchSetupPage } from './pages';
+import { JoinSessionPage } from './pages/JoinSessionPage';
+import { SelectionPage } from './pages/SelectionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
+import { WatchSetupPage } from './pages/WatchSetupPage';
 
 test('corrects the final swipe, then recovers an all-pass Watch round through shared choices', async ({
   page,
@@ -8,7 +11,7 @@ test('corrects the final swipe, then recovers an all-pass Watch round through sh
 }, info) => {
   const host = new WatchSetupPage(page);
   await host.goto();
-  await host.enterName('UAT Host');
+  await host.nameInput.fill('UAT Host');
   const code = await host.createSession();
   await page.getByRole('button', { name: 'Smaller Deck' }).click();
   await expect(page.getByText('10 titles', { exact: true })).toBeVisible();

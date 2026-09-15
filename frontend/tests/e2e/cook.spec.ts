@@ -1,6 +1,7 @@
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures/test-fixtures';
 import { CookSetupPage } from './pages/CookSetupPage';
-import { SelectionPage, SessionLobbyPage } from './pages';
+import { SelectionPage } from './pages/SelectionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
 
 /**
  * Cook Branch E2E (#259)
@@ -21,7 +22,7 @@ test.describe('Cook Branch', () => {
     await expect(cookPage.heading).toBeVisible();
 
     // Italian is the corpus's largest tagged cuisine cell, so it deals keyless.
-    await cookPage.enterName('Host');
+    await cookPage.nameInput.fill('Host');
     const sessionCode = await cookPage.createSession();
     expect(sessionCode).toMatch(/^[A-Z0-9]{5}$/);
     await cookPage.pickChip('italian');

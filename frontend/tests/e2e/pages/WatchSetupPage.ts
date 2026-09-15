@@ -1,5 +1,4 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * WatchSetupPage - Page object for the Watch Branch's Mood setup (#369)
@@ -8,15 +7,13 @@ import { BasePage } from './BasePage';
  * Genre and decade chips are toggle buttons (`aria-pressed`); the Session is
  * created and its Movie Deck dealt on "Start swiping".
  */
-export class WatchSetupPage extends BasePage {
+export class WatchSetupPage {
   readonly heading: Locator;
   readonly nameInput: Locator;
   readonly startButton: Locator;
   readonly backButton: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.heading = page.getByRole('heading', { name: /Watch something/i });
     this.nameInput = page.getByLabel(/Your Name/i);
     this.startButton = page.getByRole('button', { name: /Create session/i });
@@ -25,7 +22,6 @@ export class WatchSetupPage extends BasePage {
 
   async goto(): Promise<void> {
     await this.page.goto('/watch');
-    await this.waitForPageLoad();
   }
 
   /**
@@ -46,10 +42,6 @@ export class WatchSetupPage extends BasePage {
       await interests.locator('summary').click();
     await this.chip(label).click();
     await expect(this.chip(label)).toHaveAttribute('aria-pressed', 'true');
-  }
-
-  async enterName(name: string): Promise<void> {
-    await this.nameInput.fill(name);
   }
 
   /**

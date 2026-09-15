@@ -31,13 +31,9 @@ export default defineConfig({
   reporter: CI
     ? [
         ['html', { outputFolder: 'playwright-report' }],
-        ['junit', { outputFile: 'test-results/junit.xml' }],
         ['github'], // GitHub Actions annotations
       ]
     : [['html', { open: 'never' }], ['list']],
-
-  // Test output
-  outputDir: 'test-results',
 
   // Global test timeout
   timeout: 30_000,
@@ -69,7 +65,7 @@ export default defineConfig({
     ...(CI ? {} : { launchOptions: { slowMo: 50 } }),
   },
 
-  // Test projects: mobile-first (primary, used in CI) plus one desktop browser
+  // Test projects: mobile-first; CI runs mobile-chrome plus the mobile-webkit subset
   projects: [
     {
       name: 'mobile-chrome',
@@ -86,13 +82,6 @@ export default defineConfig({
       // Browser engine coverage only; this does not execute a native app.
       testMatch: ['**/collaborative-session.spec.ts', '**/watch.spec.ts'],
       use: { ...devices['iPhone 12 Pro'], browserName: 'webkit' },
-    },
-    {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1280, height: 720 },
-      },
     },
   ],
 

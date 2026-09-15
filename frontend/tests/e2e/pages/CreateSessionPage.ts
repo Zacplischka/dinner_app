@@ -1,12 +1,11 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * CreateSessionPage - Page object for session creation
  *
  * Routes: /create
  */
-export class CreateSessionPage extends BasePage {
+export class CreateSessionPage {
   readonly heading: Locator;
   readonly nameInput: Locator;
   readonly nameCharacterCount: Locator;
@@ -14,9 +13,7 @@ export class CreateSessionPage extends BasePage {
   readonly backButton: Locator;
   readonly useMyLocationButton: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.heading = page.getByRole('heading', { name: /New session|Eat out|Order in/i });
     this.nameInput = page.getByLabel(/Your Name/i);
     this.nameCharacterCount = page.getByText(/\/50 characters/i);
@@ -27,14 +24,6 @@ export class CreateSessionPage extends BasePage {
 
   async goto(): Promise<void> {
     await this.page.goto('/create');
-    await this.waitForPageLoad();
-  }
-
-  /**
-   * Fill in the name field
-   */
-  async enterName(name: string): Promise<void> {
-    await this.nameInput.fill(name);
   }
 
   /**
@@ -42,7 +31,7 @@ export class CreateSessionPage extends BasePage {
    * Returns the session code from the URL
    */
   async createSession(name: string): Promise<string> {
-    await this.enterName(name);
+    await this.nameInput.fill(name);
     await this.createButton.click();
 
     // Wait for navigation to session lobby
@@ -77,34 +66,5 @@ export class CreateSessionPage extends BasePage {
         .getByRole('region', { name: 'Shared search area' })
         .getByText(/37.7749|San Francisco/)
     ).toBeVisible();
-  }
-
-  /**
-   * Get current character count display
-   */
-  async getCharacterCountText(): Promise<string> {
-    return (await this.nameCharacterCount.textContent()) || '';
-  }
-
-  /**
-   * Verify page elements are visible
-   */
-  async verifyPageElements(): Promise<void> {
-    await expect(this.heading).toBeVisible();
-    await expect(this.nameInput).toBeVisible();
-    await expect(this.useMyLocationButton).toHaveCount(0);
-    await expect(this.createButton).toBeVisible();
-    await expect(this.backButton).toBeVisible();
-  }
-
-  /**
-   * Verify submit button state based on name
-   */
-  async verifySubmitButtonState(shouldBeEnabled: boolean): Promise<void> {
-    if (shouldBeEnabled) {
-      await expect(this.createButton).toBeEnabled();
-    } else {
-      await expect(this.createButton).toBeDisabled();
-    }
   }
 }

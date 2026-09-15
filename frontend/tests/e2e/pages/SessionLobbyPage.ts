@@ -1,39 +1,19 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * SessionLobbyPage - Page object for session waiting room
  *
  * Routes: /session/:sessionCode
  */
-export class SessionLobbyPage extends BasePage {
+export class SessionLobbyPage {
   readonly participantsList: Locator;
   readonly startButton: Locator;
   readonly leaveButton: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
-    this.participantsList = page
-      .locator('[data-testid="participants-list"]')
-      .or(page.locator('[class*="participants"]'));
+  constructor(readonly page: Page) {
+    this.participantsList = page.locator('[data-testid="participants-list"]');
     this.startButton = page.getByRole('button', { name: /Start/i });
     this.leaveButton = page.getByRole('button', { name: /Back|Leave|Exit/i });
-  }
-
-  /**
-   * Get list of participant names
-   */
-  async getParticipants(): Promise<string[]> {
-    const participantElements = await this.participantsList
-      .locator('[data-testid="participant-name"]')
-      .all();
-    const names: string[] = [];
-    for (const el of participantElements) {
-      const name = await el.textContent();
-      if (name) names.push(name.trim());
-    }
-    return names;
   }
 
   /**
