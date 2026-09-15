@@ -21,72 +21,27 @@ describe('sessionStore', () => {
   });
 
   describe('location state', () => {
-    it('should store and retrieve location with address', () => {
-      const { setLocation } = useSessionStore.getState();
-
-      setLocation({ latitude: 37.7749, longitude: -122.4194, address: 'San Francisco, CA' });
-
-      const location = useSessionStore.getState().location;
-      expect(location).toEqual({
-        latitude: 37.7749,
-        longitude: -122.4194,
-        address: 'San Francisco, CA',
-      });
-    });
-
-    it('should store and retrieve location without address', () => {
-      const { setLocation } = useSessionStore.getState();
-
-      setLocation({ latitude: 37.7749, longitude: -122.4194 });
-
-      const location = useSessionStore.getState().location;
-      expect(location).toEqual({
-        latitude: 37.7749,
-        longitude: -122.4194,
-      });
-    });
-
     it('should clear location on reset', () => {
-      const { setLocation, resetSession } = useSessionStore.getState();
-
-      setLocation({ latitude: 37.7749, longitude: -122.4194, address: 'SF' });
+      useSessionStore.setState({
+        location: { latitude: 37.7749, longitude: -122.4194, address: 'SF' },
+      });
       expect(useSessionStore.getState().location).toBeDefined();
 
-      resetSession();
+      useSessionStore.getState().resetSession();
       expect(useSessionStore.getState().location).toBeUndefined();
     });
   });
 
   describe('search radius state', () => {
-    it('should store and retrieve search radius', () => {
-      const { setSearchRadiusMiles } = useSessionStore.getState();
-
-      setSearchRadiusMiles(10);
-
-      expect(useSessionStore.getState().searchRadiusMiles).toBe(10);
-    });
-
     it('should default to undefined', () => {
       expect(useSessionStore.getState().searchRadiusMiles).toBeUndefined();
     });
 
-    it('should allow updating radius', () => {
-      const { setSearchRadiusMiles } = useSessionStore.getState();
-
-      setSearchRadiusMiles(5);
-      expect(useSessionStore.getState().searchRadiusMiles).toBe(5);
-
-      setSearchRadiusMiles(15);
-      expect(useSessionStore.getState().searchRadiusMiles).toBe(15);
-    });
-
     it('should clear search radius on reset', () => {
-      const { setSearchRadiusMiles, resetSession } = useSessionStore.getState();
-
-      setSearchRadiusMiles(10);
+      useSessionStore.setState({ searchRadiusMiles: 10 });
       expect(useSessionStore.getState().searchRadiusMiles).toBe(10);
 
-      resetSession();
+      useSessionStore.getState().resetSession();
       expect(useSessionStore.getState().searchRadiusMiles).toBeUndefined();
     });
   });

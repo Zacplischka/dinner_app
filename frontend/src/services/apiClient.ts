@@ -3,9 +3,7 @@
 
 import type {
   AcceptSessionInviteResponse,
-  Branch,
   DeckEntry,
-  Craving,
   ClaimLineRequest,
   ClaimLineResponse,
   CreateSessionRequest,
@@ -17,13 +15,11 @@ import type {
   GeocodedArea,
   GetProfileResponse,
   LoadRestaurantsResponse,
-  Mood,
   SearchUsersResponse,
   SendFriendRequestPayload,
   SendSessionInviteRequest,
   SessionInvite,
   SessionInvitesResponse,
-  SessionLocation,
   SessionResponse,
   ShoppingListResponse,
   SwapLineRequest,
@@ -44,57 +40,12 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
  * Headcount for Cook, a Mood for Watch. Absent fields are simply left off the
  * wire (ADR 0007).
  */
-export async function createSession(
+export function createSession(
   hostName: string,
-  setup: {
-    collaborative?: boolean;
-    location?: SessionLocation;
-    searchRadiusMiles?: number;
-    branch?: Branch;
-    craving?: Craving;
-    headcount?: number;
-    mood?: Mood;
-    deckSize?: number;
-  } = {}
+  setup: Omit<CreateSessionRequest, 'hostName'> = {}
 ): Promise<CreateSessionResponse> {
-  const body: CreateSessionRequest = { hostName };
-  if (setup.collaborative) body.collaborative = true;
-
-  if (setup.location) {
-    body.location = setup.location;
-  }
-
-  if (setup.searchRadiusMiles !== undefined) {
-    body.searchRadiusMiles = setup.searchRadiusMiles;
-  }
-
-  if (setup.branch) {
-    body.branch = setup.branch;
-  }
-
-  if (setup.craving) {
-    body.craving = setup.craving;
-  }
-
-  if (setup.headcount !== undefined) {
-    body.headcount = setup.headcount;
-  }
-
-  if (setup.mood) {
-    body.mood = setup.mood;
-  }
-
-  if (setup.deckSize !== undefined) {
-    body.deckSize = setup.deckSize;
-  }
-
-  return request<CreateSessionResponse>('/sessions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  const body: CreateSessionRequest = { hostName, ...setup };
+  return postJson<CreateSessionResponse>('/sessions', body);
 }
 
 /**
@@ -153,11 +104,9 @@ export async function claimShoppingListLine(
   lineId: string,
   displayName: string
 ): Promise<ClaimLineResponse> {
-  return request<ClaimLineResponse>(claimPath(listId, lineId), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ displayName } satisfies ClaimLineRequest),
-  });
+  return postJson<ClaimLineResponse>(claimPath(listId, lineId), {
+    displayName,
+  } satisfies ClaimLineRequest);
 }
 
 /** Release the Claim on one line, whoever holds it (#229). */
@@ -179,13 +128,9 @@ export async function swapShoppingListLine(
   lineId: string,
   stockcode: number | null
 ): Promise<SwapLineResponse> {
-  return request<SwapLineResponse>(
+  return postJson<SwapLineResponse>(
     `/lists/${encodeURIComponent(listId)}/lines/${encodeURIComponent(lineId)}/swap`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stockcode } satisfies SwapLineRequest),
-    }
+    { stockcode } satisfies SwapLineRequest
   );
 }
 
@@ -294,6 +239,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
   return handleResponse<T>(await (init ? fetch(url, init) : fetch(url)));
+}
+
+function postJson<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 // AbortController also works in the older WebViews supported by our native targets.

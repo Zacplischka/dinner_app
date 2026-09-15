@@ -2,7 +2,12 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, devtools, persist } from 'zustand/middleware';
-import type { Branch, DeckEntry, SessionLobbyState, SessionResultsEvent } from '@dinder/shared/types';
+import type {
+  Branch,
+  DeckEntry,
+  SessionLobbyState,
+  SessionResultsEvent,
+} from '@dinder/shared/types';
 import type { Participant } from '../types';
 import { useOrderStore } from './orderStore';
 import { Capacitor } from '@capacitor/core';
@@ -71,10 +76,6 @@ interface SessionState {
   addParticipant: (participant: Participant) => void;
   removeParticipant: (participantId: string) => void;
   updateParticipants: (participants: Participant[]) => void;
-
-  // Location actions
-  setLocation: (location: Location) => void;
-  setSearchRadiusMiles: (miles: number) => void;
 
   // Selection actions
   addSelection: (placeId: string) => void;
@@ -198,11 +199,6 @@ export const useSessionStore = create<SessionState>()(
           })),
 
         updateParticipants: (participants) => set({ participants }),
-
-        // Location actions
-        setLocation: (location) => set({ location }),
-
-        setSearchRadiusMiles: (miles) => set({ searchRadiusMiles: miles }),
 
         // Selection actions
         addSelection: (placeId) =>

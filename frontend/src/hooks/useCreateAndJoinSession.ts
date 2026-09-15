@@ -1,53 +1,26 @@
 // Creating a Session is the same sequence whatever Branch you picked: create
-// it, connect, join as host, invite anyone you selected, then land in the
-// lobby. Only the setup differs — a location and radius for Eat Out and
-// Takeaway, a Craving and Headcount for Cook, a Mood for Watch — so the pages
-// own their forms and share this.
+// it, connect, join as host, then land in the lobby, where everyone settles
+// the choices together.
 
 import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  isApiError,
-  type ApiError,
-  type Branch,
-  type Craving,
-  type Mood,
-  type SessionLocation,
-} from '@dinder/shared/types';
+import { isApiError, type ApiError, type CreateSessionRequest } from '@dinder/shared/types';
 import { createSession } from '../services/apiClient';
-import { useSessionStore } from '../stores/sessionStore';
-import { useFriendsStore } from '../stores/friendsStore';
-import { toast } from './useToast';
-
-interface SessionSetup {
-  collaborative?: boolean;
-  location?: SessionLocation;
-  searchRadiusMiles?: number;
-  branch?: Branch;
-  craving?: Craving;
-  headcount?: number;
-  mood?: Mood;
-  /** How many cards the Host asked to swipe (#415); the Branch's default when absent. */
-  deckSize?: number;
-}
 
 export function useCreateAndJoinSession() {
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
-  const { setLocation: setStoreLocation, setSearchRadiusMiles: setStoreRadius } = useSessionStore();
-  const { inviteFriendsToSession } = useFriendsStore();
 
   /**
    * Resolves to the failure when the Session could not be created or joined, or
    * null once the host has landed in the lobby. Callers render its message; the
-   * code is there for the few failures a screen can do something about — the
-   * zero-Recipe refusal Cook setup answers with a Nearest Craving (#334).
+   * code is there for the few failures a screen can do something about
+   * (DISPLAY_NAME_TAKEN asks for a different name).
    */
   async function createAndJoin(
     hostName: string,
-    setup: SessionSetup,
-    friendIds: Set<string>
+    setup: Omit<CreateSessionRequest, 'hostName'>
   ): Promise<ApiError | null> {
     const intent = beginSessionIntent();
     setIsCreating(true);
@@ -67,23 +40,6 @@ export function useCreateAndJoinSession() {
         setIsCreating(false);
         return ack.error;
       }
-
-      if (setup.location) setStoreLocation(setup.location);
-      if (setup.searchRadiusMiles !== undefined) setStoreRadius(setup.searchRadiusMiles);
-
-      // The Session is already the Host's; failing invites only cost them the
-      // shortcut, so say so and point at the Session Code rather than blocking.
-      if (
-        friendIds.size > 0 &&
-        !(await inviteFriendsToSession(response.sessionCode, [...friendIds]))
-      ) {
-        if (!isSessionIntentCurrent(intent)) return null;
-        toast.error(
-          `Couldn't invite your friends. Share the code ${response.sessionCode} so they can join.`
-        );
-      }
-
-      if (!isSessionIntentCurrent(intent)) return null;
 
       // Reset before navigating too: today navigate() unmounts the setup page
       // immediately, but a caller that stays mounted (a modal, say) would

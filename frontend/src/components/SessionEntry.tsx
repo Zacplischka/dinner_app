@@ -33,7 +33,7 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
       return;
     }
     setError('');
-    const failure = await createAndJoin(name.trim(), { branch, collaborative: true }, new Set());
+    const failure = await createAndJoin(name.trim(), { branch, collaborative: true });
     if (failure) {
       setError(failure.message);
       if (failure.code === 'DISPLAY_NAME_TAKEN') setNeedsName(true);
