@@ -150,19 +150,6 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
       {/* Content */}
       <div className="flex-1 min-w-0 pt-0.5">
         <p className="text-sm text-text leading-snug">{toast.message}</p>
-
-        {/* Action button */}
-        {toast.action && (
-          <button
-            onClick={() => {
-              toast.action?.onClick();
-              handleDismiss();
-            }}
-            className="mt-2 text-sm font-medium text-cyan hover:text-text transition-colors"
-          >
-            {toast.action.label}
-          </button>
-        )}
       </div>
 
       {/* Close button */}
@@ -186,21 +173,11 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
       {!isPaused && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-line/30 rounded-b-xl overflow-hidden">
           <div
-            className={`h-full ${colors.bg.replace('/10', '')}`}
-            style={{
-              animation: `shrink ${remainingTimeRef.current}ms linear forwards`,
-            }}
+            className={`h-full animate-shrink ${colors.bg.replace('/10', '')}`}
+            style={{ animationDuration: `${remainingTimeRef.current}ms` }}
           />
         </div>
       )}
-
-      {/* Inline style for shrink animation */}
-      <style>{`
-        @keyframes shrink {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-      `}</style>
     </div>
   );
 }

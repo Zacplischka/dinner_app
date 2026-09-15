@@ -53,7 +53,6 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
       <NavigationHeader
         title={titles[branch]}
         subtitle="Gather first. Choose together."
-        showBackButton
         onBack={() => navigate('/')}
       />
       <div className="mx-auto max-w-md px-4 py-6">

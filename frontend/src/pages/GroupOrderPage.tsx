@@ -644,7 +644,6 @@ export default function GroupOrderPage() {
       <NavigationHeader
         title="Group order"
         sessionCode={sessionCode}
-        showBackButton
         onBack={hasOrder ? handleHeaderBack : handleBack}
         confirmOnBack={hasOrder}
         confirmContext={order?.lines.some((line) => line.by === me) ? 'ordering' : 'lobby'}

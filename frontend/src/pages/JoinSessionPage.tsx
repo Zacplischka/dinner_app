@@ -154,7 +154,6 @@ function JoinInvitation() {
       <NavigationHeader
         title="Join a session"
         subtitle="Enter the session code shared by your host"
-        showBackButton
         onBack={() => navigate('/')}
       />
 

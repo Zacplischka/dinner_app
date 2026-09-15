@@ -354,7 +354,6 @@ export default function ShoppingListPage() {
       <NavigationHeader
         title="Shopping list"
         subtitle={list ? list.recipeName : 'Everything for tonight'}
-        showBackButton
         onBack={() => navigate('/')}
         rightAction={
           list ? (

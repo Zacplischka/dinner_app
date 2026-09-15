@@ -580,7 +580,6 @@ export default function ResultsPage() {
               : `No ${deckNoun} got a like from everyone`
         }
         sessionCode={sessionCode}
-        showBackButton
         onBack={handleLeaveSession}
         confirmOnBack
         confirmContext="results"

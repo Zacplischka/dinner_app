@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import Toast from '../../src/components/Toast/Toast';
-import ToastProvider from '../../src/components/Toast/ToastProvider';
+import Toaster from '../../src/components/Toast/Toaster';
 import { toast, useToastStore } from '../../src/hooks/useToast';
 
 describe('toast stack (#409)', () => {
@@ -75,7 +75,7 @@ describe('Toast announcement role (#409)', () => {
   });
 
   it.each(['success', 'info', 'warning'] as const)('announces %s politely', (type) => {
-    render(<ToastProvider>{null}</ToastProvider>);
+    render(<Toaster />);
     // The region has to be in the tree BEFORE the text lands, or a polite
     // announcement is never made — so it must not be the card itself.
     const region = screen.getByRole('status');
@@ -90,7 +90,7 @@ describe('Toast announcement role (#409)', () => {
   });
 
   it('re-announces a repeated polite message', () => {
-    render(<ToastProvider>{null}</ToastProvider>);
+    render(<Toaster />);
     const region = screen.getByRole('status');
 
     act(() => void toast.warning('Connection lost', { duration: 10_000 }));
@@ -104,7 +104,7 @@ describe('Toast announcement role (#409)', () => {
   });
 
   it('leaves the polite region alone for an error', () => {
-    render(<ToastProvider>{null}</ToastProvider>);
+    render(<Toaster />);
     act(() => void toast.error('Boom', { duration: 10_000 }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('Boom');

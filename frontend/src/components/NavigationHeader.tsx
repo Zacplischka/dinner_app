@@ -17,17 +17,15 @@ function expiryLabel(expiresAt: string): string {
   return minutes < 1 ? 'Expires in under a minute' : `Expires in ${minutes} min`;
 }
 
-export interface NavigationHeaderProps {
+interface NavigationHeaderProps {
   /** Page title displayed in header */
   title: string;
   /** Optional subtitle, shown in the secondary region */
   subtitle?: string;
   /** Session code to display as badge (optional) */
   sessionCode?: string;
-  /** Show back/exit button */
-  showBackButton?: boolean;
-  /** Custom back button handler - if not provided, will use browser back */
-  onBack?: () => void | Promise<void>;
+  /** What the back button does */
+  onBack: () => void | Promise<void>;
   /** Label for back button (default: "Back") */
   backLabel?: string;
   /** Show confirmation modal before navigating back */
@@ -53,7 +51,6 @@ export default function NavigationHeader({
   title,
   subtitle,
   sessionCode,
-  showBackButton = false,
   onBack,
   backLabel = 'Back',
   confirmOnBack = false,
@@ -119,23 +116,14 @@ export default function NavigationHeader({
   };
 
   const handleBackClick = () => {
-    if (confirmOnBack) {
-      setShowConfirmModal(true);
-    } else if (onBack) {
-      void onBack();
-    } else {
-      window.history.back();
-    }
+    if (confirmOnBack) setShowConfirmModal(true);
+    else void onBack();
   };
 
   const handleConfirmLeave = async () => {
     setIsLeaving(true);
     try {
-      if (onBack) {
-        await onBack();
-      } else {
-        window.history.back();
-      }
+      await onBack();
     } finally {
       setIsLeaving(false);
       setShowConfirmModal(false);
@@ -162,9 +150,7 @@ export default function NavigationHeader({
               and stop long titles from moving or shrinking the edge actions. */}
           <div className="flex items-center gap-2">
             {/* Left edge - Back button */}
-            <div
-              className={`flex flex-1 basis-0 items-center justify-start ${showBackButton ? 'min-w-[88px]' : 'min-w-[44px]'}`}
-            >
+            <div className="flex flex-1 basis-0 items-center justify-start min-w-[88px]">
               <Link
                 to="/"
                 aria-label="YupCrew home"
@@ -173,31 +159,29 @@ export default function NavigationHeader({
               >
                 <span className="logo-mark scale-75" aria-hidden="true" />
               </Link>
-              {showBackButton && (
-                <button
-                  onClick={handleBackClick}
-                  className="flex shrink-0 items-center gap-1 text-muted hover:text-cyan transition-colors min-h-[44px] min-w-[44px] pl-2 pr-1"
-                  aria-label={confirmOnBack && sessionCode ? 'Leave session' : backLabel}
+              <button
+                onClick={handleBackClick}
+                className="flex shrink-0 items-center gap-1 text-muted hover:text-cyan transition-colors min-h-[44px] min-w-[44px] pl-2 pr-1"
+                aria-label={confirmOnBack && sessionCode ? 'Leave session' : backLabel}
+              >
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
                 >
-                  <svg
-                    className="w-5 h-5 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  <span className={compact ? 'sr-only' : 'hidden text-sm min-[420px]:inline'}>
-                    {backLabel}
-                  </span>
-                </button>
-              )}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                <span className={compact ? 'sr-only' : 'hidden text-sm min-[420px]:inline'}>
+                  {backLabel}
+                </span>
+              </button>
             </div>
 
             {/* Center - Title only */}
@@ -212,9 +196,7 @@ export default function NavigationHeader({
             </div>
 
             {/* Right edge - page-specific action */}
-            <div
-              className={`flex flex-1 basis-0 items-center justify-end ${showBackButton ? 'min-w-[88px]' : 'min-w-[44px]'}`}
-            >
+            <div className="flex flex-1 basis-0 items-center justify-end min-w-[88px]">
               {rightAction && (
                 <div className="min-h-[44px] flex shrink-0 items-center">{rightAction}</div>
               )}

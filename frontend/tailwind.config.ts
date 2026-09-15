@@ -45,6 +45,8 @@ export default {
         'pulse-glow': 'pulseGlow 0.6s ease-out',
         'heart-pop': 'heartPop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55)',
         'match-pop': 'matchPop 0.6s ease-out both',
+        // The toast progress bar; its duration is an inline animation-duration.
+        shrink: 'shrink linear forwards',
       },
       keyframes: {
         fadeIn: {
@@ -72,6 +74,10 @@ export default {
           '0%': { opacity: '0', transform: 'scale(0.65) rotate(7deg)' },
           '70%': { opacity: '1', transform: 'scale(1.16) rotate(-4deg)' },
           '100%': { opacity: '1', transform: 'scale(1) rotate(0)' },
+        },
+        shrink: {
+          from: { width: '100%' },
+          to: { width: '0%' },
         },
       },
     },

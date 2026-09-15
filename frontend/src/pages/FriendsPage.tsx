@@ -122,7 +122,6 @@ export default function FriendsPage() {
       <div className="sticky top-0 z-40">
         <NavigationHeader
           title="Friends"
-          showBackButton
           onBack={() => navigate('/')}
           rightAction={
             <button

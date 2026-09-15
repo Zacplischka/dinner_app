@@ -192,7 +192,7 @@ export default function ComparePage() {
 
   return (
     <main className="min-h-screen text-text">
-      <NavigationHeader title="Compare menu prices" showBackButton onBack={() => navigate('/')} />
+      <NavigationHeader title="Compare menu prices" onBack={() => navigate('/')} />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {!location ? (
           <section className="card text-center">

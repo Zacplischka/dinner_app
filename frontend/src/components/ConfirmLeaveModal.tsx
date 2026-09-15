@@ -6,16 +6,61 @@ import { useRef } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import Spinner from './Spinner';
 
+type Context = 'lobby' | 'selecting' | 'results' | 'ordering' | 'switching';
+
 interface ConfirmLeaveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   isLoading?: boolean;
   /** Context determines the warning message shown */
-  context?: 'lobby' | 'selecting' | 'results' | 'ordering' | 'switching';
+  context?: Context;
   /** Number of selections made (for selecting context) */
   selectionsCount?: number;
 }
+
+// Context-aware messaging; only the selecting message reads the count.
+const COPY: Record<
+  Context,
+  { title: string; stay: string; leave: string; message: string | ((selections: number) => string) }
+> = {
+  lobby: {
+    title: 'Leave session?',
+    stay: 'Stay in session',
+    leave: 'Leave session',
+    message: "You'll leave the session and the others won't see you in it anymore.",
+  },
+  selecting: {
+    title: 'Leave session?',
+    stay: 'Keep swiping',
+    leave: 'Leave session',
+    message: (selections) =>
+      selections > 0
+        ? `Your ${selections} selection${selections !== 1 ? 's' : ''} will be lost and won't count toward the Match.`
+        : "You'll leave without submitting any selections.",
+  },
+  results: {
+    title: 'Leave session?',
+    stay: 'Stay here',
+    leave: 'Leave session',
+    message:
+      'Leave this session and stop participating? Use the YupCrew logo to go home and keep your place.',
+  },
+  ordering: {
+    title: 'Leave the basket?',
+    stay: 'Back to the basket',
+    leave: 'Leave session',
+    message:
+      "Your items stay in the basket and still count — whoever taps I'll order still buys them.",
+  },
+  switching: {
+    title: 'Leave this session to continue?',
+    stay: 'Stay in session',
+    leave: 'Leave and continue',
+    message:
+      'Leave this session to create or join another? Your participation and selections in this session will be removed.',
+  },
+};
 
 export default function ConfirmLeaveModal({
   isOpen,
@@ -30,64 +75,8 @@ export default function ConfirmLeaveModal({
 
   if (!isOpen) return null;
 
-  // Context-aware messaging
-  const getTitle = () => {
-    switch (context) {
-      case 'switching':
-        return 'Leave this session to continue?';
-      case 'results':
-        return 'Leave session?';
-      case 'selecting':
-        return 'Leave session?';
-      case 'ordering':
-        return 'Leave the basket?';
-      case 'lobby':
-      default:
-        return 'Leave session?';
-    }
-  };
-
-  const getMessage = () => {
-    switch (context) {
-      case 'switching':
-        return 'Leave this session to create or join another? Your participation and selections in this session will be removed.';
-      case 'results':
-        return 'Leave this session and stop participating? Use the YupCrew logo to go home and keep your place.';
-      case 'selecting':
-        if (selectionsCount > 0) {
-          return `Your ${selectionsCount} selection${selectionsCount !== 1 ? 's' : ''} will be lost and won't count toward the Match.`;
-        }
-        return "You'll leave without submitting any selections.";
-      case 'ordering':
-        return "Your items stay in the basket and still count — whoever taps I'll order still buys them.";
-      case 'lobby':
-      default:
-        return "You'll leave the session and the others won't see you in it anymore.";
-    }
-  };
-
-  const getStayLabel = () => {
-    switch (context) {
-      case 'results':
-        return 'Stay here';
-      case 'selecting':
-        return 'Keep swiping';
-      case 'ordering':
-        return 'Back to the basket';
-      case 'lobby':
-      default:
-        return 'Stay in session';
-    }
-  };
-
-  const getLeaveLabel = () => {
-    switch (context) {
-      case 'switching':
-        return 'Leave and continue';
-      default:
-        return 'Leave session';
-    }
-  };
+  const copy = COPY[context];
+  const message = typeof copy.message === 'function' ? copy.message(selectionsCount) : copy.message;
 
   // Handle keyboard escape
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -121,9 +110,9 @@ export default function ConfirmLeaveModal({
                 id="confirm-leave-title"
                 className="text-2xl font-display font-black text-text mb-2"
               >
-                {getTitle()}
+                {copy.title}
               </h2>
-              <p className="text-muted">{getMessage()}</p>
+              <p className="text-muted">{message}</p>
             </div>
             <button
               type="button"
@@ -143,7 +132,7 @@ export default function ConfirmLeaveModal({
               className="flex-1 min-h-[48px] rounded-xl bg-lime px-4 py-3 font-extrabold text-white shadow-glow-lime transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
               autoFocus
             >
-              {getStayLabel()}
+              {copy.stay}
             </button>
             <button
               onClick={onConfirm}
@@ -156,7 +145,7 @@ export default function ConfirmLeaveModal({
                   Leaving…
                 </span>
               ) : (
-                getLeaveLabel()
+                copy.leave
               )}
             </button>
           </div>

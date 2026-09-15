@@ -264,11 +264,7 @@ export default function ComparisonViewPage() {
 
   return (
     <main className="min-h-screen bg-ink text-text">
-      <NavigationHeader
-        title={venueName || 'Price comparison'}
-        showBackButton
-        onBack={backToVenues}
-      />
+      <NavigationHeader title={venueName || 'Price comparison'} onBack={backToVenues} />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {!complete && !error && (
           <PricePatrol key={`${placeId}-${attempt}`} storefronts={storefronts} />

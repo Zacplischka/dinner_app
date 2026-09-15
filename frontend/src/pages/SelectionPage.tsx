@@ -410,7 +410,6 @@ function SelectionRound() {
 
   const headerProps = {
     sessionCode,
-    showBackButton: true,
     onBack: handleLeaveSession,
     confirmOnBack: true,
     confirmContext: 'selecting' as const,

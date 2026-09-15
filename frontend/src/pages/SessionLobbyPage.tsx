@@ -15,7 +15,7 @@ import {
 } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useShareLink } from '../hooks/useShareLink';
-import { useToast } from '../hooks/useToast';
+import { toast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
 import NavigationHeader from '../components/NavigationHeader';
 import { ErrorNote } from '../components/Notice';
@@ -39,7 +39,6 @@ export default function SessionLobbyPage() {
   const inFlight = useRef(false);
   const fetchFailed = useRef(false);
   const roster = participants.map((p) => p.participantId).join(',');
-  const toast = useToast();
   const inviteFriends = useFriendsStore((state) => state.inviteFriendsToSession);
   const me = participants.find((p) => p.participantId === currentUserId);
   const isHost = !!me && (me.isHost || !participants.some((p) => p.isHost && p.isOnline !== false));
@@ -72,7 +71,7 @@ export default function SessionLobbyPage() {
     return () => {
       active = false;
     };
-  }, [sessionCode, roster, setExpiresAt, setLobby, toast]);
+  }, [sessionCode, roster, setExpiresAt, setLobby]);
 
   const share = useShareLink(shareableLink, 'Link copied to clipboard!');
   const leave = useLeaveSession(sessionCode);
@@ -182,7 +181,6 @@ export default function SessionLobbyPage() {
         }
         subtitle="Invite friends. Choose together. Get ready."
         sessionCode={sessionCode}
-        showBackButton
         onBack={leave}
         confirmOnBack
         confirmContext="lobby"

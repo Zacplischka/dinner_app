@@ -8,7 +8,6 @@ import { useFriendsStore } from '../../stores/friendsStore';
 
 interface FriendsListProps {
   friends: Friend[];
-  onInvite?: (friendId: string) => void;
   selectable?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (friendId: string) => void;
@@ -16,7 +15,6 @@ interface FriendsListProps {
 
 export default function FriendsList({
   friends,
-  onInvite,
   selectable = false,
   selectedIds = new Set(),
   onToggleSelect,
@@ -97,28 +95,15 @@ export default function FriendsList({
 
             {/* Actions */}
             {!selectable && (
-              <div className="flex gap-2">
-                {onInvite && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onInvite(friend.id);
-                    }}
-                    className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-cyan hover:text-text hover:bg-cyan/10 rounded-lg transition-colors"
-                  >
-                    Invite
-                  </button>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleRemoveFriend(friend.id, friend.displayName);
-                  }}
-                  className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-soft hover:text-text hover:bg-coral/10 rounded-lg transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleRemoveFriend(friend.id, friend.displayName);
+                }}
+                className="min-h-[44px] px-3 py-1.5 text-sm font-medium text-coral-soft hover:text-text hover:bg-coral/10 rounded-lg transition-colors"
+              >
+                Remove
+              </button>
             )}
           </div>
 

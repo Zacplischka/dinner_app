@@ -2,7 +2,7 @@
 
 import { Suspense, lazy, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router';
-import ToastProvider from './components/Toast/ToastProvider';
+import Toaster from './components/Toast/Toaster';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LoadingAnnouncer, LoadingFallback } from './components/Spinner';
 import { useRouteAnnouncement } from './hooks/useRouteAnnouncement';
@@ -135,15 +135,14 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <ToastProvider>
-          {/* Above the router on purpose: it must outlive every spinner that
+        {/* Above the router on purpose: it must outlive every spinner that
               publishes into it, or the text arrives with the region. */}
-          <LoadingAnnouncer />
-          <Suspense fallback={<LoadingFallback />}>
-            {Capacitor.isNativePlatform() && <NativeLifecycle />}
-            <AnimatedRoutes />
-          </Suspense>
-        </ToastProvider>
+        <LoadingAnnouncer />
+        <Suspense fallback={<LoadingFallback />}>
+          {Capacitor.isNativePlatform() && <NativeLifecycle />}
+          <AnimatedRoutes />
+        </Suspense>
+        <Toaster />
       </BrowserRouter>
     </ErrorBoundary>
   );

@@ -61,7 +61,6 @@ export default function SwipeCard({
     currentX: 0,
   });
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const detailsButtonRef = useRef<HTMLButtonElement>(null);
   // Only the top card is interactive; every kind supports details.
   const openDetails = isTop ? onOpenDetails : undefined;
@@ -70,30 +69,24 @@ export default function SwipeCard({
   const prefersReducedMotion = usePrefersReducedMotion();
   const { rotation, likeIntensity, nopeIntensity } = swipeVisuals(deltaX, prefersReducedMotion);
 
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (!isTop || (e.target as Element).closest('a, button')) return;
-      const touch = e.touches[0];
-      setDragState({
-        isDragging: true,
-        startX: touch.clientX,
-        currentX: touch.clientX,
-      });
-    },
-    [isTop]
-  );
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isTop || (e.target as Element).closest('a, button')) return;
+    const touch = e.touches[0];
+    setDragState({
+      isDragging: true,
+      startX: touch.clientX,
+      currentX: touch.clientX,
+    });
+  };
 
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (!dragState.isDragging) return;
-      const touch = e.touches[0];
-      setDragState((prev) => ({
-        ...prev,
-        currentX: touch.clientX,
-      }));
-    },
-    [dragState.isDragging]
-  );
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragState.isDragging) return;
+    const touch = e.touches[0];
+    setDragState((prev) => ({
+      ...prev,
+      currentX: touch.clientX,
+    }));
+  };
 
   const handleTouchEnd = useCallback(
     (e?: React.TouchEvent) => {
@@ -126,10 +119,6 @@ export default function SwipeCard({
         // backdrop is mounted there, and its click closes what this tap just
         // opened. React's touchend listener is not passive, so this takes.
         e?.preventDefault();
-        // A mouse release runs this twice — React's onMouseUp and the window
-        // listener share one stale isDragging — so the open must be
-        // idempotent. It is: the caller only stores this entry as the open
-        // one, and storing the same entry twice is one open.
         detailsButtonRef.current?.focus();
         openDetails?.();
       }
@@ -140,37 +129,27 @@ export default function SwipeCard({
   // A cancelled touch (a system gesture taking over, a call arriving) never
   // delivers touchend, so without this the card stays stuck mid-drag and the
   // next release reads as a tap on a gesture that was abandoned.
-  const handleTouchCancel = useCallback(() => {
+  const handleTouchCancel = () => {
     setDragState({ isDragging: false, startX: 0, currentX: 0 });
-  }, []);
+  };
 
   // Mouse event handlers for desktop
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isTop || (e.target as Element).closest('a, button')) return;
-      setDragState({
-        isDragging: true,
-        startX: e.clientX,
-        currentX: e.clientX,
-      });
-    },
-    [isTop]
-  );
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isTop || (e.target as Element).closest('a, button')) return;
+    setDragState({
+      isDragging: true,
+      startX: e.clientX,
+      currentX: e.clientX,
+    });
+  };
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!dragState.isDragging) return;
-      setDragState((prev) => ({
-        ...prev,
-        currentX: e.clientX,
-      }));
-    },
-    [dragState.isDragging]
-  );
-
-  const handleMouseUp = useCallback(() => {
-    handleTouchEnd();
-  }, [handleTouchEnd]);
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragState.isDragging) return;
+    setDragState((prev) => ({
+      ...prev,
+      currentX: e.clientX,
+    }));
+  };
 
   // Handle mouse leaving the card while dragging
   useEffect(() => {
@@ -245,7 +224,6 @@ export default function SwipeCard({
 
   return (
     <div
-      ref={cardRef}
       data-swipe-card
       className={`absolute inset-0 flex flex-col rounded-market-lg overflow-hidden shadow-card border border-line bg-raised select-none ${
         isTop ? 'cursor-grab' : 'pointer-events-none'
@@ -257,7 +235,6 @@ export default function SwipeCard({
       onTouchCancel={handleTouchCancel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
     >
       {/* DeckEntry Photo: letter tile behind, RetryingPhoto layered on top
           (#290, same arrangement as the Compare page). The container fixes the

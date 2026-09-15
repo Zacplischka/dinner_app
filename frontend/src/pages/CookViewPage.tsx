@@ -124,7 +124,6 @@ export default function CookViewPage() {
       <NavigationHeader
         title="Method"
         subtitle={list ? list.recipeName : 'At the stove'}
-        showBackButton
         backLabel="List"
         onBack={() => navigate(listId ? `/list/${listId}` : '/')}
       />
