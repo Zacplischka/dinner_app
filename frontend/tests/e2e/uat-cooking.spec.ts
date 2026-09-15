@@ -7,7 +7,8 @@ const list: ShoppingList = {
   recipeName: 'Penne Arrabbiata',
   headcount: 4,
   servings: 4,
-  mintedAt: '2026-09-07T10:00:00.000Z',
+  // Fresh: cooking progress rides the list's 7-day clock.
+  mintedAt: new Date().toISOString(),
   provenance: 'owned',
   steps: ['Heat the olive oil and add the garlic.', 'Add the tomatoes and simmer.'],
   lines: ['UAT Cooking Host', 'Alexandria'.repeat(5)].map(
