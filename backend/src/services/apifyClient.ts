@@ -18,6 +18,10 @@ export async function runApifyActor(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(input),
+      // The one client-side deadline on a run: Apify's own `timeout` bounds the
+      // actor, not a response that stalls or drips, and undici's body timeout
+      // resets per chunk. Past this the flight settles as a failed storefront.
+      signal: AbortSignal.timeout(300_000),
     }
   );
 

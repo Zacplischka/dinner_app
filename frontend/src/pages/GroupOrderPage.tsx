@@ -640,7 +640,7 @@ export default function GroupOrderPage() {
   }
 
   return (
-    <main className="h-dvh overflow-hidden bg-ink flex flex-col">
+    <main className="h-screen h-dvh overflow-hidden bg-ink flex flex-col">
       <NavigationHeader
         title="Group order"
         sessionCode={sessionCode}

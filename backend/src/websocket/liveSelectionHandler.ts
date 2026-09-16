@@ -8,6 +8,7 @@
 import type { Socket } from 'socket.io';
 import { z } from 'zod';
 import type { SessionStore } from '../store/sessionStore.js';
+import { DomainError } from '../services/DomainError.js';
 import { runCommand } from './runCommand.js';
 import {
   SESSION_CODE_PATTERN,
@@ -43,10 +44,7 @@ export async function handleLiveSelection(
       // check SessionService.leaveSession makes. No second read.
       const participant = await store.getParticipant(socket.id);
       if (!participant || participant.sessionCode !== sessionCode) {
-        return callback({
-          success: false,
-          error: { code: 'NOT_IN_SESSION', message: 'You are not a participant in this session' },
-        });
+        throw new DomainError('NOT_IN_SESSION', 'You are not a participant in this session');
       }
 
       const session = await store.readSession(sessionCode);
@@ -55,10 +53,7 @@ export async function handleLiveSelection(
         (session?.lobby &&
           (session.state !== 'selecting' || (round !== undefined && round !== session.lobby.round)))
       ) {
-        return callback({
-          success: false,
-          error: { code: 'NOT_IN_SESSION', message: 'You are waiting for the next round.' },
-        });
+        throw new DomainError('NOT_IN_SESSION', 'You are waiting for the next round.');
       }
 
       ack(null);

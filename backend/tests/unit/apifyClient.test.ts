@@ -27,6 +27,7 @@ describe('runApifyActor', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query: '11 Inch Pizza', maxRows: 5 }),
+        signal: expect.any(AbortSignal),
       }
     );
   });

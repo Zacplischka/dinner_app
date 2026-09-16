@@ -23,6 +23,7 @@ export const MAX_RESTAURANT_DECK_SIZE = 20;
 export interface SessionLocation {
   latitude: number;
   longitude: number;
+  /** Free text; the API rejects more than 250 characters. */
   address?: string;
 }
 

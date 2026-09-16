@@ -118,6 +118,39 @@ describe('createComparisonService', () => {
     );
   });
 
+  it('settles a timed-out actor run as failed and still writes the Snapshot', async () => {
+    const insert = vi.fn(async ({ payload }: { payload: SnapshotPayload }) =>
+      insertedSnapshot(payload)
+    );
+    const service = createComparisonService({
+      // What apifyClient's AbortSignal.timeout rejects with once a run stalls.
+      runActor: vi
+        .fn()
+        .mockRejectedValue(
+          new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+        ),
+      fetchPlaceDetails: vi.fn().mockResolvedValue(venue),
+      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert },
+    });
+
+    const events = await collectComparison(service, 'place-1');
+
+    expect(events).toContainEqual({
+      type: 'storefront',
+      platform: 'ubereats',
+      storefront: { status: 'failed', deals: [], menu: [] },
+    });
+    expect(insert).toHaveBeenCalledWith({
+      placeId: 'place-1',
+      venueName: '11 Inch Pizza',
+      payload: {
+        ubereats: { status: 'failed', deals: [], menu: [] },
+        doordash: { status: 'failed', deals: [], menu: [] },
+      },
+    });
+    expect(events.at(-1)?.type).toBe('comparison');
+  });
+
   it('serves a fresh Snapshot without Place Details, actor spend, or a new row', async () => {
     const capture = {
       status: 'resolved' as const,

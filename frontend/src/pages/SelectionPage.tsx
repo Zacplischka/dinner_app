@@ -614,7 +614,7 @@ function SelectionRound() {
   const visibleEntries = entries.slice(deckCursor, deckCursor + 3);
 
   return (
-    <main className="h-dvh overflow-hidden bg-ink flex flex-col">
+    <main className="h-screen h-dvh overflow-hidden bg-ink flex flex-col">
       {/* Navigation Header */}
       <NavigationHeader
         {...headerProps}
