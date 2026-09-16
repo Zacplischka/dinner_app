@@ -1,9 +1,10 @@
 // Join Session page - Join an existing session via code
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import NavigationHeader from '../components/NavigationHeader';
+import { ErrorNote } from '../components/Notice';
 import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
 import { validateDisplayName } from '../utils/displayName';
@@ -147,22 +148,22 @@ function JoinInvitation() {
     continueTo(enter, sessionCode);
   });
 
-  if (linkDead) {
-    return (
-      <main className="min-h-screen bg-ink">
-        {switchDialog}
-        <NavigationHeader
-          title="Join a session"
-          subtitle="Enter the session code shared by your host"
-          showBackButton
-          onBack={() => navigate('/')}
-        />
-        <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
+  return (
+    <main className="min-h-screen bg-ink">
+      {switchDialog}
+      <NavigationHeader
+        title="Join a session"
+        subtitle="Enter the session code shared by your host"
+        onBack={() => navigate('/')}
+      />
+
+      <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
+        {linkDead ? (
           <div className="card space-y-4 text-center">
             <p className="text-4xl" aria-hidden="true">
               ⏳
             </p>
-            <h2 className="text-lg font-display font-semibold text-text">This link has expired</h2>
+            <h2 className="text-lg font-semibold text-text">This link has expired</h2>
             <p className="text-sm text-muted">
               A session closes once everyone stops using it. This one is over — or the code was
               mistyped.
@@ -180,105 +181,90 @@ function JoinInvitation() {
               Enter a code instead
             </button>
           </div>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="min-h-screen bg-ink">
-      {switchDialog}
-      <NavigationHeader
-        title="Join a session"
-        subtitle="Enter the session code shared by your host"
-        showBackButton
-        onBack={() => navigate('/')}
-      />
-
-      <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
-        {/* Form */}
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            continueTo(enter, sessionCode);
-          }}
-          className="card space-y-6"
-        >
-          {/* Session Code */}
-          <div>
-            <label htmlFor="sessionCode" className="label">
-              Session code
-            </label>
-            <input
-              id="sessionCode"
-              name="sessionCode"
-              type="text"
-              value={sessionCode}
-              onChange={(e) => setSessionCode(cleanSessionCode(e.target.value))}
-              placeholder="7K9M2"
-              maxLength={SESSION_CODE_LENGTH}
-              className="w-full min-h-[56px] rounded-market-md border border-cyan bg-surface px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-cyan shadow-glow-cyan transition-all duration-150 placeholder:text-muted/70"
-              autoFocus={!searchParams.get('code')}
-              disabled={isLoading}
-            />
-            <p className="mt-2 text-xs text-muted text-center">
-              {SESSION_CODE_LENGTH}-character code (letters and numbers)
-            </p>
-          </div>
-
-          {/* Participant Name */}
-          {identity.isLoading ? (
-            <p role="status">Checking your profile…</p>
-          ) : identity.hasProfileName && !needsName ? (
-            <p>
-              Joining as <strong>{participantName}</strong>
-            </p>
-          ) : (
+        ) : (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              continueTo(enter, sessionCode);
+            }}
+            className="card space-y-6"
+          >
+            {/* Session Code */}
             <div>
-              <label htmlFor="participantName" className="label">
-                Your Name
+              <label htmlFor="sessionCode" className="label">
+                Session code
               </label>
               <input
-                id="participantName"
-                name="displayName"
+                id="sessionCode"
+                name="sessionCode"
                 type="text"
-                autoComplete="name"
-                autoCorrect="off"
-                spellCheck={false}
-                value={participantName}
-                onChange={(e) => setParticipantName(e.target.value)}
-                placeholder="Enter your name"
-                maxLength={50}
-                className="input"
+                value={sessionCode}
+                onChange={(e) => setSessionCode(cleanSessionCode(e.target.value))}
+                placeholder="7K9M2"
+                maxLength={SESSION_CODE_LENGTH}
+                className="w-full min-h-[56px] rounded-market-md border border-text bg-surface px-4 py-4 text-center font-mono text-2xl font-black uppercase tracking-[0.35em] text-text shadow-glow transition-all duration-150 placeholder:text-muted/70"
+                autoFocus={!searchParams.get('code')}
                 disabled={isLoading}
               />
-              <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
+              <p className="mt-2 text-xs text-muted text-center">
+                {SESSION_CODE_LENGTH}-character code (letters and numbers)
+              </p>
             </div>
-          )}
 
-          {/* Error message */}
-          {error && (
-            <div role="alert" className="p-3 bg-coral/10 border border-coral/30 rounded-xl">
-              <p className="text-sm text-coral-soft">{error}</p>
+            {/* Participant Name */}
+            {identity.isLoading ? (
+              <p role="status">Checking your profile…</p>
+            ) : identity.hasProfileName && !needsName ? (
+              <p>
+                Joining as <strong>{participantName}</strong>
+              </p>
+            ) : (
+              <div>
+                <label htmlFor="participantName" className="label">
+                  Your Name
+                </label>
+                <input
+                  id="participantName"
+                  name="displayName"
+                  type="text"
+                  autoComplete="name"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={participantName}
+                  onChange={(e) => setParticipantName(e.target.value)}
+                  placeholder="Enter your name"
+                  maxLength={50}
+                  className="input"
+                  disabled={isLoading}
+                />
+                <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
+              </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <ErrorNote role="alert" className="p-3">
+                {error}
+              </ErrorNote>
+            )}
+
+            {/* Submit Button */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={
+                  identity.isLoading ||
+                  isLoading ||
+                  sessionCode.length !== SESSION_CODE_LENGTH ||
+                  !!validateDisplayName(participantName)
+                }
+                className="btn btn-primary w-full min-h-[48px] text-lg"
+              >
+                {isLoading ? 'Joining…' : 'Join session'}
+              </button>
             </div>
-          )}
-
-          {/* Submit Button */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={
-                identity.isLoading ||
-                isLoading ||
-                sessionCode.length !== SESSION_CODE_LENGTH ||
-                !!validateDisplayName(participantName)
-              }
-              className="btn btn-primary w-full min-h-[48px] text-lg"
-            >
-              {isLoading ? 'Joining…' : 'Join session'}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     </main>
   );

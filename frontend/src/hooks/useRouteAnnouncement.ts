@@ -3,7 +3,7 @@
 // in the document title and moves focus to the new page's heading (#408).
 
 import { useEffect, useRef, type RefObject } from 'react';
-import { matchPath, useLocation } from 'react-router-dom';
+import { matchPath, useLocation } from 'react-router';
 
 const APP_NAME = 'YupCrew';
 

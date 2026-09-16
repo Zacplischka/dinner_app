@@ -481,7 +481,6 @@ describe('SessionService', () => {
     it('should warn when session code generation collides', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       await redis.hset('session:AAAAA', {
-        hostId: 'existing-host',
         state: 'waiting',
         participantCount: '1',
         createdAt: '1700000000',
@@ -509,7 +508,6 @@ describe('SessionService', () => {
     it('should fail after repeated session code collisions', async () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
       await redis.hset('session:AAAAA', {
-        hostId: 'existing-host',
         state: 'waiting',
         participantCount: '1',
         createdAt: '1700000000',
@@ -533,7 +531,6 @@ describe('SessionService', () => {
     it('should return null when the session has no TTL', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       await redis.hset(`session:${testSessionCode}`, {
-        hostId: 'host-1',
         hostName: 'Alice',
         state: 'waiting',
         participantCount: '1',
@@ -569,7 +566,6 @@ describe('SessionService', () => {
     it('should use an unknown host fallback and custom frontend URL', async () => {
       config.frontendUrl = 'https://frontend.example.test';
       await redis.hset('session:NOHST', {
-        hostId: 'host-1',
         state: 'waiting',
         participantCount: '1',
         createdAt: '1700000000',
@@ -1706,7 +1702,6 @@ describe('SessionService', () => {
       async function createSessionWithRecipeDeck(entries: Recipe[]): Promise<string> {
         const sessionCode = 'COOK1';
         await store.createSession(sessionCode, {
-          hostId: 'p-alice',
           hostName: 'Alice',
           entries,
         });
@@ -1816,7 +1811,6 @@ describe('SessionService', () => {
       async function createSessionWithMovieDeck(entries: Movie[]): Promise<string> {
         const sessionCode = 'WATCH';
         await store.createSession(sessionCode, {
-          hostId: 'p-alice',
           hostName: 'Alice',
           entries,
         });

@@ -19,21 +19,15 @@ import type { Mood } from './watch.js';
 export const MIN_DECK_SIZE = 5;
 export const MAX_DECK_SIZE = 50;
 export const MAX_RESTAURANT_DECK_SIZE = 20;
-/** What a setup screen preselects, so an untouched form deals what it always did. */
-export const DEFAULT_DECK_SIZE = 15;
 
 export interface SessionLocation {
   latitude: number;
   longitude: number;
+  /** Free text; the API rejects more than 250 characters. */
   address?: string;
 }
 
 // POST /api/sessions
-/** Public setup defaults; read before the Host chooses a Deck size. */
-export interface SessionDefaultsResponse {
-  cookDeckSize: number;
-}
-
 export interface CreateSessionRequest {
   hostName: string;
   collaborative?: boolean;

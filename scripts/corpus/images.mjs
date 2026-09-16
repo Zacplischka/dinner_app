@@ -19,11 +19,12 @@
 //   node scripts/corpus/images.mjs publish                         # upload
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { Readable } from 'node:stream';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { env, readRecords } from './records.mjs';
 
 /** The custom domain the R2 bucket is bound to. r2.dev is rate-limited and dev-only. */
 export const IMAGE_BASE_URL = 'https://img.dinder.it.com';
@@ -199,12 +200,6 @@ export function collectReport({ submitted, usages, failed }) {
 
 // ---------------------------------------------------------------- side effects
 
-const env = (name) => {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is not set — AGENTS.md says where the credential lives`);
-  return value;
-};
-
 async function openai(path, init = {}) {
   const response = await fetch(`${API}${path}`, {
     ...init,
@@ -217,13 +212,9 @@ async function openai(path, init = {}) {
   return response;
 }
 
-/** Every `<recordsDir>/<slug>/recipe.json`, in directory order. */
-function readRecords(recordsDir) {
-  return readdirSync(recordsDir)
-    .map((entry) => join(recordsDir, entry, 'recipe.json'))
-    .filter((file) => existsSync(file))
-    .map((file) => ({ file, record: JSON.parse(readFileSync(file, 'utf8')) }));
-}
+/** Every record as `{ file, record }`, the shape the stamp writes back. */
+const recordEntries = (recordsDir) =>
+  readRecords(recordsDir).map(({ file, recipe }) => ({ file, record: recipe }));
 
 /** Master PNG bytes → the 1200x900 WebP the Deck renders, and the stamped record. */
 function convertAndStamp(slug, pngBase64, outDir, byFile) {
@@ -238,7 +229,7 @@ function convertAndStamp(slug, pngBase64, outDir, byFile) {
 }
 
 async function submit(recordsDir, slugs) {
-  const records = selectRecords(readRecords(recordsDir), slugs).map(({ record }) => record);
+  const records = selectRecords(recordEntries(recordsDir), slugs).map(({ record }) => record);
   const jsonl = batchRequests(records)
     .map((r) => `${JSON.stringify(r)}\n`)
     .join('');
@@ -281,7 +272,7 @@ async function* fileLines(fileId) {
 async function collect(batchId, recordsDir, outDir) {
   const batch = await (await openai(`/batches/${batchId}`)).json();
   if (batch.status !== 'completed') throw new Error(`batch ${batchId} is ${batch.status}`);
-  const byFile = new Map(readRecords(recordsDir).map((e) => [slugOf(e.record), e]));
+  const byFile = new Map(recordEntries(recordsDir).map((e) => [slugOf(e.record), e]));
   const usages = [];
   const failed = [];
   const fail = (line) => {
@@ -306,7 +297,7 @@ async function collect(batchId, recordsDir, outDir) {
 
 /** One Recipe's photo, regenerated on its own — no batch, no 24-hour window. */
 async function one(slug, recordsDir, outDir) {
-  const byFile = new Map(readRecords(recordsDir).map((e) => [slugOf(e.record), e]));
+  const byFile = new Map(recordEntries(recordsDir).map((e) => [slugOf(e.record), e]));
   const entry = byFile.get(slug);
   if (!entry) throw new Error(`no ${join(recordsDir, slug, 'recipe.json')}`);
   const [request] = batchRequests([entry.record]);

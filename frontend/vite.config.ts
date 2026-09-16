@@ -22,14 +22,13 @@ export default defineConfig(({ mode }) => {
     allowedHosts: ['host.docker.internal', 'localhost'],
   },
   build: {
-    outDir: 'dist',
     sourcemap: native ? 'hidden' : true,
     rollupOptions: {
       output: {
         // One long-cached vendor chunk: react + router change only on a dependency
         // bump, so a deploy that touches app code no longer re-downloads them.
         // Rollup's object form pulls each package's dependencies in with it.
-        manualChunks: { vendor: ['react', 'react-dom', 'react-router-dom'] },
+        manualChunks: { vendor: ['react', 'react-dom', 'react-router'] },
       },
     },
   },
@@ -43,11 +42,6 @@ export default defineConfig(({ mode }) => {
     setupFiles: ['./tests/unit/setup.ts'],
     include: ['tests/unit/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
-    coverage: {
-      provider: 'v8',
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/main.tsx', 'src/vite-env.d.ts'],
-    },
   },
 };
 });

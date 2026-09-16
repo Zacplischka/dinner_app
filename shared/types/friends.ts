@@ -35,10 +35,6 @@ export interface SendFriendRequestPayload {
   email: string;
 }
 
-export interface AcceptFriendRequestPayload {
-  requestId: string;
-}
-
 // Session Invite lifecycle wire contracts (issue #108). The list response
 // (SessionInvitesResponse) is below with the other read contracts. Sending and
 // declining return 204 No Content — no response body, so no contract. Accepting

@@ -1,5 +1,8 @@
 import { test as base, expect } from '@playwright/test';
-import { HomePage, CreateSessionPage, JoinSessionPage, WatchSetupPage } from '../pages';
+import { HomePage } from '../pages/HomePage';
+import { CreateSessionPage } from '../pages/CreateSessionPage';
+import { JoinSessionPage } from '../pages/JoinSessionPage';
+import { WatchSetupPage } from '../pages/WatchSetupPage';
 
 /**
  * Custom Playwright Test Fixtures

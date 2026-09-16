@@ -43,7 +43,7 @@ export default function MovieLinks({ movie }: { movie: Movie }) {
             href={`https://www.imdb.com/title/${movie.imdbId}/`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-[44px] items-center py-2 text-center text-sm text-cyan underline"
+            className="flex min-h-[44px] items-center py-2 text-center text-sm text-text underline"
           >
             IMDb
           </a>

@@ -4,7 +4,7 @@ import type {
   SnapshotPayload,
   StorefrontCapture,
 } from '@dinder/shared/types';
-import { SNAPSHOT_FAILURE_FRESHNESS_MS } from '@dinder/shared/types';
+import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import type { VenueDetails } from './RestaurantSearchService.js';
 import { deriveComparison } from './comparisonMatcher.js';
 import { doorDashStorefront } from './doorDashStorefront.js';
@@ -26,9 +26,6 @@ interface ComparisonServiceDeps {
   doorDashActorId?: string;
   fetchPlaceDetails(placeId: string): Promise<VenueDetails>;
   snapshotStore: SnapshotStore;
-  freshnessMs: number;
-  failureFreshnessMs?: number;
-  settleCapMs: number;
 }
 
 export interface StorefrontResolver {
@@ -49,15 +46,7 @@ interface ComparisonSubscriptionOptions {
   beginColdCompare?: () => boolean;
 }
 
-export interface ComparisonService {
-  subscribe(
-    placeId: string,
-    subscriber: (event: ComparisonStreamEvent) => void,
-    options?: ComparisonSubscriptionOptions
-  ): () => void;
-}
-
-export function createComparisonService(deps: ComparisonServiceDeps): ComparisonService {
+export function createComparisonService(deps: ComparisonServiceDeps) {
   // ponytail: in-memory dedupe assumes the single Railway backend instance.
   const flights = new Map<string, Flight>();
 
@@ -73,7 +62,7 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
   ) => {
     try {
       const latest = await deps.snapshotStore.getLatest(placeId);
-      if (latest && isFresh(latest, deps.freshnessMs, deps.failureFreshnessMs)) {
+      if (latest && isFresh(latest)) {
         emitSnapshot(flight, latest, emit);
         return;
       }
@@ -129,7 +118,11 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
   };
 
   return {
-    subscribe(placeId, subscriber, options) {
+    subscribe(
+      placeId: string,
+      subscriber: (event: ComparisonStreamEvent) => void,
+      options?: ComparisonSubscriptionOptions
+    ): () => void {
       let flight = flights.get(placeId);
       if (flight) {
         flight.subscribers.add(subscriber);
@@ -147,6 +140,8 @@ export function createComparisonService(deps: ComparisonServiceDeps): Comparison
   };
 }
 
+export type ComparisonService = ReturnType<typeof createComparisonService>;
+
 async function fetchStorefront(
   deps: ComparisonServiceDeps,
   resolver: StorefrontResolver,
@@ -156,10 +151,7 @@ async function fetchStorefront(
 ): Promise<StorefrontCapture> {
   if (storedUrl) {
     try {
-      const output = await settleWithin(
-        deps.runActor(actorId, resolver.urlInput(storedUrl)),
-        deps.settleCapMs
-      );
+      const output = await deps.runActor(actorId, resolver.urlInput(storedUrl));
       const capture = resolver.resolve(output, venue);
       if (capture.status === 'resolved') return capture;
     } catch {
@@ -168,10 +160,7 @@ async function fetchStorefront(
   }
 
   try {
-    const output = await settleWithin(
-      deps.runActor(actorId, resolver.searchInput(venue)),
-      deps.settleCapMs
-    );
+    const output = await deps.runActor(actorId, resolver.searchInput(venue));
     return resolver.resolve(output, venue);
   } catch {
     return emptyCapture('failed');
@@ -197,31 +186,11 @@ function emitSnapshot(
   emit(flight, { type: 'comparison', comparison: deriveComparison(snapshot) });
 }
 
-export function isFresh(
-  snapshot: Snapshot,
-  freshnessMs: number,
-  failureFreshnessMs = SNAPSHOT_FAILURE_FRESHNESS_MS
-): boolean {
-  const ageMs = Date.now() - Date.parse(snapshot.fetchedAt);
+export function isFresh(snapshot: Snapshot, now = Date.now()): boolean {
+  const ageMs = now - Date.parse(snapshot.fetchedAt);
   const hasFailure = [snapshot.payload.ubereats, snapshot.payload.doordash].some(
     (storefront) => storefront?.status === 'failed'
   );
-  const maxAgeMs = hasFailure ? Math.min(freshnessMs, failureFreshnessMs) : freshnessMs;
+  const maxAgeMs = hasFailure ? SNAPSHOT_FAILURE_FRESHNESS_MS : SNAPSHOT_FRESHNESS_MS;
   return ageMs >= 0 && ageMs < maxAgeMs;
-}
-
-function settleWithin<T>(promise: Promise<T>, settleCapMs: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Actor run exceeded settle cap')), settleCapMs);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error: unknown) => {
-        clearTimeout(timer);
-        reject(error instanceof Error ? error : new Error('Actor run failed'));
-      }
-    );
-  });
 }

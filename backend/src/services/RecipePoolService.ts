@@ -18,18 +18,11 @@
 // and the two supplies meet only in `blendDeck`. Nothing downstream of the
 // cut knows which source a card came from — Deck, Selection and Top Pick all
 // see Recipes.
-import type {
-  Craving,
-  Cuisine,
-  DeckEntry,
-  Diet,
-  MealType,
-  NearestCraving,
-  Recipe,
-} from '@dinder/shared/types';
+import type { Craving, Cuisine, DeckEntry, Diet, MealType, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
-import { relaxationLadder } from './cuisineGroups.js';
+import type { RedisLike } from '../redis/redisLike.js';
+import { shuffled } from './MovieDeckService.js';
 import { satisfiedDiets, type OwnedRecipeStore } from './ownedRecipeStore.js';
 import { SpoonacularRefusal } from './spoonacularClient.js';
 import type { PooledRecipe, SpoonacularClient } from './spoonacularClient.js';
@@ -119,14 +112,6 @@ const VENDOR_DARK_TTL_MS = 5 * 60_000;
  */
 const BLIP_LATCH = 3;
 
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
-  incr(key: string): Promise<number>;
-  pexpire(key: string, ttlMs: number): Promise<unknown>;
-  del(key: string): Promise<unknown>;
-}
-
 interface RecipePoolServiceDeps {
   redis: RedisLike;
   client: SpoonacularClient;
@@ -155,7 +140,7 @@ interface RecipePoolServiceDeps {
  * product — and a thin Craving on a healthy vendor never carries it either,
  * because that is a fact about the catalogue, not about us (#250).
  */
-export interface DealtDeck {
+interface DealtDeck {
   entries: Recipe[];
   recipeSourceDown: boolean;
 }
@@ -181,13 +166,6 @@ export interface RecipePoolService {
     deckSize?: number
   ): Promise<DealtDeck>;
   /**
-   * The Nearest Craving to offer a Craving that dealt nothing (#334), or null
-   * when even the widest step of the ladder is empty. Priced from the corpus in
-   * memory plus whatever pools are already warm — never a vendor call, so an
-   * offer costs nothing to make and none of it can fail.
-   */
-  nearestCraving(craving: Craving): Promise<NearestCraving | null>;
-  /**
    * A Restart's Deck (#246, #260): a fresh cut of the pool `current` was dealt
    * from. A pool that has aged out degrades to reshuffling `current` rather
    * than paying a lookup — Restart is not a moment to go to the network, and
@@ -205,16 +183,6 @@ export interface RecipePoolService {
    * rather than paying a lookup. An Owned Recipe never ages out.
    */
   readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null>;
-}
-
-/** Fisher-Yates over a copy — the caller's pool is never reordered. */
-function shuffleInPlace<T>(entries: T[]): T[] {
-  const shuffled = [...entries];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 /** The Deck Entry half: what a Participant swipes, and all the wire carries. */
@@ -302,7 +270,7 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
   const ownedFloor = deps.ownedFloor ?? OWNED_FLOOR;
   const vendorDarkTtlMs = deps.vendorDarkTtlMs ?? VENDOR_DARK_TTL_MS;
   const dealBudgetMs = deps.dealBudgetMs ?? config.spoonacular.dealBudgetMs;
-  const shuffle = deps.shuffle ?? shuffleInPlace;
+  const shuffle = deps.shuffle ?? shuffled;
 
   /** Latch the vendor dark. The blip run is over — the outage subsumes it. */
   async function latchDark(): Promise<void> {
@@ -488,19 +456,6 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
         entries: shuffle(picked.map(toDeckEntry)),
         recipeSourceDown: sourceDown && picked.length < deckSize,
       };
-    },
-
-    async nearestCraving(craving: Craving): Promise<NearestCraving | null> {
-      for (const step of relaxationLadder(craving)) {
-        // `readPool`, never `sourcedSupply`: a cold pool prices as the zero it
-        // is rather than filling itself from the vendor. What the offer is
-        // worth is what is already here — the corpus, and the pools tonight's
-        // other Sessions have warmed.
-        const pooled = await readPool(cravingPoolKey(step.craving));
-        const recipeCount = deps.owned.forCraving(step.craving).length + (pooled?.length ?? 0);
-        if (recipeCount > 0) return { ...step, recipeCount };
-      }
-      return null;
     },
 
     async redeal(

@@ -19,26 +19,14 @@ export function createOptionsRouter(store: SessionStore) {
       const { sessionCode } = req.params;
 
       if (!SESSION_CODE_PATTERN.test(sessionCode)) {
-        req.log.warn(
-          {
-            sessionCode,
-            reason: 'invalid_session_code',
-          },
-          'Rejected REST options get'
-        );
+        req.log.warn({ sessionCode, reason: 'invalid_session_code' }, 'Rejected REST options get');
 
         throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
       }
 
       // Check if session exists
       if (!(await store.sessionExists(sessionCode))) {
-        req.log.warn(
-          {
-            sessionCode,
-            reason: 'session_not_found',
-          },
-          'Rejected REST options get'
-        );
+        req.log.warn({ sessionCode, reason: 'session_not_found' }, 'Rejected REST options get');
 
         throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
       }

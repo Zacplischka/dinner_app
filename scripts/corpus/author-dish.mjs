@@ -33,7 +33,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { readDish } from './read-dish.mjs';
+import { parseArgs } from 'node:util';
+import { MODEL, readDish, structured } from './read-dish.mjs';
+import { escapeRe } from './records.mjs';
 
 /** Shingle width, and the count of shared shingles that flags one source. */
 const SHINGLE_SIZE = 5;
@@ -167,9 +169,7 @@ const recordNames = (record) =>
 // "salted butter", and claiming it there would key a record ingredient to an
 // unrelated authored amount.
 const mentions = (original, name) =>
-  new RegExp(`(?<![a-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9])`).test(
-    original
-  );
+  new RegExp(`(?<![a-z0-9])${escapeRe(name)}(?![a-z0-9])`).test(original);
 
 /**
  * The authored quantity for each ingredient, keyed by the authored name *and*
@@ -312,8 +312,6 @@ const REWRITE_NOTES = {
   // fix it — the dish runs out its rewrites and is dropped, which is the point.
 };
 
-const MODEL = 'claude-opus-5';
-
 const RECIPE_SCHEMA = {
   type: 'object',
   properties: {
@@ -354,39 +352,16 @@ async function authorRecipe(record, notes = [], client = new Anthropic()) {
   // a model that knows whose page it is can reach for the house style it
   // remembers. The facts are the whole brief.
   const { sources, skipped, ...facts } = record;
-  // Streamed, so the budget is the streaming one: thinking shares the output
-  // tokens, and 16000 is the ceiling for a *non*-streaming call. A truncation
-  // here throws AUTHORING_INCOMPLETE past the rewrite loop and the dish dies
-  // with its tokens spent.
-  const response = await client.messages
-    .stream({
-      model: MODEL,
-      max_tokens: 64000,
-      thinking: { type: 'adaptive' },
-      system: AUTHORING_RULES,
-      output_config: { format: { type: 'json_schema', schema: RECIPE_SCHEMA } },
-      messages: [
-        {
-          role: 'user',
-          content:
-            `Fact Record:\n${JSON.stringify(facts, null, 2)}` +
-            (notes.length ? `\n\nThis is a rewrite.\n${notes.join('\n')}` : ''),
-        },
-      ],
-    })
-    .finalMessage();
-
-  // A truncation or a refusal arrives as a 200 with a half-written body, same
-  // as the reading stage's extraction: parsing it blind blames JSON.
-  if (response.stop_reason !== 'end_turn') {
-    throw new Error(`AUTHORING_INCOMPLETE: ${record.dish} stopped on ${response.stop_reason}`);
-  }
-  return JSON.parse(
-    response.content
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('')
-  );
+  // A truncation throws AUTHORING_INCOMPLETE past the rewrite loop: the dish
+  // dies with its tokens spent.
+  return structured(client, {
+    system: AUTHORING_RULES,
+    schema: RECIPE_SCHEMA,
+    label: `AUTHORING_INCOMPLETE: ${record.dish}`,
+    content:
+      `Fact Record:\n${JSON.stringify(facts, null, 2)}` +
+      (notes.length ? `\n\nThis is a rewrite.\n${notes.join('\n')}` : ''),
+  });
 }
 
 /**
@@ -451,13 +426,17 @@ export function commitRecord(outDir, record, recipe) {
 // check needs exist only as `readDish`'s return value, so there is no run in
 // which raw source text is on disk waiting to be cleaned up.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [dish, ...rest] = process.argv.slice(2);
+  const {
+    positionals: [dish],
+    values: { out },
+  } = parseArgs({
+    allowPositionals: true,
+    options: { out: { type: 'string', default: 'records' } },
+  });
   if (!dish) {
     console.error('usage: author-dish.mjs "<dish>" [--out records]');
     process.exit(2);
   }
-  const flag = rest.indexOf('--out');
-  const out = flag === -1 ? 'records' : rest[flag + 1];
 
   const { record, captures } = await readDish(dish);
   const recipe = await authorDish(record, captures);

@@ -9,8 +9,9 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
+    // Test fixtures are JSON; nothing under src/ imports any.
+    "resolveJsonModule": true,
     "rootDir": "."
   },
-  "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "tests/**/*"]
 }

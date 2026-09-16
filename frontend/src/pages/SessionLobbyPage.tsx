@@ -1,7 +1,7 @@
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router';
 import type { Ack, SessionChoicesPayload, SessionLobbyState } from '@dinder/shared/types';
 import { useSessionStore } from '../stores/sessionStore';
 import { useFriendsStore } from '../stores/friendsStore';
@@ -15,9 +15,10 @@ import {
 } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useShareLink } from '../hooks/useShareLink';
-import { useToast } from '../hooks/useToast';
+import { toast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
 import NavigationHeader from '../components/NavigationHeader';
+import { ErrorNote } from '../components/Notice';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
 import LobbyChoices from '../components/LobbyChoices';
 import Spinner from '../components/Spinner';
@@ -38,7 +39,6 @@ export default function SessionLobbyPage() {
   const inFlight = useRef(false);
   const fetchFailed = useRef(false);
   const roster = participants.map((p) => p.participantId).join(',');
-  const toast = useToast();
   const inviteFriends = useFriendsStore((state) => state.inviteFriendsToSession);
   const me = participants.find((p) => p.participantId === currentUserId);
   const isHost = !!me && (me.isHost || !participants.some((p) => p.isHost && p.isOnline !== false));
@@ -71,13 +71,7 @@ export default function SessionLobbyPage() {
     return () => {
       active = false;
     };
-  }, [sessionCode, roster, setExpiresAt, setLobby, toast]);
-
-  useEffect(() => {
-    if (!sessionCode || me?.waitingForNextRound || reviewingWaiting) return;
-    if (sessionStatus === 'selecting') navigate(`/session/${sessionCode}/select`);
-    if (sessionStatus === 'complete') navigate(`/session/${sessionCode}/results`);
-  }, [navigate, sessionCode, sessionStatus, me?.waitingForNextRound, reviewingWaiting]);
+  }, [sessionCode, roster, setExpiresAt, setLobby]);
 
   const share = useShareLink(shareableLink, 'Link copied to clipboard!');
   const leave = useLeaveSession(sessionCode);
@@ -160,6 +154,14 @@ export default function SessionLobbyPage() {
     if (error) errorRef.current?.scrollIntoView?.({ block: 'center' });
   }, [error]);
 
+  // Follow the room once it starts or finishes, unless I am waiting for the
+  // next round or reviewing who is.
+  const follow = sessionCode && !me?.waitingForNextRound && !reviewingWaiting;
+  if (follow && sessionStatus === 'selecting')
+    return <Navigate to={`/session/${sessionCode}/select`} replace />;
+  if (follow && sessionStatus === 'complete')
+    return <Navigate to={`/session/${sessionCode}/results`} replace />;
+
   if (isLoading)
     return (
       <main className="flex min-h-screen items-center justify-center bg-ink">
@@ -168,7 +170,7 @@ export default function SessionLobbyPage() {
     );
 
   return (
-    <main className="market-backdrop min-h-screen">
+    <main className="bg-ink min-h-screen">
       <NavigationHeader
         title={
           lobby
@@ -179,7 +181,6 @@ export default function SessionLobbyPage() {
         }
         subtitle="Invite friends. Choose together. Get ready."
         sessionCode={sessionCode}
-        showBackButton
         onBack={leave}
         confirmOnBack
         confirmContext="lobby"
@@ -190,7 +191,7 @@ export default function SessionLobbyPage() {
           <h2 id="invite-title" className="label text-center">
             Session code
           </h2>
-          <div className="rounded-market-md border border-cyan bg-surface px-4 py-2 text-center font-mono text-3xl font-black tracking-[0.28em] text-cyan shadow-glow-cyan">
+          <div className="rounded-market-md border border-text bg-surface px-4 py-2 text-center font-mono text-3xl font-black tracking-[0.28em] text-text shadow-glow">
             {sessionCode}
           </div>
           {shareableLink && (
@@ -239,8 +240,8 @@ export default function SessionLobbyPage() {
         </section>
 
         <section className="card p-4" aria-labelledby="participants-title">
-          <h2 id="participants-title" className="mb-3 text-lg font-display font-semibold">
-            Participants <span className="text-cyan">({participants.length})</span>
+          <h2 id="participants-title" className="mb-3 text-lg font-semibold">
+            Participants <span className="text-text">({participants.length})</span>
           </h2>
           <div className="space-y-2" data-testid="participants-list" aria-live="polite">
             {participants.map((participant, index) => {
@@ -275,7 +276,7 @@ export default function SessionLobbyPage() {
                       <p className="font-medium">
                         <span data-testid="participant-name">{participant.displayName}</span>
                         {participant.isHost && (
-                          <span className="ml-2 text-xs font-semibold text-cyan">Host</span>
+                          <span className="ml-2 text-xs font-semibold text-text">Host</span>
                         )}
                       </p>
                       <p className="text-xs text-muted">
@@ -301,7 +302,7 @@ export default function SessionLobbyPage() {
                     !participant.ready &&
                     participant.participantId !== currentUserId && (
                       <button
-                        className="mt-2 min-h-[44px] text-sm font-bold text-coral-soft"
+                        className="mt-2 min-h-[44px] text-sm font-bold text-coral-strong"
                         disabled={disabled}
                         onClick={() => {
                           if (
@@ -336,13 +337,9 @@ export default function SessionLobbyPage() {
               </p>
             )}
             {error && (
-              <p
-                ref={errorRef}
-                role="alert"
-                className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
-              >
+              <ErrorNote ref={errorRef} role="alert" className="p-3">
                 {error}
-              </p>
+              </ErrorNote>
             )}
             {lobby?.state === 'waiting' && me && (
               <div className="space-y-3">
@@ -387,7 +384,7 @@ export default function SessionLobbyPage() {
                     void run(() =>
                       lobby
                         ? startSession({ sessionCode, revision: lobby.revision })
-                        : restartSession(sessionCode)
+                        : restartSession({ sessionCode })
                     );
                   }}
                 >
@@ -441,7 +438,7 @@ export default function SessionLobbyPage() {
                     'Return everyone to choices? This round’s selections and Match will be discarded. Everyone must confirm Ready again.'
                   )
                 )
-                  void run(() => restartSession(lobby.sessionCode));
+                  void run(() => restartSession({ sessionCode: lobby.sessionCode }));
               }}
             >
               Return everyone to choices

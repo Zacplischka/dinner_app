@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures/test-fixtures';
 
 /**
  * Mobile-Specific Tests
@@ -11,21 +11,19 @@ import { test, expect } from './fixtures';
  */
 
 test.describe('Mobile Layout - Home Page', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('all content fits within mobile viewport', async ({ homePage }) => {
     await homePage.goto();
+
+    // Verify main elements are visible without scrolling
+    await expect(homePage.heading).toBeVisible();
+    await expect(homePage.eatOutCard).toBeVisible();
+    await expect(homePage.joinLink).toBeVisible();
 
     // Verify no horizontal scroll
     const hasHorizontalScroll = await homePage.page.evaluate(() => {
       return document.documentElement.scrollWidth > document.documentElement.clientWidth;
     });
     expect(hasHorizontalScroll).toBe(false);
-
-    // Verify main elements are visible without scrolling
-    await expect(homePage.heading).toBeVisible();
-    await expect(homePage.eatOutCard).toBeVisible();
-    await expect(homePage.joinLink).toBeVisible();
   });
 
   test('buttons are properly sized for touch (min 44x44)', async ({ homePage }) => {
@@ -54,8 +52,6 @@ test.describe('Mobile Layout - Home Page', () => {
 });
 
 test.describe('Mobile Layout - Create Session Page', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('form is centered and properly padded', async ({ createPage }) => {
     await createPage.goto();
 
@@ -91,8 +87,6 @@ test.describe('Mobile Layout - Create Session Page', () => {
 });
 
 test.describe('Mobile Layout - Join Session Page', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('session code input is prominent', async ({ joinPage }) => {
     await joinPage.goto();
 
@@ -102,20 +96,9 @@ test.describe('Mobile Layout - Join Session Page', () => {
     // Should be in upper portion of screen
     expect(codeInputBox!.y).toBeLessThan(844 / 2);
   });
-
-  test('uppercase formatting works on mobile input', async ({ joinPage }) => {
-    await joinPage.goto();
-
-    await joinPage.enterSessionCode('abc123');
-    const value = await joinPage.getSessionCodeValue();
-
-    expect(value).toBe('ABC12');
-  });
 });
 
 test.describe('Mobile Touch Interactions', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
-
   test('buttons respond to touch', async ({ page, homePage }) => {
     await homePage.goto();
 
@@ -178,11 +161,10 @@ test.describe('Mobile - Landscape Orientation', () => {
 });
 
 test.describe('Mobile - Performance', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
-
   test('page loads quickly on mobile', async ({ page: _page, homePage }) => {
     const startTime = Date.now();
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
     const loadTime = Date.now() - startTime;
 
     // Should load within 3 seconds
@@ -191,6 +173,7 @@ test.describe('Mobile - Performance', () => {
 
   test('no layout shift during load', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
     // Check Cumulative Layout Shift
     const cls = await page.evaluate(() => {

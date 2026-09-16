@@ -5,17 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { isApiError } from '@dinder/shared/types';
-import type {
-  Ack,
-  SessionJoinResponse,
-  SelectionSubmitResponse,
-  SessionRestartResponse,
-  SessionLeaveResponse,
-  SelectionLiveResponse,
-  SessionJoinData,
-  OrderUnavailableError,
-  OrderBuyResponse,
-} from '@dinder/shared/types';
+import type { Ack, SessionJoinData, OrderUnavailableError } from '@dinder/shared/types';
 
 describe('canonical Socket.IO ack wire contract (shared event map)', () => {
   it('join success is exactly { success, data } carrying the canonical data', () => {
@@ -28,13 +18,13 @@ describe('canonical Socket.IO ack wire contract (shared event map)', () => {
       participants: [{ participantId: 'p1', displayName: 'Alice', isHost: true }],
       branch: 'eatout',
     };
-    const ack: SessionJoinResponse = { success: true, data };
+    const ack: Ack<SessionJoinData> = { success: true, data };
     // No flattened participantId/participantCount/participants at the top level.
     expect(Object.keys(ack).sort()).toEqual(['data', 'success']);
   });
 
   it('a failure ack is exactly { success:false, error: ApiError } - no string error, no apiError', () => {
-    const ack: SessionJoinResponse = {
+    const ack: Ack<SessionJoinData> = {
       success: false,
       error: { code: 'SESSION_NOT_FOUND', message: 'gone' },
     };
@@ -45,13 +35,7 @@ describe('canonical Socket.IO ack wire contract (shared event map)', () => {
   });
 
   it('no-data commands acknowledge data: null', () => {
-    const acks: Array<
-      | SelectionSubmitResponse
-      | SessionRestartResponse
-      | SessionLeaveResponse
-      | SelectionLiveResponse
-      | OrderBuyResponse
-    > = [
+    const acks: Ack<null>[] = [
       { success: true, data: null },
       { success: true, data: null },
       { success: true, data: null },

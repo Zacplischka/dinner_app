@@ -2,9 +2,8 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { config } from '../config/index.js';
 import { asyncHandler } from './asyncHandler.js';
-import { moodSchema } from './lobbySchema.js';
+import { locationSchema, moodSchema } from './lobbySchema.js';
 import { cravingSchema } from './cravingSchema.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
@@ -15,11 +14,9 @@ import {
   MAX_HEADCOUNT,
   MIN_DECK_SIZE,
   SESSION_CODE_PATTERN,
-  type ApiError,
   type CreateSessionRequest,
   type CreateSessionResponse,
   type SessionResponse,
-  type SessionDefaultsResponse,
 } from '@dinder/shared/types';
 
 // Every located create spends a Google-billed Places search; cap per-visitor
@@ -31,9 +28,6 @@ const CREATE_WINDOW_MS = 60_000;
 
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
-  router.get('/defaults', (_req, res) => {
-    res.json({ cookDeckSize: config.spoonacular.deckSize } satisfies SessionDefaultsResponse);
-  });
   // ponytail: per-instance in-memory rate window, same ceiling as rateWindow.ts notes.
   const createRequests = new Map<string, RequestWindow>();
 
@@ -42,13 +36,7 @@ export function createSessionsRouter(sessionService: SessionService) {
     .object({
       hostName: z.string().trim().min(1).max(50),
       collaborative: z.boolean().optional(),
-      location: z
-        .object({
-          latitude: z.number().min(-90).max(90),
-          longitude: z.number().min(-180).max(180),
-          address: z.string().optional(),
-        })
-        .optional(),
+      location: locationSchema.optional(),
       searchRadiusMiles: z.number().min(1).max(15).optional(),
       branch: z.enum(BRANCHES).optional(),
       craving: cravingSchema.optional(),
@@ -95,10 +83,7 @@ export function createSessionsRouter(sessionService: SessionService) {
 
       if (!validation.success) {
         req.log.warn(
-          {
-            reason: 'validation_error',
-            fields: validationFields(validation.error),
-          },
+          { reason: 'validation_error', fields: validationFields(validation.error) },
           'Rejected REST session create'
         );
 
@@ -111,10 +96,10 @@ export function createSessionsRouter(sessionService: SessionService) {
       const ip = requestIp(req);
       if (!admitRequest(createRequests, ip, CREATE_LIMIT, CREATE_WINDOW_MS)) {
         res.setHeader('Retry-After', retryAfterSeconds(createRequests, ip, CREATE_WINDOW_MS));
-        return res.status(429).json({
-          code: 'RATE_LIMITED',
-          message: 'Too many Sessions created. Please try again shortly.',
-        } satisfies ApiError);
+        throw new DomainError(
+          'TOO_MANY_REQUESTS',
+          'Too many Sessions created. Please try again shortly.'
+        );
       }
 
       // Annotated, not cast: this is what checks the Zod schema still agrees
@@ -200,13 +185,7 @@ export function createSessionsRouter(sessionService: SessionService) {
 
       // Validate session code format
       if (!SESSION_CODE_PATTERN.test(sessionCode)) {
-        req.log.warn(
-          {
-            sessionCode,
-            reason: 'invalid_session_code',
-          },
-          'Rejected REST session get'
-        );
+        req.log.warn({ sessionCode, reason: 'invalid_session_code' }, 'Rejected REST session get');
 
         throw notFound();
       }
@@ -215,23 +194,13 @@ export function createSessionsRouter(sessionService: SessionService) {
       const session = await sessionService.getSession(sessionCode);
 
       if (!session) {
-        req.log.warn(
-          {
-            sessionCode,
-            reason: 'session_not_found',
-          },
-          'Rejected REST session get'
-        );
+        req.log.warn({ sessionCode, reason: 'session_not_found' }, 'Rejected REST session get');
 
         throw notFound();
       }
 
       req.log.info(
-        {
-          sessionCode,
-          state: session.state,
-          participantCount: session.participantCount,
-        },
+        { sessionCode, state: session.state, participantCount: session.participantCount },
         'Returned REST session'
       );
 

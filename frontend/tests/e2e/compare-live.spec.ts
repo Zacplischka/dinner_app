@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures/test-fixtures';
 
 interface SnapshotRow {
   place_id?: string;

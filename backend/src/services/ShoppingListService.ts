@@ -17,6 +17,7 @@ import type {
   ShoppingListProduct,
 } from '@dinder/shared/types';
 import { logger } from '../logger.js';
+import type { RedisLike } from '../redis/redisLike.js';
 import type { Session } from '../store/sessionStore.js';
 import { wantedPackForm, type IngredientAmount, type WantedPackForm } from './quantityLadder.js';
 import type { PooledIngredient, PooledRecipe } from './spoonacularClient.js';
@@ -101,23 +102,6 @@ interface StoredList {
   list: ShoppingList;
   /** By line id, for matched lines only. Absent on a list minted before #264. */
   matches?: Record<string, LineMatch>;
-}
-
-/** The chained MULTI builder, narrowed to the commands a Claim or swap needs. */
-interface ListMulti {
-  hsetnx(key: string, field: string, value: string): ListMulti;
-  hset(key: string, field: string, value: string): ListMulti;
-  pexpireat(key: string, timestampMs: number): ListMulti;
-  exec(): Promise<unknown>;
-}
-
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string, mode: 'PX', ttlMs: number): Promise<unknown>;
-  del(key: string): Promise<unknown>;
-  hdel(key: string, field: string): Promise<unknown>;
-  hgetall(key: string): Promise<Record<string, string>>;
-  multi(): ListMulti;
 }
 
 interface ShoppingListServiceDeps {

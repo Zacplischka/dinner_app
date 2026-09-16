@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { Branch } from '@dinder/shared/types';
 import NavigationHeader from './NavigationHeader';
+import { ErrorNote } from './Notice';
 import TmdbCredit from './TmdbCredit';
 import Spinner from './Spinner';
 import { useProfileName } from '../hooks/useProfileName';
@@ -33,7 +34,7 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
       return;
     }
     setError('');
-    const failure = await createAndJoin(name.trim(), { branch, collaborative: true }, new Set());
+    const failure = await createAndJoin(name.trim(), { branch, collaborative: true });
     if (failure) {
       setError(failure.message);
       if (failure.code === 'DISPLAY_NAME_TAKEN') setNeedsName(true);
@@ -52,7 +53,6 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
       <NavigationHeader
         title={titles[branch]}
         subtitle="Gather first. Choose together."
-        showBackButton
         onBack={() => navigate('/')}
       />
       <div className="mx-auto max-w-md px-4 py-6">
@@ -95,12 +95,9 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
             </p>
           )}
           {error && (
-            <p
-              role="alert"
-              className="rounded-xl border border-coral/30 bg-coral/10 p-3 text-sm text-coral-soft"
-            >
+            <ErrorNote role="alert" className="p-3">
               {error}
-            </p>
+            </ErrorNote>
           )}
           <button
             type="submit"

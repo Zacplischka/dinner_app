@@ -1,7 +1,10 @@
-import dotenv from 'dotenv';
-
-// Load environment variables from .env file
-dotenv.config();
+// Load .env with Node's own loader: no override of what is already set, and
+// no file is not an error — the environment is the configuration.
+try {
+  process.loadEnvFile();
+} catch {
+  // No .env file.
+}
 
 export const config = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',

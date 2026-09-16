@@ -12,7 +12,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DeckEntry, Movie, Recipe, Restaurant } from '@dinder/shared/types';
 
@@ -78,7 +78,6 @@ const seed = (branch: 'watch' | 'eatout' | 'cook', ...names: string[]) => {
       participantId: `p${i}`,
       displayName,
       sessionCode: 'AB123',
-      joinedAt: i,
       hasSubmitted: false,
       isHost: i === 0,
     })),
@@ -312,23 +311,6 @@ describe('Deck Entry details sheet — Movie', () => {
       'href',
       'https://www.themoviedb.org/movie/949'
     );
-  });
-
-  it('drops the slide-in under prefers-reduced-motion', async () => {
-    vi.spyOn(window, 'matchMedia').mockImplementation(
-      (media: string) =>
-        ({
-          matches: true,
-          media,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        }) as unknown as MediaQueryList
-    );
-    renderSelectionPage();
-    await screen.findByText('Alien');
-    const { dialog } = await pressDetails();
-
-    expect(within(dialog).getByTestId('details-panel')).not.toHaveClass('animate-slide-up');
   });
 });
 

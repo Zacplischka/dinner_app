@@ -68,26 +68,15 @@ const IMPLIED: Partial<Record<Diet, readonly Diet[]>> = {
 export const satisfiedDiets = (diets: readonly Diet[]): Set<Diet> =>
   new Set(diets.flatMap((diet) => [diet, ...(IMPLIED[diet] ?? [])]));
 
-export interface OwnedRecipeStore {
-  /**
-   * Every Owned Recipe that answers this Craving: the meal type exactly, one
-   * of the craved cuisines (any, when no chip names one), and every craved
-   * diet satisfied. In memory and synchronous — there is nothing to await.
-   */
-  forCraving(craving: Craving): OwnedRecipe[];
-  /**
-   * The whole Recipe behind an `owned:` card, whatever Craving dealt it — what
-   * the Shopping List is minted from (#262, #332). The corpus is the only copy: an
-   * Owned Recipe is never written to the Redis pool, so it can never be read
-   * back out of one, and unlike a Sourced Recipe it never ages out.
-   */
-  byPlaceId(placeId: string): OwnedRecipe | undefined;
-}
-
-export function createOwnedRecipeStore(recipes: readonly OwnedRecipe[]): OwnedRecipeStore {
+export function createOwnedRecipeStore(recipes: readonly OwnedRecipe[]) {
   const indexed = recipes.map((recipe) => ({ recipe, diets: satisfiedDiets(recipe.diets) }));
   return {
-    forCraving(craving) {
+    /**
+     * Every Owned Recipe that answers this Craving: the meal type exactly, one
+     * of the craved cuisines (any, when no chip names one), and every craved
+     * diet satisfied. In memory and synchronous — there is nothing to await.
+     */
+    forCraving(craving: Craving): OwnedRecipe[] {
       return indexed
         .filter(
           ({ recipe, diets }) =>
@@ -100,12 +89,20 @@ export function createOwnedRecipeStore(recipes: readonly OwnedRecipe[]): OwnedRe
         )
         .map(({ recipe }) => recipe);
     },
+    /**
+     * The whole Recipe behind an `owned:` card, whatever Craving dealt it — what
+     * the Shopping List is minted from (#262, #332). The corpus is the only copy: an
+     * Owned Recipe is never written to the Redis pool, so it can never be read
+     * back out of one, and unlike a Sourced Recipe it never ages out.
+     */
     // ponytail: a scan, not an index — one lookup per Shopping List over a
     // corpus in the thousands. Upgrade path if a hot path ever calls it per
     // card: build a Map beside `indexed`.
-    byPlaceId: (placeId) => recipes.find((recipe) => recipe.placeId === placeId),
+    byPlaceId: (placeId: string) => recipes.find((recipe) => recipe.placeId === placeId),
   };
 }
+
+export type OwnedRecipeStore = ReturnType<typeof createOwnedRecipeStore>;
 
 /**
  * Read at boot, once, from `config.ownedRecipesDir` — `<dir>/<frozen-slug>/

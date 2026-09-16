@@ -4,7 +4,7 @@
 // dropped, until you swipe past it).
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const restaurant = {
@@ -45,7 +45,6 @@ const participant = (id: string, displayName: string) => ({
   participantId: id,
   displayName,
   sessionCode: 'AB123',
-  joinedAt: 1,
   hasSubmitted: false,
   isHost: id === 'p1',
 });

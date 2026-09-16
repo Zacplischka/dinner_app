@@ -2,7 +2,7 @@ import type { Ack } from '@dinder/shared/types';
 // Issue #176 — opening a Group Order and the eight §2 failure branches.
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const openOrderMock = vi.fn();
@@ -68,7 +68,6 @@ function seedStore(overrides: Partial<ReturnType<typeof useSessionStore.getState
         participantId: 'p1',
         displayName: 'Alice',
         sessionCode: 'AB123',
-        joinedAt: 1,
         hasSubmitted: true,
         isHost: true,
       },
@@ -191,7 +190,6 @@ describe('GroupOrderPage', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: true,
           isHost: true,
         },
@@ -199,7 +197,6 @@ describe('GroupOrderPage', () => {
           participantId: 'p2',
           displayName: 'Bob',
           sessionCode: 'AB123',
-          joinedAt: 2,
           hasSubmitted: true,
           isHost: false,
         },
@@ -461,7 +458,6 @@ describe('GroupOrderPage', () => {
       participantId: 'p1',
       displayName: 'Alice',
       sessionCode: 'AB123',
-      joinedAt: 1,
       hasSubmitted: true,
       isHost: true,
     },
@@ -469,7 +465,6 @@ describe('GroupOrderPage', () => {
       participantId: 'p2',
       displayName: 'Bob',
       sessionCode: 'AB123',
-      joinedAt: 2,
       hasSubmitted: true,
       isHost: false,
     },
@@ -525,7 +520,7 @@ describe('GroupOrderPage', () => {
     const button = screen.getByRole('button', { name: "I'll order" });
     fireEvent.click(button);
 
-    expect(claimBuyerMock).toHaveBeenCalledWith('AB123');
+    expect(claimBuyerMock).toHaveBeenCalledWith({ sessionCode: 'AB123' });
     await waitFor(() =>
       expect(useToastStore.getState().toasts).toContainEqual(
         expect.objectContaining({ type: 'error', message: 'Bob is already ordering' })
@@ -583,9 +578,9 @@ describe('GroupOrderPage', () => {
 
     fireEvent.change(input, { target: { value: '8.99' } });
     act(() => vi.advanceTimersByTime(399));
-    expect(claimBuyerMock).not.toHaveBeenCalledWith('AB123', 899);
+    expect(claimBuyerMock).not.toHaveBeenCalledWith({ sessionCode: 'AB123', feeCents: 899 });
     act(() => vi.advanceTimersByTime(1));
-    expect(claimBuyerMock).toHaveBeenCalledWith('AB123', 899);
+    expect(claimBuyerMock).toHaveBeenCalledWith({ sessionCode: 'AB123', feeCents: 899 });
     expect(claimBuyerMock).toHaveBeenCalledTimes(1);
 
     // A rejected value also cancels a valid fee that has not been sent yet.
@@ -620,7 +615,7 @@ describe('GroupOrderPage', () => {
     // A fee right at the server cap still emits.
     fireEvent.change(input, { target: { value: '1000' } });
     act(() => vi.advanceTimersByTime(400));
-    expect(claimBuyerMock).toHaveBeenCalledWith('AB123', 100000);
+    expect(claimBuyerMock).toHaveBeenCalledWith({ sessionCode: 'AB123', feeCents: 100000 });
 
     vi.useRealTimers();
   });

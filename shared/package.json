@@ -12,9 +12,6 @@
   "exports": {
     "./types": "./dist/types/index.js"
   },
-  "devDependencies": {
-    "typescript": "^5.3.3"
-  },
   "keywords": [
     "dinder",
     "dinner",

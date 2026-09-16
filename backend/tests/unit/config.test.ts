@@ -6,7 +6,7 @@ describe('Google Places API Configuration', () => {
 
   afterEach(() => {
     process.env = { ...originalEnv };
-    vi.doUnmock('dotenv');
+    vi.restoreAllMocks();
     vi.resetModules();
   });
 
@@ -17,9 +17,7 @@ describe('Google Places API Configuration', () => {
 
   it('should load explicit environment values at module initialization', async () => {
     vi.resetModules();
-    vi.doMock('dotenv', () => ({
-      default: { config: vi.fn() },
-    }));
+    vi.spyOn(process, 'loadEnvFile').mockImplementation(() => {});
     Object.assign(process.env, {
       FRONTEND_URL: 'https://dinder.example.test',
       GOOGLE_PLACES_API_KEY: 'places-key',
@@ -51,9 +49,7 @@ describe('Google Places API Configuration', () => {
 
   it('should load default values when optional environment values are missing', async () => {
     vi.resetModules();
-    vi.doMock('dotenv', () => ({
-      default: { config: vi.fn() },
-    }));
+    vi.spyOn(process, 'loadEnvFile').mockImplementation(() => {});
     for (const key of [
       'FRONTEND_URL',
       'APIFY_TOKEN',

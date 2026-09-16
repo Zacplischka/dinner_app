@@ -28,7 +28,6 @@ describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
 
   async function createCompleteSession(): Promise<void> {
     await store.createSession(sessionCode, {
-      hostId: 'alice',
       hostName: 'Alice',
       entries: restaurants,
     });

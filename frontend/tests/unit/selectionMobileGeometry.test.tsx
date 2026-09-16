@@ -2,7 +2,7 @@
 // progressive coral/lime drag feedback that respects reduced motion.
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const restaurant = {
@@ -182,7 +182,6 @@ describe('SelectionPage mobile geometry', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: true,
         },
@@ -195,7 +194,7 @@ describe('SelectionPage mobile geometry', () => {
     await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
 
     const main = screen.getByRole('main');
-    expect(main).toHaveClass('h-screen-dvh', 'overflow-hidden', 'flex', 'flex-col');
+    expect(main).toHaveClass('h-dvh', 'overflow-hidden', 'flex', 'flex-col');
 
     const stack = screen.getByTestId('card-stack');
     expect(stack).toHaveClass('flex-1', 'min-h-0');
@@ -241,7 +240,6 @@ describe('SelectionPage mobile geometry', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: true,
         },
@@ -249,7 +247,6 @@ describe('SelectionPage mobile geometry', () => {
           participantId: 'p2',
           displayName: 'Bob',
           sessionCode: 'AB123',
-          joinedAt: 2,
           hasSubmitted: false,
           isHost: false,
         },
@@ -257,7 +254,6 @@ describe('SelectionPage mobile geometry', () => {
           participantId: 'p3',
           displayName: 'Carol',
           sessionCode: 'AB123',
-          joinedAt: 3,
           hasSubmitted: false,
           isHost: false,
         },
@@ -301,7 +297,6 @@ describe('GroupOrderPage mobile geometry', () => {
         participantId: `p${index}`,
         displayName,
         sessionCode: 'AB123',
-        joinedAt: index,
         hasSubmitted: true,
         isHost: index === 0,
       })),
@@ -322,7 +317,7 @@ describe('GroupOrderPage mobile geometry', () => {
     await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
 
     const main = screen.getByRole('main');
-    expect(main).toHaveClass('h-screen-dvh', 'overflow-hidden', 'flex', 'flex-col');
+    expect(main).toHaveClass('h-dvh', 'overflow-hidden', 'flex', 'flex-col');
 
     const menuBand = screen.getByText('In the basket').parentElement as HTMLElement;
     expect(menuBand).toHaveClass('flex-1', 'min-h-0', 'overflow-y-auto');

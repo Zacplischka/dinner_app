@@ -14,7 +14,6 @@ import type {
   SessionResultsEvent,
   SessionRestartedEvent,
   SessionExpiredEvent,
-  ErrorEvent,
   OrderStateEvent,
 } from '@dinder/shared/types';
 import * as socketService from './socketService';
@@ -78,21 +77,16 @@ function cancelDisconnectToast(displayName: string): boolean {
 
 function applyResults(event: SessionResultsEvent): void {
   useSessionStore.getState().setResults({
-    sessionCode: event.sessionCode,
+    ...event,
     overlappingOptions: resolvePhotoUrls(event.overlappingOptions),
-    allSelections: event.allSelections,
-    restaurantNames: event.restaurantNames,
-    hasOverlap: event.hasOverlap,
     topPick: event.topPick && {
       ...event.topPick,
       restaurant: resolvePhotoUrls([event.topPick.restaurant])[0],
     },
-    shoppingListId: event.shoppingListId,
   });
 }
 
 const socketConfig: SocketConfig = {
-  getAuthToken: () => useAuthStore.getState().session?.access_token,
   canMutate: () => useSessionStore.getState().isConnected,
   onUncertainOutcome: () => {
     void reconcileSession();
@@ -184,7 +178,6 @@ const socketConfig: SocketConfig = {
           participantId: event.participantId,
           displayName: event.displayName,
           sessionCode: '',
-          joinedAt: Date.now(),
           hasSubmitted: false,
           // A Host who left and came back joins as a new entry here, and the
           // start guard reads this flag — assuming false leaves every roster
@@ -309,12 +302,6 @@ const socketConfig: SocketConfig = {
       useSessionStore.getState().setSessionStatus('expired');
       toast.error('This session has expired');
     },
-
-    // error - Server-side error
-    error: (event: ErrorEvent) => {
-      console.error('Socket error:', event);
-      toast.error(event.message || 'An error occurred');
-    },
   },
 };
 
@@ -381,14 +368,19 @@ async function admitSession(
         message: 'Your saved place is no longer available. Join again to take a new place.',
       },
     };
-  const ack = await socketService.joinSession(sessionCode, displayName, token ?? undefined);
+  const ack = await socketService.joinSession({
+    sessionCode,
+    displayName,
+    rejoinToken: token ?? undefined,
+    accessToken: useAuthStore.getState().session?.access_token,
+  });
   if (!isSessionIntentCurrent(generation) || (resumeOnly && !stillResuming())) {
     // Finish departure before a queued newer join, even if the older ack timed out.
     if (!resumeOnly) {
       if (ack.success && intendedParticipant === `${sessionCode}:${displayName}`) {
         await saveRejoinToken(sessionCode, displayName, ack.data.rejoinToken);
       } else {
-        await socketService.leaveSession(sessionCode);
+        await socketService.leaveSession({ sessionCode });
         await clearRejoinToken(sessionCode, displayName);
       }
     }
@@ -418,7 +410,7 @@ async function admitSession(
       if (ack.success && intendedParticipant === `${sessionCode}:${displayName}`) {
         await saveRejoinToken(sessionCode, displayName, ack.data.rejoinToken);
       } else {
-        await socketService.leaveSession(sessionCode);
+        await socketService.leaveSession({ sessionCode });
         await clearRejoinToken(sessionCode, displayName);
       }
     }
@@ -462,7 +454,6 @@ async function admitSession(
       ack.data.participants.map((p) => ({
         ...p,
         sessionCode,
-        joinedAt: Date.now(),
         // The server says who already submitted (#284); absent on older backends.
         hasSubmitted: p.hasSubmitted ?? false,
       }))
@@ -512,11 +503,11 @@ export {
 // cannot become a vote in a freshly restarted round.
 export function submitSelection(sessionCode: string, optionIds: string[]): Promise<Ack<null>> {
   const lobby = useSessionStore.getState().lobby;
-  return socketService.submitSelection(
+  return socketService.submitSelection({
     sessionCode,
-    optionIds,
-    lobby?.sessionCode === sessionCode ? lobby.round : undefined
-  );
+    selections: optionIds,
+    round: lobby?.sessionCode === sessionCode ? lobby.round : undefined,
+  });
 }
 export function sendLiveSelection(
   sessionCode: string,
@@ -524,12 +515,12 @@ export function sendLiveSelection(
   retract?: boolean
 ): Promise<Ack<null>> {
   const lobby = useSessionStore.getState().lobby;
-  return socketService.sendLiveSelection(
+  return socketService.sendLiveSelection({
     sessionCode,
     placeId,
     retract,
-    lobby?.sessionCode === sessionCode ? lobby.round : undefined
-  );
+    round: lobby?.sessionCode === sessionCode ? lobby.round : undefined,
+  });
 }
 
 /**
@@ -545,7 +536,7 @@ export async function leaveSession(
   return queueAdmission(async () => {
     if (!isSessionIntentCurrent(generation)) return superseded();
     try {
-      const ack = await socketService.leaveSession(sessionCode);
+      const ack = await socketService.leaveSession({ sessionCode });
       return isSessionIntentCurrent(generation) ? ack : superseded();
     } finally {
       if (me) {
@@ -604,7 +595,7 @@ export function reconcileSession(): Promise<void> {
       }
       const { orderPlaceId, lobby } = useSessionStore.getState();
       if (orderPlaceId) {
-        const order = await socketService.openOrder(code, orderPlaceId);
+        const order = await socketService.openOrder({ sessionCode: code, placeId: orderPlaceId });
         if (!stillCurrent()) return;
         const current = useSessionStore.getState();
         if (current.orderPlaceId !== orderPlaceId || current.lobby?.round !== lobby?.round) {

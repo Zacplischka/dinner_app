@@ -11,19 +11,13 @@ import { supabase } from '../services/supabase.js';
 export interface AuthenticatedUser {
   id: string;
   email?: string;
-  role?: string;
 }
 
 export interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
 }
 
-type SupabaseAuthUser = {
-  id: string;
-  email?: string | null;
-  role?: string | null;
-  app_metadata?: Record<string, unknown> | null;
-};
+type SupabaseAuthUser = { id: string; email?: string | null };
 
 // Two arms: a user, or the reason there isn't one. Callers that care whether the
 // reason was expiry read it off `message` themselves.
@@ -58,15 +52,7 @@ async function verifyTokenInternal(token: string): Promise<TokenVerification> {
     if (!data.user) return { user: null, message: 'No user returned for token' };
 
     const authUser = data.user as SupabaseAuthUser;
-    const appMetadataRole = authUser.app_metadata?.role;
-
-    return {
-      user: {
-        id: authUser.id,
-        email: authUser.email || undefined,
-        role: authUser.role || (typeof appMetadataRole === 'string' ? appMetadataRole : undefined),
-      },
-    };
+    return { user: { id: authUser.id, email: authUser.email || undefined } };
   } catch (error) {
     return { user: null, message: errorMessage(error) };
   }

@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparePage from '../../src/pages/ComparePage';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
@@ -43,7 +43,7 @@ function venueList(count: number) {
 describe('ComparePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useComparisonStore.getState().reset();
+    useComparisonStore.setState(useComparisonStore.getInitialState());
   });
 
   // A test that fails mid-fake-timers must not leak them into the next one.

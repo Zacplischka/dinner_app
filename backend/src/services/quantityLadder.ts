@@ -13,6 +13,7 @@ import type {
   QuantityResolution,
 } from '@dinder/shared/types';
 import { logger } from '../logger.js';
+import type { RedisLike } from '../redis/redisLike.js';
 import { cupCentsPerGram, parsePack } from './packParser.js';
 import type { IngredientInfo, SpoonacularClient } from './spoonacularClient.js';
 
@@ -66,27 +67,15 @@ const SUB_GRAM_TELL = 0.5;
 const convertKey = (name: string, unit: string) => `spoonacular:convert:${name}:${unit}`;
 const ingredientKey = (name: string) => `spoonacular:ingredient:${name}`;
 
-interface RedisLike {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string): Promise<unknown>;
-}
-
 interface QuantityLadderDeps {
   redis: RedisLike;
   client: SpoonacularClient;
 }
 
-export interface QuantityLadder {
-  resolveLine(
-    ingredient: IngredientAmount,
-    outcome: ProductMatchOutcome
-  ): Promise<QuantityResolution>;
-}
-
 const ceilPacks = (need: number, per: number) => Math.ceil(need / per - 1e-9);
 const unpriced = (reason: string): QuantityResolution => ({ state: 'unpriced_matched', reason });
 
-export function createQuantityLadder(deps: QuantityLadderDeps): QuantityLadder {
+export function createQuantityLadder(deps: QuantityLadderDeps) {
   /** Cached call: a definitive answer caches forever; a transport failure
    * returns undefined (unreachable — fall through) and caches nothing. */
   async function cached<T>(key: string, call: () => Promise<T>): Promise<T | undefined> {
@@ -195,7 +184,10 @@ export function createQuantityLadder(deps: QuantityLadderDeps): QuantityLadder {
   }
 
   return {
-    async resolveLine(ingredient, outcome) {
+    async resolveLine(
+      ingredient: IngredientAmount,
+      outcome: ProductMatchOutcome
+    ): Promise<QuantityResolution> {
       // A clean miss and a failed search land the same way for the line:
       // Unmatched — recipe text plus a Retailer search link, still claimable.
       if (outcome.status !== 'matched') return { state: 'unmatched' };

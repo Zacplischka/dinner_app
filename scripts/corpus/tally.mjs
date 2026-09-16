@@ -51,10 +51,9 @@
 
 import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
-import { recordSlugs } from './records.mjs';
+import { readRecords } from './records.mjs';
 
 /**
  * The store the corpus is judged against — production's, per #242/#245. Not a
@@ -410,16 +409,8 @@ async function measure(encoded) {
 
 // ------------------------------------------------------- the CLI
 
-/** Every `<recordsDir>/<slug>/recipe.json`, or just the named slugs. */
-function loadRecords(recordsDir, slugs) {
-  return recordSlugs(recordsDir, slugs).map((slug) => ({
-    slug,
-    recipe: JSON.parse(readFileSync(join(recordsDir, slug, 'recipe.json'), 'utf8')),
-  }));
-}
-
 async function check(recordsDir, slugs) {
-  const { storeId, reports } = await tallyGate(loadRecords(recordsDir, slugs));
+  const { storeId, reports } = await tallyGate(readRecords(recordsDir, slugs));
   for (const report of reports) {
     const head = `${report.slug}: ${report.inTally}/${report.measured}`;
     if (report.passed) {

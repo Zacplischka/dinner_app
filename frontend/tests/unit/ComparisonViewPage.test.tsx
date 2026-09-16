@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ComparisonViewPage from '../../src/pages/ComparisonViewPage';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';

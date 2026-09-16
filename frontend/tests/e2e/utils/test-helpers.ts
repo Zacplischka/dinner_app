@@ -1,46 +1,30 @@
 import { Page } from '@playwright/test';
 
 /**
- * Check for common accessibility issues
+ * Check for common accessibility issues: images without alt text, buttons
+ * without an accessible name, and inputs with an id but no label.
  */
-export async function checkAccessibility(page: Page): Promise<{
-  passed: boolean;
-  issues: string[];
-}> {
-  const issues: string[] = [];
+export function checkAccessibility(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const issues: string[] = [];
 
-  // Check for images without alt text
-  const imagesWithoutAlt = await page.locator('img:not([alt])').count();
-  if (imagesWithoutAlt > 0) {
-    issues.push(`${imagesWithoutAlt} images missing alt text`);
-  }
+    const imagesWithoutAlt = document.querySelectorAll('img:not([alt])').length;
+    if (imagesWithoutAlt > 0) issues.push(`${imagesWithoutAlt} images missing alt text`);
 
-  // Check for buttons without accessible names
-  const buttons = await page.getByRole('button').all();
-  for (const button of buttons) {
-    const name = await button.getAttribute('aria-label') || await button.textContent();
-    if (!name?.trim()) {
-      issues.push('Button without accessible name found');
-    }
-  }
-
-  // Check for form inputs without labels
-  const inputs = await page.locator('input:not([type="hidden"])').all();
-  for (const input of inputs) {
-    const id = await input.getAttribute('id');
-    const ariaLabel = await input.getAttribute('aria-label');
-    const ariaLabelledBy = await input.getAttribute('aria-labelledby');
-
-    if (!ariaLabel && !ariaLabelledBy && id) {
-      const hasLabel = await page.locator(`label[for="${id}"]`).count() > 0;
-      if (!hasLabel) {
-        issues.push(`Input "${id}" missing label`);
+    for (const button of document.querySelectorAll('button, [role="button"]')) {
+      if (!(button.getAttribute('aria-label') || button.textContent)?.trim()) {
+        issues.push('Button without accessible name found');
       }
     }
-  }
 
-  return {
-    passed: issues.length === 0,
-    issues,
-  };
+    for (const input of document.querySelectorAll('input:not([type="hidden"])')) {
+      const labelled =
+        input.getAttribute('aria-label') ||
+        input.getAttribute('aria-labelledby') ||
+        document.querySelector(`label[for="${input.id}"]`);
+      if (input.id && !labelled) issues.push(`Input "${input.id}" missing label`);
+    }
+
+    return issues;
+  });
 }

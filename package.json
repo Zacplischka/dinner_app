@@ -11,24 +11,14 @@
   "scripts": {
     "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
     "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
-    "build:backend": "npm run build --workspace=shared && npm run build --workspace=backend",
     "build:frontend": "npm run build --workspace=shared && npm run build --workspace=frontend",
     "check:frontend-serving": "bash scripts/check-frontend-serving.sh",
+    "check": "node --test 'scripts/**/*.test.mjs'",
     "start": "node backend/dist/server.js",
-    "start:backend": "node backend/dist/server.js",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
     "typecheck": "npm run build --workspace=shared && npx tsc --noEmit -p backend && npx tsc --noEmit -p backend/tsconfig.test.json && npx tsc --noEmit -p frontend && npx tsc --noEmit -p frontend/tsconfig.test.json",
     "test:e2e:live": "npm run test:e2e:live --workspace=frontend --",
     "compare:smoke": "npm run compare:smoke --workspace=backend --",
-    "check:production-edge": "node --test scripts/check-production-edge.test.mjs",
-    "check:comment-paths": "node --test scripts/check-comment-paths.test.mjs",
-    "check:reading-stage": "node --test scripts/corpus/read-dish.test.mjs",
-    "check:authoring-stage": "node --test scripts/corpus/author-dish.test.mjs",
-    "check:corpus-images": "node --test scripts/corpus/images.test.mjs",
-    "check:gate-layers": "node --test scripts/corpus/gate.test.mjs",
-    "check:tally-gate": "node --test scripts/corpus/tally.test.mjs",
-    "check:human-gate": "node --test scripts/corpus/human.test.mjs",
-    "check:movie-corpus": "node --test scripts/build-movie-corpus.test.mjs",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
     "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
     "analyze": "fallow --production-dead-code",
@@ -45,9 +35,13 @@
   "license": "MIT",
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
-    "@vitest/coverage-v8": "~4.1.11",
+    "@typescript-eslint/eslint-plugin": "~8.39.0",
+    "@typescript-eslint/parser": "~8.39.0",
+    "eslint": "^8.56.0",
     "fallow": "^3.3.0",
-    "typescript": "5.9.3"
+    "prettier": "^3.1.1",
+    "typescript": "5.9.3",
+    "vitest": "~4.1.11"
   },
   "overrides": {
     "express": {

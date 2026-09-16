@@ -61,12 +61,12 @@ describe('Spinner', () => {
   });
 
   it('inherits the call site colour and keeps the caller class', () => {
-    const { container } = render(<Spinner size="xl" className="text-cyan" />);
+    const { container } = render(<Spinner size="xl" className="text-text" />);
 
     const spinner = container.firstElementChild as HTMLElement;
     expect(spinner.className).toContain('border-current');
     expect(spinner.className).toContain('animate-spin');
     expect(spinner.className).toContain('h-10 w-10');
-    expect(spinner.className).toContain('text-cyan');
+    expect(spinner.className).toContain('text-text');
   });
 });

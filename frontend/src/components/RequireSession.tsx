@@ -14,7 +14,7 @@
 // one, and it makes a rejected rejoin redirect for free — socketBindings
 // resets the store and toasts the server's reason, and this re-renders.
 
-import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useParams } from 'react-router';
 import { useSessionStore } from '../stores/sessionStore';
 
 export default function RequireSession() {
@@ -45,7 +45,7 @@ export default function RequireSession() {
         className="min-h-screen p-6 space-y-4"
         style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
       >
-        <h1 className="text-2xl font-display">Reconnecting to your session</h1>
+        <h1 className="text-2xl">Reconnecting to your session</h1>
         <p role="status">Your place is saved. Connect to the internet to continue.</p>
         <button
           className="btn btn-primary"

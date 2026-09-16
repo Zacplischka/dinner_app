@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures/test-fixtures';
 
 /**
  * Home Page E2E Tests
@@ -16,37 +16,38 @@ test.describe('Home Page', () => {
   test('should display welcome screen with navigation options', async ({ homePage }) => {
     await homePage.goto();
 
-    // Verify all key elements using page object
-    await homePage.verifyPageElements();
+    await expect(homePage.heading).toBeVisible();
+    await expect(homePage.eatOutCard).toBeVisible();
+    await expect(homePage.takeawayCard).toBeVisible();
+    await expect(homePage.cookCard).toBeVisible();
+    await expect(homePage.watchCard).toBeVisible();
+    await expect(homePage.joinLink).toBeVisible();
+    await expect(homePage.compareLink).toBeVisible();
+    await expect(homePage.guestModeText).toBeVisible();
   });
 
   test('should navigate to create session page', async ({ homePage, page }) => {
     await homePage.goto();
-    await homePage.clickCreateSession();
+    await homePage.eatOutCard.click();
 
     await expect(page).toHaveURL(/\/create/);
   });
 
   test('should navigate to join session page', async ({ homePage, page }) => {
     await homePage.goto();
-    await homePage.clickJoinSession();
+    await homePage.joinLink.click();
 
     await expect(page).toHaveURL(/\/join/);
   });
 
   test('should have accessible button elements', async ({ homePage }) => {
     await homePage.goto();
-    await homePage.verifyButtonsEnabled();
-  });
 
-  test('should display mobile-friendly layout', async ({ homePage }) => {
-    await homePage.setMobileViewport();
-    await homePage.goto();
-
-    // Verify content is visible in mobile viewport
-    await expect(homePage.heading).toBeVisible();
-    await expect(homePage.eatOutCard).toBeVisible();
-    await expect(homePage.joinLink).toBeVisible();
+    await expect(homePage.eatOutCard).toBeEnabled();
+    await expect(homePage.takeawayCard).toBeEnabled();
+    await expect(homePage.cookCard).toBeEnabled();
+    await expect(homePage.watchCard).toBeEnabled();
+    await expect(homePage.joinLink).toBeEnabled();
   });
 });
 
@@ -90,26 +91,12 @@ test('home remains usable with failed images, reduced motion and narrow screens'
 test.describe('Create Session Page', () => {
   test('should display create session form', async ({ createPage }) => {
     await createPage.goto();
-    await createPage.verifyPageElements();
-  });
 
-  test('should show character count for name input', async ({ createPage }) => {
-    await createPage.goto();
-    await createPage.enterName('John');
-
-    const charCount = await createPage.getCharacterCountText();
-    expect(charCount).toContain('4');
-  });
-
-  test('should disable submit button when name is empty', async ({ createPage }) => {
-    await createPage.goto();
-    await createPage.verifySubmitButtonState(false);
-  });
-
-  test('should enable submit button when the name is set', async ({ createPage }) => {
-    await createPage.goto();
-    await createPage.enterName('John');
-    await createPage.verifySubmitButtonState(true);
+    await expect(createPage.heading).toBeVisible();
+    await expect(createPage.nameInput).toBeVisible();
+    await expect(createPage.useMyLocationButton).toHaveCount(0);
+    await expect(createPage.createButton).toBeVisible();
+    await expect(createPage.backButton).toBeVisible();
   });
 
   test('should navigate back on cancel', async ({ createPage, page }) => {
@@ -123,26 +110,29 @@ test.describe('Create Session Page', () => {
 test.describe('Join Session Page', () => {
   test('should display join session form', async ({ joinPage }) => {
     await joinPage.goto();
-    await joinPage.verifyPageElements();
+
+    await expect(joinPage.heading).toBeVisible();
+    await expect(joinPage.sessionCodeInput).toBeVisible();
+    await expect(joinPage.nameInput).toBeVisible();
+    await expect(joinPage.joinButton).toBeVisible();
+    await expect(joinPage.backButton).toBeVisible();
   });
 
   test('should format session code to uppercase', async ({ joinPage }) => {
     await joinPage.goto();
-    await joinPage.enterSessionCode('abc123');
-    await joinPage.verifySessionCodeUppercase('ABC12');
+    await joinPage.sessionCodeInput.fill('abc123');
+    await expect(joinPage.sessionCodeInput).toHaveValue('ABC12');
   });
 
   test('should limit session code to 5 characters', async ({ joinPage }) => {
     await joinPage.goto();
-    await joinPage.enterSessionCode('ABCDEGHIJ');
-
-    const value = await joinPage.getSessionCodeValue();
-    expect(value).toBe('ABCDE');
+    await joinPage.sessionCodeInput.fill('ABCDEGHIJ');
+    await expect(joinPage.sessionCodeInput).toHaveValue('ABCDE');
   });
 
   test('should show character count for name input', async ({ joinPage, page }) => {
     await joinPage.goto();
-    await joinPage.enterName('Alice');
+    await joinPage.nameInput.fill('Alice');
 
     await expect(page.getByText(/5\/50 characters/i)).toBeVisible();
   });

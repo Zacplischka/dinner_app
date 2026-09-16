@@ -11,14 +11,14 @@ interface InviteFriendsSectionProps {
   selectedFriendIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
   disabled?: boolean;
-  description?: string;
+  description: string;
 }
 
 export default function InviteFriendsSection({
   selectedFriendIds,
   onSelectionChange,
   disabled = false,
-  description = 'Select friends to invite when the session is created',
+  description,
 }: InviteFriendsSectionProps) {
   const { isAuthenticated } = useAuthStore();
   const { friends, isLoadingFriends, fetchFriends } = useFriendsStore();
@@ -58,7 +58,7 @@ export default function InviteFriendsSection({
         className="w-full flex items-center justify-between p-4 bg-surface/50 hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -69,7 +69,7 @@ export default function InviteFriendsSection({
           <span className="font-medium text-text">
             Invite Friends
             {selectedCount > 0 && (
-              <span className="ml-2 text-cyan">({selectedCount} selected)</span>
+              <span className="ml-2 text-text">({selectedCount} selected)</span>
             )}
           </span>
         </div>
@@ -88,7 +88,7 @@ export default function InviteFriendsSection({
         <div className="p-4 bg-raised/50 border-t border-line/30">
           {isLoadingFriends ? (
             <div className="py-4 text-center">
-              <Spinner size="sm" className="text-cyan" label="Loading friends…" />
+              <Spinner size="sm" className="text-text" label="Loading friends…" />
               <p className="mt-2 text-sm text-muted">Loading friends…</p>
             </div>
           ) : friends.length === 0 ? (

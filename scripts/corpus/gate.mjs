@@ -37,10 +37,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs } from 'node:util';
 import { authorDish, commitRecord } from './author-dish.mjs';
 import { imageUrl } from './images.mjs';
 import { readDish } from './read-dish.mjs';
-import { recordSlugs } from './records.mjs';
+import { env, escapeRe, readRecords } from './records.mjs';
 
 // ------------------------------------------------------- the vocabularies, borrowed
 
@@ -166,8 +167,6 @@ const FRESH_HERBS = [
 const PACK_STEP = 5;
 const PACK_STEP_FROM = 100;
 
-const escape = (term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 /**
  * On word boundaries: "beet" is not in "beetroot", "sage" is not in "sausage".
  *
@@ -179,7 +178,7 @@ const escape = (term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  * while "bell pepper" is caught.
  */
 const wordRe = (term) =>
-  new RegExp(`(?<![a-z0-9])${escape(term).replace(/[\s-]+/g, '[\\s-]+')}(?:e?s)?(?![a-z0-9])`);
+  new RegExp(`(?<![a-z0-9])${escapeRe(term).replace(/[\s-]+/g, '[\\s-]+')}(?:e?s)?(?![a-z0-9])`);
 
 const holds = (text, term) => wordRe(term).test(text);
 
@@ -457,12 +456,6 @@ function parseVerdict(family, text) {
   return verdict;
 }
 
-const env = (name) => {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is not set — AGENTS.md says where the credential lives`);
-  return value;
-};
-
 async function post(url, init) {
   const response = await fetch(url, {
     method: 'POST',
@@ -591,16 +584,6 @@ export async function gateDish(record, captures, options = {}) {
 
 // ------------------------------------------------------- the CLI
 
-/** The flags that eat the argument behind them. Every other `--flag` is a
- *  boolean, so what follows it is positional. Keyed rather than inferred from
- *  position: `--structural black-bean-tacos` is a slug, and reading it as a
- *  flag value silently widens a one-record run into the whole corpus. */
-const VALUE_FLAGS = new Set(['--images', '--out']);
-
-/** The arguments that are not a flag and not a flag's value. */
-export const positionalArgs = (rest) =>
-  rest.filter((argument, index) => !argument.startsWith('--') && !VALUE_FLAGS.has(rest[index - 1]));
-
 /**
  * Both layers over a corpus that already exists — what #338 re-gates the pilot
  * with, and what a reviewer runs before a corpus pull request. `--structural`
@@ -610,9 +593,8 @@ export const positionalArgs = (rest) =>
 async function check(recordsDir, imagesDir, slugs, judged) {
   const seen = new Map();
   let failed = 0;
-  const all = recordSlugs(recordsDir, slugs);
-  for (const slug of all) {
-    const recipe = JSON.parse(readFileSync(join(recordsDir, slug, 'recipe.json'), 'utf8'));
+  const all = readRecords(recordsDir, slugs);
+  for (const { slug, recipe } of all) {
     const failures = [
       ...shapeFailures(recipe, { slug, seen }),
       ...imageFailures(recipe, join(imagesDir, `${slug}.webp`)),
@@ -643,22 +625,21 @@ async function dish(name, out) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [command, ...rest] = process.argv.slice(2);
-  const flag = (name, fallback) => {
-    const at = rest.indexOf(name);
-    return at === -1 ? fallback : rest[at + 1];
-  };
-  const positional = positionalArgs(rest);
+  const {
+    positionals: [command, ...positional],
+    values,
+  } = parseArgs({
+    allowPositionals: true,
+    options: {
+      images: { type: 'string', default: '.corpus-images' },
+      out: { type: 'string', default: 'records' },
+      structural: { type: 'boolean', default: false },
+    },
+  });
 
   const run = {
-    check: () =>
-      check(
-        positional[0],
-        flag('--images', '.corpus-images'),
-        positional.slice(1),
-        !rest.includes('--structural')
-      ),
-    dish: () => dish(positional[0], flag('--out', 'records')),
+    check: () => check(positional[0], values.images, positional.slice(1), !values.structural),
+    dish: () => dish(positional[0], values.out),
   }[command];
   if (!run || !positional[0]) {
     console.error(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n\n')[0]);

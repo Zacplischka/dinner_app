@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import type {
   Comparison,
   MenuItemCapture,
@@ -38,7 +38,7 @@ function OutboundLink({ name, url }: { name: PlatformName; url: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-coral px-4 py-2 font-semibold text-text shadow-glow-coral transition-all duration-150 hover:brightness-110"
+      className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-coral px-4 py-2 font-semibold text-text shadow-glow transition-all duration-150 hover:brightness-110"
     >
       Open in {name}
     </a>
@@ -50,7 +50,7 @@ function RecoveryActions({ onRetry, onBack }: { onRetry: () => void; onBack: () 
     <div className="flex justify-center gap-3">
       <button
         onClick={onRetry}
-        className="min-h-[44px] rounded-xl bg-cyan px-4 py-2 font-semibold text-white transition-all duration-150 hover:brightness-110"
+        className="min-h-[44px] rounded-xl bg-text px-4 py-2 font-semibold text-white transition-all duration-150 hover:brightness-110"
       >
         Retry
       </button>
@@ -68,7 +68,7 @@ function UnmatchedSection({ name, items }: { name: PlatformName; items: MenuItem
   if (items.length === 0) return null;
   return (
     <details className="rounded-2xl border border-line/30 bg-raised p-5">
-      <summary className="cursor-pointer font-display text-lg font-semibold">
+      <summary className="cursor-pointer text-lg font-semibold">
         Only on {name} ({items.length})
       </summary>
       <ul className="mt-4 divide-y divide-line/20">
@@ -111,7 +111,7 @@ function PlatformColumn({
       className="rounded-2xl border border-line/30 bg-raised p-5 shadow-card"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-display text-xl font-semibold">{name}</h2>
+        <h2 className="text-xl font-semibold">{name}</h2>
         <span className={`text-sm font-semibold ${presentation.className}`}>
           {presentation.label}
         </span>
@@ -128,7 +128,7 @@ function PlatformColumn({
           <div>
             <p className="text-xs uppercase tracking-wide text-muted">Deals</p>
             {capture.deals.length > 0 ? (
-              <ul className="mt-1 space-y-2 text-sm text-cyan">
+              <ul className="mt-1 space-y-2 text-sm text-text">
                 {capture.deals.map((deal) => (
                   <li key={deal}>{deal}</li>
                 ))}
@@ -264,11 +264,7 @@ export default function ComparisonViewPage() {
 
   return (
     <main className="min-h-screen bg-ink text-text">
-      <NavigationHeader
-        title={venueName || 'Price comparison'}
-        showBackButton
-        onBack={backToVenues}
-      />
+      <NavigationHeader title={venueName || 'Price comparison'} onBack={backToVenues} />
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         {!complete && !error && (
           <PricePatrol key={`${placeId}-${attempt}`} storefronts={storefronts} />
@@ -303,7 +299,7 @@ export default function ComparisonViewPage() {
           <div className="space-y-1 text-center">
             {comparison.cheaperMenu ? (
               <>
-                <p className="font-display text-2xl font-bold text-lime">
+                <p className="text-2xl font-bold text-lime">
                   {PLATFORM_NAMES[comparison.cheaperMenu.platform]} is cheaper here
                 </p>
                 {matchedCount > 0 && (
@@ -315,7 +311,7 @@ export default function ComparisonViewPage() {
             ) : (
               matchedCount > 0 && (
                 <>
-                  <p className="font-display text-2xl font-bold text-text">
+                  <p className="text-2xl font-bold text-text">
                     Prices are about the same on both apps
                   </p>
                   <p className="text-sm text-text/80">Across {matchedCountLabel}</p>
@@ -338,7 +334,7 @@ export default function ComparisonViewPage() {
           <>
             {comparison.matchedItems.length > 0 ? (
               <section className="overflow-hidden rounded-2xl border border-line/30 bg-raised shadow-card">
-                <h2 className="px-5 pt-5 font-display text-xl font-semibold">Matched items</h2>
+                <h2 className="px-5 pt-5 text-xl font-semibold">Matched items</h2>
                 <div className="mt-2 divide-y divide-line/20">
                   {comparison.matchedItems.map((item, index) => (
                     <div
@@ -388,7 +384,7 @@ export default function ComparisonViewPage() {
         {!neitherFound && !bothFailed && (
           <>
             {(onlyUberEats || onlyDoorDash) && (
-              <p className="mx-auto w-fit rounded-full bg-cyan/10 px-4 py-2 text-sm font-semibold text-cyan">
+              <p className="mx-auto w-fit rounded-full bg-text/10 px-4 py-2 text-sm font-semibold text-text">
                 Only on {onlyUberEats ? 'Uber Eats' : 'DoorDash'}
               </p>
             )}

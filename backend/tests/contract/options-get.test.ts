@@ -38,7 +38,6 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
 
   async function createSessionRestaurants(): Promise<void> {
     await redis.hset(`session:${sessionCode}`, {
-      hostId: 'host-1',
       state: 'waiting',
       participantCount: '1',
       createdAt: '1700000000',
@@ -51,10 +50,7 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
     );
 
     const restaurantHash = Object.fromEntries(
-      restaurants.map((restaurant) => [
-        restaurant.placeId,
-        JSON.stringify(restaurant),
-      ])
+      restaurants.map((restaurant) => [restaurant.placeId, JSON.stringify(restaurant)])
     );
     await redis.hset(`session:${sessionCode}:restaurants`, restaurantHash);
   }
@@ -132,7 +128,6 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
   it('should return 404 when a session has no restaurant ids', async () => {
     const logs = captureLogs();
     await redis.hset(`session:${sessionCode}`, {
-      hostId: 'host-1',
       state: 'waiting',
       participantCount: '1',
       createdAt: '1700000000',
@@ -157,7 +152,6 @@ describe('Contract Test: GET /api/options/:sessionCode', () => {
   it('should return 404 when restaurant ids have no stored restaurant data', async () => {
     const logs = captureLogs();
     await redis.hset(`session:${sessionCode}`, {
-      hostId: 'host-1',
       state: 'waiting',
       participantCount: '1',
       createdAt: '1700000000',

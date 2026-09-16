@@ -28,7 +28,6 @@ describe('accepted display names on the Selection transport', () => {
     async (displayName) => {
       const code = 'NME23';
       await sessionStore.createSession(code, {
-        hostId: 'absent-host',
         hostName: 'Host',
         entries: [{ placeId: 'pizza', name: 'Pizza' }],
       });

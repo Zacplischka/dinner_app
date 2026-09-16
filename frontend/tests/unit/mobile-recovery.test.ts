@@ -58,7 +58,6 @@ describe('native recovery through the shared socket boundary', () => {
       participantId: 'old-socket',
       displayName: 'Alice',
       sessionCode: 'AB123',
-      joinedAt: 1,
       hasSubmitted: false,
       isHost: false,
     };
@@ -164,7 +163,7 @@ describe('native recovery through the shared socket boundary', () => {
       },
     });
     await bindings.joinSession('AB123', 'Alice');
-    useSessionStore.getState().setSelections(['movie-1']);
+    useSessionStore.setState({ selections: ['movie-1'] });
     useSessionStore.getState().setDeckCursor(2);
     useSessionStore.getState().setOrderPlaceId('previous-order');
     await vi.waitFor(() =>
@@ -192,7 +191,11 @@ describe('native recovery through the shared socket boundary', () => {
       isConnected: false,
     });
     expect(device.credentials.size).toBe(1);
-    expect(device.join).toHaveBeenLastCalledWith('AB123', 'Alice', 'secret-capability');
+    expect(device.join).toHaveBeenLastCalledWith({
+      sessionCode: 'AB123',
+      displayName: 'Alice',
+      rejoinToken: 'secret-capability',
+    });
 
     device.join.mockResolvedValue({
       success: true,
@@ -224,7 +227,7 @@ describe('native recovery through the shared socket boundary', () => {
     useSessionStore.setState({
       sessionCode: 'AB123',
       currentUserId: 'old-socket',
-      participants: [{ ...participant, joinedAt: 0, sessionCode: 'AB123', hasSubmitted: false }],
+      participants: [{ ...participant, sessionCode: 'AB123', hasSubmitted: false }],
     });
     device.join.mockClear();
     await bindings.reconcileSession();

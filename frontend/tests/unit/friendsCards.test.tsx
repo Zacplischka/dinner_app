@@ -3,7 +3,7 @@
 // wait for the socket first, and every failure has to land under the card whose
 // button caused it rather than vanishing when the button re-enables.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Friend, FriendRequest, SessionInvite } from '@dinder/shared/types';
 

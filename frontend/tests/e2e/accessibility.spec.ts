@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect } from './fixtures/test-fixtures';
 import { checkAccessibility } from './utils/test-helpers';
 
 /**
@@ -23,13 +23,14 @@ test.describe('Accessibility - Home Page', () => {
 
   test('page passes accessibility checks', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
-    const result = await checkAccessibility(page);
-    expect(result.issues).toEqual([]);
+    expect(await checkAccessibility(page)).toEqual([]);
   });
 
   test('focus is visible on interactive elements', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
     // Tab through elements and verify focus visibility
     await page.keyboard.press('Tab');
@@ -54,17 +55,16 @@ test.describe('Accessibility - Create Session Page', () => {
     await expect(createPage.createButton).toBeDisabled();
 
     // After entering the required name, button should be enabled
-    await createPage.enterName('TestUser');
+    await createPage.nameInput.fill('TestUser');
     await expect(createPage.createButton).toBeEnabled();
   });
 
   test('character count is accessible', async ({ createPage }) => {
     await createPage.goto();
-    await createPage.enterName('Test');
+    await createPage.nameInput.fill('Test');
 
     // Character count should be present
-    const charCount = await createPage.getCharacterCountText();
-    expect(charCount).toContain('4');
+    await expect(createPage.nameCharacterCount).toContainText('4');
   });
 });
 
@@ -89,8 +89,8 @@ test.describe('Accessibility - Join Session Page', () => {
     await joinPage.goto();
 
     // A well-formed code that names no Session — the join must fail visibly.
-    await joinPage.enterSessionCode('AAAAA');
-    await joinPage.enterName('Test');
+    await joinPage.sessionCodeInput.fill('AAAAA');
+    await joinPage.nameInput.fill('Test');
     await joinPage.joinButton.click();
 
     // The failure must surface as visible text a screen reader reaches, not a
@@ -102,6 +102,7 @@ test.describe('Accessibility - Join Session Page', () => {
 test.describe('Accessibility - Keyboard Navigation', () => {
   test('can navigate entire home page with keyboard', async ({ page, homePage }) => {
     await homePage.goto();
+    await expect(homePage.heading).toBeVisible();
 
     // Tab through all interactive elements
     const interactiveElements: string[] = [];
@@ -156,8 +157,7 @@ test.describe('Accessibility - Screen Reader Support', () => {
       await expect(page.getByRole('main')).toBeVisible();
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-      const result = await checkAccessibility(page);
-      expect(result.issues).toEqual([]);
+      expect(await checkAccessibility(page)).toEqual([]);
     });
   }
 

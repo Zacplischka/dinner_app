@@ -1,38 +1,29 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
 
 /**
  * SelectionPage - Page object for Tinder-style Deck selection (Restaurants, Recipes or Movies)
  *
  * Routes: /session/:sessionCode/select
  */
-export class SelectionPage extends BasePage {
+export class SelectionPage {
   readonly heading: Locator;
   readonly swipeCard: Locator;
   readonly scoreBadge: Locator;
   readonly likeButton: Locator;
   readonly passButton: Locator;
   readonly submitButton: Locator;
-  readonly loadingState: Locator;
   readonly waitingState: Locator;
   readonly finishHereButton: Locator;
   readonly progress: Locator;
 
-  constructor(page: Page) {
-    super(page);
-
+  constructor(readonly page: Page) {
     this.heading = page.locator('header').getByRole('heading').first();
     this.swipeCard = page.locator('[data-swipe-card]');
     this.scoreBadge = this.swipeCard.getByText(/\d+% on TMDB/);
-    this.likeButton = page
-      .getByRole('button', { name: /Like/i })
-      .or(page.locator('button[aria-label="Like"]'));
-    this.passButton = page
-      .getByRole('button', { name: /Pass|Nope/i })
-      .or(page.locator('button[aria-label="Pass"]'));
+    this.likeButton = page.getByRole('button', { name: /Like/i });
+    this.passButton = page.getByRole('button', { name: /Pass|Nope/i });
     this.submitButton = page.getByRole('button', { name: /Submit/i });
 
-    this.loadingState = page.getByText(/Finding (restaurants|recipes|movies)/i);
     // The waiting screen's heading, not a /Waiting for/ text match: any other
     // sentence starting "Waiting for" would make that locator ambiguous.
     this.waitingState = page.getByRole('heading', { name: 'All done!' });

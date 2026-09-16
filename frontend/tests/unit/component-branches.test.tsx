@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/services/socketBindings', () => ({
@@ -13,7 +13,7 @@ import NavigationHeader from '../../src/components/NavigationHeader';
 import { PHOTO_RETRY_DELAY_MS } from '../../src/components/RetryingPhoto';
 import SwipeCard from '../../src/components/SwipeCard';
 import Toast from '../../src/components/Toast/Toast';
-import ToastProvider from '../../src/components/Toast/ToastProvider';
+import Toaster from '../../src/components/Toast/Toaster';
 import AddFriendModal from '../../src/components/friends/AddFriendModal';
 import FriendsList from '../../src/components/friends/FriendsList';
 import SessionInviteCard from '../../src/components/friends/SessionInviteCard';
@@ -27,7 +27,6 @@ const authActions = {
   initialize: useAuthStore.getState().initialize,
   signInWithGoogle: useAuthStore.getState().signInWithGoogle,
   signOut: useAuthStore.getState().signOut,
-  setSession: useAuthStore.getState().setSession,
 };
 
 function renderAt(route: string, element: React.ReactElement) {
@@ -97,9 +96,7 @@ describe('component and hook branch coverage', () => {
   it('covers auth button and user menu error branches', async () => {
     const successfulSignIn = vi.fn(async () => undefined);
     useAuthStore.setState({ signInWithGoogle: successfulSignIn as any, isLoading: false });
-    const { unmount: successfulButtonUnmount } = render(
-      <GoogleSignInButton className="extra-class" />
-    );
+    const { unmount: successfulButtonUnmount } = render(<GoogleSignInButton />);
     fireEvent.click(screen.getByText('Continue with Google'));
     await waitFor(() => expect(successfulSignIn).toHaveBeenCalled());
     successfulButtonUnmount();
@@ -108,11 +105,9 @@ describe('component and hook branch coverage', () => {
     const { unmount: loadingButtonUnmount } = render(
       <>
         <GoogleSignInButton />
-        <GoogleSignInButton variant="compact" />
       </>
     );
     expect(screen.getByText('Signing in…')).toBeInTheDocument();
-    expect(screen.getByText('…')).toBeInTheDocument();
     loadingButtonUnmount();
 
     const signIn = vi.fn(async () => {
@@ -139,17 +134,10 @@ describe('component and hook branch coverage', () => {
     await waitFor(() => expect(signOut).toHaveBeenCalled());
   });
 
-  it('covers navigation header default back, confirm close, and confirm fallback back branches', async () => {
-    const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
-    const { unmount: directUnmount } = render(<NavigationHeader title="Direct" showBackButton />, {
-      wrapper: MemoryRouter,
-    });
-    fireEvent.click(screen.getByLabelText('Back'));
-    expect(historyBack).toHaveBeenCalledTimes(1);
-    directUnmount();
-
+  it('covers navigation header confirm close and confirm leave', async () => {
+    const onBack = vi.fn();
     render(
-      <NavigationHeader title="Confirm" showBackButton confirmOnBack confirmContext="results" />,
+      <NavigationHeader title="Confirm" onBack={onBack} confirmOnBack confirmContext="results" />,
       { wrapper: MemoryRouter }
     );
     fireEvent.click(screen.getByLabelText('Back'));
@@ -157,8 +145,7 @@ describe('component and hook branch coverage', () => {
     expect(screen.queryByText('Leave session')).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText('Back'));
     fireEvent.click(await screen.findByText('Leave session'));
-    expect(historyBack).toHaveBeenCalledTimes(2);
-    historyBack.mockRestore();
+    await waitFor(() => expect(onBack).toHaveBeenCalledTimes(1));
   });
 
   it('covers toast timers', () => {
@@ -182,7 +169,7 @@ describe('component and hook branch coverage', () => {
     act(() => {
       singletonToast.info('Live', { duration: 10_000 });
     });
-    render(<ToastProvider>{null}</ToastProvider>);
+    render(<Toaster />);
 
     // The card is tappable; the full-width band it sits in is not — that band
     // spans the viewport's bottom edge and used to swallow chip taps there.
@@ -501,11 +488,10 @@ describe('component and hook branch coverage', () => {
     fireEvent.click(screen.getAllByText('Join').at(-1)!);
     expect(await screen.findByText('Failed to join session')).toBeInTheDocument();
 
-    const action = vi.fn();
-    singletonToast.success('success', { duration: 1, action: { label: 'Go', onClick: action } });
-    singletonToast.error('error', { duration: 2, action: { label: 'Stop', onClick: action } });
-    singletonToast.warning('warning', { duration: 3, action: { label: 'Wait', onClick: action } });
-    singletonToast.info('info', { duration: 4, action: { label: 'Read', onClick: action } });
+    singletonToast.success('success', { duration: 1 });
+    singletonToast.error('error', { duration: 2 });
+    singletonToast.warning('warning', { duration: 3 });
+    singletonToast.info('info', { duration: 4 });
     // The stack is capped at three, so the oldest ('success') is already gone (#409).
     expect(useToastStore.getState().toasts.map((t) => t.type)).toEqual([
       'error',

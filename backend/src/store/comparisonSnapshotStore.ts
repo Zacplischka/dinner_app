@@ -1,7 +1,8 @@
 import { isSnapshotPayload, type Snapshot, type SnapshotPayload } from '@dinder/shared/types';
 import { logger } from '../logger.js';
 import { DomainError } from '../services/DomainError.js';
-import { supabase, type Database, type Json } from '../services/supabase.js';
+import { supabase } from '../services/supabase.js';
+import type { Database, Json } from '../db/database.types.js';
 
 const snapshotSelect = 'id, place_id, venue_name, fetched_at, payload';
 

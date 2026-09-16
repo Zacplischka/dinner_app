@@ -8,7 +8,8 @@ const pendingList: ShoppingList = {
   recipeName: 'Tomato pasta',
   headcount: 2,
   servings: 2,
-  mintedAt: '2026-09-07T10:00:00.000Z',
+  // Fresh: cooking progress rides the list's 7-day clock.
+  mintedAt: new Date().toISOString(),
   provenance: 'owned',
   pricingStatus: 'pending',
   steps: ['Boil the pasta.', 'Stir in the tomatoes and serve.'],

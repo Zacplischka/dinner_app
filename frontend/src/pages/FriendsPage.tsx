@@ -2,39 +2,19 @@
 // Features: Friends list, pending requests, session invites, add friends
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import FriendsList from '../components/friends/FriendsList';
 import FriendRequestCard from '../components/friends/FriendRequestCard';
 import SessionInviteCard from '../components/friends/SessionInviteCard';
 import AddFriendModal from '../components/friends/AddFriendModal';
-import Spinner from '../components/Spinner';
+import Spinner, { LoadingFallback } from '../components/Spinner';
 import NavigationHeader from '../components/NavigationHeader';
+import { Notice } from '../components/Notice';
 
-function LoadingCard({ label }: { label: string }) {
-  return (
-    <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
-      <Spinner className="text-cyan" label={`Loading ${label}…`} />
-      <p className="mt-2 text-muted">Loading {label}…</p>
-    </div>
-  );
-}
-
-function FailureCard({ label, onRetry }: { label: string; onRetry: () => void }) {
-  return (
-    <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
-      <p className="text-lg text-text">Couldn&apos;t load {label}</p>
-      <p className="text-sm mt-1 text-muted">Friends are unavailable right now.</p>
-      <button
-        onClick={onRetry}
-        className="mt-4 min-h-[44px] px-6 py-2 font-medium text-white bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
-      >
-        Retry
-      </button>
-    </div>
-  );
-}
+const ACTION =
+  'mt-4 min-h-[44px] px-6 py-2 font-medium text-white bg-text rounded-xl hover:bg-text/90 transition-colors';
 
 export default function FriendsPage() {
   const navigate = useNavigate();
@@ -57,13 +37,6 @@ export default function FriendsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'invites'>('friends');
 
-  // Redirect to home if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/');
-    }
-  }, [authLoading, isAuthenticated, navigate]);
-
   // Fetch data on mount
   useEffect(() => {
     if (isAuthenticated) {
@@ -75,35 +48,85 @@ export default function FriendsPage() {
     }
   }, [isAuthenticated, fetchFriends, fetchFriendRequests, fetchSessionInvites]);
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-ink">
-        <div className="text-center">
-          <Spinner size="lg" className="text-cyan" label="Loading…" />
-          <p className="mt-4 text-muted">Loading…</p>
+  if (authLoading) return <LoadingFallback />;
+
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+
+  const tabs = [
+    {
+      id: 'friends' as const,
+      // Hide the count until it's known, so a failed or in-flight fetch never
+      // advertises "(0)" as fact
+      label: isLoadingFriends || friendsError ? 'Friends' : `Friends (${friends.length})`,
+      badge: undefined,
+      isLoading: isLoadingFriends,
+      error: friendsError,
+      retry: fetchFriends,
+      items: friends,
+      empty: (
+        <Notice
+          heading="No friends yet"
+          body="Friends can be invited straight into your sessions — no code sharing needed."
+        >
+          <button onClick={() => setIsAddModalOpen(true)} className={ACTION}>
+            Add a friend
+          </button>
+        </Notice>
+      ),
+      list: (
+        <div className="bg-raised rounded-2xl shadow-card border border-line/30">
+          <FriendsList friends={friends} />
         </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  const requestsCount = friendRequests.length;
-  const invitesCount = sessionInvites.length;
+      ),
+    },
+    {
+      id: 'requests' as const,
+      label: 'Requests',
+      badge: friendRequests.length
+        ? { count: friendRequests.length, className: 'text-text bg-coral' }
+        : undefined,
+      isLoading: isLoadingRequests,
+      error: requestsError,
+      retry: fetchFriendRequests,
+      items: friendRequests,
+      empty: (
+        <Notice heading="No pending requests" body="Friend requests you receive will appear here" />
+      ),
+      list: friendRequests.map((request) => (
+        <FriendRequestCard key={request.id} request={request} />
+      )),
+    },
+    {
+      id: 'invites' as const,
+      label: 'Invites',
+      badge: sessionInvites.length
+        ? { count: sessionInvites.length, className: 'text-white bg-text' }
+        : undefined,
+      isLoading: isLoadingInvites,
+      error: invitesError,
+      retry: fetchSessionInvites,
+      items: sessionInvites,
+      empty: (
+        <Notice
+          heading="No session invites"
+          body="When friends invite you to sessions, they'll appear here"
+        />
+      ),
+      list: sessionInvites.map((invite) => <SessionInviteCard key={invite.id} invite={invite} />),
+    },
+  ];
+  const tab = tabs.find((t) => t.id === activeTab)!;
 
   return (
-    <main className="shared-table-backdrop min-h-screen">
+    <main className="bg-ink min-h-screen">
       <div className="sticky top-0 z-40">
         <NavigationHeader
           title="Friends"
-          showBackButton
           onBack={() => navigate('/')}
           rightAction={
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex min-h-[44px] items-center text-cyan hover:text-text font-medium transition-colors"
+              className="flex min-h-[44px] items-center text-text hover:text-text font-medium transition-colors"
             >
               <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -121,48 +144,26 @@ export default function FriendsPage() {
           {/* Tabs */}
           <div className="max-w-2xl mx-auto px-4">
             <div className="flex border-b border-line/30">
-              <button
-                onClick={() => setActiveTab('friends')}
-                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'friends'
-                    ? 'border-cyan text-cyan'
-                    : 'border-transparent text-muted hover:text-text/80'
-                }`}
-              >
-                {/* Hide the count until it's known, so a failed or in-flight
-                    fetch never advertises "(0)" as fact */}
-                {isLoadingFriends || friendsError ? 'Friends' : `Friends (${friends.length})`}
-              </button>
-              <button
-                onClick={() => setActiveTab('requests')}
-                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                  activeTab === 'requests'
-                    ? 'border-cyan text-cyan'
-                    : 'border-transparent text-muted hover:text-text/80'
-                }`}
-              >
-                Requests
-                {requestsCount > 0 && (
-                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text bg-coral rounded-full">
-                    {requestsCount}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('invites')}
-                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                  activeTab === 'invites'
-                    ? 'border-cyan text-cyan'
-                    : 'border-transparent text-muted hover:text-text/80'
-                }`}
-              >
-                Invites
-                {invitesCount > 0 && (
-                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-cyan rounded-full">
-                    {invitesCount}
-                  </span>
-                )}
-              </button>
+              {tabs.map(({ id, label, badge }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors relative ${
+                    activeTab === id
+                      ? 'border-text text-text'
+                      : 'border-transparent text-muted hover:text-text/80'
+                  }`}
+                >
+                  {label}
+                  {badge && (
+                    <span
+                      className={`ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold rounded-full ${badge.className}`}
+                    >
+                      {badge.count}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -170,72 +171,24 @@ export default function FriendsPage() {
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Friends Tab */}
-        {activeTab === 'friends' &&
-          (isLoadingFriends ? (
-            <LoadingCard label="friends" />
-          ) : friendsError ? (
-            <FailureCard label="friends" onRetry={() => void fetchFriends()} />
-          ) : friends.length === 0 ? (
+        <div className="space-y-3">
+          {tab.isLoading ? (
             <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30">
-              <p className="text-lg text-text">No friends yet</p>
-              <p className="text-sm mt-1 text-muted">
-                Friends can be invited straight into your sessions — no code sharing needed.
-              </p>
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="mt-4 min-h-[44px] px-6 py-2 font-medium text-white bg-cyan rounded-xl hover:bg-cyan/90 transition-colors"
-              >
-                Add a friend
+              <Spinner className="text-text" label={`Loading ${tab.id}…`} />
+              <p className="mt-2 text-muted">Loading {tab.id}…</p>
+            </div>
+          ) : tab.error ? (
+            <Notice heading={`Couldn't load ${tab.id}`} body="Friends are unavailable right now.">
+              <button onClick={() => void tab.retry()} className={ACTION}>
+                Retry
               </button>
-            </div>
+            </Notice>
+          ) : tab.items.length === 0 ? (
+            tab.empty
           ) : (
-            <div className="bg-raised rounded-2xl shadow-card border border-line/30">
-              <FriendsList friends={friends} />
-            </div>
-          ))}
-
-        {/* Requests Tab */}
-        {activeTab === 'requests' && (
-          <div className="space-y-3">
-            {isLoadingRequests ? (
-              <LoadingCard label="requests" />
-            ) : requestsError ? (
-              <FailureCard label="requests" onRetry={() => void fetchFriendRequests()} />
-            ) : friendRequests.length === 0 ? (
-              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
-                <p className="text-lg">No pending requests</p>
-                <p className="text-sm mt-1 text-muted">
-                  Friend requests you receive will appear here
-                </p>
-              </div>
-            ) : (
-              friendRequests.map((request) => (
-                <FriendRequestCard key={request.id} request={request} />
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Invites Tab */}
-        {activeTab === 'invites' && (
-          <div className="space-y-3">
-            {isLoadingInvites ? (
-              <LoadingCard label="invites" />
-            ) : invitesError ? (
-              <FailureCard label="invites" onRetry={() => void fetchSessionInvites()} />
-            ) : sessionInvites.length === 0 ? (
-              <div className="p-8 text-center bg-raised rounded-2xl shadow-card border border-line/30 text-muted">
-                <p className="text-lg">No session invites</p>
-                <p className="text-sm mt-1 text-muted">
-                  When friends invite you to sessions, they&apos;ll appear here
-                </p>
-              </div>
-            ) : (
-              sessionInvites.map((invite) => <SessionInviteCard key={invite.id} invite={invite} />)
-            )}
-          </div>
-        )}
+            tab.list
+          )}
+        </div>
       </div>
 
       {/* Add friend modal */}

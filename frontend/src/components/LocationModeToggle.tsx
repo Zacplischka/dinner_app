@@ -20,9 +20,7 @@ export default function LocationModeToggle({
 }: LocationModeToggleProps) {
   const optionClass = (option: LocationMode) =>
     `btn text-sm ${
-      mode === option
-        ? 'border border-cyan/60 bg-cyan/10 text-cyan shadow-glow-cyan'
-        : 'btn-secondary'
+      mode === option ? 'border border-text/60 bg-text/10 text-text shadow-glow' : 'btn-secondary'
     }`;
 
   return (

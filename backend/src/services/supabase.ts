@@ -7,9 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config/index.js';
-import type { Database, Json } from '../db/database.types.js';
-
-export type { Database, Json };
+import type { Database } from '../db/database.types.js';
 
 // Create Supabase client with service role for backend operations
 export const supabase = createClient<Database>(

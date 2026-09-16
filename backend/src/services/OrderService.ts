@@ -19,29 +19,12 @@ import { isFresh } from './ComparisonService.js';
 export interface OrderServiceDeps {
   store: SessionStore;
   snapshotStore: { getLatest: (placeId: string) => Promise<Snapshot | null> };
-  freshnessMs: number;
-  failureFreshnessMs: number;
 }
 
-export type OrderUnavailable = { reason: 'stale' | 'no_menu'; message: string };
+type OrderUnavailable = { reason: 'stale' | 'no_menu'; message: string };
 
-export interface OrderService {
-  open(
-    sessionCode: string,
-    participantId: string,
-    placeId: string
-  ): Promise<OrderState | OrderUnavailable>;
-  addItem(
-    sessionCode: string,
-    participantId: string,
-    index: number,
-    delta: 1 | -1
-  ): Promise<{ order: OrderState; change?: { by: string; name: string; delta: 1 | -1 } }>;
-  claimBuyer(sessionCode: string, participantId: string, feeCents?: number): Promise<OrderState>;
-}
-
-export function createOrderService(deps: OrderServiceDeps): OrderService {
-  const { store, snapshotStore, freshnessMs, failureFreshnessMs } = deps;
+export function createOrderService(deps: OrderServiceDeps) {
+  const { store, snapshotStore } = deps;
 
   /**
    * Builds the wire state from the stored order hash and its Order Lines. The
@@ -136,7 +119,7 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
         );
       }
       if (existing) return existing;
-      if (!snapshot || !isFresh(snapshot, freshnessMs, failureFreshnessMs)) {
+      if (!snapshot || !isFresh(snapshot)) {
         return { reason: 'stale', message: 'Prices for this Venue are stale. Please try again.' };
       }
 
@@ -273,9 +256,11 @@ export function createOrderService(deps: OrderServiceDeps): OrderService {
 
   return {
     open,
-    addItem: (sessionCode, participantId, index, delta) =>
+    addItem: (sessionCode: string, participantId: string, index: number, delta: 1 | -1) =>
       store.withSessionLock(sessionCode, () => addItem(sessionCode, participantId, index, delta)),
-    claimBuyer: (sessionCode, participantId, feeCents) =>
+    claimBuyer: (sessionCode: string, participantId: string, feeCents?: number) =>
       store.withSessionLock(sessionCode, () => claimBuyer(sessionCode, participantId, feeCents)),
   };
 }
+
+export type OrderService = ReturnType<typeof createOrderService>;

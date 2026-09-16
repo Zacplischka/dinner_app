@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
 import { useFriendsStore } from '../stores/friendsStore';
 import ProfileAvatar from './ProfileAvatar';
@@ -21,13 +21,13 @@ export default function UserMenu() {
         aria-label="Profile settings"
         className="flex min-h-[48px] min-w-0 items-center gap-2 rounded-lg px-1 text-sm font-medium"
       >
-        <ProfileAvatar name={name} url={current?.avatarUrl} className="h-8 w-8 ring-2 ring-cyan" />
+        <ProfileAvatar name={name} url={current?.avatarUrl} className="h-8 w-8 ring-2 ring-text" />
         <span className="max-w-[120px] truncate">{name}</span>
       </Link>
       <button
         onClick={() => void signOut().catch((error) => console.error('Failed to sign out:', error))}
         disabled={isLoading}
-        className="min-h-[48px] px-2 text-sm text-muted hover:text-coral-soft transition-colors disabled:opacity-50"
+        className="min-h-[48px] px-2 text-sm text-muted hover:text-coral-strong transition-colors disabled:opacity-50"
       >
         Sign out
       </button>

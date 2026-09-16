@@ -23,14 +23,10 @@ const IDENTITY_HEADERS = {
 // doubles to ~2-4 KB per term.
 const TOP_N = 10;
 
-export interface WoolworthsSearchResult {
+interface WoolworthsSearchResult {
   /** The FulfilmentStoreId read off the response; null when absent. */
   storeId: number | null;
   products: WoolworthsProduct[];
-}
-
-export interface WoolworthsClient {
-  search(term: string): Promise<WoolworthsSearchResult>;
 }
 
 /**
@@ -38,7 +34,7 @@ export interface WoolworthsClient {
  * caller caches it for the failure window. A clean zero-result answer returns
  * `products: []`.
  */
-export function createWoolworthsClient(fetchImpl: typeof fetch = fetch): WoolworthsClient {
+export function createWoolworthsClient(fetchImpl: typeof fetch = fetch) {
   // One GET seeds the session cookies the search API expects; dropped on
   // failure so the next attempt (after the ~1 h failure window) re-seeds.
   let cookies: string | null = null;
@@ -92,6 +88,8 @@ export function createWoolworthsClient(fetchImpl: typeof fetch = fetch): Woolwor
     },
   };
 }
+
+export type WoolworthsClient = ReturnType<typeof createWoolworthsClient>;
 
 function parseSearchResponse(body: unknown): WoolworthsSearchResult {
   if (!body || typeof body !== 'object' || !('Products' in body)) {

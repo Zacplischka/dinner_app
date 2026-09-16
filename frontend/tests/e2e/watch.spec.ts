@@ -1,5 +1,6 @@
-import { test, expect } from './fixtures';
-import { SelectionPage, SessionLobbyPage } from './pages';
+import { test, expect } from './fixtures/test-fixtures';
+import { SelectionPage } from './pages/SelectionPage';
+import { SessionLobbyPage } from './pages/SessionLobbyPage';
 
 /**
  * Watch Branch E2E (#369)
@@ -12,10 +13,11 @@ import { SelectionPage, SessionLobbyPage } from './pages';
 test.describe('Watch Branch', () => {
   test('deals a Movie Deck from a Mood', async ({ homePage, watchPage, page }, info) => {
     await homePage.goto();
-    await homePage.clickWatch();
+    await homePage.watchCard.click();
+    await expect(page).toHaveURL(/\/watch/);
     await expect(watchPage.heading).toBeVisible();
 
-    await watchPage.enterName('Host');
+    await watchPage.nameInput.fill('Host');
     const sessionCode = await watchPage.createSession();
     expect(sessionCode).toMatch(/^[A-Z0-9]{5}$/);
     await watchPage.pickChip('Comedy');
@@ -26,7 +28,7 @@ test.describe('Watch Branch', () => {
     await expect(selectionPage.heading).toHaveText('Choose something to watch');
     await expect(selectionPage.swipeCard.first()).toBeVisible();
     await expect(selectionPage.scoreBadge.first()).toBeVisible();
-    for (const width of info.project.name === 'chromium' ? [1280] : [390, 320]) {
+    for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 844 });
       await expect(selectionPage.heading).toBeInViewport({ ratio: 1 });
       expect(

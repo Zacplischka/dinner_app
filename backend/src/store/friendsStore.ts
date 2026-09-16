@@ -12,7 +12,8 @@
 import { ownedPhotoBytes, photoVersion, profileAvatarUrl } from '../services/profilePhoto.js';
 import { logger } from '../logger.js';
 import { z } from 'zod';
-import { supabase, type Database } from '../services/supabase.js';
+import { supabase } from '../services/supabase.js';
+import type { Database } from '../db/database.types.js';
 import { DomainError } from '../services/DomainError.js';
 import type { SessionInvite, UserProfile } from '@dinder/shared/types';
 
@@ -41,14 +42,14 @@ function toUserProfile(row: ProfileRow): UserProfile {
 }
 
 /** An accepted Friendship as a camelCase value; callers pick which side is the friend. */
-export interface AcceptedFriendship {
+interface AcceptedFriendship {
   id: string;
   userId: string;
   friendId: string;
 }
 
 /** A pending Friend Request received by a user, as a camelCase value. */
-export interface PendingFriendRequest {
+interface PendingFriendRequest {
   id: string;
   fromUserId: string;
   createdAt: string;

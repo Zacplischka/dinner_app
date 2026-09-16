@@ -68,3 +68,15 @@ export default function Spinner({ size = 'md', className = '', label = '' }: Spi
     />
   );
 }
+
+/** The full-screen wait: the router's Suspense fallback and a page's first paint. */
+export function LoadingFallback({ label = 'Loading…' }: { label?: string }) {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-ink">
+      <div className="text-center">
+        <Spinner size="xl" className="text-text" label={label} />
+        <p className="mt-4 text-muted">{label}</p>
+      </div>
+    </div>
+  );
+}

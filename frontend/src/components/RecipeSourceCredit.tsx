@@ -29,7 +29,7 @@ export default function RecipeSourceCredit({
       href={sourceUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="font-semibold text-cyan hover:underline"
+      className="font-semibold text-text hover:underline"
     >
       {name}
     </a>

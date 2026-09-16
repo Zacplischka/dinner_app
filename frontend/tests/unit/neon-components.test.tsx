@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const restaurant = {
@@ -61,7 +61,6 @@ describe('YupCrew components', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: true,
         },
@@ -69,7 +68,6 @@ describe('YupCrew components', () => {
           participantId: 'p2',
           displayName: 'Bo',
           sessionCode: 'AB123',
-          joinedAt: 2,
           hasSubmitted: false,
           isHost: false,
         },
@@ -77,7 +75,6 @@ describe('YupCrew components', () => {
           participantId: 'p3',
           displayName: 'Cy',
           sessionCode: 'AB123',
-          joinedAt: 3,
           hasSubmitted: false,
           isHost: false,
           isOnline: false,
@@ -94,10 +91,10 @@ describe('YupCrew components', () => {
     );
 
     await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
-    expect(screen.getByText('3 together')).toHaveClass('text-cyan');
+    expect(screen.getByText('3 together')).toHaveClass('text-text');
     expect(screen.getByLabelText('Alice is choosing')).toHaveClass('border-coral');
     expect(screen.getByLabelText('Cy is offline')).toHaveClass('opacity-40');
-    expect(screen.getByText('Japanese ramen')).toHaveClass('text-coral-soft');
+    expect(screen.getByText('Japanese ramen')).toHaveClass('text-coral-strong');
     expect(screen.getByText('Open now')).toHaveClass('text-lime');
     expect(screen.getByLabelText('Rating 4.6')).toHaveClass('text-amber');
 
@@ -133,14 +130,14 @@ describe('YupCrew components', () => {
 
     expect(screen.getByText('Saved').closest('.border-l-4')).toHaveClass('border-l-lime');
     expect(screen.getByText('Failed').closest('[role="alert"]')).toHaveClass('border-l-coral');
-    expect(screen.getByText('Connected').closest('.border-l-4')).toHaveClass('border-l-cyan');
+    expect(screen.getByText('Connected').closest('.border-l-4')).toHaveClass('border-l-text');
   });
 
   it('presents leave confirmation as a branded dialog', () => {
     render(<ConfirmLeaveModal isOpen onClose={vi.fn()} onConfirm={vi.fn()} />);
 
     const dialog = screen.getByRole('dialog');
-    expect(dialog.querySelector('.shadow-glow-coral')).toBeInTheDocument();
+    expect(dialog.querySelector('.shadow-glow')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close' })).toHaveClass(
       'w-11',
       'h-11',
@@ -171,7 +168,6 @@ describe('YupCrew components', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: false,
           isHost: true,
         },
@@ -179,7 +175,6 @@ describe('YupCrew components', () => {
           participantId: 'p2',
           displayName: 'Bo',
           sessionCode: 'AB123',
-          joinedAt: 2,
           hasSubmitted: false,
           isHost: false,
           isOnline: false,
@@ -197,7 +192,7 @@ describe('YupCrew components', () => {
 
     await waitFor(() => expect(screen.getByText('Copy shareable link')).toBeInTheDocument());
     expect(
-      screen.getAllByText('AB123').some((element) => element.classList.contains('shadow-glow-cyan'))
+      screen.getAllByText('AB123').some((element) => element.classList.contains('shadow-glow'))
     ).toBe(true);
     expect(screen.getByLabelText('Alice, host, live')).toHaveClass('border-coral');
     expect(screen.getByLabelText('Bo, offline')).toBeInTheDocument();
@@ -214,7 +209,6 @@ describe('YupCrew components', () => {
           participantId: 'p1',
           displayName: 'Alice',
           sessionCode: 'AB123',
-          joinedAt: 1,
           hasSubmitted: true,
           isHost: true,
         },
@@ -265,6 +259,6 @@ describe('YupCrew components', () => {
     });
     render(<UserMenu />, { wrapper: MemoryRouter });
 
-    expect(screen.getByRole('img', { name: 'Alice' })).toHaveClass('ring-cyan');
+    expect(screen.getByRole('img', { name: 'Alice' })).toHaveClass('ring-text');
   });
 });

@@ -11,10 +11,6 @@ export interface Toast {
   type: ToastType;
   message: string;
   duration: number;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
 }
 
 interface ToastStore {
@@ -79,52 +75,19 @@ const DEFAULT_DURATIONS: Record<ToastType, number> = {
   info: 3000,
 };
 
-interface ToastOptions {
-  duration?: number;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
+const emit =
+  (type: ToastType) =>
+  (message: string, options?: { duration?: number }): string =>
+    useToastStore.getState().addToast({
+      type,
+      message,
+      duration: options?.duration ?? DEFAULT_DURATIONS[type],
+    });
 
-// Export a singleton for use outside React components (e.g., in socket handlers)
+// A singleton, usable outside React components (e.g. in socket handlers)
 export const toast = {
-  success: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'success',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.success,
-      action: options?.action,
-    });
-  },
-  error: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'error',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.error,
-      action: options?.action,
-    });
-  },
-  warning: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'warning',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.warning,
-      action: options?.action,
-    });
-  },
-  info: (message: string, options?: ToastOptions) => {
-    return useToastStore.getState().addToast({
-      type: 'info',
-      message,
-      duration: options?.duration ?? DEFAULT_DURATIONS.info,
-      action: options?.action,
-    });
-  },
-  dismiss: (id: string) => useToastStore.getState().removeToast(id),
-  clearAll: () => useToastStore.getState().clearAll(),
+  success: emit('success'),
+  error: emit('error'),
+  warning: emit('warning'),
+  info: emit('info'),
 };
-
-export function useToast() {
-  return toast;
-}

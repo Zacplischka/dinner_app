@@ -27,9 +27,8 @@
 //   node scripts/corpus/human.mjs verdict <recordsDir> <reviews.json>
 
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { recordSlugs } from './records.mjs';
+import { readRecords } from './records.mjs';
 
 /** 10% of the batch — the spec's number, and the pilot's reading budget. */
 export const REVIEW_FRACTION = 0.1;
@@ -128,13 +127,9 @@ export function review(recipes, reviewed, fraction = REVIEW_FRACTION) {
 
 // ------------------------------------------------------- the CLI
 
-/** Every `<recordsDir>/<slug>/recipe.json`, as `{ slug, cuisine }`. */
-function loadBatch(recordsDir) {
-  return recordSlugs(recordsDir).map((slug) => ({
-    slug,
-    cuisine: JSON.parse(readFileSync(join(recordsDir, slug, 'recipe.json'), 'utf8')).cuisine,
-  }));
-}
+/** Every record, as `{ slug, cuisine }`. */
+const loadBatch = (recordsDir) =>
+  readRecords(recordsDir).map(({ slug, recipe }) => ({ slug, cuisine: recipe.cuisine }));
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command, recordsDir, reviewsPath] = process.argv.slice(2);

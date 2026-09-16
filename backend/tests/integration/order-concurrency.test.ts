@@ -40,8 +40,6 @@ function service(index: number, getLatest = async () => snapshot) {
   return createOrderService({
     store: stores[index],
     snapshotStore: { getLatest },
-    freshnessMs: 60000,
-    failureFreshnessMs: 1000,
   });
 }
 async function cleanup() {
@@ -57,7 +55,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   vi.restoreAllMocks();
   await cleanup();
-  await stores[0].createSession(code, { hostId: 'order-race-alice', hostName: 'Alice' });
+  await stores[0].createSession(code, { hostName: 'Alice' });
   await stores[0].addParticipant(code, { participantId: 'order-race-alice', displayName: 'Alice' });
   await stores[0].addResultPlaceId(code, 'pizza');
 });
