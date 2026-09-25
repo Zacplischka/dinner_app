@@ -13,6 +13,7 @@ import {
   redealMovieDeck,
 } from '../../src/services/MovieDeckService.js';
 import { logger } from '../../src/logger.js';
+import { registerLobbyHandlers } from '../../src/websocket/lobbyHandler.js';
 
 const recipe: Recipe = {
   kind: 'recipe',
@@ -231,6 +232,50 @@ describe('gather-first Sessions', () => {
       expect((await service.getLobby(code))?.state).toBe('waiting');
     }
   );
+
+  // #517: guests saw "Waiting for the host to start" through the whole deal.
+  it('broadcasts the starting Lobby before the deal resolves, and clears it when the deal fails', async () => {
+    const { code } = await joined('eatout');
+    await service.updateChoices(code, 'guest', {
+      sessionCode: code,
+      revision: await revision(code),
+      location: { latitude: -37, longitude: 145 },
+    });
+    await ready(code, 'host');
+    await ready(code, 'guest');
+    let fail!: (error: Error) => void;
+    search.mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          fail = reject;
+        })
+    );
+    const handlers = new Map<
+      string,
+      (payload: unknown, callback: (ack: unknown) => void) => void
+    >();
+    const emit = vi.fn();
+    registerLobbyHandlers(
+      { id: 'host', on: (event: string, handler: never) => handlers.set(event, handler) } as never,
+      { in: () => ({ emit }) } as never,
+      service
+    );
+    const payload = { sessionCode: code, revision: await revision(code) };
+    const ack = new Promise((resolve) => handlers.get('session:start')!(payload, resolve));
+    while (!fail) await new Promise((resolve) => setTimeout(resolve, 1));
+    const broadcasts = () =>
+      emit.mock.calls.map(([event, lobby]) => [event, lobby.starting, lobby.notice]);
+    expect(broadcasts()).toEqual([['session:lobby', true, undefined]]);
+    fail(new Error('Places is down'));
+    expect(await ack).toMatchObject({ success: false });
+    // The failed deal's Lobby is broadcast just after the ack.
+    await vi.waitFor(() =>
+      expect(broadcasts()).toEqual([
+        ['session:lobby', true, undefined],
+        ['session:lobby', false, 'The search could not finish. Try again in a moment.'],
+      ])
+    );
+  });
 
   it('keeps an empty or failed Cook deal in the Lobby without relaxing diets', async () => {
     const { code } = await joined('cook');

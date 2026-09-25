@@ -159,6 +159,19 @@ it('keeps the group together after a failed deal with choices intact and retry a
   expect(screen.getByRole('button', { name: 'Comedy' })).toBeVisible();
   expect(screen.getByRole('group', { name: 'Getting together' })).toBeInTheDocument();
 });
+// #517: the Host's start is broadcast before the deal, so guests see it too.
+it('tells a guest the shared deck is being found while the host starts, until the deal fails', async () => {
+  const lobby = snapshot();
+  lobby.participants.forEach((p) => (p.ready = true));
+  renderLobby(lobby, 'guest');
+  expect(await screen.findByText('Waiting for the host to start')).toBeInTheDocument();
+  act(() => useSessionStore.getState().setLobby({ ...lobby, revision: 2, starting: true }));
+  expect(screen.getByText('Finding your shared deck…')).toBeInTheDocument();
+  const notice = 'No movies fit. Adjust your choices.';
+  act(() => useSessionStore.getState().setLobby({ ...lobby, revision: 3, notice }));
+  expect(screen.getByText('Waiting for the host to start')).toBeInTheDocument();
+  expect(screen.getByText(notice)).toBeInTheDocument();
+});
 
 it.each([1, 4])(
   'gathers %i actual Participants without requiring empty seats to fill',
