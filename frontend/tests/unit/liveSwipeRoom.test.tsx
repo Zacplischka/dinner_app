@@ -521,6 +521,30 @@ describe('Full House takeover', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Taco Turno')).toBeInTheDocument();
   });
+
+  // #513: the reconnect gate unmounts the Deck while this phone is offline (so
+  // does a reload). Jo joins meanwhile, so the celebrated entry comes back as
+  // 2 of 3; when Jo completes it, it is the same house, not a new one.
+  it('never re-fires for the same Deck Entry after the Deck remounts under a larger roster', async () => {
+    seedParticipants('Sam', 'Alex');
+    const first = renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Alex'));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Keep swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    first.unmount();
+
+    act(() => useSessionStore.getState().addParticipant(participant('p3', 'Jo')));
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Taco Turno')).toBeInTheDocument());
+
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Jo'));
+    expect(strip()).toHaveTextContent('3 of 3 liked Ramen Ichiban');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });
 
 // A Participant who submitted and then reloaded (or whose socket rejoined) must
