@@ -744,9 +744,17 @@ export function createSessionService({
   }
 
   async function readCompletedResults(sessionCode: string): Promise<SessionResultsEvent> {
-    const stored = await store.readCompletedResults(sessionCode);
+    const stored = await store.readCompletedResults(sessionCode).catch((error: unknown) => {
+      // Unreadable must not fail every rejoin for the rest of the Session's life.
+      if (!(error instanceof SyntaxError)) throw error;
+      logger.warn({ err: error, sessionCode }, 'Stored Session outcome unreadable, recomputing');
+      return null;
+    });
     if (stored) return stored;
-    // Completed before the outcome was stored (#506): recompute over whoever is left.
+    // ponytail: transitional. The recompute over whoever is left only serves
+    // Sessions completed before #506 stored the outcome, and Session data
+    // expires in 30 minutes, so a later PR can delete it (an unreadable copy
+    // would then answer with no results rather than a recompute).
     const session = await store.readSession(sessionCode);
     const results = await store.readMatch(sessionCode);
     return {

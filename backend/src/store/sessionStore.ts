@@ -718,7 +718,10 @@ export function createSessionStore(redis: Redis) {
     await redis.hset(sessionKey(sessionCode), 'completedResults', JSON.stringify(results));
   }
 
-  /** Null when the Session completed before its outcome was stored. */
+  /**
+   * Null when the Session completed before its outcome was stored. A malformed
+   * field throws SyntaxError; the caller decides what a rejoin gets instead.
+   */
   async function readCompletedResults(sessionCode: string): Promise<SessionResultsEvent | null> {
     const raw = await redis.hget(sessionKey(sessionCode), 'completedResults');
     return raw ? (JSON.parse(raw) as SessionResultsEvent) : null;

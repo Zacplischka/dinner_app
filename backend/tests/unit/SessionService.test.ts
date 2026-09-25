@@ -1546,6 +1546,25 @@ describe('SessionService', () => {
       expect(rejoin.results).toEqual({ sessionCode, ...broadcast });
     });
 
+    it('recomputes when the stored outcome is unreadable, rather than failing the rejoin', async () => {
+      const { sessionCode, rejoinToken, broadcast } = await completeAliceAndBob();
+      await redis.hset(`session:${sessionCode}`, 'completedResults', '{not json');
+
+      const rejoin = await SessionService.joinSession(
+        sessionCode,
+        'p-alice-2',
+        'Alice',
+        rejoinToken
+      );
+
+      // Nobody Left, so the recompute still matches the broadcast.
+      expect(rejoin.results).toEqual({ sessionCode, ...broadcast });
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionCode }),
+        'Stored Session outcome unreadable, recomputing'
+      );
+    });
+
     it('lets the rejoiner open the Group Order on their Top Pick', async () => {
       const { sessionCode, rejoinToken } = await completeAliceAndBob();
       await SessionService.leaveSession(sessionCode, 'p-bob');
