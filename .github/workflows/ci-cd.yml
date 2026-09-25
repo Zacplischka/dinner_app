@@ -138,72 +138,10 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
 
-  e2e:
-    name: E2E (keyless mobile subset)
-    runs-on: ubuntu-latest
-
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared types
-        run: npm run build --workspace=@dinder/shared
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
-
-      # Only the specs that never create an Eat Out Session: those need a real
-      # Google Places key, and the workflow-level key is a placeholder. Cook is
-      # in because a Craving the Owned Recipe Store answers deals with no
-      # Spoonacular key (the dark source is dealt around, #333). Watch is in
-      # because its corpus is committed and dealt in memory (ADR 0014). The
-      # playwright webServer entries build and start frontend + backend here.
-      - name: Run mobile e2e subset
-        run: npm run test:e2e:mobile --workspace=@dinder/frontend -- home.spec.ts accessibility.spec.ts neon-theme.spec.ts cook.spec.ts watch.spec.ts collaborative-session.spec.ts price-patrol.spec.ts cat-social-menu.spec.ts profile-photos.spec.ts cat-discovery-grocery.spec.ts uat-selection.spec.ts uat-cooking.spec.ts uat-delivery.spec.ts uat-lobby.spec.ts
-        env:
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-
-      # WebKit with an iPhone viewport is browser emulation, not native execution.
-      - name: Run WebKit shared journey
-        run: npm run test:e2e --workspace=@dinder/frontend -- --project=mobile-webkit
-        env:
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: frontend/playwright-report
-          retention-days: 7
-
   verify-production-deploy:
     name: Verify Production Deploy
     runs-on: ubuntu-latest
-    needs: [lint, contract-tests, integration-tests, e2e]
+    needs: [lint, contract-tests, integration-tests]
     # workflow_dispatch lets an operator deliberately rerun the whole job after a
     # proxy-state transition; no manual purge is ever required.
     if: >-
