@@ -1,0 +1,12 @@
+[0.01s] fetch GET term=(seed) -> good signal=yes
+[0.01s] good server: seed GET (answering in 6 s)
+[6.02s] fetch POST term=hung -> HUNG signal=yes
+[6.02s] hung server: connection accepted, never answering
+[8.02s] lookup 1 ("hung") settled: {"status":"failed"}
+[8.02s] fetch GET term=(seed) -> good signal=yes
+[8.02s] good server: seed GET
+[8.02s] fetch POST term=coriander -> good signal=yes
+[8.02s] hung server: connection accepted, never answering
+[8.02s] good server: search POST "coriander"
+[8.03s] lookup 2 ("coriander") settled: status=matched
+[8.03s] DONE both lookups settled

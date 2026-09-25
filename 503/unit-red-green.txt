@@ -1,0 +1,53 @@
+# #503 red/green
+# Command (backend/, placeholder Supabase env, private Redis):
+#   npx vitest run --project unit tests/unit/ProductMatchService.test.ts \
+#     tests/unit/RestaurantSearchService.test.ts tests/unit/spoonacularClient.test.ts
+
+## main @ 3d0a88a source + the PR's test files -> RED
+FAIL  ProductMatchService > fails a hung lookup at its 8 s timeout and releases the queue to the next one (#503)
+Error: Test timed out in 1000ms.
+FAIL  RestaurantSearchService > fetchPlacePhoto > authenticates server-side and returns only a trusted Google image URL
+AssertionError: expected "vi.fn()" to be called with arguments: [ …(2) ]   (no signal)
+FAIL  RestaurantSearchService > fetchPlaceDetails > fetches the trusted Venue name and coordinates by placeId
+AssertionError: expected "vi.fn()" to be called with arguments: [ …(2) ]   (no signal)
+FAIL  RestaurantSearchService > reverseGeocodeSuburb > derives the suburb from the shared browser coordinates
+AssertionError: expected "vi.fn()" to be called with arguments: [ …(2) ]   (no signal)
+FAIL  RestaurantSearchService > geocodeArea > resolves a suburb/postcode query to coordinates and formatted address
+AssertionError: expected "vi.fn()" to be called with arguments: [ …(2) ]   (no signal)
+FAIL  RestaurantSearchService > searchNearbyRestaurants > should call Google Places Text Search API with correct parameters
+AssertionError: expected "timeout" to be called with arguments: [ 5000 ]
+FAIL  RestaurantSearchService > searchNearbyRestaurants > returns RATE_LIMITED after one attempt and no sleep when the quota is exhausted (#503)
+AssertionError: expected "vi.fn()" to be called 1 times, but got 3 times
+FAIL  RestaurantSearchService > searchNearbyRestaurants > caps the Retry-After sleep at 2 s and never sleeps after the last attempt (#503)
+AssertionError: expected 180000 to be 4000 // Object.is equality
+FAIL  spoonacularClient > bounds every call with a 5 s timeout unless the caller brings its own signal (#503)
+AssertionError: expected [ undefined, undefined, undefined ] to deeply equal [ Any<AbortSignal>, …(2) ]
+Test Files  3 failed (3)
+Tests  9 failed | 94 passed (103)
+
+## first PR head 0c66832 source + the final test files -> RED for the review fixes
+FAIL  ProductMatchService > a hung Woolworths fetch (#503) > fails a hung search at the lookup's one 8 s budget and releases the queue
+AssertionError: expected [ 8000, 8000, 8000, 8000 ] to deeply equal [ 8000, 8000 ]
+FAIL  ProductMatchService > a hung Woolworths fetch (#503) > fails a hung cold seed inside that same budget and lets the next lookup run
+AssertionError: expected [ 8000, 8000, 8000 ] to deeply equal [ 8000, 8000 ]
+FAIL  RestaurantSearchService > fetchPlaceDetails > names the stalled API in the log and rethrows the timeout unchanged (#503)
+AssertionError: expected "LOG" to be called with arguments: [ { …(3) }, …(1) ]
+FAIL  RestaurantSearchService > searchNearbyRestaurants > sleeps the 2 s cap when Retry-After is an HTTP date, not seconds (#503)
+AssertionError: expected +0 to be 4000 // Object.is equality
+Test Files  2 failed | 1 passed (3)
+Tests  4 failed | 102 passed (106)
+
+## verified head 49f76fd (identical PR files to merged head d27a4b4 / squash fb2fae3) -> GREEN
+✓ spoonacularClient > bounds every call with a 5 s timeout unless the caller brings its own signal (#503)
+✓ ProductMatchService > a hung Woolworths fetch (#503) > fails a hung search at the lookup's one 8 s budget and releases the queue
+✓ ProductMatchService > a hung Woolworths fetch (#503) > fails a hung cold seed inside that same budget and lets the next lookup run
+✓ RestaurantSearchService > fetchPlaceDetails > names the stalled API in the log and rethrows the timeout unchanged (#503)
+✓ RestaurantSearchService > searchNearbyRestaurants > returns RATE_LIMITED after one attempt and no sleep when the quota is exhausted (#503)
+✓ RestaurantSearchService > searchNearbyRestaurants > caps the Retry-After sleep at 2 s and never sleeps after the last attempt (#503)
+✓ RestaurantSearchService > searchNearbyRestaurants > sleeps the 2 s cap when Retry-After is an HTTP date, not seconds (#503)
+Test Files  3 passed (3)
+Tests  106 passed (106)
+
+## full backend suite @ 49f76fd (vitest run --no-file-parallelism, private Redis)
+Test Files  81 passed (81)
+Tests  1094 passed (1094)

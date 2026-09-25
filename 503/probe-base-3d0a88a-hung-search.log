@@ -1,0 +1,5 @@
+[0.01s] fetch GET term=(seed) -> good signal=NONE
+[0.01s] good server: seed GET
+[0.02s] fetch POST term=hung -> HUNG signal=NONE
+[0.02s] hung server: connection accepted, never answering
+[25.01s] HARD CAP 25s reached: first lookup still pending, second never ran -> killing
