@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import type { Branch } from '@dinder/shared/types';
+import { MAX_DISPLAY_NAME_LENGTH, type Branch } from '@dinder/shared/types';
 import NavigationHeader from './NavigationHeader';
 import { ErrorNote } from './Notice';
 import TmdbCredit from './TmdbCredit';
@@ -82,7 +82,7 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
                 spellCheck={false}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                maxLength={50}
+                maxLength={MAX_DISPLAY_NAME_LENGTH}
                 autoFocus
                 disabled={isCreating}
                 placeholder="Enter your name"

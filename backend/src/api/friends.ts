@@ -4,7 +4,7 @@
 import { Router, Response, raw } from 'express';
 import { PHOTO_UPLOAD_BYTES } from '../services/profilePhoto.js';
 import { DomainError } from '../services/DomainError.js';
-import { admitRequest, type RequestWindow } from './rateWindow.js';
+import { rateLimit } from './rateWindow.js';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
@@ -28,7 +28,12 @@ export function createFriendsRouter(friendsService: FriendsService) {
     friendIds: z.array(z.string().min(1)).min(1),
   });
 
-  const photoRequests = new Map<string, RequestWindow>();
+  const photoLimit = rateLimit({
+    limit: 6,
+    windowMs: 60_000,
+    message: 'Please wait a minute before changing your photo again.',
+    key: (req) => (req as AuthenticatedRequest).user!.id,
+  });
   // The versioned image URL is a public capability, like other avatar URLs. It exposes no Profile fields.
   router.get(
     '/profile-photos/:userId/:version.jpg',
@@ -49,18 +54,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
   router.use(requireAuth);
   router.put(
     '/users/me/photo',
-    (req: AuthenticatedRequest, res, next) => {
-      if (!admitRequest(photoRequests, req.user!.id, 6, 60_000)) {
-        res.set('Retry-After', '60');
-        return next(
-          new DomainError(
-            'TOO_MANY_REQUESTS',
-            'Please wait a minute before changing your photo again.'
-          )
-        );
-      }
-      next();
-    },
+    photoLimit,
     raw({
       type: ['image/jpeg', 'image/png', 'image/webp'],
       limit: PHOTO_UPLOAD_BYTES,
@@ -68,7 +62,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     }),
     asyncHandler(async (req: AuthenticatedRequest, res) => {
       if (!Buffer.isBuffer(req.body))
-        throw new DomainError('validation_error', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
+        throw new DomainError('VALIDATION_ERROR', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
       return res.json(
         await friendsService.saveProfilePhoto(
           req.user!.id,

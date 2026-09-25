@@ -142,11 +142,11 @@ export function parseComparisonStreamEvent(
   return undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function queryNumber(value: unknown): number {
+export function queryNumber(value: unknown): number {
   return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
 }
 

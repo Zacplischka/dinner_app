@@ -188,7 +188,7 @@ describe('persistent Profile photos', () => {
       .webp({ delay: [100, 100] })
       .toBuffer();
     await expect(encodeProfilePhoto(animated, 'image/webp')).rejects.toMatchObject({
-      code: 'validation_error',
+      code: 'VALIDATION_ERROR',
     });
     expect(state.rows.get(ids[0])!.avatar_url).toBe('https://example.test/google.jpg');
   });

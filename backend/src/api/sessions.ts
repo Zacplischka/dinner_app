@@ -3,16 +3,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
-import { locationSchema, moodSchema } from './lobbySchema.js';
-import { cravingSchema } from './cravingSchema.js';
+import { choicesPayloadSchema, cravingSchema, locationSchema, moodSchema } from './lobbySchema.js';
 import type { SessionService } from '../services/SessionService.js';
 import { DomainError } from '../services/DomainError.js';
-import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
+import { rateLimit } from './rateWindow.js';
 import {
   BRANCHES,
-  MAX_DECK_SIZE,
-  MAX_HEADCOUNT,
-  MIN_DECK_SIZE,
+  MAX_DISPLAY_NAME_LENGTH,
   SESSION_CODE_PATTERN,
   type CreateSessionRequest,
   type CreateSessionResponse,
@@ -24,28 +21,29 @@ import {
 // leaves room for retries and a shared NAT while matching the geocode window
 // a Host clears first.
 const CREATE_LIMIT = 20;
-const CREATE_WINDOW_MS = 60_000;
 
 export function createSessionsRouter(sessionService: SessionService) {
   const router = Router();
   // ponytail: per-instance in-memory rate window, same ceiling as rateWindow.ts notes.
-  const createRequests = new Map<string, RequestWindow>();
+  const createLimit = rateLimit({
+    limit: CREATE_LIMIT,
+    windowMs: 60_000,
+    message: 'Too many Sessions created. Please try again shortly.',
+  });
 
   // Zod schemas for validation
   const createSessionRequestSchema = z
     .object({
-      hostName: z.string().trim().min(1).max(50),
+      hostName: z.string().trim().min(1).max(MAX_DISPLAY_NAME_LENGTH),
       collaborative: z.boolean().optional(),
       location: locationSchema.optional(),
-      searchRadiusMiles: z.number().min(1).max(15).optional(),
       branch: z.enum(BRANCHES).optional(),
       craving: cravingSchema.optional(),
-      headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
       mood: moodSchema.optional(),
-      // Rejected, never clamped (#415): a size outside the range is a client
-      // bug, and silently dealing a different Deck would hide it.
-      deckSize: z.number().int().min(MIN_DECK_SIZE).max(MAX_DECK_SIZE).optional(),
     })
+    // A deckSize outside the range is rejected, never clamped (#415): it is a
+    // client bug, and silently dealing a different Deck would hide it.
+    .merge(choicesPayloadSchema.pick({ headcount: true, deckSize: true, searchRadiusMiles: true }))
     // A Cook Session has nothing to deal without its setup. This narrows what
     // the endpoint accepts, which ADR 0007 would normally stage over two
     // deployments — safe here only because no shipped client can send
@@ -93,14 +91,7 @@ export function createSessionsRouter(sessionService: SessionService) {
         );
       }
 
-      const ip = requestIp(req);
-      if (!admitRequest(createRequests, ip, CREATE_LIMIT, CREATE_WINDOW_MS)) {
-        res.setHeader('Retry-After', retryAfterSeconds(createRequests, ip, CREATE_WINDOW_MS));
-        throw new DomainError(
-          'TOO_MANY_REQUESTS',
-          'Too many Sessions created. Please try again shortly.'
-        );
-      }
+      createLimit(req, res);
 
       // Annotated, not cast: this is what checks the Zod schema still agrees
       // with the shared contract, so a chip vocabulary drifting out of

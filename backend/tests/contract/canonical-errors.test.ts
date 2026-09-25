@@ -149,11 +149,6 @@ describe('canonical error transport', () => {
       code: 'INTERNAL_ERROR',
       message: GENERIC,
     },
-    validation_error: {
-      domainMessage: 'No valid ids',
-      status: 400,
-      code: 'VALIDATION_ERROR',
-    },
   };
 
   it.each(

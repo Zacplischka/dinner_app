@@ -20,6 +20,13 @@ export const MIN_DECK_SIZE = 5;
 export const MAX_DECK_SIZE = 50;
 export const MAX_RESTAURANT_DECK_SIZE = 20;
 
+/** A Host or Participant name, bounded on its trimmed length (#346). */
+export const MAX_DISPLAY_NAME_LENGTH = 50;
+
+/** The wire's search radius, in miles; the frontend presents it in kilometres. */
+export const MIN_SEARCH_RADIUS_MILES = 1;
+export const MAX_SEARCH_RADIUS_MILES = 15;
+
 export interface SessionLocation {
   latitude: number;
   longitude: number;

@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import {
   admitRequest,
   pruneExpiredRequests,
+  rateLimit,
   requestIp,
   retryAfterSeconds,
   type RequestWindow,
 } from '../../src/api/rateWindow.js';
+import { DomainError } from '../../src/services/DomainError.js';
 
 const WINDOW_MS = 60_000;
 const LIMIT = 3;
@@ -73,5 +75,61 @@ describe('rateWindow', () => {
     expect(requestIp(req(' 203.0.113.9 '))).toBe('203.0.113.9');
     expect(requestIp(req('not-an-ip'))).toBe('10.0.0.1');
     expect(requestIp(req(undefined, ''))).toBe('10.0.0.2');
+  });
+
+  describe('rateLimit', () => {
+    const req = (ip: string, userId?: string) =>
+      ({
+        get: () => undefined,
+        ip,
+        socket: {},
+        user: userId && { id: userId },
+      }) as unknown as Request;
+    const res = () => {
+      const headers: Record<string, unknown> = {};
+      const response = {
+        headers,
+        setHeader: (name: string, value: unknown) => (headers[name] = value),
+      };
+      return response as unknown as Response & { headers: Record<string, unknown> };
+    };
+
+    it('passes requests through until the window is full, then sets Retry-After and throws', () => {
+      const limit = rateLimit({ limit: 2, windowMs: WINDOW_MS, message: 'Slow down.' });
+      const next = vi.fn();
+
+      limit(req('1.1.1.1'), res(), next);
+      vi.advanceTimersByTime(20_000);
+      limit(req('1.1.1.1'), res(), next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      const limited = res();
+      let thrown: unknown;
+      try {
+        limit(req('1.1.1.1'), limited, next);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).toBeInstanceOf(DomainError);
+      expect(thrown).toMatchObject({ code: 'TOO_MANY_REQUESTS', message: 'Slow down.' });
+      expect(limited.headers['Retry-After']).toBe(40);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      // Called mid-handler without next, another IP still has its own window.
+      expect(() => limit(req('2.2.2.2'), res())).not.toThrow();
+    });
+
+    it('counts by key when given, so one user shares a window across IPs', () => {
+      const limit = rateLimit({
+        limit: 1,
+        windowMs: WINDOW_MS,
+        message: 'Wait a minute.',
+        key: (r) => (r as Request & { user: { id: string } }).user.id,
+      });
+
+      limit(req('1.1.1.1', 'user-a'), res());
+      expect(() => limit(req('2.2.2.2', 'user-a'), res())).toThrow('Wait a minute.');
+      expect(() => limit(req('1.1.1.1', 'user-b'), res())).not.toThrow();
+    });
   });
 });

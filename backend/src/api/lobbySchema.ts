@@ -9,8 +9,25 @@ import {
   MAX_HEADCOUNT,
   MAX_DECK_SIZE,
   MIN_DECK_SIZE,
+  MIN_SEARCH_RADIUS_MILES,
+  MAX_SEARCH_RADIUS_MILES,
   SESSION_CODE_PATTERN,
 } from '@dinder/shared/types';
+
+// The Craving as a request shape (#259): the create endpoint nests it.
+//
+// The chips are closed vocabularies, not free text: they reach a Spoonacular
+// query and a shared Redis pool key, so only the values the setup screen offers
+// get through, and the caps stop a repeated chip building an unbounded pool key
+// with an unbounded corpus scan behind it.
+//
+// It lives here rather than beside the `Craving` type because `@dinder/shared`
+// carries no runtime dependencies — it ships to the browser.
+export const cravingSchema = z.object({
+  mealType: z.enum(MEAL_TYPES),
+  cuisines: z.array(z.enum(CUISINES)).max(CUISINES.length),
+  diets: z.array(z.enum(DIETS)).max(DIETS.length),
+});
 
 export const moodSchema = z.object({
   genres: z.array(z.enum(GENRES)).max(GENRES.length),
@@ -34,5 +51,9 @@ export const choicesPayloadSchema = lobbyPayloadSchema.extend({
   headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
   deckSize: z.number().int().min(MIN_DECK_SIZE).max(MAX_DECK_SIZE).optional(),
   location: locationSchema.optional(),
-  searchRadiusMiles: z.number().min(1).max(15).optional(),
+  searchRadiusMiles: z
+    .number()
+    .min(MIN_SEARCH_RADIUS_MILES)
+    .max(MAX_SEARCH_RADIUS_MILES)
+    .optional(),
 });

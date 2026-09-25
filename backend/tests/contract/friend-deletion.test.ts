@@ -111,7 +111,7 @@ it('rejects unauthenticated removal without a write', async () => {
 
 it('validates the caller at the privileged store boundary too', async () => {
   await expect(store.deleteFriendshipBetween('invalid', B)).rejects.toMatchObject({
-    code: 'validation_error',
+    code: 'VALIDATION_ERROR',
   });
   expect(state.writes).toEqual([]);
 });

@@ -42,8 +42,7 @@ export type DomainErrorCode =
   | 'already_friends'
   | 'blocked'
   | 'request_pending'
-  | 'database_error'
-  | 'validation_error';
+  | 'database_error';
 
 export class DomainError extends Error {
   constructor(
