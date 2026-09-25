@@ -179,6 +179,45 @@ describe('matchProducts', () => {
     expect(result?.match.stockcode).toBe(1);
   });
 
+  // #542: search rank put a frozen, seasoned product first for raw potatoes.
+  it('prefers plain potatoes to a frozen or seasoned form the term never asked for', () => {
+    const rows = [
+      product({
+        stockcode: 1,
+        name: 'Birds Eye Deli Seasoned Roast Potatoes Rosemary & Garlic',
+        packageSize: '600g',
+        sapCategory: 'FROZEN',
+      }),
+      product({
+        stockcode: 2,
+        name: 'Birds Eye Deli Roast Potatoes',
+        packageSize: '600g',
+        sapCategory: 'FROZEN',
+      }),
+      product({
+        stockcode: 3,
+        name: 'Woolworths Washed Potatoes Bag',
+        packageSize: '2kg',
+        sapCategory: 'VEG / FRESHCUTS',
+      }),
+    ];
+    const potatoes = matchProducts(rows, 'potatoes', 'mass');
+    expect(potatoes?.match.stockcode).toBe(3);
+    // Demoted, not evicted: the processed forms are still a swap away.
+    expect(potatoes?.runnersUp.map((candidate) => candidate.stockcode)).toEqual([1, 2]);
+    // A form the term names is no demotion; one it does not name still is.
+    expect(matchProducts(rows, 'roast potatoes', 'mass')?.match.stockcode).toBe(2);
+  });
+
+  it('prefers dried cherries to glacé ones for a dried cherries line', () => {
+    const rows = [
+      product({ stockcode: 1, name: 'Winn Cherries Red Glace', packageSize: '200g' }),
+      product({ stockcode: 2, name: 'Glacé Cherries Red', packageSize: '200g' }),
+      product({ stockcode: 3, name: 'Forresters Dried Sour Cherries', packageSize: '150g' }),
+    ];
+    expect(matchProducts(rows, 'dried cherries', 'mass')?.match.stockcode).toBe(3);
+  });
+
   it.each(['mass', 'volume'] as const)('demotes count packs for a %s line', (form) => {
     const rows = [
       product({ stockcode: 1, name: 'Pumpkin Whole', packageSize: 'each' }),

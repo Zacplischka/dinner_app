@@ -446,6 +446,31 @@ describe('ShoppingListService.mint', () => {
     expect(matchProduct).toHaveBeenCalledWith('garlic', undefined);
   });
 
+  it('states a one-count line in the singular, never "1 eggs" (#542)', async () => {
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: [
+          { name: 'eggs', amount: 1, unit: '', original: '1 egg' },
+          { name: 'carrots', amount: 2, unit: '', original: '2 carrots' },
+          // An "-es" plural has no safe singular to guess, so it says "×".
+          { name: 'tomatoes', amount: 1, unit: '', original: '1 tomato' },
+          { name: 'lemongrass', amount: 1, unit: '', original: '1 stalk lemongrass' },
+        ],
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines.map((line) => line.text)).toEqual([
+      '1 egg',
+      '2 carrots',
+      '1 × tomatoes',
+      '1 lemongrass',
+    ]);
+  });
+
   it('mints the #305 corpus lines with a single unit, never the doubled pair', async () => {
     // Recipe 636360, exactly as Spoonacular parses it: the metric rewrite put
     // "250/gr" in the structured amount but left the imperial token in the

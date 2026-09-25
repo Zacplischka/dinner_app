@@ -53,6 +53,28 @@ describe('createWoolworthsClient', () => {
     expect(searches[0].body).toMatchObject({ SearchTerm: 'coriander', PageNumber: 1 });
   });
 
+  // #542: the catalogue itself doubles a word, and every consumer shows the name.
+  it('collapses a word the catalogue repeats, but not a doubled name like Cous Cous', async () => {
+    const item = (Stockcode: number, Name: string) => ({ Products: [{ Stockcode, Name }] });
+    const { fetchImpl } = woolworthsFetchFake({
+      cumin: {
+        Products: [
+          item(1, 'Woolworths Cumin Ground Ground'),
+          item(2, 'Lemon Lemon Bag'),
+          item(3, 'Woolworths Cous Cous'),
+          item(4, "Nando's Peri Peri Sauce"),
+        ],
+      },
+    });
+    const { products } = await createWoolworthsClient(fetchImpl).search('cumin');
+    expect(products.map((product) => product.name)).toEqual([
+      'Woolworths Cumin Ground',
+      'Lemon Bag',
+      'Woolworths Cous Cous',
+      "Nando's Peri Peri Sauce",
+    ]);
+  });
+
   it('returns an empty product list for a clean zero-result answer', async () => {
     const { fetchImpl } = woolworthsFetchFake({
       wombok: { SearchResultsCount: 0, Products: null },
