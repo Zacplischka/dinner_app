@@ -162,6 +162,47 @@ describe('createProductMatchService', () => {
     expect(queued).toBe(1); // warm read never touches the queue
   });
 
+  it('fails a hung lookup at its 8 s timeout and releases the queue to the next one (#503)', async () => {
+    // AbortSignal.timeout runs on Node's own timers, out of fake timers' reach:
+    // record the budget the client asks for and spend 10 ms of it instead.
+    const realTimeout = AbortSignal.timeout.bind(AbortSignal);
+    const budgets: number[] = [];
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+      budgets.push(ms);
+      return realTimeout(10);
+    });
+    const { fetchImpl: answer } = woolworthsFetchFake({ coriander });
+    const searched: string[] = [];
+    // "hung" is accepted and never answered: only an abort ends it, as with real fetch.
+    const fetchImpl = ((input, init) => {
+      if (typeof init?.body !== 'string') return answer(input, init);
+      const term = (JSON.parse(init.body) as { SearchTerm: string }).SearchTerm;
+      searched.push(term);
+      if (term !== 'hung') return answer(input, init);
+      return new Promise((_, reject) =>
+        init.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+      );
+    }) as typeof fetch;
+    const matcher = createProductMatchService({
+      redis: new RedisMock(),
+      client: createWoolworthsClient(fetchImpl),
+      enqueue: createPolitenessQueue(0),
+      defaultStoreId: 1101,
+      successWindowCapMs: DAY_MS,
+      failureWindowMs: HOUR_MS,
+    });
+
+    const [hung, next] = await Promise.all([
+      matcher.matchProduct('hung'),
+      matcher.matchProduct('coriander'),
+    ]);
+
+    expect(hung).toEqual({ status: 'failed' });
+    expect(next.status).toBe('matched');
+    expect(searched).toEqual(['hung', 'coriander']); // the next lookup ran after it, not beside it
+    expect(budgets).toEqual([8_000, 8_000, 8_000, 8_000]); // seed and search, for both lookups
+  }, 1_000);
+
   it('counts Price/InstorePrice divergence as an operator-visible log metric', async () => {
     const logs = captureLogs();
     const { service: matcher } = service({ coriander });
