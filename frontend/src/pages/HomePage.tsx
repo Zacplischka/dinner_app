@@ -5,6 +5,7 @@ import GoogleSignInButton from '../components/GoogleSignInButton';
 import ConfirmLeaveModal from '../components/ConfirmLeaveModal';
 import { getSession, ApiClientError } from '../services/apiClient';
 import { useLeaveSession } from '../hooks/useLeaveSession';
+import { reconcileSession } from '../services/socketBindings';
 import { useSessionStore } from '../stores/sessionStore';
 import UserMenu from '../components/UserMenu';
 import { useAuthStore } from '../stores/authStore';
@@ -98,7 +99,12 @@ export default function HomePage() {
     if (!sessionCode || returning) return;
     setReturning(true);
     setReturnError('');
-    if (await refreshSession(sessionCode)) navigate(`/session/${sessionCode}`);
+    if (await refreshSession(sessionCode)) {
+      // Home is the reconnect gate's way out (#511), so returning retries the
+      // rejoin: the socket's connect handler never refires on a live transport.
+      if (!useSessionStore.getState().isConnected) await reconcileSession();
+      navigate(`/session/${sessionCode}`);
+    }
     setReturning(false);
   }
   const { isAuthenticated, isLoading } = useAuthStore();

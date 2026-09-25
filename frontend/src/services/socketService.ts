@@ -37,7 +37,8 @@ type SocketEventHandlers = Partial<ServerToClientEvents> & {
 };
 
 export interface SocketConfig {
-  canMutate?: (event: keyof ClientToServerEvents) => boolean;
+  // Why a mutation must wait, in words the caller can show; undefined sends it.
+  mutationBlocked?: (event: keyof ClientToServerEvents) => string | undefined;
   onUncertainOutcome?: () => void;
   onEvent?: SocketEventHandlers;
 }
@@ -45,7 +46,7 @@ export interface SocketConfig {
 // Typed socket instance
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 let onUncertainOutcome: (() => void) | undefined;
-let canMutate: SocketConfig['canMutate'];
+let mutationBlocked: SocketConfig['mutationBlocked'];
 
 /**
  * Initialize Socket.IO client connection.
@@ -61,7 +62,7 @@ export function initializeSocket(config: SocketConfig = {}): void {
   }
 
   onUncertainOutcome = config.onUncertainOutcome;
-  canMutate = config.canMutate;
+  mutationBlocked = config.mutationBlocked;
 
   socket = io(BACKEND_URL, {
     // Straight to WebSocket: the default polling-first handshake costs serial
@@ -113,18 +114,10 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
     }
     // A connected transport does not prove an uncertain mutation's outcome.
     // Recovery reads and deliberate Leave remain usable; never queue a retry.
-    if (
-      canMutate &&
-      !canMutate(event) &&
-      !['session:join', 'session:leave', 'order:open'].includes(event)
-    ) {
-      resolve({
-        success: false,
-        error: {
-          code: 'UNKNOWN',
-          message: 'Your session is still being checked. Try again once it reconnects.',
-        },
-      });
+    const blocked =
+      !['session:join', 'session:leave', 'order:open'].includes(event) && mutationBlocked?.(event);
+    if (blocked) {
+      resolve({ success: false, error: { code: 'UNKNOWN', message: blocked } });
       return;
     }
     // socket.io's typed `emit` can't infer through this generic wrapper; the
@@ -136,7 +129,12 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
         cb: (err: Error | null, ack: Ack<T>) => void
       ) => void
     )(event, payload, (err, ack) => {
-      if (err && !['session:join', 'session:leave', 'selection:live'].includes(event)) {
+      // order:open is a read its callers already handle; recovering on its
+      // timeout lifts the gate back onto a page that reads again (#511).
+      if (
+        err &&
+        !['session:join', 'session:leave', 'selection:live', 'order:open'].includes(event)
+      ) {
         onUncertainOutcome?.();
       }
       resolve(

@@ -46,10 +46,13 @@ export default function RequireSession() {
         style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
       >
         <h1 className="text-2xl">Reconnecting to your session</h1>
-        {/* Also shown to an online phone whose rejoin failed, so the copy never
-            blames the connection (#511). Home keeps the Session: Home offers
-            "Return to session". */}
-        <p role="status">Couldn’t reach your session yet. Your place is saved.</p>
+        {/* Also shown to an online phone whose rejoin failed, so only an offline
+            one hears about the connection (#511). Home keeps the Session: Home
+            offers "Return to session". */}
+        <p role="status">
+          {navigator.onLine ? 'Couldn’t reach your session yet.' : 'You’re offline.'} Your place is
+          saved.
+        </p>
         <div className="flex gap-3">
           <button
             className="btn btn-primary"
