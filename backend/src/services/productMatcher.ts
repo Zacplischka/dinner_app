@@ -32,6 +32,21 @@ const UNSUITABLE_PENALTY = 1.5;
 const produceNuts = (product: WoolworthsProduct): boolean =>
   /^VEG(?:\s*\/|$)/i.test(product.sapCategory?.trim() ?? '') &&
   /^NUTS AND SNACKS$/i.test(product.sapSubCategory?.trim() ?? '');
+// A processed or prepared form the term never asked for (#542): raw potatoes
+// are not seasoned roast potatoes, and dried cherries are not glacé ones.
+// ponytail: a fixed word list; a form it does not name still ranks as plain,
+// so add words as the tally finds them.
+const PROCESSED_FORMS = [
+  'frozen',
+  'seasoned',
+  'roast(?:ed)?',
+  'glac[eé]',
+  'candied',
+  'crumbed',
+  'wedges',
+  'chips',
+  'mash',
+].map((form) => new RegExp(`\\b${form}(?![a-z])`, 'i'));
 
 // Descriptor words that carry no product identity ("fresh", "chopped", …).
 const STOP_WORDS = new Set([
@@ -75,6 +90,7 @@ function identityKeywords(term: string): string[] {
 
 function score(
   product: WoolworthsProduct,
+  term: string,
   keywords: string[],
   rank: number,
   wantedForm?: WantedPackForm
@@ -98,7 +114,8 @@ function score(
   const refusedPack =
     (pack?.kind === 'fixed' && pack.family === 'volume' && wantedForm === 'count') ||
     (pack?.kind === 'count' && (wantedForm === 'mass' || wantedForm === 'volume'));
-  return { value, identityHits, penalized: refusedPack || produceNuts(product) };
+  const processed = PROCESSED_FORMS.some((form) => form.test(product.name) && !form.test(term));
+  return { value, identityHits, penalized: refusedPack || produceNuts(product) || processed };
 }
 
 function toCandidate(product: WoolworthsProduct): ProductCandidate {
@@ -154,7 +171,7 @@ export function matchProducts(
   const ranked = eligible.map(({ product, rank }) => ({
     product,
     rank,
-    ...score(product, keywords, rank, wantedForm),
+    ...score(product, term, keywords, rank, wantedForm),
   }));
   // ponytail: pairwise over the small search answer; identity-first ordering
   // could cross more rank places, but needs a new store tally before adoption.

@@ -114,7 +114,10 @@ function parseSearchResponse(body: unknown): WoolworthsSearchResult {
     if (!raw || typeof raw !== 'object') continue;
     const item = raw as Record<string, unknown>;
     const stockcode = number(item.Stockcode);
-    const name = string(item.Name);
+    // The catalogue can double a word ("Cumin Ground Ground", #542), and every
+    // consumer shows this name. ponytail: the five-letter floor spares doubled
+    // names such as Cous Cous and Peri Peri; a longer one would collapse too.
+    const name = string(item.Name)?.replace(/\b([a-z]{5,})(?:\s+\1\b)+/gi, '$1');
     if (stockcode === undefined || !name) continue;
     storeId ??= number(item.FulfilmentStoreId) ?? null;
     const attributes = (item.AdditionalAttributes ?? {}) as Record<string, unknown>;

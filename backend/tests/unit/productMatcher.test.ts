@@ -479,7 +479,7 @@ describe('matchProducts', () => {
         product({ stockcode: 3, name: 'Coriander Dried' }),
         product({ stockcode: 4, name: 'Coriander Paste' }),
         product({ stockcode: 5, name: 'Coriander Seeds', available: false }),
-        product({ stockcode: 6, name: 'Coriander Frozen' }),
+        product({ stockcode: 6, name: 'Coriander Microherbs' }),
         product({ stockcode: 7, name: 'Coriander Seedling' }),
       ],
       'coriander'

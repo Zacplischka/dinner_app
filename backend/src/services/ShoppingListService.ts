@@ -237,6 +237,12 @@ function lineText(amount: number, unit: string, name: string): string {
   // Spoonacular's metric rewrite states grams as "gr"; a human writes "g"
   // (#305). Display only — the structured unit is what pricing sees.
   const shownUnit = unit === 'gr' ? 'g' : unit;
+  // One of a plural reads "1 egg", not "1 eggs" (#542). ponytail: only a
+  // consonant + "s" plural is singularised; "-es", "-ies" and "-ves" guess
+  // wrong too often ("tomatoe", "leave"), so those say "1 × tomatoes".
+  if (shown === 1 && !shownUnit && /[^su]s$/i.test(name)) {
+    return /[^aeiousy]s$/i.test(name) ? `1 ${name.slice(0, -1)}` : `1 × ${name}`;
+  }
   return shownUnit ? `${shown} ${shownUnit} ${name}` : `${shown} ${name}`;
 }
 
