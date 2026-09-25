@@ -64,11 +64,12 @@ export function initializeSocket(config: SocketConfig = {}): void {
   onUncertainOutcome = config.onUncertainOutcome;
   mutationBlocked = config.mutationBlocked;
 
+  // Default transports (polling, then upgrade), not WebSocket-only: a reload's
+  // polling handshake rides the page's warm HTTP connection, while a WebSocket
+  // needs its own TCP + TLS + Upgrade before the rejoin can start. Measured from
+  // AU against production (#518): reload-to-usable median 944 ms WebSocket-only
+  // vs 593 ms polling first; create-to-Lobby 982 vs 929 ms.
   socket = io(BACKEND_URL, {
-    // Straight to WebSocket: the default polling-first handshake costs serial
-    // round trips before connect. ponytail: no polling fallback (owner's call,
-    // #518); add tryAllTransports if a proxy that blocks WebSocket shows up.
-    transports: ['websocket'],
     reconnection: true,
     // Never give up on our own: a cap of 5 stopped retrying ~15s into a
     // 30-minute Session while the UI kept saying "Reconnecting...". The

@@ -168,7 +168,10 @@ export default function SessionLobbyPage() {
   if (follow && sessionStatus === 'complete')
     return <Navigate to={`/session/${sessionCode}/results`} replace />;
 
-  if (isLoading)
+  // A Lobby already in the store came from the join or rejoin ack, so it is
+  // fresh: show the room and let the Session fetch fill in the invite link and
+  // expiry behind it, instead of adding its round trip to every reload (#518).
+  if (isLoading && !lobby)
     return (
       <main className="flex min-h-screen items-center justify-center bg-ink">
         <Spinner size="lg" label="Loading session…" />
