@@ -4,11 +4,25 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { User, Session, Subscription } from '@supabase/supabase-js';
-import {
-  supabase,
-  signInWithGoogle as googleSignIn,
-  signOut as supabaseSignOut,
-} from '../services/supabase';
+import { Capacitor } from '@capacitor/core';
+
+// supabase-js is loaded on demand (#521): most visitors are guests who never
+// sign in, and it is the biggest chunk in the app.
+const loadSupabase = () => import('../services/supabase');
+
+// On the web supabase-js keeps the session in localStorage under its default
+// key, sb-<project-ref>-auth-token, and the Google sign-in lands back on `/`
+// with the tokens in the hash (the implicit flow). Native keeps it in
+// credentialStorage, so the app always restores there.
+function hasSessionToRestore(): boolean {
+  if (Capacitor.isNativePlatform()) return true;
+  if (new URLSearchParams(window.location.hash.slice(1)).has('access_token')) return true;
+  try {
+    return Object.keys(localStorage).some((key) => /^sb-.+-auth-token/.test(key));
+  } catch {
+    return true; // storage blocked: let supabase-js decide, as it always did
+  }
+}
 
 interface AuthState {
   // Auth data
@@ -34,13 +48,19 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       initialize: async () => {
-        if (!supabase) {
+        if (!hasSessionToRestore()) {
           set({ isLoading: false });
           return;
         }
-        // Optional identity must not hold guest entry hostage to an auth outage.
-        const guestFallback = setTimeout(() => set({ isLoading: false }), 3000);
+        let guestFallback: ReturnType<typeof setTimeout> | undefined;
         try {
+          const { supabase } = await loadSupabase();
+          if (!supabase) {
+            set({ isLoading: false });
+            return;
+          }
+          // Optional identity must not hold guest entry hostage to an auth outage.
+          guestFallback = setTimeout(() => set({ isLoading: false }), 3000);
           // Get initial session
           const {
             data: { session },
@@ -77,7 +97,7 @@ export const useAuthStore = create<AuthState>()(
       signInWithGoogle: async () => {
         set({ isLoading: true });
         try {
-          await googleSignIn();
+          await (await loadSupabase()).signInWithGoogle();
           set({ isLoading: false });
         } catch (error) {
           console.error('Sign in error:', error);
@@ -89,7 +109,7 @@ export const useAuthStore = create<AuthState>()(
       signOut: async () => {
         set({ isLoading: true });
         try {
-          await supabaseSignOut();
+          await (await loadSupabase()).signOut();
           set({
             user: null,
             session: null,
