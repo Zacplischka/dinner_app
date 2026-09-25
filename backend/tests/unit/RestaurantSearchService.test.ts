@@ -261,6 +261,21 @@ describe('RestaurantSearchService', () => {
         RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')
       ).resolves.toMatchObject({ placeId: 'ChIJ11InchPizza' });
     });
+
+    it('names the stalled API in the log and rethrows the timeout unchanged (#503)', async () => {
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      const timeout = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timeout));
+
+      await expect(RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')).rejects.toBe(
+        timeout
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        { err: timeout, apiName: 'Places details', attempt: 1 },
+        'Places details request failed'
+      );
+      errorSpy.mockRestore();
+    });
   });
 
   describe('reverseGeocodeSuburb', () => {
@@ -907,6 +922,31 @@ describe('RestaurantSearchService', () => {
       expect(await outcome).toMatchObject({ name: 'DomainError', code: 'RATE_LIMITED' });
       expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(Date.now() - start).toBe(4_000); // two capped sleeps between three attempts
+    });
+
+    it('sleeps the 2 s cap when Retry-After is an HTTP date, not seconds (#503)', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: async () => '',
+        headers: {
+          get: (name: string) => (name === 'Retry-After' ? 'Wed, 21 Oct 2026 07:28:00 GMT' : null),
+        },
+      });
+      const start = Date.now();
+
+      const outcome = RestaurantSearchService.searchNearbyRestaurants({
+        latitude: -37.8136,
+        longitude: 144.9631,
+        radiusMeters: 8046.72,
+      }).catch((error: unknown) => error);
+      await vi.runAllTimersAsync();
+
+      expect(await outcome).toMatchObject({ name: 'DomainError', code: 'RATE_LIMITED' });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(Date.now() - start).toBe(4_000); // not a zero-sleep hot loop
     });
 
     it('should return empty array if no places found', async () => {

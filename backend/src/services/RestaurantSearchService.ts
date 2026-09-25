@@ -67,7 +67,14 @@ async function fetchWithRateLimitRetry(
   init: RequestInit
 ): Promise<Response | undefined> {
   for (let attempt = 1; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
-    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    let response: Response;
+    try {
+      response = await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    } catch (err) {
+      // A bare TimeoutError names no API: say which Google call stalled.
+      logger.error({ err, apiName, attempt }, `${apiName} request failed`);
+      throw err;
+    }
     if (response.status !== 429) return response;
     const errorBody = await response.text();
     if (errorBody.includes('RESOURCE_EXHAUSTED')) {
@@ -75,8 +82,12 @@ async function fetchWithRateLimitRetry(
       return undefined;
     }
     if (attempt === MAX_RATE_LIMIT_RETRIES) break;
+    // Retry-After may be an HTTP date, which parses to NaN: sleep the cap then.
     const retryAfterMs = parseFloat(response.headers.get('Retry-After') || '1') * 1000;
-    await new Promise((resolve) => setTimeout(resolve, Math.min(retryAfterMs, MAX_RETRY_SLEEP_MS)));
+    const sleepMs = Number.isFinite(retryAfterMs)
+      ? Math.min(retryAfterMs, MAX_RETRY_SLEEP_MS)
+      : MAX_RETRY_SLEEP_MS;
+    await new Promise((resolve) => setTimeout(resolve, sleepMs));
   }
   logger.error(
     { retries: MAX_RATE_LIMIT_RETRIES },
