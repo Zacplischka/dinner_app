@@ -137,6 +137,11 @@ test('a listed Staple need not be named in a step', () => {
   assert.doesNotMatch(report(oiled, { slug: 'beef-ragu' }), /olive oil/);
 });
 
+test('a name that merely ends in a Staple still has to be named in a step (#504)', () => {
+  const tinned = withIngredient(2, { name: 'tuna in water', original: '185 g tuna in water' });
+  assert.match(report(tinned, { slug: 'beef-ragu' }), /"tuna in water" is never named/);
+});
+
 test('a name another Recipe already holds is a duplicate', () => {
   const seen = new Map([['beef ragu', 'beef-ragu-2']]);
   assert.match(report(CLEAN, { slug: 'beef-ragu', seen }), /beef-ragu-2/);

@@ -139,14 +139,20 @@ const PACKET_GOODS = [
  * The Staples, read off `backend/src/services/staples.ts` — the same set the
  * Shopping List mutes and every Tally excludes. A listed Staple is exempt from
  * the "named in a step" rule below, because the method is free to reach for it
- * as "the oil" or "a pinch".
- * ponytail: still the tail rule staples.ts dropped for an exact match (#504),
- * which only ever makes this exemption wider than the Shopping List's. Narrow
- * it to `STAPLES.includes` if a real Recipe is ever let off by one.
+ * as "the oil" or "a pinch". Matched exactly, with `isStaple`'s own
+ * normalisation, so nothing the Shopping List prices ("tuna in water") is let
+ * off here (#504).
  */
 const STAPLES = tsStringList(source('../../backend/src/services/staples.ts'), 'STAPLES');
 
-const isStaple = (name) => STAPLES.some((staple) => name === staple || name.endsWith(` ${staple}`));
+const isStaple = (name) =>
+  STAPLES.includes(
+    name
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  );
 
 const FRESH_HERBS = [
   'basil',
