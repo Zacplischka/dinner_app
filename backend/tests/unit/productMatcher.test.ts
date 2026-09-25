@@ -413,6 +413,24 @@ describe('matchProducts', () => {
     expect(result?.match.stockcode).toBe(2);
   });
 
+  it('buys a diet-qualified line only a product that says so, or nothing (#505)', () => {
+    // The term is what the mint searches: "fish sauce gluten free" is a diet
+    // claim, and the plain sauce ranked first must not be what fulfils it.
+    const plain = product({ stockcode: 1, name: 'Fish Sauce 700ml' });
+    const labelled = product({ stockcode: 2, name: 'Gluten-Free Fish Sauce 250ml' });
+    const others = [3, 4].map((stockcode) => product({ stockcode, name: 'Fish Sauce 200ml' }));
+    const result = matchProducts([plain, ...others, labelled], 'fish sauce gluten free');
+    expect(result?.match.stockcode).toBe(2);
+    expect(result?.runnersUp).toEqual([]);
+
+    // Nothing that says so is a clean miss: the line stays Unmatched, with its
+    // Search Woolworths link, rather than buying the plain product.
+    expect(matchProducts([plain], 'fish sauce gluten free')).toBeNull();
+    const parmesan = product({ stockcode: 5, name: 'Parmesan Cheese Grated 250g' });
+    expect(matchProducts([parmesan], 'parmesan cheese vegetarian')).toBeNull();
+    expect(matchProducts([parmesan], 'parmesan cheese')?.match.stockcode).toBe(5);
+  });
+
   it('penalises unavailable and priceless candidates so a priceable one wins a tie', () => {
     const result = matchProducts(
       [
