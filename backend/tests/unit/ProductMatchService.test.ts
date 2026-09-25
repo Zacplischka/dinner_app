@@ -115,6 +115,51 @@ describe('createProductMatchService', () => {
     expect(stockcodes).not.toContain(900001);
   });
 
+  it('asks the Retailer for the product, and holds the diet on its labels (#505)', async () => {
+    // A live "parmesan cheese vegetarian" answer led with ricotta: the store
+    // reads a diet word as a shelf of its own. So the qualified line asks for
+    // the product — one cached answer for it and its plain twin — and the
+    // Matcher holds the diet against each product's label.
+    const cheese = (Stockcode: number, Name: string, lifestyleanddietarystatement?: string) => ({
+      Products: [
+        {
+          Stockcode,
+          Name,
+          Price: 5,
+          IsAvailable: true,
+          AdditionalAttributes: { sapcategoryname: 'CHEESE COOKING', lifestyleanddietarystatement },
+        },
+      ],
+    });
+    const {
+      redis,
+      service: matcher,
+      searches,
+    } = service({
+      'parmesan cheese': {
+        Products: [
+          cheese(1, 'Parmesan Cheese Block'),
+          cheese(2, 'Parmesan Cheese Grated', 'Gluten Free,Vegetarian'),
+        ],
+      },
+    });
+
+    expect(await matcher.matchProduct('parmesan cheese vegetarian')).toMatchObject({
+      status: 'matched',
+      match: { stockcode: 2 },
+    });
+    expect(await matcher.matchProduct('parmesan cheese')).toMatchObject({
+      status: 'matched',
+      match: { stockcode: 1 },
+    });
+    expect(searches().map((request) => request.body)).toMatchObject([
+      { SearchTerm: 'parmesan cheese' },
+    ]);
+    expect(await redis.keys('woolworths:price:*')).toEqual([
+      'woolworths:price:1101:parmesan cheese',
+    ]);
+  });
+
   it('serves the cache first: one cold fetch, concurrent and repeat calls reuse it', async () => {
     const { service: matcher, searches } = service({ coriander });
     const [first, second] = await Promise.all([
