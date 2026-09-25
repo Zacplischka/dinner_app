@@ -40,7 +40,8 @@ export async function handleSessionJoin(
   resolveAvatar: (token?: string) => Promise<string | null> = () => Promise.resolve(null)
 ): Promise<void> {
   // Joining pulled them out of another Session (#284): tell that room they
-  // left, and deliver the Match when their departure completed it.
+  // left, and deliver the Match when their departure completed it — or else
+  // re-send its Lobby, whose revision and roster the departure changed (#529).
   const emitDeparture = (left: LeftSession) => {
     socket.to(left.sessionCode).emit('participant:left', {
       participantId: socket.id,
@@ -52,6 +53,16 @@ export async function handleSessionJoin(
         sessionCode: left.sessionCode,
         ...left.results,
       });
+    } else {
+      service
+        .getLobby(left.sessionCode)
+        .then((lobby) => lobby && socket.to(left.sessionCode).emit('session:lobby', lobby))
+        .catch((err: unknown) =>
+          logger.warn(
+            { err, socketId: socket.id, sessionCode: left.sessionCode },
+            'Departed Lobby re-broadcast failed'
+          )
+        );
     }
   };
 

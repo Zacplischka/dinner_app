@@ -456,6 +456,7 @@ describe('websocket handlers', () => {
             }
           )
         ),
+        getLobby: vi.fn(),
       };
 
       await handleSessionJoin(
@@ -479,8 +480,63 @@ describe('websocket handlers', () => {
         'session:results',
         expect.objectContaining({ sessionCode: 'OLD42', allSelections: { Bob: [] } })
       );
+      // A completed Session hears the Match, not a Lobby (#529).
+      expect(failingService.getLobby).not.toHaveBeenCalled();
+      expect(testSocket.roomEmitter.emit).not.toHaveBeenCalledWith(
+        'session:lobby',
+        expect.anything()
+      );
       // The refused join itself changed no rooms.
       expect(testSocket.join).not.toHaveBeenCalled();
+    });
+
+    // #529 review: the Lobby re-read is fire-and-forget, so its failure is
+    // logged and never reaches the joiner's ack or the old room's participant:left.
+    it('should log, not re-ack, when the departed Lobby re-broadcast fails', async () => {
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const testSocket = socket('socket-1', ['OLD42']);
+      const callback = vi.fn();
+      const error = new Error('redis down');
+      const failingService = {
+        joinSession: vi
+          .fn()
+          .mockRejectedValue(
+            Object.assign(
+              new DomainError('SESSION_FULL', 'Session is full (maximum 4 participants)'),
+              { leftSession: { sessionCode: 'OLD42', displayName: 'Alice', participantCount: 1 } }
+            )
+          ),
+        getLobby: vi.fn().mockRejectedValue(error),
+      };
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode, displayName: 'Alice' },
+        callback,
+        failingService as any
+      );
+
+      await vi.waitFor(() =>
+        expect(warnSpy).toHaveBeenCalledWith(
+          { err: error, socketId: 'socket-1', sessionCode: 'OLD42' },
+          'Departed Lobby re-broadcast failed'
+        )
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledWith({
+        success: false,
+        error: { code: 'SESSION_FULL', message: expect.any(String) },
+      });
+      expect(testSocket.to).toHaveBeenCalledWith('OLD42');
+      expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('participant:left', {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        participantCount: 1,
+      });
+      expect(testSocket.roomEmitter.emit).not.toHaveBeenCalledWith(
+        'session:lobby',
+        expect.anything()
+      );
     });
 
     it('should deliver the Match to the old room when the departure completes it', async () => {
@@ -505,6 +561,49 @@ describe('websocket handlers', () => {
         expect.objectContaining({ sessionCode, allSelections: { Bob: [] } })
       );
       await expect(store.readSession(sessionCode)).resolves.toMatchObject({ state: 'complete' });
+
+      const leftovers = await redis.keys('session:NEW42*');
+      if (leftovers.length > 0) await redis.del(...leftovers);
+    });
+
+    // #529: the Lobby renders from its roster, so participant:left alone leaves
+    // the old room showing Carol and holding a stale revision.
+    it('should re-broadcast the old Lobby when a join pulls a Participant out of it', async () => {
+      await store.createSession(sessionCode, {
+        hostName: 'Alice',
+        branch: 'eatout',
+        lobby: { revision: 0, round: 1, mealType: 'main course' },
+      });
+      await store.addParticipant(sessionCode, {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        isHost: true,
+        ready: true,
+      });
+      await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Carol' });
+      await store.createSession('NEW42', { hostName: 'Ava' });
+      const testSocket = socket('socket-2', [sessionCode]);
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode: 'NEW42', displayName: 'Carol' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: expect.anything() });
+      expect(testSocket.to).toHaveBeenCalledWith(sessionCode);
+      await vi.waitFor(() =>
+        expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
+          'session:lobby',
+          expect.objectContaining({
+            sessionCode,
+            revision: 1,
+            participants: [expect.objectContaining({ participantId: 'socket-1', ready: true })],
+          })
+        )
+      );
 
       const leftovers = await redis.keys('session:NEW42*');
       if (leftovers.length > 0) await redis.del(...leftovers);
