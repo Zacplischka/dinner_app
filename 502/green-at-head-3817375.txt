@@ -1,0 +1,17 @@
+ ✓ |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses Session create in a new area as RATE_LIMITED once Text Search is spent 27ms
+ ✓ |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses a venue search on the same Text Search budget 4ms
+ ✓ |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses a photo cache miss as RATE_LIMITED, not a 500 3ms
+ ✓ |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > streams a cold Comparison refusal as a RATE_LIMITED event before any paid work 3ms
+ ✓ |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > admits compatible Cook diets and keeps reconnect outside no extra slot 7ms
+ ✓ |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > refuses a fourth paid search in one Session, says so in the Lobby, and still reuses a dealt area 22ms
+ ✓ |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > counts a Cook deal against the cap only when its Craving is new to the Session 21ms
+ ✓ |unit| tests/unit/ShoppingListService.test.ts > ShoppingListService.mint > keeps the product card on an Unpriced-matched line and shows no price 2ms
+ ✓ |unit| tests/unit/ShoppingListService.test.ts > ShoppingListService.mint > mints the list unpriced, without a Retailer call, once the daily pricing budget is spent 1ms
+ ✓ |unit| tests/unit/ShoppingListService.test.ts > ShoppingListService.mint > opens pending ingredients by URL, survives Session expiry and preserves Claims when prices arrive 2ms
+ ✓ |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > admits calls up to the ceiling and refuses once the counter reaches it 3ms
+ ✓ |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > gives the counter an expiry, so a day that has passed leaves nothing behind 1ms
+ ✓ |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > keys the day to Google's quota day, which turns over at midnight Pacific 1ms
+ ✓ |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > fails closed: a Redis error refuses the call rather than letting it through 1ms
+ Test Files  4 passed (4)
+      Tests  99 passed (99)
+   Duration  1.16s (transform 233ms, setup 0ms, import 460ms, tests 506ms, environment 0ms)

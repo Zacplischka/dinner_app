@@ -1,0 +1,9 @@
+$ redis-cli -p 7502 HSET session:<code> paidDeals 3
+0
+before: paidDeals=3  dealtSearch=  locationLat,Lng=-37.8137,144.9631 (new: last dealt = none)  budget:placesTextSearch:2026-09-24=3
+backend log searchText/RestaurantSearch lines before: 0
+$ (browser) click "Start swiping"   # session:start
+### Result
+"This Session has used all its searches. Start a new Session to search again."
+after:  paidDeals=3  state=waiting  budget:placesTextSearch:2026-09-24=3
+backend log searchText/RestaurantSearch lines after: 0

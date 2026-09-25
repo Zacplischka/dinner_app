@@ -1,0 +1,33 @@
+# node scripts/corpus/gate.mjs check <recordsDir> --structural
+# Every record reports "no image at .corpus-images/<slug>.webp" locally: .corpus-images/ is gitignored,
+# so the 50 image failures are expected off the pipeline machine. Lines below are everything else.
+
+## base gate.mjs @ 92c0fe5 over base records            -> exit=1, 50 FAIL (image only)
+(no non-image failure lines — base has no diet check)
+0/50 pass structural
+
+## head gate.mjs @ 9cbbe1d over head records            -> exit=1, 50 FAIL (image only)
+(no non-image failure lines — the shape layer is otherwise clean)
+0/50 pass structural
+
+## head gate.mjs @ 9cbbe1d over base records (92c0fe5)  -> exit=1, 50 FAIL, 19 diet lines (16 dropped + 3 contradictions)
+  ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "beef liquid stock gluten free"
+  ingredient "gluten-free massaman curry paste": searchTerm "massaman curry paste" drops "gluten free", ...
+  ingredient "gluten-free fish sauce": searchTerm "fish sauce" drops "gluten free", ...            (beef-massaman-curry)
+  ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", ...     (beef-pho)
+  ingredient "gluten-free fish sauce": searchTerm "fish sauce" drops "gluten free", ...            (beef-pho)
+  ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", ...     (chilli-con-carne)
+  ingredient "thickened cream": thickened cream is not vegetarian unless it says so, and the Recipe declares "vegetarian" ...   (chocolate-self-saucing-pudding)
+  ingredient "vegetarian fresh mozzarella": searchTerm "fresh mozzarella" drops "vegetarian", ...  (margherita-pizza)
+  ingredient "gluten-free vegetable stock": searchTerm "vegetable liquid stock" drops "gluten free", ...   (mushroom-risotto)
+  ingredient "vegetarian parmesan cheese": searchTerm "parmesan cheese" drops "vegetarian", ...    (mushroom-risotto)
+  ingredient "gluten-free vegetable stock": searchTerm "vegetable liquid stock" drops "gluten free", ...   (pumpkin-soup)
+  ingredient "gluten-free vegetable stock": searchTerm "vegetable liquid stock" drops "gluten free", ...   (red-lentil-dhal)
+  ingredient "chicken stock": stock is not gluten free unless it says so, and the Recipe declares "gluten free" ...   (roast-chicken-and-vegetables)
+  ingredient "gluten-free tamari": searchTerm "tamari" drops "gluten free", ...                   (san-choy-bow)
+  ingredient "vegetarian feta": searchTerm "feta" drops "vegetarian", ...                         (shakshuka)
+  ingredient "gluten-free Thai green curry paste": searchTerm "thai green curry paste" drops "gluten free", ...  (thai-green-chicken-curry)
+  ingredient "fish sauce": fish sauce is not gluten free unless it says so, and the Recipe declares "gluten free" ...   (thai-green-chicken-curry)
+  ingredient "gluten-free fish sauce": searchTerm "fish sauce" drops "gluten free", ...            (vietnamese-chicken-vermicelli-bowl)
+  ingredient "cheddar cheese (vegetarian rennet)": searchTerm "cheddar cheese" drops "vegetarian", ...  (zucchini-slice)
+0/50 pass structural

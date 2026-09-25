@@ -1,0 +1,63 @@
+Production AFTER: https://yupcrew.com, main 7ae1083 (squash of PR #579). Railway backend d8d04581 and frontend 2af6539a,
+SUCCESS 2026-09-25T04:56:15Z. The deployed SelectionPage and socketBindings chunks contain fullHousesShown and the
+connected-edge replay. 2026-09-25, times UTC.
+Watch Session (code masked XXXXX). Three playwright-cli Chrome contexts at 390x844: Test Alex (host), Test Sam, Test Jo.
+Store read from sessionStorage 'dinner-session-storage'. WebSocket frames timed with Playwright's websocket events.
+An in-page 20 ms tracer on each phone logs every change of liveSelections, the connection status and the Full House dialog.
+
+=== Setup ===
+05:01:29  Alex created the Watch Session; Sam joined; both Ready; Alex tapped Start swiping
+05:01:5x  Alex liked cards 1-4 (Wonder Woman, Sex Education, Stranger Things, Fantastic Beasts and Where to Find Them)
+05:02:01  Sam liked Wonder Woman: Full House "Wonder Woman" on BOTH phones (after-1-alex-fullhouse-wonderwoman-2of2.png).
+          Both tapped Keep swiping.
+
+=== The production-before scenario: Sam leaves and rejoins ===
+05:02:22  Sam tapped Leave (the header control) and confirmed "Leave session": home page, store reset
+05:02:24.101  Sam rejoined via /join?code=XXXXX with the same name and landed in the Deck at card 1.
+    +1528 ms  session:join sent
+    +1731 ms  ack (admitted)
+    +1894..1896 ms  four participant:selected replay frames from Test Alex
+    +1897 ms  all 4 of Alex's likes in Sam's liveSelections: 163 ms after admission.   <- AC1 (rejoin)
+              (Before, on the same scenario: liveSelections stayed {}.)
+05:02:38  Sam liked Wonder Woman:
+            Sam:  Full House "EVERYONE LIKED THIS / Wonder Woman", "2 of 2 liked Wonder Woman"
+                  (after-2-sam-fullhouse-after-rejoin.png)                                <- AC2 (newcomer)
+            Alex: NO dialog. Wonder Woman was already celebrated at 05:02:01; the tracer shows no dialog after 05:02:11
+                  (after-3-alex-no-second-fullhouse.png)                                  <- AC3
+05:03:02  Sam liked Sex Education (Alex liked it before the rejoin):
+            Alex: Full House "EVERYONE LIKED THIS / Sex Education", Alex's first for this entry
+                  (after-4-alex-fullhouse-sexeducation.png)                               <- AC2 (the others)
+            Sam:  strip only. The one-shot takeover per roster was spent on Wonder Woman (#284).
+
+=== Offline rejoiner + fresh mid-Deck join (context.setOffline drops the socket against production) ===
+05:03:21.771  Sam's context set OFFLINE. Sam: "Reconnecting to your session" / "You're offline. Your place is saved."
+              (after-5-sam-offline-gate.png). Alex's roster: "Test Sam is offline".
+05:03:35.873  Jo JOINED FRESH mid-Deck
+    +909 ms   session:join sent
+    +1099 ms  ack (admitted)
+    +1264..1266 ms  four replay frames from Test Alex
+    +1267 ms  all 4 in Jo's liveSelections: 167 ms after admission.                      <- AC1 (fresh join)
+              Sam's likes are missing: Sam is offline.
+05:03:47.211  Sam's context back ONLINE
+05:03:49.352  Sam sent session:join (rejoin) -> 05:03:49.578 ack
+05:03:49.578  Sam sent selection:live x2 (Wonder Woman, Sex Education), acked 05:03:49.750. Sam is back in the Deck.
+05:03:49.753  Jo's liveSelections gains Test Sam on both: 175 ms after Sam's rejoin ack.  <- AC1 (offline rejoiner)
+05:04:06  Jo liked Wonder Woman (Alex and Sam both liked it):
+            Jo:   Full House "EVERYONE LIKED THIS / Wonder Woman", "3 of 3 liked Wonder Woman"
+                  (after-6-jo-fullhouse-wonderwoman-3of3.png)                             <- AC2 (newcomer)
+            Sam:  (its Deck remounted behind the offline gate, roster now 3) strip "3 of 3 liked Wonder Woman", NO dialog.
+                  Polled 2 s more: none. The tracer shows no dialog after 05:03:01
+                  (after-7-sam-no-second-fullhouse-after-offline.png)                     <- AC3 (the 44894ee regression case)
+            Alex: NO dialog. The tracer shows none after 05:03:13 (after-8-alex-no-second-fullhouse-3of3.png)   <- AC3
+            (The 7 and 8 screenshots were taken after the 4 s strip cleared.)
+05:04:40  Jo liked Sex Education (Alex and Sam both liked it):
+            Sam:  Full House "Sex Education", Sam's FIRST for this entry (Sam only had a strip for it at 05:03:02),
+                  re-armed by Jo's join (#284) (after-9-sam-first-fullhouse-sexeducation.png)  <- AC2 (the others)
+            Alex: NO dialog. Sex Education was already celebrated on Alex at 05:03:02.       <- AC3
+            Jo:   strip "3 of 3", no takeover (its one-shot was spent on Wonder Woman)
+
+05:05     Jo, Sam and Alex tapped Leave and confirmed "Leave session". All back on the home page. Session left.
+
+RESULT: fixed on production. A rejoiner, a fresh mid-Deck joiner and an offline rejoiner each get the others' Live Selections
+163-175 ms after the relevant ack. The Full House fires on the newcomer's phone and on the others'. No phone saw a second
+Full House for an entry it had already shown, including the phone whose Deck remounted while the roster grew.

@@ -1,0 +1,38 @@
+Round 3 local probes at b5edc92. Backend on 3102, private Redis 7502, dummy keys, no .env. A preloaded fetch
+stub (502-r3-fetch-stub.mjs) answered and counted every outbound call, so nothing reached Google, Apify or Supabase.
+Run E: COLD_COMPARISON_MONTHLY_CEILING=100, PLACE_PHOTO_DAILY_CEILING=abc, PLACES_TEXT_SEARCH_DAILY_CEILING unset.
+Run F: PLACES_TEXT_SEARCH_DAILY_CEILING=45.
+Pacific now: 2026-09-24 22:07 PDT   key: budget:coldComparison:2026-09   ceiling: 100
+
+== 1. Month spent (counter 100 of 100): 20 cold streams from one IP, then budget freed: 5 admissions, then the per-IP 429
+  20 refused streams: SSE RATE_LIMITED=20  HTTP 429=0  Place Details calls=0  Apify runs=0  counter stays 100
+  admitted #1..#5: HTTP 200  event: venue ... (each runs to its comparison)
+  6th after 5 admissions: HTTP 429  "code":"RATE_LIMITED"
+  counter = 5 (5 admitted spends)
+  Round 2 (efdac61) on the same loop: Place Details calls=20. Pre-review 8e22bb3: 0 calls, 429 after 5.
+
+== 2. Race: counter at 99 when the check runs; the stubbed Place Details fills it to 100 (another compare takes the
+   last slot) before the spend. 6 tries from 203.0.113.20, counter reset to 99 before each.
+  try #1..#5: HTTP 200  event: error  "code":"RATE_LIMITED"   counter after: 101 (spend refused)
+  try #6:     HTTP 429  "code":"RATE_LIMITED"                 counter after: 99  (never reached the check)
+  Place Details calls=5  Apify runs=0
+  -> each raced try billed Place Details and kept its hourly slot, so the window closed after 5.
+
+== 3. Unknown place ID with budget available
+  before: counter = 5
+  stream unknownPlaceZ: HTTP 200  event: error  "code":"NOT_FOUND"
+  after:  counter = 5
+
+== 4. Text Search ceiling (by behaviour: counter one below the ceiling, then two stubbed venue searches)
+  run E (env unset): counter 29 -> #1 HTTP 200 (counter 30), #2 HTTP 503 (counter 31); 1 searchText call  => 30
+  run F (=45):       counter 44 -> #1 HTTP 200 (counter 45), #2 HTTP 503 (counter 46); 1 searchText call  => 45
+  run E boot log with PLACE_PHOTO_DAILY_CEILING=abc:
+    [15:06:56.114] ERROR (31505): Paid-budget ceiling is not a count; using the default
+        variable: "PLACE_PHOTO_DAILY_CEILING"
+        value: "abc"
+        fallback: 180
+  (the pid now prints where round 2 printed the variable name as the logger name)
+  run F boot log: 0 "Paid-budget" errors
+
+Stub totals, runs E+F: places.details=11, places.searchText=2, geocoding=2, apify.actorRun=10, supabase GET=33 POST=5
+(all answered locally).

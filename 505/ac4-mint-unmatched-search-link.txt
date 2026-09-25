@@ -1,0 +1,63 @@
+# AC4 (branch side) — service level. A shipped Owned Recipe minted through the REAL
+# createShoppingListService + REAL matchProducts + REAL deriveSearchTerm (the mint's
+# search, ShoppingListService.ts unpricedLine/buildLine), over the shipped backend/recipes
+# corpus. Only the Woolworths answer is stubbed. No network, no Redis, no Spoonacular or
+# Woolworths budget spent. Script: 505-mint-probe.mts (scratch, outside the repo).
+#   plain shelf    = the search answer holds only the PLAIN product (nothing named gluten free / vegetarian)
+#   labelled shelf = the plain product still ranks first, a labelled one second
+
+## base 92c0fe5, plain shelf — the diet claim is undone: the plain product is bought
+== mushroom-risotto (diets ["vegetarian","gluten free"])
+  priced    "gluten-free vegetable stock"            bought "Liquid Stock 1l"
+  priced    "vegetarian parmesan cheese"             bought "Parmesan Cheese Grated 250g"
+== thai-green-chicken-curry (diets ["gluten free"])
+  priced    "gluten-free Thai green curry paste"     bought "Curry Paste 195g"
+  priced    "fish sauce"                             bought "Fish Sauce 700ml"
+== san-choy-bow (diets ["gluten free"])
+  priced    "gluten-free tamari"                     bought "Tamari 250ml"
+  priced    "gluten free oyster sauce"               bought "Oyster Sauce 510g"
+== zucchini-slice (diets ["vegetarian"])
+  priced    "cheddar cheese (vegetarian rennet)"     bought "Tasty Cheddar Cheese Block 500g"
+== chocolate-self-saucing-pudding (diets ["vegetarian"])
+  priced    "thickened cream"                        bought "thickened cream 1kg"
+== roast-chicken-and-vegetables (diets ["gluten free"])
+  priced    "chicken stock"                          bought "Liquid Stock 1l"
+  priced    "gluten free cornflour"                  bought "Cornflour 300g"
+
+## head 9cbbe1d, plain shelf — Unmatched, and the Search Woolworths link carries the qualified term
+== mushroom-risotto (diets ["vegetarian","gluten free"])
+  unmatched "gluten-free vegetable stock"            Search Woolworths q="vegetable liquid stock gluten free"
+  unmatched "vegetarian parmesan cheese"             Search Woolworths q="parmesan cheese vegetarian"
+== thai-green-chicken-curry (diets ["gluten free"])
+  unmatched "gluten-free Thai green curry paste"     Search Woolworths q="thai green curry paste gluten free"
+  unmatched "gluten-free fish sauce"                 Search Woolworths q="fish sauce gluten free"
+== san-choy-bow (diets ["gluten free"])
+  unmatched "gluten-free tamari"                     Search Woolworths q="tamari gluten free"
+  unmatched "gluten free oyster sauce"               Search Woolworths q="oyster sauce gluten free"
+== zucchini-slice (diets ["vegetarian"])
+  unmatched "cheddar cheese (vegetarian rennet)"     Search Woolworths q="cheddar cheese vegetarian"
+== chocolate-self-saucing-pudding (diets ["vegetarian"])
+  priced    "pure cream"                             bought "pure cream 1kg"
+== roast-chicken-and-vegetables (diets ["gluten free"])
+  unmatched "gluten-free chicken stock"              Search Woolworths q="chicken stock gluten free"
+  unmatched "gluten free cornflour"                  Search Woolworths q="cornflour gluten free"
+
+## head 9cbbe1d, labelled shelf — a product that says so is still bought, over a higher-ranked plain one
+== mushroom-risotto
+  priced    "gluten-free vegetable stock"            bought "Gluten Free Liquid Stock 1l"
+  priced    "vegetarian parmesan cheese"             bought "Vegetarian Parmesan Cheese Grated 250g"
+== thai-green-chicken-curry
+  priced    "gluten-free Thai green curry paste"     bought "Gluten Free Curry Paste 195g"
+  priced    "gluten-free fish sauce"                 bought "Gluten Free Fish Sauce 700ml"
+== san-choy-bow
+  priced    "gluten-free tamari"                     bought "Gluten Free Tamari 250ml"
+  priced    "gluten free oyster sauce"               bought "Gluten Free Oyster Sauce 510g"
+== zucchini-slice
+  priced    "cheddar cheese (vegetarian rennet)"     bought "Vegetarian Tasty Cheddar Cheese Block 500g"
+== roast-chicken-and-vegetables
+  priced    "gluten-free chicken stock"              bought "Gluten Free Liquid Stock 1l"
+  priced    "gluten free cornflour"                  bought "Gluten Free Cornflour 300g"
+
+# The frontend renders an unmatched line as
+#   <WoolworthsLink target={{ q: line.searchTerm }}>Search Woolworths</WoolworthsLink>   (frontend/src/pages/ShoppingListPage.tsx:162)
+# and line.searchTerm = deriveSearchTerm(ingredient.searchTerm ?? ingredient.name)       (ShoppingListService.ts unpricedLine)

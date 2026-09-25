@@ -1,0 +1,4 @@
+before: budget:placePhoto:2026-09-24 = 1
+$ curl "localhost:3102/api/comparison/photo?name=places/verify502hit/photos/cached"   # seeded in comparison:photo cache, ceiling still 0
+HTTP 302 -> https://lh3.googleusercontent.com/verify502-cached.jpg
+after:  budget:placePhoto:2026-09-24 = 1

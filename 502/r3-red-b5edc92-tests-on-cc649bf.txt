@@ -1,0 +1,21 @@
+ × |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > streams a cold Comparison refusal as a RATE_LIMITED event before any Apify run 3ms
+   → expected "fetchPlaceDetails" to not be called at all, but actually been called 1 times
+ × |contract| tests/contract/paid-budget.test.ts > the cold-Comparison budget and the per-IP hourly window > refuses a spent month before Place Details, without spending the caller hour 13ms
+   → expected "vi.fn()" to not be called at all, but actually been called 20 times
+ × |contract| tests/contract/paid-budget.test.ts > the cold-Comparison budget and the per-IP hourly window > keeps the hourly slot when the month runs out after Place Details 4ms
+   → expected 200 to be 429 // Object.is equality
+ × |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > checks a spent budget without spending it 1ms
+   → checkPaidBudget is not a function
+ × |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > fails closed on a check too: a Redis error refuses 1ms
+   → checkPaidBudget is not a function
+ × |unit| tests/unit/config.test.ts > Google Places API Configuration > falls back to the default paid-budget ceiling, loudly, when the override is not a count 3ms
+   → expected { placesTextSearch: 80, …(3) } to deeply equal { placesTextSearch: 30, …(3) }
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected { placesTextSearch: 80, …(3) } to deeply equal { placesTextSearch: 30, …(3) }
+TypeError: checkPaidBudget is not a function
+TypeError: checkPaidBudget is not a function
+AssertionError: expected "fetchPlaceDetails" to not be called at all, but actually been called 1 times
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 20 times
+AssertionError: expected 200 to be 429 // Object.is equality
+ Test Files  3 failed | 1 passed (4)
+      Tests  6 failed | 26 passed (32)

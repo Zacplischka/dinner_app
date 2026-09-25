@@ -1,0 +1,14 @@
+Regression check for fix 2 (spend after Place Details + refund the per-IP hourly slot on a budget refusal).
+Same stubbed local backend, same script (502-r2-loop.sh): 20 cold /api/comparison/<new placeId>/stream requests
+from one X-Real-IP while the cold-Comparison budget is spent. Place Details and Apify are answered by a fetch stub
+and counted; nothing reached Google or Apify.
+
+pre-review 8e22bb3 (COLD_COMPARISON_DAILY_CEILING=0):   SSE RATE_LIMITED=5   HTTP 429=15  Place Details calls=0   Apify runs=0
+review fix efdac61 (COLD_COMPARISON_MONTHLY_CEILING=0): SSE RATE_LIMITED=20  HTTP 429=0   Place Details calls=20  Apify runs=0
+
+Before the fix a spent budget cost nothing and the IP hit its 429 after 5 tries. After the fix every try is a
+Google-billed Place Details call (field mask id,displayName,formattedAddress,location) and the refund means the
+per-IP window never closes, so the only bound is Google's quota. Read-only `gcloud alpha services quota list
+--service=places.googleapis.com --consumer=projects/mypickle-486702`: GetPlaceRequest 125,000/day and 600/min,
+no override (the only override is GetPhotoMediaRequest 200/day). The same listing shows SearchTextRequest at
+75,000/day with no override, so the 80/day app budget is now the only daily cap on Text Search.

@@ -1,0 +1,24 @@
+Whole local backend run (head 3817375, every paid ceiling = 0):
+  grep -ciE 'Places searchText'            0
+  grep -ciE 'RestaurantSearch'             0
+  grep -ciE 'Places API error'             0
+  grep -ciE 'places.googleapis'            0
+  grep -ciE 'Comparison actor|runApifyActor|apify' 0
+  grep -ciE 'woolworths'                   0
+
+Refusal stacks (DomainError RATE_LIMITED raised by spendPaidBudget, before the vendor call):
+  DomainError: Restaurant search is temporarily unavailable: the app has reached its daily search limit. Please try again later.
+  at spendPaidBudget (backend/src/services/paidBudget.ts:47:30)
+  at async <anonymous> (backend/src/server.ts:71:5)
+  at async Object.createSession (backend/src/services/SessionService.ts:297:23)
+  DomainError: Restaurant search is temporarily unavailable: the app has reached its daily search limit. Please try again later.
+  at spendPaidBudget (backend/src/services/paidBudget.ts:47:30)
+  at async <anonymous> (backend/src/server.ts:71:5)
+  at async <anonymous> (backend/src/api/comparison.ts:170:32)
+  DomainError: Photos are temporarily unavailable: the app has reached its daily photo limit.
+  at spendPaidBudget (backend/src/services/paidBudget.ts:47:30)
+  at async <anonymous> (backend/src/server.ts:71:5)
+  at async <anonymous> (backend/src/api/comparison.ts:78:26)
+  at async Object.startRound (backend/src/services/SessionLobbyService.ts:326:23)
+  DomainError: Shopping List pricing has reached its daily limit.
+  at spendPaidBudget (backend/src/services/paidBudget.ts:47:30)

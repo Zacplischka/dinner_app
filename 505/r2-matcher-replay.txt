@@ -1,0 +1,50 @@
+# #505 round 2: offline replay of saved Woolworths answers through the Matcher (matchProducts),
+# at 08f9211 (= 9cbbe1d rebased: name-only diet filter, qualified query) and at head f47e2ec
+# (name + dietaryStatement filter, retailerQuery drops the diet from the query).
+#   excerpt = woolworths-dietary-attribute.txt  (answers to QUALIFIED queries — what 08f9211 is served)
+#   live    = r2-live-plain-answers.txt         (answers to PLAIN queries — what f47e2ec is served)
+# No network during the replay. The excerpt has no prices, so every product gets the same price.
+
+## What each version actually buys (its own query -> its own answer)
+line term                         08f9211 (qualified query, excerpt answer)                 f47e2ec (plain query, live answer)
+"fish sauce gluten free"          BUYS #1 "Latina Fresh Gluten Free Tagliatelle Pasta"       (plain "fish sauce" not captured; see note 1)
+"beef liquid stock gluten free"   BUYS #2 "Latina Fresh Gluten Free Tagliatelle Pasta"       BUYS #0 "Woolworths Beef Liquid Stock" [Gluten Free,Low Fat,Low Sugar]
+"parmesan cheese vegetarian"      null -> Unmatched                                          BUYS #2 "Perfect Italiano Parmesan Cheese Block" [Gluten Free,Halal,Low Sugar,Vegetarian]
+"spaghetti gluten free" (fixture) (qualified "spaghetti gluten free" not captured)           null -> Unmatched (no GF spaghetti in the plain top 10)
+
+## Head's Matcher over the excerpt (counterfactual: if the query had kept the diet word)
+"fish sauce gluten free"          BUYS #0 "Chang's Original Fish Sauce" [Gluten Free]
+"beef liquid stock gluten free"   BUYS #0 "Maggie Beer Natural Beef Stock" [Gluten Free]
+"parmesan cheese vegetarian"      BUYS #0 "La Casa Del Formaggio Traditional Ricotta from The Deli" [Low Sugar,Vegetarian]   <- wrong product
+-> the label alone fixes fish sauce and stock, but the diet-word query still buys ricotta for parmesan;
+   dropping the diet from the query (8f1485b) is what gets the parmesans into the answer.
+
+## Head f47e2ec over the live plain answers — the three required probes, on real data
+"parmesan cheese vegetarian"  unlabelled #0 "Woolworths Shredded Parmesan Cheese" [GF,Low Sugar,Protein] REFUSED; labelled #2 BOUGHT
+"parmesan cheese vegan"       null -> Unmatched: the Vegetarian-labelled parmesans do not meet a vegan line
+                              (08f9211: BUYS #0 "Woolworths Shredded Parmesan Cheese" — vegan was not a qualifier)
+"parmesan cheese" (plain twin) BUYS #0 "Woolworths Shredded Parmesan Cheese" — plain lines unchanged
+"beef liquid stock gluten free" BUYS #0 "Woolworths Beef Liquid Stock" [Gluten Free,...]
+
+## Pre-deploy cache: the same live answers with dietaryStatement removed (entries cached before the field was read)
+"parmesan cheese vegetarian"    null -> Unmatched
+"beef liquid stock gluten free" null -> Unmatched
+"parmesan cheese"               BUYS #0 "Woolworths Shredded Parmesan Cheese"  (plain line unaffected)
+-> errs toward Unmatched: with no label, only a product whose NAME says the diet passes. Same result at 08f9211.
+
+## retailerQuery at head: query / price-cache term for every shipped diet-qualified searchTerm
+"beef liquid stock gluten free" -> "beef liquid stock"        "fish sauce gluten free"           -> "fish sauce"
+"chicken liquid stock gluten free" -> "chicken liquid stock"  "massaman curry paste gluten free" -> "massaman curry paste"
+"vegetable liquid stock gluten free" -> "vegetable liquid stock"  "thai green curry paste gluten free" -> "thai green curry paste"
+"tamari gluten free" -> "tamari"   "oyster sauce gluten free" -> "oyster sauce"   "cornflour gluten free" -> "cornflour"
+"parmesan cheese vegetarian" -> "parmesan cheese"   "fresh mozzarella vegetarian" -> "fresh mozzarella"
+"feta vegetarian" -> "feta"   "cheddar cheese vegetarian" -> "cheddar cheese"
+
+## Identity is still not required: the diet filter can leave a labelled product of another identity
+head, live plain "spaghetti" answer:
+  term "spaghetti"             -> BUYS "Pastificio Liguori Spaghetti Spaghetti"
+  term "spaghetti vegetarian"  -> BUYS "Continental Classics Recipe Base Spaghetti Bolognese"   (#0 has no Vegetarian label, so #1 wins on rank)
+  (hypothetical term — no shipped line. Compliant but wrong product; the same mechanism bought tagliatelle at 08f9211.)
+
+Note 1: Chang's Original Fish Sauce was #0 even for the qualified query, carries "Gluten Free", and the plain
+"fish sauce" query was not spent (3-search budget went to parmesan, stock, spaghetti).

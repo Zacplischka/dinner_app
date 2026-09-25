@@ -1,0 +1,20 @@
+Backend at efdac61 (private Redis 7502, placeholder Supabase env), `npm test` = vitest run --no-file-parallelism
+
+run 1: Test Files 2 failed | 81 passed (83)  Tests 2 failed | 1128 passed (1130)
+       sessions-create.test.ts "rate-limits creates per Railway X-Real-IP" -> Error: read ECONNRESET
+       canonical-errors.test.ts "maps DomainError('DISPLAY_NAME_TAKEN')" -> expected 409, got 200
+run 2: Test Files 1 failed | 82 passed (83)  Tests 1 failed | 1129 passed (1130)
+       friends-reads.test.ts "GET /api/users/me returns the caller profile" -> expected 200, got 404
+run 3: Test Files 2 failed | 81 passed (83)  Tests 2 failed | 1128 passed (1130)
+       profile-photos.test.ts / redirect.test.ts -> Error: socket hang up
+run 4: Test Files 83 passed (83)  Tests 1130 passed (1130)
+run 5: Test Files 83 passed (83)  Tests 1130 passed (1130)
+rerun of run 1's two failing files alone: 2 passed (40 tests)
+main 8dbf372 baseline, one run: Test Files 81 passed (81)  Tests 1113 passed (1113)
+
+Every failure was a supertest transport error or a wrong status in a contract file this PR does not touch,
+a different file each run, and none reproduced alone. Treated as local flake, not a regression.
+
+Typecheck: npx tsc --noEmit -p backend/tsconfig.json -> exit 0
+CI on efdac61 (run 36095344181, pull_request, headSha efdac61b): Lint and Type Check, Contract Tests,
+Integration Tests, E2E (keyless mobile subset) all pass; Verify Production Deploy skipped.

@@ -1,0 +1,40 @@
+Pacific now: 2026-09-24 21:46 PDT   UTC now: 2026-09-25 04:46 UTC
+
+== 1. one cold-compare spend -> monthly key name + TTL
+place details / apify calls before: 0 / 0
+stream stubPlaceA from 198.51.100.1: HTTP 200  event: venue  
+  budget:coldComparison:2026-09 = 1  TTL=3024000s (35 d = 3024000 s)
+place details / apify calls after: 1 / 2
+
+== 2. unknown place ID -> NOT_FOUND, no budget spent
+before: budget:coldComparison:2026-09 = 1
+stream unknownPlaceZ from 198.51.100.2: HTTP 200  event: error  "code":"NOT_FOUND"
+after:  budget:coldComparison:2026-09 = 1
+
+== 3. month spent (counter set past ceiling 100): 6 refusals from one IP, then budget freed: 5 admissions, 6th is the per-IP 429
+  refused #1: HTTP 200  event: error  "code":"RATE_LIMITED"
+  refused #2: HTTP 200  event: error  "code":"RATE_LIMITED"
+  refused #3: HTTP 200  event: error  "code":"RATE_LIMITED"
+  refused #4: HTTP 200  event: error  "code":"RATE_LIMITED"
+  refused #5: HTTP 200  event: error  "code":"RATE_LIMITED"
+  refused #6: HTTP 200  event: error  "code":"RATE_LIMITED"
+  apify runs during refusals: 0   place details calls during refusals: 6
+  admitted #1: HTTP 200  event: venue  
+  admitted #2: HTTP 200  event: venue  
+  admitted #3: HTTP 200  event: venue  
+  admitted #4: HTTP 200  event: venue  
+  admitted #5: HTTP 200  event: venue  
+  6th after 5 admissions: HTTP 429    "code":"RATE_LIMITED"
+  budget:coldComparison:2026-09 = 5 (5 admitted spends)
+
+== 4. month spent: does the per-IP hourly window still bound billed Place Details calls?
+  20 cold streams from 203.0.113.9: SSE RATE_LIMITED=20  HTTP 429=0  Place Details calls=20  apify runs total=12
+
+== 5. an admitted stream runs to its comparison; the refusal body
+admitted (counter 7 of 100, fresh IP): event: venue  event: storefront  event: storefront  event: comparison
+refused (counter 100 of 100, fresh IP): event: error
+  data: {"code":"RATE_LIMITED","message":"New price comparisons are paused until next month: the app has reached its monthly limit. Recent comparisons still load."}
+
+== 6. expiry set once, at creation (fix 7)
+key created ~04:46:05 UTC with TTL=3024000s; at 04:51:03 UTC, after 55 further INCRs across two server restarts (value set in between with SET ... KEEPTTL), TTL=3023702s: counting down, never reset.
+budget:placesTextSearch:2026-09-24 (daily, value 2): TTL=172526s of 172800s.

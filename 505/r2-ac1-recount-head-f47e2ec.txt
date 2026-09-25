@@ -1,0 +1,26 @@
+# AC1 recount (head-f47e2ec): ingredient names matching /gluten[- ]free|vegetarian/i across backend/recipes/*/recipe.json (jq, independent of gate.mjs)
+KEPT      beef-casserole: gluten free cornflour -> cornflour gluten free
+KEPT      beef-casserole: gluten-free beef stock -> beef liquid stock gluten free
+KEPT      beef-massaman-curry: gluten-free fish sauce -> fish sauce gluten free
+KEPT      beef-massaman-curry: gluten-free massaman curry paste -> massaman curry paste gluten free
+KEPT      beef-pho: gluten-free beef stock -> beef liquid stock gluten free
+KEPT      beef-pho: gluten-free fish sauce -> fish sauce gluten free
+KEPT      chilli-con-carne: gluten-free beef stock -> beef liquid stock gluten free
+KEPT      margherita-pizza: vegetarian fresh mozzarella -> fresh mozzarella vegetarian
+KEPT      mushroom-risotto: gluten-free vegetable stock -> vegetable liquid stock gluten free
+KEPT      mushroom-risotto: vegetarian parmesan cheese -> parmesan cheese vegetarian
+KEPT      pumpkin-soup: gluten-free vegetable stock -> vegetable liquid stock gluten free
+KEPT      red-lentil-dhal: gluten-free vegetable stock -> vegetable liquid stock gluten free
+KEPT      roast-chicken-and-vegetables: gluten free cornflour -> cornflour gluten free
+KEPT      roast-chicken-and-vegetables: gluten-free chicken stock -> chicken liquid stock gluten free
+KEPT      san-choy-bow: gluten free oyster sauce -> oyster sauce gluten free
+KEPT      san-choy-bow: gluten-free tamari -> tamari gluten free
+KEPT      shakshuka: vegetarian feta -> feta vegetarian
+KEPT      thai-green-chicken-curry: gluten-free fish sauce -> fish sauce gluten free
+KEPT      thai-green-chicken-curry: gluten-free Thai green curry paste -> thai green curry paste gluten free
+KEPT      vietnamese-chicken-vermicelli-bowl: gluten-free fish sauce -> fish sauce gluten free
+KEPT      zucchini-slice: cheddar cheese (vegetarian rennet) -> cheddar cheese vegetarian
+
+# totals
+  21 KEPT
+recipes with a DROPPED line: 0

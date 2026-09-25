@@ -1,0 +1,14 @@
+# AC3 green @ head 9cbbe1d
+$ node --test scripts/corpus/gate.test.mjs        -> exit=0
+✔ the diet ladder belongs to the store, not to the gate
+✔ a diet qualifier in the name has to survive into the searchTerm
+✔ a declared diet cannot take a known trap on trust
+✔ every shipped Recipe keeps the diets it declares
+ℹ tests 39
+ℹ pass 39
+ℹ fail 0
+
+$ npm run check   (node --test 'scripts/**/*.test.mjs')   -> exit=0
+ℹ tests 159
+ℹ pass 159
+ℹ fail 0

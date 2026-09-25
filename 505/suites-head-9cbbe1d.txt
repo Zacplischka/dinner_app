@@ -1,0 +1,20 @@
+# Suites @ head 9cbbe1d (local, private Redis :7505, placeholder Supabase env)
+
+$ npm run check                         -> exit=0   ℹ tests 159  ℹ pass 159  ℹ fail 0
+$ npm run typecheck                     -> exit=0
+$ npm test --workspace=backend (1st)    -> exit=1   Tests 3 failed | 1109 passed (1112)
+    3 contract files, all "Error: socket hang up" (friend-deletion, options-get, sessions-create-watch) —
+    none touch the diff; the same 3 files re-run alone: 24/24 passed.
+$ npm test --workspace=backend (2nd)    -> exit=0   Test Files 81 passed (81)   Tests 1112 passed (1112)
+$ node scripts/corpus/gate.mjs check backend/recipes --structural
+                                        -> exit=1, 50/50 "no image at .corpus-images/<slug>.webp" (gitignored, expected locally),
+                                           zero other failure lines
+
+# CI on the PR head (gh pr checks 582; run 36094271881, event pull_request, headSha 9cbbe1d39c98…)
+Lint and Type Check          pass   (typecheck, lint, backend+frontend unit tests, npm run check)
+Contract Tests               pass
+Integration Tests            pass
+E2E (keyless mobile subset)  pass
+claude-review                pass
+Verify Production Deploy     skipping (main-only)
+https://github.com/Zacplischka/dinner_app/actions/runs/36094271881

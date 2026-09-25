@@ -1,0 +1,33 @@
+# AC2 @ head 9cbbe1d — the three records that broke their own diet label
+
+== roast-chicken-and-vegetables  {"diets":["gluten free"]}
+  base: "chicken stock" (no searchTerm)
+  head: "gluten-free chicken stock" [searchTerm: chicken stock gluten free]
+  step:  "Pour half the gluten-free chicken stock into the tray, ..."   (was "half the chicken stock")
+         "..., add the remaining stock and bring to the boil. Stir the gluten free cornflour ..."  (refers back; unchanged)
+  other lines: whole chicken, potatoes, carrots, pumpkin, red onion, butter, garlic, lemon, olive oil,
+               fresh thyme, gluten free cornflour [cornflour gluten free], green beans   -> nothing else GF-risky
+
+== thai-green-chicken-curry  {"diets":["gluten free"]}
+  base: "fish sauce" (no searchTerm)
+  head: "gluten-free fish sauce" [searchTerm: fish sauce gluten free]; original "1 tbsp (20 ml) gluten-free fish sauce"
+  step:  "Stir in the coconut milk, gluten-free fish sauce and brown sugar, ..."   (was "fish sauce")
+  also:  "gluten-free Thai green curry paste" searchTerm now "thai green curry paste gluten free"
+  other lines: chicken thighs, coconut milk, brown sugar, brown onion, carrot, red capsicum, zucchini,
+               green beans, lime, basil, jasmine rice   -> nothing else GF-risky
+
+== chocolate-self-saucing-pudding  {"diets":["vegetarian"]}
+  base: "thickened cream"
+  head: "pure cream"; original "300 ml pure cream, to serve"
+  step:  "Rest for 5 minutes, then spoon into bowls and serve warm with the pure cream."   (was "the thickened cream")
+  other lines: self raising flour, cocoa powder, caster sugar, brown sugar, butter, milk, egg, vanilla extract
+               -> nothing else vegetarian-risky. Same substitution the corpus already made for pumpkin-soup
+                  (backend/recipes/README.md:140: thickened cream "can carry gelatine", replaced by pure cream).
+
+# No remaining mention of the old names in these records (grep -i "thickened|fish sauce|stock|cream"):
+#   only the renamed lines, their originals, the updated steps, and "the remaining stock".
+# head dietFailures over all 50 shipped records: 0 failures (see ac3-dietFailures-probe-head-9cbbe1d.txt).
+# A wider jq sweep of every GF / vegetarian / vegan record for soy|worcester|hoisin|oyster|flour|breadcrumb|
+# pasta|noodle|bread|stock|curry paste|beer|malt|gelatin|anchov|fish|pecorino|gruy|grana|parmesan|cheddar|
+# feta|mozzarella|halloumi|thickened cream (unqualified) finds only "rice stick noodles" (beef-pho) and
+# "rice vermicelli noodles" (vietnamese-chicken-vermicelli-bowl) — both rice, both fine.

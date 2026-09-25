@@ -1,0 +1,8 @@
+boot log (COLD_COMPARISON_MONTHLY_CEILING=abc):
+  [14:47:14.084] ERROR (COLD_COMPARISON_MONTHLY_CEILING/8202): Paid-budget ceiling is not a count; using the default
+      value: "abc"
+      fallback: 60
+  [14:47:14.158] INFO (8202): Server running, WebSocket ready
+budget:coldComparison:2026-09 set to 59
+stream abcPlace1 (fresh IP): event: venue event: storefront event: storefront event: comparison   -> counter 60
+stream abcPlace2 (fresh IP): event: error "code":"RATE_LIMITED"   -> counter 61

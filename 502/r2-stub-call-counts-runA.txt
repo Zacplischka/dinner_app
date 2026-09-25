@@ -1,0 +1,5 @@
+Outbound calls answered by the stub during run A (none left the machine):
+  apify.actorRun         14
+  places.details         35
+  supabase.GET           36
+  supabase.POST          7

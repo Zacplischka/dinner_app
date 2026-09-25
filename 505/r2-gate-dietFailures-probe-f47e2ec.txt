@@ -1,0 +1,35 @@
+# New traps (fix 7)
+FAIL diets ["gluten free"] | "cornflour"
+       ingredient "cornflour": cornflour is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["gluten free"] | "oyster sauce"
+       ingredient "oyster sauce": oyster sauce is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "fish sauce"
+       ingredient "fish sauce": fish sauce is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "oyster sauce"
+       ingredient "oyster sauce": oyster sauce is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "worcestershire sauce"
+       ingredient "worcestershire sauce": worcestershire sauce is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "gelatine"
+       ingredient "gelatine": gelatine is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+ok   diets ["gluten free"] | "gluten free cornflour" [cornflour gluten free]
+
+# vegan (fix 2)
+ok   diets ["vegan"] | "vegan feta"   (was a false positive at 9cbbe1d)
+ok   diets ["vegetarian"] | "vegan parmesan"
+FAIL diets [] | "vegan parmesan" searchTerm "parmesan"
+       ingredient "vegan parmesan": searchTerm "parmesan" drops "vegan", so the Shopping List buys the plain product — search "parmesan vegan"
+ok   diets [] | "vegan parmesan" searchTerm "parmesan vegan"
+FAIL diets ["vegan"] | "feta"
+       ingredient "feta": feta is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+
+# diets omitted (fix 6)
+FAIL dietFailures([gluten-free beef stock -> "beef liquid stock"])  (no diets argument)
+       ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "beef liquid stock gluten free"
+
+# Still not flagged: GF-only records with vegetarian traps
+ok   butter-chicken diets ["gluten free"]
+ok   garlic-butter-steak-with-creamed-spinach diets ["ketogenic","gluten free"]
+
+# head dietFailures over backend/recipes: 0 failures in 50 records
+
+# head dietFailures over backend/tests/fixtures/owned-recipes: 0 failures in 3 records

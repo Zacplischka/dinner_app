@@ -1,0 +1,17 @@
+$ curl -X POST $B/api/sessions {"hostName":"Budget Tester","location":{"latitude":-37.8136,"longitude":144.9631},"searchRadiusMiles":5}   # solo Eat Out, PLACES_TEXT_SEARCH_DAILY_CEILING=0
+{"code":"RATE_LIMITED","message":"Restaurant search is temporarily unavailable: the app has reached its daily search limit. Please try again later."}
+HTTP 503
+
+$ curl "$B/api/comparison/venues?latitude=-37.8136&longitude=144.9631&radiusMiles=5"   # same Text Search budget
+{"code":"RATE_LIMITED","message":"Restaurant search is temporarily unavailable: the app has reached its daily search limit. Please try again later."}
+HTTP 503
+
+$ curl "$B/api/comparison/photo?name=places/verify502miss/photos/uncached"   # PLACE_PHOTO_DAILY_CEILING=0, a cache miss
+{"code":"RATE_LIMITED","message":"Photos are temporarily unavailable: the app has reached its daily photo limit."}
+HTTP 503
+
+$ curl -N "$B/api/comparison/verify502-no-snapshot/stream"   # COLD_COMPARISON_DAILY_CEILING=0, no snapshot
+HTTP/1.1 200 OK
+Content-Type: text/event-stream; charset=utf-8
+event: error
+data: {"code":"RATE_LIMITED","message":"New price comparisons are temporarily unavailable: the app has reached its daily limit. Please try again later."}

@@ -1,0 +1,21 @@
+Local backend at efdac61, every outbound call answered by a fetch stub (no Google/Apify/Supabase reached).
+Client: socket.io-client, one collaborative Eat Out Session per probe; host joins, sets the area, confirms Ready.
+
+== A. Per-Session cap: redis-cli -p 7502 HSET session:<code> paidDeals 3, then session:start at an area the Session was never dealt
+before start: session hash paidDeals = "3"
+session:start ack = {"success":false,"error":{"code":"RATE_LIMITED","message":"This Session has used all its searches. Start a new Session to search again."}}
+session:lobby broadcasts during start = [{"revision":4,"starting":false,"state":"waiting","notice":"This Session has used all its searches. Start a new Session to search again."}]
+any broadcast with starting:true = false
+after start: session hash paidDeals = "3"
+
+== B. App-wide Text Search budget spent (PLACES_TEXT_SEARCH_DAILY_CEILING=0), fresh Session with paidDeals 0, session:start
+before start: session hash paidDeals = "0"
+session:start ack = {"success":false,"error":{"code":"RATE_LIMITED","message":"Restaurant search is temporarily unavailable: the app has reached its daily search limit. Please try again later."}}
+session:lobby broadcasts during start = [{"revision":4,"starting":true,"state":"waiting"},{"revision":5,"starting":false,"state":"waiting","notice":"Restaurant search is temporarily unavailable: the app has reached its daily search limit. Please try again later."}]
+any broadcast with starting:true = true   (expected here: a real deal was attempted)
+after start: session hash paidDeals = "0"   (slot given back)
+
+Stub log: places.searchText calls across A, B and the whole run = 0.
+Note: a socket ack carries only the public body. toApiError maps the domain code TOO_MANY_REQUESTS to public
+code RATE_LIMITED with HTTP 429 (the per-IP style), versus RATE_LIMITED -> 503 for the app-wide budget; the
+unit test asserts the domain code TOO_MANY_REQUESTS and that onStarting is never called.

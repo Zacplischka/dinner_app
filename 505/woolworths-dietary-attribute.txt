@@ -1,0 +1,43 @@
+# #505 review item 3: Woolworths search answer, AdditionalAttributes.lifestyleanddietarystatement
+# Captured 2026-09-25 from residential AU egress (Telstra, Melbourne; VPN disconnected):
+# one seed GET + 3 searches, same request shape as backend/src/services/woolworthsClient.ts.
+# FulfilmentStoreId was null on these answers, so this is the residential store, not 1101.
+# Per product, in search rank order: Name | lifestyleanddietarystatement | sapcategoryname.
+# The "vegetarian" and "containsgluten" keys also exist but read "False" on every product,
+# labelled ones included, so they are not usable.
+
+## fish sauce gluten free
+0: Chang's Original Fish Sauce | Gluten Free | CONDIMENTS
+1: Latina Fresh Gluten Free Tagliatelle Pasta | Gluten Free | DELI CONVENIENCE
+2: Woolworths Free From Gluten Chocolate Mud Cake | Gluten Free | INSTORE BAKERY
+3: OB Finest Gluten Free Speciality Crackers Fig & Pistachio | Gluten Free | DELI CONVENIENCE
+4: Oreo Gluten Free Cookies | Gluten Free | BISCUITS
+5: Betty Crocker Strawberry Frosting | Gluten Free | COOKING NEEDS
+6: OB Finest Gluten Free Speciality Crackers Date & Almond | Gluten Free | DELI CONVENIENCE
+7: Latina Fresh Gluten Free Lasagne Sheets | Gluten Free | DELI CONVENIENCE
+8: Arnott's Gluten Free Scotch Finger Biscuits | Gluten Free | BISCUITS
+9: Arnott's Gluten Free Tim Tam Biscuits | Gluten Free | BISCUITS
+
+## parmesan cheese vegetarian
+0: La Casa Del Formaggio Traditional Ricotta from The Deli | Low Sugar,Vegetarian | DELI SERVICE
+1: La Casa Del Formaggio Mascarpone Mascarpone | Low Salt,Low Sugar,Vegetarian | CHEESE COOKING
+2: Thomas Dux Yorkshire Wensleydale Cheese With Cranberry | Gluten Free,Source of Protein,Vegetarian | DELI SERVICE
+3: Peckish Fancies Parmesan & Herbs Rice Crackers | Gluten Free,Low Sugar,Vegetarian | BISCUITS
+4: Castello Soft Mild Blue Cheese | Gluten Free,Low Sugar,Vegetarian | CHEESE ENTERTAINING
+5: Castello Creamy Havarti | Gluten Free,Low Sugar,Vegetarian | CHEESE ENTERTAINING
+6: Castello Blue Cheese Creamy | Gluten Free,Low Sugar,Vegetarian | CHEESE ENTERTAINING
+7: Perfect Italiano Parmesan Cheese Grated Extra Sharp | Gluten Free,Halal,Low Sugar,Vegetarian | CHEESE COOKING
+8: Perfect Italiano Parmesan Cheese Shaved Parmesan | Gluten Free,Halal,Low Sugar,Vegetarian | CHEESE COOKING
+9: Barilla Basil Pesto Vegan Pasta Sauce | Gluten Free,Low Sugar,Vegan,Vegetarian | PASTA / RICE
+
+## beef liquid stock gluten free
+0: Maggie Beer Natural Beef Stock | Gluten Free | COOKING NEEDS
+1: Woolworths Free From Gluten Chocolate Mud Cake | Gluten Free | INSTORE BAKERY
+2: Latina Fresh Gluten Free Tagliatelle Pasta | Gluten Free | DELI CONVENIENCE
+3: OB Finest Gluten Free Speciality Crackers Fig & Pistachio | Gluten Free | DELI CONVENIENCE
+4: Latina Fresh Gluten Free Lasagne Sheets | Gluten Free | DELI CONVENIENCE
+5: OB Finest Gluten Free Speciality Crackers Date & Almond | Gluten Free | DELI CONVENIENCE
+6: Betty Crocker Strawberry Frosting | Gluten Free | COOKING NEEDS
+7: Oreo Gluten Free Cookies | Gluten Free | BISCUITS
+8: Arnott's Gluten Free Scotch Finger Biscuits | Gluten Free | BISCUITS
+9: Arnott's Gluten Free Shortbread Cream Biscuits | Gluten Free | BISCUITS

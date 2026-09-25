@@ -1,0 +1,5 @@
+before: searchText calls=0  geocoding calls=0  budget:placesTextSearch:2026-09-24=
+$ curl "localhost:3102/api/comparison/venues?latitude=-37.8136&longitude=144.9631&radiusMiles=5"
+{"code":"RATE_LIMITED","message":"Restaurant search is temporarily unavailable: the app has reached its daily search limit. Please try again later."}
+HTTP 503
+after:  searchText calls=0  geocoding calls=0  budget:placesTextSearch:2026-09-24=1

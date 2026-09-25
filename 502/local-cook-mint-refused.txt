@@ -1,0 +1,8 @@
+(browser) solo Cook Session at 390px: Craving italian > Ready > Start swiping > like one > pass rest > Submit > /results
+session state: complete
+session shoppingListId set: yes
+budget:shoppingListMint:2026-09-24 = 1  TTL=172763s
+backend log 'Shopping List minted unpriced': 1
+backend log Woolworths lines: 0
+backend log 'Shopping List pricing failed' (the build() path): 0
+(browser) /list/<id> banner: 'Prices are unavailable. Your ingredients and method are still here.' -> local-cook-list-unpriced.png

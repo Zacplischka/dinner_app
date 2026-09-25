@@ -1,0 +1,25 @@
+ × |contract| tests/contract/comparison-stream.test.ts > GET /api/comparison/:placeId/stream > streams named Venue, Storefront, and terminal Comparison events to a guest 13ms
+   → expected "vi.fn()" to be called with arguments: [ 'place-1', Any<Function>, { …(2) } ]
+ × |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses a venue search on the same Text Search budget, before any billed Geocoding 5ms
+   → expected "reverseGeocodeSuburb" to not be called at all, but actually been called 1 times
+ × |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > streams a cold Comparison refusal as a RATE_LIMITED event before any Apify run 4ms
+   → expected 'event: error\ndata: {"code":"RATE_LIM…' to contain 'monthly limit'
+ × |contract| tests/contract/paid-budget.test.ts > the cold-Comparison budget and the per-IP hourly window > gives the caller their hourly slot back when the app-wide budget refuses 7ms
+   → expected 200 "OK", got 429 "Too Many Requests"
+ × |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > refuses a fourth paid search in one Session, says so in the Lobby, and still reuses a dealt area 22ms
+   → expected DomainError: This Session has used all it… { code: '…' } to match object { code: 'TOO_MANY_REQUESTS' }
+ × |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > counts a Cook deal against the cap only when its Craving is new to the Session 21ms
+   → expected DomainError: This Session has used all it… { code: '…' } to match object { code: 'TOO_MANY_REQUESTS' }
+ × |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > gives the paid-deal slot back when no vendor was reached 13ms
+   → expected [Function] to throw error including 'emit failed' but got 'This Session has used all its searche…'
+ × |unit| tests/unit/ComparisonService.test.ts > createComparisonService > spends no cold-Comparison budget on a Venue Place Details does not know 2ms
+   → expected "vi.fn()" to not be called at all, but actually been called 1 times
+ × |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > starts the clock when the counter is created, and never restarts it 2ms
+   → expected "Mock" to be called 1 times, but got 2 times
+ × |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > budgets cold Comparisons by the Pacific month, with a counter that outlives it 2ms
+   → expected 'budget:coldComparison:2026-09-30' to be 'budget:coldComparison:2026-09' // Object.is equality
+ × |unit| tests/unit/config.test.ts > Google Places API Configuration > falls back to the default paid-budget ceiling, loudly, when the override is not a count 8ms
+   → expected { placesTextSearch: NaN, …(3) } to deeply equal { placesTextSearch: 80, …(3) }
+⎯⎯⎯⎯⎯⎯ Failed Tests 11 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  6 failed (6)
+      Tests  11 failed | 50 passed (61)

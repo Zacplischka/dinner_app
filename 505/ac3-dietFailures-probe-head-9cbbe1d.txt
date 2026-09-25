@@ -1,0 +1,66 @@
+# Rule 1: a qualifier in the name must survive into the searchTerm
+FAIL diets [] | "gluten-free beef stock" searchTerm "beef liquid stock"
+       ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "beef liquid stock gluten free"
+FAIL diets [] | "gluten free fish sauce" searchTerm "fish sauce"
+       ingredient "gluten free fish sauce": searchTerm "fish sauce" drops "gluten free", so the Shopping List buys the plain product — search "fish sauce gluten free"
+FAIL diets [] | "vegetarian parmesan cheese" searchTerm "parmesan cheese"
+       ingredient "vegetarian parmesan cheese": searchTerm "parmesan cheese" drops "vegetarian", so the Shopping List buys the plain product — search "parmesan cheese vegetarian"
+ok   diets [] | "gluten-free beef stock" searchTerm "beef liquid stock gluten free"
+ok   diets [] | "gluten-free beef stock" (no searchTerm: the name is searched)
+
+# Rule 2: a GF / vegetarian record cannot take a known-risky head unqualified
+FAIL diets ["gluten free"] | "chicken stock"
+       ingredient "chicken stock": stock is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["gluten free"] | "fish sauce"
+       ingredient "fish sauce": fish sauce is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["gluten free"] | "thai green curry paste"
+       ingredient "thai green curry paste": curry paste is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["gluten free"] | "soy sauce"
+       ingredient "soy sauce": soy sauce is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "thickened cream"
+       ingredient "thickened cream": thickened cream is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "parmesan"
+       ingredient "parmesan": parmesan is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "cheddar cheese"
+       ingredient "cheddar cheese": cheddar is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "feta"
+       ingredient "feta": feta is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegetarian"] | "fresh mozzarella"
+       ingredient "fresh mozzarella": mozzarella is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+FAIL diets ["vegan"] | "feta"  (vegan ⊆ vegetarian)
+       ingredient "feta": feta is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+ok   diets ["gluten free"] | "gluten-free chicken stock" [chicken stock gluten free]
+ok   diets ["vegetarian"] | "pure cream"
+
+# Not flagged: a head is a trap only for the diet it breaks (shipped GF records)
+ok   butter-chicken diets ["gluten free"] with ["thickened cream"]
+ok   garlic-butter-steak-with-creamed-spinach diets ["ketogenic","gluten free"] with ["thickened cream","parmesan"]
+
+# Edge: a vegan record naming a plant-based cheese
+FAIL diets ["vegan"] | "vegan feta"
+       ingredient "vegan feta": feta is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+
+# head dietFailures over the shipped records at base 92c0fe5
+  beef-casserole: ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "beef liquid stock gluten free"
+  beef-massaman-curry: ingredient "gluten-free massaman curry paste": searchTerm "massaman curry paste" drops "gluten free", so the Shopping List buys the plain product — search "massaman curry paste gluten free"
+  beef-massaman-curry: ingredient "gluten-free fish sauce": searchTerm "fish sauce" drops "gluten free", so the Shopping List buys the plain product — search "fish sauce gluten free"
+  beef-pho: ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "beef liquid stock gluten free"
+  beef-pho: ingredient "gluten-free fish sauce": searchTerm "fish sauce" drops "gluten free", so the Shopping List buys the plain product — search "fish sauce gluten free"
+  chilli-con-carne: ingredient "gluten-free beef stock": searchTerm "beef liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "beef liquid stock gluten free"
+  chocolate-self-saucing-pudding: ingredient "thickened cream": thickened cream is not vegetarian unless it says so, and the Recipe declares "vegetarian" — qualify the name (and any searchTerm), or use one that is
+  margherita-pizza: ingredient "vegetarian fresh mozzarella": searchTerm "fresh mozzarella" drops "vegetarian", so the Shopping List buys the plain product — search "fresh mozzarella vegetarian"
+  mushroom-risotto: ingredient "gluten-free vegetable stock": searchTerm "vegetable liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "vegetable liquid stock gluten free"
+  mushroom-risotto: ingredient "vegetarian parmesan cheese": searchTerm "parmesan cheese" drops "vegetarian", so the Shopping List buys the plain product — search "parmesan cheese vegetarian"
+  pumpkin-soup: ingredient "gluten-free vegetable stock": searchTerm "vegetable liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "vegetable liquid stock gluten free"
+  red-lentil-dhal: ingredient "gluten-free vegetable stock": searchTerm "vegetable liquid stock" drops "gluten free", so the Shopping List buys the plain product — search "vegetable liquid stock gluten free"
+  roast-chicken-and-vegetables: ingredient "chicken stock": stock is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+  san-choy-bow: ingredient "gluten-free tamari": searchTerm "tamari" drops "gluten free", so the Shopping List buys the plain product — search "tamari gluten free"
+  shakshuka: ingredient "vegetarian feta": searchTerm "feta" drops "vegetarian", so the Shopping List buys the plain product — search "feta vegetarian"
+  thai-green-chicken-curry: ingredient "gluten-free Thai green curry paste": searchTerm "thai green curry paste" drops "gluten free", so the Shopping List buys the plain product — search "thai green curry paste gluten free"
+  thai-green-chicken-curry: ingredient "fish sauce": fish sauce is not gluten free unless it says so, and the Recipe declares "gluten free" — qualify the name (and any searchTerm), or use one that is
+  vietnamese-chicken-vermicelli-bowl: ingredient "gluten-free fish sauce": searchTerm "fish sauce" drops "gluten free", so the Shopping List buys the plain product — search "fish sauce gluten free"
+  zucchini-slice: ingredient "cheddar cheese (vegetarian rennet)": searchTerm "cheddar cheese" drops "vegetarian", so the Shopping List buys the plain product — search "cheddar cheese vegetarian"
+  => 19 failures in 15 records
+
+# head dietFailures over the shipped records at head 9cbbe1d
+  => 0 failures in 0 records

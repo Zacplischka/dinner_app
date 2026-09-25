@@ -1,0 +1,29 @@
+# AC4 (branch side) — backend/tests/unit/productMatcher.test.ts, the #505 case
+# "buys a diet-qualified line only a product that says so, or nothing (#505)"
+# Private Redis on :7505, placeholder Supabase env.
+
+## red @ base 92c0fe5 with only head's test file brought in (git checkout 9cbbe1d -- backend/tests/unit/productMatcher.test.ts)
+$ npx vitest run tests/unit/productMatcher.test.ts        -> exit=1
+     × buys a diet-qualified line only a product that says so, or nothing (#505)
+ FAIL  |unit| tests/unit/productMatcher.test.ts > matchProducts > buys a diet-qualified line only a product that says so, or nothing (#505)
+AssertionError: expected 1 to be 2 // Object.is equality
+    423|     expect(result?.match.stockcode).toBe(2);
+      Tests  1 failed | 40 passed (41)
+(base buys stockcode 1, "Fish Sauce 700ml", for the term "fish sauce gluten free")
+
+## green @ head 9cbbe1d
+$ npx vitest run tests/unit/productMatcher.test.ts        -> exit=0
+ Test Files  1 passed (1)
+      Tests  41 passed (41)
+
+## matchProducts probe (scratch, pure function, no network)
+term                             shelf (search answer)                                  base 92c0fe5                         head 9cbbe1d
+"fish sauce gluten free"         ["Fish Sauce 700ml"]                                   MATCH "Fish Sauce 700ml"             null (Unmatched)
+"parmesan cheese vegetarian"     ["Parmesan Cheese Grated 250g"]                        MATCH "Parmesan Cheese Grated 250g"  null (Unmatched)
+"beef liquid stock gluten free"  ["Massel Beef Liquid Stock 1l","Campbells Real..."]    MATCH "Massel Beef Liquid Stock 1l"  null (Unmatched)
+"beef liquid stock gluten free"  ["Beef Liquid Stock 1l","Massel Gluten Free Beef..."]  MATCH "Massel Gluten Free Beef ..."  MATCH "Massel Gluten Free Beef ..."
+"cornflour gluten free"          ["White Wings Cornflour 300g"]                         MATCH "White Wings Cornflour 300g"   null (Unmatched)
+"fish sauce"                     ["Fish Sauce 700ml"]                                   MATCH "Fish Sauce 700ml"             MATCH "Fish Sauce 700ml"
+Note: at base the qualified searchTerm alone would NOT have stopped the fallback — the Matcher
+bought the plain product for a qualified term. The Matcher change is what delivers AC4's
+"rather than falling back to a non-compliant product".

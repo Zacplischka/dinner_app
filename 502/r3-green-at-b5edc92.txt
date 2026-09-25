@@ -1,0 +1,13 @@
+ ✓ |contract| tests/contract/paid-budget.test.ts > the cold-Comparison budget and the per-IP hourly window > refuses a spent month before Place Details, without spending the caller hour 18ms
+ ✓ |contract| tests/contract/paid-budget.test.ts > the cold-Comparison budget and the per-IP hourly window > keeps the hourly slot when the month runs out after Place Details 5ms
+ ✓ |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > checks a spent budget without spending it 1ms
+ ✓ |unit| tests/unit/paidBudget.test.ts > spendPaidBudget > fails closed on a check too: a Redis error refuses 1ms
+ ✓ |unit| tests/unit/config.test.ts > Google Places API Configuration > falls back to the default paid-budget ceiling, loudly, when the override is not a count 0ms
+ ✓ |unit| tests/unit/ComparisonService.test.ts > createComparisonService > serves a fresh Snapshot without Place Details, actor spend, or a new row 0ms
+ ✓ |unit| tests/unit/ComparisonService.test.ts > createComparisonService > emits NOT_FOUND when Place Details reports no such Venue 0ms
+ ✓ |unit| tests/unit/ComparisonService.test.ts > createComparisonService > spends no cold-Comparison budget on a Venue Place Details does not know 0ms
+ ✓ |unit| tests/unit/ComparisonService.test.ts > createComparisonService > answers an unknown Venue NOT_FOUND with the budget unspent 2ms
+ ✓ |unit| tests/unit/ComparisonService.test.ts > createComparisonService > keeps a transient Place Details failure a retryable COMPARISON_FAILED 0ms
+ Test Files  4 passed (4)
+      Tests  32 passed (32)
+ ✓ |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > streams a cold Comparison refusal as a RATE_LIMITED event before any Apify run (now also asserts fetchPlaceDetails not called)

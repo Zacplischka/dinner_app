@@ -1,0 +1,50 @@
+# #505 round 2 red/green. Red = 08f9211 (9cbbe1d rebased onto main 7ae1083; `git range-diff` shows
+# all 10 commits patch-identical) with ONLY head f47e2ec's test files brought in:
+#   scripts/corpus/gate.test.mjs, backend/tests/unit/{productMatcher,ProductMatchService,woolworthsClient,
+#   ShoppingListService}.test.ts, backend/tests/integration/shopping-list.test.ts
+# (source, recipe data and the fixture stay at 08f9211). Green = f47e2ec. Private Redis :7505.
+
+## RED @ 08f9211
+$ node --test scripts/corpus/gate.test.mjs                                    -> exit=1  tests 43, pass 39, fail 4
+✖ the traps the corpus already names are traps for the gate too
+    AssertionError: cornflour in gluten free   actual: ''   expected: /cornflour.*gluten free/
+✖ vegan is a qualifier too, and a vegan product is a vegetarian one
+    expected: /vegan parmesan.*drops "vegan"/   (input: '')
+✖ a record without diets is still read for the qualifiers it names
+    TypeError: Cannot read properties of undefined (reading 'includes')  at dietFailures (gate.mjs:287)
+✖ every shipped Recipe, and every fixture, keeps the diets it declares
+    AssertionError: fixture-pasta
+    actual: [ 'ingredient "gluten free spaghetti": searchTerm "spaghetti" drops "gluten free", ...' ]
+
+$ npx vitest run <the 5 backend files>                                       -> exit=1  Tests 5 failed | 154 passed (159)
+× ProductMatchService > asks the Retailer for the product, and holds the diet on its labels (#505)
+    AssertionError: expected { status: 'failed' } to match object { status: 'matched', …(1) }
+    (08f9211 asks Woolworths for "parmesan cheese vegetarian"; the fake only answers "parmesan cheese")
+× woolworthsClient > carries the store's dietary statement for the Matcher (#505)
+    AssertionError: expected undefined to be 'Gluten Free'
+× productMatcher > reads the store's own dietary statement, not only the name (#505)
+    AssertionError: expected 2 to be 1   (08f9211 buys the "Fresh Gluten Free Tagliatelle Pasta" for "fish sauce gluten free")
+× productMatcher > holds vegan as a qualifier, and lets a vegan product meet a vegetarian line (#505)
+    AssertionError: expected undefined to be 1
+× productMatcher > asks the Retailer for the product without its diet (#505)
+    TypeError: retailerQuery is not a function
+Passing at 08f9211 by design (they pin behaviour 9cbbe1d already had, or are data/comment updates):
+  productMatcher "holds a Sourced Recipe's diet-qualified line to the same rule" (fix 4 = requirement kept),
+  ShoppingListService.test.ts and integration/shopping-list.test.ts (searchTerm fixtures updated to the suffix form).
+
+## GREEN @ f47e2ec
+$ node --test scripts/corpus/gate.test.mjs                                    -> exit=0  tests 43, pass 43
+✔ the traps the corpus already names are traps for the gate too
+✔ vegan is a qualifier too, and a vegan product is a vegetarian one
+✔ a record without diets is still read for the qualifiers it names
+✔ every shipped Recipe, and every fixture, keeps the diets it declares
+$ npm run check                                                               -> exit=0  tests 163, pass 163
+$ npm run typecheck                                                           -> exit=0
+$ npm test --workspace=backend   (REDIS_PORT=7505)                            -> exit=0  Test Files 81 passed, Tests 1120 passed (1120)
+$ node scripts/corpus/gate.mjs check backend/recipes --structural             -> exit=1, 50/50 "no image" only (gitignored .corpus-images), 0 other lines
+$ node scripts/corpus/gate.mjs check backend/tests/fixtures/owned-recipes --structural -> 3/3 "photoUrl is missing" only, 0 diet lines
+
+## CI on f47e2ec (run 36096572064, pull_request, headSha f47e2ecd…; mergeable CLEAN)
+Lint and Type Check pass · Contract Tests pass · Integration Tests pass · E2E (keyless mobile subset) pass ·
+Verify Production Deploy skipping (main-only). claude-review did not run on this push.
+https://github.com/Zacplischka/dinner_app/actions/runs/36096572064

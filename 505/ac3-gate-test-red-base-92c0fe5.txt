@@ -1,0 +1,28 @@
+# AC3 red @ base 92c0fe5 with only head's scripts/corpus/gate.test.mjs brought in (git checkout 9cbbe1d -- scripts/corpus/gate.test.mjs)
+
+$ node --test scripts/corpus/gate.test.mjs          -> exit=1
+  dietFailures,
+  ^^^^^^^^^^^^
+SyntaxError: The requested module './gate.mjs' does not provide an export named 'dietFailures'
+ℹ tests 1
+ℹ pass 0
+ℹ fail 1
+
+# Same file with only the new `dietFailures` import removed (scratch copy outside the repo),
+# so the behaviour tests reach base's gate.mjs and fail on their assertions:
+$ node --test --test-name-pattern='diet|declared|keeps the diets' 505-gate-noimport.test.mjs   -> exit=1
+✔ the diet ladder belongs to the store, not to the gate
+✖ a diet qualifier in the name has to survive into the searchTerm
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /gluten-free beef stock/. Input:
+    actual: '',
+    expected: /gluten-free beef stock/,
+✖ a declared diet cannot take a known trap on trust
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /chicken stock/. Input:
+    actual: '',
+    expected: /chicken stock/,
+✔ every shipped Recipe keeps the diets it declares   (vacuous at base: base's shape layer has no diet check;
+                                                      head's dietFailures over base's records: 19 failures in 15 records,
+                                                      see ac3-dietFailures-probe-head-9cbbe1d.txt and gate-structural-cli.txt)
+ℹ tests 4
+ℹ pass 2
+ℹ fail 2

@@ -1,0 +1,25 @@
+# AC1 recount (base-92c0fe5): ingredient names matching /gluten[- ]free|vegetarian/i across backend/recipes/*/recipe.json (jq, independent of gate.mjs)
+DROPPED   beef-casserole: gluten-free beef stock -> beef liquid stock
+DROPPED   beef-massaman-curry: gluten-free fish sauce -> fish sauce
+DROPPED   beef-massaman-curry: gluten-free massaman curry paste -> massaman curry paste
+DROPPED   beef-pho: gluten-free beef stock -> beef liquid stock
+DROPPED   beef-pho: gluten-free fish sauce -> fish sauce
+DROPPED   chilli-con-carne: gluten-free beef stock -> beef liquid stock
+DROPPED   margherita-pizza: vegetarian fresh mozzarella -> fresh mozzarella
+DROPPED   mushroom-risotto: gluten-free vegetable stock -> vegetable liquid stock
+DROPPED   mushroom-risotto: vegetarian parmesan cheese -> parmesan cheese
+DROPPED   pumpkin-soup: gluten-free vegetable stock -> vegetable liquid stock
+DROPPED   red-lentil-dhal: gluten-free vegetable stock -> vegetable liquid stock
+DROPPED   san-choy-bow: gluten-free tamari -> tamari
+DROPPED   shakshuka: vegetarian feta -> feta
+DROPPED   thai-green-chicken-curry: gluten-free Thai green curry paste -> thai green curry paste
+DROPPED   vietnamese-chicken-vermicelli-bowl: gluten-free fish sauce -> fish sauce
+DROPPED   zucchini-slice: cheddar cheese (vegetarian rennet) -> cheddar cheese
+KEPT      beef-casserole: gluten free cornflour -> cornflour gluten free
+KEPT      roast-chicken-and-vegetables: gluten free cornflour -> cornflour gluten free
+KEPT      san-choy-bow: gluten free oyster sauce -> oyster sauce gluten free
+
+# totals
+  16 DROPPED
+   3 KEPT
+recipes with a DROPPED line: 13

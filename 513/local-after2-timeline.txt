@@ -1,0 +1,59 @@
+Local AFTER at PR head 44894ee, 2026-09-25, times UTC.
+Production build + vite preview :5113, backend :3113 (addressed as 127.0.0.1, see note), private Redis :7513.
+Watch Session (code masked XXXXX). playwright-cli Chrome contexts at 390x844: Test Alex (host), Test Sam, Test Jo.
+An in-page 20 ms tracer on each phone logs every change of liveSelections, the connection chip and the Full House dialog.
+
+Note on "offline": engine.io-client registers its window 'offline' listener only when hostname !== 'localhost', so
+context.setOffline(true) left a localhost socket open (first attempt, aborted 04:02). The frontend was rebuilt with the
+backend at 127.0.0.1:3113, so going offline closes the socket as it would on a real phone.
+A second attempt was aborted because the Mac hibernated 04:03:34-04:23:04 (battery at 1%). The run below is clean.
+
+=== A/B/C: Sam is offline while Jo joins ===
+04:24:00  Alex created the Watch Session; Sam joined; both Ready; Alex tapped Start swiping
+04:24:14  Alex liked cards 1-3 (Titanic, Harry Potter and the Philosopher's Stone, Shutter Island)
+04:24:20  Sam liked Titanic: Full House "Titanic" on BOTH phones (local-after2-1-alex-fullhouse-titanic-2of2.png).
+          Both tapped Keep swiping.
+04:24:37  Sam liked Harry Potter: strip "2 of 2 liked Harry Potter..." on both. No takeover: the one-shot was spent on
+          Titanic (#284). Sam's selections = [Titanic, Harry Potter].
+04:24:47.206  Sam's context set OFFLINE. Sam's page shows "Your place is saved. Connect to the internet to continue."
+          Alex's roster shows "Test Sam is offline".
+04:24:58.424  Jo JOINED FRESH mid-Deck while Sam was offline.
+    +936 ms   Jo admitted
+    +939 ms   three replay frames from Test Alex
+    +941 ms   Jo's liveSelections = {Titanic:[Alex], Harry Potter:[Alex], Shutter Island:[Alex]}. Sam's likes are missing:
+              Sam is offline and cannot replay.
+04:25:13.683  Sam's context back ONLINE
+04:25:14.454  Sam's socket sent session:join (rejoin) -> 04:25:14.471 ack
+04:25:14.471-472  Sam sent selection:live x2 (Titanic, Harry Potter): the rejoiner replaying its own likes (new in 44894ee).
+          Sam also received Alex's 3-like replay, all duplicates.
+04:25:14.482  Sam's chip back to "Connected"
+04:25:14.490  Jo's liveSelections gains Test Sam on Titanic and Harry Potter: 36 ms after Sam's rejoin was sent,
+              19 ms after its ack, 0.8 s after the network came back.
+          Alex's and Sam's tracers: liveSelections unchanged and no dialog through the whole offline/join/return.
+04:25:40  Jo liked Titanic (Alex and Sam both liked it):
+            Jo:   Full House "EVERYONE LIKED THIS / Titanic", strip "3 of 3 liked Titanic" (local-after2-2-jo-fullhouse-titanic-3of3.png)
+            Alex: NO dialog. Titanic was already celebrated (local-after2-3-alex-no-second-fullhouse.png)
+            Sam:  A SECOND Full House "Titanic". Sam's tracer shows the dialog at 04:24:20.732, dismissed 04:24:31,
+                  and shown AGAIN at 04:25:40.363 (local-after2-4-sam-REPEAT-fullhouse-titanic.png)
+          Cause: RequireSession renders "Reconnecting to your session" instead of <Outlet/> while !isConnected, so Sam's
+          SelectionPage UNMOUNTED at 04:24:47 and remounted at 04:25:14, losing fullHouseShownRef. The #404 first-deal
+          seed marks an entry as already celebrated only if it is a Full House under the CURRENT roster. After Jo joined
+          the roster was 3, and Titanic was Alex + me = 2 of 3, so it was not marked. Jo's like then made it 3 of 3.
+          The same repeat happens on main (see local-base-abc-timeline.txt), so the PR did not introduce it.
+04:26:55  Jo tapped Keep swiping and liked Harry Potter (Alex and Sam both liked it):
+            Jo:   strip "3 of 3 liked Harry Potter...", no takeover (Jo's one-shot was spent on Titanic)
+            Alex: Full House "Harry Potter...", Alex's FIRST for this entry (Alex only had a strip at 04:24:39). Jo's join
+                  re-armed it per #284 (local-after2-5-alex-first-fullhouse-harrypotter.png)
+            Sam:  strip only
+
+=== Leave/rejoin re-run (same Session) ===
+04:27:22  Sam tapped Leave session and confirmed (store reset)
+04:27:23.563  Sam rejoined via /join?code=XXXXX with the same name and landed in the Deck at card 1.
+    +933 ms   admitted
+    +936 ms   five replay frames (3 from Alex, 2 from Jo)
+    +937 ms   all 5 in Sam's liveSelections: 4 ms after admission
+04:27:33  Sam liked Titanic:
+            Sam:        Full House "EVERYONE LIKED THIS / Titanic", strip "3 of 3 liked Titanic" (local-after2-6-sam-rejoin-fullhouse-titanic.png)
+            Alex and Jo: tracers from 04:27:00 show no liveSelections change and no dialog. Both had already celebrated
+                         Titanic, and Sam's like was a duplicate by name.
+04:28     Jo, Sam and Alex tapped Leave session and confirmed. Session left.

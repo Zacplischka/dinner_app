@@ -1,0 +1,7 @@
+Local BASE control, main @ d175164 frontend (backend identical: the PR touches no backend file), same stack and ports, backend at 127.0.0.1:3113, 2026-09-25, times UTC. Same A/B/C offline scenario, to tell pre-existing behaviour apart from the PR's.
+04:29:32.488  Alex created the Watch Session (base build)
+04:30:07.065  Alex liked The Maze Runner and Lucifer; Sam liked The Maze Runner: Full House 'The Maze Runner' on BOTH phones; both tapped Keep swiping.
+04:30:20.831  Sam set offline ('Your place is saved...'). Jo joined fresh mid-Deck: roster Alex / Sam (offline) / Jo; Jo's liveSelections = {} (base has no replay at all).
+04:30:33.011  Sam back online: 'Connected', '3 TOGETHER'. Jo's liveSelections still {} 4 s later (nobody replays on base).
+04:30:54.012  04:30:33 Jo liked The Maze Runner (Alex and Sam both liked it). Jo: NO Full House, strip '3 TOGETHER', liveSelections={} (the #513 offline-rejoiner gap on base) (local-base-abc-1-jo-no-fullhouse.png). Alex: no dialog. Sam: SECOND Full House 'The Maze Runner' (tracer: shown 04:29:48.894, dismissed 04:29:59, offline 04:30:07, 'Connected' 04:30:23, shown AGAIN 04:30:33.238) (local-base-abc-2-sam-REPEAT-fullhouse.png).
+RESULT: main has the same repeat Full House on the phone that dropped and came back while the roster grew. It is pre-existing and not introduced by PR #579 (RequireSession unmounts SelectionPage while !isConnected; the #404 first-deal seed judges 'already celebrated' against the new, larger roster).

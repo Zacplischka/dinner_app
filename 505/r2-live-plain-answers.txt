@@ -1,0 +1,42 @@
+# #505 round 2: three PLAIN Woolworths searches — the queries head f47e2ec's retailerQuery sends
+# Captured 2026-09-25 by the verifier from residential AU egress (VPN disconnected), through the
+# repo's own createWoolworthsClient (one seed GET + 3 searches, 1.5 s apart, identity headers as shipped).
+# FulfilmentStoreId 3221 (residential), NOT production's 1101.
+# Per product, in search rank order: Name | lifestyleanddietarystatement | sapcategoryname
+
+## parmesan cheese  (head's query for "parmesan cheese vegetarian")
+0: Woolworths Shredded Parmesan Cheese | Gluten Free,Low Sugar,Source of Protein | CHEESE COOKING
+1: Woolworths Essentials Parmesan Cheese | Gluten Free,Low Sugar | PASTA / RICE
+2: Perfect Italiano Parmesan Cheese Block | Gluten Free,Halal,Low Sugar,Vegetarian | CHEESE COOKING
+3: Woolworths Shaved Parmesan | Gluten Free,Low Sugar,Source of Protein | CHEESE COOKING
+4: Perfect Italiano Parmesan Cheese Grated Parmesan | Gluten Free,Halal,Low Sugar,Vegetarian | CHEESE COOKING
+5: Perfect Italiano Parmesan Cheese Shaved Parmesan | Gluten Free,Halal,Low Sugar,Vegetarian | CHEESE COOKING
+6: Kraft Grated Parmesan Cheese | Gluten Free,Low Sugar | PASTA / RICE
+7: Perfect Italiano Parmesan Cheese Grated | Gluten Free,Halal,Low Sugar | CHEESE COOKING
+8: Perfect Italiano Parmesan Cheese Block Extra Sharp | Gluten Free,Halal,Low Sugar | CHEESE COOKING
+9: Woolworths Parmesan Cheese Block | Gluten Free,Low Sugar,Source of Protein | CHEESE COOKING
+
+## beef liquid stock  (head's query for "beef liquid stock gluten free")
+0: Woolworths Beef Liquid Stock | Gluten Free,Low Fat,Low Sugar | COOKING NEEDS
+1: Edgar's Kitchen Beef Liquid Stock | Low Fat,Low Sugar | COOKING NEEDS
+2: Campbell's Real Stock Beef Liquid Stock | Gluten Free,Low Fat,Low Saturated Fat,Low Sugar | COOKING NEEDS
+3: Campbell's Real Stock Unsalted Beef | Gluten Free,Low Fat,Low Salt,Low Sugar | COOKING NEEDS
+4: The Stock Merchant Free Range Beef Stock | Gluten Free,Low Fat,Low Salt,Low Sugar,Source of Protein | ETHNIC / GOURMET FOOD
+5: Bonox Beef Stock Paste Extract | Low Fat,Low Saturated Fat,Low Sugar | COOKING NEEDS
+6: Matt Moran Beef Stock | Gluten Free,Low Fat,Low Sugar | COOKING NEEDS
+7: OXO Beef Stock Cubes | Low Fat,Low Saturated Fat,Low Sugar,Vegetarian | COOKING NEEDS
+8: Nuttelex Beef Stock | Gluten Free,Low Fat,Low Salt,Low Sugar,Vegan,Vegetarian | -
+9: The Stock Merchant Triple Concentrated Beef Bone Broth Free Range | Gluten Free,High Protein,Low Fat,Low Salt,Low Sugar,Source of Protein | ETHNIC / GOURMET FOOD
+
+## spaghetti  (head's query for fixture-pasta "spaghetti gluten free", and any Sourced "gluten free spaghetti")
+0: Pastificio Liguori Spaghetti Spaghetti | High Protein,Low Fat,Low Salt,Low Sugar,Source of Fibre,Source of Protein | PASTA / RICE
+1: Continental Classics Recipe Base Spaghetti Bolognese | Vegan,Vegetarian | PREPARED FOODS
+2: Woolworths Pasta Spaghetti | High Protein,...,Vegan,Vegetarian | PASTA / RICE
+3: San Remo Spaghetti Pasta No 5 | Halal,...,Vegan,Vegetarian | PASTA / RICE
+4: Woolworths Essentials Pasta Spaghetti | High Protein,...,Vegan,Vegetarian | PASTA / RICE
+5: Barilla Pasta Spaghetti Pasta No 5 | Halal,...,Vegan,Vegetarian | PASTA / RICE
+6: Zafarelli Spaghetti No4 | High Fibre,...,Vegan,Vegetarian | PASTA / RICE
+7: Macro Organic Spaghetti Pasta | High Protein,...,Organic,...,Vegan,Vegetarian | PASTA / RICE
+8: San Remo Thin Spaghetti No. 4 | Halal,...,Vegan,Vegetarian | PASTA / RICE
+9: La Molisana Pastificio Extra Di Lusso Spaghetti Pasta | High Protein,...,Vegan,Vegetarian | PASTA / RICE
+# -> no gluten-free spaghetti anywhere in the top 10 the plain query returns.

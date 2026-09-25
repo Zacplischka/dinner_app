@@ -1,0 +1,40 @@
+AC4 'Nothing is written to Redis': local run at PR head 44894ee, private Redis :7513 (fresh, 0 keys before).
+
+1) gh pr diff 579 --name-only at 44894ee: frontend only. backend/src/websocket/liveSelectionHandler.ts is untouched.
+   frontend/src/services/socketBindings.ts
+   frontend/src/stores/sessionStore.ts          (native partialize now persists liveSelections to device storage, not Redis)
+   frontend/tests/unit/deckResume.test.tsx
+   frontend/tests/unit/liveSwipeRoom.test.tsx
+   frontend/tests/unit/mobile-recovery.test.ts
+   frontend/tests/unit/socketBindings.test.ts
+
+2) redis-cli --scan: 0 keys before. After every Participant left (key types; code masked):
+   session:XXXXX
+   session:XXXXX:restaurant_ids
+   session:XXXXX:restaurants
+   -> only the ordinary Session and Deck keys. There is no key type for Live Selections.
+
+3) redis-cli MONITOR over the whole run (three Sessions: two aborted attempts, then the clean A/B/C run from 04:23).
+   Every command whose arguments carry a Deck Entry id (tmdb:*):
+   04:00:48 UTC   1 x EVAL <script>                       } Deck deal, aborted attempt 1
+   04:00:48 UTC   2 x HMGET session:XXXXX:restaurants     }
+   04:00:48 UTC  15 x HSET session:XXXXX:restaurants      }
+   04:00:48 UTC  15 x SADD session:XXXXX:restaurant_ids   }
+   04:02:03 UTC   1 x HMGET session:XXXXX:restaurants
+   04:03:09 UTC   1 x EVAL <script>                       } Deck deal, aborted attempt 2 (the Mac then hibernated)
+   04:03:09 UTC   2 x HMGET session:XXXXX:restaurants     }
+   04:03:09 UTC  15 x HSET session:XXXXX:restaurants      }
+   04:03:09 UTC  15 x SADD session:XXXXX:restaurant_ids   }
+   04:03:34 UTC   2 x HMGET session:XXXXX:restaurants
+   04:23:05 UTC   1 x HMGET session:XXXXX:restaurants
+   04:23:06 UTC   1 x HMGET session:XXXXX:restaurants
+   04:24:04 UTC   1 x EVAL <script>                       } Deck deal, clean A/B/C run
+   04:24:04 UTC   2 x HMGET session:XXXXX:restaurants     }
+   04:24:04 UTC  15 x HSET session:XXXXX:restaurants      }
+   04:24:04 UTC  15 x SADD session:XXXXX:restaurant_ids   }
+   04:24:59 UTC   1 x HMGET session:XXXXX:restaurants     Jo's join (Deck read)
+   04:25:14 UTC   1 x HMGET session:XXXXX:restaurants     Sam's offline return (Deck read)
+   04:27:24 UTC   1 x HMGET session:XXXXX:restaurants     Sam's leave-rejoin (Deck read)
+   -> every write (HSET/SADD) is a Deck deal at Start swiping. No write carries a placeId during the replay windows
+      (Jo's join 04:24:58, Sam's offline return 04:25:14, Sam's leave-rejoin 04:27:24) or during any like.
+      Each replayed selection:live costs one HGETALL participant:<sid> plus one HGETALL session:XXXXX, both reads.

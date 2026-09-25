@@ -1,0 +1,6 @@
+now UTC:     2026-09-25 04:25 UTC
+now Pacific: 2026-09-24 21:25 PDT
+now local:   2026-09-25 14:25 AEST
+budget:coldComparison:2026-09-24  value=1  TTL=172779s
+budget:placePhoto:2026-09-24  value=1  TTL=172778s
+budget:placesTextSearch:2026-09-24  value=2  TTL=172778s

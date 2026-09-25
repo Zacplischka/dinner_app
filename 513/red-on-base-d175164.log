@@ -1,5 +1,5 @@
 
- RUN  v4.1.11 /Users/zacharyplischka/projects/Hobby/dinner_app/.claude/worktrees/agent-ad369871fa1067734/frontend
+ RUN  v4.1.11 <repo>/frontend
 
  ✓ tests/unit/socketBindings.test.ts > socketBindings > mirrors connection state into the session store 6ms
  ✓ tests/unit/liveSwipeRoom.test.tsx > liveReveal > adds exactly one for likedByMe 1ms

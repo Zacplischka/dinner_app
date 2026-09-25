@@ -1,0 +1,194 @@
+
+ RUN  v4.1.11 <repo>/frontend
+
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > mirrors connection state into the session store 5ms
+ ✓ tests/unit/mobile-recovery.test.ts > native recovery through the shared socket boundary > discards a stale basket when a cold native resume receives the same-round waiting Lobby 109ms
+ ✓ tests/unit/mobile-recovery.test.ts > native recovery through the shared socket boundary > recovers only with a secure capability, preserves transient failures, resets a missed round and clears Leave 53ms
+ × tests/unit/mobile-recovery.test.ts > native recovery through the shared socket boundary > restores the Live Selection buffer after a native reload, so the rejoin replay is a duplicate 55ms
+   → expected {} to deeply equal { 'movie-1': [ 'Bob' ] }
+ ✓ tests/unit/deckResume.test.tsx > the final choice stays editable until Submission > undoes a final Pass by button and Like by Backspace in eatout 75ms
+ ✓ tests/unit/deckResume.test.tsx > the final choice stays editable until Submission > undoes a final Pass by button and Like by Backspace in takeaway 24ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > liveReveal > adds exactly one for likedByMe 1ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > liveReveal > does not count a selector name no longer in participantNames 0ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > liveReveal > clamps the count to participantNames.length 0ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > liveReveal > never reports fullHouse for a solo Session even at count === participantNames.length 0ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Live Swipe Room reveal strip > never reveals for the Restaurant at the cursor or one ahead of it (anti-conformity gate) 32ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Live Swipe Room reveal strip > reveals a buffered Live Selection once you swipe past it (pace-sync buffer) 48ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > rejoins the persisted session after refresh and clears it when rejoin fails 104ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > re-fires order:open on reconnect when on the order route, and feeds a successful ack into orderStore 53ms
+ ✓ tests/unit/deckResume.test.tsx > the final choice stays editable until Submission > undoes a final Pass by button and Like by Backspace in cook 19ms
+ ✓ tests/unit/deckResume.test.tsx > the final choice stays editable until Submission > undoes a final Pass by button and Like by Backspace in watch 19ms
+ ✓ tests/unit/deckResume.test.tsx > the final choice stays editable until Submission > blocks Undo during submission, restores it on failure, and removes it after success 44ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Live Swipe Room reveal strip > clears the reveal on Undo and does not re-reveal when the Restaurant is re-decided 25ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Live Swipe Room reveal strip > does not double-count the same displayName recorded twice for one placeId (rejoin) 10ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Live Swipe Room reveal strip > shrinks the denominator with the departing Participant instead of over-counting 17ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Live Swipe Room reveal strip > announces only the highest-index placeId when two unlock in a single effect run 24ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Live Swipe Room reveal strip > re-reveals a card at a higher count when another Live Selection for it arrives (staggered likes) 14ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Deck invite affordance > copies the minted Invite Link from the deck header without leaving the deck 10ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > renders the overlay with the copy, dialog semantics and focus on Finish here 19ms
+ ✓ tests/unit/deckResume.test.tsx > the final choice stays editable until Submission > does not create a hidden final-card Full House that blocks Undo 23ms
+ ✓ tests/unit/deckResume.test.tsx > the Deck cursor survives a reload > resumes on the same card when the page remounts 14ms
+ ✓ tests/unit/deckResume.test.tsx > the Deck cursor survives a reload > does not replay reveals for cards already decided before the reload 5ms
+ ✓ tests/unit/deckResume.test.tsx > the Deck cursor survives a reload > does not celebrate a Full House a second time after the reload 6ms
+ ✓ tests/unit/deckResume.test.tsx > the Deck cursor survives a reload > is cleared when the Selections are reset 0ms
+ ✓ tests/unit/deckResume.test.tsx > an empty or failed Deck > offers a retry that re-fetches, never the end-of-deck screen 10ms
+ ✓ tests/unit/deckResume.test.tsx > an empty or failed Deck > offers a retry when the Deck request fails 6ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > clears recovery when the basket read proves the Participant is no longer admitted 52ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > does not toast on an intentional disconnect 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > updates participants from server events 2ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > does not toast the room about a Participant whose drop is over before the grace period 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > ignores participant:joined for a Session the client is not in 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > takes a joiner isHost from the server 0ms
+ × tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends each current like when a Participant joins mid-Deck (isRejoin: false) 4ms
+   → expected [] to deeply equal [ Array(2) ]
+ × tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends each current like when a Participant joins mid-Deck (isRejoin: true) 1ms
+   → expected [] to deeply equal [ Array(2) ]
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends nothing when a Participant joins while the Session is waiting 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends nothing when a Participant joins while the Session is complete 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends nothing when a Participant joins while the Session is expired 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends nothing for a join to a Session this phone is not in 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends nothing while this phone is itself reconnecting 0ms
+ × tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends my own current likes once my rejoin into a selecting Session recovers 52ms
+   → expected 0 to be less than -1
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > records a replayed Live Selection once, however often it is re-sent 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > handles session lifecycle events and server errors 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > carries session:results shoppingListId into the store, so a Cook Session can reach its list (#253) 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > order:state toasts a removal by someone else — not my own removal, not an addition 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > resolves a relative session:results photoUrl to an absolute URL on both overlappingOptions and topPick (hero rider, #166) 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > keeps deliberate admission current while waiting through a transport reconnect 1ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > makes the deck inert: action buttons disabled and the deck container aria-hidden 22ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > Keep swiping dismisses and no second overlay fires for the rest of the deck 33ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > Escape dismisses exactly as Keep swiping does 21ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > Finish here submits the current selections once and lands on All done! 31ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > recovers across credential persistence and successful Invite Link navigation 103ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > keeps the overlay up on an ack failure and re-enables the primary, sending only once 32ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > clears a failed submit error when the takeover is dismissed, so it never leaks to the end-of-deck screen 40ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > never raises the overlay for a solo Session across the whole deck 25ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > lets the real Invite Link destination retry an autojoin interrupted by transport loss 86ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > re-arms after the Participant list grows and fires for a new unanimity across the larger group 29ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > never re-fires for the same Deck Entry even when the larger group is unanimous on it 22ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > fires the takeover when the completing Live Selection lands after an earlier partial reveal (staggered) 16ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > fires on a joiner's phone for an entry the replayed Live Selections already hold 11ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Full House takeover > stays down when a join replays Live Selections this phone already holds 31ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Resume after submit > shows the waiting screen and no Deck when the roster says I already submitted 4ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Resume after submit > still deals the Deck when only someone else has submitted 5ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Resume after submit > deals the Deck again when a Restart flips my roster flag back to false 8ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Keyboard swipe > maps ArrowRight/ArrowLeft/Backspace to like/pass/undo and ignores keys while typing or inert 24ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Keyboard swipe > ignores keys while the Leave Session dialog is open, on auto-repeat, and with a modifier held 16ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > waiting screen > names each dot and announces who is still swiping, never yourself 23ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Undo retracts a Live Selection > emits a retraction for the card the undo un-likes 11ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Undo retracts a Live Selection > emits nothing when the undone card was passed, not liked 11ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Undo retracts a Live Selection > clears the strip the moment the like it is announcing is retracted 10ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Undo retracts a Live Selection > leaves a reveal for a different card alone 13ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > serializes admission and suppresses an older success 156ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Undo retracts a Live Selection > reveals again after a retraction when another Participant likes that card 17ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Undo retracts a Live Selection > drops only the retracted name from the buffer 0ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Selection flash timer (#426) > cancels the extra flash timer on unmount 7ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Selection flash timer (#426) > a second Pass keeps one timer with the accepted flash timing 11ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Selection flash timer (#426) > a second Like keeps one timer with the accepted flash timing 9ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > serializes admission and suppresses an older failure 155ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > preserves the capability when the latest admission targets the same Participant 53ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > does not let a delayed Leave reset a newer join 51ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > stores session state when joining and resets it when leaving 1ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > maps a canonical join ack DTO into Participant state and leaves store untouched on failure 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > stores the Session Branch from the join ack 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > resets selections when joining a different session than the stored one 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > adopts a selecting state and hasSubmitted flags from a late-join ack 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > seeds presence from the join ack roster, so a Participant who dropped before the join starts offline 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > leaves sessionStatus untouched when a same-session ack carries no state (older backend) 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > clears connection status when disconnecting 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > does not toast "Reconnected" on the first connect after leaving a Session and disconnecting 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > adopts authoritative lobby choices, ignores stale revisions and restarts to the Lobby 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > discards a missed Restart on rejoin into 'waiting' 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > discards a missed Restart on rejoin into 'selecting' 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > does not restore a discarded Match from a delayed completed-rejoin ack 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > binds selections to the round that produced this Deck 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > ignores late session:join recovery after Leave (replacement Session: none) 51ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > ignores late order:open recovery after Leave (replacement Session: none) 52ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > ignores late session:join recovery after Leave (replacement Session: different) 52ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > ignores late order:open recovery after Leave (replacement Session: different) 55ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > ignores late session:join recovery after Leave (replacement Session: same) 53ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > ignores late order:open recovery after Leave (replacement Session: same) 55ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > hydrates a completed rejoin without resubmitting (collaborative: false) 2ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > hydrates a completed rejoin without resubmitting (collaborative: true) 1ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > returns an authoritative missing basket (stale) to the existing menu recovery UI 1ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > returns an authoritative missing basket (no_menu) to the existing menu recovery UI 0ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > returns an authoritative missing basket (invalid_outcome) to the existing menu recovery UI 1ms
+ ✓ tests/unit/socketBindings.test.ts > socketBindings > starts fresh recovery when transport reconnects during credential persistence 105ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/mobile-recovery.test.ts > native recovery through the shared socket boundary > restores the Live Selection buffer after a native reload, so the rejoin replay is a duplicate
+AssertionError: expected {} to deeply equal { 'movie-1': [ 'Bob' ] }
+
+- Expected
++ Received
+
+- {
+-   "movie-1": [
+-     "Bob",
+-   ],
+- }
++ {}
+
+ ❯ tests/unit/mobile-recovery.test.ts:284:22
+    282|     await useSessionStore.persist.rehydrate();
+    283|     const restored = useSessionStore.getState().liveSelections;
+    284|     expect(restored).toEqual({ 'movie-1': ['Bob'] });
+       |                      ^
+    285|
+    286|     useSessionStore.getState().recordLiveSelection('movie-1', 'Bob'); …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends each current like when a Participant joins mid-Deck (isRejoin: false)
+ FAIL  tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends each current like when a Participant joins mid-Deck (isRejoin: true)
+AssertionError: expected [] to deeply equal [ Array(2) ]
+
+- Expected
++ Received
+
+- [
+-   {
+-     "placeId": "place-1",
+-     "retract": undefined,
+-     "round": 2,
+-     "sessionCode": "AB123",
+-   },
+-   {
+-     "placeId": "place-3",
+-     "retract": undefined,
+-     "round": 2,
+-     "sessionCode": "AB123",
+-   },
+- ]
++ []
+
+ ❯ tests/unit/socketBindings.test.ts:493:44
+    491|         });
+    492|
+    493|         expect(liveSends(emit.mock.calls)).toEqual([
+       |                                            ^
+    494|           { sessionCode: 'AB123', placeId: 'place-1', retract: undefin…
+    495|           { sessionCode: 'AB123', placeId: 'place-3', retract: undefin…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/unit/socketBindings.test.ts > socketBindings > replaying Live Selections to a joiner (#513) > re-sends my own current likes once my rejoin into a selecting Session recovers
+AssertionError: expected 0 to be less than -1
+ ❯ tests/unit/socketBindings.test.ts:590:46
+    588|       const events = emit.mock.calls.map(([event]) => event);
+    589|       expect(events.indexOf('session:join')).toBeGreaterThanOrEqual(0);
+    590|       expect(events.indexOf('session:join')).toBeLessThan(events.index…
+       |                                              ^
+    591|       expect(liveSends(emit.mock.calls)).toEqual([
+    592|         { sessionCode: 'AB123', placeId: 'place-1', retract: undefined…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+
+ Test Files  2 failed | 2 passed (4)
+      Tests  4 failed | 106 passed (110)
+   Start at  13:58:48
+   Duration  2.06s (transform 555ms, setup 762ms, import 609ms, tests 2.47s, environment 1.22s)
+

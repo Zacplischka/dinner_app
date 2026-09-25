@@ -1,0 +1,31 @@
+     × refuses Session create in a new area as RATE_LIMITED once Text Search is spent 2ms
+     × refuses a venue search on the same Text Search budget 0ms
+     × refuses a photo cache miss as RATE_LIMITED, not a 500 0ms
+     × streams a cold Comparison refusal as a RATE_LIMITED event before any paid work 0ms
+     × mints the list unpriced, without a Retailer call, once the daily pricing budget is spent 1ms
+     × refuses a fourth paid search in one Session, says so in the Lobby, and still reuses a dealt area 24ms
+     × counts a Cook deal against the cap only when its Craving is new to the Session 24ms
+ FAIL  |unit| tests/unit/paidBudget.test.ts [ tests/unit/paidBudget.test.ts ]
+Error: Cannot find module '../../src/services/paidBudget.js' imported from backend/tests/unit/paidBudget.test.ts
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > refuses a fourth paid search in one Session, says so in the Lobby, and still reuses a dealt area
+AssertionError: promise resolved "{ sessionCode: '3JQZ9', …(12) }" instead of rejecting
+ FAIL  |unit| tests/unit/SessionLobbyService.test.ts > gather-first Sessions > counts a Cook deal against the cap only when its Craving is new to the Session
+AssertionError: promise resolved "{ sessionCode: '7TH9C', …(12) }" instead of rejecting
+ FAIL  |unit| tests/unit/ShoppingListService.test.ts > ShoppingListService.mint > mints the list unpriced, without a Retailer call, once the daily pricing budget is spent
+TypeError: Cannot read properties of undefined (reading 'shoppingListMint')
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses Session create in a new area as RATE_LIMITED once Text Search is spent
+TypeError: Cannot set properties of undefined (setting 'placesTextSearch')
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses Session create in a new area as RATE_LIMITED once Text Search is spent
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses a venue search on the same Text Search budget
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses a photo cache miss as RATE_LIMITED, not a 500
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > streams a cold Comparison refusal as a RATE_LIMITED event before any paid work
+TypeError: Cannot convert undefined or null to object
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses a venue search on the same Text Search budget
+TypeError: Cannot set properties of undefined (setting 'placesTextSearch')
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > refuses a photo cache miss as RATE_LIMITED, not a 500
+TypeError: Cannot set properties of undefined (setting 'placePhoto')
+ FAIL  |contract| tests/contract/paid-budget.test.ts > the global paid-API budget > streams a cold Comparison refusal as a RATE_LIMITED event before any paid work
+TypeError: Cannot set properties of undefined (setting 'coldComparison')
+ Test Files  4 failed (4)
+      Tests  7 failed | 88 passed (95)

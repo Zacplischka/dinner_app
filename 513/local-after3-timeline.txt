@@ -1,0 +1,52 @@
+Local AFTER at PR head 0188af8 (rebased on main 8dbf372: WebSocket-only transport, socket-first create), 2026-09-25, times UTC.
+Production build + vite preview :5113, backend :3113 addressed as 127.0.0.1 (so context.setOffline really drops the socket:
+engine.io-client skips its 'offline' listener for 'localhost'), private Redis :7513. Watch Session (code masked XXXXX).
+playwright-cli Chrome contexts at 390x844: Test Alex (host), Test Sam, Test Jo. An in-page 20 ms tracer on each phone logs
+every change of liveSelections, the connection chip and the Full House dialog. One combined run.
+
+=== Setup ===
+04:41:44  Alex created the Watch Session; Sam joined; both Ready; Alex tapped Start swiping
+04:41:5x  Alex liked cards 1-4 (Mr. Robot, Harry Potter and the Chamber of Secrets, The Matrix, Fight Club)
+04:42:07  Sam liked Mr. Robot: Full House "Mr. Robot" on BOTH phones (local-after3-1-sam-fullhouse-mrrobot-2of2.png).
+          Both tapped Keep swiping.
+04:42:21  Sam liked Harry Potter: strip only (one-shot spent, #284). Store fullHousesShown = [Mr. Robot] on both phones.
+
+=== AC3 (the 44894ee failure): offline remount + roster growth ===
+04:42:31.605  Sam's context set OFFLINE. Sam's Deck UNMOUNTED behind the reconnect gate ("Reconnecting to your session" /
+              "Your place is saved..."). Alex's roster: "Test Sam is offline".
+04:42:42.173  Jo JOINED FRESH mid-Deck (tapped Join session)
+    +917 ms   session:join sent over the pre-opened WebSocket (B2); +931 ms ack
+    +934 ms   four replay frames from Test Alex
+    +936 ms   Jo's liveSelections holds all 4 of Alex's likes: 3 ms after admission.   <- AC1 (joiner)
+              Sam's likes are missing (Sam is offline).
+04:42:53.736  Sam's context back ONLINE
+04:42:55.482  Sam sent session:join (rejoin) -> 04:42:55.501 ack
+04:42:55.501  Sam sent selection:live x2 (Mr. Robot, Harry Potter): the rejoiner replaying its own likes. Both acked.
+04:42:55.511  Sam's gate lifted ("Connected"). The Deck remounted under a roster of 3.
+04:42:55.515  Jo's liveSelections gains Test Sam on Mr. Robot and Harry Potter: 33 ms after Sam's rejoin was sent,
+              14 ms after its ack.                                                      <- AC1 (offline rejoiner)
+              Alex's tracer: no liveSelections change and no dialog. Sam's tracer: no dialog on remount.
+04:43:17  Jo liked Mr. Robot (Alex and Sam liked it before):
+            Jo:   Full House "EVERYONE LIKED THIS / Mr. Robot", strip "3 of 3 liked Mr. Robot"
+                  (local-after3-2-jo-fullhouse-mrrobot-3of3.png)                        <- AC2
+            Sam:  strip "3 of 3 liked Mr. Robot" (read 04:43:19.7). NO dialog. Polled 2 s more: still none. The tracer shows
+                  no dialog after 04:42:21 (local-after3-3-sam-strip-only-no-repeat.png, taken after the 4 s strip cleared).
+                                                                                        <- AC3 (on 44894ee this step re-fired Sam's takeover)
+            Alex: no dialog (local-after3-4-alex-no-repeat.png)
+04:43:46  Jo tapped Keep swiping and liked Harry Potter (Alex and Sam liked it before):
+            Jo:          strip "3 of 3", no takeover (Jo's one-shot was spent on Mr. Robot)
+            Alex and Sam: Full House "Harry Potter and the Chamber of Secrets". It is the FIRST for this entry on both
+                          (each only had a strip at 04:42:21), re-armed by Jo's join (#284)
+                          (local-after3-5-alex-first-fullhouse-harrypotter.png)          <- AC2 on the others' phones
+          Both dismissed it. fullHousesShown = [Mr. Robot, Harry Potter] on both.
+
+=== #404 non-regression: reload mid-Deck on web ===
+04:44:11.777  Alex RELOADED mid-Deck (cursor 4, with two celebrated Full Houses behind it). Alex auto-rejoined.
+              Sam's and Jo's replays (4 frames, all duplicates) reached Alex 52 ms after the reload.
+              Polled for 4 s: NO dialog, no stale takeover on arrival. Restored store: fullHousesShown = [Mr. Robot, Harry Potter],
+              cursor 4, card 5 (local-after3-6-alex-after-reload-no-stale-takeover.png)
+04:44:26  Sam, then Jo, liked The Matrix (Alex liked it before the reload). A DIFFERENT entry goes unanimous:
+            Alex: Full House "EVERYONE LIKED THIS / The Matrix" at 04:44:27.942 (local-after3-7-alex-new-entry-fullhouse-after-reload.png)
+            Sam and Jo: strip only. Their one-shots were spent on Harry Potter and Mr. Robot, and the roster has not grown since (#284).
+
+04:45     Jo, Sam and Alex tapped Leave (the header control reads "Leave" since #510) and confirmed "Leave session". Session left.
