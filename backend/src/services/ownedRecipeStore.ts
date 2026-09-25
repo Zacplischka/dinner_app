@@ -10,7 +10,7 @@
 // `aggregateLikes` and no source credit, because there is no source. The
 // schema is the last structural gate: `.strict()` is what keeps a backfilled
 // `aggregateLikes` from ever landing in a record. The corpus pipeline's own
-// structural layer (`scripts/corpus/gate.mjs`, #336) checks the same shape
+// structural layer (#336) checks the same shape
 // before a record is ever committed — change one and change the other.
 import { readFileSync, readdirSync } from 'node:fs';
 import { z } from 'zod';
@@ -107,7 +107,7 @@ export type OwnedRecipeStore = ReturnType<typeof createOwnedRecipeStore>;
 
 /**
  * Read at boot, once, from `config.ownedRecipesDir` — `<dir>/<frozen-slug>/
- * recipe.json`, the same layout `scripts/corpus/images.mjs` reads and stamps
+ * recipe.json`, the same layout the image pipeline (#330) reads and stamps
  * `photoUrl` into. A record that will not parse throws by name rather than
  * going quietly missing from every Deck — this is reviewed data shipped with
  * the deploy, so a bad batch should fail loudly and be one revert from gone.

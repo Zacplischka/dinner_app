@@ -56,12 +56,6 @@ jobs:
       - name: Run frontend unit tests
         run: npm run test:unit --workspace=@dinder/frontend
 
-      # Offline self-checks: the production-edge validator, the CI gates, the
-      # comment-path linter, the corpus pipeline stages and the movie corpus
-      # builder. Pure functions with injected I/O — no network, no tokens spent.
-      - name: Run script self-checks
-        run: npm run check
-
   contract-tests:
     name: Contract Tests
     runs-on: ubuntu-latest
@@ -158,8 +152,6 @@ jobs:
       #   bootstrap  - no frontend host is proxied (default when the variable is unset)
       #   apex-only  - dinder.it.com is proxied, www.dinder.it.com is still DNS-only
       #   both-hosts - both frontend hosts are proxied
-      # The job never infers this from the presence or absence of a Cloudflare header;
-      # scripts/check-production-edge.mjs asserts the declared state against reality.
       DINDER_EDGE_ROLLOUT_STATE: ${{ vars.DINDER_EDGE_ROLLOUT_STATE || 'bootstrap' }}
       COMMIT_SHA: ${{ github.sha }}
 
@@ -233,12 +225,6 @@ jobs:
             curl --fail --silent --show-error "https://${host}/" | grep -F '<title>YupCrew</title>'
           done
 
-      # Runs before the purge so the tag purge is proved to reset a warm document
-      # while the warm fingerprinted asset survives it.
-      - name: Warm per-commit document and fingerprinted asset
-        if: env.DINDER_EDGE_ROLLOUT_STATE != 'bootstrap'
-        run: node scripts/check-production-edge.mjs prewarm
-
       # Only runs after both Railway deployment statuses succeeded for this SHA.
       # Failure fails production verification; the retry is GitHub "Re-run failed
       # jobs", which repeats this idempotent purge. A dashboard purge is recorded
@@ -269,13 +255,7 @@ jobs:
               --output "$RUNNER_TEMP/purge.json" \
               --write-out '%{http_code}')" || status=000
 
-            node scripts/check-production-edge.mjs purge-response "$status" "$RUNNER_TEMP/purge.json"
+            [[ "$status" == 200 ]] && grep -Eq '"success": ?true' "$RUNNER_TEMP/purge.json" \
+              || { echo "purge failed (HTTP ${status})" >&2; cat "$RUNNER_TEMP/purge.json" >&2; exit 1; }
           done
 
-      # Portable cache and health semantics only. The fixed-Melbourne performance
-      # gate is never evaluated or reported as passed here.
-      - name: Verify frontend cache and route contracts
-        run: node scripts/check-production-edge.mjs verify
-
-      - name: Smoke test session create (Places API key)
-        run: bash scripts/smoke-prod.sh

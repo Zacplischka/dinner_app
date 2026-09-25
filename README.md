@@ -6,7 +6,7 @@
 
 **What are we doing tonight?** YupCrew helps friends, couples and housemates choose somewhere to eat, takeaway, a recipe to cook, or a movie or series to watch. Invite your people with a link, choose together and swipe to find a shared pick. No download or account needed.
 
-Formerly Dinder. Public address: [yupcrew.com](https://yupcrew.com). Existing Dinder addresses remain available for current Sessions and Shopping Lists; internal service and storage identifiers are unchanged. See the [rebrand and migration notes](docs/yupcrew-rebrand-plan.md).
+Formerly Dinder. Public address: [yupcrew.com](https://yupcrew.com). Existing Dinder addresses remain available for current Sessions and Shopping Lists; internal service and storage identifiers are unchanged.
 
 <p align="center">
   <a href="https://yupcrew.com"><img src="https://img.shields.io/badge/demo-live-success" alt="Live demo"></a>
@@ -74,8 +74,6 @@ REST is deliberately thin — `POST /api/sessions`, `GET /api/sessions/:code` �
 
 ## Local development
 
-The mobile foundation bundles this same frontend through Capacitor. Native projects are in [`frontend/ios`](frontend/ios) and [`frontend/android`](frontend/android); see [mobile setup](docs/mobile-development.md). This is partial delivery of [spec #459](https://github.com/Zacplischka/dinner_app/issues/459), not a store-ready release.
-
 Prerequisites: Node 22, Docker (for Redis), and a [Google Places API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key).
 
 ```bash
@@ -99,7 +97,6 @@ npm run dev
 |---|---|
 | `GOOGLE_PLACES_API_KEY` | Restaurant search for Eat Out and Takeaway Sessions |
 | `SPOONACULAR_API_KEY` | Sourced Recipes for the Cook Branch |
-| `TMDB_API_KEY` | Only `scripts/build-movie-corpus.mjs`, which rebuilds the committed Movie corpus; the running app never needs it |
 | `PORT`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `FRONTEND_URL` | All have local defaults |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Optional Google sign-in / friends feature only |
 | `VITE_BACKEND_URL` | Frontend → backend (REST under `/api`, and the socket); defaults to the local backend on port 3001 |
@@ -116,15 +113,13 @@ npm test             # backend + frontend vitest suites (the backend's include c
 npm run typecheck    # builds shared, then tsc --noEmit on both
 npm run lint         # eslint both workspaces
 npm run format       # prettier both workspaces
-npm run analyze:pr   # fallow audit against origin/main
 npm run gen:types    # regenerate supabase/database.types.ts
 ```
 
 Narrower runs go through the workspace: `npm run test:unit --workspace=backend`, `npm run test:contract --workspace=backend` (Redis required), `npm run test:e2e --workspace=frontend` (Playwright; `mobile-chrome` is the primary project). The WebSocket contract is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts) and the [contract tests](backend/tests/contract/) assert the backend against it — they are the source of truth for the realtime protocol.
 
-`npm run check` runs every `scripts/**/*.test.mjs` self-check under `node --test`: the comment-path linter, the production-edge validator (its `verify` step needs a CI-only cache purge first), the corpus pipeline stages in [`scripts/corpus/`](scripts/corpus/) ([ADR 0012](docs/adr/0012-owned-recipes-are-authored-from-fact-records.md)), the movie corpus builder and the mobile config checks. No build step, no network. `check:frontend-serving` is the one bash checker — the `Caddyfile` serves a fresh frontend build correctly — and needs Caddy installed, so it does not run in CI.
 
-CI ([`ci-cd.yml`](.github/workflows/ci-cd.yml)) runs `typecheck`, `lint`, both unit suites and `check` in one job and the contract suite against a Redis service in another; a green `main` auto-deploys.
+CI ([`ci-cd.yml`](.github/workflows/ci-cd.yml)) runs `typecheck`, `lint` and both unit suites in one job and the contract suite against a Redis service in another; a green `main` auto-deploys.
 
 ## Deployment
 
@@ -132,9 +127,7 @@ Both services deploy to [Railway](https://railway.app): the backend via Railpack
 
 ## Documentation
 
-[CONTEXT.md](CONTEXT.md) defines domain language; [ADRs](docs/adr/) record architecture decisions. [Spec #459](https://github.com/Zacplischka/dinner_app/issues/459) defines mobile release requirements and [native development](docs/mobile-development.md) supplies commands.
-
-Use the [YupCrew direction](docs/yupcrew-rebrand-plan.md) for public branding and the [marketing plan](docs/marketing-launch-plan.md) with its [research](docs/marketing-channel-research.md) for provisional growth experiments. Historical research and test results do not certify new revisions or current external settings.
+[CONTEXT.md](CONTEXT.md) defines domain language; [ADRs](docs/adr/) record architecture decisions.
 
 ## License
 
