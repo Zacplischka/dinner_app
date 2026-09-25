@@ -170,6 +170,18 @@ describe('the shipped batch deals and cooks', () => {
       expect(searched).not.toContain(ingredient.name);
     }
   });
+
+  it('shops for the tuna in Tuna Pasta Bake and counts it in the total (#504)', async () => {
+    // "tuna in olive oil" ends in a Staple, and a tail match once muted the
+    // dish's protein into the pantry section, unpriced and out of the total.
+    const { list, searched } = await cook(store.byPlaceId('owned:tuna-pasta-bake')!);
+    const tuna = list!.lines.find((line) => line.text.includes('tuna'));
+
+    expect(tuna).toMatchObject({ staple: false, state: 'priced' });
+    expect(searched).toContain('tuna olive oil 425g');
+    // No line of this dish is a Staple, so every one of them is in the total.
+    expect(shoppingListTotal(list!.lines).cents).toBe(list!.lines.length * 500);
+  });
 });
 
 describe('the cuisine tags the batch had to withhold', () => {
