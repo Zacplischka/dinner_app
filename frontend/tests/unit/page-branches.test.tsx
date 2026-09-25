@@ -297,6 +297,42 @@ describe('page branch coverage', () => {
     expect(useToastStore.getState().toasts).toHaveLength(1);
   });
 
+  // #518: on a reload the rejoin has already put a fresh Lobby in the store, so
+  // the Session fetch fills in the invite link behind the room, not before it.
+  it('shows the Lobby the rejoin restored without waiting for the Session fetch', async () => {
+    serviceMocks.getSession.mockReturnValueOnce(new Promise(() => undefined));
+    act(() =>
+      useSessionStore.setState({
+        lobby: {
+          sessionCode: 'AB123',
+          branch: 'watch',
+          state: 'waiting',
+          revision: 1,
+          round: 1,
+          participants: [
+            {
+              participantId: 'participant-1',
+              displayName: 'Alice',
+              isHost: true,
+              isOnline: true,
+              hasSubmitted: false,
+              ready: false,
+              waitingForNextRound: false,
+            },
+          ],
+          mealType: 'main course',
+          headcount: 2,
+          deckSize: 10,
+          searchRadiusMiles: 5,
+        },
+      })
+    );
+    renderApp('/session/AB123');
+
+    expect(screen.getByTestId('participant')).toHaveTextContent('Alice');
+    expect(screen.queryByText('Loading session…')).toBeNull();
+  });
+
   it('starts selection through the shared session event and follows its state', async () => {
     renderApp('/session/AB123');
 
