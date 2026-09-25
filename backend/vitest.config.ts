@@ -15,10 +15,8 @@ const unitEnv = {
 // no override, which is what lets tests/unit/shippedCorpus.test.ts deal and cook
 // the batch that actually ships.
 //
-// The Movie corpus is pointed at a fixture for the same reason (ADR 0014), and
-// for one more: with thousands of titles no in-vocabulary Mood is reliably
-// empty, so the fixture — 24 titles, no Documentary — is what keeps the
-// NO_MOVIES_FOUND contract case a fact. Its poster paths are placeholders.
+// The Movie corpus is pointed at a fixture for the same reason (ADR 0014): 24
+// titles, no Documentary. Its poster paths are placeholders.
 const serviceEnv = {
   ...unitEnv,
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',

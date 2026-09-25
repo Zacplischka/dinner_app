@@ -38,17 +38,15 @@ export async function handleDisconnect(
 
     // Server truth for presence: still a current Participant, but anyone who
     // joins or rejoins from here on sees them offline instead of live.
-    if ((await store.readSession(sessionCode))?.lobby) {
-      await store.withSessionLock(sessionCode, async () => {
-        await store.markDisconnected(socket.id);
-        const current = await store.readSession(sessionCode);
-        if (current?.lobby) {
-          current.lobby.revision++;
-          current.lobby.starting = false;
-          await store.writeLobbySession(current);
-        }
-      });
-    } else await store.markDisconnected(socket.id);
+    await store.withSessionLock(sessionCode, async () => {
+      await store.markDisconnected(socket.id);
+      const current = await store.readSession(sessionCode);
+      if (current?.lobby) {
+        current.lobby.revision++;
+        current.lobby.starting = false;
+        await store.writeLobbySession(current);
+      }
+    });
     const lobby = await service.getLobby(sessionCode);
     if (lobby) socket.to(sessionCode).emit('session:lobby', lobby);
 

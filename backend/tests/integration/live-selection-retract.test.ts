@@ -4,16 +4,17 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { io as ioClient, type Socket as ClientSocket } from 'socket.io-client';
-import request from 'supertest';
 import type Redis from 'ioredis';
 import { getTestRedis, cleanupTestData } from '../helpers/testSetup.js';
 import { startSocketServer, stopSocketServer } from '../helpers/socketServer.js';
+import { startedSession } from '../helpers/startedSession.js';
+import { sessionStore } from '../../src/server.js';
 import type { ParticipantSelectedEvent } from '@dinder/shared/types';
 
 describe('Integration Test: Live Selection retraction (#410)', () => {
   let redis: Redis;
   let socketUrl: string;
-  let sessionCode: string;
+  const sessionCode = 'LIV12';
   const sockets: ClientSocket[] = [];
 
   beforeAll(async () => {
@@ -23,11 +24,7 @@ describe('Integration Test: Live Selection retraction (#410)', () => {
 
   beforeEach(async () => {
     await cleanupTestData(redis);
-    const response = await request(socketUrl)
-      .post('/api/sessions')
-      .send({ hostName: 'Alice' })
-      .expect(201);
-    sessionCode = response.body.sessionCode;
+    await startedSession(sessionStore, sessionCode, [{ placeId: 'place-1', name: 'Cafe' }]);
   });
 
   afterAll(async () => {

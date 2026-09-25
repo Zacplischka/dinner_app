@@ -14,7 +14,7 @@ import { MAX_SEARCH_RADIUS_MILES, MIN_SEARCH_RADIUS_MILES } from './session-cont
 import type { Venue } from './models.js';
 
 /** Where a results-screen tap came from; counted server-side for the #68 kill gates. */
-export const COMPARISON_TAP_SOURCES = ['match_card', 'near_miss'] as const;
+const COMPARISON_TAP_SOURCES = ['match_card', 'near_miss'] as const;
 export type ComparisonTapSource = (typeof COMPARISON_TAP_SOURCES)[number];
 /** Same vocabulary as a Set, for validating untrusted query params. */
 export const COMPARISON_TAP_SOURCE_SET = new Set<string>(COMPARISON_TAP_SOURCES);

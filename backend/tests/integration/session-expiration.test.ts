@@ -7,6 +7,7 @@ import {
   disconnectSessionExpiryNotifier,
 } from '../../src/redis/sessionExpiryNotifier.js';
 import type { Restaurant } from '@dinder/shared/types';
+import { startedSession } from '../helpers/startedSession.js';
 
 describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
   const sessionCode = 'EXP12';
@@ -27,10 +28,7 @@ describe('Integration Test: Session Expiration (FR-019, FR-020)', () => {
   });
 
   async function createCompleteSession(): Promise<void> {
-    await store.createSession(sessionCode, {
-      hostName: 'Alice',
-      entries: restaurants,
-    });
+    await startedSession(store, sessionCode, restaurants);
     await store.addParticipant(sessionCode, {
       participantId: 'alice',
       displayName: 'Alice',

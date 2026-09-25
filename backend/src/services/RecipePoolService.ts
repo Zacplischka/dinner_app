@@ -3,7 +3,7 @@
 // thing cost one Spoonacular lookup, dealt as a random ~15-card Deck each.
 // `sourcedSupply` owns Redis, the vendor and its failures; `cutDeck`/`blendDeck`
 // cut a Deck from the Sourced and Owned supplies, knowing nothing of either source.
-import type { Craving, Cuisine, DeckEntry, Diet, MealType, Recipe } from '@dinder/shared/types';
+import type { Craving, Cuisine, DeckEntry, Diet, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import type { RedisLike } from '../redis/redisLike.js';
@@ -40,23 +40,6 @@ export function cravingPoolKey(craving: Craving): string {
       .sort()
       .join(',');
   return `recipes:pool:${craving.mealType.trim().toLowerCase()}|${set(craving.cuisines)}|${set(craving.diets)}`;
-}
-
-/**
- * The Craving a pool key was built from. The Restart path carries the key
- * rather than the Craving, and the corpus filters on the Craving — so the
- * canonicalization is read back out rather than the Craving stored twice.
- * Lossless by construction: the key holds the same three fields, trimmed,
- * lowercased and sorted, and the chip vocabularies are lowercase already.
- */
-export function cravingFromPoolKey(poolKey: string): Craving {
-  const [mealType, cuisines, diets] = poolKey.slice('recipes:pool:'.length).split('|');
-  const set = (values: string) => (values === '' ? [] : values.split(','));
-  return {
-    mealType: mealType as MealType,
-    cuisines: set(cuisines) as Cuisine[],
-    diets: set(diets) as Diet[],
-  };
 }
 
 const offsetKey = (poolKey: string) => poolKey.replace('recipes:pool:', 'recipes:offset:');
@@ -150,16 +133,6 @@ export interface RecipePoolService {
     current: DeckEntry[],
     deckSize?: number
   ): Promise<DealtDeck>;
-  /**
-   * A Restart's Deck (#246, #260): a fresh cut of the pool `current` was dealt
-   * from. A pool that has aged out degrades to reshuffling `current` rather
-   * than paying a lookup — Restart is not a moment to go to the network, and
-   * never fails.
-   *
-   * Restaurant Restart never comes here: restaurant supply is geography-bound
-   * and recipe supply is not, which is the whole reason for the divergence.
-   */
-  redeal(poolKey: string, current: DeckEntry[], deckSize?: number): Promise<DeckEntry[]>;
   /**
    * The whole Recipe behind a dealt card — ingredients, steps, servings,
    * credit — which is what the Shopping List is minted from (#262). Both
@@ -437,27 +410,6 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
         entries: shuffle(picked.map(toDeckEntry)),
         recipeSourceDown: sourceDown && picked.length < deckSize,
       };
-    },
-
-    async redeal(
-      poolKey: string,
-      current: DeckEntry[],
-      deckSize = defaultDeckSize
-    ): Promise<DeckEntry[]> {
-      const pool = await readPool(poolKey);
-      // `null` and `[]` part company here, the same way they do in
-      // `sourcedSupply`. An aged-out pool (`null`) has nothing left to name
-      // the Sourced cards the Deck was dealt, so the wiped Deck is the supply:
-      // reshuffling it keeps the Deck's size and its floor, which cutting
-      // owned alone would not. A cached clean miss (`[]`) is an answer — the
-      // corpus is the whole supply and always was, so the Restart blends
-      // against it and deals its unshown cards first.
-      if (!pool) return shuffle(current);
-      const owned = deps.owned.forCraving(cravingFromPoolKey(poolKey));
-      const dealt = blendDeck(owned, pool, deckSize, ownedFloor, current, shuffle);
-      // Only reachable when a redeploy takes the corpus out from under a live
-      // Session that was dealt owned-only: a Restart never returns no Deck.
-      return dealt.length > 0 ? dealt : shuffle(current);
     },
 
     async readRecipe(poolKey: string, placeId: string): Promise<PooledRecipe | null> {

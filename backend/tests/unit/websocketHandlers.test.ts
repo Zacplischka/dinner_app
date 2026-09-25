@@ -21,22 +21,18 @@ import {
 } from '../../src/websocket/orderHandler.js';
 import { createOrderService } from '../../src/services/OrderService.js';
 import type { Snapshot } from '@dinder/shared/types';
+import { startedSession } from '../helpers/startedSession.js';
 
 const redis = new RedisMock() as unknown as Redis;
 const store = createSessionStore(redis);
 // The Deck supplies these handlers never reach, stubbed inert. Every session
-// here is seeded straight through store.createSession, so service.createSession
-// — the only caller of searchNearbyRestaurants, dealRecipeDeck and dealMovieDeck
-// — never runs; none of them carries a Craving or a Mood, so neither redeal
-// branch of a Restart fires (both are covered in SessionService.test.ts); and no
+// here is seeded straight through the store, so no lobby start deals; and no
 // Deck here holds a Recipe, so nothing mints a Shopping List. Wiring every
 // declared dependency is what keeps the suite honest when the shape changes.
 const service = createSessionService({
   store,
   searchNearbyRestaurants: vi.fn(async () => []),
   dealRecipeDeck: vi.fn(async () => ({ entries: [], recipeSourceDown: false })),
-  redealRecipeDeck: vi.fn(async (_poolKey, current) => current),
-  dealMovieDeck: vi.fn(() => []),
   redealMovieDeck: vi.fn((_mood, current) => current),
   mintShoppingList: vi.fn(async () => undefined),
 });
@@ -86,8 +82,9 @@ describe('websocket handlers', () => {
     };
   }
 
+  // A started Eat Out Session, selecting. Its Deck is empty so no Top Pick is crowned.
   async function createSessionWithParticipant(participantId = 'socket-1') {
-    await store.createSession(sessionCode, { hostName: 'Alice' });
+    await startedSession(store, sessionCode, [], { branch: 'eatout' });
     await store.claimDisplayName(sessionCode, 'Alice', participantId, rejoinToken);
     await store.addParticipant(sessionCode, {
       participantId,
@@ -569,11 +566,7 @@ describe('websocket handlers', () => {
     // #529: the Lobby renders from its roster, so participant:left alone leaves
     // the old room showing Carol and holding a stale revision.
     it('should re-broadcast the old Lobby when a join pulls a Participant out of it', async () => {
-      await store.createSession(sessionCode, {
-        hostName: 'Alice',
-        branch: 'eatout',
-        lobby: { revision: 0, round: 1, mealType: 'main course' },
-      });
+      await store.createSession(sessionCode, { hostName: 'Alice', branch: 'eatout' });
       await store.addParticipant(sessionCode, {
         participantId: 'socket-1',
         displayName: 'Alice',
@@ -982,8 +975,8 @@ describe('websocket handlers', () => {
       );
     });
 
-    it('should restart sessions and log the state transition', async () => {
-      const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    it('should return the room to the lobby and broadcast it', async () => {
+      vi.spyOn(logger, 'info').mockImplementation(() => undefined);
       await createSessionWithParticipant('socket-1');
       const testIo = io();
       const callback = vi.fn();
@@ -998,17 +991,13 @@ describe('websocket handlers', () => {
 
       // Canonical: no-data commands ack data: null (bridge → Ack<null>).
       expect(callback).toHaveBeenCalledWith({ success: true, data: null });
-      // From 'waiting' this command is the lobby's start, not a Restart —
-      // it must not masquerade as one in the log or the broadcast (#289).
       expect(testIo.roomEmitter.emit).toHaveBeenCalledWith('session:restarted', {
+        state: 'waiting',
+        lobby: expect.objectContaining({ sessionCode, state: 'waiting' }),
         sessionCode,
-        message: 'Selection started.',
+        message: 'Back in the lobby. Review your choices and confirm Ready.',
       });
-      expect(logSpy).toHaveBeenCalledWith(
-        { sessionCode, participantId: 'socket-1' },
-        'Session selection started'
-      );
-      expect(logSpy).not.toHaveBeenCalledWith(expect.anything(), 'Session restarted');
+      await expect(redis.hget(`session:${sessionCode}`, 'state')).resolves.toBe('waiting');
     });
 
     it('should return generic error when restart processing throws', async () => {
@@ -1085,7 +1074,7 @@ describe('websocket handlers', () => {
 
     it('should reject sockets that are not participants', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      await store.createSession(sessionCode, { hostName: 'Alice' });
+      await startedSession(store, sessionCode, []);
       const callback = vi.fn();
 
       await handleSelectionSubmit(

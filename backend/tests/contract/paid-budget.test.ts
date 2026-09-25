@@ -6,7 +6,7 @@
 import express from 'express';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { app } from '../../src/server.js';
+import { app, sessionService } from '../../src/server.js';
 import { createComparisonRouter } from '../../src/api/comparison.js';
 import { config } from '../../src/config/index.js';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
@@ -22,25 +22,25 @@ describe('the global paid-API budget', () => {
     vi.restoreAllMocks();
   });
 
-  it('refuses Session create in a new area as RATE_LIMITED once Text Search is spent', async () => {
+  it('refuses a lobby start in a new area as RATE_LIMITED once Text Search is spent', async () => {
     config.paidBudget.placesTextSearch = 0;
     const search = vi
       .spyOn(RestaurantSearchService, 'searchNearbyRestaurants')
       .mockResolvedValue([{ placeId: 'place-1', name: 'R1' }]);
-
-    const response = await request(app)
-      .post('/api/sessions')
-      .send({
-        hostName: 'Alice',
-        location: { latitude: -37.8136, longitude: 144.9631 },
-        searchRadiusMiles: 5,
-      })
-      .expect(503);
-
-    expect(response.body).toEqual({
-      code: 'RATE_LIMITED',
-      message: expect.stringMatching(/daily search limit/),
+    const { sessionCode } = await sessionService.createSession('Alice', {
+      branch: 'eatout',
+      location: { latitude: -37.8136, longitude: 144.9631 },
+      searchRadiusMiles: 5,
     });
+    const { lobby } = await sessionService.joinSession(sessionCode, 'alice', 'Alice');
+    const ready = await sessionService.setReady(sessionCode, 'alice', lobby!.revision, true);
+
+    await expect(sessionService.startRound(sessionCode, 'alice', ready.revision)).rejects.toThrow(
+      expect.objectContaining({
+        code: 'RATE_LIMITED',
+        message: expect.stringMatching(/daily search limit/),
+      })
+    );
     expect(search).not.toHaveBeenCalled();
   });
 

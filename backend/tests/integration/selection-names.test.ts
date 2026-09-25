@@ -8,6 +8,7 @@ import type {
 import { sessionStore } from '../../src/server.js';
 import { getTestRedis, cleanupTestData } from '../helpers/testSetup.js';
 import { startSocketServer, stopSocketServer } from '../helpers/socketServer.js';
+import { startedSession } from '../helpers/startedSession.js';
 
 let url: string;
 const redis = getTestRedis();
@@ -27,9 +28,8 @@ describe('accepted display names on the Selection transport', () => {
     'preserves %s through join, submit and results',
     async (displayName) => {
       const code = 'NME23';
-      await sessionStore.createSession(code, {
+      await startedSession(sessionStore, code, [{ placeId: 'pizza', name: 'Pizza' }], {
         hostName: 'Host',
-        entries: [{ placeId: 'pizza', name: 'Pizza' }],
       });
       const socket: Socket<ServerToClientEvents, ClientToServerEvents> = connect(url, {
         transports: ['websocket'],

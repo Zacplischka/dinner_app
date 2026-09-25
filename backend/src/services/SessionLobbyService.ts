@@ -24,7 +24,6 @@ export function createLobbyCommands(
     SessionServiceDeps,
     | 'store'
     | 'searchNearbyRestaurants'
-    | 'dealMovieDeck'
     | 'redealMovieDeck'
     | 'dealRecipeDeck'
     | 'dealCollaborativeRecipeDeck'
@@ -69,8 +68,6 @@ export function createLobbyCommands(
   async function context(sessionCode: string, participantId: string, revision?: number) {
     const session = await store.readSession(sessionCode);
     if (!session) throw new DomainError('SESSION_NOT_FOUND', 'Session not found or has expired');
-    if (!session.lobby)
-      throw new DomainError('VALIDATION_ERROR', 'This session uses the original setup.');
     const roster = await store.listParticipants(sessionCode);
     const me = roster.find((p) => p.participantId === participantId);
     if (!me)
@@ -78,7 +75,7 @@ export function createLobbyCommands(
         'NOT_IN_SESSION',
         'You are no longer in this session. Join again to take part.'
       );
-    if (revision !== undefined && revision !== session.lobby.revision) {
+    if (revision !== undefined && revision !== session.lobby!.revision) {
       throw new DomainError(
         'VALIDATION_ERROR',
         'The choices changed. Review the latest choices and try again.'

@@ -13,8 +13,6 @@
     "test:contract": "vitest run --project contract",
     "test:integration": "vitest run --project integration",
     "test:unit": "vitest run --project unit",
-    "compare:smoke": "tsx scripts/compare-smoke.ts",
-    "grocery:smoke": "tsx scripts/grocery-smoke.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
   },

@@ -35,17 +35,20 @@ export interface SessionLocation {
 }
 
 // POST /api/sessions
+// Every Session opens in its lobby and deals when the host starts, so the
+// pre-lobby setup fields are accepted and ignored (ADR 0007): `collaborative`,
+// `mood`, and all of `craving` but its meal type.
 export interface CreateSessionRequest {
   hostName: string;
   collaborative?: boolean;
   location?: SessionLocation;
   searchRadiusMiles?: number;
+  /** Absent means Eat Out, the only Branch before the fork. */
   branch?: Branch;
-  /** Cook setup: what the Deck is dealt from. Ignored outside the Cook Branch. */
+  /** Only the meal type is read: it seeds the Cook lobby's. */
   craving?: Craving;
-  /** Cook setup: who's eating. Stored on the Session, never part of the Craving. */
+  /** Cook: who's eating. Stored on the Session, never part of the Craving. */
   headcount?: number;
-  /** Watch setup: what the Movie Deck is dealt from. Ignored outside the Watch Branch. */
   mood?: Mood;
   /**
    * How many cards the Host wants to swipe (#415), MIN_DECK_SIZE-MAX_DECK_SIZE.

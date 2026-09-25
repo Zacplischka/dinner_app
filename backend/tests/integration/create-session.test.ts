@@ -29,7 +29,7 @@ describe('Integration Test: Create Session Flow (FR-001, FR-002, FR-003)', () =>
       hostName: 'Alice',
       participantCount: 1,
       state: 'waiting',
-      restaurantCount: 0,
+      branch: 'eatout',
     });
   });
 

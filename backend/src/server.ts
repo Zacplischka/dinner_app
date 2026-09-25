@@ -21,7 +21,6 @@ import { createSessionService } from './services/SessionService.js';
 import { createRecipePoolService } from './services/RecipePoolService.js';
 import {
   corpusMovieSource,
-  dealMovieDeck,
   loadMovieCorpus,
   redealMovieDeck,
 } from './services/MovieDeckService.js';
@@ -107,11 +106,7 @@ const sessionService = createSessionService({
     RestaurantSearchService.searchNearbyRestaurants(...args)
   ),
   dealRecipeDeck: (craving, deckSize) => recipePoolService.dealDeck(craving, deckSize),
-  redealRecipeDeck: (poolKey, current, deckSize) =>
-    recipePoolService.redeal(poolKey, current, deckSize),
   // Pure over the committed corpus: no service to construct (#369).
-  dealMovieDeck: (mood, deckSize, interests) =>
-    dealMovieDeck(mood, { source: movieSource, deckSize, interests }),
   redealMovieDeck: (mood, current, deckSize, interests) =>
     redealMovieDeck(mood, current, { source: movieSource, deckSize, interests }),
   dealCollaborativeRecipeDeck: (craving, interests, current, deckSize) =>

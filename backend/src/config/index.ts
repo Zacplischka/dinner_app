@@ -47,8 +47,8 @@ export const config = {
   },
   apify: {
     token: process.env.APIFY_TOKEN,
-    uberEatsActorId: process.env.APIFY_UBER_EATS_ACTOR_ID || 'borderline/uber-eats-scraper-ppr',
-    doorDashActorId: process.env.APIFY_DOORDASH_ACTOR_ID || 'abotapi/doordash-scraper',
+    uberEatsActorId: 'borderline/uber-eats-scraper-ppr',
+    doorDashActorId: 'abotapi/doordash-scraper',
   },
   supabase: {
     url: process.env.SUPABASE_URL || '',
@@ -62,26 +62,26 @@ export const config = {
     // obligation returns, and nothing else in the code would catch it.
     apiKey: process.env.SPOONACULAR_API_KEY,
     // The recipe supply (#232): a shared per-Craving pool dealt as per-Session
-    // Decks. The TTL is config precisely so it can be cut to the compliant 1 h
-    // with a redeploy if Spoonacular objects to cross-user caching (#237).
-    poolTtlMs: parseInt(process.env.RECIPE_POOL_TTL_MS || `${24 * 3_600_000}`, 10),
+    // Decks. Cut the TTL to the compliant 1 h if Spoonacular objects to
+    // cross-user caching (#237).
+    poolTtlMs: 24 * 3_600_000,
     // A Craving that matches nothing is a fact about the catalogue, not about
     // the app, so it caches too — but briefly (#260). Long enough that a Host
     // fiddling with chips costs one lookup, short enough that a Craving the
     // source learns about tonight is swipeable within the hour.
-    emptyPoolTtlMs: parseInt(process.env.RECIPE_EMPTY_POOL_TTL_MS || `${3_600_000}`, 10),
-    poolSize: parseInt(process.env.RECIPE_POOL_SIZE || '60', 10),
-    deckSize: parseInt(process.env.RECIPE_DECK_SIZE || '15', 10),
+    emptyPoolTtlMs: 3_600_000,
+    poolSize: 60,
+    deckSize: 15,
     // The daily-points ceiling the guard fails closed at (#261). Spoonacular's
     // Cook tier includes 1,500 points a day and its console has no spend cap:
     // past that it keeps answering and bills $0.005/pt silently. The default
     // stops short of the included quota, and the gap absorbs the in-flight
     // calls whose points only land on the counter once they answer.
-    dailyPointCeiling: parseInt(process.env.SPOONACULAR_DAILY_POINT_CEILING || '1400', 10),
+    dailyPointCeiling: 1400,
     // The deal-time budget on a vendor fetch (#333). A slow source is a source
     // failure for that deal: past this the deal gives up on it and deals owned
     // alone, so a hanging Spoonacular can never hold a Host at setup.
-    dealBudgetMs: parseInt(process.env.RECIPE_DEAL_BUDGET_MS || '2500', 10),
+    dealBudgetMs: 2500,
   },
   // The global paid-API budget (#502): calls per quota period per paid SKU,
   // app-wide, each kept under the vendor's quota or bill with headroom for
@@ -104,11 +104,11 @@ export const config = {
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,
     // ADR 0010); the cache self-heals onto whatever store responses name.
-    defaultStoreId: parseInt(process.env.WOOLWORTHS_STORE_ID || '1101', 10),
+    defaultStoreId: 1101,
     // Price-cache Freshness Windows (#253 story 44): success min(cap,
     // Wednesday 6 am AEST rollover); a failure retries after ~1 h.
-    successWindowCapMs: parseInt(process.env.WOOLWORTHS_PRICE_WINDOW_MS || `${24 * 3_600_000}`, 10),
-    failureWindowMs: parseInt(process.env.WOOLWORTHS_PRICE_FAILURE_WINDOW_MS || `${3_600_000}`, 10),
+    successWindowCapMs: 24 * 3_600_000,
+    failureWindowMs: 3_600_000,
   },
 };
 

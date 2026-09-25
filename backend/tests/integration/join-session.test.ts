@@ -4,6 +4,8 @@ import request from 'supertest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData } from '../helpers/testSetup.js';
 import { startSocketServer, stopSocketServer } from '../helpers/socketServer.js';
+import { startedSession } from '../helpers/startedSession.js';
+import { sessionStore } from '../../src/server.js';
 
 describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
   let redis: Redis;
@@ -154,15 +156,13 @@ describe('Integration Test: Join Session Flow (FR-004, FR-005, FR-022)', () => {
     bee.socket.close();
   });
 
-  // #284: the Invite Link admits joiners while the Session lives. The lobby's
-  // Start Selecting is the restart command, so drive the real transition.
+  // #284: the Invite Link admits joiners while the Session lives.
   it('should admit a late joiner after the host starts selecting, telling them the state', async () => {
-    const alice = await joinSession('Alice');
-    await new Promise<void>((resolve, reject) => {
-      alice.socket.emit('session:restart', { sessionCode: testSessionCode }, (response: any) =>
-        response.success ? resolve() : reject(new Error(response.error?.message))
-      );
+    testSessionCode = 'LATE1';
+    await startedSession(sessionStore, testSessionCode, [{ placeId: 'venue', name: 'Cafe' }], {
+      branch: 'eatout',
     });
+    const alice = await joinSession('Alice');
 
     const bob = await joinSession('Bob');
 
