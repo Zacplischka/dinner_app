@@ -214,10 +214,10 @@ export default function HomePage() {
                     aria-hidden="true"
                   >
                     <img
-                      src={`/images/tonight-${card.image}.webp`}
+                      src={`/images/tonight-${card.image}-432.webp`}
                       alt=""
-                      width="1536"
-                      height="1024"
+                      width="432"
+                      height="288"
                       className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
                       onError={(event) => {
                         event.currentTarget.style.visibility = 'hidden';
