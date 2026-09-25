@@ -216,8 +216,8 @@ export default function HomePage() {
                     <img
                       src={`/images/tonight-${card.image}-480.webp`}
                       alt=""
-                      width="480"
-                      height="320"
+                      width="432"
+                      height="288"
                       className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
                       onError={(event) => {
                         event.currentTarget.style.visibility = 'hidden';
