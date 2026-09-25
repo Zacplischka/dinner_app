@@ -9,27 +9,12 @@
 - Supabase
 - Google Places API
 - Cloudflare (DNS, and R2 for Owned Recipe images)
-- OpenAI (Owned Recipe image generation, and the corpus's first culinary judge)
-- Google Gemini (the corpus's second culinary judge)
 
 ### How you should access these
 
 - **Supabase**: Supabase MCP tools (`mcp__plugin_supabase_supabase__*`) — list_tables, execute_sql, get_logs, get_advisors, apply_migration, etc. against project `hcjuqvicwuszwqkreklc`. It is a free-tier project, so Supabase pauses it after a week without API requests and its hostname stops resolving (only sign-in and Friends notice; the core flow is Redis). `prod-smoke.yml` reads one row daily to keep it awake and goes red if it has paused; restore from the dashboard or `POST https://api.supabase.com/v1/projects/hcjuqvicwuszwqkreklc/restore` with a personal access token.
 - **Railway**: `railway` CLI (installed via Homebrew). Requires `railway login` (interactive — ask the user to run it), then `railway link`, `railway logs`, `railway variables`, `railway up`.
-  - `railway ssh` additionally needs a key registered (`railway ssh keys`) and `ssh-keyscan ssh.railway.com >> ~/.ssh/known_hosts`, both one-off. The corpus's tally gate (#337) is the standing user: `node scripts/corpus/tally.mjs check <recordsDir>` runs the measurement inside the container, because production is served Woolworths store **1101** where residential AU gets 3221. It runs the container's *deployed* copy of `scripts/corpus/tally.mjs`, so a change to that file is measured only once it is on `main`. Run it when nobody is using the app — it refuses to start while a live Session exists, because the ADR 0010 politeness budget is shared with every Shopping List mint. It also spends the shared Spoonacular daily points (#261) on the ladder's Convert rung, so it takes half the day's ceiling at most and refuses to start (`TALLY_SPOONACULAR_BUDGET`) once that is gone: a quiet hour does not give those back, and lines it could not convert come back `unmeasured` for the next run rather than as defects.
 - **Google Places**: `gcloud` CLI is installed and authenticated, but the active project is `mypickle-486702` — verify/switch project before touching Places quotas or keys (`gcloud config set project <id>`). Runtime access just uses the API key in `backend/.env`.
-- **TMDB** (the Movie corpus, ADR 0014): `TMDB_API_KEY`, an operator credential exported for `node scripts/build-movie-corpus.mjs` — not in any `.env`, not in Railway; the running app reads the committed `backend/movies/movies.json` and never calls TMDB. It is also the one GitHub secret `movie-corpus.yml` needs for the quarterly rebuild PR. A free key is minted at https://www.themoviedb.org/settings/api (non-commercial terms, attribution shown in-app; a commercial licence is a conversation to have before Dinder ever takes money).
-- **Cloudflare R2** (Owned Recipe images, #330): bucket `dinder-recipe-images`, served from `https://img.dinder.it.com`. Nothing at runtime reads it — the backend only ever hands out the URL — so the credential is an operator credential, not a deploy variable: an R2 API token scoped Object Read & Write to that bucket, exported as `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` for `node scripts/corpus/images.mjs publish`. Not in any `.env`, not in Railway, not a GitHub secret. Mint it from the Cloudflare dashboard when you need it and let it expire.
-- **OpenAI** (Owned Recipe image generation #330, and the corpus's first culinary judge #336): `OPENAI_API_KEY`, same shape — exported for the pipeline run only, never a deploy variable. Note the gateway blackholes OpenAI IPs on this network; connect the VPN before a run.
-- **Google Gemini** (the corpus's second culinary judge, #336): `GEMINI_API_KEY`, same shape again — an operator credential exported for a corpus run, not in any `.env`, not in Railway, not a GitHub secret. It exists to be a *second model family*: the author is Claude and the first judge is GPT, so a judge pair that is anything less than three families is not the layer, and `scripts/corpus/gate.mjs` refuses to run rather than report a pass it did not earn. **The key exists** — display name `dinder-corpus-culinary-judge (#336)`, in the AI Studio project `gen-lang-client-0616448802` (not `mypickle-486702`, whose billing is deliberately detached: that is the Places project, and reattaching it to add an API is the runaway the cap exists to stop). It is restricted to `generativelanguage.googleapis.com` and nothing else. Read the string, never commit it:
-
-  ```bash
-  export GEMINI_API_KEY=$(gcloud services api-keys get-key-string \
-    ac294274-6986-4746-8a87-80dc20e3bcd9 \
-    --project=gen-lang-client-0616448802 --format='value(keyString)')
-  ```
-
-  That project has billing attached, so a corpus run of ~1,160 Recipes bills at the paid tier rather than riding the free one — watch it, or mint a free-tier key in a project without billing. Both judge model ids were exercised live when the layer landed: `gemini-pro-latest` and `gpt-5.5` each answered `JUDGE_RUBRIC` with strict JSON and each caught the same gluten-free soy-sauce trap. Bump an id in `gate.mjs` and prove it the same way; a stale id fails on the first call of a run rather than grading badly, but nobody wants to find that out 200 Recipes in.
 
 ## Agent skills
 

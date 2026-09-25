@@ -4,7 +4,6 @@
   "description": "Dinder frontend with React and Vite",
   "type": "module",
   "scripts": {
-    "mobile:sync": "node scripts/mobile.mjs",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
