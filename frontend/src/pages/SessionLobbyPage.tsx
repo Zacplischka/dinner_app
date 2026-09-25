@@ -73,6 +73,12 @@ export default function SessionLobbyPage() {
     };
   }, [sessionCode, roster, setExpiresAt, setLobby]);
 
+  // Fetch the Deck's route while the Lobby is idle, not after Start swiping.
+  // App lazy-loads this same module, so both share one chunk.
+  useEffect(() => {
+    void import('./SelectionPage').catch(() => undefined);
+  }, []);
+
   const share = useShareLink(shareableLink, 'Link copied to clipboard!');
   const leave = useLeaveSession(sessionCode);
 
@@ -396,7 +402,7 @@ export default function SessionLobbyPage() {
                 </button>
               ) : (
                 <p className="rounded-xl border border-dashed border-line py-4 text-center text-sm text-muted">
-                  Waiting for the host to start
+                  {lobby?.starting ? 'Finding your shared deck…' : 'Waiting for the host to start'}
                 </p>
               ))}
           </div>

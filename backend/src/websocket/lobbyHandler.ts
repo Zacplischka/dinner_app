@@ -61,7 +61,9 @@ export function registerLobbyHandlers(
     'session:start',
     command((payload, callback) =>
       run(lobbyPayloadSchema, payload, callback, (data) =>
-        service.startRound(data.sessionCode, socket.id, data.revision)
+        service.startRound(data.sessionCode, socket.id, data.revision, (lobby) =>
+          io.in(lobby.sessionCode).emit('session:lobby', lobby)
+        )
       )
     )
   );

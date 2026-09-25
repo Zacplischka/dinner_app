@@ -231,7 +231,12 @@ export function createLobbyCommands(
     });
   }
 
-  async function startRound(sessionCode: string, participantId: string, revision: number) {
+  async function startRound(
+    sessionCode: string,
+    participantId: string,
+    revision: number,
+    onStarting?: (lobby: SessionLobbyState) => void
+  ) {
     const snapshot = await store.withSessionLock(sessionCode, async () => {
       const { session, roster, me } = await context(sessionCode, participantId, revision);
       requireHost(roster, me);
@@ -251,6 +256,8 @@ export function createLobbyCommands(
       session.lobby!.revision++;
       session.lobby!.notice = undefined;
       await store.writeLobbySession(session);
+      // The deal takes seconds; let the room see it has started.
+      onStarting?.((await readLobby(sessionCode))!);
       return {
         session,
         roster: [...roster].sort((a, b) => a.displayName.localeCompare(b.displayName)),
