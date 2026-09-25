@@ -273,14 +273,24 @@ describe('socketService', () => {
       socket.silent.add('order:open');
       socket.silent.add('order:item');
 
+      // Nothing reconnects after a lost read, so its message must not say so.
       const read = socketService.openOrder({ sessionCode: 'AB123', placeId: 'place-1' });
       await vi.advanceTimersByTimeAsync(10_000);
-      expect(await read).toMatchObject({ success: false, error: { code: 'UNKNOWN' } });
+      expect(await read).toEqual({
+        success: false,
+        error: { code: 'UNKNOWN', message: "The server didn't respond. Try again." },
+      });
       expect(onUncertainOutcome).not.toHaveBeenCalled();
 
       const tap = socketService.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 });
       await vi.advanceTimersByTimeAsync(10_000);
-      expect(await tap).toMatchObject({ success: false });
+      expect(await tap).toMatchObject({
+        success: false,
+        error: {
+          message:
+            "The server didn't respond. Reconnecting to check what happened before you try again.",
+        },
+      });
       expect(onUncertainOutcome).toHaveBeenCalledOnce();
     } finally {
       vi.useRealTimers();
