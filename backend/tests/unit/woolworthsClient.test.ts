@@ -54,7 +54,7 @@ describe('createWoolworthsClient', () => {
   });
 
   // #542: the catalogue itself doubles a word, and every consumer shows the name.
-  it('collapses a word the catalogue repeats, but not a doubled name like Cous Cous', async () => {
+  it('collapses a word or phrase the catalogue repeats, but not a name like Cous Cous', async () => {
     const item = (Stockcode: number, Name: string) => ({ Products: [{ Stockcode, Name }] });
     const { fetchImpl } = woolworthsFetchFake({
       cumin: {
@@ -63,6 +63,9 @@ describe('createWoolworthsClient', () => {
           item(2, 'Lemon Lemon Bag'),
           item(3, 'Woolworths Cous Cous'),
           item(4, "Nando's Peri Peri Sauce"),
+          // Live store names from the #542 review.
+          item(5, 'Woolworths Lamb Easy Carve Leg Roast Leg Roast'),
+          item(6, 'Continental Instant Mashed Potato Instant Mashed Potato'),
         ],
       },
     });
@@ -72,6 +75,8 @@ describe('createWoolworthsClient', () => {
       'Lemon Bag',
       'Woolworths Cous Cous',
       "Nando's Peri Peri Sauce",
+      'Woolworths Lamb Easy Carve Leg Roast',
+      'Continental Instant Mashed Potato',
     ]);
   });
 

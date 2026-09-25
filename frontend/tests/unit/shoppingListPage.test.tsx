@@ -181,6 +181,7 @@ describe('ShoppingListPage', () => {
       lines: [
         unpricedLine('0', '0.17 teaspoon ground cumin', '30g'),
         unpricedLine('1', '1 dozen eggs', '12 pack'),
+        unpricedLine('2', '2 dozen eggs', '24pk'),
       ],
     });
     renderPage();
@@ -188,6 +189,7 @@ describe('ShoppingListPage', () => {
 
     expect(lineFor('0.17 teaspoon ground cumin').textContent).toContain('30g pack · unpriced');
     expect(lineFor('1 dozen eggs').textContent).toContain('12 pack · unpriced');
+    expect(lineFor('2 dozen eggs').textContent).toContain('24pk · unpriced');
   });
 
   it('gives an Unmatched line its recipe text and a Woolworths search', async () => {
