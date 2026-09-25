@@ -11,7 +11,7 @@
   "ingredients": [
     {
       "name": "gluten-free beef stock",
-      "searchTerm": "beef liquid stock",
+      "searchTerm": "beef liquid stock gluten free",
       "amount": 2,
       "unit": "l",
       "original": "2 L gluten-free beef stock"
@@ -60,7 +60,7 @@
     },
     {
       "name": "gluten-free fish sauce",
-      "searchTerm": "fish sauce",
+      "searchTerm": "fish sauce gluten free",
       "amount": 40,
       "unit": "ml",
       "original": "2 tbsp (40 ml) gluten-free fish sauce"

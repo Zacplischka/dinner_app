@@ -25,7 +25,7 @@
     },
     {
       "name": "gluten-free vegetable stock",
-      "searchTerm": "vegetable liquid stock",
+      "searchTerm": "vegetable liquid stock gluten free",
       "amount": 1,
       "unit": "l",
       "original": "1 L gluten-free vegetable stock"
@@ -50,7 +50,7 @@
     },
     {
       "name": "vegetarian parmesan cheese",
-      "searchTerm": "parmesan cheese",
+      "searchTerm": "parmesan cheese vegetarian",
       "amount": 80,
       "unit": "g",
       "original": "80 g vegetarian parmesan cheese, finely grated"

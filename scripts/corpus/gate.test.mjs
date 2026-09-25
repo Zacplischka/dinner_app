@@ -14,6 +14,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   AUTHOR_FAMILY,
   CUISINES,
@@ -22,11 +23,12 @@ import {
   MEAL_TYPES,
   US_TO_AU,
   culinaryFailures,
+  dietFailures,
   gateDish,
   imageFailures,
   shapeFailures,
 } from './gate.mjs';
-import { recordSlugs } from './records.mjs';
+import { readRecords, recordSlugs } from './records.mjs';
 
 /** A Recipe as it ships: the shape `backend/src/services/ownedRecipeStore.ts` loads. */
 const CLEAN = {
@@ -268,6 +270,15 @@ test('a declared diet cannot take a known trap on trust', () => {
   assert.deepEqual(shapeFailures(labelled, { slug: 'beef-ragu' }), []);
   const cheese = withLine(line('parmesan', 50, 'g'), { diets: ['gluten free'] });
   assert.deepEqual(shapeFailures(cheese, { slug: 'beef-ragu' }), []);
+});
+
+test('every shipped Recipe keeps the diets it declares', () => {
+  // The shipped records, not a fixture: nothing else in CI gates them, and a
+  // later edit to a searchTerm would quietly buy the plain product again.
+  const shipped = fileURLToPath(new URL('../../backend/recipes', import.meta.url));
+  for (const { slug, recipe } of readRecords(shipped)) {
+    assert.deepEqual(dietFailures(recipe.ingredients, recipe.diets), [], slug);
+  }
 });
 
 // ------------------------------------------------------------------- the image

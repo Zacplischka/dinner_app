@@ -169,6 +169,17 @@ const FRESH_HERBS = [
   'thyme',
 ];
 
+/**
+ * The heads a declared diet cannot take on trust (#505), keyed by the diet —
+ * whose chip name is also the qualifier an ingredient says it with. Stock and
+ * sauces can carry wheat, cheese animal rennet, thickened cream gelatine; each
+ * is a trap only for the diet it breaks. These grow the way the lists above do.
+ */
+const DIET_TRAPS = {
+  'gluten free': ['stock', 'fish sauce', 'curry paste', 'soy sauce'],
+  vegetarian: ['thickened cream', 'parmesan', 'cheddar', 'feta', 'mozzarella'],
+};
+
 /** A pack-form gram or millilitre amount: whole, and round at the sizes shops sell. */
 const PACK_STEP = 5;
 const PACK_STEP_FROM = 100;
@@ -260,7 +271,44 @@ export function shapeFailures(recipe, { slug, seen = new Map() } = {}) {
   if (!ingredients.length) fail('"ingredients" is empty');
   for (const ingredient of ingredients) failures.push(...ingredientFailures(ingredient, stepText));
 
+  failures.push(...dietFailures(ingredients, diets));
   failures.push(...auTermFailures(ingredients, steps));
+  return failures;
+}
+
+/**
+ * A diet the card claims has to reach the Shopping List (#505). The mint
+ * searches a line's `searchTerm` when it has one, so a qualifier the name
+ * carries and the term drops buys the plain product; and a trap with no
+ * qualifier at all is the record breaking its own label.
+ */
+export function dietFailures(ingredients, diets) {
+  // `vegan ⊆ vegetarian`: the store's ladder, so a vegan record answers to both.
+  const declared = new Set(diets.includes('vegan') ? [...diets, 'vegetarian'] : diets);
+  const failures = [];
+  for (const ingredient of ingredients) {
+    const name = String(ingredient.name ?? '').toLowerCase();
+    const term = ingredient.searchTerm;
+    const label = JSON.stringify(ingredient.name);
+    for (const [diet, traps] of Object.entries(DIET_TRAPS)) {
+      if (holds(name, diet)) {
+        if (term !== undefined && !holds(String(term).toLowerCase(), diet)) {
+          failures.push(
+            `ingredient ${label}: searchTerm ${JSON.stringify(term)} drops "${diet}", so the ` +
+              `Shopping List buys the plain product — search "${term} ${diet}"`
+          );
+        }
+      } else if (declared.has(diet)) {
+        const trap = traps.find((head) => holds(name, head));
+        if (trap) {
+          failures.push(
+            `ingredient ${label}: ${trap} is not ${diet} unless it says so, and the Recipe ` +
+              `declares "${diet}" — qualify the name (and any searchTerm), or use one that is`
+          );
+        }
+      }
+    }
+  }
   return failures;
 }
 
