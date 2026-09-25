@@ -49,22 +49,45 @@ interface GooglePlaceResult {
   userRatingCount?: number;
 }
 
-// Shared 429 handling for every Google API this service spends the key on
-// (issue #216): retry honouring Retry-After, and when the 429 persists, log at
-// error level naming the API — so the log answers "which quota" without a code
-// read — and return undefined. Each call site then decides only whether to
-// surface (DomainError RATE_LIMITED) or degrade.
+// The one fetch boundary for every Google API this service spends the key on.
+// Each attempt gets its own timeout, so a Google stall cannot hang Session
+// create (#503). A 429 is retried honouring Retry-After (issue #216), capped
+// and never slept after the last attempt; a RESOURCE_EXHAUSTED 429 is a quota
+// that waiting will not clear, so it is not retried at all. Either way the
+// log names the API — it answers "which quota" without a code read — and the
+// caller gets undefined, deciding only whether to surface (DomainError
+// RATE_LIMITED) or degrade.
 const MAX_RATE_LIMIT_RETRIES = 3;
+const MAX_RETRY_SLEEP_MS = 2_000;
+const TIMEOUT_MS = 5_000;
 
 async function fetchWithRateLimitRetry(
   apiName: string,
-  doFetch: () => Promise<Response>
+  url: string,
+  init: RequestInit
 ): Promise<Response | undefined> {
-  for (let attempt = 0; attempt < MAX_RATE_LIMIT_RETRIES; attempt++) {
-    const response = await doFetch();
+  for (let attempt = 1; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
+    let response: Response;
+    try {
+      response = await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    } catch (err) {
+      // A bare TimeoutError names no API: say which Google call stalled.
+      logger.error({ err, apiName, attempt }, `${apiName} request failed`);
+      throw err;
+    }
     if (response.status !== 429) return response;
-    const retryAfter = parseFloat(response.headers.get('Retry-After') || '1');
-    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+    const errorBody = await response.text();
+    if (errorBody.includes('RESOURCE_EXHAUSTED')) {
+      logger.error({ errorBody }, `${apiName} quota exhausted`);
+      return undefined;
+    }
+    if (attempt === MAX_RATE_LIMIT_RETRIES) break;
+    // Retry-After may be an HTTP date, which parses to NaN: sleep the cap then.
+    const retryAfterMs = parseFloat(response.headers.get('Retry-After') || '1') * 1000;
+    const sleepMs = Number.isFinite(retryAfterMs)
+      ? Math.min(retryAfterMs, MAX_RETRY_SLEEP_MS)
+      : MAX_RETRY_SLEEP_MS;
+    await new Promise((resolve) => setTimeout(resolve, sleepMs));
   }
   logger.error(
     { retries: MAX_RATE_LIMIT_RETRIES },
@@ -82,13 +105,15 @@ function placesApiKey(): string {
 export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> {
   const apiKey = placesApiKey();
 
-  const response = await fetchWithRateLimitRetry('Places details', () =>
-    fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+  const response = await fetchWithRateLimitRetry(
+    'Places details',
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+    {
       headers: {
         'X-Goog-Api-Key': apiKey,
         'X-Goog-FieldMask': 'id,displayName,formattedAddress,location',
       },
-    })
+    }
   );
 
   if (!response) {
@@ -122,16 +147,15 @@ export async function reverseGeocodeSuburb(
 ): Promise<string | undefined> {
   const apiKey = placesApiKey();
 
-  const response = await fetchWithRateLimitRetry('Geocoding reverse lookup', () =>
-    fetch(
-      `https://geocode.googleapis.com/v4/geocode/location/${latitude},${longitude}?types=locality&regionCode=AU&languageCode=en`,
-      {
-        headers: {
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'results.addressComponents.longText,results.addressComponents.types',
-        },
-      }
-    )
+  const response = await fetchWithRateLimitRetry(
+    'Geocoding reverse lookup',
+    `https://geocode.googleapis.com/v4/geocode/location/${latitude},${longitude}?types=locality&regionCode=AU&languageCode=en`,
+    {
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'results.addressComponents.longText,results.addressComponents.types',
+      },
+    }
   );
   // Best-effort decoration: the suburb name only labels a location the caller
   // already has, so a persistent 429 degrades to no label, never an error.
@@ -157,13 +181,15 @@ export async function geocodeArea(query: string): Promise<GeocodedArea | undefin
   const address = /^\d{4}$/.test(query)
     ? `?address.postalCode=${query}&address.regionCode=AU`
     : `/${encodeURIComponent(query)}?regionCode=AU`;
-  const response = await fetchWithRateLimitRetry('Geocoding address', () =>
-    fetch(`https://geocode.googleapis.com/v4/geocode/address${address}&languageCode=en`, {
+  const response = await fetchWithRateLimitRetry(
+    'Geocoding address',
+    `https://geocode.googleapis.com/v4/geocode/address${address}&languageCode=en`,
+    {
       headers: {
         'X-Goog-Api-Key': apiKey,
         'X-Goog-FieldMask': 'results.location,results.formattedAddress',
       },
-    })
+    }
   );
   if (!response) {
     // Blocking: without this the Host cannot resolve an area or create a Session.
@@ -217,13 +243,10 @@ export async function fetchPlacePhoto(photoName: string): Promise<string> {
   }
   const apiKey = placesApiKey();
 
-  const response = await fetchWithRateLimitRetry('Places photo', () =>
-    fetch(
-      `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=400&skipHttpRedirect=true`,
-      {
-        headers: { 'X-Goog-Api-Key': apiKey },
-      }
-    )
+  const response = await fetchWithRateLimitRetry(
+    'Places photo',
+    `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=400&skipHttpRedirect=true`,
+    { headers: { 'X-Goog-Api-Key': apiKey } }
   );
   // Decorative: the card already renders without a photo, so a persistent 429
   // stays a plain Error (generic 500 on the proxy route) — no new error surface.
@@ -397,17 +420,15 @@ async function fetchTextSearchPage(
     pageSize: 20,
   };
 
-  const response = await fetchWithRateLimitRetry('Places searchText', () =>
-    fetch(textSearchUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': fieldMask,
-      },
-      body: JSON.stringify(requestBody),
-    })
-  );
+  const response = await fetchWithRateLimitRetry('Places searchText', textSearchUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': fieldMask,
+    },
+    body: JSON.stringify(requestBody),
+  });
 
   if (!response) {
     // Persistent 429 = the Places searchText quota is exhausted (daily cap or

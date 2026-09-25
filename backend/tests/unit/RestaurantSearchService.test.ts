@@ -115,7 +115,7 @@ describe('RestaurantSearchService', () => {
       );
       expect(fetchMock).toHaveBeenCalledWith(
         'https://places.googleapis.com/v1/places/abc/photos/def/media?maxHeightPx=400&skipHttpRedirect=true',
-        { headers: { 'X-Goog-Api-Key': expect.any(String) } }
+        { headers: { 'X-Goog-Api-Key': expect.any(String) }, signal: expect.any(AbortSignal) }
       );
       expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('key=');
     });
@@ -136,9 +136,12 @@ describe('RestaurantSearchService', () => {
 
     it('logs the exhausted API and stays a plain error when the 429 persists', async () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        headers: { get: () => '0' },
+        text: async () => '',
+      });
       vi.stubGlobal('fetch', fetchMock);
 
       await expect(
@@ -155,7 +158,12 @@ describe('RestaurantSearchService', () => {
     it('returns the photo URL when a single 429 is followed by success', async () => {
       const fetchMock = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          headers: { get: () => '0' },
+          text: async () => '',
+        })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ photoUri: 'https://lh3.googleusercontent.com/photo.jpg' }),
@@ -199,15 +207,19 @@ describe('RestaurantSearchService', () => {
             'X-Goog-Api-Key': expect.any(String),
             'X-Goog-FieldMask': 'id,displayName,formattedAddress,location',
           },
+          signal: expect.any(AbortSignal),
         }
       );
     });
 
     it('throws a RATE_LIMITED DomainError when the 429 persists past all retries', async () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        headers: { get: () => '0' },
+        text: async () => '',
+      });
       vi.stubGlobal('fetch', fetchMock);
 
       await expect(
@@ -228,7 +240,12 @@ describe('RestaurantSearchService', () => {
     it('returns the venue when a single 429 is followed by success', async () => {
       const fetchMock = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          headers: { get: () => '0' },
+          text: async () => '',
+        })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -243,6 +260,21 @@ describe('RestaurantSearchService', () => {
       await expect(
         RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')
       ).resolves.toMatchObject({ placeId: 'ChIJ11InchPizza' });
+    });
+
+    it('names the stalled API in the log and rethrows the timeout unchanged (#503)', async () => {
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      const timeout = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timeout));
+
+      await expect(RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza')).rejects.toBe(
+        timeout
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        { err: timeout, apiName: 'Places details', attempt: 1 },
+        'Places details request failed'
+      );
+      errorSpy.mockRestore();
     });
   });
 
@@ -280,15 +312,19 @@ describe('RestaurantSearchService', () => {
             'X-Goog-FieldMask':
               'results.addressComponents.longText,results.addressComponents.types',
           },
+          signal: expect.any(AbortSignal),
         }
       );
     });
 
     it('resolves undefined when the 429 persists, logging the exhausted API', async () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        headers: { get: () => '0' },
+        text: async () => '',
+      });
       vi.stubGlobal('fetch', fetchMock);
 
       await expect(
@@ -305,7 +341,12 @@ describe('RestaurantSearchService', () => {
     it('returns the suburb when a single 429 is followed by success', async () => {
       const fetchMock = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          headers: { get: () => '0' },
+          text: async () => '',
+        })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -383,6 +424,7 @@ describe('RestaurantSearchService', () => {
             'X-Goog-Api-Key': expect.any(String),
             'X-Goog-FieldMask': 'results.location,results.formattedAddress',
           },
+          signal: expect.any(AbortSignal),
         }
       );
     });
@@ -415,9 +457,12 @@ describe('RestaurantSearchService', () => {
 
     it('throws a RATE_LIMITED DomainError naming location lookup when the 429 persists', async () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValue({ ok: false, status: 429, headers: { get: () => '0' } });
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        headers: { get: () => '0' },
+        text: async () => '',
+      });
       vi.stubGlobal('fetch', fetchMock);
 
       await expect(RestaurantSearchService.geocodeArea('Richmond')).rejects.toMatchObject({
@@ -436,7 +481,12 @@ describe('RestaurantSearchService', () => {
     it('returns the area when a single 429 is followed by success', async () => {
       const fetchMock = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 429, headers: { get: () => '0' } })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          headers: { get: () => '0' },
+          text: async () => '',
+        })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -522,6 +572,7 @@ describe('RestaurantSearchService', () => {
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
       fetchMock.mockResolvedValue({
         status: 429,
+        text: async () => '',
         ok: false,
         headers: { get: () => '0' },
       });
@@ -563,6 +614,7 @@ describe('RestaurantSearchService', () => {
           get: () => null,
         },
       });
+      const timeout = vi.spyOn(AbortSignal, 'timeout');
 
       const result = await RestaurantSearchService.searchNearbyRestaurants({
         latitude: 37.7749,
@@ -571,6 +623,8 @@ describe('RestaurantSearchService', () => {
         maxResults: 50,
       });
 
+      // A Google stall must not hang Session create (#503).
+      expect(timeout).toHaveBeenCalledWith(5_000);
       // Text Search API uses different endpoint and request structure
       expect(fetchMock).toHaveBeenCalledWith('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
@@ -595,6 +649,7 @@ describe('RestaurantSearchService', () => {
           },
           pageSize: 20,
         }),
+        signal: expect.any(AbortSignal),
       });
 
       expect(result).toHaveLength(1);
@@ -733,6 +788,7 @@ describe('RestaurantSearchService', () => {
       fetchMock.mockResolvedValueOnce({
         ok: false,
         status: 429,
+        text: async () => '',
         headers: {
           get: (name: string) => (name === 'Retry-After' ? '0.1' : null),
         },
@@ -762,6 +818,7 @@ describe('RestaurantSearchService', () => {
         .mockResolvedValueOnce({
           ok: false,
           status: 429,
+          text: async () => '',
           headers: {
             get: () => null,
           },
@@ -793,6 +850,7 @@ describe('RestaurantSearchService', () => {
         fetchMock.mockResolvedValueOnce({
           ok: false,
           status: 429,
+          text: async () => '',
           headers: {
             get: (name: string) => (name === 'Retry-After' ? '0.1' : null),
           },
@@ -807,6 +865,89 @@ describe('RestaurantSearchService', () => {
         })
       ).rejects.toThrow();
     }, 10000); // Increase timeout for retry logic
+
+    it('returns RATE_LIMITED after one attempt and no sleep when the quota is exhausted (#503)', async () => {
+      vi.useFakeTimers();
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      // The daily-quota 429: waiting will not clear it, so retrying only burns time.
+      const body = JSON.stringify({
+        error: {
+          code: 429,
+          message: "Quota exceeded for quota metric 'SearchTextRequest per day'",
+          status: 'RESOURCE_EXHAUSTED',
+        },
+      });
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: async () => body,
+        headers: { get: () => null },
+      });
+      const start = Date.now();
+
+      const outcome = RestaurantSearchService.searchNearbyRestaurants({
+        latitude: -37.8136,
+        longitude: 144.9631,
+        radiusMeters: 8046.72,
+      }).catch((error: unknown) => error);
+      await vi.runAllTimersAsync();
+
+      expect(await outcome).toMatchObject({ name: 'DomainError', code: 'RATE_LIMITED' });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(Date.now() - start).toBe(0);
+      expect(errorSpy).toHaveBeenCalledWith(
+        { errorBody: body },
+        'Places searchText quota exhausted'
+      );
+    });
+
+    it('caps the Retry-After sleep at 2 s and never sleeps after the last attempt (#503)', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: async () => '',
+        headers: { get: (name: string) => (name === 'Retry-After' ? '60' : null) },
+      });
+      const start = Date.now();
+
+      const outcome = RestaurantSearchService.searchNearbyRestaurants({
+        latitude: -37.8136,
+        longitude: 144.9631,
+        radiusMeters: 8046.72,
+      }).catch((error: unknown) => error);
+      await vi.runAllTimersAsync();
+
+      expect(await outcome).toMatchObject({ name: 'DomainError', code: 'RATE_LIMITED' });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(Date.now() - start).toBe(4_000); // two capped sleeps between three attempts
+    });
+
+    it('sleeps the 2 s cap when Retry-After is an HTTP date, not seconds (#503)', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: async () => '',
+        headers: {
+          get: (name: string) => (name === 'Retry-After' ? 'Wed, 21 Oct 2026 07:28:00 GMT' : null),
+        },
+      });
+      const start = Date.now();
+
+      const outcome = RestaurantSearchService.searchNearbyRestaurants({
+        latitude: -37.8136,
+        longitude: 144.9631,
+        radiusMeters: 8046.72,
+      }).catch((error: unknown) => error);
+      await vi.runAllTimersAsync();
+
+      expect(await outcome).toMatchObject({ name: 'DomainError', code: 'RATE_LIMITED' });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(Date.now() - start).toBe(4_000); // not a zero-sleep hot loop
+    });
 
     it('should return empty array if no places found', async () => {
       fetchMock.mockResolvedValueOnce({

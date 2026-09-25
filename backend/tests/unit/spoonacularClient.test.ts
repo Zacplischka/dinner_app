@@ -54,6 +54,40 @@ describe('createSpoonacularClient', () => {
     await expect(client.ingredientInfo('chicken breast')).rejects.toThrow('500');
   });
 
+  it('bounds every call with a 5 s timeout unless the caller brings its own signal (#503)', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    const { fetchImpl: answer } = spoonacularFetchFake({
+      ingredients: chicken,
+      gramsPerUnit: { 'chicken breast:piece': 226 },
+      recipes: recipeHits(1),
+    });
+    const signals: Array<AbortSignal | null | undefined> = [];
+    const fetchImpl = ((input, init) => {
+      signals.push(init?.signal);
+      return answer(input, init);
+    }) as typeof fetch;
+    const client = createSpoonacularClient(fetchImpl, 'test-key');
+
+    // The Shopping List's calls: Convert, then ingredient search and information.
+    await client.gramsPerUnit('chicken breast', 'piece');
+    await client.ingredientInfo('chicken breast');
+    const deal = new AbortController();
+    await client.searchRecipes(
+      { mealType: 'dessert', cuisines: [], diets: [] },
+      { number: 1, offset: 0 },
+      deal.signal
+    );
+
+    expect(signals.slice(0, 3)).toEqual([
+      expect.any(AbortSignal),
+      expect.any(AbortSignal),
+      expect.any(AbortSignal),
+    ]);
+    expect(timeout.mock.calls).toEqual([[5_000], [5_000], [5_000]]);
+    expect(signals[3]).toBe(deal.signal); // the deal keeps its own 2.5 s budget
+    timeout.mockRestore();
+  });
+
   describe('searchRecipes', () => {
     const craving = {
       mealType: 'main course' as const,
