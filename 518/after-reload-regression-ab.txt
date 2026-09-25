@@ -1,0 +1,129 @@
+# #518 reload regression: controlled A/B test against the SAME production backend (Railway, US West)
+# Client: this Mac, Melbourne AU (expressvpnctl: Disconnected), Playwright 1.63.0 headless chromium 390x844.
+# The frontend was built both ways in production mode (VITE_* -> the production backend, placeholder Supabase),
+#   base = 99bafe8, head = aefe386 (same 15-file delta as the squash 8dbf372),
+#   each served from http://localhost:3000 (an origin the backend allows), so the only difference is the client.
+# Script: scratchpad/510-518-measure.mjs, unchanged method (page clock).
+#
+# reload-to-usable x10 (reload navigation start -> first [data-testid=participant] in the DOM)
+#   base 99bafe8: runs=[721, 725, 1110, 816, 730, 730, 716, 726, 759, 753]      median=730ms  p90=816ms
+#   head aefe386: runs=[1062, 1080, 1090, 1150, 1584, 1088, 1158, 1061, 1151, 1040] median=1088ms p90=1158ms
+#   head is +358 ms slower (median), about 2 RTT at 156-163 ms each
+#
+# create-to-Lobby x5 (click "Create session" -> first participant in the DOM)
+#   base 99bafe8: runs=[2561, 1485, 1717, 2030, 1386]  median=1717ms p90=2561ms
+#   head aefe386: runs=[1255, 1081, 1109, 1089, 1088]  median=1089ms p90=1255ms   (head faster)
+#
+# Where the reload time goes (DIAG=1 reload 3, page clock ms from navigation start):
+#   base: first polling GET +14..+25 on the page's already-open HTTP/2 connection to the backend;
+#         socket connect (Engine.IO "40" received) at +351..+450 = 2 RTT; participant +732..+831
+#   head: new WebSocket() at +11..+12; ws open +504..+574 (fresh TCP + TLS + HTTP/1.1 Upgrade = 3 RTT);
+#         connect +675..+747 (+1 RTT for the Socket.IO "40" exchange); participant +1125..+1179
+# Cause: on a reload, polling rides the connection that is already open, while a WebSocket
+# needs its own new connection (TCP + TLS + Upgrade) before the Socket.IO connect. That is +2 RTT
+# before RequireSession lets the page fetch its Session. transports: ['websocket'] is what the reload pays for.
+# Note: Playwright's page 'websocket' event (the "websocket requests +NNNms" lines in the waterfall/reload
+# output) fires ~2 RTT after new WebSocket(), i.e. at the handshake request, not at construction.
+
+# mode=reload base=http://localhost:3000 runs=3 at 2026-09-25T04:43:26.649Z (Playwright 1.63.0 headless chromium 390x844)
+reload 1: reload = +0ms
+  polling requests before connect: 5 [GET +14ms..+182ms, POST +182ms..+350ms, GET +182ms..+351ms, GET +351ms..+548ms, POST +351ms..+518ms]
+  polling requests total (to +1.5s after usable): 6
+  websocket requests: 1 [+503ms upgrade-from-polling(sid)]
+  socket connect (40 recv): +351ms via connect(polling)
+  first GET /api/sessions/XXXXX start +554ms
+  Lobby participant in DOM +732ms (page clock: navigation start -> participant)
+  diag (page clock): doc responseEnd 2 | domInteractive 5 | last script responseEnd 550 | new WebSocket() 180 | ws open 670 | participant 732
+reload 2: reload = +0ms
+  polling requests before connect: 5 [GET +22ms..+194ms, POST +194ms..+369ms, GET +194ms..+369ms, GET +369ms..+554ms, POST +369ms..+535ms]
+  polling requests total (to +1.5s after usable): 6
+  websocket requests: 1 [+507ms upgrade-from-polling(sid)]
+  socket connect (40 recv): +370ms via connect(polling)
+  first GET /api/sessions/XXXXX start +557ms
+  Lobby participant in DOM +736ms (page clock: navigation start -> participant)
+  diag (page clock): doc responseEnd 3 | domInteractive 8 | last script responseEnd 554 | new WebSocket() 188 | ws open 677 | participant 736
+reload 3: reload = +0ms
+  polling requests before connect: 5 [GET +25ms..+193ms, POST +193ms..+450ms, GET +193ms..+449ms, GET +449ms..+644ms, POST +450ms..+617ms]
+  polling requests total (to +1.5s after usable): 6
+  websocket requests: 1 [+517ms upgrade-from-polling(sid)]
+  socket connect (40 recv): +450ms via connect(polling)
+  first GET /api/sessions/XXXXX start +649ms
+  Lobby participant in DOM +831ms (page clock: navigation start -> participant)
+  diag (page clock): doc responseEnd 4 | domInteractive 10 | last script responseEnd 644 | new WebSocket() 188 | ws open 681 | participant 831
+  left session XXXXX -> /
+# mode=reload base=http://localhost:3000 runs=3 at 2026-09-25T04:44:16.919Z (Playwright 1.63.0 headless chromium 390x844)
+reload 1: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+333ms direct]
+  socket connect (40 recv): +675ms via connect(ws)
+  first GET /api/sessions/XXXXX start +874ms
+  Lobby participant in DOM +1179ms (page clock: navigation start -> participant)
+  diag (page clock): doc responseEnd 2 | domInteractive 4 | last script responseEnd 872 | new WebSocket() 12 | ws open 504 | participant 1179
+reload 2: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+329ms direct]
+  socket connect (40 recv): +747ms via connect(ws)
+  first GET /api/sessions/XXXXX start +949ms
+  Lobby participant in DOM +1130ms (page clock: navigation start -> participant)
+  diag (page clock): doc responseEnd 1 | domInteractive 4 | last script responseEnd 948 | new WebSocket() 11 | ws open 574 | participant 1130
+reload 3: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+324ms direct]
+  socket connect (40 recv): +685ms via connect(ws)
+  first GET /api/sessions/XXXXX start +892ms
+  Lobby participant in DOM +1125ms (page clock: navigation start -> participant)
+  diag (page clock): doc responseEnd 1 | domInteractive 4 | last script responseEnd 890 | new WebSocket() 11 | ws open 516 | participant 1125
+  left session XXXXX -> /
+# mode=latency-reload base=http://localhost:3000 runs=10 at 2026-09-25T04:43:42.019Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: reload-to-usable 721ms
+run 2: reload-to-usable 725ms
+run 3: reload-to-usable 1110ms
+run 4: reload-to-usable 816ms
+run 5: reload-to-usable 730ms
+run 6: reload-to-usable 730ms
+run 7: reload-to-usable 716ms
+run 8: reload-to-usable 726ms
+run 9: reload-to-usable 759ms
+run 10: reload-to-usable 753ms
+  left session XXXXX -> /
+reload-to-usable (page clock: reload navigation start -> first [data-testid=participant] in the DOM): runs=[721, 725, 1110, 816, 730, 730, 716, 726, 759, 753] median=730ms p90=816ms (nearest-rank)
+# mode=latency-reload base=http://localhost:3000 runs=10 at 2026-09-25T04:44:27.754Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: reload-to-usable 1062ms
+run 2: reload-to-usable 1080ms
+run 3: reload-to-usable 1090ms
+run 4: reload-to-usable 1150ms
+run 5: reload-to-usable 1584ms
+run 6: reload-to-usable 1088ms
+run 7: reload-to-usable 1158ms
+run 8: reload-to-usable 1061ms
+run 9: reload-to-usable 1151ms
+run 10: reload-to-usable 1040ms
+  left session XXXXX -> /
+reload-to-usable (page clock: reload navigation start -> first [data-testid=participant] in the DOM): runs=[1062, 1080, 1090, 1150, 1584, 1088, 1158, 1061, 1151, 1040] median=1088ms p90=1158ms (nearest-rank)
+# mode=latency-create base=http://localhost:3000 runs=5 at 2026-09-25T04:45:23.858Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: create-to-Lobby 2561ms
+  left session XXXXX -> /
+run 2: create-to-Lobby 1485ms
+  left session XXXXX -> /
+run 3: create-to-Lobby 1717ms
+  left session XXXXX -> /
+run 4: create-to-Lobby 2030ms
+  left session XXXXX -> /
+run 5: create-to-Lobby 1386ms
+  left session XXXXX -> /
+create-to-Lobby (page clock: click "Create session" -> first [data-testid=participant] in the DOM): runs=[2561, 1485, 1717, 2030, 1386] median=1717ms p90=2561ms (nearest-rank)
+# mode=latency-create base=http://localhost:3000 runs=5 at 2026-09-25T04:45:01.936Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: create-to-Lobby 1255ms
+  left session XXXXX -> /
+run 2: create-to-Lobby 1081ms
+  left session XXXXX -> /
+run 3: create-to-Lobby 1109ms
+  left session XXXXX -> /
+run 4: create-to-Lobby 1089ms
+  left session XXXXX -> /
+run 5: create-to-Lobby 1088ms
+  left session XXXXX -> /
+create-to-Lobby (page clock: click "Create session" -> first [data-testid=participant] in the DOM): runs=[1255, 1081, 1109, 1089, 1088] median=1089ms p90=1255ms (nearest-rank)

@@ -1,0 +1,26 @@
+# PROD BEFORE Match header at 430px
+# captured 2026-09-25T03:12:40Z via: playwright-cli -s=v510a snapshot (session code masked XXXXX)
+"/session/XXXXX/results @ innerWidth=430"
+"header control: aria-label=\"Leave session\" visibleText(innerText)=\"Back\""
+```yaml
+- generic [ref=e2]:
+  - status [ref=e3]
+  - main [ref=e381]:
+    - generic [ref=e383]:
+      - generic [ref=e384]:
+        - generic [ref=e385]:
+          - link "YupCrew home" [ref=e386] [cursor=pointer]:
+            - /url: /
+          - button "Leave session" [ref=e388] [cursor=pointer]:
+            - generic [ref=e391]: Back
+        - heading "Perfect Match!" [active] [level=1] [ref=e393]
+        - button "Share Top Pick" [ref=e396] [cursor=pointer]
+      - generic [ref=e399]:
+        - status [ref=e400]: Connected
+        - button "Copy session code" [ref=e402] [cursor=pointer]:
+          - generic [ref=e403]: XXXXX
+        - paragraph [ref=e405]: The Top Pick is locked in
+        - paragraph [ref=e406]: Expires in 29 min
+    - generic [ref=e407]:
+      - generic [ref=e409]:
+        - generic [ref=e410]:

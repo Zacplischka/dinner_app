@@ -1,0 +1,35 @@
+# #518 AC4: frontend/tests/e2e/flows/multi-participant.spec.ts, ONE run at PR head aefe386 (mobile-chrome)
+# cmd (frontend/): BASE_URL=http://localhost:5110 BACKEND_URL=http://localhost:3110 \
+#   npx playwright test --project=mobile-chrome tests/e2e/flows/multi-participant.spec.ts --retries=0 --workers=1 --reporter=list
+# servers: backend :3110 (npm run dev, private Redis :7510, real Places key from backend/.env);
+#          frontend = vite preview :5110 of a production build with VITE_BACKEND_URL/VITE_API_BASE_URL=localhost:3110,
+#          placeholder Supabase; `grep -l railway frontend/dist/assets/*.js` -> none.
+# Places quota: 10 x POST /api/sessions -> all 201; 0 quota/RESOURCE_EXHAUSTED lines in the backend log.
+#   The backend logged 148 x 429, all GET, from the local photo-proxy rate window (backend/src/api/comparison.ts
+#   PHOTO_LIMIT = 60/min per IP), not Google.
+# Result: 10 passed, 1 failed. The failure is "Select Again returns every participant to Restaurant Selection":
+#   expects /session/<code>/select, gets /session/XXXXX, 15 s timeout at spec line 289. The same test fails the same
+#   way at base 99bafe8 (see e2e-select-again-base-99bafe8.txt), so it predates this PR (#450: collaborative
+#   Sessions return to the Lobby).
+
+Running 11 tests using 1 worker
+  ✓   1 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:20:3 › Multi-Participant Session Flow › host can create session and participants can join (5.1s)
+  ✓   2 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:40:3 › Multi-Participant Session Flow › host can start session and all move to selection (4.8s)
+  ✓   3 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:57:3 › Multi-Participant Session Flow › all participants can make selections and submit (8.2s)
+  ✓   4 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:101:3 › Multi-Participant Session Flow › results show matching restaurants (8.5s)
+  ✓   5 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:139:3 › Top Pick crown on empty match (#165/#166, supersedes #72) › empty match with three participants crowns the closest pick on every screen (9.6s)
+  ✓   6 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:192:3 › Live Swipe Room (#183-#187) › unanimous like raises the Full House takeover on every phone and Finish here completes the Session (8.5s)
+  ✓   7 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:229:3 › Live Swipe Room (#183-#187) › a Live Selection is revealed in the deck strip once you have decided that card (8.0s)
+  ✘   8 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:256:3 › Select Again restart (#14, #85) › Select Again returns every participant to Restaurant Selection (23.7s)
+  ✓   9 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:295:3 › Session Edge Cases › participant cannot join full session (max 4) (7.1s)
+  ✓  10 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:323:3 › Session Edge Cases › participant sees error for invalid session code (699ms)
+  ✓  11 [mobile-chrome] › tests/e2e/flows/multi-participant.spec.ts:344:3 › Session Edge Cases › participant can leave session mid-flow (4.9s)
+    Error: expect(page).toHaveURL(expected) failed
+    Expected pattern: /\/session\/[A-Z0-9]+\/select/
+    Received string:  "http://localhost:5110/session/XXXXX"
+    Timeout: 15000ms
+    test-results/flows-multi-participant-Se-a54ae-ant-to-Restaurant-Selection-mobile-chrome/test-failed-2.png
+    test-results/flows-multi-participant-Se-a54ae-ant-to-Restaurant-Selection-mobile-chrome/test-failed-1.png
+  1 failed
+  10 passed (1.5m)
+exit=1

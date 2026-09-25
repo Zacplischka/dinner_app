@@ -1,0 +1,44 @@
+# #518 production AFTER latency: https://yupcrew.com @ 8dbf372 (Railway backend + frontend deploys SUCCESS 2026-09-25T04:33:18Z)
+# Client: this Mac, egress Melbourne AU (ipinfo.io city/country; expressvpnctl status: Disconnected, checked before each batch)
+# Playwright 1.63.0 headless chromium, 390x844, a fresh browser context per Participant. Same script and method as the before:
+#   node 510-518-measure.mjs latency-create 10   # page clock: click "Create session" -> first [data-testid=participant] in the DOM; then Leave
+#   node 510-518-measure.mjs latency-reload 10   # page clock: reload navigation start -> first [data-testid=participant] in the DOM; Leave at end
+# median/p90 are nearest-rank. One US-West RTT from here: curl time_connect to the Railway backend = 155-158 ms.
+# Before (same vantage, same method): create-to-Lobby median 1454 / p90 1527; reload-to-usable median 1207 / p90 1443.
+# Pass thresholds (drop >= ~165 ms): create median <= 1289, reload median <= 1042.
+
+# mode=latency-create base=https://yupcrew.com runs=10 at 2026-09-25T04:40:27.587Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: create-to-Lobby 1128ms
+  left session XXXXX -> /
+run 2: create-to-Lobby 1108ms
+  left session XXXXX -> /
+run 3: create-to-Lobby 1330ms
+  left session XXXXX -> /
+run 4: create-to-Lobby 1105ms
+  left session XXXXX -> /
+run 5: create-to-Lobby 1070ms
+  left session XXXXX -> /
+run 6: create-to-Lobby 1103ms
+  left session XXXXX -> /
+run 7: create-to-Lobby 1097ms
+  left session XXXXX -> /
+run 8: create-to-Lobby 1186ms
+  left session XXXXX -> /
+run 9: create-to-Lobby 1256ms
+  left session XXXXX -> /
+run 10: create-to-Lobby 1105ms
+  left session XXXXX -> /
+create-to-Lobby (page clock: click "Create session" -> first [data-testid=participant] in the DOM): runs=[1128, 1108, 1330, 1105, 1070, 1103, 1097, 1186, 1256, 1105] median=1105ms p90=1256ms (nearest-rank)
+# mode=latency-reload base=https://yupcrew.com runs=10 at 2026-09-25T04:41:00.045Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: reload-to-usable 1599ms
+run 2: reload-to-usable 1407ms
+run 3: reload-to-usable 1474ms
+run 4: reload-to-usable 1471ms
+run 5: reload-to-usable 1415ms
+run 6: reload-to-usable 1456ms
+run 7: reload-to-usable 1489ms
+run 8: reload-to-usable 1362ms
+run 9: reload-to-usable 1361ms
+run 10: reload-to-usable 1657ms
+  left session XXXXX -> /
+reload-to-usable (page clock: reload navigation start -> first [data-testid=participant] in the DOM): runs=[1599, 1407, 1474, 1471, 1415, 1456, 1489, 1362, 1361, 1657] median=1456ms p90=1599ms (nearest-rank)

@@ -1,0 +1,44 @@
+# #518 latency, client: this Mac (AU), Playwright 1.63.0 headless Chromium 390x844
+# script: scratchpad/510-518-measure.mjs (rerun unchanged after deploy)
+#   node 510-518-measure.mjs latency-create 10 [base]  # fresh context per run: goto /watch, fill 'Latency Host', wait networkidle,
+#                                                     # t0 = click "Create session", t1 = first [data-testid=participant] visible; then Leave
+#   node 510-518-measure.mjs latency-reload 10 [base]  # one Participant in the Lobby: t0 = page.reload(waitUntil: commit),
+#                                                     # t1 = first [data-testid=participant] visible; 1 s gap; Leave at end
+# median/p90 are nearest-rank over the 10 runs.
+# One US-West RTT from this machine: curl time_connect to the Railway backend = 204-252 ms (5 samples; first 416 ms incl. DNS).
+
+# mode=latency-create base=https://yupcrew.com runs=10 at 2026-09-25T03:16:29.732Z (Playwright 1.63.0 headless Chromium 390x844)
+run 1: create-to-Lobby 2826ms
+  left session XXXXX -> /
+run 2: create-to-Lobby 2326ms
+  left session XXXXX -> /
+run 3: create-to-Lobby 2348ms
+  left session XXXXX -> /
+run 4: create-to-Lobby 2315ms
+  left session XXXXX -> /
+run 5: create-to-Lobby 2325ms
+  left session XXXXX -> /
+run 6: create-to-Lobby 2334ms
+  left session XXXXX -> /
+run 7: create-to-Lobby 2331ms
+  left session XXXXX -> /
+run 8: create-to-Lobby 2339ms
+  left session XXXXX -> /
+run 9: create-to-Lobby 2345ms
+  left session XXXXX -> /
+run 10: create-to-Lobby 2833ms
+  left session XXXXX -> /
+create-to-Lobby (click Create -> first [data-testid=participant] visible): runs=[2826, 2326, 2348, 2315, 2325, 2334, 2331, 2339, 2345, 2833] median=2334ms p90=2826ms (nearest-rank)
+# mode=latency-reload base=https://yupcrew.com runs=10 at 2026-09-25T03:17:31.116Z (Playwright 1.63.0 headless Chromium 390x844)
+run 1: reload-to-usable 1576ms
+run 2: reload-to-usable 2091ms
+run 3: reload-to-usable 1586ms
+run 4: reload-to-usable 1594ms
+run 5: reload-to-usable 1595ms
+run 6: reload-to-usable 1586ms
+run 7: reload-to-usable 1574ms
+run 8: reload-to-usable 1589ms
+run 9: reload-to-usable 1565ms
+run 10: reload-to-usable 1578ms
+  left session XXXXX -> /
+reload-to-usable (page.reload -> first [data-testid=participant] visible): runs=[1576, 2091, 1586, 1594, 1595, 1586, 1574, 1589, 1565, 1578] median=1586ms p90=1595ms (nearest-rank)

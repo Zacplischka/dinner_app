@@ -1,0 +1,14 @@
+# mode=back-create base=https://yupcrew.com runs=1 at 2026-09-25T03:15:05.501Z (Playwright 1.63.0 headless Chromium 390x844)
+history: / -> (click Watch something) /watch -> Create -> /session/XXXXX
+history.length before Back = 4
+after browser Back: URL = /watch
+after browser Back: h1 = "Watch something"; dialog open = 0
+requests after Back (4s): {
+ "postSessions": 0,
+ "socketJoinFrames": 0,
+ "requests": [
+  "POST /cdn-cgi/rum",
+  "POST /cdn-cgi/rum"
+ ]
+}
+  left session XXXXX -> /

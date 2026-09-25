@@ -1,0 +1,11 @@
+# local head 113a087: Match page, context.setOffline(true) then backend stopped (socket drops), 390x844, navigator.onLine=false, 2026-09-25T04:00:49Z
+- generic [ref=e2]:
+  - status [ref=e3]
+  - main [ref=e427]:
+    - heading "Reconnecting to your session" [level=1] [ref=e428]
+    - status [ref=e429]: You’re offline. Your place is saved.
+    - generic [ref=e430]:
+      - button "Try again" [ref=e431] [cursor=pointer]
+      - link "Home" [ref=e432] [cursor=pointer]:
+        - /url: /
+  - status [ref=e31]

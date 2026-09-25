@@ -1,0 +1,11 @@
+# production https://yupcrew.com @ 52600b5, Lobby, context.setOffline(true) then the live socket dropped, navigator.onLine=false, viewport 390x844, 2026-09-25T04:47:47Z
+- generic [ref=f1e2]:
+  - status [ref=f1e3]
+  - main [ref=f1e77]:
+    - heading "Reconnecting to your session" [level=1] [ref=f1e78]
+    - status [ref=f1e79]: You’re offline. Your place is saved.
+    - generic [ref=f1e80]:
+      - button "Try again" [ref=f1e81] [cursor=pointer]
+      - link "Home" [ref=f1e82] [cursor=pointer]:
+        - /url: /
+  - status [ref=f1e11]

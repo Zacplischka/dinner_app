@@ -1,0 +1,15 @@
+# local head a06e98e: after clicking Home on the gate (socket still blocked), 2026-09-25T03:38:17Z
+- generic [ref=f1e2]:
+  - status [ref=f1e3]
+  - main [ref=f1e13]:
+    - link "YupCrew home" [ref=f1e15] [cursor=pointer]:
+      - /url: /
+      - text: yupcrew
+    - generic [ref=f1e17]:
+      - generic [ref=f1e18]:
+        - button "Return to sessionXXXXX" [ref=f1e19] [cursor=pointer]
+        - button "Leave session" [ref=f1e20] [cursor=pointer]
+      - generic [ref=f1e21]:
+        - generic [ref=f1e22]:
+          - paragraph [ref=f1e23]: A good night starts together
+          - heading "What are we doing tonight?" [active] [level=1] [ref=f1e24]

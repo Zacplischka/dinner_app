@@ -1,0 +1,6 @@
+ × tests/unit/useCreateAndJoinSession.test.tsx > useCreateAndJoinSession > starts connecting while the create request is still in flight 2ms
+ ✓ tests/unit/JoinSessionPage.test.tsx > starts connecting on arrival without joining anything 3ms
+ FAIL  tests/unit/useCreateAndJoinSession.test.tsx > useCreateAndJoinSession > starts connecting while the create request is still in flight
+AssertionError: expected 10 to be less than 9
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 23 passed (24)

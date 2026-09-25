@@ -1,0 +1,3 @@
+# mode=join-arrival base=https://yupcrew.com runs=1 at 2026-09-25T03:36:55.079Z (Playwright 1.63.0 headless Chromium 390x844)
+goto /join, idle 3 s, nothing typed or submitted:
+  socket.io traffic: none

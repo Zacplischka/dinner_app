@@ -1,0 +1,30 @@
+# local head a06e98e: completed Watch Session, persisted orderPlaceId planted, order:open answered INTERNAL 'Menu provider failed' (WebSocket stub, 2 acks stubbed), reload of /session/XXXXX/order, 390x844, 2026-09-25T03:48:17Z
+# timeline (250 ms polling):
+# +0.0s gate=true  'Couldn’t reach your session yet. Your place is saved.'
+# +0.3s gate=false h1='Group order' toast='Could not restore the basket: Menu provider failed'
+# (no gate again through +26 s)
+- generic [ref=f1e2]:
+  - status [ref=f1e3]
+  - main [ref=f1e5]:
+    - generic [ref=f1e7]:
+      - generic [ref=f1e8]:
+        - generic [ref=f1e9]:
+          - link "YupCrew home" [ref=f1e10] [cursor=pointer]:
+            - /url: /
+          - button "Back" [ref=f1e12] [cursor=pointer]
+        - heading "Group order" [level=1] [ref=f1e17]
+      - generic [ref=f1e18]:
+        - status [ref=f1e19]: Connected
+        - button "Copy session code" [ref=f1e21] [cursor=pointer]:
+          - generic [ref=f1e22]: XXXXX
+        - paragraph [ref=f1e24]: Expires in 26 min
+    - generic [ref=f1e26]:
+      - paragraph [ref=f1e27]: Something went wrong getting the menu.
+      - paragraph [ref=f1e28]: "You can still order the old way:"
+      - button "Back to the Match" [ref=f1e29] [cursor=pointer]
+      - generic [ref=f1e30]:
+        - link "Uber Eats" [ref=f1e31] [cursor=pointer]:
+          - /url: https://www.ubereats.com/search?q=
+        - link "DoorDash" [ref=f1e37] [cursor=pointer]:
+          - /url: https://www.doordash.com/search/store//
+  - status [ref=f1e43]

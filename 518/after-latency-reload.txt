@@ -1,0 +1,13 @@
+# mode=latency-reload base=https://yupcrew.com runs=10 at 2026-09-25T04:41:00.045Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: reload-to-usable 1599ms
+run 2: reload-to-usable 1407ms
+run 3: reload-to-usable 1474ms
+run 4: reload-to-usable 1471ms
+run 5: reload-to-usable 1415ms
+run 6: reload-to-usable 1456ms
+run 7: reload-to-usable 1489ms
+run 8: reload-to-usable 1362ms
+run 9: reload-to-usable 1361ms
+run 10: reload-to-usable 1657ms
+  left session XXXXX -> /
+reload-to-usable (page clock: reload navigation start -> first [data-testid=participant] in the DOM): runs=[1599, 1407, 1474, 1471, 1415, 1456, 1489, 1362, 1361, 1657] median=1456ms p90=1599ms (nearest-rank)

@@ -1,0 +1,11 @@
+# local head 113a087: Lobby, lost session:ready ack -> recovery -> session:join refused INTERNAL 'Server hiccup' over the WebSocket (not forwarded; socket stays connected), 390x844, 2026-09-25T04:29:00Z
+- generic [ref=f1e2]:
+  - status [ref=f1e3]
+  - main [ref=f1e77]:
+    - heading "Reconnecting to your session" [level=1] [ref=f1e78]
+    - status [ref=f1e79]: Couldn’t reach your session yet. Your place is saved.
+    - generic [ref=f1e80]:
+      - button "Try again" [ref=f1e81] [cursor=pointer]
+      - link "Home" [ref=f1e82] [cursor=pointer]:
+        - /url: /
+  - status [ref=f1e11]

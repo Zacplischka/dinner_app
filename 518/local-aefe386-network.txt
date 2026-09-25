@@ -1,0 +1,105 @@
+# mode=waterfall base=http://localhost:5110 runs=3 at 2026-09-25T04:02:16.885Z (Playwright 1.63.0 headless Chromium 390x844)
+(POST /api/sessions held 800ms by page.route before it is sent)
+run 1: click Create = +0ms
+  POST /api/sessions        start +74ms end +919ms
+  first socket.io request   start +127ms (websocket)
+  socket connect (40 recv)  +140ms via connect(ws)
+  session:join sent         +920ms
+  Lobby participant in DOM  +942ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +127ms
+  left session XXXXX -> /
+run 2: click Create = +0ms
+  POST /api/sessions        start +54ms end +865ms
+  first socket.io request   start +109ms (websocket)
+  socket connect (40 recv)  +112ms via connect(ws)
+  session:join sent         +866ms
+  Lobby participant in DOM  +876ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +109ms
+  left session XXXXX -> /
+run 3: click Create = +0ms
+  POST /api/sessions        start +25ms end +844ms
+  first socket.io request   start +88ms (websocket)
+  socket connect (40 recv)  +91ms via connect(ws)
+  session:join sent         +844ms
+  Lobby participant in DOM  +879ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +88ms
+  left session XXXXX -> /
+# mode=waterfall base=http://localhost:5110 runs=2 at 2026-09-25T04:02:24.761Z (Playwright 1.63.0 headless Chromium 390x844)
+run 1: click Create = +0ms
+  POST /api/sessions        start +28ms end +83ms
+  first socket.io request   start +82ms (websocket)
+  socket connect (40 recv)  +86ms via connect(ws)
+  session:join sent         +86ms
+  Lobby participant in DOM  +115ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +82ms
+  left session XXXXX -> /
+run 2: click Create = +0ms
+  POST /api/sessions        start +59ms end +106ms
+  first socket.io request   start +105ms (websocket)
+  socket connect (40 recv)  +109ms via connect(ws)
+  session:join sent         +109ms
+  Lobby participant in DOM  +119ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +105ms
+  left session XXXXX -> /
+# mode=reload base=http://localhost:5110 runs=1 at 2026-09-25T04:02:39.157Z (Playwright 1.63.0 headless Chromium 390x844)
+reload 1: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+17ms direct]
+  socket connect (40 recv): +18ms via connect(ws)
+  first GET /api/sessions/XXXXX start +31ms
+  Lobby participant in DOM +36ms (page clock: navigation start -> participant)
+  left session XXXXX -> /
+# mode=waterfall base=http://localhost:5110 runs=3 at 2026-09-25T04:23:20.521Z (Playwright 1.63.0 headless webkit 390x844)
+run 1: click Create = +0ms
+  POST /api/sessions        start +29ms end +43ms
+  first socket.io request   start +34ms (websocket)
+  socket connect (40 recv)  +37ms via connect(ws)
+  session:join sent         +43ms
+  Lobby participant in DOM  +53ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +34ms
+  left session XXXXX -> /
+run 2: click Create = +0ms
+  POST /api/sessions        start +27ms end +37ms
+  first socket.io request   start +31ms (websocket)
+  socket connect (40 recv)  +32ms via connect(ws)
+  session:join sent         +38ms
+  Lobby participant in DOM  +56ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +31ms
+  left session XXXXX -> /
+run 3: click Create = +0ms
+  POST /api/sessions        start +20ms end +32ms
+  first socket.io request   start +24ms (websocket)
+  socket connect (40 recv)  +26ms via connect(ws)
+  session:join sent         +32ms
+  Lobby participant in DOM  +60ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +24ms
+  left session XXXXX -> /
+# mode=waterfall base=http://localhost:5110 runs=1 at 2026-09-25T04:23:32.095Z (Playwright 1.63.0 headless webkit 390x844)
+(POST /api/sessions held 800ms by page.route before it is sent)
+run 1: click Create = +0ms
+  POST /api/sessions        start +28ms end +838ms
+  first socket.io request   start +32ms (websocket)
+  socket connect (40 recv)  +33ms via connect(ws)
+  session:join sent         +839ms
+  Lobby participant in DOM  +859ms (page clock: click -> participant)
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +32ms
+  left session XXXXX -> /
+# mode=reload base=http://localhost:5110 runs=1 at 2026-09-25T04:23:34.598Z (Playwright 1.63.0 headless webkit 390x844)
+reload 1: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+33ms direct]
+  socket connect (40 recv): +34ms via connect(ws)
+  first GET /api/sessions/XXXXX start +50ms
+  Lobby participant in DOM +62ms (page clock: navigation start -> participant)
+  left session XXXXX -> /

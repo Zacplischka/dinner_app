@@ -1,0 +1,17 @@
+# PR #575 CI "E2E (keyless mobile subset)" is red: 13 failed, 52 passed
+# run: https://github.com/Zacplischka/dinner_app/actions/runs/36089045346/job/107927223693
+# Same job on main at base 99bafe8: success (run 36088065614). Later main runs (e.g. 36090557041 @ ced63d8): success.
+#
+# Failing: 11 x tests/e2e/cat-social-menu.spec.ts, 2 x tests/e2e/profile-photos.spec.ts
+# Root cause: both specs carry Socket.IO over HTTP route interception, which only works for long-polling:
+#   cat-social-menu.spec.ts:16  new Server(http, { transports: ['polling'], ... })
+#   cat-social-menu.spec.ts:20  page.route('**/socket.io/**', ... route.fetch → fixture server)
+#   profile-photos.spec.ts:81   context.route('**/socket.io/**', ... route.fetch → backend)
+# With the client pinned to transports: ['websocket'] (socketService.ts, #518) the socket never
+# reaches the fixture (page.route does not intercept WebSocket; routeWebSocket would), so the
+# Lobby never renders and every step after it times out.
+#
+# Local reproduction (backend :3110, vite preview :5110, same single test, --retries=0):
+#   head 6fd9cfc:  ✘ cat-social-menu.spec.ts:191 › a rejected lower lobby choice stays visible below the sticky header
+#                  TimeoutError: locator.click: Timeout 10000ms exceeded.   (1 failed)
+#   base 99bafe8:  ✓ cat-social-menu.spec.ts:191 › a rejected lower lobby choice stays visible below the sticky header (1.8s)   (1 passed)

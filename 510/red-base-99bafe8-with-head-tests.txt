@@ -1,0 +1,41 @@
+ ❯ tests/unit/socketService.test.ts (11 tests | 1 failed) 82ms
+     × connects over WebSocket only 4ms
+ ❯ tests/unit/useCreateAndJoinSession.test.tsx (7 tests | 2 failed) 18ms
+     × creates a Session, joins as Host and lands in the lobby 10ms
+     × starts connecting while the create request is still in flight 1ms
+ ❯ tests/unit/navigationHeader.test.tsx (17 tests | 1 failed) 103ms
+     × labels the Session header control Leave, visibly and by name 15ms
+ ❯ tests/unit/page-branches.test.tsx (9 tests | 1 failed) 156ms
+     × covers lobby route without a session code and leave success 21ms
+ ❯ tests/unit/groupOrderPage.test.tsx (30 tests | 2 failed) 508ms
+     × confirms with the ordering copy on Leave, then leaves the session on confirm (#180) 43ms
+     × still confirms leaving an open order without claiming the viewer has basket items 32ms
+ ❯ tests/unit/liveSwipeRoom.test.tsx (38 tests | 1 failed) 636ms
+     × ignores keys while the Leave Session dialog is open, on auto-repeat, and with a modifier held 43ms
+ ❯ tests/unit/JoinSessionPage.test.tsx (17 tests | 2 failed) 2215ms
+   × starts connecting on arrival without joining anything 1007ms
+   × replaces the Join entry on admission, so Back does not rejoin 1011ms
+AssertionError: expected "vi.fn()" to be called at least once
+ ❯ tests/unit/JoinSessionPage.test.tsx:300:60
+TestingLibraryElementError: Unable to find an element with the text: Home route. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make yo
+ ❯ tests/unit/JoinSessionPage.test.tsx:332:23
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+               × 
+                ×
+ ❯ tests/unit/groupOrderPage.test.tsx:145:28
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+ ❯ tests/unit/groupOrderPage.test.tsx:168:28
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+ ❯ tests/unit/liveSwipeRoom.test.tsx:599:28
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+ ❯ tests/unit/navigationHeader.test.tsx:54:26
+TestingLibraryElementError: Unable to find a label with the text of: Leave
+ ❯ tests/unit/page-branches.test.tsx:203:28
+AssertionError: expected { reconnection: true, …(4) } to match object { transports: [ 'websocket' ] }
+ ❯ tests/unit/socketService.test.ts:124:45
+AssertionError: expected "vi.fn()" to be called with arguments: [ '/session/AB123', { replace: true } ]
+ ❯ tests/unit/useCreateAndJoinSession.test.tsx:81:28
+AssertionError: expected "vi.fn()" to be called at least once
+ ❯ tests/unit/useCreateAndJoinSession.test.tsx:122:37
+ Test Files  7 failed | 1 passed (8)
+      Tests  10 failed | 127 passed (137)

@@ -1,0 +1,11 @@
+# production https://yupcrew.com @ 52600b5, /session/XXXXX, socket.io WebSocket refused (closed before reaching the server), page reloaded, viewport 390x844, 2026-09-25T04:46:46Z
+- generic [ref=f1e2]:
+  - status [ref=f1e3]
+  - main [ref=f1e5]:
+    - heading "Reconnecting to your session" [level=1] [ref=f1e6]
+    - status [ref=f1e7]: Couldn’t reach your session yet. Your place is saved.
+    - generic [ref=f1e8]:
+      - button "Try again" [ref=f1e9] [cursor=pointer]
+      - link "Home" [ref=f1e10] [cursor=pointer]:
+        - /url: /
+  - status [ref=f1e11]

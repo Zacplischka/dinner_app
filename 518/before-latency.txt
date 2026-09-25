@@ -1,0 +1,49 @@
+# #518 latency, client: this Mac, egress Melbourne AU (ipinfo.io: Melbourne, Victoria, AU, AS1221 Telstra; no VPN)
+# Playwright 1.63.0 headless Chromium, 390x844, fresh browser context per Participant
+# script: scratchpad/510-518-measure.mjs (rerun unchanged after deploy)
+#   node 510-518-measure.mjs latency-create 10 [base]
+#       fresh context per run: goto /watch, fill 'Latency Host', wait networkidle, click "Create session";
+#       value = page clock: capture-phase click on the button -> MutationObserver first sees [data-testid=participant]; then Leave
+#   node 510-518-measure.mjs latency-reload 10 [base]
+#       one Participant in the Lobby, page.reload() x10 with a 1 s gap;
+#       value = page clock: reload navigation start (timeOrigin) -> first [data-testid=participant] in the DOM; Leave at end
+# Timing is in-page on purpose: Playwright's waitFor polls on a [20,50,100,100,500] ms backoff, which quantized
+# the first attempt to 500 ms steps (kept as *-vpn-chicago-waitfor-quantized.txt, which was also measured through a Chicago VPN).
+# median/p90 are nearest-rank over the 10 runs.
+# One US-West RTT from here: curl time_connect to the Railway backend = 160-163 ms (5 samples).
+
+# mode=latency-create base=https://yupcrew.com runs=10 at 2026-09-25T03:34:46.349Z (Playwright 1.63.0 headless Chromium 390x844)
+run 1: create-to-Lobby 1724ms
+  left session XXXXX -> /
+run 2: create-to-Lobby 1498ms
+  left session XXXXX -> /
+run 3: create-to-Lobby 1490ms
+  left session XXXXX -> /
+run 4: create-to-Lobby 1527ms
+  left session XXXXX -> /
+run 5: create-to-Lobby 1507ms
+  left session XXXXX -> /
+run 6: create-to-Lobby 1422ms
+  left session XXXXX -> /
+run 7: create-to-Lobby 1443ms
+  left session XXXXX -> /
+run 8: create-to-Lobby 1404ms
+  left session XXXXX -> /
+run 9: create-to-Lobby 1454ms
+  left session XXXXX -> /
+run 10: create-to-Lobby 1451ms
+  left session XXXXX -> /
+create-to-Lobby (page clock: click "Create session" -> first [data-testid=participant] in the DOM): runs=[1724, 1498, 1490, 1527, 1507, 1422, 1443, 1404, 1454, 1451] median=1454ms p90=1527ms (nearest-rank)
+# mode=latency-reload base=https://yupcrew.com runs=10 at 2026-09-25T03:35:21.970Z (Playwright 1.63.0 headless Chromium 390x844)
+run 1: reload-to-usable 1443ms
+run 2: reload-to-usable 2983ms
+run 3: reload-to-usable 1207ms
+run 4: reload-to-usable 1296ms
+run 5: reload-to-usable 1181ms
+run 6: reload-to-usable 1249ms
+run 7: reload-to-usable 1299ms
+run 8: reload-to-usable 1199ms
+run 9: reload-to-usable 1194ms
+run 10: reload-to-usable 1192ms
+  left session XXXXX -> /
+reload-to-usable (page clock: reload navigation start -> first [data-testid=participant] in the DOM): runs=[1443, 2983, 1207, 1296, 1181, 1249, 1299, 1199, 1194, 1192] median=1207ms p90=1443ms (nearest-rank)

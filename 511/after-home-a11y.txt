@@ -1,0 +1,23 @@
+# production https://yupcrew.com @ 52600b5: gate (socket still refused, online) -> Home, 2026-09-25T04:48:11Z
+- generic [ref=f1e2]:
+  - status [ref=f1e3]
+  - main [ref=f1e84]:
+    - link "YupCrew home" [ref=f1e86] [cursor=pointer]:
+      - /url: /
+      - text: yupcrew
+    - generic [ref=f1e88]:
+      - generic [ref=f1e89]:
+        - button "Return to sessionXXXXX" [ref=f1e90] [cursor=pointer]
+        - button "Leave session" [ref=f1e91] [cursor=pointer]
+      - generic [ref=f1e92]:
+        - generic [ref=f1e93]:
+          - paragraph [ref=f1e94]: A good night starts together
+          - heading "What are we doing tonight?" [active] [level=1] [ref=f1e95]
+# then socket unblocked and 'Return to session' clicked (250 ms polling):
+# +0.0s h1="What are we doing tonight?" live="" path=/
+# +4.1s h1="" live="Loading session…" path=/session/XXXXX
+# +4.3s h1="Watch" live="Connected" path=/session/XXXXX
+# --- wire ---
+# +0.0s http GET /api/sessions/XXXXX
+# +3.8s ws> session:join
+# +4.0s http GET /api/sessions/XXXXX

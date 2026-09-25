@@ -1,0 +1,85 @@
+# mode=waterfall base=https://yupcrew.com runs=3 at 2026-09-25T04:50:56.413Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: click Create = +0ms
+  POST /api/sessions        start +27ms end +2009ms
+  first socket.io request   start +465ms (websocket)
+  socket connect (40 recv)  +1431ms via connect(ws)
+  session:join sent         +2009ms
+  Lobby participant in DOM  +2399ms (page clock: click -> participant)
+  page clock: new WebSocket() +2ms, ws open +615ms
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +465ms
+  left session XXXXX -> /
+run 2: click Create = +0ms
+  POST /api/sessions        start +37ms end +697ms
+  first socket.io request   start +348ms (websocket)
+  socket connect (40 recv)  +705ms via connect(ws)
+  session:join sent         +705ms
+  Lobby participant in DOM  +1083ms (page clock: click -> participant)
+  page clock: new WebSocket() +3ms, ws open +509ms
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +348ms
+  left session XXXXX -> /
+run 3: click Create = +0ms
+  POST /api/sessions        start +23ms end +1802ms
+  first socket.io request   start +661ms (websocket)
+  socket connect (40 recv)  +1001ms via connect(ws)
+  session:join sent         +1802ms
+  Lobby participant in DOM  +2187ms (page clock: click -> participant)
+  page clock: new WebSocket() +1ms, ws open +811ms
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +661ms
+  left session XXXXX -> /
+# mode=waterfall base=https://yupcrew.com runs=3 at 2026-09-25T04:51:15.686Z (Playwright 1.63.0 headless chromium 390x844)
+run 1: click Create = +0ms
+  POST /api/sessions        start +28ms end +689ms
+  first socket.io request   start +343ms (websocket)
+  socket connect (40 recv)  +688ms via connect(ws)
+  session:join sent         +689ms
+  Lobby participant in DOM  +1089ms (page clock: click -> participant)
+  page clock: new WebSocket() +2ms, ws open +490ms
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +343ms
+  left session XXXXX -> /
+run 2: click Create = +0ms
+  POST /api/sessions        start +43ms end +707ms
+  first socket.io request   start +360ms (websocket)
+  socket connect (40 recv)  +698ms via connect(ws)
+  session:join sent         +707ms
+  Lobby participant in DOM  +1113ms (page clock: click -> participant)
+  page clock: new WebSocket() +2ms, ws open +490ms
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +360ms
+  left session XXXXX -> /
+run 3: click Create = +0ms
+  POST /api/sessions        start +30ms end +686ms
+  first socket.io request   start +345ms (websocket)
+  socket connect (40 recv)  +685ms via connect(ws)
+  session:join sent         +686ms
+  Lobby participant in DOM  +1121ms (page clock: click -> participant)
+  page clock: new WebSocket() +3ms, ws open +491ms
+  socket starts before POST returns: true
+  all socket.io requests after click: ws +345ms
+  left session XXXXX -> /
+# mode=reload base=https://yupcrew.com runs=3 at 2026-09-25T04:39:44.415Z (Playwright 1.63.0 headless chromium 390x844)
+reload 1: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+875ms direct]
+  socket connect (40 recv): +1234ms via connect(ws)
+  first GET /api/sessions/XXXXX start +1444ms
+  Lobby participant in DOM +1625ms (page clock: navigation start -> participant)
+reload 2: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+675ms direct]
+  socket connect (40 recv): +1260ms via connect(ws)
+  first GET /api/sessions/XXXXX start +1460ms
+  Lobby participant in DOM +1643ms (page clock: navigation start -> participant)
+reload 3: reload = +0ms
+  polling requests before connect: 0 []
+  polling requests total (to +1.5s after usable): 0
+  websocket requests: 1 [+657ms direct]
+  socket connect (40 recv): +1035ms via connect(ws)
+  first GET /api/sessions/XXXXX start +1235ms
+  Lobby participant in DOM +1430ms (page clock: navigation start -> participant)
+  left session XXXXX -> /

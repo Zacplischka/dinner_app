@@ -1,0 +1,22 @@
+# mode=latency-create base=https://yupcrew.com runs=10 at 2026-09-25T03:32:10.470Z (Playwright 1.63.0 headless Chromium 390x844)
+run 1: create-to-Lobby 2371ms
+  left session XXXXX -> /
+run 2: create-to-Lobby 2398ms
+  left session XXXXX -> /
+run 3: create-to-Lobby 2341ms
+  left session XXXXX -> /
+run 4: create-to-Lobby 2429ms
+  left session XXXXX -> /
+run 5: create-to-Lobby 2334ms
+  left session XXXXX -> /
+run 6: create-to-Lobby 2396ms
+  left session XXXXX -> /
+run 7: create-to-Lobby 2469ms
+  left session XXXXX -> /
+run 8: create-to-Lobby 2259ms
+  left session XXXXX -> /
+run 9: create-to-Lobby 2282ms
+  left session XXXXX -> /
+run 10: create-to-Lobby 2375ms
+  left session XXXXX -> /
+create-to-Lobby (page clock: click "Create session" -> first [data-testid=participant] in the DOM): runs=[2371, 2398, 2341, 2429, 2334, 2396, 2469, 2259, 2282, 2375] median=2371ms p90=2429ms (nearest-rank)

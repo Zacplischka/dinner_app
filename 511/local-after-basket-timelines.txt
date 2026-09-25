@@ -1,0 +1,25 @@
+# local head a06e98e (vite preview :5111 -> backend :3111, private Redis :7511), completed Watch Session,
+# persisted orderPlaceId planted (bogus place), page reloaded, socket NOT blocked, 390x844. 250 ms polling.
+
+## A. Match page (/results), real backend answers VALIDATION_ERROR
++0.0s gate=true  h1="Reconnecting to your session" live="Couldn’t reach your session yet. Your place is saved."
++0.3s gate=false h1="Perfect Match!" live="Connected || Could not restore the basket: That Venue was not this Session outcome"
++5.3s gate=false h1="Perfect Match!" live="Connected"
+wire: poll> 420["session:join",…]  ws> 421["order:open",{"placeId":"fake-place-511"}]  poll< 430[{"success":true,…}]  ws< 431[{"success":false,"error":{"code":"VALIDATION_ERROR",…}}]
+
+## B. Match page (/results), order:open packet swallowed -> ack timeout (UNKNOWN) after 10 s
++0.1s  gate=true  h1="Reconnecting to your session"
++10.1s gate=false h1="Perfect Match!" live="Connected || Could not restore the basket: The server didn't respond. Reconnecting to check what happened before you try again."
++15.4s gate=false h1="Perfect Match!" live="Connected"   (no gate again through +16 s)
+
+## C. Order page (/order), order:open packet swallowed on every attempt (server never acks)
++0.0s  gate=true  (reconcile's order:open pending)
++10.1s gate=false h1="Group order" + toast "Could not restore the basket: The server didn't respond…"
++20.2s gate=true  (GroupOrderPage's own order:open timed out -> onUncertainOutcome -> reconcileSession -> gate)
+=> with a server that never acks order:open, /order alternates gate <-> order page every ~10 s.
+   Base stays on the gate instead. Acked failures (A, D) do not cycle.
+
+## D. Order page (/order), order:open answered INTERNAL "Menu provider failed" (WebSocket stub, 2 acks stubbed)
++0.0s gate=true
++0.3s gate=false h1="Group order" live="Connected || Could not restore the basket: Menu provider failed"
++5.3s gate=false h1="Group order" live="Connected"   (page shows "Something went wrong getting the menu." + Back to the Match; no gate through +26 s)

@@ -1,0 +1,32 @@
+# local head 113a087 (vite preview :5111 -> backend :3111, private Redis :7511), 390x844, 250 ms polling.
+# A Playwright Socket.IO proxy drops or refuses chosen packets. Session codes masked.
+
+## Offline copy (context.setOffline(true), then backend stopped so the socket drops)
+navigator.onLine=false -> gate status "You’re offline. Your place is saved." + Try again + Home
+setOffline(false), backend still down -> same gate re-renders "Couldn’t reach your session yet. Your place is saved."
+backend restarted -> socket.io reconnects -> Match page, Connected
+
+## Non-terminal rejoin failure the server answers, then Home -> Return to session
+Lobby, Connected. session:ready packet swallowed; the rejoin the lost ack starts goes over the live WebSocket
+and is answered INTERNAL "Server hiccup" without reaching the server (socket stays connected).
++0.0s  h1="Watch" live="Connected"
++10.1s h1="Reconnecting to your session" live="Couldn’t reach your session yet. Your place is saved. || Could not rejoin session: Server hiccup"
++15.4s still gated (socket connected; nothing retries on its own)
+Home -> "/" shows "Return to session" + "Leave session"
+Return to session:
++0.0s h1="What are we doing tonight?" path=/
++0.2s h1="Watch" live="Connected" path=/session/XXXXX      (GET /api/sessions/XXXXX, then a rejoin over the WebSocket: proxy joinsViaWs 1 -> 2)
+Same refused rejoin again, then Try again -> h1="Watch", Connected (rejectedJoins=2, joinsViaWs=4)
+
+## Scenario C: the server never acks order:open (every order:open swallowed), reload /session/XXXXX/order
++0.0s  gate=true  (reconcile's basket read pending)
++10.2s gate=false h1="Group order" toast "Could not restore the basket: The server didn't respond. Reconnecting to check what happened before you try again."
++15.5s gate=false h1="Group order" (page's own open times out -> "Something went wrong getting the menu." + Back to the Match)
+no gate again through +36 s; 2 order:open dropped (recovery + page). At a06e98e this cycled gate <-> page every ~10 s.
+
+## Pre-existing, not introduced by #578: a rejoin the server APPLIES but the phone sees fail
+(proxy rewrote a successful session:join ack to INTERNAL). participantId is the socket id, so the server now
+holds the Participant under a new id; the Lobby snapshot replaces participants and currentUserId no longer
+matches. reconcileSession returns early (`if (!code || !me)`), which a0098ef also does, so Try again and
+Return to session both land on the gate and stay there. Leave session still works. A lost session:join ack
+(10 s timeout) would likely reach the same state (not tested).

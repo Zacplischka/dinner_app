@@ -1,0 +1,13 @@
+# mode=back-create base=http://localhost:5110 runs=1 at 2026-09-25T04:02:48.862Z (Playwright 1.63.0 headless Chromium 390x844)
+history: / -> (click Watch something) /watch -> Create -> /session/XXXXX
+history.length before Back = 3
+after browser Back: URL = /
+after browser Back: h1 = "What are we doing tonight?"; dialog open = 0
+requests after Back (4s): {
+ "postSessions": 0,
+ "socketJoinFrames": 0,
+ "requests": [
+  "GET /api/sessions/XXXXX"
+ ]
+}
+  left session XXXXX -> /

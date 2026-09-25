@@ -1,0 +1,26 @@
+# PROD AFTER (8dbf372) Lobby header at 430px
+# captured 2026-09-25T04:46:37Z via: playwright-cli -s=v510p snapshot (session code masked XXXXX)
+"/session/XXXXX @ innerWidth=430"
+"header control: aria-label=\"Leave\" visibleText(innerText)=\"Leave\""
+```yaml
+- generic [ref=e2]:
+  - status [ref=e3]
+  - main [ref=e36]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - link "YupCrew home" [ref=e41] [cursor=pointer]:
+            - /url: /
+          - button "Leave" [ref=e43] [cursor=pointer]
+        - heading "Watch" [active] [level=1] [ref=e47]
+      - generic [ref=e48]:
+        - status [ref=e49]: Connected
+        - button "Copy session code" [ref=e51] [cursor=pointer]:
+          - generic [ref=e52]: XXXXX
+        - paragraph [ref=e54]: Invite friends. Choose together. Get ready.
+        - paragraph [ref=e55]: Expires in 29 min
+    - generic [ref=e56]:
+      - region [ref=e57]:
+        - heading "Session code" [level=2] [ref=e58]
+        - generic [ref=e59]: XXXXX
+        - button "Share invite link" [ref=e60] [cursor=pointer]

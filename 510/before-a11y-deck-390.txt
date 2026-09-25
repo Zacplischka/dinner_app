@@ -1,0 +1,26 @@
+# PROD BEFORE Deck header at 390px
+# captured 2026-09-25T03:11:40Z via: playwright-cli -s=v510a snapshot (session code masked XXXXX)
+"/session/XXXXX/select @ innerWidth=390"
+"header control: aria-label=\"Leave session\" visibleText(innerText)=\"Back\""
+```yaml
+- generic [ref=e2]:
+  - status [ref=e3]
+  - main [ref=e170]:
+    - generic [ref=e172]:
+      - generic [ref=e173]:
+        - generic [ref=e174]:
+          - link "YupCrew home" [ref=e175] [cursor=pointer]:
+            - /url: /
+          - button "Leave session" [ref=e177] [cursor=pointer]:
+            - generic [ref=e180]: Back
+        - heading "Choose something to watch" [active] [level=1] [ref=e182]
+        - generic [ref=e185]:
+          - button "Invite to session" [ref=e186] [cursor=pointer]
+          - status "0 liked" [ref=e189]:
+            - generic [ref=e192]: "0"
+      - generic [ref=e193]:
+        - status [ref=e194]: Connected
+        - button "Copy session code" [ref=e196] [cursor=pointer]:
+          - generic [ref=e197]: XXXXX
+        - paragraph [ref=e199]: Expires in 29 min
+        - progressbar "Deck progress" [ref=e200]:

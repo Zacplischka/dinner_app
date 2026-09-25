@@ -1,0 +1,16 @@
+# production https://yupcrew.com (main, reconcileSession as at a0098ef): completed Watch Session on its Match page, persisted orderPlaceId planted (bogus place), reload, socket NOT blocked, 390x844, 2026-09-25T03:51:30Z
+# +0.4s gate=true h1="Reconnecting to your session" live="Your place is saved. Connect to the internet to continue." path=/session/XXXXX/results
+# +1.4s gate=true h1="Reconnecting to your session" live="Your place is saved. Connect to the internet to continue. || Could not restore the basket: That Venue was not this Session outcome" path=/session/XXXXX/results
+# --- wire ---
+# +0.7s poll> 420["session:join",{"sessionCode":"XXXXX","displayName":"Verifier511","rejoinToken":"…"}]
+# +1.1s poll> 421["order:open",{"sessionCode":"XXXXX","placeId":"fake-place-511"}]
+# +1.1s poll< 430[{"success":true,"data":{"participantId":"…","sessionCode":"XXXXX","displayName":"Verifier511","participantCount":1,"rejoinToken":"…","participants":[{"participantId":"…","displayName":"Verifier511","avatarUrl":null,"isHost":true,"hasSub
+# +1.2s poll< 431[{"success":false,"error":{"code":"VALIDATION_ERROR","message":"That Venue was not this Session outcome"}}]
+# snapshot ~20 s later (still gated while online):
+- generic [ref=f2e2]:
+  - status [ref=f2e3]
+  - main [ref=f2e5]:
+    - heading "Reconnecting to your session" [level=1] [ref=f2e6]
+    - status [ref=f2e7]: Your place is saved. Connect to the internet to continue.
+    - button "Try again" [ref=f2e8] [cursor=pointer]
+  - status [ref=f2e9]

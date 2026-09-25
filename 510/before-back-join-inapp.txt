@@ -1,0 +1,15 @@
+# mode=back-join-inapp base=https://yupcrew.com runs=1 at 2026-09-25T03:23:17.316Z (Playwright 1.63.0 headless Chromium 390x844)
+history: / -> (in-app) /join + typed code -> Join -> /session/XXXXX
+history.length before Back = 4
+after browser Back: URL = /join
+after browser Back: h1 = "Join a session"; dialog open = 0
+requests after Back (4s): {
+ "postSessions": 0,
+ "socketJoinFrames": 0,
+ "requests": [
+  "POST /cdn-cgi/rum",
+  "POST /cdn-cgi/rum"
+ ]
+}
+  left session XXXXX -> /
+  left session XXXXX -> /

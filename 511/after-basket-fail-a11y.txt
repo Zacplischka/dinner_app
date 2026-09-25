@@ -1,0 +1,33 @@
+# production https://yupcrew.com @ 52600b5: completed Watch Session on its Match page, persisted orderPlaceId planted (bogus place), reload, socket NOT blocked, 390x844, 2026-09-25T04:50:33Z
+# +0.5s gate=true h1="Reconnecting to your session" live="Couldn’t reach your session yet. Your place is saved." path=/session/XXXXX/results
+# +2.1s gate=false h1="Perfect Match!" live="Connected || Could not restore the basket: That Venue was not this Session outcome" path=/session/XXXXX/results
+# --- wire ---
+# +1.5s ws> 420["session:join",{"sessionCode":"XXXXX","displayName":"Verifier511","rejoinToken":"…"}]
+# +1.9s ws< 430[{"success":true,"data":{"participantId":"…","sessionCode":"XXXXX","displayName":"Verifier511","participantCount":1,"rejoinToken":"…","participants":[{"participantId":"…","displayName":"Verifier511","avatarUrl":null,"isHost":true,"hasSub
+# +1.9s ws> 421["order:open",{"sessionCode":"XXXXX","placeId":"fake-place-511"}]
+# +2.0s ws< 431[{"success":false,"error":{"code":"VALIDATION_ERROR","message":"That Venue was not this Session outcome"}}]
+# snapshot ~20 s later (Match page, no gate):
+- generic [ref=f3e2]:
+  - status [ref=f3e3]
+  - main [ref=f3e5]:
+    - generic [ref=f3e7]:
+      - generic [ref=f3e8]:
+        - generic [ref=f3e9]:
+          - link "YupCrew home" [ref=f3e10] [cursor=pointer]:
+            - /url: /
+          - button "Leave" [ref=f3e12] [cursor=pointer]
+        - heading "Perfect Match!" [level=1] [ref=f3e16]
+        - button "Share Top Pick" [ref=f3e19] [cursor=pointer]
+      - generic [ref=f3e22]:
+        - status [ref=f3e23]: Connected
+        - button "Copy session code" [ref=f3e25] [cursor=pointer]:
+          - generic [ref=f3e26]: XXXXX
+        - paragraph [ref=f3e28]: The Top Pick is locked in
+        - paragraph [ref=f3e29]: Expires in 29 min
+    - generic [ref=f3e30]:
+      - generic [ref=f3e32]:
+        - generic [ref=f3e33]:
+          - paragraph [ref=f3e34]: TONIGHT’S XXXXX
+          - heading "Ratatouille" [level=2] [ref=f3e35]
+          - paragraph [ref=f3e36]: Everyone liked it — best rated of your 5 matches.
+          - link "Where to watch" [ref=f3e37] [cursor=pointer]:

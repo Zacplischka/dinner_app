@@ -1,0 +1,21 @@
+ × tests/unit/socketService.test.ts > socketService > connects over WebSocket only 3ms
+ × tests/unit/useCreateAndJoinSession.test.tsx > useCreateAndJoinSession > creates a Session, joins as Host and lands in the lobby 10ms
+ × tests/unit/useCreateAndJoinSession.test.tsx > useCreateAndJoinSession > starts connecting while the create request is still in flight 1ms
+ × tests/unit/navigationHeader.test.tsx > NavigationHeader > labels the Session header control Leave, visibly and by name 14ms
+ × tests/unit/groupOrderPage.test.tsx > GroupOrderPage > confirms with the ordering copy on Leave, then leaves the session on confirm (#180) 42ms
+ × tests/unit/groupOrderPage.test.tsx > GroupOrderPage > still confirms leaving an open order without claiming the viewer has basket items 29ms
+ × tests/unit/page-branches.test.tsx > page branch coverage > covers lobby route without a session code and leave success 22ms
+ × tests/unit/JoinSessionPage.test.tsx > starts connecting on arrival without joining anything 5ms
+ × tests/unit/liveSwipeRoom.test.tsx > Keyboard swipe > ignores keys while the Leave Session dialog is open, on auto-repeat, and with a modifier held 45ms
+ × tests/unit/JoinSessionPage.test.tsx > replaces the Join entry on admission, so Back does not rejoin 1011ms
+TestingLibraryElementError: Unable to find an element with the text: Home route. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your tex
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Leave"
+TestingLibraryElementError: Unable to find a label with the text of: Leave
+AssertionError: expected { reconnection: true, …(4) } to match object { transports: [ 'websocket' ] }
+AssertionError: expected "vi.fn()" to be called with arguments: [ '/session/AB123', { replace: true } ]
+AssertionError: expected "vi.fn()" to be called at least once
+ Test Files  7 failed | 1 passed (8)
+      Tests  10 failed | 127 passed (137)

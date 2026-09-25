@@ -1,0 +1,34 @@
+# mode=back-join base=https://yupcrew.com runs=1 at 2026-09-25T04:50:20.724Z (Playwright 1.63.0 headless chromium 390x844)
+history: / -> (new document) /join?code=XXXXX -> Join -> /session/XXXXX
+history.length before Back = 3
+after browser Back: URL = /
+after browser Back: h1 = "What are we doing tonight?"; dialog open = 0
+requests after Back (4s): {
+ "postSessions": 0,
+ "socketJoinFrames": 1,
+ "joinFramesCarryingRejoinToken": 1,
+ "requests": [
+  "GET /",
+  "GET /assets/index-BTDDyRUu.js",
+  "GET /assets/vendor-DH3fDsfN.js",
+  "GET /assets/index-BPSYi1kV.css",
+  "GET /beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495",
+  "GET /assets/HomePage-Bf-zADLy.js",
+  "GET /assets/GoogleSignInButton-DoEnXPNP.js",
+  "GET /assets/authStore-BIsjTecu.js",
+  "GET /assets/useLeaveSession-Bj7YV0QL.js",
+  "GET /assets/socketBindings-ibwOpi4l.js",
+  "GET /assets/apiClient-DQuAD_w4.js",
+  "GET /assets/friendsStore-pfXxNXHP.js",
+  "GET /assets/ProfileAvatar-6-NQvkOg.js",
+  "POST /cdn-cgi/rum",
+  "GET /images/tonight-eatout.webp",
+  "GET /images/tonight-takeaway.webp",
+  "GET /images/tonight-cook.webp",
+  "GET /images/tonight-watch.webp",
+  "GET /api/sessions/XXXXX",
+  "GET /yupcrew-mark.svg"
+ ]
+}
+  left session XXXXX -> /
+  left session XXXXX -> /

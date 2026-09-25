@@ -1,0 +1,13 @@
+ ✓ tests/unit/socketService.test.ts > socketService > connects over WebSocket only 0ms
+ ✓ tests/unit/useCreateAndJoinSession.test.tsx > useCreateAndJoinSession > creates a Session, joins as Host and lands in the lobby 8ms
+ ✓ tests/unit/useCreateAndJoinSession.test.tsx > useCreateAndJoinSession > starts connecting while the create request is still in flight 1ms
+ ✓ tests/unit/navigationHeader.test.tsx > NavigationHeader > labels the Session header control Leave, visibly and by name 4ms
+ ✓ tests/unit/JoinSessionPage.test.tsx > starts connecting on arrival without joining anything 3ms
+ ✓ tests/unit/JoinSessionPage.test.tsx > replaces the Join entry on admission, so Back does not rejoin 6ms
+ ✓ tests/unit/groupOrderPage.test.tsx > GroupOrderPage > confirms with the ordering copy on Leave, then leaves the session on confirm (#180) 28ms
+ ✓ tests/unit/groupOrderPage.test.tsx > GroupOrderPage > still confirms leaving an open order without claiming the viewer has basket items 13ms
+ ✓ tests/unit/page-branches.test.tsx > page branch coverage > covers lobby route without a session code and leave success 29ms
+ ✓ tests/unit/liveSwipeRoom.test.tsx > Keyboard swipe > ignores keys while the Leave Session dialog is open, on auto-repeat, and with a modifier held 17ms
+ Test Files  8 passed (8)
+      Tests  137 passed (137)
+8

@@ -1,0 +1,27 @@
+# local head 39f4613 (PR #578 rebased on main 8dbf372: socket transports ['websocket'], socket-first create)
+# vite preview :5111 -> backend :3111, private Redis :7511, 390x844, 250 ms polling. Playwright WebSocket
+# proxy (proxy installed before the first page load, so every socket goes through it). Codes masked.
+
+## AC2: rejoin refused INTERNAL by the proxy over the live WebSocket (server never sees it)
+Lobby, Connected. session:ready packet swallowed -> 10 s ack timeout -> recovery -> rejoin refused.
++0.0s  h1="Watch" live="Connected"
++10.2s h1="Reconnecting to your session" live="Couldn’t reach your session yet. Your place is saved. || Could not rejoin session: Server hiccup"
++15.5s still gated; gate shows Try again + Home (a11y below)
+Home -> "/" -> Return to session:
++0.0s h1="What are we doing tonight?" path=/
++0.2s h1="Watch" live="Connected" path=/session/XXXXX   (GET /api/sessions/XXXXX, proxy joinsViaWs 2 -> 3)
+Second refused rejoin, then Try again -> h1="Watch", Connected (rejectedJoins=2, joinsViaWs=5)
+
+## Scenario C: the server never acks order:open (every order:open swallowed), reload /session/XXXXX/order
++0.0s  gate=true  (recovery's basket read pending)
++10.2s gate=false h1="Group order" toast "Could not restore the basket: The server didn't respond. Try again."
++15.5s gate=false h1="Group order"
+~+20 s the page's own open times out -> "Something went wrong getting the menu." + Back to the Match
+no gate again through +36 s; order:open dropped 2x (recovery + page). No "Reconnecting" in the copy.
+
+## Gate a11y at the refused rejoin
+- main:
+  - heading "Reconnecting to your session" [level=1]
+  - status: Couldn’t reach your session yet. Your place is saved.
+  - button "Try again"
+  - link "Home" (/url: /)

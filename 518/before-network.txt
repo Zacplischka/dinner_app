@@ -1,0 +1,51 @@
+# mode=waterfall base=https://yupcrew.com runs=3 at 2026-09-25T03:34:13.937Z (Playwright 1.63.0 headless Chromium 390x844)
+run 1: click Create = +0ms
+  POST /api/sessions        start +40ms end +722ms
+  first socket.io request   start +725ms (polling)
+  socket connect (40 recv)  +1078ms via connect(polling)
+  session:join sent         +1078ms
+  Lobby participant in DOM  +1547ms (page clock: click -> participant)
+  socket starts before POST returns: false
+  all socket.io requests after click: GET polling +725ms, POST polling +902ms, GET polling +902ms, GET polling +1078ms, POST polling +1078ms, ws +1217ms, GET polling +1353ms
+  left session XXXXX -> /
+run 2: click Create = +0ms
+  POST /api/sessions        start +18ms end +715ms
+  first socket.io request   start +718ms (polling)
+  socket connect (40 recv)  +1075ms via connect(polling)
+  session:join sent         +1075ms
+  Lobby participant in DOM  +1479ms (page clock: click -> participant)
+  socket starts before POST returns: false
+  all socket.io requests after click: GET polling +718ms, POST polling +897ms, GET polling +897ms, GET polling +1074ms, POST polling +1075ms, ws +1240ms, GET polling +1274ms
+  left session XXXXX -> /
+run 3: click Create = +0ms
+  POST /api/sessions        start +37ms end +700ms
+  first socket.io request   start +703ms (polling)
+  socket connect (40 recv)  +1045ms via connect(polling)
+  session:join sent         +1045ms
+  Lobby participant in DOM  +1419ms (page clock: click -> participant)
+  socket starts before POST returns: false
+  all socket.io requests after click: GET polling +703ms, POST polling +876ms, GET polling +876ms, GET polling +1045ms, POST polling +1045ms, ws +1193ms, GET polling +1239ms
+  left session XXXXX -> /
+# mode=reload base=https://yupcrew.com runs=3 at 2026-09-25T03:34:28.179Z (Playwright 1.63.0 headless Chromium 390x844)
+reload 1: reload = +0ms
+  polling requests before connect: 5 [GET +421ms..+591ms, POST +591ms..+940ms, GET +591ms..+942ms, GET +942ms..+1140ms, POST +942ms..+1112ms]
+  polling requests total (to +1.5s after usable): 6
+  websocket requests: 1 [+942ms upgrade-from-polling(sid)]
+  socket connect (40 recv): +943ms via connect(polling)
+  first GET /api/sessions/XXXXX start +1142ms
+  Lobby participant in DOM +1320ms (page clock: navigation start -> participant)
+reload 2: reload = +0ms
+  polling requests before connect: 5 [GET +361ms..+541ms, POST +541ms..+712ms, GET +541ms..+715ms, GET +715ms..+916ms, POST +715ms..+886ms]
+  polling requests total (to +1.5s after usable): 6
+  websocket requests: 1 [+871ms upgrade-from-polling(sid)]
+  socket connect (40 recv): +716ms via connect(polling)
+  first GET /api/sessions/XXXXX start +916ms
+  Lobby participant in DOM +1093ms (page clock: navigation start -> participant)
+reload 3: reload = +0ms
+  polling requests before connect: 5 [GET +354ms..+529ms, POST +529ms..+699ms, GET +529ms..+703ms, GET +703ms..+900ms, POST +703ms..+880ms]
+  polling requests total (to +1.5s after usable): 6
+  websocket requests: 1 [+850ms upgrade-from-polling(sid)]
+  socket connect (40 recv): +704ms via connect(polling)
+  first GET /api/sessions/XXXXX start +900ms
+  Lobby participant in DOM +1172ms (page clock: navigation start -> participant)
+  left session XXXXX -> /
