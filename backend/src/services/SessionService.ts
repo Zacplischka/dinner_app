@@ -744,6 +744,17 @@ export function createSessionService({
   }
 
   async function readCompletedResults(sessionCode: string): Promise<SessionResultsEvent> {
+    const stored = await store.readCompletedResults(sessionCode).catch((error: unknown) => {
+      // Unreadable must not fail every rejoin for the rest of the Session's life.
+      if (!(error instanceof SyntaxError)) throw error;
+      logger.warn({ err: error, sessionCode }, 'Stored Session outcome unreadable, recomputing');
+      return null;
+    });
+    if (stored) return stored;
+    // ponytail: transitional. The recompute over whoever is left only serves
+    // Sessions completed before #506 stored the outcome, and Session data
+    // expires in 30 minutes, so a later PR can delete it (an unreadable copy
+    // would then answer with no results rather than a recompute).
     const session = await store.readSession(sessionCode);
     const results = await store.readMatch(sessionCode);
     return {
@@ -812,6 +823,10 @@ export function createSessionService({
             }
           )
         : undefined;
+    const outcome = { ...results, topPick, shoppingListId };
+    // Crowned once (#399): a rejoin reads this copy, never a recompute over a
+    // roster a Leave has since changed (#506).
+    await store.writeCompletedResults(sessionCode, { sessionCode, ...outcome });
 
     const matchSize = results.overlappingOptions.length;
     const restartFollowed = await store.wasRestartedAfterComplete(sessionCode);
@@ -832,7 +847,7 @@ export function createSessionService({
       current.lobby.revision++;
       await store.writeLobbySession(current);
     }
-    return { ...results, topPick, shoppingListId };
+    return outcome;
   }
 
   /**
