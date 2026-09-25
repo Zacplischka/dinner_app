@@ -214,7 +214,7 @@ export default function HomePage() {
                     aria-hidden="true"
                   >
                     <img
-                      src={`/images/tonight-${card.image}-480.webp`}
+                      src={`/images/tonight-${card.image}-432.webp`}
                       alt=""
                       width="432"
                       height="288"
