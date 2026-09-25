@@ -24,6 +24,7 @@ import type { PooledIngredient, PooledRecipe } from './spoonacularClient.js';
 import { spendPaidBudget } from './paidBudget.js';
 import { isStaple } from './staples.js';
 import { deriveSearchTerm, sanitiseIngredientName } from './usToAuTerms.js';
+import { productName } from './woolworthsClient.js';
 
 /**
  * Seven days from mint, and nothing extends it — not a read, not a Claim, not
@@ -164,9 +165,11 @@ export interface ShoppingListService {
   swapLine(listId: string, lineId: string, stockcode: number | null): Promise<ShoppingList | null>;
 }
 
-const toProduct = (candidate: ProductCandidate): ShoppingListProduct => ({
+// Also run on every read: a list minted before #542 stored the catalogue's
+// doubled words, and so did a search answer cached before it.
+const toProduct = (candidate: ShoppingListProduct): ShoppingListProduct => ({
   stockcode: candidate.stockcode,
-  name: candidate.name,
+  name: productName(candidate.name),
   packageSize: candidate.packageSize,
 });
 
@@ -238,7 +241,61 @@ function lineText(amount: number, unit: string, name: string): string {
   // Spoonacular's metric rewrite states grams as "gr"; a human writes "g"
   // (#305). Display only — the structured unit is what pricing sees.
   const shownUnit = unit === 'gr' ? 'g' : unit;
-  return shownUnit ? `${shown} ${shownUnit} ${name}` : `${shown} ${name}`;
+  const phrase = shownUnit ? `${shownUnit} ${name}` : name;
+  return `${shown} ${shown === 1 ? oneOf(phrase, shownUnit) : phrase}`;
+}
+
+// ponytail: three closed lists (#542). An unlisted count word leading a name
+// with no unit, or an unlisted plural-only noun, reads "1 rashers bacon" or
+// "1 bit"; add words as lists show them.
+/** Count words, singular; they may also lead a name parsed with no unit. */
+const COUNT_WORDS = new Map([
+  ['cloves', 'clove'],
+  ['stalks', 'stalk'],
+  ['heads', 'head'],
+  ['sprigs', 'sprig'],
+  ['slices', 'slice'],
+  ['leaves', 'leaf'],
+  ['cans', 'can'],
+  ['pieces', 'piece'],
+  ['bunches', 'bunch'],
+  ['pinches', 'pinch'],
+  ['dashes', 'dash'],
+  ['ounces', 'ounce'],
+  ['litres', 'litre'],
+]);
+/** A size describes the thing counted ("1 large egg"); it is not a unit of it. */
+const SIZES = /^(?:small|medium|large|extra[- ]large|whole)$/i;
+/** Plural-only nouns, whose "-s" singular says something else ("1 oat", "1 chip"). */
+const PLURAL_ONLY = /^mixed |\b(?:oats|grits|greens|chips|crisps|herbs|nuts|crumbs|breadcrumbs)$/i;
+
+/** One of `word`: itself when it is no plural, null when the singular is a guess. */
+function singular(word: string): string | null {
+  const lower = word.toLowerCase();
+  const counted = COUNT_WORDS.get(lower);
+  if (counted) return counted;
+  // Not a plural: "egg", "lemongrass", "hummus", "Campbell's", "Tbs".
+  if (!/[^su'’]s$/.test(lower) || lower === 'tbs') return word;
+  // Only a consonant + "s" drops its "s"; "-es", "-ies", "-ves" and a vowel + "s"
+  // guess wrong too often ("tomatoe", "leave", "pea").
+  return /[bcdfghjklmnpqrtvwxz]s$/.test(lower) ? word.slice(0, -1) : null;
+}
+
+/**
+ * The phrase after a "1" (#542): its count unit made singular ("1 clove
+ * garlic", "1 cup flour"), else its head noun, the last word before any
+ * qualifier ("1 large egg", "1 egg, beaten"), else "× eggs" when the singular
+ * would be a guess. Never "1 eggs".
+ */
+function oneOf(phrase: string, unit: string): string {
+  const [first, ...rest] = phrase.split(' ');
+  if ((unit && !SIZES.test(unit)) || COUNT_WORDS.has(first.toLowerCase())) {
+    const counted = singular(first);
+    return counted ? [counted, ...rest].join(' ') : `× ${phrase}`;
+  }
+  const [, before = '', head, after = ''] = /^(.*?)([^\s,(]+)(\s*[,(].*)?$/.exec(phrase) ?? [];
+  const counted = head && !PLURAL_ONLY.test(before + head) ? singular(head) : null;
+  return counted ? `${before}${counted}${after}` : `× ${phrase}`;
 }
 
 /**
@@ -361,7 +418,8 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
         // The swap replaces what the line's state says and nothing else: the
         // id, the recipe text, the Staple flag and the Claim all stay put.
         const { id, text, staple } = line;
-        const current: ShoppingListLine = swapped ? { id, text, staple, ...swapped } : line;
+        let current: ShoppingListLine = swapped ? { id, text, staple, ...swapped } : line;
+        if ('product' in current) current = { ...current, product: toProduct(current.product) };
         const match = stored.matches?.[line.id];
         // The picker offers the other four — never the one already on the line.
         // Present-but-empty on a search that found a single product, because

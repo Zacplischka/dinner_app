@@ -446,6 +446,119 @@ describe('ShoppingListService.mint', () => {
     expect(matchProduct).toHaveBeenCalledWith('garlic', undefined);
   });
 
+  // #542: every name the review probed, from a live Spoonacular recipe (644581)
+  // and the Owned corpus. A singular is only stated when it is certain;
+  // otherwise the line says "1 ×" rather than guess ("1 tomatoe", "1 oat").
+  it('states a one-count line in the singular, never "1 eggs" and never a guess', async () => {
+    const cases: Array<[name: string, unit: string, text: string, amount?: number]> = [
+      ['eggs', '', '1 egg'],
+      ['large eggs', '', '1 large egg'],
+      ['free range eggs', '', '1 free range egg', 0.999],
+      ['egg yolks', '', '1 egg yolk'],
+      ['egg whites', '', '1 × egg whites'],
+      ['lemons', '', '1 lemon'],
+      ['limes', '', '1 × limes'],
+      ['onions', '', '1 onion'],
+      ['spring onions', '', '1 spring onion'],
+      ['red onions', '', '1 red onion'],
+      ['carrots', '', '1 carrot'],
+      ['potatoes', '', '1 × potatoes'],
+      ['sweet potatoes', '', '1 × sweet potatoes'],
+      ['tomatoes', '', '1 × tomatoes'],
+      ['cherry tomatoes', '', '1 × cherry tomatoes'],
+      ['peas', '', '1 × peas'],
+      ['chickpeas', '', '1 × chickpeas'],
+      ['oats', '', '1 × oats'],
+      ['grits', '', '1 × grits'],
+      ['chips', '', '1 × chips'],
+      ['mixed greens', '', '1 × mixed greens'],
+      ['mixed salad leaves', '', '1 × mixed salad leaves'],
+      ['bay leaves', '', '1 bay leaf'],
+      ['curry leaves', '', '1 curry leaf'],
+      ['eggs (free range)', '', '1 egg (free range)'],
+      ['eggs, beaten', '', '1 egg, beaten'],
+      ['cloves garlic', '', '1 clove garlic'],
+      ['garlic cloves', '', '1 garlic clove'],
+      ['whole cloves', '', '1 whole clove'],
+      ['shallots', '', '1 shallot'],
+      ['radishes', '', '1 × radishes'],
+      ['brussels sprouts', '', '1 brussels sprout'],
+      ['chillies', '', '1 × chillies'],
+      ['bananas', '', '1 × bananas'],
+      ['avocados', '', '1 × avocados'],
+      ['mangoes', '', '1 × mangoes'],
+      ['zucchinis', '', '1 × zucchinis'],
+      ['cucumbers', '', '1 cucumber'],
+      ['lebanese cucumbers', '', '1 lebanese cucumber'],
+      ['pork loin chops', '', '1 pork loin chop'],
+      ['royal gala apples', '', '1 × royal gala apples'],
+      ['chicken thighs', '', '1 chicken thigh'],
+      ['sausages', '', '1 × sausages'],
+      ['tortillas', '', '1 × tortillas'],
+      ['taco shells', '', '1 taco shell'],
+      ['hamburger buns', '', '1 hamburger bun'],
+      ['pita breads', '', '1 pita bread'],
+      ['anchovies', '', '1 × anchovies'],
+      ['dates', '', '1 × dates'],
+      ['figs', '', '1 fig'],
+      ['mushrooms', '', '1 mushroom'],
+      ['lemongrass', '', '1 lemongrass'],
+      ['hummus', '', '1 hummus'],
+      ['asparagus', '', '1 asparagus'],
+      ['cous cous', '', '1 cous cous'],
+      ['couscous', '', '1 couscous'],
+      ['swiss', '', '1 swiss'],
+      ['molasses', '', '1 × molasses'],
+      ["Campbell's", '', "1 Campbell's"],
+      ['egg', '', '1 egg'],
+      ['lemon', '', '1 lemon'],
+      // A size describes the egg, so the egg is what is counted.
+      ['eggs', 'large', '1 large egg'],
+      // A count or measure unit carries the one, and the name stays as written.
+      ['garlic', 'cloves', '1 clove garlic'],
+      ['green onions', 'stalks', '1 stalk green onions'],
+      ['flour', 'cups', '1 cup flour'],
+      ['ginger', 'Tbs', '1 Tbs ginger'],
+      ['chicken wings', '', '2 chicken wings', 2],
+    ];
+    const { service } = build({
+      recipe: {
+        ...recipe,
+        servings: undefined,
+        ingredients: cases.map(([name, unit, , amount = 1]) => ({
+          name,
+          amount,
+          unit,
+          original: name,
+        })),
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+
+    expect(list?.lines.map((line) => line.text)).toEqual(cases.map(([, , text]) => text));
+  });
+
+  // #542: a list minted, or a search answer cached, before the collapse still
+  // holds the catalogue's doubled words, so the read is where they go.
+  it('reads a stored product name without the catalogue doubled words', async () => {
+    const { service } = build({
+      outcome: {
+        status: 'matched',
+        match: { ...tin, name: 'Woolworths Cumin Ground Ground' },
+        runnersUp: [{ ...runnersUp[0], name: 'Woolworths Lamb Easy Carve Leg Roast Leg Roast' }],
+      },
+    });
+
+    const list = await service.readList((await service.mint('AB123', '11'))!);
+    const line = list?.lines[0];
+
+    expect(line && 'product' in line && line.product.name).toBe('Woolworths Cumin Ground');
+    expect(line?.runnersUp?.map((product) => product.name)).toEqual([
+      'Woolworths Lamb Easy Carve Leg Roast',
+    ]);
+  });
+
   it('mints the #305 corpus lines with a single unit, never the doubled pair', async () => {
     // Recipe 636360, exactly as Spoonacular parses it: the metric rewrite put
     // "250/gr" in the structured amount but left the imperial token in the

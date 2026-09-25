@@ -167,6 +167,31 @@ describe('ShoppingListPage', () => {
     expect(line.textContent).not.toContain('$');
   });
 
+  // #542: a bare "30g · unpriced" read as the amount needed, not the pack sold.
+  it('labels an Unpriced-matched line size as the pack, never doubling "pack"', async () => {
+    const unpricedLine = (id: string, text: string, packageSize: string): ShoppingListLine => ({
+      id,
+      text,
+      staple: false,
+      state: 'unpriced_matched',
+      product: { stockcode: Number(id) + 900, name: 'Product', packageSize },
+    });
+    serviceMocks.getShoppingList.mockResolvedValue({
+      ...list,
+      lines: [
+        unpricedLine('0', '0.17 teaspoon ground cumin', '30g'),
+        unpricedLine('1', '1 dozen eggs', '12 pack'),
+        unpricedLine('2', '2 dozen eggs', '24pk'),
+      ],
+    });
+    renderPage();
+    await screen.findByText('0.17 teaspoon ground cumin');
+
+    expect(lineFor('0.17 teaspoon ground cumin').textContent).toContain('30g pack · unpriced');
+    expect(lineFor('1 dozen eggs').textContent).toContain('12 pack · unpriced');
+    expect(lineFor('2 dozen eggs').textContent).toContain('24pk · unpriced');
+  });
+
   it('gives an Unmatched line its recipe text and a Woolworths search', async () => {
     renderPage();
     await screen.findByText('1 tbsp yuzu kosho');

@@ -183,6 +183,95 @@ describe('matchProducts', () => {
     expect(result?.match.stockcode).toBe(1);
   });
 
+  // #542: search rank put a frozen, seasoned product first for raw potatoes.
+  it('prefers plain potatoes to a frozen or seasoned form the term never asked for', () => {
+    const rows = [
+      product({
+        stockcode: 1,
+        name: 'Birds Eye Deli Seasoned Roast Potatoes Rosemary & Garlic',
+        packageSize: '600g',
+        sapCategory: 'FROZEN',
+      }),
+      product({
+        stockcode: 2,
+        name: 'Birds Eye Frozen Roast Potatoes',
+        packageSize: '600g',
+        sapCategory: 'FROZEN',
+      }),
+      product({
+        stockcode: 3,
+        name: 'Woolworths Washed Potatoes Bag',
+        packageSize: '2kg',
+        sapCategory: 'VEG / FRESHCUTS',
+      }),
+    ];
+    const potatoes = matchProducts(rows, 'potatoes', 'mass');
+    expect(potatoes?.match.stockcode).toBe(3);
+    // Demoted, not evicted: the processed forms are still a swap away.
+    expect(potatoes?.runnersUp.map((candidate) => candidate.stockcode)).toEqual([1, 2]);
+  });
+
+  it('prefers dried cherries to glacé ones for a dried cherries line', () => {
+    const rows = [
+      product({ stockcode: 1, name: 'Winn Cherries Red Glace', packageSize: '200g' }),
+      product({ stockcode: 2, name: 'Glacé Cherries Red', packageSize: '200g' }),
+      product({ stockcode: 3, name: 'Forresters Dried Sour Cherries', packageSize: '150g' }),
+    ];
+    expect(matchProducts(rows, 'dried cherries', 'mass')?.match.stockcode).toBe(3);
+  });
+
+  // #542 review: store names where frozen is the plain form of the ingredient.
+  it.each([
+    ['peas', 'Woolworths Peas Frozen', 'Split Peas Green'],
+    ['broad beans', 'Birds Eye Frozen Australian Broad Beans', 'Edgell Broad Beans'],
+    ['edamame', 'Umami Frozen Edamame Whole Baby Soy Beans', 'Eco Organics Edamame Spaghetti'],
+  ])(
+    'keeps frozen %s, which the store mostly sells frozen, as the plain product',
+    (term, frozen, other) => {
+      const rows = [
+        product({ stockcode: 1, name: frozen, packageSize: '1kg', sapCategory: 'FROZEN MEALS' }),
+        product({ stockcode: 2, name: other, packageSize: '400g' }),
+      ];
+      expect(matchProducts(rows, term, 'mass')?.match.stockcode).toBe(1);
+    }
+  );
+
+  // #542 review, live store names: "Roast" names a raw joint; "Roasted" is cooked.
+  it('keeps a raw roasting joint for a cut, and still demotes a roasted product', () => {
+    const pair = (first: string, second: string) => [
+      product({ stockcode: 1, name: first }),
+      product({ stockcode: 2, name: second }),
+    ];
+    const lamb = pair('Woolworths Lamb Leg Roast', 'Woolworths Lamb Leg Steak');
+    expect(matchProducts(lamb, 'lamb leg')?.match.stockcode).toBe(1);
+    const pork = pair(
+      'Woolworths Pork Shoulder Roast Boneless Small',
+      'Woolworths Slow Cooked BBQ Pork Shoulder'
+    );
+    expect(matchProducts(pork, 'pork shoulder')?.match.stockcode).toBe(1);
+    const chicken = pair(
+      'Steggles Family Roast Whole Chicken',
+      'Macro Free Range Australian Whole Chicken'
+    );
+    expect(matchProducts(chicken, 'whole chicken')?.match.stockcode).toBe(1);
+    const capsicum = pair('Always Fresh Roasted Red Capsicum', 'Woolworths Red Capsicum');
+    expect(matchProducts(capsicum, 'red capsicum')?.match.stockcode).toBe(2);
+  });
+
+  it('demotes mashed potato and fries for a raw potato, but not the mash a term asks for', () => {
+    const potato = [
+      product({ stockcode: 1, name: 'Strong Roots Oven Baked Sweet Potato Fries' }),
+      product({ stockcode: 2, name: 'Continental Instant Mashed Potato' }),
+      product({ stockcode: 3, name: 'Potato White Washed', sapCategory: 'VEG / FRESHCUTS' }),
+    ];
+    expect(matchProducts(potato, 'potato')?.match.stockcode).toBe(3);
+    const mash = [
+      product({ stockcode: 4, name: 'Woolworths Classic Potato Mash' }),
+      product({ stockcode: 5, name: 'Woolworths Washed Potatoes Bag', sapCategory: 'VEG' }),
+    ];
+    expect(matchProducts(mash, 'mashed potato')?.match.stockcode).toBe(4);
+  });
+
   it.each(['mass', 'volume'] as const)('demotes count packs for a %s line', (form) => {
     const rows = [
       product({ stockcode: 1, name: 'Pumpkin Whole', packageSize: 'each' }),
@@ -526,7 +615,7 @@ describe('matchProducts', () => {
         product({ stockcode: 3, name: 'Coriander Dried' }),
         product({ stockcode: 4, name: 'Coriander Paste' }),
         product({ stockcode: 5, name: 'Coriander Seeds', available: false }),
-        product({ stockcode: 6, name: 'Coriander Frozen' }),
+        product({ stockcode: 6, name: 'Coriander Microherbs' }),
         product({ stockcode: 7, name: 'Coriander Seedling' }),
       ],
       'coriander'
