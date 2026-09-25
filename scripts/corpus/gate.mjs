@@ -575,11 +575,7 @@ async function geminiJudge(recipe) {
   );
 }
 
-/**
- * Two judges, two families, neither the author's — the pilot's GPT and Claude
- * pair each caught a gluten-free trap the other missed, so a second genuine
- * family is the layer rather than a nicety, and Claude is already the author.
- */
+/** Two judges, two families, neither the author's (see the header). */
 export const DEFAULT_JUDGES = [
   { family: 'openai', judge: openAiJudge },
   { family: 'google', judge: geminiJudge },
@@ -623,9 +619,7 @@ const REWRITE_INTRO =
 
 /**
  * Author one dish and hold it against both layers, structural first because it
- * is free. A failure is a rewrite instruction and another pass, never a drop:
- * the pilot's 28% first-pass culinary failures all cleared inside two rewrites
- * and none of its 50 dishes was discarded.
+ * is free. A failure is a rewrite instruction and another pass, never a drop.
  *
  * The loop lives here, in the same process as the read, because a re-author
  * runs `authorDish` again and the overlap checker it calls needs the captures —

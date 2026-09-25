@@ -1,6 +1,3 @@
-// Friends API Router
-// Handles user profiles, friendships, and session invites
-
 import { Router, Response, raw } from 'express';
 import { PHOTO_UPLOAD_BYTES } from '../services/profilePhoto.js';
 import { DomainError } from '../services/DomainError.js';
@@ -81,19 +78,10 @@ export function createFriendsRouter(friendsService: FriendsService) {
     )
   );
 
-  // Zod schema for the one friend mutation that carries a body
   const sendFriendRequestSchema = z.object({
     email: z.string().min(1),
   });
 
-  // ============================================================================
-  // USER PROFILE ENDPOINTS
-  // ============================================================================
-
-  /**
-   * GET /api/users/me
-   * Get the current user's profile
-   */
   router.get(
     '/users/me',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -105,10 +93,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * GET /api/users/search?email=<email>
-   * Search for users by exact email match
-   */
+  // Exact email match only.
   router.get(
     '/users/search',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -124,14 +109,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  // ============================================================================
-  // FRIENDS ENDPOINTS
-  // ============================================================================
-
-  /**
-   * GET /api/friends
-   * List all accepted friends for the current user
-   */
   router.get(
     '/friends',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -141,10 +118,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * GET /api/friends/requests
-   * List pending friend requests for the current user (requests they received)
-   */
+  // Requests the current user received, not ones they sent.
   router.get(
     '/friends/requests',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -154,10 +128,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * POST /api/friends/request
-   * Send a friend request to a user by email
-   */
   router.post(
     '/friends/request',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -174,10 +144,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * POST /api/friends/:requestId/accept
-   * Accept a friend request
-   */
   router.post(
     '/friends/:requestId/accept',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -187,10 +153,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * POST /api/friends/:requestId/decline
-   * Decline a friend request
-   */
   router.post(
     '/friends/:requestId/decline',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -200,10 +162,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * DELETE /api/friends/:friendId
-   * Remove a friend (unfriend)
-   */
   router.delete(
     '/friends/:friendId',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -213,14 +171,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  // ============================================================================
-  // SESSION INVITE ENDPOINTS
-  // ============================================================================
-
-  /**
-   * POST /api/sessions/:code/invite
-   * Invite friends to join a session. Returns 204 No Content.
-   */
+  // Returns 204 No Content.
   router.post(
     '/sessions/:code/invite',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -237,10 +188,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * GET /api/invites
-   * Get session invites for the current user
-   */
   router.get(
     '/invites',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -249,11 +196,7 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * POST /api/invites/:inviteId/accept
-   * Accept a session invite. Retains a JSON body with the Session Code the
-   * frontend consumes to navigate into the Session.
-   */
+  // The one invite route with a body: the Session Code the frontend navigates into.
   router.post(
     '/invites/:inviteId/accept',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -266,10 +209,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     })
   );
 
-  /**
-   * POST /api/invites/:inviteId/decline
-   * Decline a session invite. Returns 204 No Content.
-   */
   router.post(
     '/invites/:inviteId/decline',
     asyncHandler(async (req: AuthenticatedRequest, res: Response) => {

@@ -247,8 +247,8 @@ export default function GroupOrderPage() {
   let content: React.ReactNode;
 
   // Two ways in: the socket event sets sessionStatus while the basket is open,
-  // or a cold open acks SESSION_NOT_FOUND (#402 — that path used to render
-  // nothing). Either way the page goes inert; the header banner alone would
+  // or a cold open acks SESSION_NOT_FOUND (#402). Either way the page renders a
+  // failure screen and goes inert; the header banner alone would
   // leave every add/remove tap a silent no-op.
   if (failure === 'expired' || sessionStatus === 'expired') {
     content = (

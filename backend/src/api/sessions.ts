@@ -1,5 +1,3 @@
-// REST API endpoints for session management
-
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from './asyncHandler.js';
@@ -31,7 +29,6 @@ export function createSessionsRouter(sessionService: SessionService) {
     message: 'Too many Sessions created. Please try again shortly.',
   });
 
-  // Zod schemas for validation
   const createSessionRequestSchema = z
     .object({
       hostName: z.string().trim().min(1).max(MAX_DISPLAY_NAME_LENGTH),
@@ -44,13 +41,7 @@ export function createSessionsRouter(sessionService: SessionService) {
     // A deckSize outside the range is rejected, never clamped (#415): it is a
     // client bug, and silently dealing a different Deck would hide it.
     .merge(choicesPayloadSchema.pick({ headcount: true, deckSize: true, searchRadiusMiles: true }))
-    // A Cook Session has nothing to deal without its setup. This narrows what
-    // the endpoint accepts, which ADR 0007 would normally stage over two
-    // deployments — safe here only because no shipped client can send
-    // branch=cook: until this ticket the fork's Cook card routed to a
-    // placeholder screen that never created a Session. The Watch narrowing
-    // (#369) is safe for the same reason: no client sends branch=watch until
-    // its setup screen exists.
+    // A Cook or Watch Session has nothing to deal without its setup.
     .superRefine((body, ctx) => {
       const required = (field: string) =>
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: 'required' });
@@ -69,14 +60,9 @@ export function createSessionsRouter(sessionService: SessionService) {
     return Object.keys(error.flatten().fieldErrors).sort();
   }
 
-  /**
-   * POST /api/sessions
-   * Create a new dinner decision session
-   */
   router.post(
     '/',
     asyncHandler(async (req, res) => {
-      // Validate request body
       const validation = createSessionRequestSchema.safeParse(req.body);
 
       if (!validation.success) {
@@ -108,7 +94,6 @@ export function createSessionsRouter(sessionService: SessionService) {
         deckSize,
       }: CreateSessionRequest = validation.data;
 
-      // Default searchRadiusMiles to 5 if location is provided but radius is not
       const radius = location && searchRadiusMiles === undefined ? 5 : searchRadiusMiles;
       // Cook setup only applies to a Cook Session; superRefine has already
       // established both halves are present when the Branch is Cook.
@@ -162,10 +147,6 @@ export function createSessionsRouter(sessionService: SessionService) {
     })
   );
 
-  /**
-   * GET /api/sessions/:sessionCode
-   * Get session details
-   */
   router.get(
     '/:sessionCode',
     asyncHandler(async (req, res) => {
@@ -174,14 +155,12 @@ export function createSessionsRouter(sessionService: SessionService) {
       const notFound = () =>
         new DomainError('SESSION_NOT_FOUND', `Session ${sessionCode} not found or has expired`);
 
-      // Validate session code format
       if (!SESSION_CODE_PATTERN.test(sessionCode)) {
         req.log.warn({ sessionCode, reason: 'invalid_session_code' }, 'Rejected REST session get');
 
         throw notFound();
       }
 
-      // Get session
       const session = await sessionService.getSession(sessionCode);
 
       if (!session) {

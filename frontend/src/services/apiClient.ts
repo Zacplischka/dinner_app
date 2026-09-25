@@ -1,4 +1,4 @@
-// REST API client for Dinder - the single owner of HTTP transport
+// The app's own REST API client - the single owner of HTTP transport
 // (base URL, auth header, error shaping). State stores never call fetch.
 
 import type {
@@ -198,10 +198,7 @@ function authedRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
 /**
  * The one typed error thrown for any failed API response. `code` is a stable
- * public `ApiErrorCode`: the backend emits canonical { code, message } bodies
- * everywhere (#104, shipped). The legacy `error`-field branch below is dead
- * defence, not a live compatibility path; `UNKNOWN` covers a failure body
- * carrying no code at all.
+ * public `ApiErrorCode`; `UNKNOWN` covers a failure body carrying no code at all.
  */
 export class ApiClientError extends Error {
   constructor(
@@ -216,9 +213,8 @@ export class ApiClientError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    // Canonical bodies are { code, message } — the backend emits them
-    // everywhere since #104, so the lowercase `error` branch is dead defence;
-    // some failures have no body at all.
+    // The backend emits { code, message } everywhere (#104), so the lowercase
+    // `error` branch is dead defence; some failures have no body at all.
     const body = (await response.json().catch(() => ({}))) as {
       code?: string;
       error?: string;

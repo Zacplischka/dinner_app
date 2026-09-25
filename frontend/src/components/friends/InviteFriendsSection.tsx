@@ -1,4 +1,3 @@
-// InviteFriendsSection Component
 // Collapsible section for selecting friends to invite to a session
 
 import { useEffect, useState } from 'react';
@@ -24,14 +23,12 @@ export default function InviteFriendsSection({
   const { friends, isLoadingFriends, fetchFriends } = useFriendsStore();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Fetch friends when section is expanded
   useEffect(() => {
     if (isAuthenticated && isExpanded && friends.length === 0) {
       void fetchFriends();
     }
   }, [isAuthenticated, isExpanded, friends.length, fetchFriends]);
 
-  // Don't render if not authenticated
   if (!isAuthenticated) {
     return null;
   }

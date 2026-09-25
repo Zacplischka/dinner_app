@@ -41,7 +41,6 @@ export const useAuthStore = create<AuthState>()(
         // Optional identity must not hold guest entry hostage to an auth outage.
         const guestFallback = setTimeout(() => set({ isLoading: false }), 3000);
         try {
-          // Get initial session
           const {
             data: { session },
           } = await supabase.auth.getSession();
@@ -53,7 +52,6 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
 
-          // Listen for auth state changes
           const {
             data: { subscription },
           } = supabase.auth.onAuthStateChange((_event, session) => {

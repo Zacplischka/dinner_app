@@ -102,9 +102,8 @@ export default function NavigationHeader({
     return () => clearTimeout(timer);
   }, [copied]);
 
-  // Tap-to-copy Session Code, on every in-Session screen — the lobby's copy
-  // button used to be the only one. The badge flashes lime for 1.5s as the
-  // pressed cue; the toast says what happened.
+  // Tap-to-copy Session Code, on every in-Session screen. The badge flashes
+  // lime for 1.5s as the pressed cue; the toast says what happened.
   const handleCopyCode = () => {
     if (!sessionCode) return;
     copyText(sessionCode)

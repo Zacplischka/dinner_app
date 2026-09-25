@@ -133,7 +133,6 @@ export default function SwipeCard({
     setDragState({ isDragging: false, startX: 0, currentX: 0 });
   };
 
-  // Mouse event handlers for desktop
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isTop || (e.target as Element).closest('a, button')) return;
     setDragState({

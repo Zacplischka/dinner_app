@@ -8,35 +8,21 @@
 // before changing anything here.
 //
 //   - **It runs last of the machine layers** because it is the only one that
-//     spends money nobody can print: the politeness budget ADR 0010 chose (one
-//     browsing human, app-wide). Structural and culinary are free, so they get
-//     first refusal on every Recipe and this layer only ever sees drafts that
-//     already deserve measuring.
-//   - **It measures at store 1101, through production's egress**, by running
-//     the measurement *inside the Railway container* (#245's method) rather
-//     than from here. Production is served store 1101 where residential AU gets
-//     3221, with different result sets, different top-5 orderings and different
-//     prices; basket-level divergence between the two stores is ~1.5%, so the
-//     pilot's store-3221 numbers are the wrong store's numbers. The gate refuses
+//     spends the politeness budget ADR 0010 chose; structural and culinary are
+//     free, so this layer only ever sees drafts that already deserve measuring.
+//   - **It measures at store 1101, through production's egress** (ADR 0010 and
+//     #245 say why), by running *inside the Railway container*. The gate refuses
 //     any answer that did not come from the reference store.
-//   - **It never runs beside live traffic.** The queue is per-process, so a
-//     measurement run and a Shopping List mint are two hands on one budget —
-//     the pilot brushed a 403 doing precisely that. The container half refuses
-//     to start, and refuses to continue, while any live Session exists.
-//   - **Spoonacular is a second shared budget**, and a harsher one: the ladder's
-//     Convert rung spends #261's daily points, the ceiling is app-wide, and once
-//     it trips every Cook Branch reads "unavailable" until UTC midnight — no
-//     amount of waiting for a quiet hour gives it back. So a run takes a
-//     fraction of the day's points (`TALLY_POINT_SHARE`) and no more, and a line
-//     the source refused is `unmeasured`, never a defect: the author cannot
-//     rewrite their way out of our quota.
+//   - **It never runs beside live traffic, and takes `TALLY_POINT_SHARE` of the
+//     day's Spoonacular points at most.** A line the source refused is
+//     `unmeasured`, never a defect: the author cannot rewrite their way out of
+//     our quota.
 //   - **A store-availability miss is a fact about the store, not a defect in
-//     the Recipe.** Buk choy simply is not ranged at 1101. Both fail the Recipe
-//     — this is a *this-store* gate and the spec says so — but only one of them
-//     is something an author can rewrite, and the report keeps them apart. The
-//     split reads the store's own evidence — no ranging, no stock, no price, an
-//     unreadable pack, a variable pack with no unit price — never the ladder's
-//     `reason` prose, which `shared/types/grocery.ts` says to branch on never.
+//     the Recipe.** Both fail the Recipe, but only one is something an author
+//     can rewrite, so the report keeps them apart. The split reads the store's
+//     own evidence — no ranging, no stock, no price, an unreadable pack, a
+//     variable pack with no unit price — never the ladder's `reason` prose,
+//     which `shared/types/grocery.ts` says to branch on never.
 //   - **It reports each Recipe as it finishes.** A dropped SSH session, a
 //     redeploy or a Session opening mid-run must not throw away measurements
 //     the budget already paid for; the missing-Recipe check names what is left.

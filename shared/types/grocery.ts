@@ -46,8 +46,8 @@ export interface NeededAmount {
 /**
  * The quantity ladder's verdict for one Ingredient Line (#257): the four #234
  * states. Priced and Estimated are in the Tally ("needs 250g · buy 1 × 400g
- * tin"); the other two are principled degrades — a line is never blocked and
- * never guessed. Estimated is variable-weight pricing: unit price × needed
+ * tin"); the other two are principled degrades — a line is never dropped,
+ * never blocked and never guessed. Estimated is variable-weight pricing: unit price × needed
  * mass, rendered "≈ … (est.)".
  */
 export type QuantityResolution =
@@ -120,7 +120,7 @@ interface ShoppingListLineFields {
 }
 
 /**
- * Everything a line's #234 state says, and nothing it says about identity —
+ * Everything a line's state says, and nothing it says about identity —
  * the part a swap replaces wholesale, leaving the id, the text and the Claim
  * exactly where they were.
  */
@@ -135,19 +135,14 @@ export type ShoppingListLineState =
   | { state: 'estimated'; needs: NeededAmount; priceCents: number; product: ShoppingListProduct }
   | { state: 'unpriced_matched'; product: ShoppingListProduct }
   /**
-   * No product: the recipe text plus a Retailer search for this term. Read
-   * it as the rendering #234 specifies, not as a claim about the Retailer's
-   * catalogue — a Staple takes this state without ever having been asked,
+   * No product: the recipe text plus a Retailer search for this term, not a
+   * claim about the Retailer's catalogue — a Staple takes this state without ever having been asked,
    * because it is outside every count and a lookup for it would price
    * nothing. `staple` is what tells the two apart.
    */
   | { state: 'unmatched'; searchTerm: string };
 
-/**
- * One Ingredient Line on the wire, in exactly one of #234's four states. All
- * four are first-class: a line is never dropped, never blocked, never guessed.
- * Priced and Estimated are in the tally; the other two are principled degrades.
- */
+/** One Ingredient Line on the wire, in exactly one of the QuantityResolution states. */
 export type ShoppingListLine = ShoppingListLineFields & ShoppingListLineState;
 
 export interface ShoppingList {
@@ -170,7 +165,7 @@ export interface ShoppingList {
   sourceName?: string;
   sourceUrl?: string;
   /**
-   * Who authored the Recipe this was minted from. `'owned'` is Dinder's own
+   * Who authored the Recipe this was minted from. `'owned'` is the app's own
    * (ADR 0012) and renders no credit line at all — an Owned Recipe names no
    * source and the absence is correct. Absent means Sourced, and still reads
    * as Spoonacular: the vendor credit is a licence obligation that must

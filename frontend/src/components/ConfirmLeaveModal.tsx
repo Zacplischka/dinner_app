@@ -1,4 +1,3 @@
-// ConfirmLeaveModal Component
 // Confirmation dialog before leaving a session
 // UX: "Stay" is the safe action, "Leave" is destructive.
 
@@ -78,7 +77,6 @@ export default function ConfirmLeaveModal({
   const copy = COPY[context];
   const message = typeof copy.message === 'function' ? copy.message(selectionsCount) : copy.message;
 
-  // Handle keyboard escape
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape' && !isLoading) {
       onClose();

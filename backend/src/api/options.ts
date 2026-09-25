@@ -1,5 +1,3 @@
-// REST API endpoint for dinner options
-
 import { Router } from 'express';
 import { asyncHandler } from './asyncHandler.js';
 import { DomainError } from '../services/DomainError.js';
@@ -9,10 +7,6 @@ import { SESSION_CODE_PATTERN, type LoadRestaurantsResponse } from '@dinder/shar
 export function createOptionsRouter(store: SessionStore) {
   const router = Router();
 
-  /**
-   * GET /api/options/:sessionCode
-   * Get restaurants for a specific session
-   */
   router.get(
     '/:sessionCode',
     asyncHandler(async (req, res) => {
@@ -24,7 +18,6 @@ export function createOptionsRouter(store: SessionStore) {
         throw new DomainError('SESSION_NOT_FOUND', 'Session not found');
       }
 
-      // Check if session exists
       if (!(await store.sessionExists(sessionCode))) {
         req.log.warn({ sessionCode, reason: 'session_not_found' }, 'Rejected REST options get');
 

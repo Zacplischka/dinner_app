@@ -462,7 +462,6 @@ export default function ResultsPage() {
     try {
       const ack = await restartSession({ sessionCode });
       if (ack.success) {
-        // Reset local store selections/results
         if (lobby) {
           // The restart broadcast has cleared progress and returned everyone to choices.
           navigate(`/session/${sessionCode}`);

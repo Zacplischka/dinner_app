@@ -1,23 +1,8 @@
-// Pool-and-deal, the Cook Branch's recipe supply (#232, #259): one shared pool
-// of ~60 Recipes per canonical Craving in Redis, dealt as a random ~15-card
-// Deck per Session. Two Sessions craving the same thing tonight cost one
-// Spoonacular lookup between them.
-//
-// The pool holds whole Recipes — ingredients and steps aboard — because the
-// Shopping List is minted from the crowned one later (#262). Only the Deck
-// Entry half is ever dealt onto the wire.
-//
-// Two seams, deliberately apart (#327): `sourcedSupply` gets the Sourced
-// supply for a Craving — Redis, the vendor, and every failure semantic it
-// carries — and `cutDeck` cuts a Deck from a supply, pure and knowing nothing
-// about where the supply came from. The Owned Recipe Store blends a second
-// supply into the same cut (#331), the vendor fetch becomes best-effort
-// behind the first (#333), and neither has to reach through the other.
-//
-// The blend is a deal-time union (#316): the Redis pool stays purely Sourced,
-// and the two supplies meet only in `blendDeck`. Nothing downstream of the
-// cut knows which source a card came from — Deck, Selection and Top Pick all
-// see Recipes.
+// Pool-and-deal, the Cook Branch's recipe supply (#232): one shared Redis pool
+// of ~60 whole Recipes per canonical Craving, so two Sessions craving the same
+// thing cost one Spoonacular lookup, dealt as a random ~15-card Deck each.
+// `sourcedSupply` owns Redis, the vendor and its failures; `cutDeck`/`blendDeck`
+// cut a Deck from the Sourced and Owned supplies, knowing nothing of either source.
 import type { Craving, Cuisine, DeckEntry, Diet, MealType, Recipe } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
@@ -115,7 +100,7 @@ const BLIP_LATCH = 3;
 interface RecipePoolServiceDeps {
   redis: RedisLike;
   client: SpoonacularClient;
-  /** The second supply: Dinder's own Recipes, in memory (ADR 0011). */
+  /** The second supply: the app's own Recipes, in memory (ADR 0011). */
   owned: OwnedRecipeStore;
   /** 24 h by default, shortenable to the compliant 1 h with a redeploy (#237). */
   poolTtlMs?: number;
@@ -377,12 +362,8 @@ export function createRecipePoolService(deps: RecipePoolServiceDeps): RecipePool
 
     async dealDeck(craving: Craving, deckSize = defaultDeckSize): Promise<DealtDeck> {
       const owned = deps.owned.forCraving(craving);
-      // Best-effort (#333): the Cook Branch keeps dealing while the vendor is
-      // dark, owned-only. The failure propagates only when owned is empty too
-      // — the one case where the vendor's silence is the whole answer, and the
-      // one case where "the source is unavailable" is still the true thing to
-      // say. Nothing was written either way, so a failure is never remembered
-      // as "this Craving has no Recipes".
+      // Owned-only while the vendor is dark (#333). Empty owned is the one case
+      // where "the source is unavailable" is still the true thing to say.
       let sourceDown = false;
       const sourced = await sourcedSupply(craving).catch((error: unknown) => {
         if (owned.length === 0) throw error;

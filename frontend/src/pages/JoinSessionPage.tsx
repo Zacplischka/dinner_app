@@ -79,7 +79,6 @@ function JoinInvitation() {
     if (!mounted.current) return;
     setError('');
 
-    // Validate inputs
     if (sessionCode.trim().length !== SESSION_CODE_LENGTH) {
       setError(`Session code must be ${SESSION_CODE_LENGTH} characters`);
       return;

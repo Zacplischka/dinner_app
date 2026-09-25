@@ -387,7 +387,7 @@ export function sceneDrawing(ctx: CanvasRenderingContext2D) {
       '#826354',
       1.2
     );
-    // Dinder's coral satchel, with collected slips poking out.
+    // The mascot's coral satchel, with collected slips poking out.
     line(
       [
         ['moveTo', -19, -43],

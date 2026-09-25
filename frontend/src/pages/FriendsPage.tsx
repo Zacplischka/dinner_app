@@ -37,7 +37,6 @@ export default function FriendsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'invites'>('friends');
 
-  // Fetch data on mount
   useEffect(() => {
     if (isAuthenticated) {
       // Ensure user profile exists (creates if needed)

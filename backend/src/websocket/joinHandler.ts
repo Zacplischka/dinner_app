@@ -17,7 +17,6 @@ import {
   type SessionJoinPayload,
 } from '@dinder/shared/types';
 
-// Zod schema for validation
 const sessionJoinPayloadSchema = z.object({
   sessionCode: z
     .string()
@@ -99,10 +98,8 @@ export async function handleSessionJoin(
         }
       }
 
-      // Join Socket.IO room
       await socket.join(sessionCode);
 
-      // Send acknowledgment to joining client
       ack({
         participantId: socket.id,
         sessionCode,
