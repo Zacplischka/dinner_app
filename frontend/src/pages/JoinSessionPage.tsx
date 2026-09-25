@@ -10,6 +10,7 @@ import { getSession, ApiClientError } from '../services/apiClient';
 import { validateDisplayName } from '../utils/displayName';
 import { useSessionSwitch } from '../hooks/useSessionSwitch';
 import { useProfileName } from '../hooks/useProfileName';
+import { initializeSocket } from '../services/socketBindings';
 
 const alphanumeric = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 const cleanSessionCode = (value: string) => alphanumeric(value).slice(0, SESSION_CODE_LENGTH);
@@ -39,6 +40,10 @@ function JoinInvitation() {
   useEffect(() => {
     mounted.current = true;
     admissionIntent.current = beginSessionIntent();
+    // Open the socket while the joiner types; it joins nothing until submit (#518).
+    // Before the probe below: WebKit drops a WebSocket handshake that starts in
+    // the same tick as a fetch to the same server.
+    initializeSocket();
     return () => {
       mounted.current = false;
       if (admissionIntent.current !== undefined && isSessionIntentCurrent(admissionIntent.current))
@@ -114,7 +119,9 @@ function JoinInvitation() {
             ? `/session/${code}/select`
             : ack.data.state === 'complete' && !pending
               ? `/session/${code}/results`
-              : `/session/${code}`
+              : `/session/${code}`,
+          // Replace, so browser Back skips /join?code=… instead of rejoining (#510).
+          { replace: true }
         );
       } else {
         // Handle specific error cases by canonical code, falling back to message text.

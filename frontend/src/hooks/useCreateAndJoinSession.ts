@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { isApiError, type ApiError, type CreateSessionRequest } from '@dinder/shared/types';
 import { createSession } from '../services/apiClient';
+import { joinSession, waitForConnection } from '../services/socketBindings';
 
 export function useCreateAndJoinSession() {
   const navigate = useNavigate();
@@ -25,13 +26,11 @@ export function useCreateAndJoinSession() {
     const intent = beginSessionIntent();
     setIsCreating(true);
     try {
-      const [response, { waitForConnection, joinSession }] = await Promise.all([
-        createSession(hostName, setup),
-        import('../services/socketBindings'),
-      ]);
+      // The socket handshake overlaps POST /sessions rather than following it
+      // (#518). Socket first: WebKit drops a WebSocket handshake that starts in
+      // the same tick as a fetch to the same server.
+      const [, response] = await Promise.all([waitForConnection(), createSession(hostName, setup)]);
 
-      // Connect WebSocket and wait for connection, then join as host
-      await waitForConnection();
       if (!isSessionIntentCurrent(intent)) return null;
       const ack = await joinSession(response.sessionCode, hostName, false, intent);
       if (!isSessionIntentCurrent(intent)) return null;
@@ -45,7 +44,8 @@ export function useCreateAndJoinSession() {
       // immediately, but a caller that stays mounted (a modal, say) would
       // otherwise be left with its submit button disabled forever.
       setIsCreating(false);
-      navigate(`/session/${response.sessionCode}`);
+      // Replace, so browser Back skips the setup page instead of re-running create (#510).
+      navigate(`/session/${response.sessionCode}`, { replace: true });
       return null;
     } catch (err: unknown) {
       if (!isSessionIntentCurrent(intent)) return null;

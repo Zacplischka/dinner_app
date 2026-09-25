@@ -7,6 +7,7 @@ const serviceMocks = vi.hoisted(() => ({
 }));
 
 const socketMocks = vi.hoisted(() => ({
+  initializeSocket: vi.fn(),
   waitForConnection: vi.fn(async () => undefined),
   joinSession: vi.fn(),
 }));
@@ -379,4 +380,49 @@ it('retries autojoin by invitation identity and ignores the old completion', asy
   );
   expect(screen.getByLabelText('Session code')).toHaveValue('NEW12');
   expect(screen.queryByText('Joined destination')).toBeNull();
+});
+
+// #518: the socket handshake starts while the joiner is still typing, not on submit.
+it('starts connecting on arrival without joining anything', async () => {
+  vi.clearAllMocks();
+  serviceMocks.getSession.mockResolvedValue({});
+  renderPage('/join?code=AB123');
+  await waitFor(() => expect(serviceMocks.getSession).toHaveBeenCalled());
+  // Socket before the probe fetch: WebKit drops a handshake that follows one in the same tick.
+  expect(socketMocks.initializeSocket.mock.invocationCallOrder[0]).toBeLessThan(
+    serviceMocks.getSession.mock.invocationCallOrder[0]
+  );
+  expect(socketMocks.joinSession).not.toHaveBeenCalled();
+});
+
+// #510: admission replaces the Invite Link entry, so browser Back lands where
+// the joiner came from instead of on /join?code=…, which would auto-join again.
+function BrowserBack() {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate(-1)}>Browser back</button>;
+}
+it('replaces the Join entry on admission, so Back does not rejoin', async () => {
+  useAuthStore.setState({
+    user: { id: 'profile', user_metadata: { full_name: 'Alice' } } as never,
+    isAuthenticated: true,
+    isLoading: false,
+  });
+  serviceMocks.getSession.mockResolvedValue({});
+  socketMocks.joinSession.mockReset();
+  socketMocks.joinSession.mockResolvedValue({
+    success: true,
+    data: { participantId: 'alice', state: 'waiting' },
+  });
+  render(
+    <MemoryRouter initialEntries={['/', '/join?code=AB123']} initialIndex={1}>
+      <Routes>
+        <Route path="/" element={<div>Home route</div>} />
+        <Route path="/join" element={<JoinSessionPage />} />
+        <Route path="/session/:sessionCode" element={<BrowserBack />} />
+      </Routes>
+    </MemoryRouter>
+  );
+  fireEvent.click(await screen.findByText('Browser back'));
+  expect(await screen.findByText('Home route')).toBeTruthy();
+  expect(socketMocks.joinSession).toHaveBeenCalledTimes(1);
 });

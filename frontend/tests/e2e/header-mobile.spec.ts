@@ -34,7 +34,7 @@ async function expectMobileSafeHeader(page: Page) {
   await expect(header.getByRole('link', { name: 'YupCrew home' })).toBeVisible();
 
   // Back action: stable, full-size touch target
-  const back = header.getByRole('button', { name: /^(Back|Leave session)$/ });
+  const back = header.getByRole('button', { name: /^(Back|Leave)$/ });
   await expect(back).toBeVisible();
   const backMinHeight = await back.evaluate((el) => getComputedStyle(el).minHeight);
   expect(backMinHeight).toBe('44px');
