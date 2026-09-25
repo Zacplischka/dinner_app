@@ -35,7 +35,7 @@ import { createFriendsService } from './services/FriendsService.js';
 import { createComparisonService } from './services/ComparisonService.js';
 import { createOrderService } from './services/OrderService.js';
 import { runApifyActor } from './services/apifyClient.js';
-import { spendPaidBudget, type PaidSku } from './services/paidBudget.js';
+import { checkPaidBudget, spendPaidBudget, type PaidSku } from './services/paidBudget.js';
 import * as friendsStore from './store/friendsStore.js';
 import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
@@ -128,6 +128,7 @@ const comparisonService = createComparisonService({
   fetchPlaceDetails: (...args) => RestaurantSearchService.fetchPlaceDetails(...args),
   snapshotStore: comparisonSnapshotStore,
   spendColdComparison: () => spendPaidBudget(redis, 'coldComparison'),
+  checkColdComparison: () => checkPaidBudget(redis, 'coldComparison'),
 });
 const orderService = createOrderService({
   store: sessionStore,

@@ -29,6 +29,8 @@ interface ComparisonServiceDeps {
   snapshotStore: SnapshotStore;
   /** The app-wide monthly budget on cold Comparisons (#502): throws RATE_LIMITED once spent. */
   spendColdComparison?: () => Promise<void>;
+  /** The same budget, read without spending: throws RATE_LIMITED if it is already spent. */
+  checkColdComparison?: () => Promise<void>;
 }
 
 export interface StorefrontResolver {
@@ -80,14 +82,19 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
         return;
       }
 
-      const venue = await deps.fetchPlaceDetails(placeId);
-      // Spent only by a compare that will reach Apify: an unknown Venue has
-      // already thrown. The refusal is the app's, not the caller's, so their
-      // hourly slot goes back — a Retry must not read as "5 per hour".
-      await deps.spendColdComparison?.().catch((error: unknown) => {
+      // A spent month refuses before Place Details, which Google bills, so a
+      // Retry loop costs nothing. The refusal is the app's, not the caller's:
+      // their hourly slot goes back, or a Retry would read as "5 per hour".
+      await deps.checkColdComparison?.().catch((error: unknown) => {
         options?.refundColdCompare?.();
         throw error;
       });
+
+      const venue = await deps.fetchPlaceDetails(placeId);
+      // Spent only by a compare that will reach Apify: an unknown Venue has
+      // already thrown. A refusal here means the month ran out since the
+      // check; Place Details was billed, so the hourly slot stays spent.
+      await deps.spendColdComparison?.();
       emit(flight, { type: 'venue', placeId: venue.placeId, venueName: venue.name });
 
       const uberEatsPromise = fetchStorefront(

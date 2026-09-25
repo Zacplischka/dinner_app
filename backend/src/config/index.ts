@@ -18,7 +18,7 @@ function budgetCeiling(name: string, fallback: number): number {
   const ceiling = Number(raw);
   if (Number.isFinite(ceiling) && ceiling >= 0) return ceiling;
   logger.error(
-    { name, value: raw, fallback },
+    { variable: name, value: raw, fallback },
     'Paid-budget ceiling is not a count; using the default'
   );
   return fallback;
@@ -84,10 +84,12 @@ export const config = {
     dealBudgetMs: parseInt(process.env.RECIPE_DEAL_BUDGET_MS || '2500', 10),
   },
   // The global paid-API budget (#502): calls per quota period per paid SKU,
-  // app-wide, each the vendor's quota less headroom for calls that never pass
-  // through it (local runs, e2e and verify-live share the Places key).
+  // app-wide, each kept under the vendor's quota or bill with headroom for
+  // calls that never pass through it (local runs, e2e and verify-live share
+  // the Places key).
   paidBudget: {
-    // Text Search is quota-capped at 100 a day (GCP mypickle-486702); 20 spare.
+    // The app's own cap: Google's Text Search quota is its 75,000-a-day default (no override on
+    // mypickle-486702), so what this keeps us off is the billing kill switch, not a quota.
     placesTextSearch: budgetCeiling('PLACES_TEXT_SEARCH_DAILY_CEILING', 80),
     // Place Photo media is quota-capped at 200 a day; 20 spare.
     placePhoto: budgetCeiling('PLACE_PHOTO_DAILY_CEILING', 180),

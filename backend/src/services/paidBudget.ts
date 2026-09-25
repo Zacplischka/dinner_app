@@ -62,3 +62,17 @@ export async function spendPaidBudget(
   if (spent === 1) await redis.pexpire(key, MONTHLY.has(sku) ? MONTHLY_TTL_MS : DAILY_TTL_MS);
   if (spent > ceiling) throw new DomainError('RATE_LIMITED', REFUSALS[sku]);
 }
+
+/**
+ * Refuses exactly as a spend would once the period's ceiling is spent, but
+ * spends nothing: for a caller that must pay for something else (Place
+ * Details) before it knows the spend is due. Fails closed the same way.
+ */
+export async function checkPaidBudget(
+  redis: RedisLike,
+  sku: PaidSku,
+  ceiling: number = config.paidBudget[sku]
+): Promise<void> {
+  if (Number(await redis.get(budgetKey(sku))) >= ceiling)
+    throw new DomainError('RATE_LIMITED', REFUSALS[sku]);
+}
