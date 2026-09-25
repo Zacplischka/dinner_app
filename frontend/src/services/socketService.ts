@@ -37,7 +37,7 @@ type SocketEventHandlers = Partial<ServerToClientEvents> & {
 };
 
 export interface SocketConfig {
-  canMutate?: () => boolean;
+  canMutate?: (event: keyof ClientToServerEvents) => boolean;
   onUncertainOutcome?: () => void;
   onEvent?: SocketEventHandlers;
 }
@@ -45,7 +45,7 @@ export interface SocketConfig {
 // Typed socket instance
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 let onUncertainOutcome: (() => void) | undefined;
-let canMutate: (() => boolean) | undefined;
+let canMutate: SocketConfig['canMutate'];
 
 /**
  * Initialize Socket.IO client connection.
@@ -115,7 +115,7 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
     // Recovery reads and deliberate Leave remain usable; never queue a retry.
     if (
       canMutate &&
-      !canMutate() &&
+      !canMutate(event) &&
       !['session:join', 'session:leave', 'order:open'].includes(event)
     ) {
       resolve({
