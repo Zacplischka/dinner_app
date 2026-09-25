@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { isApiError, type ApiError, type CreateSessionRequest } from '@dinder/shared/types';
 import { createSession } from '../services/apiClient';
+import { joinSession, waitForConnection } from '../services/socketBindings';
 
 export function useCreateAndJoinSession() {
   const navigate = useNavigate();
@@ -25,14 +26,10 @@ export function useCreateAndJoinSession() {
     const intent = beginSessionIntent();
     setIsCreating(true);
     try {
-      // The socket handshake overlaps POST /sessions rather than following it (#518).
-      const [response, { joinSession }] = await Promise.all([
-        createSession(hostName, setup),
-        import('../services/socketBindings').then(async (socket) => {
-          await socket.waitForConnection();
-          return socket;
-        }),
-      ]);
+      // The socket handshake overlaps POST /sessions rather than following it
+      // (#518). Socket first: WebKit drops a WebSocket handshake that starts in
+      // the same tick as a fetch to the same server.
+      const [, response] = await Promise.all([waitForConnection(), createSession(hostName, setup)]);
 
       if (!isSessionIntentCurrent(intent)) return null;
       const ack = await joinSession(response.sessionCode, hostName, false, intent);

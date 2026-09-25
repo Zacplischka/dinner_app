@@ -41,6 +41,8 @@ function JoinInvitation() {
     mounted.current = true;
     admissionIntent.current = beginSessionIntent();
     // Open the socket while the joiner types; it joins nothing until submit (#518).
+    // Before the probe below: WebKit drops a WebSocket handshake that starts in
+    // the same tick as a fetch to the same server.
     initializeSocket();
     return () => {
       mounted.current = false;
