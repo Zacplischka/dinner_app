@@ -13,7 +13,9 @@ test('core checks always report and production verification waits for all of the
       match[2],
     ])
   );
-  const required = ['lint', 'contract-tests', 'integration-tests', 'e2e'];
+  // The Playwright e2e job is gone: CI stays a ~1-2 min gate, and browser
+  // flows are proven per change by a local playwright run instead.
+  const required = ['lint', 'contract-tests', 'integration-tests'];
   const needs = jobs['verify-production-deploy']
     .match(/needs: \[([^\]]+)\]/)[1]
     .split(',')
@@ -25,7 +27,4 @@ test('core checks always report and production verification waits for all of the
     assert.doesNotMatch(jobs[id], /continue-on-error:\s*true/);
   }
   assert.match(jobs['integration-tests'], /npm run test:integration/);
-  assert.match(jobs.e2e, /playwright install --with-deps chromium webkit/);
-  assert.match(jobs.e2e, /--project=mobile-webkit/);
-  assert.match(jobs.e2e, /npm run test:e2e:mobile/);
 });
