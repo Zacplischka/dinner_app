@@ -309,6 +309,9 @@ jobs:
         if: env.DINDER_EDGE_ROLLOUT_STATE != 'bootstrap'
         env:
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          # Optional: the yupcrew-frontend Worker caches yupcrew.com documents in that
+          # zone under the same tag. The purge token must be scoped to it too.
+          CLOUDFLARE_YUPCREW_ZONE_ID: ${{ vars.CLOUDFLARE_YUPCREW_ZONE_ID }}
           CLOUDFLARE_CACHE_PURGE_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_PURGE_TOKEN }}
         run: |
           if [[ -z "$CLOUDFLARE_ZONE_ID" || -z "$CLOUDFLARE_CACHE_PURGE_TOKEN" ]]; then
@@ -316,17 +319,20 @@ jobs:
             exit 1
           fi
 
-          # 000 records a transport error; the token is never written to the log.
-          : >"$RUNNER_TEMP/purge.json"
-          status="$(curl --silent --show-error \
-            --request POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
-            --header "Authorization: Bearer ${CLOUDFLARE_CACHE_PURGE_TOKEN}" \
-            --header 'Content-Type: application/json' \
-            --data '{"tags":["dinder-route-html"]}' \
-            --output "$RUNNER_TEMP/purge.json" \
-            --write-out '%{http_code}')" || status=000
+          # Unquoted so an unset yupcrew zone id drops out; zone ids are bare hex.
+          for zone in $CLOUDFLARE_ZONE_ID $CLOUDFLARE_YUPCREW_ZONE_ID; do
+            # 000 records a transport error; the token is never written to the log.
+            : >"$RUNNER_TEMP/purge.json"
+            status="$(curl --silent --show-error \
+              --request POST "https://api.cloudflare.com/client/v4/zones/${zone}/purge_cache" \
+              --header "Authorization: Bearer ${CLOUDFLARE_CACHE_PURGE_TOKEN}" \
+              --header 'Content-Type: application/json' \
+              --data '{"tags":["dinder-route-html"]}' \
+              --output "$RUNNER_TEMP/purge.json" \
+              --write-out '%{http_code}')" || status=000
 
-          node scripts/check-production-edge.mjs purge-response "$status" "$RUNNER_TEMP/purge.json"
+            node scripts/check-production-edge.mjs purge-response "$status" "$RUNNER_TEMP/purge.json"
+          done
 
       # Portable cache and health semantics only. The fixed-Melbourne performance
       # gate is never evaluated or reported as passed here.

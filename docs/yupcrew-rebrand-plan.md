@@ -32,7 +32,7 @@ The legacy sites can remain serving indefinitely. Before retiring them, establis
 
 ## Verification and rollback
 
-Before merging: frontend build, unit tests, typecheck, lint, proxy test and relevant browser checks. CI also checks the new hosts show the YupCrew title and continues validating the legacy frontend cache contract. The Worker edge-caches GET and HEAD HTML documents for 60 seconds under the `dinder-route-html` tag, the policy the Caddyfile gives the legacy hosts, and still tells browsers to revalidate every document. The deploy's tag purge runs against the `dinder.it.com` zone only, so until it also purges the `yupcrew.com` zone, `yupcrew.com` can serve the previous shell for up to 60 seconds after a frontend deploy.
+Before merging: frontend build, unit tests, typecheck, lint, proxy test and relevant browser checks. CI also checks the new hosts show the YupCrew title and continues validating the legacy frontend cache contract. The Worker edge-caches GET and HEAD HTML documents for 60 seconds under the `dinder-route-html` tag, the policy the Caddyfile gives the legacy hosts, and still tells browsers to revalidate every document. The deploy's tag purge also covers the `yupcrew.com` zone once the `CLOUDFLARE_YUPCREW_ZONE_ID` environment variable is set and the purge token is scoped to that zone; until then `yupcrew.com` can serve the previous shell for up to 60 seconds after a frontend deploy.
 
 After deployment: verify both new HTTPS hosts, install/share assets, HTTP CORS and Socket.IO, new Invite Links, a mixed old/new-origin Session, and Google sign-in/Friends. Record any remaining provider verification separately.
 
