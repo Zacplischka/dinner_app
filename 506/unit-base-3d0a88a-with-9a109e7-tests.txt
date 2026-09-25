@@ -1,0 +1,162 @@
+# #506 red: base 3d0a88a (fix absent) with the PR head 9a109e7 test file
+# cmd: vitest run --no-file-parallelism tests/unit/SessionService.test.ts -t "a completed Session rejoined after a Leave"  (exit 1)
+# The new "recomputes when the stored outcome is unreadable" test fails at base only on its logger.warn assertion (no stored copy exists at base); its results check passes because nobody Left.
+
+RUN  v4.1.11 backend
+
+ × |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > hands the rejoiner exactly the outcome that was broadcast 26ms
+   → expected { sessionCode: '<code>', …(6) } to deeply equal { sessionCode: '<code>', …(6) }
+ × |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > recomputes when the stored outcome is unreadable, rather than failing the rejoin 9ms
+   → expected "LOG" to be called with arguments: [ ObjectContaining{…}, …(1) ]
+
+Number of calls: 0
+
+ × |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > lets the rejoiner open the Group Order on their Top Pick 10ms
+   → promise rejected "DomainError: That Venue was not this Sess… { code: '…' }" instead of resolving
+ × |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > keeps a Cook rejoiner's Top Pick on the Recipe its Shopping List was minted for 6ms
+   → expected "vi.fn()" to be called with arguments: [ '<code>', 'recA' ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "<code>",
+-   "recA",
++   "recB",
+  ]
+
+Number of calls: 1
+
+ ✓ |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > forgets the outcome on Restart 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > hands the rejoiner exactly the outcome that was broadcast
+AssertionError: expected { sessionCode: '<code>', …(6) } to deeply equal { sessionCode: '<code>', …(6) }
+
+- Expected
++ Received
+
+@@ -2,35 +2,35 @@
+    "allSelections": {
+      "Alice": [
+        "A",
+        "B",
+      ],
+-     "Bob": [
+-       "B",
+-       "C",
+-     ],
+    },
+    "hasOverlap": true,
+    "overlappingOptions": [
++     {
++       "name": "Apple Bistro",
++       "placeId": "A",
++       "rating": 4.9,
++     },
+      {
+        "name": "Bean Bar",
+        "placeId": "B",
+        "rating": 4,
+      },
+    ],
+    "restaurantNames": {
+      "A": "Apple Bistro",
+      "B": "Bean Bar",
+-     "C": "Curry Club",
+    },
+    "sessionCode": "<code>",
+    "shoppingListId": undefined,
+    "topPick": {
+-     "likedBy": 2,
+-     "of": 2,
++     "likedBy": 1,
++     "of": 1,
+      "restaurant": {
+-       "name": "Bean Bar",
+-       "placeId": "B",
+-       "rating": 4,
++       "name": "Apple Bistro",
++       "placeId": "A",
++       "rating": 4.9,
+      },
+    },
+  }
+
+ ❯ tests/unit/SessionService.test.ts:1546:30
+    1544|       );
+    1545|
+    1546|       expect(rejoin.results).toEqual({ sessionCode, ...broadcast });
+       |                              ^
+    1547|     });
+    1548|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > recomputes when the stored outcome is unreadable, rather than failing the rejoin
+AssertionError: expected "LOG" to be called with arguments: [ ObjectContaining{…}, …(1) ]
+
+Number of calls: 0
+
+ ❯ tests/unit/SessionService.test.ts:1562:27
+    1560|       // Nobody Left, so the recompute still matches the broadcast.
+    1561|       expect(rejoin.results).toEqual({ sessionCode, ...broadcast });
+    1562|       expect(logger.warn).toHaveBeenCalledWith(
+       |                           ^
+    1563|         expect.objectContaining({ sessionCode }),
+    1564|         'Stored Session outcome unreadable, recomputing'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > lets the rejoiner open the Group Order on their Top Pick
+AssertionError: promise rejected "DomainError: That Venue was not this Sess… { code: '…' }" instead of resolving
+ ❯ tests/unit/SessionService.test.ts:1582:7
+    1580|       await expect(
+    1581|         orders.open(sessionCode, 'p-alice-2', rejoin.results?.topPick?…
+    1582|       ).resolves.toMatchObject({ reason: 'stale' });
+       |       ^
+    1583|     });
+    1584|
+
+Caused by: DomainError: That Venue was not this Session outcome
+ ❯ validateOpening src/services/OrderService.ts:100:15
+ ❯ src/services/OrderService.ts:106:17
+ ❯ Object.withSessionLock src/store/sessionStore.ts:233:14
+ ❯ Object.open src/services/OrderService.ts:105:21
+ ❯ tests/unit/SessionService.test.ts:1580:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'VALIDATION_ERROR' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > keeps a Cook rejoiner's Top Pick on the Recipe its Shopping List was minted for
+AssertionError: expected "vi.fn()" to be called with arguments: [ '<code>', 'recA' ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+    "<code>",
+-   "recA",
++   "recB",
+  ]
+
+Number of calls: 1
+
+ ❯ tests/unit/SessionService.test.ts:1612:32
+    1610|
+    1611|       expect(mintShoppingList).toHaveBeenCalledTimes(1);
+    1612|       expect(mintShoppingList).toHaveBeenCalledWith(
+       |                                ^
+    1613|         sessionCode,
+    1614|         rejoin.results?.topPick?.restaurant.placeId
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 1 passed | 98 skipped (103)
+   Start at  13:00:04
+   Duration  264ms (transform 98ms, setup 0ms, import 148ms, tests 59ms, environment 0ms)

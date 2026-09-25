@@ -1,0 +1,12 @@
+# #506 AFTER in production @ 9ca4f2b (Railway deployment 7af4ea09): https://backend-production-4ce9.up.railway.app
+# One Watch Session (no Places/Spoonacular spend), synthetic "Test Alex"/"Test Sam"; code masked; no order:open; both Participants Left at the end.
+
+created Watch Session <code masked>
+deck (ranked): Toy Story 80 | Toy Story 3 78 | Back to the Future Part III 75 | Superbad 73 | Mr. & Mrs. Smith 67 | Night at the Museum 66
+A=Toy Story  B=Toy Story 3  C=Back to the Future Part III
+BROADCAST: {"match":["Toy Story 3"],"topPick":"Toy Story 3 (2/2)","selectors":["Test Alex","Test Sam"]}
+Test Sam left from Results
+REJOIN   : {"match":["Toy Story 3"],"topPick":"Toy Story 3 (2/2)","selectors":["Test Alex","Test Sam"]} state= complete
+rejoin.results deep-equals broadcast: true
+Top Pick equal: true
+Test Alex left; Session has no Participants

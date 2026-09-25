@@ -1,0 +1,16 @@
+# #506 green: PR head 9a109e7 (code identical to squash 9ca4f2b on main)
+# cmd: vitest run --no-file-parallelism tests/unit/SessionService.test.ts -t "a completed Session rejoined after a Leave"  (exit 0)
+# Also at 9a109e7: SessionService + sessionStore + OrderService unit files 3 files / 167 tests passed (exit 0); full backend suite 81 files / 1092 tests passed (exit 0); tsc backend + backend tests exit 0; backend lint exit 0.
+
+RUN  v4.1.11 backend
+
+ ✓ |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > hands the rejoiner exactly the outcome that was broadcast 23ms
+ ✓ |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > recomputes when the stored outcome is unreadable, rather than failing the rejoin 9ms
+ ✓ |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > lets the rejoiner open the Group Order on their Top Pick 8ms
+ ✓ |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > keeps a Cook rejoiner's Top Pick on the Recipe its Shopping List was minted for 7ms
+ ✓ |unit| tests/unit/SessionService.test.ts > SessionService > a completed Session rejoined after a Leave > forgets the outcome on Restart 10ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed | 98 skipped (103)
+   Start at  12:57:43
+   Duration  279ms (transform 110ms, setup 0ms, import 164ms, tests 58ms, environment 0ms)

@@ -1,0 +1,24 @@
+# #506 end-to-end, local: Watch Session driven by socket.io-client (506 watch-rejoin script), synthetic Participants "Test Alex" and "Test Sam"
+# Scenario: Alex likes {A,B}, Sam likes {B,C} (A outranks B on the 1-vote tie-break); Match {B} broadcast; Sam Leaves from Results; Alex socket closes and rejoins with his rejoin token.
+# Session codes are never printed. Local backend on a private Redis; for the AFTER run Supabase was pointed at a placeholder host.
+
+## BEFORE: base 3d0a88a
+deck (ranked): Back to the Future 83 | The Wolf of Wall Street 80 | The Hangover 73 | Mean Girls 72 | Men in Black 72 | Shrek the Third 63
+A=Back to the Future  B=The Wolf of Wall Street  C=The Hangover
+BROADCAST: {"match":["The Wolf of Wall Street"],"topPick":"The Wolf of Wall Street (2/2)","selectors":["Test Alex","Test Sam"]}
+Test Sam left from Results
+REJOIN   : {"match":["Back to the Future","The Wolf of Wall Street"],"topPick":"Back to the Future (1/1)","selectors":["Test Alex"]} state= complete
+rejoin.results deep-equals broadcast: false
+Top Pick equal: false
+order:open on rejoiner Top Pick -> {"code":"VALIDATION_ERROR","message":"That Venue was not this Session outcome"}
+
+## AFTER: PR head 2af2590 (fix; same rejoin path as 9a109e7 / squash 9ca4f2b)
+deck (ranked): Back to the Future 83 | Ratatouille 78 | Thor: Ragnarok 76 | Once Upon a Time... in Hollywood 74 | Scary Movie 64 | Pixels 58
+A=Back to the Future  B=Ratatouille  C=Thor: Ragnarok
+BROADCAST: {"match":["Ratatouille"],"topPick":"Ratatouille (2/2)","selectors":["Test Alex","Test Sam"]}
+Test Sam left from Results
+REJOIN   : {"match":["Ratatouille"],"topPick":"Ratatouille (2/2)","selectors":["Test Alex","Test Sam"]} state= complete
+rejoin.results deep-equals broadcast: true
+Top Pick equal: true
+order:open on rejoiner Top Pick -> {"code":"INTERNAL_ERROR","message":"An unexpected error occurred. Please try again later."}
+# order:open at head got past the "not this Session outcome" gate and failed afterwards on the comparison-snapshot read, because Supabase is a placeholder host locally (backend log: "Error fetching comparison snapshot ... ENOTFOUND placeholder.supabase.co"). The gate itself is covered by the unit test "lets the rejoiner open the Group Order on their Top Pick".
