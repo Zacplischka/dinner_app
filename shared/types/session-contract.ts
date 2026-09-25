@@ -82,7 +82,6 @@ export interface SessionResponse {
 export interface CreateSessionResponse extends SessionResponse {
   location?: SessionLocation;
   searchRadiusMiles?: number;
-  restaurantCount?: number;
   /** Echoed back so the Host sees the Headcount the Session froze. */
   headcount?: number;
 }

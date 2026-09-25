@@ -64,7 +64,6 @@ describe('apiClient', () => {
         json: async () => ({
           sessionCode: 'AB123',
           hostName: 'Alice',
-          restaurantCount: 10,
           location: {
             latitude: 37.7749,
             longitude: -122.4194,
@@ -103,7 +102,6 @@ describe('apiClient', () => {
         json: async () => ({
           sessionCode: 'AB123',
           hostName: 'Alice',
-          restaurantCount: 5,
           location: {
             latitude: 37.7749,
             longitude: -122.4194,
@@ -140,7 +138,6 @@ describe('apiClient', () => {
         json: async () => ({
           sessionCode: 'AB123',
           hostName: 'Alice',
-          restaurantCount: 15,
           branch: 'watch',
         }),
       });

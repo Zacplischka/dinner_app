@@ -9,7 +9,6 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest run --no-file-parallelism",
-    "test:watch": "vitest --no-file-parallelism",
     "test:contract": "vitest run --project contract",
     "test:integration": "vitest run --project integration",
     "test:unit": "vitest run --project unit",
