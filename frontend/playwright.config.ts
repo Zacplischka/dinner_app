@@ -92,7 +92,7 @@ export default defineConfig({
       command: `npm run build && npm run preview -- --port ${new URL(BASE_URL).port || '3000'}`,
       // `vite build` reads .env.production, which points the bundle at the
       // production backend; pin it to the backend started below instead.
-      env: { VITE_API_BASE_URL: `${BACKEND_URL}/api`, VITE_BACKEND_URL: BACKEND_URL },
+      env: { VITE_BACKEND_URL: BACKEND_URL },
       url: BASE_URL,
       reuseExistingServer: !LIVE_COMPARE,
       timeout: 120_000,

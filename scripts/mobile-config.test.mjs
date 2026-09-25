@@ -11,7 +11,6 @@ import { validateMobileEnvironment } from '../frontend/scripts/mobile.mjs';
 test('release configuration refuses development services and privileged keys before bundling', () => {
   const env = {
     VITE_BACKEND_URL: 'https://api.dinder.it.com',
-    VITE_API_BASE_URL: 'https://api.dinder.it.com/api',
     VITE_PUBLIC_ORIGIN: 'https://www.dinder.it.com',
     VITE_SUPABASE_URL: 'https://project.supabase.co',
     VITE_SUPABASE_ANON_KEY: 'sb_publishable_example',
@@ -25,11 +24,13 @@ test('release configuration refuses development services and privileged keys bef
     'https://dev.local',
     'https://name:secret@api.dinder.it.com',
   ]) {
-    assert.throws(() =>
-      validateMobileEnvironment('production', { ...env, VITE_SUPABASE_URL: bad })
-    );
+    for (const key of ['VITE_BACKEND_URL', 'VITE_SUPABASE_URL']) {
+      assert.throws(() => validateMobileEnvironment('production', { ...env, [key]: bad }));
+    }
   }
-  assert.throws(() => validateMobileEnvironment('production', { ...env, VITE_PUBLIC_ORIGIN: '' }));
+  for (const key of ['VITE_BACKEND_URL', 'VITE_PUBLIC_ORIGIN']) {
+    assert.throws(() => validateMobileEnvironment('production', { ...env, [key]: '' }));
+  }
   for (const key of [
     'sb_secret_example',
     `header.${Buffer.from('{"role":"service_role"}').toString('base64url')}.signature`,
@@ -50,7 +51,6 @@ test('release configuration refuses development services and privileged keys bef
 
 const production = {
   VITE_BACKEND_URL: 'https://api.example.com',
-  VITE_API_BASE_URL: 'https://api.example.com/api',
   VITE_PUBLIC_ORIGIN: 'https://www.example.com',
   VITE_SUPABASE_URL: 'https://project.supabase.co',
   VITE_SUPABASE_ANON_KEY: 'sb_publishable_example',

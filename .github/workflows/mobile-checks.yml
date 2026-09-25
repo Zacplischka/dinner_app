@@ -37,7 +37,6 @@ concurrency:
 # Compile-only development configuration: no live service or signing credentials.
 env:
   VITE_BACKEND_URL: http://localhost:3458
-  VITE_API_BASE_URL: http://localhost:3458/api
   VITE_PUBLIC_ORIGIN: https://yupcrew.com
   VITE_SUPABASE_URL: ''
   VITE_SUPABASE_ANON_KEY: ''
@@ -116,7 +115,6 @@ jobs:
         env:
           # Intended production settings are synthetic; no network/authentication is exercised.
           VITE_BACKEND_URL: https://api.example.com
-          VITE_API_BASE_URL: https://api.example.com/api
           VITE_PUBLIC_ORIGIN: https://www.example.com
           VITE_SUPABASE_URL: https://project.supabase.co
           VITE_SUPABASE_ANON_KEY: sb_publishable_example
