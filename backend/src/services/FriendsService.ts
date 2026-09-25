@@ -127,7 +127,7 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
     }
 
     if (targetUser.id === userId) {
-      throw new DomainError('validation_error', 'You cannot send a friend request to yourself');
+      throw new DomainError('VALIDATION_ERROR', 'You cannot send a friend request to yourself');
     }
 
     const existingFriendship = await store.findFriendshipBetween(userId, targetUser.id);
@@ -185,7 +185,7 @@ export function createFriendsService({ store }: FriendsServiceDeps) {
 
     const validFriendIds = friendIds.filter((id) => actualFriendIds.has(id));
     if (validFriendIds.length === 0) {
-      throw new DomainError('validation_error', 'No valid friend IDs provided');
+      throw new DomainError('VALIDATION_ERROR', 'No valid friend IDs provided');
     }
 
     await store.createSessionInvites(

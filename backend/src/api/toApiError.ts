@@ -50,7 +50,6 @@ const MAPPING: Record<DomainErrorCode, Mapping> = {
   blocked: { code: 'NOT_FOUND', status: 404, message: 'User not found with that email' },
   // Persistence failures never expose their internal message.
   database_error: { code: 'INTERNAL_ERROR', status: 500, message: GENERIC_INTERNAL_MESSAGE },
-  validation_error: { code: 'VALIDATION_ERROR', status: 400 },
 };
 
 /**

@@ -359,7 +359,7 @@ describe('FriendsService', () => {
     it('rejects self-friending', async () => {
       await expect(
         FriendsService.sendFriendRequest('user-1', 'alice@example.com')
-      ).rejects.toMatchObject({ code: 'validation_error' });
+      ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
     });
 
     it.each([
@@ -464,7 +464,7 @@ describe('FriendsService', () => {
     it('rejects when no provided id is a friend', async () => {
       await expect(
         FriendsService.inviteFriendsToSession('user-1', 'AB123', ['user-4'])
-      ).rejects.toMatchObject({ code: 'validation_error' });
+      ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
     });
   });
 

@@ -1,5 +1,5 @@
 // Shared pure helpers for Storefront Resolvers (see CONTEXT.md: Storefront Resolver).
-import type { StorefrontCapture } from '@dinder/shared/types';
+import { isRecord, type StorefrontCapture } from '@dinder/shared/types';
 import { normalizeComparisonName } from './comparisonMatcher.js';
 
 export function emptyCapture(status: 'not_found' | 'failed'): StorefrontCapture {
@@ -34,10 +34,6 @@ export function distanceMeters(
   const haversine =
     Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 6_371_000 * 2 * Math.asin(Math.sqrt(haversine));
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 export function record(value: unknown): Record<string, unknown> {

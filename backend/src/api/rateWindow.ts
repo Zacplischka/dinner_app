@@ -1,7 +1,8 @@
 import { isIP } from 'node:net';
-import type { Request } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { DomainError } from '../services/DomainError.js';
 
-// Fixed-window per-IP request counting shared by the comparison and redirect
+// Fixed-window request counting per client IP (or per `key`) for the REST
 // routers. ponytail: per-instance in-memory state; multi-instance needs a
 // shared store (same ceiling as the ComparisonService in-flight dedupe).
 export type RequestWindow = { count: number; resetAt: number };
@@ -51,6 +52,31 @@ export function requestIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
 
-export function queryNumber(value: unknown): number {
-  return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
+/**
+ * One fixed window per key (the client IP unless `key` says otherwise). Mount
+ * it as route middleware, or call `limit(req, res)` mid-handler to count only
+ * the requests that get that far, such as a cache miss. Over the limit it sets
+ * Retry-After (transport state the error mapping cannot know; errorHandler
+ * keeps it) and throws TOO_MANY_REQUESTS.
+ */
+export function rateLimit({
+  limit,
+  windowMs,
+  message,
+  key = requestIp,
+}: {
+  limit: number;
+  windowMs: number;
+  message: string;
+  key?: (req: Request) => string;
+}) {
+  const requests = new Map<string, RequestWindow>();
+  return (req: Request, res: Response, next?: NextFunction): void => {
+    const id = key(req);
+    if (!admitRequest(requests, id, limit, windowMs)) {
+      res.setHeader('Retry-After', retryAfterSeconds(requests, id, windowMs));
+      throw new DomainError('TOO_MANY_REQUESTS', message);
+    }
+    next?.();
+  };
 }

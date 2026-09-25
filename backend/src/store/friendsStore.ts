@@ -301,7 +301,7 @@ export async function deleteFriendshipBetween(userId: string, friendId: string):
   // Only UUID literals may enter the raw PostgREST grammar. Validate both
   // identities here so every caller of this privileged deletion is protected.
   if (!z.tuple([z.string().uuid(), z.string().uuid()]).safeParse([userId, friendId]).success) {
-    throw new DomainError('validation_error', 'Friend identifiers must be valid UUIDs');
+    throw new DomainError('VALIDATION_ERROR', 'Friend identifiers must be valid UUIDs');
   }
   const { error } = await supabase
     .from('friendships')

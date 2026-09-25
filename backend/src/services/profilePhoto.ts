@@ -21,7 +21,7 @@ export async function encodeProfilePhoto(input: Buffer, contentType: string): Pr
     !format ||
     contentType !== `image/${format}`
   )
-    throw new DomainError('validation_error', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
+    throw new DomainError('VALIDATION_ERROR', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
   try {
     const image = sharp(input, { limitInputPixels: 4096 * 4096, failOn: 'warning' });
     const meta = await image.metadata();
@@ -45,7 +45,7 @@ export async function encodeProfilePhoto(input: Buffer, contentType: string): Pr
     return PREFIX + jpeg.toString('base64');
   } catch {
     throw new DomainError(
-      'validation_error',
+      'VALIDATION_ERROR',
       'This photo could not be read. Choose a still JPEG, PNG or WebP no larger than 4096 × 4096 pixels.'
     );
   }

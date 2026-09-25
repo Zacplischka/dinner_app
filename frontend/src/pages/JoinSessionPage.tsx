@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { beginSessionIntent, isSessionIntentCurrent } from '../services/sessionIntent';
 import NavigationHeader from '../components/NavigationHeader';
 import { ErrorNote } from '../components/Notice';
-import { SESSION_CODE_LENGTH } from '@dinder/shared/types';
+import { MAX_DISPLAY_NAME_LENGTH, SESSION_CODE_LENGTH } from '@dinder/shared/types';
 import { getSession, ApiClientError } from '../services/apiClient';
 import { validateDisplayName } from '../utils/displayName';
 import { useSessionSwitch } from '../hooks/useSessionSwitch';
@@ -233,11 +233,13 @@ function JoinInvitation() {
                   value={participantName}
                   onChange={(e) => setParticipantName(e.target.value)}
                   placeholder="Enter your name"
-                  maxLength={50}
+                  maxLength={MAX_DISPLAY_NAME_LENGTH}
                   className="input"
                   disabled={isLoading}
                 />
-                <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
+                <p className="mt-1.5 text-xs text-muted">
+                  {participantName.length}/{MAX_DISPLAY_NAME_LENGTH} characters
+                </p>
               </div>
             )}
 

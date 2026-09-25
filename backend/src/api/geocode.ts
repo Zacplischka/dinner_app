@@ -2,30 +2,25 @@
 // location for Session creation, so browser geolocation is never required.
 
 import { Router } from 'express';
-import type { GeocodedArea } from '@dinder/shared/types';
+import { queryNumber, type GeocodedArea } from '@dinder/shared/types';
 import { DomainError } from '../services/DomainError.js';
 import { asyncHandler } from './asyncHandler.js';
-import {
-  admitRequest,
-  queryNumber,
-  requestIp,
-  retryAfterSeconds,
-  type RequestWindow,
-} from './rateWindow.js';
+import { rateLimit } from './rateWindow.js';
 
 interface GeocodeRouterDeps {
   geocodeArea: (query: string) => Promise<GeocodedArea | undefined>;
   reverseGeocodeSuburb: (latitude: number, longitude: number) => Promise<string | undefined>;
 }
 
-// Geocoding calls are Google-billed; cap per-visitor spend like /comparison does.
-const GEOCODE_LIMIT = 20;
-const GEOCODE_WINDOW_MS = 60_000;
-
 export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: GeocodeRouterDeps) {
   const router = Router();
+  // Geocoding calls are Google-billed; cap per-visitor spend like /comparison does.
   // ponytail: per-instance in-memory rate window, same ceiling as rateWindow.ts notes.
-  const geocodeRequests = new Map<string, RequestWindow>();
+  const geocodeLimit = rateLimit({
+    limit: 20,
+    windowMs: 60_000,
+    message: 'Too many location lookups. Please try again shortly.',
+  });
 
   /**
    * GET /api/geocode?query=<suburb or postcode>
@@ -47,15 +42,7 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
         throw new DomainError('VALIDATION_ERROR', 'Coordinates are out of range.');
       }
 
-      const ip = requestIp(req);
-      if (!admitRequest(geocodeRequests, ip, GEOCODE_LIMIT, GEOCODE_WINDOW_MS)) {
-        res.setHeader('Retry-After', retryAfterSeconds(geocodeRequests, ip, GEOCODE_WINDOW_MS));
-        throw new DomainError(
-          'TOO_MANY_REQUESTS',
-          'Too many location lookups. Please try again shortly.'
-        );
-      }
-
+      geocodeLimit(req, res);
       if (hasCoords) {
         // Best-effort area name for coordinates the browser already resolved.
         const area = await reverseGeocodeSuburb(latitude, longitude).catch(() => undefined);

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
 import { runCommand } from './runCommand.js';
 import {
+  MAX_DISPLAY_NAME_LENGTH,
   SESSION_CODE_LENGTH,
   SESSION_CODE_PATTERN,
   type Ack,
@@ -24,7 +25,11 @@ const sessionJoinPayloadSchema = z.object({
       SESSION_CODE_PATTERN,
       `Session code must be ${SESSION_CODE_LENGTH} alphanumeric characters`
     ),
-  displayName: z.string().trim().min(1, 'Display name required').max(50, 'Display name too long'),
+  displayName: z
+    .string()
+    .trim()
+    .min(1, 'Display name required')
+    .max(MAX_DISPLAY_NAME_LENGTH, 'Display name too long'),
   rejoinToken: z.string().uuid().optional(),
   accessToken: z.string().min(1).max(8192).optional(),
 });

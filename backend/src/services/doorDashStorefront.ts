@@ -1,13 +1,12 @@
 // The DoorDash Storefront Resolver: everything this Platform's actor requires
 // and everything its answers must survive to count as this Venue's Storefront.
-import type { MenuItemCapture } from '@dinder/shared/types';
+import { isRecord, type MenuItemCapture } from '@dinder/shared/types';
 import type { StorefrontResolver } from './ComparisonService.js';
 import {
   deliveryAreaAddress,
   distanceMeters,
   emptyCapture,
   httpsUrl,
-  isRecord,
   nameMatches,
   number,
   record,

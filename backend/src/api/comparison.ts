@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import type { Redis } from 'ioredis';
 import {
+  MAX_SEARCH_RADIUS_MILES,
+  MIN_SEARCH_RADIUS_MILES,
   parseComparisonEntryRequest,
   parseVenueSearchRequest,
   type Venue,
@@ -10,7 +12,13 @@ import type { GooglePlacesSearchParams } from '../services/RestaurantSearchServi
 import type { ComparisonService } from '../services/ComparisonService.js';
 import { DomainError } from '../services/DomainError.js';
 import { asyncHandler } from './asyncHandler.js';
-import { admitRequest, requestIp, retryAfterSeconds, type RequestWindow } from './rateWindow.js';
+import {
+  admitRequest,
+  rateLimit,
+  requestIp,
+  retryAfterSeconds,
+  type RequestWindow,
+} from './rateWindow.js';
 import { toApiError } from './toApiError.js';
 
 interface ComparisonRouterDeps {
@@ -25,11 +33,6 @@ const PHOTO_CACHE_SECONDS = 24 * 60 * 60;
 // Cold Comparisons launch paid Apify actor runs; this caps per-visitor spend (#70).
 const COLD_COMPARE_LIMIT = 5;
 const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
-// Photo and venue lookups are Google-billed on a cache miss.
-const PHOTO_LIMIT = 60;
-const PHOTO_WINDOW_MS = 60_000;
-const VENUE_LIMIT = 30;
-const VENUE_WINDOW_MS = 60_000;
 
 export function createComparisonRouter({
   searchNearbyVenues,
@@ -41,9 +44,18 @@ export function createComparisonRouter({
   const router = Router();
   // ponytail: per-instance in-memory rate windows (matches the in-flight dedupe
   // ceiling); a second backend instance would need a shared store.
-  const venueRequests = new Map<string, RequestWindow>();
-  const photoRequests = new Map<string, RequestWindow>();
   const coldCompareRequests = new Map<string, RequestWindow>();
+  // Photo and venue lookups are Google-billed on a cache miss.
+  const photoLimit = rateLimit({
+    limit: 60,
+    windowMs: 60_000,
+    message: 'Too many photo requests. Please try again shortly.',
+  });
+  const venueLimit = rateLimit({
+    limit: 30,
+    windowMs: 60_000,
+    message: 'Too many venue searches. Please try again shortly.',
+  });
 
   if (fetchPlacePhoto) {
     router.get(
@@ -62,17 +74,7 @@ export function createComparisonRouter({
           return res.redirect(302, cachedPhotoUrl);
         }
 
-        const ip = requestIp(req);
-        if (!admitRequest(photoRequests, ip, PHOTO_LIMIT, PHOTO_WINDOW_MS)) {
-          // Retry-After is transport state the mapping cannot know; set it here,
-          // errorHandler keeps it.
-          res.setHeader('Retry-After', retryAfterSeconds(photoRequests, ip, PHOTO_WINDOW_MS));
-          throw new DomainError(
-            'TOO_MANY_REQUESTS',
-            'Too many photo requests. Please try again shortly.'
-          );
-        }
-
+        photoLimit(req, res);
         const photoUrl = await fetchPlacePhoto(photoName);
         // Google Places ToS permits caching the resolved URL, not the photo bytes.
         await photoCache?.set(cacheKey, photoUrl, 'EX', PHOTO_CACHE_SECONDS).catch(() => undefined);
@@ -150,19 +152,11 @@ export function createComparisonRouter({
       if (!input) {
         throw new DomainError(
           'VALIDATION_ERROR',
-          'Valid latitude, longitude, and radiusMiles (1–15) are required'
+          `Valid latitude, longitude, and radiusMiles (${MIN_SEARCH_RADIUS_MILES}–${MAX_SEARCH_RADIUS_MILES}) are required`
         );
       }
 
-      const ip = requestIp(req);
-      if (!admitRequest(venueRequests, ip, VENUE_LIMIT, VENUE_WINDOW_MS)) {
-        res.setHeader('Retry-After', retryAfterSeconds(venueRequests, ip, VENUE_WINDOW_MS));
-        throw new DomainError(
-          'TOO_MANY_REQUESTS',
-          'Too many venue searches. Please try again shortly.'
-        );
-      }
-
+      venueLimit(req, res);
       const [venues, suburb] = await Promise.all([
         searchNearbyVenues({
           latitude: input.latitude,

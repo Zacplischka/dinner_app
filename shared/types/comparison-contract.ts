@@ -10,6 +10,7 @@ import type {
   SnapshotPayload,
   StorefrontCapture,
 } from './comparison.js';
+import { MAX_SEARCH_RADIUS_MILES, MIN_SEARCH_RADIUS_MILES } from './session-contract.js';
 import type { Venue } from './models.js';
 
 /** Where a results-screen tap came from; counted server-side for the #68 kill gates. */
@@ -83,8 +84,8 @@ export function parseVenueSearchRequest(value: unknown): VenueSearchRequest | un
     longitude < -180 ||
     longitude > 180 ||
     !Number.isFinite(radiusMiles) ||
-    radiusMiles < 1 ||
-    radiusMiles > 15
+    radiusMiles < MIN_SEARCH_RADIUS_MILES ||
+    radiusMiles > MAX_SEARCH_RADIUS_MILES
   ) {
     return undefined;
   }
@@ -142,11 +143,11 @@ export function parseComparisonStreamEvent(
   return undefined;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function queryNumber(value: unknown): number {
+export function queryNumber(value: unknown): number {
   return typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
 }
 
