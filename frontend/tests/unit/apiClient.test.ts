@@ -5,6 +5,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as apiClient from '../../src/services/apiClient';
 import { Capacitor } from '@capacitor/core';
 
+// Every request carries request()'s own abort signal, its 15s bound (#533).
+const bounded = expect.objectContaining({ signal: expect.any(AbortSignal) });
+
 // A server that never answers: the request settles only if its signal aborts.
 const hang = (_url: RequestInfo | URL, init?: RequestInit) =>
   new Promise<Response>((_resolve, reject) => {
@@ -248,7 +251,7 @@ describe('apiClient', () => {
       await freshApiClient.getSession('AB123');
 
       expect(freshApiClient.API_BASE_URL).toBe(apiBase);
-      expect(fetch).toHaveBeenCalledWith(`${apiBase}/sessions/AB123`);
+      expect(fetch).toHaveBeenCalledWith(`${apiBase}/sessions/AB123`, bounded);
       vi.unstubAllEnvs();
     });
   });
@@ -369,7 +372,10 @@ describe('apiClient', () => {
         suburb: 'Melbourne',
       });
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/comparison/venues?latitude=-37.81&longitude=144.96&radiusMiles=5')
+        expect.stringContaining(
+          '/comparison/venues?latitude=-37.81&longitude=144.96&radiusMiles=5'
+        ),
+        bounded
       );
     });
   });
@@ -405,7 +411,7 @@ describe('apiClient', () => {
 
       const result = await apiClient.getRestaurants('AB123');
 
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/options/AB123'));
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/options/AB123'), bounded);
       expect(result).toEqual([
         {
           ...mockRestaurants[0],
@@ -475,7 +481,7 @@ describe('apiClient', () => {
       });
 
       await expect(apiClient.getSession('AB123')).resolves.toEqual(session);
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/sessions/AB123'));
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/sessions/AB123'), bounded);
       vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
       vi.stubEnv('VITE_PUBLIC_ORIGIN', 'https://www.dinder.it.com');
       await expect(apiClient.getSession('AB123')).resolves.toMatchObject({

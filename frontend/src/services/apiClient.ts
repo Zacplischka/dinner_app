@@ -236,9 +236,29 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+// Every call is bounded, a Profile photo upload included, so a server that
+// never answers ends in an error rather than a spinner or a poll that never
+// comes back (#533). AbortController, not AbortSignal.timeout or .any: those
+// are too new for the older WebViews supported by our native targets.
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
-  return handleResponse<T>(await (init ? fetch(url, init) : fetch(url)));
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 15_000);
+  // A caller's own signal still cancels, and is not reported as a timeout.
+  if (init?.signal?.aborted) controller.abort();
+  init?.signal?.addEventListener('abort', () => controller.abort());
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, { ...init, signal: controller.signal });
+    return await handleResponse<T>(response);
+  } catch (error) {
+    if (timedOut) throw new Error('The request timed out. Try again.');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -249,27 +269,13 @@ function postJson<T>(path: string, body: unknown): Promise<T> {
   });
 }
 
-// AbortController also works in the older WebViews supported by our native targets.
-async function requestProfile(path: string, init?: RequestInit): Promise<GetProfileResponse> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15_000);
-  try {
-    return await authedRequest<GetProfileResponse>(path, { ...init, signal: controller.signal });
-  } catch (error) {
-    if (controller.signal.aborted) throw new Error('Profile request timed out. Try again.');
-    throw error;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 /** Get the current user's profile (created on first sight server-side). */
 export function getCurrentProfile(): Promise<GetProfileResponse> {
-  return requestProfile('/users/me');
+  return authedRequest<GetProfileResponse>('/users/me');
 }
 
 export function saveProfilePhoto(file: File | null): Promise<GetProfileResponse> {
-  return requestProfile(
+  return authedRequest<GetProfileResponse>(
     '/users/me/photo',
     file
       ? { method: 'PUT', headers: { 'Content-Type': file.type }, body: file }
