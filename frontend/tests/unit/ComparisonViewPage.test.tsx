@@ -299,6 +299,39 @@ describe('ComparisonViewPage', () => {
     expect(screen.getByRole('button', { name: 'Back to venues' })).toBeInTheDocument();
   });
 
+  // #545: Retry can never find a Venue that doesn't exist.
+  it('offers Back but no Retry when the Venue is not found', () => {
+    renderPage('/compare/nope');
+
+    act(() =>
+      handlers.onError?.({
+        type: 'error',
+        code: 'NOT_FOUND',
+        message: "We couldn't find that venue.",
+      })
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent("We couldn't find that venue.");
+    expect(screen.getByRole('button', { name: 'Back to venues' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+  });
+
+  it('keeps Retry for a transient Comparison failure', () => {
+    renderPage();
+
+    act(() =>
+      handlers.onError?.({
+        type: 'error',
+        code: 'COMPARISON_FAILED',
+        message: 'Could not compare this Venue right now.',
+      })
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Could not compare this Venue right now.');
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to venues' })).toBeInTheDocument();
+  });
+
   it('shows a one-platform result as a single column with an honest badge', () => {
     renderPage();
     const uberEats = {

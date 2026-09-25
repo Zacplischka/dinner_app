@@ -3,6 +3,7 @@ import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/s
 import { SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import uberEatsFixture from '../fixtures/comparison/ubereats-search-11-inch-pizza.json';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
+import { DomainError } from '../../src/services/DomainError.js';
 import { doorDashStorefront } from '../../src/services/doorDashStorefront.js';
 import { uberEatsStorefront } from '../../src/services/uberEatsStorefront.js';
 
@@ -258,6 +259,45 @@ describe('createComparisonService', () => {
     expect(fetchPlaceDetails).not.toHaveBeenCalled();
     expect(runActor).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
+  });
+
+  // #545: an unknown Venue is not a fault a Retry can fix.
+  it('emits NOT_FOUND when Place Details reports no such Venue', async () => {
+    const runActor = vi.fn();
+    const service = createComparisonService({
+      runActor,
+      fetchPlaceDetails: vi
+        .fn()
+        .mockRejectedValue(new DomainError('not_found', "We couldn't find that venue.")),
+      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert: vi.fn() },
+    });
+
+    const events = await collectComparison(service, 'nope');
+
+    expect(events).toEqual([
+      { type: 'error', code: 'NOT_FOUND', message: "We couldn't find that venue." },
+    ]);
+    expect(runActor).not.toHaveBeenCalled();
+  });
+
+  it('keeps a transient Place Details failure a retryable COMPARISON_FAILED', async () => {
+    const service = createComparisonService({
+      runActor: vi.fn(),
+      fetchPlaceDetails: vi
+        .fn()
+        .mockRejectedValue(new Error('Places API error: Internal Server Error')),
+      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert: vi.fn() },
+    });
+
+    const events = await collectComparison(service, 'place-1');
+
+    expect(events).toEqual([
+      {
+        type: 'error',
+        code: 'COMPARISON_FAILED',
+        message: 'Could not compare this Venue right now.',
+      },
+    ]);
   });
 
   it('deduplicates concurrent subscribers into one actor chain and one Snapshot', async () => {

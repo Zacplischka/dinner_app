@@ -124,7 +124,14 @@ export async function fetchPlaceDetails(placeId: string): Promise<VenueDetails> 
     );
   }
   if (!response.ok) {
-    throw new Error(`Places API error: ${response.statusText}`);
+    const body = await response.text().catch(() => '');
+    // Google answers an unknown Place ID with a 404, and a malformed one (such as
+    // /compare/nope) with a 400 naming the Place ID. Any other 400 — an invalid
+    // API key, say — is still a fault, not a missing Venue.
+    if (response.status === 404 || (response.status === 400 && body.includes('Place ID'))) {
+      throw new DomainError('not_found', "We couldn't find that venue.");
+    }
+    throw new Error(`Places API error: ${response.statusText} ${body}`.trim());
   }
 
   const place = (await response.json()) as GooglePlaceResult;

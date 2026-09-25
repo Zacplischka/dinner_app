@@ -7,6 +7,7 @@ import type {
 import { SNAPSHOT_FAILURE_FRESHNESS_MS, SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import type { VenueDetails } from './RestaurantSearchService.js';
 import { deriveComparison } from './comparisonMatcher.js';
+import { DomainError } from './DomainError.js';
 import { doorDashStorefront } from './doorDashStorefront.js';
 import { emptyCapture } from './storefrontResolution.js';
 import { uberEatsStorefront } from './uberEatsStorefront.js';
@@ -106,12 +107,18 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
         payload,
       });
       emit(flight, { type: 'comparison', comparison: deriveComparison(snapshot) });
-    } catch {
-      emit(flight, {
-        type: 'error',
-        code: 'COMPARISON_FAILED',
-        message: 'Could not compare this Venue right now.',
-      });
+    } catch (err) {
+      emit(
+        flight,
+        // An unknown Venue is not transient: say so, and the client drops Retry.
+        err instanceof DomainError && err.code === 'not_found'
+          ? { type: 'error', code: 'NOT_FOUND', message: err.message }
+          : {
+              type: 'error',
+              code: 'COMPARISON_FAILED',
+              message: 'Could not compare this Venue right now.',
+            }
+      );
     } finally {
       flights.delete(placeId);
     }
