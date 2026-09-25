@@ -510,6 +510,49 @@ describe('websocket handlers', () => {
       if (leftovers.length > 0) await redis.del(...leftovers);
     });
 
+    // #529: the Lobby renders from its roster, so participant:left alone leaves
+    // the old room showing Carol and holding a stale revision.
+    it('should re-broadcast the old Lobby when a join pulls a Participant out of it', async () => {
+      await store.createSession(sessionCode, {
+        hostName: 'Alice',
+        branch: 'eatout',
+        lobby: { revision: 0, round: 1, mealType: 'main course' },
+      });
+      await store.addParticipant(sessionCode, {
+        participantId: 'socket-1',
+        displayName: 'Alice',
+        isHost: true,
+        ready: true,
+      });
+      await store.addParticipant(sessionCode, { participantId: 'socket-2', displayName: 'Carol' });
+      await store.createSession('NEW42', { hostName: 'Ava' });
+      const testSocket = socket('socket-2', [sessionCode]);
+      const callback = vi.fn();
+
+      await handleSessionJoin(
+        testSocket as any,
+        { sessionCode: 'NEW42', displayName: 'Carol' },
+        callback,
+        service
+      );
+
+      expect(callback).toHaveBeenCalledWith({ success: true, data: expect.anything() });
+      expect(testSocket.to).toHaveBeenCalledWith(sessionCode);
+      await vi.waitFor(() =>
+        expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
+          'session:lobby',
+          expect.objectContaining({
+            sessionCode,
+            revision: 1,
+            participants: [expect.objectContaining({ participantId: 'socket-1', ready: true })],
+          })
+        )
+      );
+
+      const leftovers = await redis.keys('session:NEW42*');
+      if (leftovers.length > 0) await redis.del(...leftovers);
+    });
+
     it('should reject full sessions before adding and log the rejection', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
       await store.createSession(sessionCode, { hostName: 'Alice' });
