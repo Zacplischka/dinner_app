@@ -16,6 +16,7 @@ import { useLeaveSession } from '../hooks/useLeaveSession';
 import { useShareLink } from '../hooks/useShareLink';
 import { toast } from '../hooks/useToast';
 import { participantRingClass } from '../utils/participantStyles';
+import { isEffectiveHost } from '../types';
 import NavigationHeader from '../components/NavigationHeader';
 import { ErrorNote } from '../components/Notice';
 import InviteFriendsSection from '../components/friends/InviteFriendsSection';
@@ -40,7 +41,7 @@ export default function SessionLobbyPage() {
   const roster = participants.map((p) => p.participantId).join(',');
   const inviteFriends = useFriendsStore((state) => state.inviteFriendsToSession);
   const me = participants.find((p) => p.participantId === currentUserId);
-  const isHost = !!me && (me.isHost || !participants.some((p) => p.isHost && p.isOnline !== false));
+  const isHost = isEffectiveHost(participants, currentUserId);
   const pendingPeople = lobby?.participants.filter((p) => p.waitingForNextRound) ?? [];
   const reviewingWaiting = isHost && pendingPeople.length > 0;
   const disabled = busy || !isConnected || !!lobby?.starting;
