@@ -181,12 +181,14 @@ describe('the Deck cursor survives a reload', () => {
         isHost: i === 0,
       }));
     // Alice (me) and Bob both liked place-1 before the reload, so its Full House
-    // already took the screen over. Carol joining re-arms the takeover and likes
-    // it too: a bigger house, not a new one.
+    // already took the screen over — the store restores that with the buffer
+    // (#513). Carol joining re-arms the takeover and likes it too: a bigger
+    // house, not a new one.
     useSessionStore.setState({
       deckCursor: 2,
       selections: ['place-1'],
       liveSelections: { 'place-1': ['Bob'] },
+      fullHousesShown: ['place-1'],
       participants: roster(['Alice', 'Bob']),
     });
     renderSelectionPage();

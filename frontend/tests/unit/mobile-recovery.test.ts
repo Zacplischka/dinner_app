@@ -242,7 +242,7 @@ describe('native recovery through the shared socket boundary', () => {
   // #513: a rejoin brings every other phone's Live Selections back as a replay.
   // A native reload that dropped the buffer would take them as news, and
   // re-announce (or re-celebrate) cards already decided behind the cursor.
-  it('restores the Live Selection buffer after a native reload, so the rejoin replay is a duplicate', async () => {
+  it('restores the Live Selection buffer and shown Full Houses after a native reload', async () => {
     device.preferences.clear();
     device.credentials.clear();
     vi.resetModules();
@@ -269,9 +269,10 @@ describe('native recovery through the shared socket boundary', () => {
     useSessionStore.getState().addSelection('movie-1');
     useSessionStore.getState().setDeckCursor(1);
     useSessionStore.getState().recordLiveSelection('movie-1', 'Bob');
+    useSessionStore.getState().markFullHouseShown('movie-1');
     await vi.waitFor(() =>
       expect(JSON.parse(device.preferences.get('dinner-session-storage')!).state).toMatchObject({
-        deckCursor: 1,
+        fullHousesShown: ['movie-1'],
       })
     );
 
@@ -282,6 +283,7 @@ describe('native recovery through the shared socket boundary', () => {
     await useSessionStore.persist.rehydrate();
     const restored = useSessionStore.getState().liveSelections;
     expect(restored).toEqual({ 'movie-1': ['Bob'] });
+    expect(useSessionStore.getState().fullHousesShown).toEqual(['movie-1']);
 
     useSessionStore.getState().recordLiveSelection('movie-1', 'Bob'); // Bob's replay
     expect(useSessionStore.getState().liveSelections).toBe(restored);
