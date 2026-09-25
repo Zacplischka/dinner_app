@@ -6,8 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from '@testing-library/react';
 import { useSessionStore } from '../../src/stores/sessionStore';
 import HomePage from '../../src/pages/HomePage';
+import RequireSession from '../../src/components/RequireSession';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
+
+const { reconcileSession } = vi.hoisted(() => ({ reconcileSession: vi.fn() }));
+vi.mock('../../src/services/socketBindings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/services/socketBindings')>()),
+  reconcileSession,
+}));
 
 function SessionStub() {
   const status = useSessionStore((state) => state.sessionStatus);
@@ -42,6 +49,7 @@ describe('HomePage entry fork', () => {
     vi.unstubAllGlobals();
     useAuthStore.setState({ isAuthenticated: false, isLoading: false, user: null, session: null });
     useFriendsStore.getState().reset();
+    reconcileSession.mockReset();
   });
 
   it('explains the shared decision and shows the four Branch cards', () => {
@@ -168,6 +176,47 @@ describe('HomePage entry fork', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /return to session/i }));
     expect(await screen.findByText('Returned to waiting')).toBeInTheDocument();
+  });
+
+  // #511: the reconnect gate's Home link must not be a loop. The socket's own
+  // connect handler does not refire on a live transport, so Return retries.
+  it('retries the rejoin when returning to a Session the gate could not reach', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              sessionCode: 'AB123',
+              state: 'selecting',
+              expiresAt: '2099-01-01T00:00:00Z',
+            })
+          )
+      )
+    );
+    reconcileSession.mockImplementation(async () =>
+      useSessionStore.setState({ isConnected: true })
+    );
+    useSessionStore.setState({
+      sessionCode: 'AB123',
+      sessionStatus: 'selecting',
+      currentUserId: 'alice',
+      isConnected: false,
+    });
+    render(
+      <MemoryRouter initialEntries={['/session/AB123']}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/session/:sessionCode" element={<RequireSession />}>
+            <Route index element={<p>Session page</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Home' }));
+    fireEvent.click(await screen.findByRole('button', { name: /return to session/i }));
+    expect(await screen.findByText('Session page')).toBeInTheDocument();
+    expect(reconcileSession).toHaveBeenCalledOnce();
   });
 
   it('keeps Leave as an explicit choice while home preserves participation', async () => {

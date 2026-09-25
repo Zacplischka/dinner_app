@@ -14,7 +14,7 @@
 // one, and it makes a rejected rejoin redirect for free — socketBindings
 // resets the store and toasts the server's reason, and this re-renders.
 
-import { Navigate, Outlet, useLocation, useParams } from 'react-router';
+import { Link, Navigate, Outlet, useLocation, useParams } from 'react-router';
 import { useSessionStore } from '../stores/sessionStore';
 
 export default function RequireSession() {
@@ -46,17 +46,28 @@ export default function RequireSession() {
         style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
       >
         <h1 className="text-2xl">Reconnecting to your session</h1>
-        <p role="status">Your place is saved. Connect to the internet to continue.</p>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            void import('../services/socketBindings').then(({ reconcileSession }) =>
-              reconcileSession()
-            );
-          }}
-        >
-          Try again
-        </button>
+        {/* Also shown to an online phone whose rejoin failed, so only an offline
+            one hears about the connection (#511). Home keeps the Session: Home
+            offers "Return to session". */}
+        <p role="status">
+          {navigator.onLine ? 'Couldn’t reach your session yet.' : 'You’re offline.'} Your place is
+          saved.
+        </p>
+        <div className="flex gap-3">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              void import('../services/socketBindings').then(({ reconcileSession }) =>
+                reconcileSession()
+              );
+            }}
+          >
+            Try again
+          </button>
+          <Link to="/" className="btn btn-secondary inline-flex items-center">
+            Home
+          </Link>
+        </div>
       </main>
     );
 

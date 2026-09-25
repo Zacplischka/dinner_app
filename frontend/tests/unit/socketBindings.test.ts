@@ -1419,7 +1419,7 @@ describe('socketBindings', () => {
       await socketBindings.reconcileSession();
       expect(useSessionStore.getState()).toMatchObject({
         sessionCode: 'AB123',
-        isConnected: reason !== 'invalid_outcome',
+        isConnected: true,
         orderPlaceId: reason === 'invalid_outcome' ? null : 'pizza',
       });
       expect(useOrderStore.getState().order).toBeNull();
@@ -1428,6 +1428,89 @@ describe('socketBindings', () => {
         expect(useSessionStore.getState().isConnected).toBe(true);
         expect(emit.mock.calls.filter(([event]) => event === 'order:open')).toHaveLength(1);
       }
+    }
+  );
+
+  // #511: the rejoin succeeded, so the phone is back in its Session. A basket
+  // that would not load is the order page's to handle (it opens its own), not
+  // a reason to hold every Session route behind the reconnect gate.
+  it.each(['INTERNAL', 'UNKNOWN'])(
+    'keeps the Session open with a toast when the basket restore fails (%s) after a successful rejoin',
+    async (code) => {
+      const socket = setupSocket();
+      socketBindings.initializeSocket();
+      useSessionStore.setState({
+        sessionCode: 'AB123',
+        currentUserId: participant.participantId,
+        orderPlaceId: 'pizza',
+        isConnected: true,
+      });
+      const menu = [{ name: 'Margherita', price_cents: 2300, tags: [] }];
+      useOrderStore.getState().setOrder({ placeId: 'pizza' } as never, menu);
+      useOrderStore.getState().markNoMenu('taco-place');
+      sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+      socket.acks.set('session:join', {
+        success: true,
+        data: {
+          participantId: participant.participantId,
+          rejoinToken: 'rejoin-token',
+          state: 'complete',
+          participants: [participant],
+        },
+      });
+      socket.acks.set('order:open', {
+        success: false,
+        error: { code, message: 'Menu provider failed' },
+      });
+      await socketBindings.reconcileSession();
+      expect(useSessionStore.getState()).toMatchObject({
+        sessionCode: 'AB123',
+        isConnected: true,
+        orderPlaceId: 'pizza',
+        rejectedSessionCode: null,
+      });
+      // The unconfirmed basket goes, so nothing is added against it before
+      // the order page's own open lands. The Pinned Menu and the Match's
+      // no-menu markers stay: a transient failure disproves neither.
+      expect(useOrderStore.getState()).toMatchObject({
+        order: null,
+        menu,
+        noMenuPlaceIds: ['taco-place'],
+      });
+      expect(socketMocks.toast.error).toHaveBeenCalledWith(
+        'Could not restore the basket: Menu provider failed'
+      );
+      // A broadcast (it never carries the menu) renders a whole basket again.
+      socket.trigger('order:state', { order: { placeId: 'pizza', lines: [] } });
+      expect(useOrderStore.getState()).toMatchObject({ order: { placeId: 'pizza' }, menu });
+    }
+  );
+
+  it.each(['INTERNAL', 'UNKNOWN'])(
+    'holds the reconnect gate but keeps the Session when a rejoin fails with %s',
+    async (code) => {
+      const socket = setupSocket();
+      socketBindings.initializeSocket();
+      useSessionStore.setState({
+        sessionCode: 'AB123',
+        currentUserId: participant.participantId,
+        isConnected: true,
+      });
+      sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+      socket.acks.set('session:join', {
+        success: false,
+        error: { code, message: 'Server hiccup' },
+      });
+      await socketBindings.reconcileSession();
+      expect(useSessionStore.getState()).toMatchObject({
+        sessionCode: 'AB123',
+        currentUserId: participant.participantId,
+        isConnected: false,
+        rejectedSessionCode: null,
+      });
+      expect(socketMocks.toast.error).toHaveBeenCalledWith(
+        'Could not rejoin session: Server hiccup'
+      );
     }
   );
 

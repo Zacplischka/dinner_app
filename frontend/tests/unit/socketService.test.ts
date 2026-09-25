@@ -261,6 +261,42 @@ describe('socketService', () => {
     }
   });
 
+  // #511: order:open is an idempotent read whose failure the order page and
+  // recovery already handle. Recovering on its timeout lifts the gate back onto
+  // the page, which reads again: a ten-second loop.
+  it('recovers after a lost mutation ack but not after a lost basket read', async () => {
+    vi.useFakeTimers();
+    try {
+      const socket = setupSocket();
+      const onUncertainOutcome = vi.fn();
+      socketService.initializeSocket({ onUncertainOutcome });
+      socket.silent.add('order:open');
+      socket.silent.add('order:item');
+
+      // Nothing reconnects after a lost read, so its message must not say so.
+      const read = socketService.openOrder({ sessionCode: 'AB123', placeId: 'place-1' });
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(await read).toEqual({
+        success: false,
+        error: { code: 'UNKNOWN', message: "The server didn't respond. Try again." },
+      });
+      expect(onUncertainOutcome).not.toHaveBeenCalled();
+
+      const tap = socketService.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 });
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(await tap).toMatchObject({
+        success: false,
+        error: {
+          message:
+            "The server didn't respond. Reconnecting to check what happened before you try again.",
+        },
+      });
+      expect(onUncertainOutcome).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('returns a failure Ack when disconnected and exposes socket helpers', async () => {
     const socket = setupSocket(false);
     socketService.initializeSocket();
@@ -362,7 +398,12 @@ describe('socketService', () => {
       socket.silent.delete('order:item');
       expect
         .soft(await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 }))
-        .toMatchObject({ success: false });
+        .toMatchObject({
+          success: false,
+          error: {
+            message: 'Your session is still being checked. Try again once it reconnects.',
+          },
+        });
       expect.soft(itemEmits()).toHaveLength(1);
 
       const recovery = bindings.reconcileSession();
@@ -371,10 +412,16 @@ describe('socketService', () => {
         error: { code: 'UNKNOWN', message: 'Temporary read failure' },
       });
       await recovery;
-      expect.soft(useSessionStore.getState().isConnected).toBe(false);
+      // The rejoin itself succeeded, so the phone is back in its Session
+      // (#511), but with no basket read the second pizza still has to wait.
+      expect.soft(useSessionStore.getState().isConnected).toBe(true);
+      expect(useOrderStore.getState().order).toBeNull();
       expect
         .soft(await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 }))
-        .toMatchObject({ success: false });
+        .toMatchObject({
+          success: false,
+          error: { message: 'Your basket is reloading. Try again in a moment.' },
+        });
       expect.soft(itemEmits()).toHaveLength(1);
 
       // The existing Try again recovery action must remain usable after a

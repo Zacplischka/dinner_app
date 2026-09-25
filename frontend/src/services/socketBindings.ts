@@ -87,7 +87,15 @@ function applyResults(event: SessionResultsEvent): void {
 }
 
 const socketConfig: SocketConfig = {
-  canMutate: () => useSessionStore.getState().isConnected,
+  mutationBlocked: (event) => {
+    if (!useSessionStore.getState().isConnected)
+      return 'Your session is still being checked. Try again once it reconnects.';
+    // A basket change also needs a basket the server confirmed: a failed restore
+    // drops it (#511), and the tap whose ack was lost may already have landed.
+    if (event.startsWith('order:') && !useOrderStore.getState().order)
+      return 'Your basket is reloading. Try again in a moment.';
+    return undefined;
+  },
   onUncertainOutcome: () => {
     void reconcileSession();
   },
@@ -622,6 +630,13 @@ export function reconcileSession(): Promise<void> {
           if (['SESSION_NOT_FOUND', 'NOT_IN_SESSION'].includes(order.error.code)) {
             store.resetSession();
             useSessionStore.setState({ rejectedSessionCode: code });
+          } else {
+            // The rejoin succeeded, so the phone is back in its Session (#511).
+            // The order page opens the basket itself and has its own failure
+            // screens. Drop only the unconfirmed basket so nothing is added
+            // against it; the Pinned Menu and no-menu markers still hold.
+            useOrderStore.setState({ order: null });
+            store.setConnectionStatus(true);
           }
           toast.error(`Could not restore the basket: ${order.error.message}`);
           return;

@@ -37,7 +37,8 @@ type SocketEventHandlers = Partial<ServerToClientEvents> & {
 };
 
 export interface SocketConfig {
-  canMutate?: () => boolean;
+  // Why a mutation must wait, in words the caller can show; undefined sends it.
+  mutationBlocked?: (event: keyof ClientToServerEvents) => string | undefined;
   onUncertainOutcome?: () => void;
   onEvent?: SocketEventHandlers;
 }
@@ -45,7 +46,7 @@ export interface SocketConfig {
 // Typed socket instance
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 let onUncertainOutcome: (() => void) | undefined;
-let canMutate: (() => boolean) | undefined;
+let mutationBlocked: SocketConfig['mutationBlocked'];
 
 /**
  * Initialize Socket.IO client connection.
@@ -61,7 +62,7 @@ export function initializeSocket(config: SocketConfig = {}): void {
   }
 
   onUncertainOutcome = config.onUncertainOutcome;
-  canMutate = config.canMutate;
+  mutationBlocked = config.mutationBlocked;
 
   socket = io(BACKEND_URL, {
     // Straight to WebSocket: the default polling-first handshake costs serial
@@ -90,6 +91,16 @@ export function initializeSocket(config: SocketConfig = {}): void {
 // failure path ("try again") is the retry. Raise it before adding retries here.
 const ACK_TIMEOUT_MS = 10_000;
 
+// A lost ack on these starts no recovery, so their timeout must not promise
+// one. order:open is a read its callers already handle; recovering on it
+// lifted the gate back onto a page that read again (#511).
+const NO_RECOVERY: readonly string[] = [
+  'session:join',
+  'session:leave',
+  'selection:live',
+  'order:open',
+];
+
 // Every command's ack is a canonical Ack<T> from the backend (#116): a
 // discriminated { success: true; data } | { success: false; error: ApiError }.
 // The transport resolves it as-is; the only acks the client mints itself are
@@ -113,18 +124,10 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
     }
     // A connected transport does not prove an uncertain mutation's outcome.
     // Recovery reads and deliberate Leave remain usable; never queue a retry.
-    if (
-      canMutate &&
-      !canMutate() &&
-      !['session:join', 'session:leave', 'order:open'].includes(event)
-    ) {
-      resolve({
-        success: false,
-        error: {
-          code: 'UNKNOWN',
-          message: 'Your session is still being checked. Try again once it reconnects.',
-        },
-      });
+    const blocked =
+      !['session:join', 'session:leave', 'order:open'].includes(event) && mutationBlocked?.(event);
+    if (blocked) {
+      resolve({ success: false, error: { code: 'UNKNOWN', message: blocked } });
       return;
     }
     // socket.io's typed `emit` can't infer through this generic wrapper; the
@@ -136,17 +139,17 @@ function emitAck<T>(event: keyof ClientToServerEvents, payload: unknown): Promis
         cb: (err: Error | null, ack: Ack<T>) => void
       ) => void
     )(event, payload, (err, ack) => {
-      if (err && !['session:join', 'session:leave', 'selection:live'].includes(event)) {
-        onUncertainOutcome?.();
-      }
+      const recovers = !NO_RECOVERY.includes(event);
+      if (err && recovers) onUncertainOutcome?.();
       resolve(
         err
           ? {
               success: false,
               error: {
                 code: 'UNKNOWN',
-                message:
-                  "The server didn't respond. Reconnecting to check what happened before you try again.",
+                message: recovers
+                  ? "The server didn't respond. Reconnecting to check what happened before you try again."
+                  : "The server didn't respond. Try again.",
               },
             }
           : ack
