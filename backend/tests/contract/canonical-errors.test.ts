@@ -1,7 +1,8 @@
 // Canonical public REST error transport (issue #104).
 // Proves the single private→public mapping: every DomainErrorCode, plus
-// malformed input and unexpected errors, produces exactly { code, message } with
-// the mapped HTTP status — no legacy `error` field, no persistence detail.
+// unexpected errors, produces exactly { code, message } with the mapped HTTP
+// status — no legacy `error` field, no persistence detail. Malformed JSON is
+// covered through the full stack in api-error-branches.test.ts.
 
 import { describe, expect, it, vi } from 'vitest';
 import express from 'express';
@@ -178,25 +179,6 @@ describe('canonical error transport', () => {
     expect(response.body.code).toBe('NOT_FOUND');
     expect(response.body.message).toBe('User not found with that email');
     expect(JSON.stringify(response.body)).not.toContain('Unable to send friend request');
-  });
-
-  it('maps malformed JSON input to VALIDATION_ERROR 400', async () => {
-    const app = express();
-    app.use(express.json());
-    app.post('/boom', (_req, res) => res.json({ ok: true }));
-    app.use(errorHandler);
-
-    const response = await request(app)
-      .post('/boom')
-      .set('Content-Type', 'application/json')
-      .send('{not json')
-      .expect(400);
-
-    expect(response.headers['content-type']).toMatch(/application\/json/);
-    expect(response.body).toEqual({
-      code: 'VALIDATION_ERROR',
-      message: 'Request body is not valid JSON',
-    });
   });
 
   it('maps an unexpected error to a detail-free INTERNAL_ERROR 500', async () => {

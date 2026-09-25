@@ -18,19 +18,6 @@ describe('global errorHandler middleware', () => {
     vi.restoreAllMocks();
   });
 
-  it('maps a DomainError to its public { code, message } and status', async () => {
-    const response = await request(
-      appThrowing(new DomainError('SESSION_NOT_FOUND', 'Session AB123 not found'))
-    )
-      .get('/boom')
-      .expect(404);
-
-    expect(response.body).toEqual({
-      code: 'SESSION_NOT_FOUND',
-      message: 'Session AB123 not found',
-    });
-  });
-
   it('maps an unknown DomainError code to a detail-free INTERNAL_ERROR 500', async () => {
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
 
