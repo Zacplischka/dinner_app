@@ -277,6 +277,23 @@ describe('gather-first Sessions', () => {
     );
   });
 
+  // Guests are locked out while starting, so it must never outlive the attempt.
+  it('clears starting with a notice when the starting broadcast fails', async () => {
+    const { code } = await joined();
+    await ready(code, 'host');
+    await ready(code, 'guest');
+    await expect(
+      service.startRound(code, 'host', await revision(code), () => {
+        throw new Error('emit failed');
+      })
+    ).rejects.toThrow('emit failed');
+    expect(await service.getLobby(code)).toMatchObject({
+      state: 'waiting',
+      starting: false,
+      notice: 'The search could not finish. Try again in a moment.',
+    });
+  });
+
   it('keeps an empty or failed Cook deal in the Lobby without relaxing diets', async () => {
     const { code } = await joined('cook');
     await service.updateChoices(code, 'host', {
