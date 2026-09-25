@@ -385,8 +385,13 @@ it('retries autojoin by invitation identity and ignores the old completion', asy
 // #518: the socket handshake starts while the joiner is still typing, not on submit.
 it('starts connecting on arrival without joining anything', async () => {
   vi.clearAllMocks();
-  renderPage('/join');
-  await waitFor(() => expect(socketMocks.initializeSocket).toHaveBeenCalled());
+  serviceMocks.getSession.mockResolvedValue({});
+  renderPage('/join?code=AB123');
+  await waitFor(() => expect(serviceMocks.getSession).toHaveBeenCalled());
+  // Socket before the probe fetch: WebKit drops a handshake that follows one in the same tick.
+  expect(socketMocks.initializeSocket.mock.invocationCallOrder[0]).toBeLessThan(
+    serviceMocks.getSession.mock.invocationCallOrder[0]
+  );
   expect(socketMocks.joinSession).not.toHaveBeenCalled();
 });
 

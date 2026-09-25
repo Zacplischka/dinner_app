@@ -120,6 +120,10 @@ describe('useCreateAndJoinSession', () => {
       pending = result.current.createAndJoin('Alice', { branch: 'eatout' });
     });
     expect(mocks.waitForConnection).toHaveBeenCalled();
+    // Socket before the fetch: WebKit drops a handshake that follows one in the same tick.
+    expect(mocks.waitForConnection.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.createSession.mock.invocationCallOrder[0]
+    );
     expect(mocks.joinSession).not.toHaveBeenCalled();
 
     await act(async () => {
