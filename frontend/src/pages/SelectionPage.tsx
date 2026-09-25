@@ -116,15 +116,15 @@ function SelectionRound() {
   const announcedRef = useRef<Map<string, number>>(new Map());
   // The takeover is one-shot per roster: armed on entry, disarmed by firing,
   // re-armed when the Participant list grows (#284) — a larger unanimity is a
-  // new fact. The shown set keeps an already-celebrated Deck Entry from ever
-  // re-firing; the earlier Full House is never retracted either.
+  // new fact. The store's fullHousesShown keeps an already-celebrated Deck
+  // Entry from ever re-firing, across a remount too (#513); the earlier Full
+  // House is never retracted either.
   const fullHouseArmedRef = useRef(true);
-  const fullHouseShownRef = useRef<Set<string>>(new Set());
   const rosterSizeRef = useRef(0);
-  // A reload restores the cursor but not the refs above (#404). Everything
-  // behind a restored cursor was already announced before the reload, so the
-  // first deal seeds the announced map instead of replaying old reveals — and
-  // a stale Full House must never take the screen over on arrival.
+  // A remount (a reload, the reconnect gate) restores the cursor but not the
+  // refs above (#404). Everything behind a restored cursor was already
+  // announced before it, so the first deal seeds the announced map instead of
+  // replaying old reveals.
   const hydratedRef = useRef(false);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -197,20 +197,11 @@ function SelectionRound() {
   useEffect(() => {
     if (!hydratedRef.current && entries.length > 0) {
       hydratedRef.current = true;
-      const names = participants.map((p) => p.displayName);
-      entries.slice(0, deckCursor).forEach((r) => {
-        const selectorNames = liveSelections[r.placeId] ?? [];
-        announcedRef.current.set(r.placeId, selectorNames.length);
-        // A Full House that took the screen over before the reload is never
-        // celebrated twice — a bigger roster liking it later is the same house.
-        const likedByMe = selections.includes(r.placeId);
-        if (
-          liveReveal({ placeId: r.placeId, selectorNames, likedByMe, participantNames: names })
-            .fullHouse
-        ) {
-          fullHouseShownRef.current.add(r.placeId);
-        }
-      });
+      entries
+        .slice(0, deckCursor)
+        .forEach((r) =>
+          announcedRef.current.set(r.placeId, liveSelections[r.placeId]?.length ?? 0)
+        );
     }
 
     // A retraction (#410) lowers the live count, so the announced high-water mark
@@ -260,14 +251,16 @@ function SelectionRound() {
       name: latest.restaurant.name,
     });
 
+    // Read, not subscribed: marking one must not re-run this effect.
+    const { fullHousesShown, markFullHouseShown } = useSessionStore.getState();
     if (
       latest.result.fullHouse &&
       deckCursor < entries.length &&
       fullHouseArmedRef.current &&
-      !fullHouseShownRef.current.has(latest.restaurant.placeId)
+      !fullHousesShown.includes(latest.restaurant.placeId)
     ) {
       fullHouseArmedRef.current = false;
-      fullHouseShownRef.current.add(latest.restaurant.placeId);
+      markFullHouseShown(latest.restaurant.placeId);
       // One dialog at a time: the sheet goes before the takeover arrives, and
       // the shared history entry above carries straight over to it.
       setDetailsEntry(null);

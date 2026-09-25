@@ -29,7 +29,7 @@ interface SessionState {
   branch?: Branch;
 
   lobby?: SessionLobbyState;
-  /** Round restored without retaining the old Lobby or other people's data. */
+  /** Round restored without retaining the old Lobby or roster. */
   recoveryRound?: number;
   setLobby: (lobby?: SessionLobbyState) => void;
 
@@ -46,6 +46,11 @@ interface SessionState {
   deckCursor: number;
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
   liveSelections: Record<string, string[]>; // placeId -> displayNames who live-selected it (remote only)
+  // Deck Entries whose Full House already took this phone's screen over this
+  // round. Kept here, not in the Deck: the reconnect gate and a reload unmount
+  // the Deck, and a larger roster completing the same entry must not
+  // celebrate it twice (#513).
+  fullHousesShown: string[];
   restaurantNames: Record<string, string>; // placeId -> name mapping for display
   overlappingOptions: DeckEntry[];
   topPick?: { restaurant: DeckEntry; likedBy: number; of: number };
@@ -82,6 +87,7 @@ interface SessionState {
   removeSelection: (placeId: string) => void;
   recordLiveSelection: (placeId: string, displayName: string) => void;
   retractLiveSelection: (placeId: string, displayName: string) => void;
+  markFullHouseShown: (placeId: string) => void;
   setDeckCursor: (index: number) => void;
 
   // Results actions
@@ -106,6 +112,7 @@ const emptyRound = {
   deckCursor: 0,
   allSelections: {},
   liveSelections: {},
+  fullHousesShown: [],
   restaurantNames: {},
   overlappingOptions: [],
   topPick: undefined,
@@ -241,6 +248,12 @@ export const useSessionStore = create<SessionState>()(
               },
             };
           }),
+        markFullHouseShown: (placeId) =>
+          set((state) =>
+            state.fullHousesShown.includes(placeId)
+              ? state
+              : { fullHousesShown: [...state.fullHousesShown, placeId] }
+          ),
         setDeckCursor: (index) => set({ deckCursor: index }),
 
         // Results actions
@@ -322,6 +335,11 @@ export const useSessionStore = create<SessionState>()(
             ],
             selections: rest.selections,
             deckCursor: rest.deckCursor,
+            // The cursor's other half (#513): without them the rejoin's replay
+            // re-announces, or re-celebrates, cards already decided behind it.
+            // Display names and ids only; a new round's setLobby discards both.
+            liveSelections: rest.liveSelections,
+            fullHousesShown: rest.fullHousesShown,
             recoveryRound: rest.lobby?.round ?? rest.recoveryRound,
             orderPlaceId: rest.orderPlaceId,
           };

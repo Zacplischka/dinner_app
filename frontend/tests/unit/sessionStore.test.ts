@@ -195,6 +195,35 @@ describe('sessionStore', () => {
       expect(useSessionStore.getState().liveSelections).toEqual({});
     });
 
+    // #513: a celebrated Full House outlives the Deck, but not its round.
+    it('remembers each shown Full House once and forgets them with the round', () => {
+      const lobby = (round: number) =>
+        ({
+          sessionCode: 'AB123',
+          branch: 'watch',
+          state: 'selecting',
+          revision: round,
+          round,
+          participants: [],
+        }) as never;
+      useSessionStore.setState({ sessionCode: 'AB123' });
+      useSessionStore.getState().setLobby(lobby(1));
+      useSessionStore.getState().markFullHouseShown('movie-1');
+      useSessionStore.getState().markFullHouseShown('movie-1');
+      expect(useSessionStore.getState().fullHousesShown).toEqual(['movie-1']);
+
+      useSessionStore.getState().setLobby(lobby(2)); // a new round, e.g. a Restart missed while away
+      expect(useSessionStore.getState().fullHousesShown).toEqual([]);
+
+      useSessionStore.getState().markFullHouseShown('movie-1');
+      useSessionStore.getState().resetSelections(); // session:restarted
+      expect(useSessionStore.getState().fullHousesShown).toEqual([]);
+
+      useSessionStore.getState().markFullHouseShown('movie-1');
+      useSessionStore.getState().resetSession(); // Leave
+      expect(useSessionStore.getState().fullHousesShown).toEqual([]);
+    });
+
     it('should set results and reset only selection state', () => {
       useSessionStore.setState({ selections: ['place-1'] });
       useSessionStore.getState().setResults({

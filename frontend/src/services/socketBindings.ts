@@ -86,6 +86,26 @@ function applyResults(event: SessionResultsEvent): void {
   });
 }
 
+// #513: a Live Selection is never stored, so a phone that was not in the room
+// holds none of the likes made meanwhile, and could never complete a Full House
+// on them. Re-send this phone's current likes (an Undo has already taken a
+// retracted one out of `selections`) when someone joins, and when this phone
+// gets its own place back — it never hears participant:joined for itself.
+// Phones that already hold them drop duplicates, keyed by display name. Not
+// while disconnected: canMutate would refuse every send.
+// ponytail: one selection:live per like, at most MAX_DECK_SIZE (50) with no
+// server rate limit to trip. Batch into one event if Decks outgrow that.
+function replayLiveSelections(): void {
+  const { isConnected, sessionStatus, sessionCode, selections } = useSessionStore.getState();
+  if (!isConnected || sessionStatus !== 'selecting' || !sessionCode) return;
+  for (const placeId of selections) void sendLiveSelection(sessionCode, placeId);
+}
+// Every join and every recovery path (connect, app resume, RequireSession)
+// ends by marking the store connected, so the rising edge is "back in the room".
+useSessionStore.subscribe((state, previous) => {
+  if (state.isConnected && !previous.isConnected) replayLiveSelections();
+});
+
 const socketConfig: SocketConfig = {
   mutationBlocked: (event) => {
     if (!useSessionStore.getState().isConnected)
@@ -197,6 +217,8 @@ const socketConfig: SocketConfig = {
         // Show joined toast for new participant
         toast.info(`${event.displayName} joined the session`);
       }
+
+      replayLiveSelections();
     },
 
     // participant:left - A participant INTENTIONALLY left the session (session:leave)
