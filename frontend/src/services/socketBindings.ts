@@ -26,7 +26,7 @@ import {
 import type { SocketConfig } from './socketService';
 import { resolvePhotoUrls } from './apiClient';
 import { useSessionStore } from '../stores/sessionStore';
-import { useAuthStore } from '../stores/authStore';
+import { authSettled, useAuthStore } from '../stores/authStore';
 import { useOrderStore } from '../stores/orderStore';
 import { toast } from '../hooks/useToast';
 import { getRejoinToken, saveRejoinToken, clearRejoinToken } from './nativeStorage';
@@ -382,6 +382,9 @@ async function admitSession(
       current.currentUserId === previousParticipantId
     );
   };
+  // #521: a signed-in reload can get here before supabase-js has restored the
+  // session, and a join without the access token loses the verified avatar.
+  await authSettled();
   // #304: sessionStorage, not localStorage — the token is this tab's
   // identity. Origin-wide it let a second tab rejoin as the first.
   const token = await getRejoinToken(sessionCode, displayName);

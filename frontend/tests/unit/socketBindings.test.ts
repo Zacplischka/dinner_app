@@ -1742,7 +1742,7 @@ describe('socketBindings', () => {
   // can reach the join before the session is restored. A join without the
   // token loses the verified avatar (#495).
   describe('waits for auth to settle before joining', () => {
-    const joinCalls = (emit: ReturnType<typeof vi.spyOn>) =>
+    const joinCalls = (emit: { mock: { calls: unknown[][] } }) =>
       emit.mock.calls.filter(([event]) => event === 'session:join');
 
     function joinable() {

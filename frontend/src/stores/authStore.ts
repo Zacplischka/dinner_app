@@ -24,6 +24,9 @@ function hasSessionToRestore(): boolean {
   }
 }
 
+// Optional identity must not hold guest entry hostage to an auth outage.
+const GUEST_FALLBACK_MS = 3000;
+
 interface AuthState {
   // Auth data
   user: User | null;
@@ -44,7 +47,9 @@ export const useAuthStore = create<AuthState>()(
     (set, _get) => ({
       user: null,
       session: null,
-      isLoading: true,
+      // A guest is settled from the start, not only once App's initialize()
+      // runs: on a cold load the socket code can join first.
+      isLoading: hasSessionToRestore(),
       isAuthenticated: false,
 
       initialize: async () => {
@@ -59,8 +64,7 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false });
             return;
           }
-          // Optional identity must not hold guest entry hostage to an auth outage.
-          guestFallback = setTimeout(() => set({ isLoading: false }), 3000);
+          guestFallback = setTimeout(() => set({ isLoading: false }), GUEST_FALLBACK_MS);
           // Get initial session
           const {
             data: { session },
@@ -126,3 +130,23 @@ export const useAuthStore = create<AuthState>()(
     { name: 'AuthStore' }
   )
 );
+
+/**
+ * Resolves once auth has settled, so a request that should carry the session
+ * does not go out while supabase-js is still restoring it. Bounded like
+ * initialize's guest fallback, and immediate when nothing is loading.
+ */
+export function authSettled(): Promise<void> {
+  if (!useAuthStore.getState().isLoading) return Promise.resolve();
+  return new Promise((resolve) => {
+    const settle = () => {
+      clearTimeout(timer);
+      unsubscribe();
+      resolve();
+    };
+    const timer = setTimeout(settle, GUEST_FALLBACK_MS);
+    const unsubscribe = useAuthStore.subscribe((state) => {
+      if (!state.isLoading) settle();
+    });
+  });
+}
