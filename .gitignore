@@ -5,8 +5,6 @@ coverage/
 .env
 .env.local
 .env.*.local
-.specify
-.cursor
 # Backend's tsc build emits these next to the generated-types source (it sits
 # outside backend/src's rootDir). The committed database.types.ts is the authority.
 supabase/database.types.js
