@@ -203,7 +203,7 @@ describe('authStore loads supabase-js only when there is a session to restore', 
   it('releases Session entry after 3 s even when supabase-js is slow to arrive', async () => {
     storeSession();
     restores();
-    let arrive!: () => void;
+    let arrive: (() => void) | undefined;
     vi.doMock(SUPABASE, async () => {
       await new Promise<void>((resolve) => (arrive = resolve));
       return supabaseModule();
@@ -216,8 +216,9 @@ describe('authStore loads supabase-js only when there is a session to restore', 
     await vi.advanceTimersByTimeAsync(1);
     expect(useAuthStore.getState().isLoading).toBe(false);
 
-    // A late arrival still signs the user in.
-    arrive();
+    // A late arrival still signs the user in. The import reaches the factory
+    // on its own schedule, not the fake clock's, so wait for it first.
+    (await vi.waitUntil(() => arrive))();
     await initializing;
     expect(useAuthStore.getState()).toMatchObject({ session, isAuthenticated: true });
   });
