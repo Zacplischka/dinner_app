@@ -16,7 +16,7 @@ On 8 September 2026, Cloudflare confirmed purchase of `yupcrew.com` for **US$10.
 
 Railway Hobby's two custom-domain slots are occupied by `dinder.it.com` and `www.dinder.it.com`. Preserve both so active participants retain their browser state.
 
-The Cloudflare Worker **yupcrew-frontend**, configured in `wrangler.jsonc`, serves `yupcrew.com` and `www.yupcrew.com` by forwarding requests to the existing frontend Railway origin. It keeps paths, query strings and response headers; it does not migrate data or change backend routing. Deploy changes with `npx wrangler deploy`; validate with `node --test scripts/yupcrew-proxy.test.mjs` and `npx wrangler deploy --dry-run` first.
+The Cloudflare Worker **yupcrew-frontend**, configured in `wrangler.jsonc`, serves `yupcrew.com` and `www.yupcrew.com` by forwarding requests to the existing frontend Railway origin. It keeps paths, query strings and response headers, except that HTML documents are fetched without their query string so every invite link shares one cached shell; the browser keeps its own URL. It does not migrate data or change backend routing. Deploy changes with `npx wrangler deploy`; validate with `node --test scripts/yupcrew-proxy.test.mjs` and `npx wrangler deploy --dry-run` first.
 
 This uses Workers Free, with a **100,000 requests/day account limit**, including asset requests. No plan upgrade was purchased. Remove the proxy once a legacy Railway domain can safely retire, or revisit hosting before traffic approaches this ceiling. The existing Railway frontend remains the sole build/deployment source. Future frontend releases automatically flow through the proxy.
 
@@ -32,7 +32,7 @@ The legacy sites can remain serving indefinitely. Before retiring them, establis
 
 ## Verification and rollback
 
-Before merging: frontend build, unit tests, typecheck, lint, proxy test and relevant browser checks. CI also checks the new hosts show the YupCrew title and continues validating the legacy frontend cache contract. The Worker intentionally uses ordinary proxy caching; it does not claim the old zone's configured HTML-cache HIT policy.
+Before merging: frontend build, unit tests, typecheck, lint, proxy test and relevant browser checks. CI also checks the new hosts show the YupCrew title and continues validating the legacy frontend cache contract. The Worker edge-caches GET and HEAD HTML documents for 60 seconds under the `dinder-route-html` tag, the policy the Caddyfile gives the legacy hosts, and still tells browsers to revalidate every document. The deploy's tag purge also covers the `yupcrew.com` zone once the `CLOUDFLARE_YUPCREW_ZONE_ID` environment variable is set and the purge token is scoped to that zone; until then `yupcrew.com` can serve the previous shell for up to 60 seconds after a frontend deploy.
 
 After deployment: verify both new HTTPS hosts, install/share assets, HTTP CORS and Socket.IO, new Invite Links, a mixed old/new-origin Session, and Google sign-in/Friends. Record any remaining provider verification separately.
 
