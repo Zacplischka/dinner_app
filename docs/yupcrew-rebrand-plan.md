@@ -16,7 +16,7 @@ On 8 September 2026, Cloudflare confirmed purchase of `yupcrew.com` for **US$10.
 
 Railway Hobby's two custom-domain slots are occupied by `dinder.it.com` and `www.dinder.it.com`. Preserve both so active participants retain their browser state.
 
-The Cloudflare Worker **yupcrew-frontend**, configured in `wrangler.jsonc`, serves `yupcrew.com` and `www.yupcrew.com` by forwarding requests to the existing frontend Railway origin. It keeps paths, query strings and response headers; it does not migrate data or change backend routing. Deploy changes with `npx wrangler deploy`; validate with `node --test scripts/yupcrew-proxy.test.mjs` and `npx wrangler deploy --dry-run` first.
+The Cloudflare Worker **yupcrew-frontend**, configured in `wrangler.jsonc`, serves `yupcrew.com` and `www.yupcrew.com` by forwarding requests to the existing frontend Railway origin. It keeps paths, query strings and response headers, except that HTML documents are fetched without their query string so every invite link shares one cached shell; the browser keeps its own URL. It does not migrate data or change backend routing. Deploy changes with `npx wrangler deploy`; validate with `node --test scripts/yupcrew-proxy.test.mjs` and `npx wrangler deploy --dry-run` first.
 
 This uses Workers Free, with a **100,000 requests/day account limit**, including asset requests. No plan upgrade was purchased. Remove the proxy once a legacy Railway domain can safely retire, or revisit hosting before traffic approaches this ceiling. The existing Railway frontend remains the sole build/deployment source. Future frontend releases automatically flow through the proxy.
 

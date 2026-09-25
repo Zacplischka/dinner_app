@@ -17,12 +17,17 @@ export default {
     url.protocol = 'https:';
     url.hostname = 'frontend-production-bdfc.up.railway.app';
     url.port = '';
-    const headers = new Headers(request.headers);
-    headers.set('Host', url.hostname);
-    const upstream = new Request(new Request(url, request), { headers, redirect: 'manual' });
     const isDocument =
       ['GET', 'HEAD'].includes(request.method) &&
       Boolean(request.headers.get('Accept')?.includes('text/html'));
+    if (isDocument) {
+      // Caddy serves the shell by path alone and the app reads ?code= in the browser,
+      // so every invite link and sign-in callback shares one cached copy.
+      url.search = '';
+    }
+    const headers = new Headers(request.headers);
+    headers.set('Host', url.hostname);
+    const upstream = new Request(new Request(url, request), { headers, redirect: 'manual' });
     if (!isDocument) {
       return fetch(upstream);
     }
