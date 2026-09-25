@@ -231,7 +231,12 @@ export function createLobbyCommands(
     });
   }
 
-  async function startRound(sessionCode: string, participantId: string, revision: number) {
+  async function startRound(
+    sessionCode: string,
+    participantId: string,
+    revision: number,
+    onStarting?: (lobby: SessionLobbyState) => void
+  ) {
     const snapshot = await store.withSessionLock(sessionCode, async () => {
       const { session, roster, me } = await context(sessionCode, participantId, revision);
       requireHost(roster, me);
@@ -260,6 +265,10 @@ export function createLobbyCommands(
     const { session, roster, current } = snapshot;
     let entries: DeckEntry[];
     try {
+      // The deal takes seconds; let the room see it has started. Inside the
+      // try, so a failed broadcast clears starting like a failed deal.
+      const starting = await readLobby(sessionCode);
+      if (starting) onStarting?.(starting);
       if (session.branch === 'watch') {
         const interests = roster.map((p) => p.mood ?? { genres: [], decades: [], mediaTypes: [] });
         session.mood = {
