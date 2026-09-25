@@ -13,6 +13,7 @@ const BASE = 'https://api.spoonacular.com';
 const PINNED_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const TIMEOUT_MS = 5_000;
 
 export interface IngredientInfo {
   /** Rung 2's gate (#244): Convert never refuses, so "the ingredient search
@@ -290,7 +291,8 @@ export function createSpoonacularClient(
     const query = new URLSearchParams({ ...params, apiKey: apiKey ?? '' }).toString();
     const response = await fetchImpl(`${BASE}${path}?${query}`, {
       headers: { 'User-Agent': PINNED_UA, Accept: 'application/json' },
-      signal,
+      // The deal brings its own 2.5 s budget; every other call gets this one (#503).
+      signal: signal ?? AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!response.ok) {
       const message = `Spoonacular ${path} failed with status ${response.status}`;

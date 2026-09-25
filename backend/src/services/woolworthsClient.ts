@@ -23,6 +23,10 @@ const IDENTITY_HEADERS = {
 // doubles to ~2-4 KB per term.
 const TOP_N = 10;
 
+// Every lookup holds the app-wide concurrency-1 politeness queue, so a hung
+// response must not outlive this: the line fails and the queue moves on (#503).
+const TIMEOUT_MS = 8_000;
+
 interface WoolworthsSearchResult {
   /** The FulfilmentStoreId read off the response; null when absent. */
   storeId: number | null;
@@ -42,6 +46,7 @@ export function createWoolworthsClient(fetchImpl: typeof fetch = fetch) {
   async function seed(): Promise<string> {
     const response = await fetchImpl(`${BASE}/shop/search/products?searchTerm=carrot`, {
       headers: { ...IDENTITY_HEADERS, Accept: 'text/html,application/xhtml+xml' },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!response.ok) throw new Error(`Woolworths seed failed with status ${response.status}`);
     return response.headers
@@ -77,6 +82,7 @@ export function createWoolworthsClient(fetchImpl: typeof fetch = fetch) {
             isMobile: false,
             Filters: [],
           }),
+          signal: AbortSignal.timeout(TIMEOUT_MS),
         });
         if (!response.ok)
           throw new Error(`Woolworths search failed with status ${response.status}`);
