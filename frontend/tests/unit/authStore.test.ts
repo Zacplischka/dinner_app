@@ -1,25 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Capacitor } from '@capacitor/core';
 
 const authMocks = vi.hoisted(() => ({
+  // How many times services/supabase (and so supabase-js) has been loaded.
+  // The registry caches it, so this can only go 0 → 1 in this file.
+  loads: 0,
   getSession: vi.fn(),
   onAuthStateChange: vi.fn(),
   signInWithGoogle: vi.fn(),
   signOut: vi.fn(),
 }));
 
-vi.mock('../../src/services/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: authMocks.getSession,
-      onAuthStateChange: authMocks.onAuthStateChange,
+vi.mock('../../src/services/supabase', () => {
+  authMocks.loads++;
+  return {
+    supabase: {
+      auth: {
+        getSession: authMocks.getSession,
+        onAuthStateChange: authMocks.onAuthStateChange,
+      },
     },
-  },
-  signInWithGoogle: authMocks.signInWithGoogle,
-  signOut: authMocks.signOut,
-}));
+    signInWithGoogle: authMocks.signInWithGoogle,
+    signOut: authMocks.signOut,
+  };
+});
 
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFriendsStore } from '../../src/stores/friendsStore';
+import { getFriends } from '../../src/services/apiClient';
 
 const user = {
   id: 'user-1',
@@ -32,15 +40,104 @@ const session = {
   user,
 };
 
+// supabase-js's default web storage key for https://placeholder.supabase.co
+const storeSession = () => localStorage.setItem('sb-placeholder-auth-token', '{}');
+
+const signedOut = () =>
+  useAuthStore.setState({
+    user: null,
+    session: null,
+    isLoading: true,
+    isAuthenticated: false,
+  });
+
+// #521: supabase-js is 61 KB gzipped, and most visitors are guests. Order
+// matters here: the first test runs before anything has loaded the module.
+describe('authStore loads supabase-js only when there is a session to restore', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    signedOut();
+  });
+
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('settles a signed-out guest on the web without loading supabase-js', async () => {
+    // A Session join code is not an OAuth callback.
+    window.history.replaceState(null, '', '/join?code=AB123');
+
+    await expect(useAuthStore.getState().initialize()).resolves.toBeUndefined();
+
+    expect(useAuthStore.getState()).toMatchObject({ isLoading: false, isAuthenticated: false });
+    expect(authMocks.getSession).not.toHaveBeenCalled();
+    expect(authMocks.loads).toBe(0);
+  });
+
+  it('loads supabase-js on demand to sign in', async () => {
+    authMocks.signInWithGoogle.mockResolvedValueOnce(undefined);
+
+    await useAuthStore.getState().signInWithGoogle();
+
+    expect(authMocks.loads).toBe(1);
+    expect(authMocks.signInWithGoogle).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['a stored web session', storeSession],
+    [
+      'the OAuth redirect back to the web app',
+      () =>
+        window.history.replaceState(
+          null,
+          '',
+          '/#access_token=t&refresh_token=r&expires_in=3600&token_type=bearer'
+        ),
+    ],
+    ['the native app', () => vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)],
+  ])('restores the session from %s', async (_, arrange) => {
+    arrange();
+    authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
+    authMocks.onAuthStateChange.mockReturnValueOnce({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
+
+    await useAuthStore.getState().initialize();
+
+    expect(useAuthStore.getState()).toMatchObject({
+      session,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  });
+
+  it('sends the restored session as the Bearer token on Friends requests', async () => {
+    storeSession();
+    authMocks.getSession.mockResolvedValueOnce({ data: { session }, error: null });
+    authMocks.onAuthStateChange.mockReturnValueOnce({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    });
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ friends: [] })));
+
+    await useAuthStore.getState().initialize();
+    await getFriends();
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/friends$/),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token' }),
+      })
+    );
+  });
+});
+
 describe('authStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useAuthStore.setState({
-      user: null,
-      session: null,
-      isLoading: true,
-      isAuthenticated: false,
-    });
+    signedOut();
+    storeSession();
   });
 
   afterEach(() => {
