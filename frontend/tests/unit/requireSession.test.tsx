@@ -1,9 +1,12 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import RequireSession from '../../src/components/RequireSession';
 import { useSessionStore } from '../../src/stores/sessionStore';
+
+const { reconcileSession } = vi.hoisted(() => ({ reconcileSession: vi.fn() }));
+vi.mock('../../src/services/socketBindings', () => ({ reconcileSession }));
 
 function JoinRoute() {
   return <div>Join route{useLocation().search}</div>;
@@ -13,6 +16,7 @@ function renderAt(route: string) {
   return render(
     <MemoryRouter initialEntries={[route]}>
       <Routes>
+        <Route path="/" element={<div>Home route</div>} />
         <Route path="/join" element={<JoinRoute />} />
         <Route path="/session/:sessionCode" element={<RequireSession />}>
           <Route index element={<div>Lobby route</div>} />
@@ -38,6 +42,23 @@ describe('RequireSession', () => {
     expect(screen.getByText('Select route')).toBeInTheDocument();
     act(() => useSessionStore.setState({ sessionCode: null, rejectedSessionCode: 'AB123' }));
     expect(screen.getByText('Join route?code=AB123&resume=failed')).toBeInTheDocument();
+  });
+
+  // #511: the gate also shows to an online phone whose rejoin failed, so its
+  // copy must not blame the connection, and it needs a way out besides retry.
+  it('offers Try again and Home without telling an online phone to connect', async () => {
+    useSessionStore.setState({ sessionCode: 'AB123', isConnected: false });
+    renderAt('/session/AB123/select');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Couldn’t reach your session yet. Your place is saved.'
+    );
+    expect(screen.queryByText(/internet/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await vi.waitFor(() => expect(reconcileSession).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole('link', { name: 'Home' }));
+    expect(screen.getByText('Home route')).toBeInTheDocument();
+    // Home is not Leave: the Session stays for Home's "Return to session".
+    expect(useSessionStore.getState().sessionCode).toBe('AB123');
   });
 
   it('renders the Session route when the stored Session matches the URL', () => {

@@ -371,7 +371,10 @@ describe('socketService', () => {
         error: { code: 'UNKNOWN', message: 'Temporary read failure' },
       });
       await recovery;
-      expect.soft(useSessionStore.getState().isConnected).toBe(false);
+      // The rejoin itself succeeded, so the phone is back in its Session
+      // (#511), but with no basket read the second pizza still has to wait.
+      expect.soft(useSessionStore.getState().isConnected).toBe(true);
+      expect(useOrderStore.getState().order).toBeNull();
       expect
         .soft(await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 }))
         .toMatchObject({ success: false });
