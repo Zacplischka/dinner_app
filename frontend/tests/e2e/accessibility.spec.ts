@@ -95,7 +95,7 @@ test.describe('Accessibility - Join Session Page', () => {
 
     // The failure must surface as visible text a screen reader reaches, not a
     // silent no-op. toBeVisible auto-waits, so no blind timeout.
-    await expect(page.getByText('Session not found or has expired')).toBeVisible();
+    await expect(page.getByText(/We couldn’t find that session/)).toBeVisible();
   });
 });
 

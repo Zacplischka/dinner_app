@@ -276,6 +276,66 @@ describe('RestaurantSearchService', () => {
       );
       errorSpy.mockRestore();
     });
+
+    // #545: the bodies Google returned live on 2026-09-25.
+    const googleError = (status: number, message: string, reason?: string) => ({
+      ok: false,
+      status,
+      statusText: status === 404 ? 'Not Found' : 'Bad Request',
+      text: async () =>
+        JSON.stringify({
+          error: {
+            code: status,
+            message,
+            status: status === 404 ? 'NOT_FOUND' : 'INVALID_ARGUMENT',
+            ...(reason && { details: [{ reason }] }),
+          },
+        }),
+    });
+
+    it.each([
+      [
+        'a well-formed Place ID Google no longer knows',
+        googleError(404, 'The provided Place ID is no longer valid.'),
+      ],
+      ['a malformed Place ID', googleError(400, 'The provided Place ID: nope is not valid.\n')],
+    ])('reports %s as a not_found DomainError', async (_case, response) => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+
+      await expect(RestaurantSearchService.fetchPlaceDetails('nope')).rejects.toMatchObject({
+        name: 'DomainError',
+        code: 'not_found',
+        message: "We couldn't find that venue.",
+      });
+    });
+
+    // The body names the cause, so the fault keeps it rather than a bare "Bad Request".
+    it.each([
+      [
+        'an invalid API key',
+        googleError(400, 'API key not valid. Please pass a valid API key.', 'API_KEY_INVALID'),
+        'API key not valid',
+      ],
+      [
+        'a server error',
+        {
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          text: async () => 'backend unavailable',
+        },
+        'backend unavailable',
+      ],
+    ])('keeps %s a plain fault, not a missing Venue', async (_case, response, detail) => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+
+      const error = await RestaurantSearchService.fetchPlaceDetails('ChIJ11InchPizza').catch(
+        (caught: unknown) => caught
+      );
+      expect(error).toBeInstanceOf(Error);
+      expect(error).not.toMatchObject({ name: 'DomainError' });
+      expect((error as Error).message).toContain(detail);
+    });
   });
 
   describe('reverseGeocodeSuburb', () => {

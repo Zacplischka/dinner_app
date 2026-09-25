@@ -53,18 +53,23 @@ describe('JoinSessionPage copy', () => {
   });
 });
 
-describe('JoinSessionPage expired-link probe', () => {
+describe('JoinSessionPage dead-link probe', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('shows the expired-link card when the probe 404s, and restores the form on demand', async () => {
+  // #545: a 404 can't tell an ended Session from a mistyped code, so it says neither is "expired".
+  it('shows the not-found card when the probe 404s, and restores the form on demand', async () => {
     serviceMocks.getSession.mockRejectedValue(
       new ApiClientError('SESSION_NOT_FOUND', 'Session not found', 404)
     );
     renderPage('/join?code=AB123');
 
-    expect(await screen.findByText('This link has expired')).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: 'We couldn’t find that session' })
+    ).toBeTruthy();
+    expect(screen.getByText(/over — or the code was mistyped/)).toBeTruthy();
+    expect(screen.queryByText(/expired/i)).toBeNull();
     expect(screen.queryByLabelText('Session code')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Enter a code instead' }));
@@ -85,7 +90,7 @@ describe('JoinSessionPage expired-link probe', () => {
 
     expect((await screen.findByLabelText('Session code')) as HTMLInputElement).toBeTruthy();
     expect((screen.getByLabelText('Session code') as HTMLInputElement).value).toBe('AB123');
-    expect(screen.queryByText('This link has expired')).toBeNull();
+    expect(screen.queryByText('We couldn’t find that session')).toBeNull();
   });
 
   it('fails open on a non-404 error, leaving the form on screen', async () => {
@@ -93,13 +98,81 @@ describe('JoinSessionPage expired-link probe', () => {
     renderPage('/join?code=AB123');
 
     expect((await screen.findByLabelText('Session code')) as HTMLInputElement).toBeTruthy();
-    expect(screen.queryByText('This link has expired')).toBeNull();
+    expect(screen.queryByText('We couldn’t find that session')).toBeNull();
   });
 
   it('does not call getSession when the route has no code param', () => {
     renderPage('/join');
 
     expect(serviceMocks.getSession).not.toHaveBeenCalled();
+  });
+
+  // #545: a wrong-length code used to be truncated to 5 and probed (then called expired).
+  it.each(['ZZZZZZ', 'AB1'])(
+    'flags the wrong-length code %s without looking it up or joining',
+    async (code) => {
+      useAuthStore.setState({
+        user: { user_metadata: { full_name: 'Alice' } } as never,
+        isAuthenticated: true,
+      });
+      serviceMocks.getSession.mockResolvedValue({});
+      renderPage(`/join?code=${code}`);
+
+      expect(
+        await screen.findByText('That code doesn’t look right — codes are 5 characters')
+      ).toBeTruthy();
+      expect(serviceMocks.getSession).not.toHaveBeenCalled();
+      expect(socketMocks.joinSession).not.toHaveBeenCalled();
+    }
+  );
+
+  // Auto-join is for an accepted Invite Link, not for a code typed after a rejected one.
+  it('waits for Join when a code is typed after a rejected URL code', async () => {
+    useAuthStore.setState({
+      user: { user_metadata: { full_name: 'Alice' } } as never,
+      isAuthenticated: true,
+    });
+    socketMocks.joinSession.mockResolvedValue({
+      success: true,
+      data: { participantId: 'alice', state: 'waiting' },
+    });
+    renderPage('/join?code=ZZZZZZ');
+    await screen.findByText('That code doesn’t look right — codes are 5 characters');
+
+    fireEvent.change(screen.getByLabelText('Session code'), { target: { value: 'AB123' } });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(socketMocks.joinSession).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    expect(await screen.findByText('Lobby route')).toBeTruthy();
+    expect(socketMocks.joinSession).toHaveBeenCalledWith(
+      'AB123',
+      'Alice',
+      false,
+      expect.any(Number)
+    );
+  });
+
+  it('starts fresh when the URL code changes past the fifth character', async () => {
+    serviceMocks.getSession.mockResolvedValue({});
+    function Relink() {
+      const navigate = useNavigate();
+      return <button onClick={() => navigate('/join?code=AB123')}>Relink</button>;
+    }
+    render(
+      <MemoryRouter initialEntries={['/join?code=AB123X']}>
+        <Relink />
+        <Routes>
+          <Route path="/join" element={<JoinSessionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText('That code doesn’t look right — codes are 5 characters');
+
+    fireEvent.click(screen.getByText('Relink'));
+
+    expect(await screen.findByLabelText('Session code')).toHaveValue('AB123');
+    expect(screen.queryByText(/doesn’t look right/)).toBeNull();
   });
 });
 
@@ -150,6 +223,22 @@ describe('JoinSessionPage late-join landing', () => {
     fillAndSubmit();
 
     expect(await screen.findByText('This session has finished')).toBeTruthy();
+  });
+
+  // #545: a typed code that names no Session gets the same not-found hedge as a dead link.
+  it('says a typed code was not found, not expired', async () => {
+    socketMocks.joinSession.mockResolvedValue({
+      success: false,
+      error: { code: 'SESSION_NOT_FOUND', message: 'Session not found or has expired' },
+    });
+    renderPage('/join');
+
+    fillAndSubmit();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'We couldn’t find that session. It’s over — or the code was mistyped.'
+    );
+    expect(screen.queryByText(/expired/i)).toBeNull();
   });
 });
 
@@ -244,10 +333,10 @@ it('resets an expired warm invitation when another valid link arrives', async ()
     .mockRejectedValueOnce(new ApiClientError('SESSION_NOT_FOUND', 'Expired', 404))
     .mockResolvedValue({});
   renderWarmLink();
-  await screen.findByText('This link has expired');
+  await screen.findByText('We couldn’t find that session');
   fireEvent.click(screen.getByText('Next invite'));
   expect(await screen.findByLabelText('Session code')).toHaveValue('NEW12');
-  expect(screen.queryByText('This link has expired')).toBeNull();
+  expect(screen.queryByText('We couldn’t find that session')).toBeNull();
 });
 it('ignores an old invitation probe after a newer warm link', async () => {
   let rejectOld!: (error: unknown) => void;
@@ -263,7 +352,7 @@ it('ignores an old invitation probe after a newer warm link', async () => {
   fireEvent.click(screen.getByText('Next invite'));
   await act(async () => rejectOld(new ApiClientError('SESSION_NOT_FOUND', 'Expired', 404)));
   expect(screen.getByLabelText('Session code')).toHaveValue('NEW12');
-  expect(screen.queryByText('This link has expired')).toBeNull();
+  expect(screen.queryByText('We couldn’t find that session')).toBeNull();
 });
 it('retries autojoin by invitation identity and ignores the old completion', async () => {
   useAuthStore.setState({

@@ -10,7 +10,7 @@ import { isComparisonTapSource } from '@dinder/shared/types';
 import NavigationHeader from '../components/NavigationHeader';
 import RetryingPhoto from '../components/RetryingPhoto';
 import PricePatrol from '../components/PricePatrol';
-import { subscribeToComparison } from '../services/comparisonStream';
+import { subscribeToComparison, type ComparisonStreamError } from '../services/comparisonStream';
 import { formatPrice } from '../utils/money';
 
 const FAILED_STOREFRONT: StorefrontCapture = { status: 'failed', deals: [], menu: [] };
@@ -45,15 +45,17 @@ function OutboundLink({ name, url }: { name: PlatformName; url: string }) {
   );
 }
 
-function RecoveryActions({ onRetry, onBack }: { onRetry: () => void; onBack: () => void }) {
+function RecoveryActions({ onRetry, onBack }: { onRetry?: () => void; onBack: () => void }) {
   return (
     <div className="flex justify-center gap-3">
-      <button
-        onClick={onRetry}
-        className="min-h-[44px] rounded-xl bg-text px-4 py-2 font-semibold text-white transition-all duration-150 hover:brightness-110"
-      >
-        Retry
-      </button>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="min-h-[44px] rounded-xl bg-text px-4 py-2 font-semibold text-white transition-all duration-150 hover:brightness-110"
+        >
+          Retry
+        </button>
+      )}
       <button
         onClick={onBack}
         className="min-h-[44px] rounded-xl border border-line/40 px-4 py-2 font-semibold text-text transition-all duration-150 hover:bg-raised"
@@ -189,7 +191,7 @@ export default function ComparisonViewPage() {
   const [storefronts, setStorefronts] = useState<Partial<SnapshotPayload>>({});
   const [fetchedAt, setFetchedAt] = useState('');
   const [comparison, setComparison] = useState<Comparison>();
-  const [error, setError] = useState('');
+  const [error, setError] = useState<ComparisonStreamError>();
   const [attempt, setAttempt] = useState(0);
   const [waitedTooLong, setWaitedTooLong] = useState(false);
   const fromComparisonList = Boolean(
@@ -228,7 +230,7 @@ export default function ComparisonViewPage() {
     setStorefronts({});
     setFetchedAt('');
     setComparison(undefined);
-    setError('');
+    setError(undefined);
     setWaitedTooLong(false);
     const waitTimer = window.setTimeout(() => setWaitedTooLong(true), WAIT_RECOVERY_MS);
     const unsubscribe = subscribeToComparison(
@@ -250,7 +252,7 @@ export default function ComparisonViewPage() {
           setFetchedAt(event.comparison.fetchedAt);
           setComparison(event.comparison);
         },
-        onError: (event) => setError(event.message),
+        onError: setError,
       },
       // A Retry is not a new tap; only the first attempt may carry the
       // source, or the #68 kill-gate metric double-counts it.
@@ -281,9 +283,12 @@ export default function ComparisonViewPage() {
         {error && (
           <div className="space-y-4">
             <p role="alert" className="rounded-xl bg-amber/10 p-4 text-amber">
-              {error}
+              {error.message}
             </p>
-            <RecoveryActions onRetry={retry} onBack={backToVenues} />
+            <RecoveryActions
+              onRetry={error.code === 'NOT_FOUND' ? undefined : retry}
+              onBack={backToVenues}
+            />
           </div>
         )}
         {showRecoveryBanner && (

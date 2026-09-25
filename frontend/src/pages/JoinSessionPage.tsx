@@ -11,17 +11,14 @@ import { validateDisplayName } from '../utils/displayName';
 import { useSessionSwitch } from '../hooks/useSessionSwitch';
 import { useProfileName } from '../hooks/useProfileName';
 
-const cleanSessionCode = (value: string) =>
-  value
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, SESSION_CODE_LENGTH);
+const alphanumeric = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+const cleanSessionCode = (value: string) => alphanumeric(value).slice(0, SESSION_CODE_LENGTH);
 
 export default function JoinSessionPage() {
   const [params] = useSearchParams();
   return (
     <JoinInvitation
-      key={`${cleanSessionCode(params.get('code') ?? '')}:${params.get('resume') ?? ''}`}
+      key={`${alphanumeric(params.get('code') ?? '')}:${params.get('resume') ?? ''}`}
     />
   );
 }
@@ -51,8 +48,15 @@ function JoinInvitation() {
 
   // Pre-fill session code if provided in URL query params, then probe it.
   useEffect(() => {
-    const code = cleanSessionCode(searchParams.get('code') ?? '');
+    const code = alphanumeric(searchParams.get('code') ?? '');
     if (!code) return;
+    // A wrong-length code names no Session: say so rather than truncate and probe,
+    // and spend auto-join so a replacement code waits for the Join button.
+    if (code.length !== SESSION_CODE_LENGTH) {
+      setError(`That code doesn’t look right — codes are ${SESSION_CODE_LENGTH} characters`);
+      autoJoined.current = true;
+      return;
+    }
 
     setSessionCode(code);
     // ponytail: only a definitive 404 kills the link. Network/5xx/CORS fail open —
@@ -119,7 +123,7 @@ function JoinInvitation() {
         if (ack.error.code === 'SESSION_FULL' || errorMessage.includes('full')) {
           setError('This session is full (maximum 4 participants)');
         } else if (ack.error.code === 'SESSION_NOT_FOUND' || errorMessage.includes('not found')) {
-          setError('Session not found or has expired');
+          setError('We couldn’t find that session. It’s over — or the code was mistyped.');
         } else {
           setError(errorMessage);
         }
@@ -163,7 +167,7 @@ function JoinInvitation() {
             <p className="text-4xl" aria-hidden="true">
               ⏳
             </p>
-            <h2 className="text-lg font-semibold text-text">This link has expired</h2>
+            <h2 className="text-lg font-semibold text-text">We couldn’t find that session</h2>
             <p className="text-sm text-muted">
               A session closes once everyone stops using it. This one is over — or the code was
               mistyped.
