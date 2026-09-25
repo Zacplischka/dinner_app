@@ -17,15 +17,8 @@ Formerly Dinder. Public address: [yupcrew.com](https://yupcrew.com). Existing Di
 <p align="center">
   <a href="https://yupcrew.com">Live demo</a> ·
   <a href="#how-it-works">How it works</a> ·
-  <a href="#demo">Demo</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#local-development">Local development</a>
-</p>
-
-## Demo
-
-<p align="center">
-  <img src="docs/media/dinder-demo.gif" alt="Walkthrough: create a session, friends join with a code, everyone swipes, the group's matches appear" width="720">
 </p>
 
 ## Features
@@ -81,7 +74,7 @@ REST is deliberately thin — `POST /api/sessions`, `GET /api/sessions/:code` �
 
 ## Local development
 
-The mobile foundation bundles this same frontend through Capacitor. Native projects are in [`frontend/ios`](frontend/ios) and [`frontend/android`](frontend/android); see [mobile setup](docs/mobile-development.md) and [verified progress and remaining work](docs/mobile-implementation-status.md). This is partial delivery of [spec #459](https://github.com/Zacplischka/dinner_app/issues/459), not a store-ready release.
+The mobile foundation bundles this same frontend through Capacitor. Native projects are in [`frontend/ios`](frontend/ios) and [`frontend/android`](frontend/android); see [mobile setup](docs/mobile-development.md). This is partial delivery of [spec #459](https://github.com/Zacplischka/dinner_app/issues/459), not a store-ready release.
 
 Prerequisites: Node 22, Docker (for Redis), and a [Google Places API key](https://developers.google.com/maps/documentation/places/web-service/get-api-key).
 
@@ -139,9 +132,9 @@ Both services deploy to [Railway](https://railway.app): the backend via Railpack
 
 ## Documentation
 
-[CONTEXT.md](CONTEXT.md) defines domain language; [ADRs](docs/adr/) record architecture decisions. The [mobile specification](docs/mobile-app-spec.md) defines release requirements, [native development](docs/mobile-development.md) supplies commands, and [implementation status](docs/mobile-implementation-status.md) records evidence and unfinished gates. The [UX implementation report](docs/epic-434-implementation.md) maps the accepted brief to delivered behavior and unresolved Recipe reports.
+[CONTEXT.md](CONTEXT.md) defines domain language; [ADRs](docs/adr/) record architecture decisions. [Spec #459](https://github.com/Zacplischka/dinner_app/issues/459) defines mobile release requirements and [native development](docs/mobile-development.md) supplies commands.
 
-Use the [YupCrew direction](docs/yupcrew-rebrand-plan.md) for public branding and the [marketing plan](docs/marketing-launch-plan.md) with its [research](docs/marketing-channel-research.md) for provisional growth experiments. Superseded plans live in [docs/archive](docs/archive/); scoped [UAT](docs/evidence/uat-improvements.md) and [cat-moment](docs/evidence/cat-moments.md) evidence remains available. Historical research and test results do not certify new revisions or current external settings.
+Use the [YupCrew direction](docs/yupcrew-rebrand-plan.md) for public branding and the [marketing plan](docs/marketing-launch-plan.md) with its [research](docs/marketing-channel-research.md) for provisional growth experiments. Historical research and test results do not certify new revisions or current external settings.
 
 ## License
 

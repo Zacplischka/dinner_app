@@ -1,6 +1,6 @@
 # Native development
 
-Implementation of [spec #459](https://github.com/Zacplischka/dinner_app/issues/459) is in progress. See [the evidence ledger](mobile-implementation-status.md) for passes and outstanding work. Generating projects or compiling an unsigned simulator app is not a physical-device, beta or release pass.
+Implementation of [spec #459](https://github.com/Zacplischka/dinner_app/issues/459) is in progress. Passes and outstanding work are tracked there. Generating projects or compiling an unsigned simulator app is not a physical-device, beta or release pass.
 
 ## Toolchain and configuration
 
@@ -116,11 +116,13 @@ Use a physical iPhone, physical Android phone and browser Participant in one Ses
 
 The native store keeps only the current Participant, local Selection progress/round and Group Order reference; it refetches authoritative data. The single rejoin credential lives in secure storage. Cook View saves one list's progress until that list expires, and releases its native wake lock in the background or on exit. Browser identities remain isolated per tab.
 
-Record physical hardware/OS, exact build and scenario result in the evidence ledger. The full security, social, safety, accessibility, reviewer and release matrices in the spec still apply after this prototype.
+Record physical hardware/OS, exact build and scenario result on [#459](https://github.com/Zacplischka/dinner_app/issues/459). The full security, social, safety, accessibility, reviewer and release matrices in the spec still apply after this prototype.
 
 ## Release preparation still to complete
 
-Carried forward from the [original release plan](archive/mobile-app-transformation-plan.md), alongside the [specification's release gate](mobile-app-spec.md#testing-decisions). These are outstanding checks, not new passes:
+Alongside the release gate in [spec #459](https://github.com/Zacplischka/dinner_app/issues/459). These are outstanding checks, not new passes:
+
+- The operator has no physical Android phone, so emulator evidence does not satisfy the physical-Android gate.
 
 - Choose and record a stable production API hostname before distributing binaries; retain endpoint compatibility for installed clients. Record the source revision, dependency/native locks, endpoints, signing identity, version/build, artifact checksum and available symbols for each candidate; tag completed releases.
 - Confirm Settings exposes support, privacy, account actions, third-party credits and version/build. Keep public support and deletion entry points usable without installation. Assign Apple browser OAuth secret renewal to an owner and recheck its expiry during provider setup.

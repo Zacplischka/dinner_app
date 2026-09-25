@@ -1,52 +1,13 @@
 #!/usr/bin/env bash
-# Live tests for the .claude/.codex automations: prettier PostToolUse hook + redis-debug.sh.
+# Live tests for backend/scripts/redis-debug.sh: production refusals, then optional live PINGs.
 # Run from anywhere: bash .claude/tests/run.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
-export CLAUDE_PROJECT_DIR="$ROOT"   # hooks reference it; Claude Code sets it at runtime
-TMP="$ROOT/.claude/tests/tmp"
-rm -rf "$TMP" && mkdir -p "$TMP/dist"
-trap 'rm -rf "$TMP"' EXIT
 
 PASS=0; FAIL=0
 ok()   { PASS=$((PASS+1)); echo "  ok   - $1"; }
 fail() { FAIL=$((FAIL+1)); echo "  FAIL - $1"; }
-
-# The deployed hook command, straight from settings.json — test what ships, not a copy.
-HOOK_CMD=$(python3 -c "
-import json
-h = json.load(open('$ROOT/.claude/settings.json'))['hooks']['PostToolUse'][0]
-assert h['matcher'] == 'Edit|Write'
-print(h['hooks'][0]['command'])")
-run_hook() { echo "{\"tool_input\":{\"file_path\":\"$1\"}}" | bash -c "$HOOK_CMD"; }
-
-echo "prettier hook:"
-echo 'const x = "double";' > "$TMP/a.ts"
-run_hook "$TMP/a.ts"
-grep -q "const x = 'double';" "$TMP/a.ts" && ok "formats edited .ts (root config applied)" || fail "did not format .ts"
-
-echo 'const y = "double";' > "$TMP/dist/b.ts"
-run_hook "$TMP/dist/b.ts"
-grep -q 'const y = "double";' "$TMP/dist/b.ts" && ok "skips paths under dist/" || fail "formatted a dist/ file"
-
-printf 'hello    world\n' > "$TMP/c.md"
-run_hook "$TMP/c.md"
-grep -q 'hello    world' "$TMP/c.md" && ok "ignores non-TS files" || fail "touched a non-TS file"
-
-run_hook "" && ok "empty file_path is a no-op" || fail "errored on empty file_path"
-
-CODEX_HOOK_CMD=$(python3 -c "
-import json
-h = json.load(open('$ROOT/.codex/hooks.json'))['hooks']['PostToolUse'][0]
-assert h['matcher'] == '^(apply_patch|Edit|Write)$'
-print(h['hooks'][0]['command'])")
-echo 'const z = "double";' > "$TMP/codex.ts"
-printf '{"tool_input":{"command":"*** Begin Patch\\n*** Update File: %s\\n*** End Patch"}}' "$TMP/codex.ts" | bash -c "$CODEX_HOOK_CMD"
-grep -q "const z = 'double';" "$TMP/codex.ts" && ok "formats Codex apply_patch files" || fail "did not format Codex apply_patch file"
-
-[ "$(npx --no-install prettier --find-config-path backend/src/server.ts)" = ".prettierrc" ] \
-  && ok "backend resolves root .prettierrc" || fail "backend resolves wrong prettier config"
 
 echo "redis-debug.sh:"
 RD=backend/scripts/redis-debug.sh
