@@ -1,4 +1,3 @@
-// Toast Component
 // Individual toast notification with auto-dismiss (paused on hover, focus or
 // touch) and a close button. No swipe-to-dismiss.
 
@@ -10,7 +9,6 @@ interface ToastProps {
   onDismiss: (id: string) => void;
 }
 
-// Icon components for each toast type
 const icons: Record<ToastVariant, React.ReactNode> = {
   success: (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -42,7 +40,6 @@ const icons: Record<ToastVariant, React.ReactNode> = {
   ),
 };
 
-// Colors for each toast type
 const colorClasses: Record<ToastVariant, { border: string; icon: string; bg: string }> = {
   success: {
     border: 'border-l-lime',
@@ -81,7 +78,6 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
     }, 200);
   }, [onDismiss, toast.id]);
 
-  // Handle auto-dismiss with pause/resume capability
   useEffect(() => {
     const startTimer = () => {
       startTimeRef.current = Date.now();

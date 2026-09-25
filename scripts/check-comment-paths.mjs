@@ -1,11 +1,8 @@
-// Offline comment-path validator (#295). The largest class of comment rot
-// found by the sweep was pointers at deleted documentation (16 files citing a
-// deleted specs/ tree, 2 citing a deleted docs/specs file). This walks the
-// comment text of the backend, frontend and shared sources, extracts anything
-// shaped like a repository-relative documentation path, and reports the ones
-// that do not resolve on disk. No network, no credentials — pure functions
-// here, asserted by check-comment-paths.test.mjs in the lint job, exactly like
-// check-production-edge.mjs.
+// Offline comment-path validator (#295). This walks the comment text of the
+// backend, frontend and shared sources, extracts anything shaped like a
+// repository-relative documentation path, and reports the ones that do not
+// resolve on disk. No network, no credentials — pure functions here, asserted
+// by check-comment-paths.test.mjs in the lint job.
 //
 // Committed Markdown (`git ls-files '*.md'`) is scanned too, since the repo's
 // documentation is mostly cross-links. One resolution rule, by how each cite is

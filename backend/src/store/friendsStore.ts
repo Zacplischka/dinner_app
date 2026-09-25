@@ -29,9 +29,8 @@ const profileSelect = 'id, display_name, avatar_url, email';
 
 type ProfileRow = Pick<Tables['profiles']['Row'], 'id' | 'display_name' | 'avatar_url' | 'email'>;
 
-// The single row→wire mapping for profiles. Missing fields fall back the same
-// way the old service-side mapper did — display_name, email and avatar_url are
-// nullable columns, so partial rows are real in production, not just in tests.
+// The single row→wire mapping for profiles. display_name, email and avatar_url
+// are nullable columns, so partial rows are real in production, not just in tests.
 function toUserProfile(row: ProfileRow): UserProfile {
   return {
     id: row.id || '',

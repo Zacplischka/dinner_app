@@ -53,7 +53,7 @@ let mutationBlocked: SocketConfig['mutationBlocked'];
  * Registers event handlers when the config provides them.
  */
 export function initializeSocket(config: SocketConfig = {}): void {
-  // Guard on existence, not on connected: a call mid-reconnect used to open a
+  // Guard on existence, not on connected: a call mid-reconnect must not open a
   // second io() and orphan the one still retrying (and holding the handlers).
   // disconnectSocket() is the one way to want a fresh socket; it nulls this.
   if (socket) {

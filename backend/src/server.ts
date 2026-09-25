@@ -135,7 +135,6 @@ const orderService = createOrderService({
   snapshotStore: comparisonSnapshotStore,
 });
 
-// Initialize Express app
 const app = express();
 app.set('trust proxy', 1); // Railway terminates requests at one edge proxy.
 
@@ -205,7 +204,6 @@ app.use(
 app.use('/api/lists', createListsRouter(shoppingListService));
 app.use('/api', createFriendsRouter(friendsService)); // Friends, users, and invites routes
 
-// Health check endpoint
 app.get(
   '/health',
   asyncHandler(async (_req, res) => {
@@ -220,10 +218,8 @@ app.get(
 // Global error safety net (must come after all routes)
 app.use(errorHandler);
 
-// Create HTTP server
 const httpServer = createServer(app);
 
-// Initialize Socket.IO with typed events
 const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   // CORS alone covers polling, not the WebSocket upgrade. Neither check
   // replaces Participant capabilities or authenticated social permissions.
@@ -250,10 +246,8 @@ import { handleSessionLeave } from './websocket/leaveHandler.js';
 import { handleDisconnect } from './websocket/disconnectHandler.js';
 import { handleLiveSelection } from './websocket/liveSelectionHandler.js';
 
-// Import auth middleware
 import type { AuthenticatedRequest } from './middleware/auth.js';
 
-// Import session expiry notifier
 import {
   initializeSessionExpiryNotifier,
   disconnectSessionExpiryNotifier,
@@ -262,7 +256,6 @@ import {
 // Profile Auth gates HTTP social routes only (ADR 0003). Socket commands use
 // Participant capabilities; optional remote verification must not stall recovery.
 
-// WebSocket connection handling
 io.on('connection', (socket) => {
   const socketLog = logger.child({ socketId: socket.id });
   socketLog.info('Socket connected');
@@ -281,7 +274,6 @@ io.on('connection', (socket) => {
   };
   registerLobbyHandlers(socket, io, sessionService);
 
-  // T041: session:join event handler
   socket.on(
     'session:join',
     command((payload, callback) =>
@@ -293,7 +285,6 @@ io.on('connection', (socket) => {
     )
   );
 
-  // T042: selection:submit event handler
   socket.on(
     'selection:submit',
     command((payload, callback) =>
@@ -301,7 +292,6 @@ io.on('connection', (socket) => {
     )
   );
 
-  // T043: session:restart event handler
   socket.on(
     'session:restart',
     command((payload, callback) =>
@@ -341,19 +331,16 @@ io.on('connection', (socket) => {
     command((payload, callback) => handleOrderBuy(socket, io, payload, callback, orderService))
   );
 
-  // T045: disconnect handler
   socket.on('disconnect', (reason) => {
     void handleDisconnect(socket, reason, sessionStore, sessionService);
   });
 });
 
-// Start server
 async function startServer() {
   try {
     if (!(await pingRedis())) throw new Error('Redis connection failed');
     logger.info('Redis connection validated');
 
-    // Initialize session expiry notifier
     await initializeSessionExpiryNotifier(io);
 
     httpServer.listen(PORT, () => {
@@ -368,7 +355,6 @@ async function startServer() {
   }
 }
 
-// Graceful shutdown
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.on(signal, () => {
     void (async () => {

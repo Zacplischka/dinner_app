@@ -181,7 +181,6 @@ const socketConfig: SocketConfig = {
       const dropUnannounced = cancelDisconnectToast(event.displayName);
 
       if (existingIndex >= 0) {
-        // Rejoin: update existing participant's socket ID
         const updatedParticipants = [...store.participants];
         updatedParticipants[existingIndex] = {
           ...updatedParticipants[existingIndex],
@@ -198,10 +197,8 @@ const socketConfig: SocketConfig = {
         store.updateParticipants(updatedParticipants);
         log('Updated existing participant socket ID:', event.displayName);
 
-        // Show reconnected toast for rejoin
         if (!dropUnannounced) toast.info(`${event.displayName} reconnected`);
       } else {
-        // New participant: add to list
         store.addParticipant({
           participantId: event.participantId,
           displayName: event.displayName,
@@ -214,7 +211,6 @@ const socketConfig: SocketConfig = {
           avatarUrl: event.avatarUrl,
         });
 
-        // Show joined toast for new participant
         toast.info(`${event.displayName} joined the session`);
       }
 
@@ -227,13 +223,11 @@ const socketConfig: SocketConfig = {
       log('Participant left:', event);
       const store = useSessionStore.getState();
 
-      // Find participant name before removing
       const participant = store.participants.find((p) => p.participantId === event.participantId);
       const displayName = participant?.displayName || 'Someone';
 
       store.removeParticipant(event.participantId);
 
-      // Show left toast
       toast.info(`${displayName} left the session`);
     },
 
@@ -244,7 +238,6 @@ const socketConfig: SocketConfig = {
       log('Participant disconnected:', event);
       const store = useSessionStore.getState();
 
-      // Find participant to get their name
       const participant = store.participants.find((p) => p.participantId === event.participantId);
       const displayName = participant?.displayName || event.displayName;
 
@@ -269,7 +262,6 @@ const socketConfig: SocketConfig = {
     // participant:submitted - A participant submitted their selections
     'participant:submitted': (event: ParticipantSubmittedEvent) => {
       log('Participant submitted:', event);
-      // Update participant's hasSubmitted status
       const store = useSessionStore.getState();
       const updatedParticipants = store.participants.map((p) =>
         p.participantId === event.participantId ? { ...p, hasSubmitted: true } : p

@@ -1,5 +1,4 @@
-// Redis keyspace notifications listener for session expiration
-// Emits session:expired events via Socket.IO when sessions expire
+// Emits session:expired to a Session's room when Redis expires its key.
 
 import { logger } from '../logger.js';
 import type { Redis } from 'ioredis';
@@ -10,18 +9,13 @@ import type { ClientToServerEvents, ServerToClientEvents } from '@dinder/shared/
 
 let subscriber: Redis | null = null;
 
-/**
- * Initialize session expiry notifier
- * Listens for Redis keyspace notifications on expired session keys
- */
 export async function initializeSessionExpiryNotifier(
   io: Server<ClientToServerEvents, ServerToClientEvents>
 ): Promise<void> {
-  // Create dedicated Redis subscriber connection (required for pub/sub)
+  // A subscribed connection can do nothing else, so it needs its own.
   subscriber = redis.duplicate();
 
-  // Enable keyspace notifications for expired events
-  // 'Ex' = keyspace events for expired keys
+  // 'Ex' = keyevent notifications for expired keys.
   try {
     await subscriber.config('SET', 'notify-keyspace-events', 'Ex');
     logger.info('✓ Redis keyspace notifications enabled');
@@ -30,10 +24,8 @@ export async function initializeSessionExpiryNotifier(
     // Some Redis instances may have CONFIG disabled; log but continue
   }
 
-  // Subscribe to expired events on database 0
   await subscriber.subscribe('__keyevent@0__:expired');
 
-  // Handle expired key events
   subscriber.on('message', (channel: string, key: string) => {
     if (channel === '__keyevent@0__:expired') {
       handleSessionExpired(io, key);
@@ -47,10 +39,6 @@ export async function initializeSessionExpiryNotifier(
   logger.info('✓ Session expiry notifier initialized');
 }
 
-/**
- * Handle session expiration
- * Extract session code and emit to all participants in that room
- */
 function handleSessionExpired(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   key: string
@@ -69,7 +57,6 @@ function handleSessionExpired(
 
   logger.info({ sessionCode }, 'Session expired');
 
-  // Emit session:expired to all participants in the session room
   io.to(sessionCode).emit('session:expired', {
     sessionCode,
     reason: 'inactivity',
@@ -77,9 +64,6 @@ function handleSessionExpired(
   });
 }
 
-/**
- * Cleanup and disconnect subscriber
- */
 export async function disconnectSessionExpiryNotifier(): Promise<void> {
   if (subscriber) {
     await subscriber.quit();

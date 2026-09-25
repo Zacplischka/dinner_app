@@ -1,5 +1,3 @@
-// WebSocket disconnect handler
-
 import { logger } from '../logger.js';
 import type { Socket } from 'socket.io';
 import type { SessionService } from '../services/SessionService.js';

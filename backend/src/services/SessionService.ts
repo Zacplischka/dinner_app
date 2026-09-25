@@ -210,7 +210,6 @@ export function createSessionService({
             : MAX_RESTAURANT_DECK_SIZE
         : undefined);
 
-    // Generate unique session code
     let sessionCode = generateSessionCode();
     let attempts = 0;
     const MAX_ATTEMPTS = 10;
@@ -291,7 +290,6 @@ export function createSessionService({
           );
         }
       } else if (location && searchRadiusMiles) {
-        // Convert miles to meters (1 mile = 1609.34 meters)
         const radiusMeters = searchRadiusMiles * 1609.34;
 
         deckEntries = await searchNearbyRestaurants({
@@ -304,7 +302,6 @@ export function createSessionService({
           maxResults: deckSize ?? MAX_RESTAURANT_DECK_SIZE,
         });
 
-        // Throw error if no restaurants found
         if (deckEntries.length === 0) {
           logger.warn(
             {
@@ -385,7 +382,6 @@ export function createSessionService({
       return null;
     }
 
-    // Get host participant to retrieve hostName
     const participants = await store.listParticipants(sessionCode);
     const host = participants.find((p) => p.isHost);
 
@@ -393,10 +389,8 @@ export function createSessionService({
     // This handles the case where a session was created via REST but host hasn't joined via WebSocket
     const hostName = host ? host.displayName : session.hostName;
 
-    // Calculate expiresAt from TTL
     const ttl = await store.getSessionTtl(sessionCode);
 
-    // Guard against negative TTL values
     // TTL -2 means key doesn't exist, -1 means no expiry set
     if (ttl < 0) {
       logger.warn(
@@ -469,7 +463,6 @@ export function createSessionService({
       results?: Awaited<ReturnType<typeof completeSession>>;
     };
   }> {
-    // Check session exists
     const session = await store.readSession(sessionCode);
     if (!session) {
       logger.warn(
@@ -529,7 +522,6 @@ export function createSessionService({
     const reservedHostSlot = Number(!(hostPresent || isHost || session.hostSlotReleased));
 
     if (!prior) {
-      // Check participant limit
       if (existing.length + reservedHostSlot >= MAX_PARTICIPANTS) {
         logger.warn(
           {

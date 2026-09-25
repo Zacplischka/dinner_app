@@ -66,7 +66,7 @@ export const config = {
     // with a redeploy if Spoonacular objects to cross-user caching (#237).
     poolTtlMs: parseInt(process.env.RECIPE_POOL_TTL_MS || `${24 * 3_600_000}`, 10),
     // A Craving that matches nothing is a fact about the catalogue, not about
-    // Dinder, so it caches too — but briefly (#260). Long enough that a Host
+    // the app, so it caches too — but briefly (#260). Long enough that a Host
     // fiddling with chips costs one lookup, short enough that a Craving the
     // source learns about tonight is swipeable within the hour.
     emptyPoolTtlMs: parseInt(process.env.RECIPE_EMPTY_POOL_TTL_MS || `${3_600_000}`, 10),

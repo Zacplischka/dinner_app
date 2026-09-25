@@ -421,7 +421,6 @@ function SelectionRound() {
     </div>
   );
 
-  // Check if we've gone through the whole Deck
   const isDone = deckCursor >= entries.length;
 
   const fullHouseName = entries.find((e) => e.placeId === fullHousePlaceId)?.name;

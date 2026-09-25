@@ -41,8 +41,8 @@ interface SessionState {
   // Selection data
   selections: string[]; // Current user's Place IDs
   // How far through the Deck this Participant has swiped. Persisted alongside
-  // the Selections it was built from (#404) — a reload that restored the likes
-  // but restarted at card one made every already-decided card decidable again.
+  // the Selections it was built from (#404), so a reload resumes at the next
+  // undecided card rather than making every decided card decidable again.
   deckCursor: number;
   allSelections: Record<string, string[]>; // All participants' selections (after reveal)
   liveSelections: Record<string, string[]>; // placeId -> displayNames who live-selected it (remote only)
@@ -101,7 +101,6 @@ interface SessionState {
   setConnectionStatus: (isConnected: boolean) => void;
   setExpiresAt: (expiresAt: string) => void;
 
-  // Reset action
   resetSession: () => void;
   resetSelections: () => void;
 }
@@ -280,7 +279,6 @@ export const useSessionStore = create<SessionState>()(
 
         setExpiresAt: (expiresAt) => set({ expiresAt }),
 
-        // Reset actions
         resetSession: () => {
           discardCredential(get());
           useOrderStore.getState().clear();

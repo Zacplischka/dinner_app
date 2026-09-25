@@ -22,11 +22,6 @@ export function createGeocodeRouter({ geocodeArea, reverseGeocodeSuburb }: Geoco
     message: 'Too many location lookups. Please try again shortly.',
   });
 
-  /**
-   * GET /api/geocode?query=<suburb or postcode>
-   * GET /api/geocode?latitude=<lat>&longitude=<lng>
-   * Returns { latitude, longitude, area? } or 404 AREA_NOT_FOUND.
-   */
   router.get(
     '/',
     asyncHandler(async (req, res) => {

@@ -15,7 +15,7 @@ export default function FriendRequestCard({ request }: FriendRequestCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A refused answer used to show as nothing but the button re-enabling; the
+  // A refused answer shows its message, not just a re-enabled button: the
   // store keeps the message, so the card reads it back and shows it here.
   const answer = async (act: () => Promise<boolean>, fallback: string) => {
     setIsLoading(true);

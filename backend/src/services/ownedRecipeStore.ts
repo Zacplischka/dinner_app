@@ -1,5 +1,5 @@
-// The Owned Recipe Store (#331, ADR 0011): the corpus of Recipes Dinder
-// authored, committed to the repository as reviewed data assets, shipped with
+// The Owned Recipe Store (#331, ADR 0011): the corpus of the app's own
+// authored Recipes, committed to the repository as reviewed data assets, shipped with
 // the deploy and read in memory — no network hop, no schema, no migrations.
 // Blended into every Cook Deck at deal time (#316); the Redis pool stays
 // purely Sourced, so nothing here ever writes anywhere.
