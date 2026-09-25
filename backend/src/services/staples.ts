@@ -4,19 +4,31 @@
 // total, every Tally, and the coverage count. Ships as data, exactly as the spec calls for; no lookup, no
 // per-user pantry, nothing to configure.
 //
-// Entries are deliberately spelled out rather than left as bare head words
-// ("white vinegar", not "vinegar"; "plain flour", not "flour"), because a
-// Staple that swallows balsamic or almond flour leaves them off the shop.
+// Entries are spelled out in full, each qualified form on its own line ("sea
+// salt", "caster sugar"), because only a name that is an entry is a Staple.
 
 const STAPLES = [
   'salt',
   'sea salt',
   'table salt',
   'kosher salt',
+  'fine sea salt',
+  'flaky sea salt',
+  'salt and pepper',
+  'salt and black pepper',
+  'salt and freshly ground black pepper',
+  'kosher salt and freshly ground black pepper',
+  'sea salt and pepper',
   'pepper',
+  'ground pepper',
+  'freshly ground pepper',
   'black pepper',
+  'ground black pepper',
+  'freshly ground black pepper',
+  'cracked black pepper',
   'white pepper',
   'peppercorns',
+  'black peppercorns',
   'olive oil',
   'extra virgin olive oil',
   'vegetable oil',
@@ -24,9 +36,12 @@ const STAPLES = [
   'sunflower oil',
   'cooking oil',
   'cooking spray',
+  'nonstick cooking spray',
   'water',
   'cold water',
   'hot water',
+  'warm water',
+  'boiling water',
   'sugar',
   'white sugar',
   'caster sugar',
@@ -42,25 +57,20 @@ const STAPLES = [
   'honey',
 ];
 
-// The few names where the Staple is the tail and the ingredient still isn't
-// one. The asymmetry is the point: a wrongly-priced spice costs the tally a
-// couple of dollars, a swallowed capsicum leaves the dish uncookable.
-const NOT_STAPLE =
-  /\b(bell|red|green|yellow|orange|capsicum|chilli|chili|sweet) pepper$|coconut water$/;
-
 /**
- * A Staple has to be the *tail* of the ingredient name, not merely present in
- * it: "sea salt" and "extra virgin olive oil" are qualified staples, while
- * "honey mustard", "sugar snap peas" and "water chestnuts" are other things
- * that merely begin with one. Leading words narrow a staple; trailing words
- * make it something else. Which entry hits is irrelevant — any hit is the same
- * verdict, and the whole-word test keeps "watercress" from being water.
+ * A Staple is a name that *is* one of the entries, once case and punctuation
+ * are set aside and "&" reads as "and": "Extra-virgin olive oil" and "salt &
+ * pepper" are, "tuna in olive oil", "palm sugar" and "jalapeno pepper" are not
+ * (#504). A name that merely ends in a Staple is usually the main ingredient,
+ * and muting it leaves the dish off its own list; a qualified form worth
+ * muting is spelled out above instead.
  */
 export function isStaple(ingredientName: string): boolean {
-  const normalized = ingredientName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-  if (NOT_STAPLE.test(normalized)) return false;
-  return STAPLES.some((staple) => normalized === staple || normalized.endsWith(` ${staple}`));
+  return STAPLES.includes(
+    ingredientName
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  );
 }
