@@ -6,8 +6,7 @@
 // the split ADR 0011 draws: recipes ship with the deploy, images are an upload.
 //
 // Model, size, aspect, file-size budget and hosting are all settled in
-// docs/evidence/owned-recipe-images/README.md, which carries the measurement
-// method and the sources behind every number here.
+// the owned-recipe-images evidence README (removed; see git history).
 //
 // Operator vehicle, not application code: needs `cwebp` (libwebp) and `aws`
 // (R2 speaks S3) on PATH, and OPENAI_API_KEY / R2_* in the environment. The
@@ -137,7 +136,7 @@ export function imagePrompt(record) {
  * The records one submission covers: everything under `<recordsDir>`, or just
  * the named slugs. Naming slugs is how the reject batch runs — a second
  * *batch*, at batch rates, which is the only shape the budget in
- * docs/evidence/owned-recipe-images/README.md fits inside. A slug with no
+ * the image evidence README fits inside. A slug with no
  * record is fatal: a typo must never quietly shrink a paid submission.
  */
 export function selectRecords(entries, slugs = []) {
@@ -188,8 +187,7 @@ export const costUsd = (usages, rate = 1) =>
  */
 export function collectReport({ submitted, usages, failed }) {
   const summary =
-    `${usages.length}/${submitted} images, measured cost US$${costUsd(usages).toFixed(2)}` +
-    ` — record it in docs/evidence/owned-recipe-images/README.md`;
+    `${usages.length}/${submitted} images, measured cost US$${costUsd(usages).toFixed(2)}`;
   // Which path matters to the bill: `one` is the synchronous endpoint at double
   // rate, so a reject *batch* is what the budget in the evidence README prices.
   return failed.length
