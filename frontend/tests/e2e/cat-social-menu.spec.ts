@@ -14,7 +14,7 @@ import type {
 // Sessions or paid menu fetches: the actual routes, stores and bindings still run.
 async function sessionFixture(page: Page, branch: Branch, entryOverride?: DeckEntry) {
   const http = createServer();
-  const io = new Server(http, { transports: ['websocket'], cors: { origin: true } });
+  const io = new Server(http, { cors: { origin: true } });
   await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', resolve));
   const address = http.address();
   if (!address || typeof address === 'string') throw new Error('Missing fixture port');
