@@ -1,21 +1,29 @@
-#517 AC1 — production after (https://yupcrew.com @ d175164), 2026-09-25, two playwright-cli headless Chromium browsers at 390x844 on one machine (one clock).
-Host "Test Alex" and guest "Test Sam", Cook, 5 Sessions / 5 starts. Each page ran a MutationObserver + 5 ms poll that timestamps (Date.now) the first appearance of each text,
-and a capture-phase click listener that timestamps the host's tap. All values are ms after the tap.
+#517 AC1: production after, https://yupcrew.com, 2026-09-25. Two playwright-cli headless Chromium browsers at 390x844 on one machine, so both share one clock.
+Host "Test Alex" and guest "Test Sam", Cook only. Each page records Date.now() the first time each text appears (MutationObserver plus a 5 ms poll).
+A capture-phase click listener stamps the taps. All values are ms after the tap.
+"Floor" = a plain Lobby command on the same network: the host's Ready tap -> the guest's "2 of 2 ready".
+It makes the same trip as the starting broadcast (host -> server -> guest).
 
-run | tap -> guest "Finding your shared deck…" | tap -> host label | tap -> guest Deck (/select) | host Ready tap -> guest "2 of 2 ready" (baseline)
- 1  | 269 | 268 | 288 | -
- 2  | 269 | 269 | 288 | -
- 3  | 267 | 266 | 284 | 270
- 4  | 273 | 273 | 291 | 268
- 5  | 272 | 272 | 279 | 269
-median 269, p90 273 (nearest rank; 272.6 interpolated), max 273.
+== HEADLINE: egress Melbourne AU ==
+ipinfo showed AU before and after each run. TCP connect to the backend was 0.156-0.164 s (ignoring each first cold lookup).
+run | tap -> guest "Finding your shared deck…" | tap -> host label | floor | Finding - floor | tap -> guest Deck
+AU1 | 220 | 220 | 219 |  +1 | 281
+AU2 | 215 | 214 | 213 |  +2 | 257
+AU3 | 207 | 207 | 210 |  -3 | 251
+AU4 | 210 | 210 | 220 | -10 | 260
+AU5 | 207 | 205 | 208 |  -1 | 247
+tap -> guest "Finding…": median 210 ms, p90 220 ms (nearest rank; 218 interpolated). Floor median 213 ms.
+The starting broadcast reaches the guest within 10 ms of the plain-command floor in every run, i.e. one round trip. Locally at the verified head (6e246d5) it took 4-13 ms.
+Deal length (guest "Finding" -> Deck), warm recipe pool: 40-62 ms.
 
-The baseline column is a plain Lobby command on the same network: 268-270 ms.
-TCP connect to backend-production-4ce9.up.railway.app during the runs: 0.203-0.233 s (curl time_connect, ignoring each first cold lookup at 0.40-0.42 s).
-Locally at the verified head (6e246d5), the same measurement was 4-13 ms.
+== Discarded / other vantage (not in the headline) ==
+Via Chicago VPN (egress US). TCP connect 0.203-0.233 s. Floor 268-270 ms where measured.
+C1-C5 tap -> guest "Finding…": 269, 269, 267, 273, 272 (median 269). Floor C3-C5: 270, 268, 269.
+Two runs were discarded because the VPN switched on mid-measurement, so their vantage is uncertain:
+297 ms (floor 308) and 316 ms (floor 322). In both, Finding still matched the floor.
 
-Production before (main @ 3d0a88a, earlier the same day, TCP connect ~0.155 s): the guest's text went "waiting" -> Deck at +187 / +203 ms and never showed "Finding".
-The host's button stayed "Start swiping" until the Deck opened (+186 / +205 ms).
+== Production before (main @ 3d0a88a; the orchestrator reports it was captured via the Chicago VPN) ==
+The guest went "Waiting for the host to start" -> Deck at +187 / +203 ms and never showed "Finding".
+The host's button stayed "Start swiping" throughout.
 
-Deal length (guest "Finding" -> Deck): 19, 19, 17, 18, 7 ms. The recipe pool was warm, so no Spoonacular pool fill (~2 s when cold) happened.
-Screenshot: after-guest-starting.png is video frame 37 of the guest's recording in run 2 (25 fps, code masked in the DOM before recording).
+Screenshot: after-guest-starting.png is video frame 38 of the guest's recording in AU1 (25 fps, code masked in the DOM before recording).

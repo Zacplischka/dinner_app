@@ -1,0 +1,28 @@
+Production BEFORE — https://yupcrew.com (main, before PR #579), 2026-09-25, times UTC.
+Watch Session (code masked XXXXX). Two playwright-cli Chrome contexts at 390x844: Test Alex (host), Test Sam.
+Store read from sessionStorage 'dinner-session-storage' (web persists liveSelections there).
+
+03:36:52  Alex created the Watch Session; Sam joined via /join?code=XXXXX; both tapped I'm ready (2 of 2 ready)
+03:36:57  Alex tapped Start swiping (15-title Deck)
+03:37:10  Alex liked cards 1-3 (Chilling Adventures of Sabrina, Gone Girl, Futurama)
+03:37:20  Sam's store before leaving: liveSelections = 3 entries x ["Test Alex"]; Sam has liked nothing
+03:37:28  Sam tapped Leave session and confirmed "Leave session" in the dialog -> home page, store reset
+03:37:44  Sam rejoined via /join?code=XXXXX with the same name "Test Sam": landed straight back in the Deck
+          (/session/XXXXX/select, card 1/15). No reload needed.
+03:37:44  Sam's store ~1.5 s after landing: sessionStatus=selecting, liveSelections={}  <-- Alex's 3 likes are gone
+03:38:00  Sam liked card 1 (Chilling Adventures of Sabrina)
+            Sam:  NO Full House. Strip "2 TOGETHER". liveSelections={}
+            Alex: Full House "EVERYONE LIKED THIS / Chilling Adventures of Sabrina". Strip "2 of 2 liked Chilling Adventures of Sabrina"
+03:38:14  Sam liked card 2 (Gone Girl)
+            Sam:  NO Full House. liveSelections={}
+            Alex: strip "2 of 2 liked Gone Girl" (card-1 takeover still up)
+03:38:22  Sam liked card 3 (Futurama)
+            Sam:  NO Full House. liveSelections={}, selections = the 3 entries
+            Alex: strip "2 of 2 liked Futurama"
+03:38:25  Screenshots: before-sam-after-likes.png (Sam, card 4/15, no takeover)
+                       before-alex-after-sam-likes.png (Alex, Full House for card 1)
+03:39:12  Sam, then Alex, tapped Leave session and confirmed. Both are back on the home page. Session left.
+
+RESULT: bug reproduced on production. The rejoined Participant's liveSelections stays {}, so its phone never shows
+"Everyone liked this" for entries the other Participant liked before the rejoin. The existing Participant (Alex)
+DOES see the Full House, because Alex holds his own selections and receives Sam's new Live Selections.

@@ -1,0 +1,52 @@
+Local AFTER at PR head 6ecb80a (fix/513-replay-live-selections), 2026-09-25, times UTC.
+Production build + vite preview :5113, backend :3113, private Redis :7513. Watch Session (code masked XXXXX).
+playwright-cli Chrome contexts at 390x844: Test Alex (host), Test Sam, and later Test Jo.
+Store read from sessionStorage 'dinner-session-storage'. WebSocket frames timed with Playwright's websocket events.
+
+03:44:29  Alex created the Watch Session
+03:44:41  Sam joined via /join?code=XXXXX; both tapped I'm ready; Alex tapped Start swiping; both are in the Deck
+03:44:52  Alex liked cards 1-3 (Bones, I Am Legend, Bohemian Rhapsody)
+03:44:54  Sam liked card 1 (Bones) BEFORE leaving: Full House "EVERYONE LIKED THIS / Bones" on BOTH phones
+          (local-after-1-alex-fullhouse-before-leave.png). Both tapped Keep swiping. Bones is now "already shown" on both.
+03:45:22  Sam tapped Leave session and confirmed: home page, store reset (liveSelections={})
+
+--- AC1: rejoin ---
+03:45:52.317  Sam rejoined via /join?code=XXXXX with the same name "Test Sam" (tapped Join session).
+              Landed straight in the Deck (/session/XXXXX/select, card 1).
+    +559 ms   Sam's store admitted (sessionCode set, status=selecting)
+    +563..565 ms  three participant:selected frames from Test Alex arrive (Alex's phone replaying its 3 likes)
+    +566 ms   Sam's liveSelections holds all 3 of Alex's likes: 7 ms after admission. selections=[] (fresh), cursor 0
+
+--- AC2 / AC3 ---
+03:46:12  Sam liked card 1 (Bones), which Alex liked before the rejoin.
+            Sam:  Full House "EVERYONE LIKED THIS / Bones", strip "2 of 2 liked Bones" (local-after-2-sam-fullhouse-after-rejoin.png)
+            Alex: NO dialog. liveSelections unchanged, because Sam's like is a duplicate by name (local-after-3-alex-no-repeat-fullhouse.png)
+03:46:45  Sam tapped Keep swiping, then liked card 2 (I Am Legend), which Alex liked before the rejoin.
+            Alex: Full House "EVERYONE LIKED THIS / I Am Legend": a new unanimity, and the join re-armed the one-shot
+                  takeover (#284) (local-after-4-alex-fullhouse-new-entry.png)
+            Sam:  strip "2 of 2 liked I Am Legend", no second takeover. It is one-shot per roster and was spent on Bones,
+                  by design (#284). The strip auto-dismisses after 4 s; it was read from the DOM at 03:46:46 and had cleared by
+                  the time of the screenshot (local-after-5-sam-strip-card2.png).
+
+--- AC3 extra: an existing Participant reloads (web) ---
+03:47:21  Alex dismissed the takeover and RELOADED mid-Deck. Alex auto-rejoined. Sam's phone replayed its 2 likes, and both
+          participant:selected frames reached Alex 43 ms after the reload. Alex was polled for 3 s: no dialog at all.
+          Alex's liveSelections unchanged (duplicates). No repeat Full House for Bones or I Am Legend.
+
+--- AC1 fresh join + AC3 with three phones (replays reach existing phones as duplicates) ---
+03:47:49.782  A third context, "Test Jo", JOINED FRESH mid-Deck via /join?code=XXXXX and landed in the Deck.
+    +569 ms   Jo's store admitted
+    +575..576 ms  five participant:selected replay frames arrive (3 from Alex, 2 from Sam)
+    +578 ms   all 5 likes are in Jo's liveSelections: 9 ms after admission
+          Alex and Sam each received the other's replay: their liveSelections unchanged (duplicates), no dialog on either.
+03:48:02  Jo liked Bones.
+            Jo:          Full House "EVERYONE LIKED THIS / Bones", strip "3 of 3 liked Bones" (local-after-6-jo-fullhouse-fresh-join.png)
+            Alex and Sam: strip "3 of 3 liked Bones" but NO dialog. Bones was already celebrated on both before Sam left
+                          (local-after-7-alex-no-second-fullhouse-3of3.png)
+03:48:25  Jo tapped Keep swiping and liked I Am Legend.
+            Jo:   strip "3 of 3 liked I Am Legend" (its one-shot takeover was spent on Bones)
+            Alex: strip, NO dialog (I Am Legend was already celebrated on Alex at 03:46:46)
+            Sam:  Full House "I Am Legend". This is Sam's FIRST takeover for this entry (Sam only had a strip for it at 03:46:46).
+                  Jo's join re-armed it per #284, so it is not a repeat (local-after-8-sam-first-fullhouse-legend-3of3.png)
+
+03:49     Jo, Sam and Alex tapped Leave session and confirmed. Session left.

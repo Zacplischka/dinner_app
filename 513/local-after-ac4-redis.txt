@@ -1,0 +1,27 @@
+AC4 'Nothing is written to Redis': local run at PR head 6ecb80a, private Redis :7513 (fresh, 0 keys before).
+
+1) gh pr diff 579 --name-only (frontend only; backend/src/websocket/liveSelectionHandler.ts untouched):
+   frontend/src/services/socketBindings.ts
+   frontend/tests/unit/liveSwipeRoom.test.tsx
+   frontend/tests/unit/socketBindings.test.ts
+
+2) redis-cli --scan: 0 keys before. After the whole scenario (key types; code and socket ids masked):
+   participant:<sid>
+   session:XXXXX
+   session:XXXXX:display_names
+   session:XXXXX:participants
+   session:XXXXX:restaurant_ids
+   session:XXXXX:restaurants
+   -> only the ordinary Session, Participant and Deck keys. There is no key type for Live Selections.
+
+3) redis-cli MONITOR over the whole scenario: every command whose arguments carry a Deck Entry id (tmdb:*):
+   03:44:33 UTC   1 x EVAL <script>
+   03:44:33 UTC   2 x HMGET session:XXXXX:restaurants
+   03:44:33 UTC  15 x HSET session:XXXXX:restaurants
+   03:44:33 UTC  15 x SADD session:XXXXX:restaurant_ids
+   03:45:52 UTC   1 x HMGET session:XXXXX:restaurants
+   03:47:21 UTC   1 x HMGET session:XXXXX:restaurants
+   03:47:50 UTC   1 x HMGET session:XXXXX:restaurants
+   -> every write (HSET/SADD) is the Deck deal at 03:44:33 (Alex's Start swiping). The later HMGETs are Deck reads on join or reload.
+      No write carries a placeId during the replay windows (Sam's rejoin 03:45:52.88, Alex's reload 03:47:21, Jo's join 03:47:50)
+      or during any like. Each replayed selection:live costs one HGETALL participant:<sid> plus one HGETALL session:XXXXX, both reads.
