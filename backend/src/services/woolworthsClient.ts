@@ -100,6 +100,16 @@ export function createWoolworthsClient(fetchImpl: typeof fetch = fetch) {
 
 export type WoolworthsClient = ReturnType<typeof createWoolworthsClient>;
 
+/**
+ * A product name as a Shopper reads it (#542). The catalogue can double a word
+ * or phrase ("Cumin Ground Ground", "Leg Roast Leg Roast"), so this runs where
+ * a name enters and again where a stored one is read back. ponytail: a lone
+ * word needs five letters, which spares Cous Cous and Peri Peri; a longer
+ * doubled name would collapse too.
+ */
+export const productName = (name: string): string =>
+  name.replace(/\b([a-z]{5,}|[a-z]+(?:\s+[a-z]+)+?)(?:\s+\1\b)+/gi, '$1');
+
 function parseSearchResponse(body: unknown): WoolworthsSearchResult {
   if (!body || typeof body !== 'object' || !('Products' in body)) {
     throw new Error('Woolworths search returned an unusable body');
@@ -114,10 +124,7 @@ function parseSearchResponse(body: unknown): WoolworthsSearchResult {
     if (!raw || typeof raw !== 'object') continue;
     const item = raw as Record<string, unknown>;
     const stockcode = number(item.Stockcode);
-    // The catalogue can double a word ("Cumin Ground Ground", #542), and every
-    // consumer shows this name. ponytail: the five-letter floor spares doubled
-    // names such as Cous Cous and Peri Peri; a longer one would collapse too.
-    const name = string(item.Name)?.replace(/\b([a-z]{5,})(?:\s+\1\b)+/gi, '$1');
+    const name = string(item.Name);
     if (stockcode === undefined || !name) continue;
     storeId ??= number(item.FulfilmentStoreId) ?? null;
     const attributes = (item.AdditionalAttributes ?? {}) as Record<string, unknown>;
@@ -125,7 +132,7 @@ function parseSearchResponse(body: unknown): WoolworthsSearchResult {
     const instorePrice = number(item.InstorePrice);
     products.push({
       stockcode,
-      name,
+      name: productName(name),
       brand: string(item.Brand),
       packageSize: string(item.PackageSize),
       priceCents: price === undefined ? undefined : Math.round(price * 100),

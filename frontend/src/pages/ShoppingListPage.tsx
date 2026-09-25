@@ -78,9 +78,9 @@ const money = (total: ReturnType<typeof shoppingListTotal>) =>
   `${total.estimated ? '≈ ' : ''}${formatPrice(total.cents)}`;
 const unpriced = (count: number) => `+ ${count} unpriced item${count === 1 ? '' : 's'}`;
 // A bare "30g" beside an unpriced line reads as the amount needed (#542); it is
-// the pack sold. "Each", "per kg" and "12 pack" already say what they are.
+// the pack sold. "Each", "per kg", "12 pack" and "24pk" already say what they are.
 const packLabel = (size: string) =>
-  /^\d/.test(size) && !/pack/i.test(size) ? `${size} pack` : size;
+  /^\d/.test(size) && !/p(?:ac)?k/i.test(size) ? `${size} pack` : size;
 
 /** The one link shape a Retailer target may take (#228): never a direct URL. */
 function WoolworthsLink({

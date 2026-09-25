@@ -33,20 +33,27 @@ const produceNuts = (product: WoolworthsProduct): boolean =>
   /^VEG(?:\s*\/|$)/i.test(product.sapCategory?.trim() ?? '') &&
   /^NUTS AND SNACKS$/i.test(product.sapSubCategory?.trim() ?? '');
 // A processed or prepared form the term never asked for (#542): raw potatoes
-// are not seasoned roast potatoes, and dried cherries are not glacé ones.
+// are not seasoned roast potatoes, and dried cherries are not glacé ones. Bare
+// "roast" is left out: the store names raw joints that way ("Lamb Leg Roast").
 // ponytail: a fixed word list; a form it does not name still ranks as plain,
 // so add words as the tally finds them.
 const PROCESSED_FORMS = [
   'frozen',
   'seasoned',
-  'roast(?:ed)?',
+  'roasted',
   'glac[eé]',
   'candied',
   'crumbed',
   'wedges',
   'chips',
-  'mash',
+  'fries',
+  'mash(?:ed)?',
 ].map((form) => new RegExp(`\\b${form}(?![a-z])`, 'i'));
+// Heads the store mostly sells frozen, so a term naming one asks for frozen.
+// ponytail: a fixed list; an unlisted head sold mostly frozen still has its
+// frozen form demoted below a fresh or canned one, which the tally shows.
+const FROZEN_HEADS =
+  /\b(?:peas|broad beans|edamame|corn kernels|mixed vegetables|mixed berries|blueberries|raspberries)\b/i;
 
 // Descriptor words that carry no product identity ("fresh", "chopped", …).
 const STOP_WORDS = new Set([
@@ -90,7 +97,7 @@ function identityKeywords(term: string): string[] {
 
 function score(
   product: WoolworthsProduct,
-  term: string,
+  unaskedForms: RegExp[],
   keywords: string[],
   rank: number,
   wantedForm?: WantedPackForm
@@ -114,7 +121,7 @@ function score(
   const refusedPack =
     (pack?.kind === 'fixed' && pack.family === 'volume' && wantedForm === 'count') ||
     (pack?.kind === 'count' && (wantedForm === 'mass' || wantedForm === 'volume'));
-  const processed = PROCESSED_FORMS.some((form) => form.test(product.name) && !form.test(term));
+  const processed = unaskedForms.some((form) => form.test(product.name));
   return { value, identityHits, penalized: refusedPack || produceNuts(product) || processed };
 }
 
@@ -168,10 +175,12 @@ export function matchProducts(
   if (eligible.length === 0) return null;
 
   const keywords = identityKeywords(term);
+  const asked = FROZEN_HEADS.test(term) ? `frozen ${term}` : term;
+  const unaskedForms = PROCESSED_FORMS.filter((form) => !form.test(asked));
   const ranked = eligible.map(({ product, rank }) => ({
     product,
     rank,
-    ...score(product, term, keywords, rank, wantedForm),
+    ...score(product, unaskedForms, keywords, rank, wantedForm),
   }));
   // ponytail: pairwise over the small search answer; identity-first ordering
   // could cross more rank places, but needs a new store tally before adoption.
