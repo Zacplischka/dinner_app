@@ -117,11 +117,12 @@ describe('socketService', () => {
     expect(logSpy).toHaveBeenCalledWith('Socket already initialized');
   });
 
-  // #518: straight to WebSocket — no serial long-polling round trips before connect.
-  it('connects over WebSocket only', () => {
+  // #518: polling first, then upgrade. On a reload polling rides the warm HTTP
+  // connection, where WebSocket-only paid for a new one before every rejoin.
+  it("keeps Socket.IO's default transports", () => {
     setupSocket();
     socketService.initializeSocket();
-    expect(socketMocks.io.mock.calls[0][1]).toMatchObject({ transports: ['websocket'] });
+    expect(socketMocks.io.mock.calls[0][1]).not.toHaveProperty('transports');
   });
 
   it('never orphans a socket that is mid-reconnect', () => {
