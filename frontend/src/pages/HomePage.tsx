@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { Link, useNavigate } from 'react-router';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import ConfirmLeaveModal from '../components/ConfirmLeaveModal';
@@ -247,11 +246,7 @@ export default function HomePage() {
             >
               Compare delivery prices
             </button>
-            <p className="text-center text-xs text-muted">
-              {Capacitor.isNativePlatform()
-                ? 'Free. No account needed.'
-                : 'No download. No account needed.'}
-            </p>
+            <p className="text-center text-xs text-muted">No download. No account needed.</p>
           </div>
         </div>
 

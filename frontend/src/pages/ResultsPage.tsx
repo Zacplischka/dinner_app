@@ -1,4 +1,3 @@
-import { publicUrl } from '../services/device';
 // Results page - Show overlapping selections and all participants' choices
 
 import { Navigate, useNavigate, useParams } from 'react-router';
@@ -516,7 +515,7 @@ export default function ResultsPage() {
   // Share the Top Pick: phones get the native sheet headed by the crowned name
   // and its one-line reason; desktop copies this page's URL.
   const handleShareTopPick = useShareLink(
-    publicUrl(window.location.pathname),
+    window.location.origin + window.location.pathname,
     'Top Pick link copied!',
     crownedRecipe
       ? { title: crownedRecipe.recipe.name, text: crownReason(crownedRecipe, recipeWords) }

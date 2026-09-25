@@ -1,4 +1,3 @@
-import { copyText } from '../services/device';
 // Group Order — the pinned basket: open, add Lines, claim the Buyer, hand off.
 
 import { useEffect, useRef, useState } from 'react';
@@ -106,7 +105,8 @@ function sumQtyByIndex(lines: OrderLine[]): Map<number, number> {
 
 // Clipboard-only copy, reused verbatim by both handoff branches' copy buttons.
 function copyToClipboard(text: string) {
-  copyText(text)
+  navigator.clipboard
+    .writeText(text)
     .then(() => toast.success('Share copied!'))
     .catch(() => toast.error('Could not copy'));
 }

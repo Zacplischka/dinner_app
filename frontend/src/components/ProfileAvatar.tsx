@@ -14,7 +14,7 @@ export default function ProfileAvatar({
   className?: string;
 }) {
   const [failedUrl, setFailedUrl] = useState<string>();
-  // Relative app photos belong to the API origin, including split-host web and Capacitor.
+  // Relative app photos belong to the API origin, including split-host web.
   const src = url?.startsWith('/api/profile-photos/')
     ? new URL(url, new URL(API_BASE_URL, window.location.origin)).href
     : url?.startsWith('https://')

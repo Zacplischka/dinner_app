@@ -1,4 +1,3 @@
-import { publicUrl } from '../services/device';
 // The Shopping List (#262, #263): the priced list minted from a completed Cook
 // Session's Top Pick, read and worked from its own URL. Every line renders in
 // exactly one of #234's four states, every Woolworths link goes through the
@@ -284,7 +283,7 @@ export default function ShoppingListPage() {
   // home and takes it with it. Rebuilt from the list id rather than read off
   // location, so no stray query or hash rides along.
   const shareList = useShareLink(
-    list ? publicUrl(`/list/${list.listId}`) : undefined,
+    list ? `${window.location.origin}/list/${list.listId}` : undefined,
     'List link copied!'
   );
 

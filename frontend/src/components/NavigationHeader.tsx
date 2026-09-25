@@ -1,4 +1,3 @@
-import { copyText } from '../services/device';
 // NavigationHeader Component
 // Reusable header providing consistent navigation across focused flows
 // Title row: stable back target, centred title, page action.
@@ -106,7 +105,8 @@ export default function NavigationHeader({
   // lime for 1.5s as the pressed cue; the toast says what happened.
   const handleCopyCode = () => {
     if (!sessionCode) return;
-    copyText(sessionCode)
+    navigator.clipboard
+      .writeText(sessionCode)
       .then(() => {
         toast.success('Session code copied!');
         setCopied(true);

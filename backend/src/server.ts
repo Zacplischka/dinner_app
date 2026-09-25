@@ -50,8 +50,6 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // Allowed origins for CORS (supports multiple origins for dev + production)
 const allowedOrigins = [
-  'capacitor://localhost',
-  'https://localhost',
   'http://localhost:3000',
   'https://www.dinder.it.com',
   'https://dinder.it.com',
