@@ -1,0 +1,24 @@
+#514 verifier evidence, PR #577 (head 8510dfa, base fb2fae3, red-test commit 74fa4f7)
+
+red-base-fb2fae3.txt     tree at fb2fae3 + scripts/yupcrew-proxy.test.mjs from 8510dfa (identical to 74fa4f7):
+                         node --test scripts/yupcrew-proxy.test.mjs   -> exit 1 (1 of 3 failing: the document edge-cache test)
+green-head-8510dfa.txt   tree at 8510dfa: node --test scripts/yupcrew-proxy.test.mjs   -> exit 0 (3/3)
+npm-check-head-8510dfa.txt  tree at 8510dfa: npm run check   -> exit 0 (156/156)
+--- head moved to 4cb1a32 (8616862 red test + 4cb1a32 fix: documents fetched upstream without the query) ---
+red-query-8510dfa.txt    tree at 8510dfa + test file from 4cb1a32 (== 8616862): node --test scripts/yupcrew-proxy.test.mjs
+                         -> exit 1 (2 of 3 fail: forwarded url kept ?code=ABCDE)
+green-head-4cb1a32.txt   tree at 4cb1a32: node --test scripts/yupcrew-proxy.test.mjs -> exit 0 (3/3)
+npm-check-head-4cb1a32.txt  tree at 4cb1a32: npm run check -> exit 0 (156/156)
+test-mutants-4cb1a32.txt node ../../514-mutate.mjs <worktree @ 4cb1a32> -> exit 0: 9/9 mutants fail the suite
+                         (adds "documents keep the query" and "non-documents lose the query")
+origin-query-probe.txt   bash ../../514-query-probe.sh: direct Railway origin, Accept text/html, 10 paths with and
+                         without a query -> same status, no redirect, same body hash on every path
+ci-purge-sim.txt        node ../../514-purge-sim.mjs <worktree @ 8510dfa> <ci-cd.yml @ fb2fae3>   -> exit 0 (11/11)
+                         runs the "Purge route HTML cache tag" run: block extracted from the YAML under bash -e
+                         (GitHub's default for an unspecified shell) with curl stubbed on PATH and the real
+                         scripts/check-production-edge.mjs purge-response validator.
+test-mutants.txt         node ../../514-mutate.mjs <worktree @ 8510dfa>   -> exit 0: 7/7 branching mutants fail the suite
+before-ttfb.txt         bash ../../514-measure.sh   (10 runs per host + side probes; rerun unchanged after the Worker deploy)
+                         AU: VPN disconnected, Cloudflare colo MEL, x-railway-edge sin1 (2026-09-25T03:33:36Z).
+before-ttfb-vpn-chicago.txt  same script through ExpressVPN usa-chicago (colo ORD, ord1); reference only, not the before.
+before-ac2-shell.txt     bash ../../514-ac2-shell.sh  (origin vs yupcrew/www/dinder index-*.js; rerun right after the CI purge)

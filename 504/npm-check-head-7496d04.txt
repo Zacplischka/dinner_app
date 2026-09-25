@@ -1,0 +1,9 @@
+✔ passes assets, non-HTML clients and writes straight through without edge caching (1.294958ms)
+ℹ tests 157
+ℹ suites 0
+ℹ pass 157
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 651.713125

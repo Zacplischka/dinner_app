@@ -1,0 +1,18 @@
+
+ RUN  v4.1.11 <worktree>/backend
+
+ ✓ |unit| tests/unit/staples.test.ts > isStaple > recognises the pantry set, however the recipe words it 1ms
+ ✓ |unit| tests/unit/staples.test.ts > isStaple > leaves the near misses alone, whichever end they share with a Staple 0ms
+ ✓ |unit| tests/unit/staples.test.ts > isStaple > never mutes an ingredient that merely ends in a Staple (#504) 0ms
+ ✓ |unit| tests/unit/shippedCorpus.test.ts > the shipped batch deals and cooks > deals its Owned Recipes onto a plain main-course Deck 12ms
+ ✓ |unit| tests/unit/shippedCorpus.test.ts > the shipped batch deals and cooks > crowns one and mints its Shopping List from the corpus, uncredited 3ms
+ ✓ |unit| tests/unit/shippedCorpus.test.ts > the shipped batch deals and cooks > searches by the term a record authored, never by its cook-honest name 2ms
+ ✓ |unit| tests/unit/shippedCorpus.test.ts > the shipped batch deals and cooks > shops for the tuna in Tuna Pasta Bake and counts it in the total (#504) 2ms
+ ✓ |unit| tests/unit/shippedCorpus.test.ts > the cuisine tags the batch had to withhold > names a value the chip vocabulary has not shipped yet 0ms
+ ✓ |unit| tests/unit/shippedCorpus.test.ts > the cuisine tags the batch had to withhold > names shipped records that are still untagged 0ms
+
+ Test Files  2 passed (2)
+      Tests  9 passed (9)
+   Start at  14:00:46
+   Duration  236ms (transform 83ms, setup 0ms, import 158ms, tests 22ms, environment 0ms)
+

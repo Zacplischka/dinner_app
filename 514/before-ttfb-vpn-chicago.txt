@@ -1,0 +1,47 @@
+# measured: 2026-09-25T03:31:17Z from this Mac
+# vantage: cloudflare colo=ORD loc=US | vpn: Connected to usa-chicago
+# per-run command:
+#   curl -s -o /dev/null -H 'Accept: text/html' -D - -w 'ttfb=%{time_starttransfer}\n' <url>
+# runs are back-to-back (well within 60 s), so run 1 may warm the edge and runs 2+ are the 'second curl'.
+
+== https://yupcrew.com/
+run 1: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=718ms
+run 2: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=765ms
+run 3: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=763ms
+run 4: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=690ms
+run 5: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=770ms
+run 6: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=706ms
+run 7: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=826ms
+run 8: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=756ms
+run 9: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=691ms
+run 10: HTTP/2 200  | cf-cache-status=DYNAMIC | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=714ms
+summary: n=10 median=737ms p90=770ms min=690ms max=826ms
+
+== https://dinder.it.com/
+run 1: HTTP/2 200  | cf-cache-status=EXPIRED | cache-control=max-age=0, must-revalidate | age=- | x-railway-edge=ord1 | ttfb=924ms
+run 2: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=0 | x-railway-edge=ord1 | ttfb=746ms
+run 3: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=1 | x-railway-edge=ord1 | ttfb=625ms
+run 4: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=2 | x-railway-edge=ord1 | ttfb=630ms
+run 5: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=2 | x-railway-edge=ord1 | ttfb=688ms
+run 6: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=3 | x-railway-edge=ord1 | ttfb=627ms
+run 7: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=4 | x-railway-edge=ord1 | ttfb=665ms
+run 8: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=4 | x-railway-edge=ord1 | ttfb=651ms
+run 9: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=5 | x-railway-edge=ord1 | ttfb=628ms
+run 10: HTTP/2 200  | cf-cache-status=HIT | cache-control=max-age=0, must-revalidate | age=6 | x-railway-edge=ord1 | ttfb=673ms
+summary: n=10 median=658ms p90=746ms min=625ms max=924ms
+
+== side probes (cf-cache-status only)
+yupcrew.com/ Accept: application/json (must stay DYNAMIC)  cf-cache-status: DYNAMIC 
+dinder.it.com/join?code=<unique A> text/html               cache-control: max-age=0, must-revalidate cf-cache-status: EXPIRED 
+dinder.it.com/join?code=<unique B> text/html               cache-control: max-age=0, must-revalidate cf-cache-status: HIT 
+yupcrew.com/join?code=<unique A> text/html                 cf-cache-status: DYNAMIC cache-control: max-age=0, must-revalidate 
+yupcrew.com/join?code=<unique B> text/html                 cf-cache-status: DYNAMIC cache-control: max-age=0, must-revalidate 
+
+== curl -sSI -H 'Accept: text/html' https://yupcrew.com/  (status + cache headers only)
+HTTP/2 200 
+content-type: text/html; charset=utf-8
+cf-cache-status: DYNAMIC
+cache-control: max-age=0, must-revalidate
+vary: Accept-Encoding
+cdn-cache-control: no-store
+x-railway-edge: ord1

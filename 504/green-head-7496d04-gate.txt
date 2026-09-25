@@ -1,0 +1,4 @@
+✔ a name that merely ends in a Staple still has to be named in a step (#504) (0.535083ms)
+ℹ tests 37
+ℹ pass 37
+ℹ fail 0

@@ -1,0 +1,11 @@
+✔ routes both branded hosts to the fixed frontend without losing cache headers (22.986583ms)
+✔ edge-caches GET and HEAD documents under the purged tag while browsers keep revalidating (1.563375ms)
+✔ passes assets, non-HTML clients and writes straight through without edge caching (1.162792ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 91.5155

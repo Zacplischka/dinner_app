@@ -1,0 +1,95 @@
+Owned Recipes: 50, distinct ingredient names: 221
+
+== Owned ingredient names whose verdict changes base -> head ==
+  "tuna in olive oil": base=true head=false  [tuna-pasta-bake]
+  total changed: 1
+
+== Owned ingredient names that are Staples at head ==
+  "brown sugar" (11 recipes)
+  "caster sugar" (3 recipes)
+  "honey" (1 recipes)
+  "olive oil" (4 recipes)
+  "plain flour" (10 recipes)
+  "self raising flour" (1 recipes)
+  "self-raising flour" (1 recipes)
+  "soy sauce" (7 recipes)
+  "vegetable oil" (8 recipes)
+  "white sugar" (1 recipes)
+  "white vinegar" (1 recipes)
+
+== Issue Evidence names (must be false at head) ==
+  "tuna in olive oil": base=true head=false ok
+  "tuna in water": base=true head=false ok
+  "jalapeno pepper": base=true head=false ok
+  "chipotle pepper": base=true head=false ok
+  "cayenne pepper": base=true head=false ok
+  "lemon pepper": base=true head=false ok
+  "palm sugar": base=true head=false ok
+  "icing sugar": base=true head=false ok
+  "celery salt": base=true head=false ok
+  "garlic salt": base=true head=false ok
+  "rose water": base=true head=false ok
+  "manuka honey": base=true head=false ok
+  "gluten free soy sauce": base=true head=false ok
+  evidence failures at head: 0
+
+== Every base STAPLES entry (must be true at head) ==
+  "salt": head=true ok
+  "sea salt": head=true ok
+  "table salt": head=true ok
+  "kosher salt": head=true ok
+  "pepper": head=true ok
+  "black pepper": head=true ok
+  "white pepper": head=true ok
+  "peppercorns": head=true ok
+  "olive oil": head=true ok
+  "extra virgin olive oil": head=true ok
+  "vegetable oil": head=true ok
+  "canola oil": head=true ok
+  "sunflower oil": head=true ok
+  "cooking oil": head=true ok
+  "cooking spray": head=true ok
+  "water": head=true ok
+  "cold water": head=true ok
+  "hot water": head=true ok
+  "sugar": head=true ok
+  "white sugar": head=true ok
+  "caster sugar": head=true ok
+  "brown sugar": head=true ok
+  "plain flour": head=true ok
+  "all purpose flour": head=true ok
+  "self raising flour": head=true ok
+  "baking powder": head=true ok
+  "baking soda": head=true ok
+  "bicarbonate of soda": head=true ok
+  "white vinegar": head=true ok
+  "soy sauce": head=true ok
+  "honey": head=true ok
+  base entries: 31, failures at head: 0
+
+== Qualified forms base accepted via the tail rule that head no longer does (sample) ==
+  "Extra-virgin olive oil": base=true head=true
+  "extra virgin olive oil": base=true head=true
+  "light olive oil": base=true head=false
+  "freshly ground black pepper": base=true head=true
+  "ground black pepper": base=true head=false
+  "cracked black pepper": base=true head=false
+  "fine sea salt": base=true head=false
+  "flaky sea salt": base=true head=false
+  "salt and pepper": base=true head=true
+  "warm water": base=true head=true
+  "boiling water": base=true head=true
+  "iced water": base=true head=false
+  "ice water": base=true head=false
+  "light soy sauce": base=true head=false
+  "dark soy sauce": base=true head=false
+  "raw honey": base=true head=false
+  "light brown sugar": base=true head=false
+  "dark brown sugar": base=true head=false
+  "granulated sugar": base=true head=false
+  "coconut water": base=false head=false
+  "red bell pepper": base=false head=false
+  "sugar snap peas": base=false head=false
+  "water chestnuts": base=false head=false
+  "honey mustard": base=false head=false
+  "watercress": base=false head=false

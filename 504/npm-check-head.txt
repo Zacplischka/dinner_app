@@ -1,0 +1,9 @@
+✔ routes both branded hosts to the fixed frontend without losing join URLs or cache headers (27.057125ms)
+ℹ tests 154
+ℹ suites 0
+ℹ pass 154
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 694.677167

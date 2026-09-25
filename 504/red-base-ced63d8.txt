@@ -1,0 +1,58 @@
+
+ RUN  v4.1.11 <worktree>/backend
+
+ ❯ |unit| tests/unit/staples.test.ts (3 tests | 1 failed) 4ms
+     × never mutes an ingredient that merely ends in a Staple (#504) 2ms
+ ❯ |unit| tests/unit/shippedCorpus.test.ts (6 tests | 1 failed) 20ms
+     × shops for the tuna in Tuna Pasta Bake and counts it in the total (#504) 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |unit| tests/unit/shippedCorpus.test.ts > the shipped batch deals and cooks > shops for the tuna in Tuna Pasta Bake and counts it in the total (#504)
+AssertionError: expected { id: '1', …(4) } to match object { staple: false, state: 'priced' }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "staple": false,
+-   "state": "priced",
++   "staple": true,
++   "state": "unmatched",
+  }
+
+ ❯ tests/unit/shippedCorpus.test.ts:180:18
+    178|     const tuna = list!.lines.find((line) => line.text.includes('tuna')…
+    179|
+    180|     expect(tuna).toMatchObject({ staple: false, state: 'priced' });
+       |                  ^
+    181|     expect(searched).toContain('tuna olive oil 425g');
+    182|     // No line of this dish is a Staple, so every one of them is in th…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |unit| tests/unit/staples.test.ts > isStaple > never mutes an ingredient that merely ends in a Staple (#504)
+AssertionError: tuna in olive oil: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/unit/staples.test.ts:96:36
+     94|       'gluten free soy sauce',
+     95|     ]) {
+     96|       expect(isStaple(name), name).toBe(false);
+       |                                    ^
+     97|     }
+     98|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 7 passed (9)
+   Start at  13:43:59
+   Duration  212ms (transform 82ms, setup 0ms, import 152ms, tests 24ms, environment 0ms)

@@ -1,0 +1,8 @@
+unmutated: tests pass
+no Accept check (cache every GET/HEAD): tests fail
+any method: tests fail
+GET only: tests fail
+no browser Cache-Control override: tests fail
+wrong tag: tests fail
+cache 3xx-5xx too: tests fail
+cf on every request: tests fail

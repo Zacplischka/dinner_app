@@ -1,0 +1,18 @@
+✖ failing tests:
+
+test at scripts/corpus/gate.test.mjs:140:1
+✖ a name that merely ends in a Staple still has to be named in a step (#504) (1.263375ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /"tuna in water" is never named/. Input:
+  
+  ''
+  
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: /"tuna in water" is never named/,
+    operator: 'match',
+    diff: 'simple'
+  }
+ℹ tests 37
+ℹ pass 36
+ℹ fail 1

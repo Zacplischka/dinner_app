@@ -1,0 +1,54 @@
+[base fb2fae3] zone set, yupcrew var n/a
+  exit=0 purges=1 zones=[aaaa1111aaaa1111aaaa1111aaaa1111]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone aaaa1111aaaa1111aaaa1111aaaa1111)
+[head] zone set, yupcrew var unset
+  exit=0 purges=1 zones=[aaaa1111aaaa1111aaaa1111aaaa1111]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone aaaa1111aaaa1111aaaa1111aaaa1111)
+  => PASS: unset -> one purge of the dinder zone, exit 0 (got [0,["aaaa1111aaaa1111aaaa1111aaaa1111"]], want [0,["aaaa1111aaaa1111aaaa1111aaaa1111"]])
+
+  => PASS: unset -> curl invocation byte-identical to base (got true, want true)
+
+[head] yupcrew var empty string (GitHub unset var)
+  exit=0 purges=1 zones=[aaaa1111aaaa1111aaaa1111aaaa1111]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone aaaa1111aaaa1111aaaa1111aaaa1111)
+  => PASS: empty -> one purge (got [0,["aaaa1111aaaa1111aaaa1111aaaa1111"]], want [0,["aaaa1111aaaa1111aaaa1111aaaa1111"]])
+
+[head] both zone ids set, both succeed
+  exit=0 purges=2 zones=[aaaa1111aaaa1111aaaa1111aaaa1111, bbbb2222bbbb2222bbbb2222bbbb2222]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone aaaa1111aaaa1111aaaa1111aaaa1111) | rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone bbbb2222bbbb2222bbbb2222bbbb2222)
+  => PASS: set -> two purges, dinder then yupcrew, exit 0 (got [0,["aaaa1111aaaa1111aaaa1111aaaa1111","bbbb2222bbbb2222bbbb2222bbbb2222"]], want [0,["aaaa1111aaaa1111aaaa1111aaaa1111","bbbb2222bbbb2222bbbb2222bbbb2222"]])
+
+  => PASS: set -> both purge the same tag (got 2, want 2)
+
+[head] set, yupcrew zone refuses (403, token not scoped)
+  exit=1 purges=2 zones=[aaaa1111aaaa1111aaaa1111aaaa1111, bbbb2222bbbb2222bbbb2222bbbb2222]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone aaaa1111aaaa1111aaaa1111aaaa1111) | rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | FAIL: cache purge failed: HTTP 403 (000 means transport error)
+  => PASS: yupcrew 403 -> step fails (got true, want true)
+
+[head] set, yupcrew zone 200 but success:false
+  exit=1 purges=2 zones=[aaaa1111aaaa1111aaaa1111aaaa1111, bbbb2222bbbb2222bbbb2222bbbb2222]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone aaaa1111aaaa1111aaaa1111aaaa1111) | rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | FAIL: cache purge reported success=false errors=[{"code":10000,"message":"Authentication error"}]
+  => PASS: yupcrew success:false -> step fails (got true, want true)
+
+[head] set, dinder zone refuses first
+  exit=1 purges=1 zones=[aaaa1111aaaa1111aaaa1111aaaa1111]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | FAIL: cache purge failed: HTTP 403 (000 means transport error)
+  => PASS: dinder 403 -> step fails, yupcrew not attempted (got [true,["aaaa1111aaaa1111aaaa1111aaaa1111"]], want [true,["aaaa1111aaaa1111aaaa1111aaaa1111"]])
+
+[head] set, yupcrew purge transport error
+  exit=1 purges=2 zones=[aaaa1111aaaa1111aaaa1111aaaa1111, bbbb2222bbbb2222bbbb2222bbbb2222]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | purged cache tag dinder-route-html (zone aaaa1111aaaa1111aaaa1111aaaa1111) | rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | curl: (6) Could not resolve host | FAIL: cache purge failed: HTTP 000 (000 means transport error)
+  => PASS: yupcrew transport error (000) -> step fails (got true, want true)
+
+[head] unset, dinder zone refuses
+  exit=1 purges=1 zones=[aaaa1111aaaa1111aaaa1111aaaa1111]
+  output: rollout state: both-hosts (proxied: dinder.it.com, www.dinder.it.com) | FAIL: cache purge failed: HTTP 403 (000 means transport error)
+  => PASS: unset + refusal -> step fails (as today) (got true, want true)
+
+[head] CLOUDFLARE_ZONE_ID missing, yupcrew set
+  exit=1 purges=0 zones=[]
+  output: CLOUDFLARE_ZONE_ID variable or CLOUDFLARE_CACHE_PURGE_TOKEN secret is missing
+  => PASS: missing dinder zone -> fails before any purge (got [1,[]], want [1,[]])
+
+
+11/11 expectations passed

@@ -1,0 +1,11 @@
+path                   no query (status loc hash)               with query (status loc hash)             verdict
+/                      200  02b1e0cea6fa                        200  02b1e0cea6fa                        same
+/join                  200  02b1e0cea6fa                        200  02b1e0cea6fa                        same
+/session/ABCDE         200  02b1e0cea6fa                        200  02b1e0cea6fa                        same
+/index.html            200  02b1e0cea6fa                        200  02b1e0cea6fa                        same
+/privacy               200  04ffe45b94d8                        200  04ffe45b94d8                        same
+/privacy.html          200  04ffe45b94d8                        200  04ffe45b94d8                        same
+/images                200  02b1e0cea6fa                        200  02b1e0cea6fa                        same
+/images/               200  02b1e0cea6fa                        200  02b1e0cea6fa                        same
+/nope/deep/path        200  02b1e0cea6fa                        200  02b1e0cea6fa                        same
+/manifest.webmanifest  200  30e06b360871                        200  30e06b360871                        same
