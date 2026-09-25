@@ -140,7 +140,7 @@ test('a partly-failed batch reports against what was submitted, not what came ba
   assert.match(report, /2 missing — .*`submit <recordsDir>` \(batch rates\): pad-thai moussaka/);
   const clean = collectReport({ submitted: 2, usages: [], failed: [] });
   assert.equal(clean.split('\n').length, 1);
-  assert.match(clean, /^0\/2 images, measured cost US\$0\.00 — record it in docs\//);
+  assert.match(clean, /^0\/2 images, measured cost US\$0\.00$/);
 });
 
 test('batch output is parsed line by line as it streams', async () => {
