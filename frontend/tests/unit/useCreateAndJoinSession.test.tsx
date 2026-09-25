@@ -77,7 +77,8 @@ describe('useCreateAndJoinSession', () => {
     });
     expect(mocks.waitForConnection).toHaveBeenCalled();
     expect(mocks.joinSession).toHaveBeenCalledWith('AB123', 'Alice', false, expect.any(Number));
-    expect(mocks.navigate).toHaveBeenCalledWith('/session/AB123');
+    // #510: replace, so browser Back skips the setup page instead of re-running create.
+    expect(mocks.navigate).toHaveBeenCalledWith('/session/AB123', { replace: true });
 
     const store = useSessionStore.getState();
     // joinSession owns successful Session adoption; its mock does not mutate the store.
@@ -106,6 +107,26 @@ describe('useCreateAndJoinSession', () => {
       await pending;
     });
     await waitFor(() => expect(result.current.isCreating).toBe(false));
+  });
+
+  // #518: the socket handshake overlaps POST /sessions instead of following it.
+  it('starts connecting while the create request is still in flight', async () => {
+    let settle!: (value: typeof created) => void;
+    mocks.createSession.mockReturnValueOnce(new Promise((resolve) => (settle = resolve)));
+    const { result } = renderHook(() => useCreateAndJoinSession());
+
+    let pending!: Promise<unknown>;
+    await act(async () => {
+      pending = result.current.createAndJoin('Alice', { branch: 'eatout' });
+    });
+    expect(mocks.waitForConnection).toHaveBeenCalled();
+    expect(mocks.joinSession).not.toHaveBeenCalled();
+
+    await act(async () => {
+      settle(created);
+      await pending;
+    });
+    expect(mocks.joinSession).toHaveBeenCalledWith('AB123', 'Alice', false, expect.any(Number));
   });
 
   // The caller needs the public code, not just a message (DISPLAY_NAME_TAKEN

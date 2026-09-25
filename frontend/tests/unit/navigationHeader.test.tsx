@@ -45,6 +45,17 @@ describe('NavigationHeader', () => {
     expect(backAfter.className).toBe(back.className);
   });
 
+  // #510 — WCAG 2.5.3 Label in Name: on a Session page the control opens the
+  // Leave dialog, so it says Leave, and its accessible name is the words shown.
+  it('labels the Session header control Leave, visibly and by name', () => {
+    renderHeader(
+      <NavigationHeader title="Lobby" onBack={noop} sessionCode="7K9M2" confirmOnBack />
+    );
+    const leave = screen.getByRole('button', { name: 'Leave' });
+    expect(leave).toHaveTextContent('Leave');
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+  });
+
   it('centres and wraps the title between equal-width edge regions', () => {
     renderHeader(<NavigationHeader title="Join Session" onBack={noop} />);
     const title = screen.getByRole('heading', { name: 'Join Session' });

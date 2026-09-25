@@ -117,6 +117,13 @@ describe('socketService', () => {
     expect(logSpy).toHaveBeenCalledWith('Socket already initialized');
   });
 
+  // #518: straight to WebSocket — no serial long-polling round trips before connect.
+  it('connects over WebSocket only', () => {
+    setupSocket();
+    socketService.initializeSocket();
+    expect(socketMocks.io.mock.calls[0][1]).toMatchObject({ transports: ['websocket'] });
+  });
+
   it('never orphans a socket that is mid-reconnect', () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const retrying = setupSocket(false);
