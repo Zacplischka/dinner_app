@@ -1445,7 +1445,9 @@ describe('socketBindings', () => {
         orderPlaceId: 'pizza',
         isConnected: true,
       });
-      useOrderStore.getState().setOrder({ placeId: 'pizza' } as never, []);
+      const menu = [{ name: 'Margherita', price_cents: 2300, tags: [] }];
+      useOrderStore.getState().setOrder({ placeId: 'pizza' } as never, menu);
+      useOrderStore.getState().markNoMenu('taco-place');
       sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
       socket.acks.set('session:join', {
         success: true,
@@ -1468,11 +1470,19 @@ describe('socketBindings', () => {
         rejectedSessionCode: null,
       });
       // The unconfirmed basket goes, so nothing is added against it before
-      // the order page's own open lands.
-      expect(useOrderStore.getState().order).toBeNull();
+      // the order page's own open lands. The Pinned Menu and the Match's
+      // no-menu markers stay: a transient failure disproves neither.
+      expect(useOrderStore.getState()).toMatchObject({
+        order: null,
+        menu,
+        noMenuPlaceIds: ['taco-place'],
+      });
       expect(socketMocks.toast.error).toHaveBeenCalledWith(
         'Could not restore the basket: Menu provider failed'
       );
+      // A broadcast (it never carries the menu) renders a whole basket again.
+      socket.trigger('order:state', { order: { placeId: 'pizza', lines: [] } });
+      expect(useOrderStore.getState()).toMatchObject({ order: { placeId: 'pizza' }, menu });
     }
   );
 

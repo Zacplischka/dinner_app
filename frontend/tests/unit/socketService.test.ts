@@ -362,7 +362,12 @@ describe('socketService', () => {
       socket.silent.delete('order:item');
       expect
         .soft(await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 }))
-        .toMatchObject({ success: false });
+        .toMatchObject({
+          success: false,
+          error: {
+            message: 'Your session is still being checked. Try again once it reconnects.',
+          },
+        });
       expect.soft(itemEmits()).toHaveLength(1);
 
       const recovery = bindings.reconcileSession();
@@ -377,7 +382,10 @@ describe('socketService', () => {
       expect(useOrderStore.getState().order).toBeNull();
       expect
         .soft(await bindings.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 }))
-        .toMatchObject({ success: false });
+        .toMatchObject({
+          success: false,
+          error: { message: 'Your basket is reloading. Try again in a moment.' },
+        });
       expect.soft(itemEmits()).toHaveLength(1);
 
       // The existing Try again recovery action must remain usable after a

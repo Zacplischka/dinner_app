@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import RequireSession from '../../src/components/RequireSession';
 import { useSessionStore } from '../../src/stores/sessionStore';
@@ -33,6 +33,8 @@ describe('RequireSession', () => {
     act(() => useSessionStore.setState({ isConnected: true }));
   });
 
+  afterEach(() => vi.restoreAllMocks());
+
   it('keeps actions unavailable until the saved Participant is reconciled', () => {
     useSessionStore.setState({ sessionCode: 'AB123', isConnected: false });
     renderAt('/session/AB123/select');
@@ -59,6 +61,13 @@ describe('RequireSession', () => {
     expect(screen.getByText('Home route')).toBeInTheDocument();
     // Home is not Leave: the Session stays for Home's "Return to session".
     expect(useSessionStore.getState().sessionCode).toBe('AB123');
+  });
+
+  it('says so when the phone is actually offline', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    useSessionStore.setState({ sessionCode: 'AB123', isConnected: false });
+    renderAt('/session/AB123/select');
+    expect(screen.getByRole('status')).toHaveTextContent('You’re offline. Your place is saved.');
   });
 
   it('renders the Session route when the stored Session matches the URL', () => {
