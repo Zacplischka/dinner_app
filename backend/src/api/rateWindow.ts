@@ -2,7 +2,7 @@ import { isIP } from 'node:net';
 import type { NextFunction, Request, Response } from 'express';
 import { DomainError } from '../services/DomainError.js';
 
-// Fixed-window per-IP request counting shared by the comparison and redirect
+// Fixed-window request counting per client IP (or per `key`) for the REST
 // routers. ponytail: per-instance in-memory state; multi-instance needs a
 // shared store (same ceiling as the ComparisonService in-flight dedupe).
 export type RequestWindow = { count: number; resetAt: number };

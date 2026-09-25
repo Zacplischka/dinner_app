@@ -28,12 +28,6 @@ export function createFriendsRouter(friendsService: FriendsService) {
     friendIds: z.array(z.string().min(1)).min(1),
   });
 
-  const photoLimit = rateLimit({
-    limit: 6,
-    windowMs: 60_000,
-    message: 'Please wait a minute before changing your photo again.',
-    key: (req) => (req as AuthenticatedRequest).user!.id,
-  });
   // The versioned image URL is a public capability, like other avatar URLs. It exposes no Profile fields.
   router.get(
     '/profile-photos/:userId/:version.jpg',
@@ -52,6 +46,13 @@ export function createFriendsRouter(friendsService: FriendsService) {
 
   // Profile mutations and every social route require verified authentication.
   router.use(requireAuth);
+  // Keyed by user id, so it must stay behind requireAuth.
+  const photoLimit = rateLimit({
+    limit: 6,
+    windowMs: 60_000,
+    message: 'Please wait a minute before changing your photo again.',
+    key: (req) => (req as AuthenticatedRequest).user!.id,
+  });
   router.put(
     '/users/me/photo',
     photoLimit,

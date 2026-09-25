@@ -167,6 +167,17 @@ describe('persistent Profile photos', () => {
     expect(state.rows.get(ids[1])!.avatar_url).toBe('https://example.test/google.jpg');
   });
 
+  it('caps photo changes per user, not per IP, and says when to retry', async () => {
+    for (let i = 0; i < 6; i++) await upload().expect(200);
+    const limited = await upload().expect(429);
+    expect(limited.body.code).toBe('RATE_LIMITED');
+    const retryAfter = Number(limited.headers['retry-after']);
+    expect(retryAfter).toBeGreaterThanOrEqual(1);
+    expect(retryAfter).toBeLessThanOrEqual(60);
+    // Same IP, another user: their own window.
+    await upload(input, 'image/png', ids[1]).expect(200);
+  });
+
   it('rejects oversized, invalid, vector, MIME-mismatched, animated and excessive-dimension input without changing the row', async () => {
     await upload(Buffer.alloc(5 * 1024 * 1024 + 1)).expect(413);
     await upload(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>')).expect(400);

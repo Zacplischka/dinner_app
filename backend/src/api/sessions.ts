@@ -87,7 +87,7 @@ export function createSessionsRouter(sessionService: SessionService) {
 
         throw new DomainError(
           'VALIDATION_ERROR',
-          'hostName is required and must be 1-50 characters'
+          `hostName is required and must be 1-${MAX_DISPLAY_NAME_LENGTH} characters`
         );
       }
 

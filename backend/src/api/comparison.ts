@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import type { Redis } from 'ioredis';
 import {
+  MAX_SEARCH_RADIUS_MILES,
+  MIN_SEARCH_RADIUS_MILES,
   parseComparisonEntryRequest,
   parseVenueSearchRequest,
   type Venue,
@@ -150,7 +152,7 @@ export function createComparisonRouter({
       if (!input) {
         throw new DomainError(
           'VALIDATION_ERROR',
-          'Valid latitude, longitude, and radiusMiles (1–15) are required'
+          `Valid latitude, longitude, and radiusMiles (${MIN_SEARCH_RADIUS_MILES}–${MAX_SEARCH_RADIUS_MILES}) are required`
         );
       }
 

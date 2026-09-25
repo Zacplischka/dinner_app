@@ -87,7 +87,9 @@ export default function SessionEntry({ branch }: { branch: Branch }) {
                 disabled={isCreating}
                 placeholder="Enter your name"
               />
-              <p className="mt-1.5 text-xs text-muted">{name.length}/50 characters</p>
+              <p className="mt-1.5 text-xs text-muted">
+                {name.length}/{MAX_DISPLAY_NAME_LENGTH} characters
+              </p>
             </div>
           ) : (
             <p className="text-text">

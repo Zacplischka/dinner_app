@@ -237,7 +237,9 @@ function JoinInvitation() {
                   className="input"
                   disabled={isLoading}
                 />
-                <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
+                <p className="mt-1.5 text-xs text-muted">
+                  {participantName.length}/{MAX_DISPLAY_NAME_LENGTH} characters
+                </p>
               </div>
             )}
 
