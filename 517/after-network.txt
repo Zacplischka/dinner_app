@@ -1,0 +1,36 @@
+#517 AC3 — production after (https://yupcrew.com @ d175164), 2026-09-25, playwright-cli headless Chromium, 390x844
+Fresh browser context (cold cache) for guest "Test Sam", opened on the invite link, joined, landed in the Lobby.
+Session code masked as XXXXX; socket.io sid/t params elided; analytics beacons omitted.
+
+--- Requests before the host tapped Start swiping (playwright-cli requests --static) ---
+ 1. [GET] https://yupcrew.com/join?code=XXXXX => [200]
+ 2. [GET] https://yupcrew.com/assets/index-C9mcwYDP.js => [200]
+ 6. [GET] https://yupcrew.com/assets/JoinSessionPage-NxxEjdyg.js => [200]
+19. [GET] https://backend-production-4ce9.up.railway.app/api/sessions/XXXXX => [200]
+21-26. socket.io handshake requests
+29. [GET] https://yupcrew.com/assets/SessionLobbyPage-CE9Pzaj5.js => [200]      <- Lobby mounts
+38. [GET] https://yupcrew.com/assets/mascotDrawing-R62GJdXV.js => [200]
+39. [GET] https://yupcrew.com/assets/SessionLobbyPage-C75ibyMB.css => [200]
+41. [GET] https://backend-production-4ce9.up.railway.app/api/sessions/XXXXX => [200]
+42. [GET] https://yupcrew.com/assets/SelectionPage-wM5hbmXt.js => [200]         <- warmed on Lobby mount, before the tap
+43. [GET] https://yupcrew.com/assets/RetryingPhoto-QspkzPO8.js => [200]
+44. [GET] https://yupcrew.com/assets/icons-D2hLi-WY.js => [200]
+45. [GET] https://yupcrew.com/assets/money-Da3c3aHG.js => [200]
+46. [GET] https://yupcrew.com/assets/MovieLinks-PlpvIf2y.js => [200]
+47. [GET] https://yupcrew.com/assets/RecipeSourceCredit-CHs_tpEX.js => [200]    <- last request before the tap
+
+--- Host taps Start swiping (click at page clock 1790306785996); guest navigates to /session/XXXXX/select at +288 ms ---
+48. [GET] https://backend-production-4ce9.up.railway.app/api/options/XXXXX => [200]
+49. [GET] https://backend-production-4ce9.up.railway.app/api/sessions/XXXXX => [200]
+50. [GET] https://yupcrew.com/yupcrew-icon-192.png => [200]
+51-53. [GET] https://img.spoonacular.com/recipes/<id>-312x231.jpg => [200]   (Deck photos)
+(no SelectionPage-*.js request after the tap)
+
+--- Resource Timing on the guest page after navigation ---
+performance.getEntriesByType('resource').filter(e => /SelectionPage/.test(e.name))
+=> [{"name":"SelectionPage-wM5hbmXt.js","startMs":3986,"transferSize":9727}]
+timeOrigin 1790306756267 + 3986 ms = 1790306760253, i.e. fetched 25.7 s before the tap; exactly one entry.
+
+--- Production before (main @ 3d0a88a), same method, for comparison ---
+Guest Lobby cold load: no SelectionPage-*.js before the tap (JS chunks end at #37 mascotDrawing);
+SelectionPage-rOFsOFlh.js first requested after the tap (#41 in run 1, #50 in run 2), on the critical path to the Deck.
