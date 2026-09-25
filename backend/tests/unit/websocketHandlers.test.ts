@@ -456,6 +456,7 @@ describe('websocket handlers', () => {
             }
           )
         ),
+        getLobby: vi.fn().mockResolvedValue({ sessionCode: 'OLD42', revision: 3 }),
       };
 
       await handleSessionJoin(
@@ -478,6 +479,12 @@ describe('websocket handlers', () => {
       expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith(
         'session:results',
         expect.objectContaining({ sessionCode: 'OLD42', allSelections: { Bob: [] } })
+      );
+      await vi.waitFor(() =>
+        expect(testSocket.roomEmitter.emit).toHaveBeenCalledWith('session:lobby', {
+          sessionCode: 'OLD42',
+          revision: 3,
+        })
       );
       // The refused join itself changed no rooms.
       expect(testSocket.join).not.toHaveBeenCalled();

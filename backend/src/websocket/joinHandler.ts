@@ -40,13 +40,18 @@ export async function handleSessionJoin(
   resolveAvatar: (token?: string) => Promise<string | null> = () => Promise.resolve(null)
 ): Promise<void> {
   // Joining pulled them out of another Session (#284): tell that room they
-  // left, and deliver the Match when their departure completed it.
+  // left, re-send its Lobby (the departure bumped its revision, #529), and
+  // deliver the Match when their departure completed it.
   const emitDeparture = (left: LeftSession) => {
     socket.to(left.sessionCode).emit('participant:left', {
       participantId: socket.id,
       displayName: left.displayName,
       participantCount: left.participantCount,
     });
+    service
+      .getLobby(left.sessionCode)
+      .then((lobby) => lobby && socket.to(left.sessionCode).emit('session:lobby', lobby))
+      .catch(() => undefined);
     if (left.results) {
       socket.to(left.sessionCode).emit('session:results', {
         sessionCode: left.sessionCode,
