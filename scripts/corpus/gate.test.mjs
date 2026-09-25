@@ -205,6 +205,71 @@ test('a US term inside a longer word is not a US term', () => {
   assert.doesNotMatch(failures, /US term/);
 });
 
+// ------------------------------------------------------------------- diet claims (#505)
+
+/** The clean Recipe plus one more line, named in a step of its own. */
+const withLine = (extra, changes = {}) =>
+  withRecipe({
+    ingredients: [...CLEAN.ingredients, extra],
+    steps: [...CLEAN.steps, `Stir through the ${extra.name}.`],
+    ...changes,
+  });
+
+const gfStock = {
+  name: 'gluten-free beef stock',
+  amount: 500,
+  unit: 'ml',
+  original: '500 ml gluten-free beef stock',
+};
+const line = (name, amount = 250, unit = 'ml') => ({
+  name,
+  amount,
+  unit,
+  original: `${amount} ${unit} ${name}`,
+});
+
+test('a diet qualifier in the name has to survive into the searchTerm', () => {
+  // The mint searches the searchTerm, so a dropped qualifier buys the plain
+  // product for a line the card calls gluten free (mushroom-risotto, beef-pho).
+  const stock = report(withLine({ ...gfStock, searchTerm: 'beef liquid stock' }), {
+    slug: 'beef-ragu',
+  });
+  assert.match(stock, /gluten-free beef stock/);
+  assert.match(stock, /beef liquid stock/);
+  const cheese = report(
+    withLine({ ...line('vegetarian parmesan cheese', 50, 'g'), searchTerm: 'parmesan cheese' }),
+    { slug: 'beef-ragu' }
+  );
+  assert.match(cheese, /vegetarian parmesan cheese/);
+
+  // Kept in either spelling, or no searchTerm at all (the name is searched).
+  const kept = withLine({ ...gfStock, searchTerm: 'beef liquid stock gluten free' });
+  assert.deepEqual(shapeFailures(kept, { slug: 'beef-ragu' }), []);
+  assert.deepEqual(shapeFailures(withLine(gfStock), { slug: 'beef-ragu' }), []);
+});
+
+test('a declared diet cannot take a known trap on trust', () => {
+  const stock = report(withLine(line('chicken stock'), { diets: ['gluten free'] }), {
+    slug: 'beef-ragu',
+  });
+  assert.match(stock, /chicken stock/);
+  assert.match(stock, /gluten free/);
+  const cream = report(withLine(line('thickened cream'), { diets: ['vegetarian'] }), {
+    slug: 'beef-ragu',
+  });
+  assert.match(cream, /thickened cream/);
+  assert.match(cream, /vegetarian/);
+  // `vegan ⊆ vegetarian` is the store's ladder, so a vegan record is held to it.
+  const vegan = withLine(line('parmesan', 50, 'g'), { diets: ['vegan'] });
+  assert.match(report(vegan, { slug: 'beef-ragu' }), /parmesan/);
+
+  // Qualified, it holds — and a head is a trap only for the diet it breaks.
+  const labelled = withLine(line('gluten-free chicken stock'), { diets: ['gluten free'] });
+  assert.deepEqual(shapeFailures(labelled, { slug: 'beef-ragu' }), []);
+  const cheese = withLine(line('parmesan', 50, 'g'), { diets: ['gluten free'] });
+  assert.deepEqual(shapeFailures(cheese, { slug: 'beef-ragu' }), []);
+});
+
 // ------------------------------------------------------------------- the image
 
 const FIXTURES = {
