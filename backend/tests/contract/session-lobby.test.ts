@@ -142,12 +142,11 @@ describe('gather-first Session wire contract', () => {
     }
   });
 
-  it('accepts the exact bundled WebView origins for HTTP and sockets and rejects an unrelated origin', async () => {
-    for (const origin of ['capacitor://localhost', 'https://localhost']) {
-      const response = await request(url).get('/health').set('Origin', origin).expect(200);
-      expect(response.headers['access-control-allow-origin']).toBe(origin);
-      expect((await client(origin)).connected).toBe(true);
-    }
+  it('accepts the app origin for HTTP and sockets and rejects an unrelated origin', async () => {
+    const origin = 'https://yupcrew.com';
+    const response = await request(url).get('/health').set('Origin', origin).expect(200);
+    expect(response.headers['access-control-allow-origin']).toBe(origin);
+    expect((await client(origin)).connected).toBe(true);
     await expect(client('https://unrelated.example')).rejects.toThrow();
   });
 

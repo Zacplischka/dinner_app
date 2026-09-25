@@ -38,14 +38,6 @@
 		respond 200
 	}
 
-	# Association files must be JSON or an honest 404, never the SPA fallback.
-	@mobile_associations path /.well-known/apple-app-site-association /.well-known/assetlinks.json
-	handle @mobile_associations {
-		header Content-Type application/json
-		header Cache-Control "public, max-age=300"
-		file_server
-	}
-
 	@asset_paths path /assets /assets/*
 	handle @asset_paths {
 		@fingerprinted_asset {

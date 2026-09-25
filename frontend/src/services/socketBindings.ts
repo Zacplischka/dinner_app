@@ -29,7 +29,7 @@ import { useSessionStore } from '../stores/sessionStore';
 import { useAuthStore } from '../stores/authStore';
 import { useOrderStore } from '../stores/orderStore';
 import { toast } from '../hooks/useToast';
-import { getRejoinToken, saveRejoinToken, clearRejoinToken } from './nativeStorage';
+import { getRejoinToken, saveRejoinToken, clearRejoinToken } from './rejoinToken';
 
 // Socket payloads carry display names; keep the chatter out of production
 // consoles. console.error stays unconditional.
@@ -374,8 +374,6 @@ async function admitSession(
       current.currentUserId === previousParticipantId
     );
   };
-  // #304: sessionStorage, not localStorage — the token is this tab's
-  // identity. Origin-wide it let a second tab rejoin as the first.
   const token = await getRejoinToken(sessionCode, displayName);
   if (!isSessionIntentCurrent(generation) || (resumeOnly && !stillResuming()))
     return {

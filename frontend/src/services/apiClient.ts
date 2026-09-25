@@ -29,8 +29,6 @@ import type {
   VenueSearchResponse,
 } from '@dinder/shared/types';
 import { useAuthStore } from '../stores/authStore';
-import { Capacitor } from '@capacitor/core';
-import { publicUrl } from './device';
 
 export const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`;
 
@@ -66,13 +64,7 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
  * Get session details by code
  */
 export async function getSession(sessionCode: string): Promise<SessionResponse> {
-  const session = await request<SessionResponse>(`/sessions/${sessionCode}`);
-  return Capacitor.isNativePlatform()
-    ? {
-        ...session,
-        shareableLink: publicUrl(`/join?code=${encodeURIComponent(session.sessionCode)}`),
-      }
-    : session;
+  return request<SessionResponse>(`/sessions/${sessionCode}`);
 }
 
 /**
@@ -245,7 +237,6 @@ function postJson<T>(path: string, body: unknown): Promise<T> {
   });
 }
 
-// AbortController also works in the older WebViews supported by our native targets.
 async function requestProfile(path: string, init?: RequestInit): Promise<GetProfileResponse> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15_000);

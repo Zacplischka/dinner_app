@@ -753,7 +753,7 @@ describe('socketBindings', () => {
     const { default: JoinSessionPage } = await import('../../src/pages/JoinSessionPage');
     const api = await import('../../src/services/apiClient');
     vi.spyOn(api, 'getSession').mockResolvedValue({} as never);
-    const storage = await import('../../src/services/nativeStorage');
+    const storage = await import('../../src/services/rejoinToken');
     const save = storage.saveRejoinToken;
     let release!: () => void;
     const held = new Promise<void>((resolve) => {
@@ -1673,7 +1673,7 @@ describe('socketBindings', () => {
   );
 
   it('starts fresh recovery when transport reconnects during credential persistence', async () => {
-    const storage = await import('../../src/services/nativeStorage');
+    const storage = await import('../../src/services/rejoinToken');
     const save = storage.saveRejoinToken;
     let finishSave!: () => void;
     const heldSave = new Promise<void>((resolve) => {

@@ -10,8 +10,7 @@ import type {
 } from '@dinder/shared/types';
 import type { Participant } from '../types';
 import { useOrderStore } from './orderStore';
-import { Capacitor } from '@capacitor/core';
-import { nativeStateStorage, clearRejoinToken } from '../services/nativeStorage';
+import { clearRejoinToken } from '../services/rejoinToken';
 
 interface Location {
   latitude: number;
@@ -29,8 +28,6 @@ interface SessionState {
   branch?: Branch;
 
   lobby?: SessionLobbyState;
-  /** Round restored without retaining the old Lobby or roster. */
-  recoveryRound?: number;
   setLobby: (lobby?: SessionLobbyState) => void;
 
   // Location data
@@ -136,7 +133,6 @@ const initialState = {
   currentUserId: null,
   branch: undefined,
   lobby: undefined,
-  recoveryRound: undefined,
   location: undefined,
   searchRadiusMiles: undefined,
   sessionStatus: 'waiting' as const,
@@ -164,18 +160,15 @@ export const useSessionStore = create<SessionState>()(
               return state;
             // Rejoin and HTTP hydration can recover a Restart whose broadcast
             // this phone missed, even after the next Deck has already started.
-            // Native hydration omits Lobby. A waiting snapshot has no previous
-            // outcome even when its saved round number already matches.
+            // A waiting snapshot has no previous outcome even when its round
+            // number already matches.
             const discardRound =
               lobby.state === 'waiting' ||
-              ((state.lobby || state.recoveryRound !== undefined) &&
-                lobby.round !== undefined &&
-                lobby.round !== (state.lobby?.round ?? state.recoveryRound));
+              (state.lobby && lobby.round !== undefined && lobby.round !== state.lobby.round);
             if (discardRound) useOrderStore.getState().clear();
             return {
               ...(discardRound ? emptyRound : {}),
               lobby,
-              recoveryRound: undefined,
               branch: lobby.branch,
               sessionStatus: lobby.state,
               location: lobby.location,
@@ -307,41 +300,10 @@ export const useSessionStore = create<SessionState>()(
         // its auto-rejoin evicted the host. sessionStorage is scoped to the
         // tab and survives reload (and iOS background-and-return), which is
         // exactly the case this persistence exists for.
-        storage: createJSONStorage(() =>
-          Capacitor.isNativePlatform() ? nativeStateStorage : sessionStorage
-        ),
-        skipHydration: Capacitor.isNativePlatform(),
+        storage: createJSONStorage(() => sessionStorage),
         // isConnected is live socket state; rehydrating it as true would lie.
-        partialize: ({
-          isConnected: _isConnected,
-          ...rest
-        }: SessionState): Partial<SessionState> => {
-          if (!Capacitor.isNativePlatform()) return rest;
-          const me = rest.participants.find((p) => p.participantId === rest.currentUserId);
-          if (!rest.sessionCode || !me || rest.sessionStatus === 'expired') return {};
-          return {
-            sessionCode: rest.sessionCode,
-            currentUserId: me.participantId,
-            participants: [
-              {
-                participantId: me.participantId,
-                displayName: me.displayName,
-                sessionCode: rest.sessionCode,
-                hasSubmitted: false,
-                isHost: false,
-              },
-            ],
-            selections: rest.selections,
-            deckCursor: rest.deckCursor,
-            // The cursor's other half (#513): without them the rejoin's replay
-            // re-announces, or re-celebrates, cards already decided behind it.
-            // Display names and ids only; a new round's setLobby discards both.
-            liveSelections: rest.liveSelections,
-            fullHousesShown: rest.fullHousesShown,
-            recoveryRound: rest.lobby?.round ?? rest.recoveryRound,
-            orderPlaceId: rest.orderPlaceId,
-          };
-        },
+        partialize: ({ isConnected: _isConnected, ...rest }: SessionState): Partial<SessionState> =>
+          rest,
         // Pre-v1 blobs have unversioned, possibly stale shapes — discard them.
         migrate: () => ({ ...initialState }),
         merge: (persisted, current) => ({

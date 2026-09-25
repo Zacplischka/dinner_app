@@ -1,6 +1,5 @@
 import ProfileAvatar from '../components/ProfileAvatar';
 import { useEffect, useRef, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import type { Ack, SessionChoicesPayload, SessionLobbyState } from '@dinder/shared/types';
 import { useSessionStore } from '../stores/sessionStore';
@@ -205,9 +204,7 @@ export default function SessionLobbyPage() {
               className="btn btn-secondary mt-4 min-h-[48px] w-full text-sm"
               onClick={() => void share()}
             >
-              {Capacitor.isNativePlatform() || typeof navigator.share === 'function'
-                ? 'Share invite link'
-                : 'Copy shareable link'}
+              {typeof navigator.share === 'function' ? 'Share invite link' : 'Copy shareable link'}
             </button>
           )}
           <div className="mt-4">

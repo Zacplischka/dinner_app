@@ -1,9 +1,4 @@
 import { useEffect } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { App } from '@capacitor/app';
-import { KeepAwake } from '@capacitor-community/keep-awake';
-
-let nativeWakeChanges = Promise.resolve();
 
 /**
  * Holds the screen awake while `enabled` — the phone must not lock at step four
@@ -17,22 +12,6 @@ let nativeWakeChanges = Promise.resolve();
 export function useWakeLock(enabled: boolean): void {
   useEffect(() => {
     if (!enabled) return;
-    if (Capacitor.isNativePlatform()) {
-      let unmounted = false;
-      const change = (awake: boolean) => {
-        nativeWakeChanges = nativeWakeChanges
-          .catch(() => undefined)
-          .then(() => (awake && !unmounted ? KeepAwake.keepAwake() : KeepAwake.allowSleep()))
-          .catch(() => undefined);
-      };
-      change(true);
-      const listener = App.addListener('appStateChange', ({ isActive }) => change(isActive));
-      return () => {
-        unmounted = true;
-        change(false);
-        void listener.then((handle) => handle.remove());
-      };
-    }
     let sentinel: WakeLockSentinel | null = null;
     let unmounted = false;
     const letGo = (held: WakeLockSentinel) => held.release().catch(() => undefined);
