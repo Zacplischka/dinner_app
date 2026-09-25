@@ -12,7 +12,6 @@ Create an ignored `frontend/.env.development.local` with the public service sett
 
 ```dotenv
 VITE_BACKEND_URL=http://localhost:3458
-VITE_API_BASE_URL=http://localhost:3458/api
 VITE_PUBLIC_ORIGIN=https://yupcrew.com
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=

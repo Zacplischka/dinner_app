@@ -12,7 +12,7 @@ const nativeRoots = {
 };
 const receiptName = 'mobile-build.json';
 const publicKeys = [
-  'VITE_BACKEND_URL', 'VITE_API_BASE_URL', 'VITE_PUBLIC_ORIGIN',
+  'VITE_BACKEND_URL', 'VITE_PUBLIC_ORIGIN',
   'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY',
 ];
 
@@ -20,7 +20,7 @@ export function validateMobileEnvironment(mode, env) {
   if (!['development', 'staging', 'production'].includes(mode)) {
     throw new Error('Choose development, staging or production');
   }
-  for (const key of ['VITE_BACKEND_URL', 'VITE_API_BASE_URL', 'VITE_PUBLIC_ORIGIN', 'VITE_SUPABASE_URL']) {
+  for (const key of ['VITE_BACKEND_URL', 'VITE_PUBLIC_ORIGIN', 'VITE_SUPABASE_URL']) {
     if (!env[key] && mode === 'development' && key === 'VITE_SUPABASE_URL') continue;
     if (!env[key]) throw new Error(`${key} is required for a bundled app`);
     const url = new URL(env[key]);

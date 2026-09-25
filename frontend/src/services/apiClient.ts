@@ -32,7 +32,7 @@ import { useAuthStore } from '../stores/authStore';
 import { Capacitor } from '@capacitor/core';
 import { publicUrl } from './device';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`;
 
 /**
  * Create a new session. Everything past the host's name is setup the chosen

@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
   const native = env.VITE_NATIVE_BUILD === 'true';
-  const origins = [env.VITE_BACKEND_URL, env.VITE_API_BASE_URL, env.VITE_SUPABASE_URL]
+  const origins = [env.VITE_BACKEND_URL, env.VITE_SUPABASE_URL]
     .filter(Boolean).map((value) => new URL(value).origin);
   const connections = Array.from(new Set([...origins, ...origins.map((origin) => origin.replace(/^http/, 'ws'))])).join(' ');
   return {

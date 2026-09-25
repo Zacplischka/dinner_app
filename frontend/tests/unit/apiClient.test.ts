@@ -229,9 +229,12 @@ describe('apiClient', () => {
       await expect(apiClient.createSession('Alice')).rejects.toThrow('HTTP error 500');
     });
 
-    it('should use configured API base URL when provided', async () => {
+    it.each([
+      ['https://api.example.test', 'https://api.example.test/api'],
+      ['', 'http://localhost:3001/api'],
+    ])('derives the API base from VITE_BACKEND_URL=%j', async (backendUrl, apiBase) => {
       vi.resetModules();
-      vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test/v1');
+      vi.stubEnv('VITE_BACKEND_URL', backendUrl);
       const freshApiClient = await import('../../src/services/apiClient');
 
       global.fetch = vi.fn().mockResolvedValue({
@@ -241,7 +244,8 @@ describe('apiClient', () => {
 
       await freshApiClient.getSession('AB123');
 
-      expect(fetch).toHaveBeenCalledWith('https://api.example.test/v1/sessions/AB123');
+      expect(freshApiClient.API_BASE_URL).toBe(apiBase);
+      expect(fetch).toHaveBeenCalledWith(`${apiBase}/sessions/AB123`);
       vi.unstubAllEnvs();
     });
   });
