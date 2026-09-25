@@ -131,6 +131,20 @@ describe('authStore loads supabase-js only when there is a session to restore', 
       })
     );
   });
+
+  // App.tsx may call initialize() after the socket code has already joined on
+  // a cold /join?code=… load, and a join waits while auth is loading.
+  it('starts settled for a guest before initialize runs, and loading for a stored session', async () => {
+    window.history.replaceState(null, '', '/join?code=AB123');
+    vi.resetModules();
+    const guest = await import('../../src/stores/authStore');
+    expect(guest.useAuthStore.getState().isLoading).toBe(false);
+
+    storeSession();
+    vi.resetModules();
+    const restoring = await import('../../src/stores/authStore');
+    expect(restoring.useAuthStore.getState().isLoading).toBe(true);
+  });
 });
 
 describe('authStore', () => {
