@@ -244,11 +244,14 @@ describe('gather-first Sessions', () => {
     await ready(code, 'host');
     await ready(code, 'guest');
     let fail!: (error: Error) => void;
-    search.mockImplementation(
-      () =>
-        new Promise((_resolve, reject) => {
-          fail = reject;
-        })
+    const dealing = new Promise<void>((dealt) =>
+      search.mockImplementation(
+        () =>
+          new Promise((_resolve, reject) => {
+            fail = reject;
+            dealt();
+          })
+      )
     );
     const handlers = new Map<
       string,
@@ -262,7 +265,13 @@ describe('gather-first Sessions', () => {
     );
     const payload = { sessionCode: code, revision: await revision(code) };
     const ack = new Promise((resolve) => handlers.get('session:start')!(payload, resolve));
-    while (!fail) await new Promise((resolve) => setTimeout(resolve, 1));
+    // A start refused before the deal acks at once; report why, not a timeout.
+    await Promise.race([
+      dealing,
+      ack.then((response) => {
+        throw new Error(`Acked before the deal: ${JSON.stringify(response)}`);
+      }),
+    ]);
     const broadcasts = () =>
       emit.mock.calls.map(([event, lobby]) => [event, lobby.starting, lobby.notice]);
     expect(broadcasts()).toEqual([['session:lobby', true, undefined]]);

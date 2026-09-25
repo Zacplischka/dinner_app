@@ -16,6 +16,8 @@ export function registerLobbyHandlers(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   service: SessionService
 ): void {
+  const broadcast = (lobby: SessionLobbyState) =>
+    io.in(lobby.sessionCode).emit('session:lobby', lobby);
   async function run<T extends { sessionCode: string }>(
     schema: z.ZodType<T>,
     payload: unknown,
@@ -33,12 +35,12 @@ export function registerLobbyHandlers(
     try {
       const lobby = await action(parsed.data);
       callback({ success: true, data: lobby });
-      io.in(lobby.sessionCode).emit('session:lobby', lobby);
+      broadcast(lobby);
     } catch (error) {
       callback({ success: false, error: toApiError(error).body });
       // A failed deal leaves its explanation and editable choices in the Lobby.
       const lobby = await service.getLobby(parsed.data.sessionCode);
-      if (lobby) io.in(lobby.sessionCode).emit('session:lobby', lobby);
+      if (lobby) broadcast(lobby);
     }
   }
   socket.on(
@@ -61,9 +63,7 @@ export function registerLobbyHandlers(
     'session:start',
     command((payload, callback) =>
       run(lobbyPayloadSchema, payload, callback, (data) =>
-        service.startRound(data.sessionCode, socket.id, data.revision, (lobby) =>
-          io.in(lobby.sessionCode).emit('session:lobby', lobby)
-        )
+        service.startRound(data.sessionCode, socket.id, data.revision, broadcast)
       )
     )
   );

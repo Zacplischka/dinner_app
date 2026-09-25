@@ -401,7 +401,10 @@ export default function SessionLobbyPage() {
                       : 'Start Selecting'}
                 </button>
               ) : (
-                <p className="rounded-xl border border-dashed border-line py-4 text-center text-sm text-muted">
+                <p
+                  role="status"
+                  className="rounded-xl border border-dashed border-line py-4 text-center text-sm text-muted"
+                >
                   {lobby?.starting ? 'Finding your shared deck…' : 'Waiting for the host to start'}
                 </p>
               ))}

@@ -165,12 +165,17 @@ it('tells a guest the shared deck is being found while the host starts, until th
   lobby.participants.forEach((p) => (p.ready = true));
   renderLobby(lobby, 'guest');
   expect(await screen.findByText('Waiting for the host to start')).toBeInTheDocument();
+  const readyToggle = screen.getByRole('button', { name: 'Ready — change my confirmation' });
+  expect(readyToggle).toBeEnabled();
   act(() => useSessionStore.getState().setLobby({ ...lobby, revision: 2, starting: true }));
-  expect(screen.getByText('Finding your shared deck…')).toBeInTheDocument();
+  // Announced to screen readers, and the guest cannot un-Ready mid-deal.
+  expect(screen.getByText('Finding your shared deck…')).toHaveAttribute('role', 'status');
+  expect(readyToggle).toBeDisabled();
   const notice = 'No movies fit. Adjust your choices.';
   act(() => useSessionStore.getState().setLobby({ ...lobby, revision: 3, notice }));
   expect(screen.getByText('Waiting for the host to start')).toBeInTheDocument();
   expect(screen.getByText(notice)).toBeInTheDocument();
+  expect(readyToggle).toBeEnabled();
 });
 
 it.each([1, 4])(
