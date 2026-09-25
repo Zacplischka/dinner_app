@@ -162,46 +162,77 @@ describe('createProductMatchService', () => {
     expect(queued).toBe(1); // warm read never touches the queue
   });
 
-  it('fails a hung lookup at its 8 s timeout and releases the queue to the next one (#503)', async () => {
-    // AbortSignal.timeout runs on Node's own timers, out of fake timers' reach:
-    // record the budget the client asks for and spend 10 ms of it instead.
-    const realTimeout = AbortSignal.timeout.bind(AbortSignal);
-    const budgets: number[] = [];
-    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
-      budgets.push(ms);
-      return realTimeout(10);
-    });
-    const { fetchImpl: answer } = woolworthsFetchFake({ coriander });
-    const searched: string[] = [];
-    // "hung" is accepted and never answered: only an abort ends it, as with real fetch.
-    const fetchImpl = ((input, init) => {
-      if (typeof init?.body !== 'string') return answer(input, init);
-      const term = (JSON.parse(init.body) as { SearchTerm: string }).SearchTerm;
-      searched.push(term);
-      if (term !== 'hung') return answer(input, init);
-      return new Promise((_, reject) =>
-        init.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+  describe('a hung Woolworths fetch (#503)', () => {
+    /**
+     * Runs a hung lookup then "coriander" through one real queue. `hangs` picks
+     * the request that is accepted and never answered: only an abort ends it,
+     * as with real fetch. Each request is recorded as its search term, or
+     * "seed" for the cookie GET, with the signal it carried.
+     */
+    async function hungThenNext(hangs: (request: string, seeds: number) => boolean) {
+      // AbortSignal.timeout runs on Node's own timers, out of fake timers'
+      // reach: record the budget the client asks for and spend 10 ms of it.
+      const realTimeout = AbortSignal.timeout.bind(AbortSignal);
+      const budgets: number[] = [];
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+        budgets.push(ms);
+        return realTimeout(10);
+      });
+      const { fetchImpl: answer } = woolworthsFetchFake({ coriander });
+      const requests: Array<{ request: string; signal?: AbortSignal | null }> = [];
+      const fetchImpl = ((input, init) => {
+        const request =
+          typeof init?.body === 'string'
+            ? (JSON.parse(init.body) as { SearchTerm: string }).SearchTerm
+            : 'seed';
+        requests.push({ request, signal: init?.signal });
+        const seeds = requests.filter((recorded) => recorded.request === 'seed').length;
+        if (!hangs(request, seeds)) return answer(input, init);
+        return new Promise((_, reject) =>
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+        );
+      }) as typeof fetch;
+      const matcher = createProductMatchService({
+        redis: new RedisMock(),
+        client: createWoolworthsClient(fetchImpl),
+        enqueue: createPolitenessQueue(0),
+        defaultStoreId: 1101,
+        successWindowCapMs: DAY_MS,
+        failureWindowMs: HOUR_MS,
+      });
+      const [hung, next] = await Promise.all([
+        matcher.matchProduct('hung'),
+        matcher.matchProduct('coriander'),
+      ]);
+      return { hung, next, budgets, requests };
+    }
+
+    it('fails a hung search at the lookup’s one 8 s budget and releases the queue', async () => {
+      const { hung, next, budgets, requests } = await hungThenNext((request) => request === 'hung');
+
+      expect(hung).toEqual({ status: 'failed' });
+      expect(next.status).toBe('matched');
+      // The next lookup ran after it, not beside it, and re-seeded.
+      expect(requests.map(({ request }) => request)).toEqual(['seed', 'hung', 'seed', 'coriander']);
+      // One budget per lookup: the seed and its search share it, so a stall
+      // holds the concurrency-1 queue for 8 s, not 8 s per fetch.
+      expect(budgets).toEqual([8_000, 8_000]);
+      expect(requests[1].signal).toBe(requests[0].signal);
+      expect(requests[3].signal).toBe(requests[2].signal);
+    }, 1_000);
+
+    it('fails a hung cold seed inside that same budget and lets the next lookup run', async () => {
+      const { hung, next, budgets, requests } = await hungThenNext(
+        (request, seeds) => request === 'seed' && seeds === 1
       );
-    }) as typeof fetch;
-    const matcher = createProductMatchService({
-      redis: new RedisMock(),
-      client: createWoolworthsClient(fetchImpl),
-      enqueue: createPolitenessQueue(0),
-      defaultStoreId: 1101,
-      successWindowCapMs: DAY_MS,
-      failureWindowMs: HOUR_MS,
-    });
 
-    const [hung, next] = await Promise.all([
-      matcher.matchProduct('hung'),
-      matcher.matchProduct('coriander'),
-    ]);
-
-    expect(hung).toEqual({ status: 'failed' });
-    expect(next.status).toBe('matched');
-    expect(searched).toEqual(['hung', 'coriander']); // the next lookup ran after it, not beside it
-    expect(budgets).toEqual([8_000, 8_000, 8_000, 8_000]); // seed and search, for both lookups
-  }, 1_000);
+      expect(hung).toEqual({ status: 'failed' });
+      expect(next.status).toBe('matched');
+      // The hung lookup never reached its search; the next one seeded afresh.
+      expect(requests.map(({ request }) => request)).toEqual(['seed', 'seed', 'coriander']);
+      expect(budgets).toEqual([8_000, 8_000]);
+    }, 1_000);
+  });
 
   it('counts Price/InstorePrice divergence as an operator-visible log metric', async () => {
     const logs = captureLogs();

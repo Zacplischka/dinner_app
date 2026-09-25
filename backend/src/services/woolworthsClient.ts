@@ -24,7 +24,8 @@ const IDENTITY_HEADERS = {
 const TOP_N = 10;
 
 // Every lookup holds the app-wide concurrency-1 politeness queue, so a hung
-// response must not outlive this: the line fails and the queue moves on (#503).
+// lookup, seed and search together, must not outlive this: the line fails and
+// the queue moves on (#503).
 const TIMEOUT_MS = 8_000;
 
 interface WoolworthsSearchResult {
@@ -43,10 +44,10 @@ export function createWoolworthsClient(fetchImpl: typeof fetch = fetch) {
   // failure so the next attempt (after the ~1 h failure window) re-seeds.
   let cookies: string | null = null;
 
-  async function seed(): Promise<string> {
+  async function seed(signal: AbortSignal): Promise<string> {
     const response = await fetchImpl(`${BASE}/shop/search/products?searchTerm=carrot`, {
       headers: { ...IDENTITY_HEADERS, Accept: 'text/html,application/xhtml+xml' },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal,
     });
     if (!response.ok) throw new Error(`Woolworths seed failed with status ${response.status}`);
     return response.headers
@@ -57,8 +58,10 @@ export function createWoolworthsClient(fetchImpl: typeof fetch = fetch) {
 
   return {
     async search(term: string): Promise<WoolworthsSearchResult> {
+      // One budget for the whole lookup, seed included: it is one queue slot.
+      const signal = AbortSignal.timeout(TIMEOUT_MS);
       try {
-        cookies ??= await seed();
+        cookies ??= await seed(signal);
         const location = `/shop/search/products?searchTerm=${encodeURIComponent(term)}`;
         const response = await fetchImpl(`${BASE}/apis/ui/Search/products`, {
           method: 'POST',
@@ -82,7 +85,7 @@ export function createWoolworthsClient(fetchImpl: typeof fetch = fetch) {
             isMobile: false,
             Filters: [],
           }),
-          signal: AbortSignal.timeout(TIMEOUT_MS),
+          signal,
         });
         if (!response.ok)
           throw new Error(`Woolworths search failed with status ${response.status}`);
