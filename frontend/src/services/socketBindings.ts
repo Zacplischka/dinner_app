@@ -197,6 +197,17 @@ const socketConfig: SocketConfig = {
         // Show joined toast for new participant
         toast.info(`${event.displayName} joined the session`);
       }
+
+      // #513: a Live Selection is never stored, so the joiner starts with an
+      // empty buffer and could never complete a Full House on likes made before
+      // it arrived. Re-send this phone's current likes (an Undo has already
+      // taken a retracted one out of `selections`): the joiner records them and
+      // every other phone drops them as duplicates, keyed by display name.
+      // ponytail: one selection:live per like, at most MAX_DECK_SIZE (50) with
+      // no server rate limit to trip. Batch into one event if Decks outgrow that.
+      if (store.sessionStatus === 'selecting' && store.sessionCode) {
+        for (const placeId of store.selections) void sendLiveSelection(store.sessionCode, placeId);
+      }
     },
 
     // participant:left - A participant INTENTIONALLY left the session (session:leave)
