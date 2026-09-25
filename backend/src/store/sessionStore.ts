@@ -18,6 +18,7 @@ import {
   type Mood,
   type LobbyParticipant,
   type SessionLobbyState,
+  type SessionResultsEvent,
 } from '@dinder/shared/types';
 
 export const SESSION_TTL_SECONDS = 30 * 60;
@@ -102,7 +103,8 @@ export interface Participant {
 }
 
 // --- Keyspace (private) ------------------------------------------------
-// session:{code}                     hash: session metadata
+// session:{code}                     hash: session metadata, plus completedResults: the finished
+//                                         outcome as broadcast, JSON, until a Restart (#506)
 // session:{code}:participants       set:  participant ids
 // session:{code}:display_names      hash: display name -> [participant id, rejoin token]
 // session:{code}:{pid}:selections   set:  place ids a participant selected
@@ -247,8 +249,9 @@ export function createSessionStore(redis: Redis) {
    * Called by the flow mutations — create, join, submission, results, restart,
    * deck replace, and the Group Order writes. NOT by every mutating operation:
    * updateState, claimDisplayName, setParticipantCount, removeParticipant,
-   * addResultPlaceId, claimShoppingListId and releaseShoppingListId leave the
-   * clock untouched (whether they should is an open Session-expiry question).
+   * addResultPlaceId, writeCompletedResults, claimShoppingListId and
+   * releaseShoppingListId leave the clock untouched (whether they should is an
+   * open Session-expiry question).
    */
   async function touch(sessionCode: string): Promise<number> {
     const expireAt = calculateExpireAt();
@@ -631,8 +634,8 @@ export function createSessionStore(redis: Redis) {
   // --- Match -------------------------------------------------------------
 
   /**
-   * Reads the Match and per-participant selections without mutation, including
-   * completed rejoin hydration. Pending Cook newcomers never enter the tally.
+   * Reads the Match and per-participant selections without mutation, over the
+   * current roster. Pending Cook newcomers never enter the tally.
    */
   async function readMatch(sessionCode: string): Promise<{
     overlappingOptions: DeckEntry[];
@@ -703,6 +706,24 @@ export function createSessionStore(redis: Redis) {
     await redis.sadd(resultsKey(sessionCode), placeId);
   }
 
+  /**
+   * The finished outcome exactly as broadcast (#506), on the session hash so it
+   * lives and dies with the Session. A rejoin reads this back: a Leave DELs the
+   * leaver's Selections, so readMatch afterwards can crown something else.
+   */
+  async function writeCompletedResults(
+    sessionCode: string,
+    results: SessionResultsEvent
+  ): Promise<void> {
+    await redis.hset(sessionKey(sessionCode), 'completedResults', JSON.stringify(results));
+  }
+
+  /** Null when the Session completed before its outcome was stored. */
+  async function readCompletedResults(sessionCode: string): Promise<SessionResultsEvent | null> {
+    const raw = await redis.hget(sessionKey(sessionCode), 'completedResults');
+    return raw ? (JSON.parse(raw) as SessionResultsEvent) : null;
+  }
+
   // --- Shopping List -----------------------------------------------------
 
   /**
@@ -755,8 +776,8 @@ export function createSessionStore(redis: Redis) {
     // minted for it: deciding again may crown a different Recipe, and the
     // list already minted must not be served as that one's. The minted list
     // is untouched — it has its own URL and its own clock, and anyone holding
-    // the link keeps it.
-    pipeline.hdel(sessionKey(sessionCode), 'shoppingListId');
+    // the link keeps it. The stored outcome goes with it.
+    pipeline.hdel(sessionKey(sessionCode), 'shoppingListId', 'completedResults');
     pipeline.hset(sessionKey(sessionCode), 'state', state);
     pipeline.hset(sessionKey(sessionCode), 'orderRound', randomUUID());
     if (wasComplete) {
@@ -985,6 +1006,8 @@ export function createSessionStore(redis: Redis) {
     computeAndStoreResults,
     readMatch,
     addResultPlaceId,
+    writeCompletedResults,
+    readCompletedResults,
     claimShoppingListId,
     releaseShoppingListId,
     resetForRestart,

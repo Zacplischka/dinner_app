@@ -744,6 +744,9 @@ export function createSessionService({
   }
 
   async function readCompletedResults(sessionCode: string): Promise<SessionResultsEvent> {
+    const stored = await store.readCompletedResults(sessionCode);
+    if (stored) return stored;
+    // Completed before the outcome was stored (#506): recompute over whoever is left.
     const session = await store.readSession(sessionCode);
     const results = await store.readMatch(sessionCode);
     return {
@@ -812,6 +815,10 @@ export function createSessionService({
             }
           )
         : undefined;
+    const outcome = { ...results, topPick, shoppingListId };
+    // Crowned once (#399): a rejoin reads this copy, never a recompute over a
+    // roster a Leave has since changed (#506).
+    await store.writeCompletedResults(sessionCode, { sessionCode, ...outcome });
 
     const matchSize = results.overlappingOptions.length;
     const restartFollowed = await store.wasRestartedAfterComplete(sessionCode);
@@ -832,7 +839,7 @@ export function createSessionService({
       current.lobby.revision++;
       await store.writeLobbySession(current);
     }
-    return { ...results, topPick, shoppingListId };
+    return outcome;
   }
 
   /**
