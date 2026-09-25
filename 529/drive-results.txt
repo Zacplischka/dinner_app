@@ -1,0 +1,13 @@
+# #529 local drive (scratchpad 529-drive.mjs): Alex hosts Watch X, Casey joins X (not Ready),
+# Alex Ready, Dana hosts Watch Y, then Casey's own app socket emits session:join for Y
+# with no session:leave (the #284 join-departure path). 390x844 viewport, three contexts.
+# "frames" = raw socket.io frames Alex's browser received after the departure.
+# "rest-blocked" = Alex's GET /api/sessions/* aborted after setup, so the socket is the only source.
+
+# base @ 3d0a88a
+{"label":"base-rest-blocked","caseyJoinAck":{"success":true},"alexBefore":{"revision":3,"lobbyRoster":["Test Alex (ready)","Test Casey"]},"alexAfter":{"revision":3,"lobbyRoster":["Test Alex (ready)","Test Casey"]},"alexUi":{"heading":"Participants (1)","readyLine":"1 of 2 ready.","startDisabled":true},"frames":[{"event":"participant:left","displayName":"Test Casey","participantCount":1}]}
+{"label":"base-default","caseyJoinAck":{"success":true},"alexBefore":{"revision":3},"alexAfter":{"revision":4,"lobbyRoster":["Test Alex (ready)"]},"alexUi":{"readyLine":"1 of 1 ready.","startDisabled":false},"frames":[{"event":"participant:left","displayName":"Test Casey","participantCount":1}],"note":"healed by SessionLobbyPage's roster-keyed REST refetch, not by the socket"}
+
+# head @ 5ee9f02 (identical output at e92335c)
+{"label":"head-rest-blocked","caseyJoinAck":{"success":true},"alexBefore":{"revision":3,"lobbyRoster":["Test Alex (ready)","Test Casey"]},"alexAfter":{"revision":4,"lobbyRoster":["Test Alex (ready)"]},"alexUi":{"heading":"Participants (1)","readyLine":"1 of 1 ready.","startDisabled":false},"frames":[{"event":"participant:left","displayName":"Test Casey","participantCount":1},{"event":"session:lobby","revision":4,"roster":["Test Alex"]}]}
+{"label":"head-default","caseyJoinAck":{"success":true},"alexAfter":{"revision":4,"lobbyRoster":["Test Alex (ready)"]},"alexUi":{"readyLine":"1 of 1 ready.","startDisabled":false},"frames":[{"event":"participant:left","displayName":"Test Casey","participantCount":1},{"event":"session:lobby","revision":4,"roster":["Test Alex"]}]}

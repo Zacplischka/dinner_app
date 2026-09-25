@@ -1,0 +1,37 @@
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should reject invalid payloads 1ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should reject missing sessions 1ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should add a new participant and log the join 3ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should leave any previous Session room when joining a new one 4ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should not leave rooms when the join is rejected 1ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should replace an existing participant when they rejoin with the same display name 6ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should reject a duplicate display name without its rejoin token 4ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should admit a brand-new participant while the session is selecting 2ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should refuse a complete session saying it has finished 2ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should broadcast participant:left to the old session when a socket joins a new one 3ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should still broadcast the departure to the old room when the join is refused post-add 0ms
+ × |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should log, not re-ack, when the departed Lobby re-broadcast fails 1005ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should deliver the Match to the old room when the departure completes it 5ms
+ × |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should re-broadcast the old Lobby when a join pulls a Participant out of it 1006ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should reject full sessions before adding and log the rejection 3ms
+ ✓ |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should return generic error when join processing throws 1ms
+ FAIL  |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should log, not re-ack, when the departed Lobby re-broadcast fails
+ FAIL  |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should re-broadcast the old Lobby when a join pulls a Participant out of it
+ Test Files  1 failed (1)
+      Tests  2 failed | 66 passed (68)
+ FAIL  |unit| tests/unit/websocketHandlers.test.ts > websocket handlers > handleSessionJoin > should re-broadcast the old Lobby when a join pulls a Participant out of it
+AssertionError: expected "vi.fn()" to be called with arguments: [ Array(2) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+-   "session:lobby",
+-   ObjectContaining {
+-     "participants": [
+-       ObjectContaining {
+-         "participantId": "socket-1",
+-         "ready": true,
+-       },
+-     ],
+-     "revision": 1,
