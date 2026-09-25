@@ -97,7 +97,7 @@ describe('Google Places API Configuration', () => {
     const { config: loadedConfig } = await import('../../src/config/index.js');
 
     expect(loadedConfig.paidBudget).toEqual({
-      placesTextSearch: 80,
+      placesTextSearch: 30,
       placePhoto: 180,
       shoppingListMint: 40,
       coldComparison: 60,

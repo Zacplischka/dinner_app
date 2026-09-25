@@ -88,9 +88,11 @@ export const config = {
   // calls that never pass through it (local runs, e2e and verify-live share
   // the Places key).
   paidBudget: {
-    // The app's own cap: Google's Text Search quota is its 75,000-a-day default (no override on
-    // mypickle-486702), so what this keeps us off is the billing kill switch, not a quota.
-    placesTextSearch: budgetCeiling('PLACES_TEXT_SEARCH_DAILY_CEILING', 80),
+    // The only cap: Google's Text Search quota is its 75,000-a-day default (no override on
+    // mypickle-486702). 30 a day is ~930 a month, inside the 1,000 free Enterprise calls with room
+    // for local, e2e and verify-live runs on the same key; past that it bills toward the A$10
+    // kill switch, which detaches billing and takes search and photos down together.
+    placesTextSearch: budgetCeiling('PLACES_TEXT_SEARCH_DAILY_CEILING', 30),
     // Place Photo media is quota-capped at 200 a day; 20 spare.
     placePhoto: budgetCeiling('PLACE_PHOTO_DAILY_CEILING', 180),
     // No vendor quota: ~1,200 cold Woolworths lookups at ~12 lines a list keeps one politeness queue ours.
