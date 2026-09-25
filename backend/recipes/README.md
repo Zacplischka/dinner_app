@@ -135,8 +135,10 @@ treated bay leaves as a Staple; `staples.ts` does not, so the line is listed.
 The two-family run then sent back eight more, all of the kind the pilot warned
 about: a diet claimed on an ingredient not labelled for it — fish sauce
 (beef-massaman-curry, vietnamese-chicken-vermicelli-bowl), tamari
-(san-choy-bow) and curry paste (beef-massaman-curry) now named gluten-free with
-the plain term kept in `searchTerm`; zucchini-slice's cheddar named for
+(san-choy-bow) and curry paste (beef-massaman-curry) now named gluten-free, with
+the qualifier kept in `searchTerm` as a suffix (`fish sauce gluten free`) —
+[#505](https://github.com/Zacplischka/dinner_app/issues/505) found the plain
+term there bought the plain product; zucchini-slice's cheddar named for
 vegetarian rennet; pumpkin-soup's thickened cream, which can carry gelatine,
 replaced by pure cream — plus three method faults: chicken-katsu-curry's rice
 had no water or time, bangers-and-mash left the potatoes boiling while the rest

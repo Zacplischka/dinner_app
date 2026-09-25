@@ -93,7 +93,8 @@ dish, not a version of anybody's page.
   the cook-friendly phrasing lives in "original" ("1 tbsp (10 g) cornflour"). No handfuls, no
   "to taste" in an amount — a pinch of salt belongs in the step text.
 - "name" is what you would type into Woolworths search. When it has to be diet-qualified to stay
-  honest ("gluten free cornflour"), add a plain matchable "searchTerm" beside it.
+  honest ("gluten-free fish sauce"), any "searchTerm" beside it keeps the qualifier as a suffix
+  ("fish sauce gluten free") — a plain term buys the plain product and undoes the diet.
 - Name each ingredient with the Fact Record's canonicalIngredients wording — it is already a plain
   AU search term. Where yours must differ, keep the record's words somewhere in "original".
 - Every ingredient appears in some step; every step names only listed ingredients. Salt, pepper,
