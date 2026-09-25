@@ -67,6 +67,13 @@ const STOP_WORDS = new Set([
   'iceberg',
 ]);
 
+// A diet the term names is a requirement, not a ranking signal (#505): a line
+// searched as "fish sauce gluten free" buys a product whose name says so, or
+// nothing, and stays Unmatched with its search link.
+// ponytail: the name is the only label the search answer carries, so a
+// compliant product that does not say so on its name is refused too.
+const DIET_QUALIFIERS = [/\bgluten[\s-]*free\b/i, /\bvegetarian\b/i];
+
 function identityKeywords(term: string): string[] {
   return (term.toLowerCase().match(/[a-z]+/g) ?? []).filter(
     (word) => word.length > 2 && !STOP_WORDS.has(word)
@@ -125,6 +132,7 @@ export function matchProducts(
   const freshGarlic = /^(?:fresh |whole )?garlic(?: cloves?| bulbs?| heads?| loose)?$/i.test(
     term.trim()
   );
+  const diets = DIET_QUALIFIERS.filter((qualifier) => qualifier.test(term));
   const eligible = products
     .map((product, rank) => ({ product, rank }))
     .filter(({ product }) => {
@@ -141,6 +149,7 @@ export function matchProducts(
       return (
         product.sapCategory &&
         !BLOCKED_SECTIONS.test(`${product.sapCategory} ${subCategory}`) &&
+        diets.every((qualifier) => qualifier.test(product.name)) &&
         (!freshGarlic ||
           (/\bgarlic\b/i.test(product.name) &&
             !/\b(pastes?|crushed|minced|chopped|dried|powder|granules?|bread|butter|oil|sauce|dip|aioli|salt|pickled|black|roasted|supplements?)\b/i.test(
