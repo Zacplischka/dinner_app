@@ -411,6 +411,62 @@ describe('gather-first Sessions', () => {
     expect(search).toHaveBeenCalledTimes(1);
   });
 
+  // #502: nudging the area by 0.0001° made every start a new paid Text Search.
+  it('refuses a fourth paid search in one Session, says so in the Lobby, and still reuses a dealt area', async () => {
+    const { code } = await joined('eatout');
+    const moveTo = async (latitude: number) =>
+      service.updateChoices(code, 'host', {
+        sessionCode: code,
+        revision: await revision(code),
+        location: { latitude, longitude: 0 },
+      });
+    for (const latitude of [0.0001, 0.0002, 0.0003]) {
+      await moveTo(latitude);
+      await start(code);
+      await service.restartSession(code, 'host');
+    }
+    expect(search).toHaveBeenCalledTimes(3);
+
+    await moveTo(0.0004);
+    await expect(start(code)).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    expect(search).toHaveBeenCalledTimes(3);
+    expect(await service.getLobby(code)).toMatchObject({
+      state: 'waiting',
+      starting: false,
+      notice: 'This Session has used all its searches. Start a new Session to search again.',
+    });
+
+    // The area the Deck was last dealt for costs nothing, so the cap never blocks it.
+    await moveTo(0.0003);
+    expect((await start(code)).state).toBe('selecting');
+    expect(search).toHaveBeenCalledTimes(3);
+  });
+
+  it('counts a Cook deal against the cap only when its Craving is new to the Session', async () => {
+    const { code } = await joined('cook');
+    const eat = async (diets: ('vegan' | 'gluten free')[]) =>
+      service.updateChoices(code, 'host', {
+        sessionCode: code,
+        revision: await revision(code),
+        diets,
+      });
+    await start(code);
+    await service.restartSession(code, 'host');
+    // The same Craving again is the pool it was already dealt from.
+    await start(code);
+    await service.restartSession(code, 'host');
+    for (const diets of [['vegan'], ['gluten free']] as const) {
+      await eat([...diets]);
+      await start(code);
+      await service.restartSession(code, 'host');
+    }
+    expect(supply).toHaveBeenCalledTimes(4);
+
+    await eat(['vegan', 'gluten free']);
+    await expect(start(code)).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    expect(supply).toHaveBeenCalledTimes(4);
+  });
+
   it('rejects a delayed Submission from the previous round after Restart and a fresh start', async () => {
     const { code } = await joined();
     const first = await start(code);

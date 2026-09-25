@@ -10,6 +10,7 @@ import {
   SHOPPING_LIST_TTL_MS,
 } from '../../src/services/ShoppingListService.js';
 import type { Session } from '../../src/store/sessionStore.js';
+import { config } from '../../src/config/index.js';
 import type { PooledRecipe } from '../../src/services/spoonacularClient.js';
 
 const tin = {
@@ -701,6 +702,23 @@ describe('ShoppingListService.mint', () => {
 
     expect(retry).toBe(dead);
     expect(await service.readList(retry!)).toMatchObject({ recipeName: 'Aglio e Olio' });
+  });
+
+  // #502: every completed Cook Session queued cold Woolworths lookups, unbounded.
+  it('mints the list unpriced, without a Retailer call, once the daily pricing budget is spent', async () => {
+    const { service, redis, matchProduct } = build();
+    redis.incr.mockResolvedValue(config.paidBudget.shoppingListMint + 1);
+
+    const listId = await service.mint('AB123', '11');
+
+    // The Session still gets its list: the Recipe and method, with prices unavailable.
+    expect(listId).toBeDefined();
+    expect(await service.readList(listId!)).toMatchObject({
+      pricingStatus: 'failed',
+      steps: recipe.steps,
+    });
+    expect(matchProduct).not.toHaveBeenCalled();
+    expect(redis.incr).toHaveBeenCalledWith(expect.stringMatching(/^budget:shoppingListMint:/));
   });
 
   it('still mints once when two completions land together', async () => {
