@@ -46,12 +46,11 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
     const io = {
       in: vi.fn(() => ({ emit })),
     };
-    const callback = vi.fn();
     const socket = { id: 'alice' };
 
-    await handleSessionRestart(socket as any, io as any, { sessionCode }, callback, sessionService);
+    await handleSessionRestart(socket as any, io as any, { sessionCode }, vi.fn(), sessionService);
 
-    return { callback, io, emit };
+    return { emit };
   }
 
   it('should clear all selections from Redis', async () => {
@@ -62,11 +61,11 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
     await expect(redis.exists(`session:${sessionCode}:results`)).resolves.toBe(0);
   });
 
-  it('should broadcast session:restarted to all participants', async () => {
-    const { callback, io, emit } = await restartSession();
+  // The ack and room broadcast are unit-tested (websocketHandlers.test.ts), but
+  // only from 'waiting'; this is the one check of the completed-Session message.
+  it('should broadcast the Restart message, not the lobby start one', async () => {
+    const { emit } = await restartSession();
 
-    expect(callback).toHaveBeenCalledWith({ success: true, data: null });
-    expect(io.in).toHaveBeenCalledWith(sessionCode);
     expect(emit).toHaveBeenCalledWith('session:restarted', {
       sessionCode,
       message: 'Session restarted. Make new selections.',
