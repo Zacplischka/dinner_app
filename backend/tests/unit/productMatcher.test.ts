@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { matchProducts, type WoolworthsProduct } from '../../src/services/productMatcher.js';
+import {
+  matchProducts,
+  retailerQuery,
+  type WoolworthsProduct,
+} from '../../src/services/productMatcher.js';
 
 function product(overrides: Partial<WoolworthsProduct> & { stockcode: number }): WoolworthsProduct {
   return {
@@ -475,6 +479,14 @@ describe('matchProducts', () => {
       dietaryStatement: 'Gluten Free,Vegetarian',
     });
     expect(matchProducts([vegetarian], 'parmesan vegan')).toBeNull();
+  });
+
+  it('asks the Retailer for the product without its diet (#505)', () => {
+    expect(retailerQuery('beef liquid stock gluten free')).toBe('beef liquid stock');
+    expect(retailerQuery('parmesan cheese vegetarian')).toBe('parmesan cheese');
+    expect(retailerQuery('vegan feta')).toBe('feta');
+    // Nothing but a diet is still a query, never "".
+    expect(retailerQuery('gluten free')).toBe('gluten free');
   });
 
   it('holds a Sourced Recipe’s diet-qualified line to the same rule (#505)', () => {

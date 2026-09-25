@@ -80,6 +80,21 @@ const DIET_QUALIFIERS = [
   { asks: /\bvegan\b/i, meets: /\bvegan\b/i },
 ];
 
+/**
+ * What the Retailer is asked for a line: the product, without the diet the
+ * Matcher holds it to. Woolworths reads a diet word as a shelf of its own — a
+ * live "parmesan cheese vegetarian" ranked ricotta first and the parmesans
+ * eighth — so the qualifier stays in the term the Matcher and the search link
+ * see, and out of the query.
+ */
+export function retailerQuery(term: string): string {
+  const query = DIET_QUALIFIERS.reduce(
+    (rest, { asks }) => rest.replace(new RegExp(asks.source, 'gi'), ' '),
+    term
+  );
+  return query.replace(/\s+/g, ' ').trim() || term;
+}
+
 function identityKeywords(term: string): string[] {
   return (term.toLowerCase().match(/[a-z]+/g) ?? []).filter(
     (word) => word.length > 2 && !STOP_WORDS.has(word)
