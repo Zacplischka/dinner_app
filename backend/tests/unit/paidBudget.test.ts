@@ -3,7 +3,7 @@
 import RedisMock from 'ioredis-mock';
 import type { Redis } from 'ioredis';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { budgetKey, spendPaidBudget } from '../../src/services/paidBudget.js';
+import { budgetKey, checkPaidBudget, spendPaidBudget } from '../../src/services/paidBudget.js';
 
 describe('spendPaidBudget', () => {
   let redis: Redis;
@@ -66,6 +66,24 @@ describe('spendPaidBudget', () => {
     expect(budgetKey('placesTextSearch')).toBe('budget:placesTextSearch:2026-09-24');
     vi.setSystemTime(new Date('2026-09-25T08:00:00.000Z'));
     expect(budgetKey('placesTextSearch')).toBe('budget:placesTextSearch:2026-09-25');
+  });
+
+  // #502 round 2: a spent month must refuse before Place Details, which Google bills.
+  it('checks a spent budget without spending it', async () => {
+    await expect(checkPaidBudget(redis, 'coldComparison', 1)).resolves.toBeUndefined();
+    expect(await redis.get(budgetKey('coldComparison'))).toBeNull();
+
+    await spendPaidBudget(redis, 'coldComparison', 1);
+    await expect(checkPaidBudget(redis, 'coldComparison', 1)).rejects.toMatchObject({
+      code: 'RATE_LIMITED',
+      message: expect.stringMatching(/monthly limit/),
+    });
+    expect(await redis.get(budgetKey('coldComparison'))).toBe('1');
+  });
+
+  it('fails closed on a check too: a Redis error refuses', async () => {
+    vi.spyOn(redis, 'get').mockRejectedValue(new Error('Redis unavailable'));
+    await expect(checkPaidBudget(redis, 'coldComparison', 60)).rejects.toThrow('Redis unavailable');
   });
 
   it('fails closed: a Redis error refuses the call rather than letting it through', async () => {

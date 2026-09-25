@@ -102,7 +102,8 @@ describe('Google Places API Configuration', () => {
       shoppingListMint: 40,
       coldComparison: 60,
     });
-    expect(error.mock.calls.map(([fields]) => (fields as { name: string }).name)).toEqual([
+    // Not `name`: pino prints that as the logger's own name.
+    expect(error.mock.calls.map(([fields]) => (fields as { variable: string }).variable)).toEqual([
       'PLACES_TEXT_SEARCH_DAILY_CEILING',
       'PLACE_PHOTO_DAILY_CEILING',
     ]);
