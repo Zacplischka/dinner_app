@@ -12,16 +12,27 @@ const loadSupabase = () => import('../services/supabase');
 
 // On the web supabase-js keeps the session in localStorage under its default
 // key, sb-<project-ref>-auth-token, and the Google sign-in lands back on `/`
-// with the tokens in the hash (the implicit flow). Native keeps it in
-// credentialStorage, so the app always restores there.
+// with the tokens in the hash (the implicit flow), or with an error there when
+// it was refused. Native keeps it in credentialStorage, so the app always
+// restores there.
+const SESSION_KEY = /^sb-.+-auth-token$/;
+
 function hasSessionToRestore(): boolean {
   if (Capacitor.isNativePlatform()) return true;
-  if (new URLSearchParams(window.location.hash.slice(1)).has('access_token')) return true;
+  const callback = new URLSearchParams(window.location.hash.slice(1));
+  if (callback.has('access_token') || callback.has('error_description')) return true;
   try {
-    return Object.keys(localStorage).some((key) => /^sb-.+-auth-token/.test(key));
+    return Object.keys(localStorage).some((key) => SESSION_KEY.test(key));
   } catch {
     return true; // storage blocked: let supabase-js decide, as it always did
   }
+}
+
+// A guest who signs in from another tab: that tab writes the session key.
+function signedInElsewhere(event: StorageEvent) {
+  if (event.key === null || !SESSION_KEY.test(event.key) || event.newValue === null) return;
+  window.removeEventListener('storage', signedInElsewhere);
+  void useAuthStore.getState().initialize();
 }
 
 // Optional identity must not hold guest entry hostage to an auth outage.
@@ -55,16 +66,17 @@ export const useAuthStore = create<AuthState>()(
       initialize: async () => {
         if (!hasSessionToRestore()) {
           set({ isLoading: false });
+          window.addEventListener('storage', signedInElsewhere);
           return;
         }
-        let guestFallback: ReturnType<typeof setTimeout> | undefined;
+        // Started before the download, so a stalled chunk cannot hold it either.
+        const guestFallback = setTimeout(() => set({ isLoading: false }), GUEST_FALLBACK_MS);
         try {
           const { supabase } = await loadSupabase();
           if (!supabase) {
             set({ isLoading: false });
             return;
           }
-          guestFallback = setTimeout(() => set({ isLoading: false }), GUEST_FALLBACK_MS);
           // Get initial session
           const {
             data: { session },
@@ -133,8 +145,9 @@ export const useAuthStore = create<AuthState>()(
 
 /**
  * Resolves once auth has settled, so a request that should carry the session
- * does not go out while supabase-js is still restoring it. Bounded like
- * initialize's guest fallback, and immediate when nothing is loading.
+ * does not go out while supabase-js is still restoring it. Immediate when
+ * nothing is loading, and bounded on its own: initialize's guest fallback
+ * cannot help before App has called initialize().
  */
 export function authSettled(): Promise<void> {
   if (!useAuthStore.getState().isLoading) return Promise.resolve();
