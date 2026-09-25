@@ -8,7 +8,6 @@ import {
   DECK_SIZE,
   POOL_CAP,
   corpusMovieSource,
-  dealMovieDeck,
   decadeOf,
   loadMovieCorpus,
   redealMovieDeck,
@@ -96,11 +95,11 @@ describe('corpusMovieSource', () => {
   });
 });
 
-describe('dealMovieDeck', () => {
+describe('redealMovieDeck — the first deal', () => {
   it('deals at most a Deck, every Movie matching every axis of the Mood', () => {
     const mood: Mood = { genres: ['Comedy', 'Horror'], decades: ['1990s'], mediaTypes: ['movie'] };
 
-    const deck = dealMovieDeck(mood, { source, shuffle: identity }) as Movie[];
+    const deck = redealMovieDeck(mood, [], { source, shuffle: identity }) as Movie[];
 
     expect(deck).toHaveLength(DECK_SIZE);
     for (const movie of deck) {
@@ -113,7 +112,7 @@ describe('dealMovieDeck', () => {
 
   it('deals the best-known titles within each media type when the Mood filters nothing', () => {
     expect(source(anything)).toHaveLength(MOVIES.length);
-    const deck = dealMovieDeck(anything, { source, shuffle: identity }) as Movie[];
+    const deck = redealMovieDeck(anything, [], { source, shuffle: identity }) as Movie[];
     expect(deck.filter((m) => m.mediaType === 'movie')).toEqual(
       MOVIES.filter((m) => m.mediaType === 'movie').slice(0, 8)
     );
@@ -121,26 +120,26 @@ describe('dealMovieDeck', () => {
       MOVIES.filter((m) => m.mediaType === 'tv').slice(0, 7)
     );
     // The real shuffle deals a whole Deck too — the cut is after the shuffle.
-    expect(dealMovieDeck(anything, { source })).toHaveLength(DECK_SIZE);
+    expect(redealMovieDeck(anything, [], { source })).toHaveLength(DECK_SIZE);
   });
 
   it('shuffles only the first POOL_CAP matches, so a broad Mood never deals the obscure', () => {
     const many = stub(POOL_CAP * 3);
 
-    const deck = dealMovieDeck(anything, { source: () => many, shuffle: reversed });
+    const deck = redealMovieDeck(anything, [], { source: () => many, shuffle: reversed });
 
     // Reversed within the cap: the cap's last title comes first, nothing past it appears.
     expect(deck).toEqual(many.slice(POOL_CAP - DECK_SIZE, POOL_CAP));
   });
 
   it('deals none for a Mood the corpus cannot answer', () => {
-    expect(dealMovieDeck(anything, { source: () => [] })).toEqual([]);
+    expect(redealMovieDeck(anything, [], { source: () => [] })).toEqual([]);
   });
 });
 
 describe('redealMovieDeck', () => {
   it('leads with the Movies the wiped Deck did not show', () => {
-    const first = dealMovieDeck(anything, { source, shuffle: identity });
+    const first = redealMovieDeck(anything, [], { source, shuffle: identity });
 
     const next = redealMovieDeck(anything, first, { source, shuffle: identity });
 
@@ -150,7 +149,7 @@ describe('redealMovieDeck', () => {
 
   it('repeats only once the Mood has run out of unshown Movies', () => {
     const pool = stub(DECK_SIZE + 5);
-    const first = dealMovieDeck(anything, { source: () => pool, shuffle: identity });
+    const first = redealMovieDeck(anything, [], { source: () => pool, shuffle: identity });
 
     const next = redealMovieDeck(anything, first, { source: () => pool, shuffle: identity });
 
@@ -178,7 +177,7 @@ describe('collaborative media allocation', () => {
     ({ mediaTypes }) => {
       const comedy = stub(6);
       const drama = stub(6, 'tv').map((movie) => ({ ...movie, genres: ['Drama'] }));
-      const deck = dealMovieDeck(anything, {
+      const deck = redealMovieDeck(anything, [], {
         source: corpusMovieSource([...comedy, ...drama]),
         interests: [
           { genres: ['Comedy'], decades: [], mediaTypes: ['movie'] },
@@ -200,8 +199,9 @@ describe('collaborative media allocation', () => {
     'balances both types from a movie-dominated corpus for size %i',
     (deckSize) => {
       const source = corpusMovieSource([...stub(500), ...stub(40, 'tv')]);
-      const deck = dealMovieDeck(
+      const deck = redealMovieDeck(
         { genres: ['Comedy'], decades: ['1990s'], mediaTypes: ['movie', 'tv'] },
+        [],
         { source, shuffle: identity, deckSize }
       );
       const films = deck.filter((m) => m.kind === 'movie' && m.mediaType === 'movie').length;
@@ -212,7 +212,7 @@ describe('collaborative media allocation', () => {
   );
 
   it('fills scarce series with movies without inventing entries', () => {
-    const deck = dealMovieDeck(anything, {
+    const deck = redealMovieDeck(anything, [], {
       source: corpusMovieSource([...stub(100), ...stub(2, 'tv')]),
       deckSize: 15,
       shuffle: identity,
@@ -237,7 +237,7 @@ describe('collaborative media allocation', () => {
       { genres: ['Action', 'Adventure', 'Comedy'], decades: ['1990s'], mediaTypes: ['movie'] },
       { genres: ['Music'], decades: ['2020s'], mediaTypes: ['movie'] },
     ];
-    const deck = dealMovieDeck(anything, {
+    const deck = redealMovieDeck(anything, [], {
       source: corpusMovieSource([...action, ...music]),
       interests,
       deckSize: 10,

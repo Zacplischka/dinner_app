@@ -6,7 +6,6 @@ import type { Craving } from '@dinder/shared/types';
 import {
   blendDeck,
   createRecipePoolService,
-  cravingFromPoolKey,
   cravingPoolKey,
   cutDeck,
 } from '../../src/services/RecipePoolService.js';
@@ -289,85 +288,15 @@ describe('createRecipePoolService', () => {
   });
 });
 
-describe('redeal — the Restart deal (#260)', () => {
-  beforeEach(async () => {
-    await new RedisMock().flushall();
-  });
-
-  const key = cravingPoolKey(pasta);
-
-  it('avoids the just-wiped deal when the pool can afford it', async () => {
-    const { service: pool } = service(recipeHits(60));
-    const wiped = (await pool.dealDeck(pasta)).entries;
-
-    const next = await pool.redeal(key, wiped);
-
-    expect(next).toHaveLength(15);
-    const wipedIds = new Set(wiped.map((entry) => entry.placeId));
-    expect(next.filter((entry) => wipedIds.has(entry.placeId))).toEqual([]);
-  });
-
-  it('tops up with repeats rather than dealing short from a thin pool', async () => {
-    // 20 pooled, 15 wiped: only 5 are fresh, so 10 must come back around.
-    const { service: pool } = service(recipeHits(20));
-    const wiped = (await pool.dealDeck(pasta)).entries;
-
-    const next = await pool.redeal(key, wiped);
-
-    expect(next).toHaveLength(15);
-    const wipedIds = new Set(wiped.map((entry) => entry.placeId));
-    // Fresh first: the five the last deal missed lead the new one.
-    expect(next.slice(0, 5).some((entry) => wipedIds.has(entry.placeId))).toBe(false);
-  });
-
-  it('reshuffles the wiped deal when the pool has aged out — never an error', async () => {
-    const { redis, service: pool } = service(recipeHits(60));
-    const wiped = (await pool.dealDeck(pasta)).entries;
-    await redis.del(key);
-
-    const next = await pool.redeal(key, wiped);
-
-    expect(next.map((entry) => entry.placeId).sort()).toEqual(
-      wiped.map((entry) => entry.placeId).sort()
-    );
-  });
-
-  it('pays no lookup for a Restart — a cold pool degrades, it does not refetch', async () => {
-    const { redis, service: pool, searches } = service(recipeHits(60));
-    const wiped = (await pool.dealDeck(pasta)).entries;
-    await redis.del(key);
-
-    await pool.redeal(key, wiped);
-
-    expect(searches()).toHaveLength(1);
-  });
-
-  it('deals the whole thin pool rather than refusing to Restart', async () => {
-    const { service: pool } = service(recipeHits(7));
-    const wiped = (await pool.dealDeck(pasta)).entries;
-
-    await expect(pool.redeal(key, wiped)).resolves.toHaveLength(7);
-  });
-});
-
 describe('the Deck size the Host chose (#415)', () => {
   beforeEach(async () => {
     await new RedisMock().flushall();
   });
 
-  const key = cravingPoolKey(pasta);
-
   it('deals the size the Host asked for instead of the configured default', async () => {
     const { service: pool } = service(recipeHits(60));
 
     await expect(pool.dealDeck(pasta, 8).then((d) => d.entries)).resolves.toHaveLength(8);
-  });
-
-  it('deals the same size again on Restart', async () => {
-    const { service: pool } = service(recipeHits(60));
-    const wiped = (await pool.dealDeck(pasta, 8)).entries;
-
-    await expect(pool.redeal(key, wiped, 8)).resolves.toHaveLength(8);
   });
 
   it('never exceeds supply — a thin pool deals what it has', async () => {
@@ -510,21 +439,6 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
     expect(deck.slice(-3).every(isOwned)).toBe(true);
   });
 
-  it('holds the floor on a Restart, with fresh cards first within each source', async () => {
-    const { service: pool } = service(recipeHits(60), { owned: corpus });
-    const wiped = (await pool.dealDeck(pasta)).entries;
-
-    const next = await pool.redeal(key, wiped);
-
-    expect(next).toHaveLength(15);
-    expect(next.filter(isOwned)).toHaveLength(3);
-    // Fresh first is computed per source, so the three owned cards are three
-    // the last Deck did not show — never quietly dropping below the floor to
-    // find them.
-    const wipedIds = new Set(wiped.map((entry) => entry.placeId));
-    expect(next.filter((entry) => wipedIds.has(entry.placeId))).toEqual([]);
-  });
-
   it('holds the floor with a corpus thinner than the floor, rather than dealing short', async () => {
     const { service: pool } = service(recipeHits(60), { owned: corpus.slice(0, 2) });
 
@@ -532,37 +446,6 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
 
     expect(deck).toHaveLength(15);
     expect(deck.filter(isOwned)).toHaveLength(2);
-  });
-
-  it('blends the corpus into a Restart of a Craving the vendor answered nothing for', async () => {
-    // `[]` is a cached clean miss, not a cold pool (the distinction
-    // `sourcedSupply` draws): the corpus is the whole supply and is still
-    // there, so a Restart deals its unshown cards rather than reshuffling the
-    // same fifteen back at the Session.
-    const { service: pool } = service(recipeHits(0), {
-      owned: ownedRecipes(20, { cuisine: 'italian', diets: ['vegetarian'] }),
-    });
-    const wiped = (await pool.dealDeck(pasta)).entries;
-
-    const next = await pool.redeal(key, wiped);
-
-    expect(next).toHaveLength(15);
-    const wipedIds = new Set(wiped.map((entry) => entry.placeId));
-    expect(next.slice(0, 5).some((entry) => wipedIds.has(entry.placeId))).toBe(false);
-  });
-
-  it('reshuffles the wiped Deck when the owned-only supply has gone too', async () => {
-    // The corpus ships with the deploy, so "gone" is a redeploy that dropped
-    // this Craving's Recipes under a live Session dealt owned-only. Blending
-    // would deal nothing; the Restart still deals a Deck.
-    const { redis, service: pool } = service(recipeHits(0), { owned: corpus });
-    const wiped = (await pool.dealDeck(pasta)).entries;
-
-    const next = await service(recipeHits(0), { redis, owned: [] }).service.redeal(key, wiped);
-
-    expect(next.map((entry) => entry.placeId).sort()).toEqual(
-      wiped.map((entry) => entry.placeId).sort()
-    );
   });
 
   it('reads a crowned Owned Recipe whole from the corpus, with no pool at all', async () => {
@@ -582,17 +465,6 @@ describe('the blend — Owned Recipes in every Cook Deck (#331)', () => {
     expect(recipe?.steps.length).toBeGreaterThan(0);
     // A Sourced Recipe is still the pool's, and still ages out with it.
     await expect(pool.readRecipe(key, sourced.placeId)).resolves.toBeNull();
-  });
-
-  it('reads the Craving back out of the pool key a Restart names', () => {
-    // The Restart path carries the pool key, not the Craving — and the key is
-    // the canonical Craving, which is exactly what the corpus filters on.
-    expect(cravingFromPoolKey(cravingPoolKey(pasta))).toEqual(pasta);
-    expect(
-      cravingFromPoolKey(
-        cravingPoolKey({ mealType: 'dessert', cuisines: ['thai', 'italian'], diets: [] })
-      )
-    ).toEqual({ mealType: 'dessert', cuisines: ['italian', 'thai'], diets: [] });
   });
 });
 

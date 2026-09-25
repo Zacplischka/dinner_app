@@ -3,8 +3,6 @@ import request from 'supertest';
 import { app } from '../../src/server.js';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 import { captureLogs } from '../helpers/logCapture.js';
-import { sessionService as SessionService } from '../../src/server.js';
-import { DomainError } from '../../src/services/DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 describe('Contract Test: API logging', () => {
@@ -65,7 +63,6 @@ describe('Contract Test: API logging', () => {
       sessionCode: response.body.sessionCode,
       hasLocation: false,
       searchRadiusMiles: null,
-      restaurantCount: 0,
     });
   });
 
@@ -100,28 +97,6 @@ describe('Contract Test: API logging', () => {
     expect(logs.withMsg('Rejected REST session create')[0]).toMatchObject({
       reason: 'validation_error',
       fields: ['hostName'],
-    });
-  });
-
-  it('logs expected no-restaurant creation failures separately from unexpected errors', async () => {
-    const logs = captureLogs();
-    vi.spyOn(SessionService, 'createSession').mockRejectedValueOnce(
-      new DomainError('NO_RESTAURANTS_FOUND', 'No restaurants found in the specified area.')
-    );
-
-    await request(app)
-      .post('/api/sessions')
-      .send({
-        hostName: 'Alice',
-        location: { latitude: -37.8136, longitude: 144.9631 },
-        searchRadiusMiles: 1,
-      })
-      .expect(404);
-
-    expect(logs.withMsg('Rejected REST session create')[0]).toMatchObject({
-      reason: 'no_restaurants_found',
-      hasLocation: true,
-      searchRadiusMiles: 1,
     });
   });
 

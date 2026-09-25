@@ -7,11 +7,7 @@ import {
   createSessionService,
   type SessionServiceDeps,
 } from '../../src/services/SessionService.js';
-import {
-  corpusMovieSource,
-  dealMovieDeck,
-  redealMovieDeck,
-} from '../../src/services/MovieDeckService.js';
+import { corpusMovieSource, redealMovieDeck } from '../../src/services/MovieDeckService.js';
 import { logger } from '../../src/logger.js';
 import { DomainError } from '../../src/services/DomainError.js';
 import { registerLobbyHandlers } from '../../src/websocket/lobbyHandler.js';
@@ -54,9 +50,6 @@ describe('gather-first Sessions', () => {
       store,
       searchNearbyRestaurants: search,
       dealRecipeDeck: supply,
-      redealRecipeDeck: async (_key, entries) => entries,
-      dealMovieDeck: (mood, deckSize, interests) =>
-        dealMovieDeck(mood, { source: movies, deckSize, interests, shuffle: identity }),
       redealMovieDeck: (mood, current, deckSize, interests) =>
         redealMovieDeck(mood, current, { source: movies, deckSize, interests, shuffle: identity }),
       mintShoppingList: async () => undefined,
@@ -72,7 +65,6 @@ describe('gather-first Sessions', () => {
     it(`keeps verified photo references attached through four-participant ${branch} lifecycle and guest rejoin`, async () => {
       const created = await service.createSession('Alice', {
         branch,
-        collaborative: true,
         deckSize: 5,
       });
       const code = created.sessionCode;
@@ -129,7 +121,6 @@ describe('gather-first Sessions', () => {
   async function joined(branch: Branch = 'watch') {
     const created = await service.createSession('Host', {
       branch,
-      collaborative: true,
       deckSize: 5,
     });
     const host = await service.joinSession(created.sessionCode, 'host', 'Host');
@@ -410,6 +401,15 @@ describe('gather-first Sessions', () => {
     await service.restartSession(code, 'host');
     await start(code);
     expect(search).toHaveBeenCalledTimes(1);
+    // Miles on the wire, metres to Places; the Deck size caps the results.
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        latitude: 0,
+        longitude: 0,
+        radiusMeters: 5 * 1609.34,
+        maxResults: 5,
+      })
+    );
   });
 
   // #502: nudging the area by 0.0001° made every start a new paid Text Search.

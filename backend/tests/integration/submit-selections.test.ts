@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { io as ioClient } from 'socket.io-client';
-import request from 'supertest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData } from '../helpers/testSetup.js';
 import { startSocketServer, stopSocketServer } from '../helpers/socketServer.js';
+import { startedSession } from '../helpers/startedSession.js';
+import { sessionStore } from '../../src/server.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 let socketUrl: string;
@@ -61,30 +62,9 @@ const MOCK_RESTAURANTS: Restaurant[] = [
   },
 ];
 
-/**
- * Set up mock restaurant data in Redis for a session
- */
-async function setupMockRestaurants(redis: Redis, sessionCode: string): Promise<void> {
-  // Store restaurant Place IDs in a Set
-  const placeIds = MOCK_RESTAURANTS.map(r => r.placeId);
-  await redis.sadd(`session:${sessionCode}:restaurant_ids`, ...placeIds);
-
-  // Store full restaurant data in a Hash
-  const restaurantData: Record<string, string> = {};
-  MOCK_RESTAURANTS.forEach(restaurant => {
-    restaurantData[restaurant.placeId] = JSON.stringify(restaurant);
-  });
-  await redis.hset(`session:${sessionCode}:restaurants`, restaurantData);
-
-  // Set TTL on restaurant keys (30 minutes)
-  const TTL_SECONDS = 1800; // 30 minutes
-  await redis.expire(`session:${sessionCode}:restaurant_ids`, TTL_SECONDS);
-  await redis.expire(`session:${sessionCode}:restaurants`, TTL_SECONDS);
-}
-
 describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', () => {
   let redis: Redis;
-  let testSessionCode: string;
+  const testSessionCode = 'SUB12';
 
   beforeAll(async () => {
     redis = getTestRedis();
@@ -95,15 +75,7 @@ describe('Integration Test: Submit Selections Flow (FR-007, FR-008, FR-023)', ()
     // Clean up before each test
     await cleanupTestData(redis);
 
-    // Create fresh session for each test
-    const response = await request(socketUrl)
-      .post('/api/sessions')
-      .send({ hostName: 'Alice' });
-
-    testSessionCode = response.body.sessionCode;
-
-    // Set up mock restaurant data for the session
-    await setupMockRestaurants(redis, testSessionCode);
+    await startedSession(sessionStore, testSessionCode, MOCK_RESTAURANTS);
   });
 
   afterAll(async () => {

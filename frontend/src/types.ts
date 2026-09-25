@@ -24,3 +24,15 @@ export interface Participant {
   ready?: boolean;
   waitingForNextRound?: boolean;
 }
+
+// Who may run the room's shared commands (the Lobby's start, a Restart): the
+// Host, or — when no Host is actually here (left, or dropped) — whoever is,
+// since nothing promotes a successor and the server lets them rather than
+// strand the room (#405).
+export function isEffectiveHost(
+  participants: Participant[],
+  currentUserId: string | null
+): boolean {
+  const me = participants.find((p) => p.participantId === currentUserId);
+  return !!me && (me.isHost || !participants.some((p) => p.isHost && p.isOnline !== false));
+}

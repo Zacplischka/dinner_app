@@ -2,11 +2,6 @@
 dist/
 *.local
 
-# Test outputs
-test-results/
-playwright-report/
-playwright/.cache/
-
 # Dependencies
 node_modules/
 

@@ -116,7 +116,7 @@ npm run format       # prettier both workspaces
 npm run gen:types    # regenerate supabase/database.types.ts
 ```
 
-Narrower runs go through the workspace: `npm run test:unit --workspace=backend`, `npm run test:contract --workspace=backend` (Redis required), `npm run test:e2e --workspace=frontend` (Playwright; `mobile-chrome` is the primary project). The WebSocket contract is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts) and the [contract tests](backend/tests/contract/) assert the backend against it — they are the source of truth for the realtime protocol.
+Narrower runs go through the workspace: `npm run test:unit --workspace=backend`, `npm run test:contract --workspace=backend` (Redis required). The WebSocket contract is typed once in [`shared/types/websocket-events.ts`](shared/types/websocket-events.ts) and the [contract tests](backend/tests/contract/) assert the backend against it — they are the source of truth for the realtime protocol.
 
 
 CI ([`ci-cd.yml`](.github/workflows/ci-cd.yml)) runs `typecheck`, `lint` and both unit suites in one job and the contract suite against a Redis service in another; a green `main` auto-deploys.

@@ -154,12 +154,11 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
   async function decided(headcount: number, crowned = '11') {
     const { sessionCode } = await sessionService.createSession('Alice', {
       branch: 'cook',
-      cook: {
-        craving,
-        headcount,
-      },
+      headcount,
     });
-    await sessionService.joinSession(sessionCode, 'alice', 'Alice');
+    const { lobby } = await sessionService.joinSession(sessionCode, 'alice', 'Alice');
+    const ready = await sessionService.setReady(sessionCode, 'alice', lobby!.revision, true);
+    await sessionService.startRound(sessionCode, 'alice', ready.revision);
     const { results } = await sessionService.submitSelections(sessionCode, 'alice', [crowned]);
     return { sessionCode, results };
   }

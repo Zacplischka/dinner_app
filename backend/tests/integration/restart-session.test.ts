@@ -4,6 +4,7 @@ import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetu
 import { sessionStore as store, sessionService } from '../../src/server.js';
 import { handleSessionRestart } from '../../src/websocket/restartHandler.js';
 import type { Restaurant } from '@dinder/shared/types';
+import { startedSession } from '../helpers/startedSession.js';
 
 describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
   const sessionCode = 'RST12';
@@ -21,10 +22,7 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
 
   beforeEach(async () => {
     await cleanupTestData(redis);
-    await store.createSession(sessionCode, {
-      hostName: 'Alice',
-      entries: restaurants,
-    });
+    await startedSession(store, sessionCode, restaurants, { branch: 'eatout' });
     await store.addParticipant(sessionCode, {
       participantId: 'alice',
       displayName: 'Alice',
@@ -61,15 +59,17 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
     await expect(redis.exists(`session:${sessionCode}:results`)).resolves.toBe(0);
   });
 
-  // The ack and room broadcast are unit-tested (websocketHandlers.test.ts), but
-  // only from 'waiting'; this is the one check of the completed-Session message.
-  it('should broadcast the Restart message, not the lobby start one', async () => {
+  it('should broadcast the room back to the lobby from a completed Session', async () => {
     const { emit } = await restartSession();
 
-    expect(emit).toHaveBeenCalledWith('session:restarted', {
-      sessionCode,
-      message: 'Session restarted. Make new selections.',
-    });
+    expect(emit).toHaveBeenCalledWith(
+      'session:restarted',
+      expect.objectContaining({
+        state: 'waiting',
+        sessionCode,
+        message: 'Back in the lobby. Review your choices and confirm Ready.',
+      })
+    );
   });
 
   it('should preserve participant list and reset submission state (FR-013)', async () => {
@@ -80,6 +80,6 @@ describe('Integration Test: Session Restart (FR-012, FR-013)', () => {
     );
     await expect(redis.hget(`participant:alice`, 'hasSubmitted')).resolves.toBe('0');
     await expect(redis.hget(`participant:bob`, 'hasSubmitted')).resolves.toBe('0');
-    await expect(redis.hget(`session:${sessionCode}`, 'state')).resolves.toBe('selecting');
+    await expect(redis.hget(`session:${sessionCode}`, 'state')).resolves.toBe('waiting');
   });
 });

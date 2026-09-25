@@ -50,8 +50,9 @@ export async function handleLiveSelection(
       const session = await store.readSession(sessionCode);
       if (
         participant.waitingForNextRound ||
-        (session?.lobby &&
-          (session.state !== 'selecting' || (round !== undefined && round !== session.lobby.round)))
+        (session &&
+          (session.state !== 'selecting' ||
+            (round !== undefined && round !== session.lobby?.round)))
       ) {
         throw new DomainError('NOT_IN_SESSION', 'You are waiting for the next round.');
       }

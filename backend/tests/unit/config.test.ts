@@ -22,8 +22,6 @@ describe('Google Places API Configuration', () => {
       FRONTEND_URL: 'https://dinder.example.test',
       GOOGLE_PLACES_API_KEY: 'places-key',
       APIFY_TOKEN: 'apify-token',
-      APIFY_UBER_EATS_ACTOR_ID: 'example/uber-eats',
-      APIFY_DOORDASH_ACTOR_ID: 'example/doordash',
       SUPABASE_URL: 'https://supabase.example.test',
       SUPABASE_SERVICE_ROLE_KEY: 'service-role',
     });
@@ -37,8 +35,6 @@ describe('Google Places API Configuration', () => {
       },
       apify: {
         token: 'apify-token',
-        uberEatsActorId: 'example/uber-eats',
-        doorDashActorId: 'example/doordash',
       },
       supabase: {
         url: 'https://supabase.example.test',
@@ -53,8 +49,6 @@ describe('Google Places API Configuration', () => {
     for (const key of [
       'FRONTEND_URL',
       'APIFY_TOKEN',
-      'APIFY_UBER_EATS_ACTOR_ID',
-      'APIFY_DOORDASH_ACTOR_ID',
       'SUPABASE_URL',
       'SUPABASE_SERVICE_ROLE_KEY',
     ]) {
@@ -71,8 +65,6 @@ describe('Google Places API Configuration', () => {
       },
       apify: {
         token: undefined,
-        uberEatsActorId: 'borderline/uber-eats-scraper-ppr',
-        doorDashActorId: 'abotapi/doordash-scraper',
       },
       supabase: {
         url: '',

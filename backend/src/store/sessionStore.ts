@@ -6,7 +6,7 @@
 // client (tests inject ioredis-mock); server.ts constructs the production
 // instance.
 
-import type { ChainableCommander, Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -15,6 +15,7 @@ import {
   SESSION_CODE_LENGTH,
   type Branch,
   type DeckEntry,
+  type MealType,
   type Mood,
   type LobbyParticipant,
   type SessionLobbyState,
@@ -59,15 +60,13 @@ export interface Session {
   deckSize?: number;
   /**
    * Watch Branch only (#369). The Mood this Deck was dealt from — the whole
-   * Mood, not a pool key, because there is no pool: a Restart re-deals from
-   * the corpus with it.
+   * Mood, not a pool key, because there is no pool.
    */
   mood?: Mood;
   /**
    * Cook Branch only (#333). This Session's Deck came up short because the
    * recipe source was dark when it was dealt — the one plain line every
-   * Participant sees. A fact about the deal, so it is fixed at creation
-   * alongside the Deck itself.
+   * Participant sees. A fact about the deal, so it is written with the Deck.
    */
   recipeSourceDown?: boolean;
   /**
@@ -189,23 +188,6 @@ export function sessionCodeFromExpiredKey(key: string): string | null {
   return sessionCode.length === SESSION_CODE_LENGTH ? sessionCode : null;
 }
 
-/**
- * Queues the two commands that make a Deck — the id set and the entry hash —
- * onto a pipeline or a MULTI. Both the Session's first Deck and a Cook
- * Restart's replacement go through here, so the two halves can never drift.
- */
-function queueDeckWrite(
-  chain: ChainableCommander,
-  sessionCode: string,
-  entries: DeckEntry[]
-): void {
-  chain.sadd(restaurantIdsKey(sessionCode), ...entries.map((e) => e.placeId));
-  chain.hset(
-    restaurantsKey(sessionCode),
-    Object.fromEntries(entries.map((e) => [e.placeId, JSON.stringify(e)]))
-  );
-}
-
 export function createSessionStore(redis: Redis) {
   const heldLocks = new AsyncLocalStorage<ReadonlySet<string>>();
   /** Short Session mutations serialize across server instances; supply runs outside.
@@ -289,25 +271,21 @@ export function createSessionStore(redis: Redis) {
   async function createSession(
     sessionCode: string,
     opts: {
-      lobby?: Session['lobby'];
+      /** Every Session opens in its lobby; this is the Cook lobby's starting meal type. */
+      mealType?: MealType;
       hostName?: string;
       branch?: Branch;
       headcount?: number;
       deckSize?: number;
-      cravingKey?: string;
-      mood?: Mood;
-      recipeSourceDown?: boolean;
       location?: { latitude: number; longitude: number; address?: string };
       searchRadiusMiles?: number;
-      /** The Deck this Session deals: Restaurants or Recipes. */
-      entries?: DeckEntry[];
     }
   ): Promise<{ session: Session; expireAt: number }> {
     const now = Math.floor(Date.now() / 1000);
 
     const session: Session = {
       sessionCode,
-      lobby: opts.lobby,
+      lobby: { revision: 0, mealType: opts.mealType ?? 'main course' },
       state: 'waiting',
       participantCount: 1,
       createdAt: now,
@@ -316,9 +294,6 @@ export function createSessionStore(redis: Redis) {
       branch: opts.branch,
       headcount: opts.headcount,
       deckSize: opts.deckSize,
-      cravingKey: opts.cravingKey,
-      mood: opts.mood,
-      recipeSourceDown: opts.recipeSourceDown || undefined,
       location: opts.location,
       searchRadiusMiles: opts.searchRadiusMiles,
     };
@@ -330,14 +305,11 @@ export function createSessionStore(redis: Redis) {
       participantCount: session.participantCount,
       lastActivityAt: session.lastActivityAt,
     };
-    if (opts.lobby) sessionData.lobby = JSON.stringify(opts.lobby);
+    sessionData.lobby = JSON.stringify(session.lobby);
     if (opts.hostName) sessionData.hostName = opts.hostName;
     if (opts.branch) sessionData.branch = opts.branch;
     if (opts.headcount !== undefined) sessionData.headcount = opts.headcount;
     if (opts.deckSize !== undefined) sessionData.deckSize = opts.deckSize;
-    if (opts.cravingKey) sessionData.cravingKey = opts.cravingKey;
-    if (opts.mood) sessionData.mood = JSON.stringify(opts.mood);
-    if (opts.recipeSourceDown) sessionData.recipeSourceDown = '1';
     if (opts.location) {
       sessionData.locationLat = opts.location.latitude;
       sessionData.locationLng = opts.location.longitude;
@@ -347,14 +319,7 @@ export function createSessionStore(redis: Redis) {
       sessionData.searchRadiusMiles = opts.searchRadiusMiles;
     }
 
-    const pipeline = redis.pipeline();
-    pipeline.hset(sessionKey(sessionCode), sessionData);
-
-    if (opts.entries && opts.entries.length > 0) {
-      queueDeckWrite(pipeline, sessionCode, opts.entries);
-    }
-
-    await pipeline.exec();
+    await redis.hset(sessionKey(sessionCode), sessionData);
     const expireAt = await touch(sessionCode);
 
     return { session, expireAt };
@@ -761,12 +726,9 @@ export function createSessionStore(redis: Redis) {
 
   /**
    * Restart: wipes all Selections, Submissions, and the Match so the same
-   * Participants can decide again; puts the session back in 'selecting'.
+   * Participants can decide again; puts the session back in its lobby.
    */
-  async function resetForRestart(
-    sessionCode: string,
-    state: 'waiting' | 'selecting' = 'selecting'
-  ): Promise<void> {
+  async function resetForRestart(sessionCode: string): Promise<void> {
     const participantIds = await redis.smembers(participantsKey(sessionCode));
     const wasComplete = (await redis.hget(sessionKey(sessionCode), 'state')) === 'complete';
 
@@ -784,7 +746,7 @@ export function createSessionStore(redis: Redis) {
     // is untouched — it has its own URL and its own clock, and anyone holding
     // the link keeps it. The stored outcome goes with it.
     pipeline.hdel(sessionKey(sessionCode), 'shoppingListId', 'completedResults');
-    pipeline.hset(sessionKey(sessionCode), 'state', state);
+    pipeline.hset(sessionKey(sessionCode), 'state', 'waiting');
     pipeline.hset(sessionKey(sessionCode), 'orderRound', randomUUID());
     if (wasComplete) {
       // Session-outcome metrics: the next completion is a Restart's outcome
@@ -801,22 +763,6 @@ export function createSessionStore(redis: Redis) {
   }
 
   // --- Deck --------------------------------------------------------------
-
-  /**
-   * Swaps the Session's Deck for a fresh deal — a Cook Restart (#260). The swap
-   * is one MULTI so no reader ever sees the old ids against the new entries;
-   * choosing the new deal is the caller's, and happens before this. An empty
-   * deal is refused outright, since it would leave the Session unswipeable.
-   */
-  async function replaceDeck(sessionCode: string, entries: DeckEntry[]): Promise<void> {
-    if (entries.length === 0) return;
-
-    const swap = redis.multi().del(restaurantIdsKey(sessionCode)).del(restaurantsKey(sessionCode));
-    queueDeckWrite(swap, sessionCode, entries);
-    await swap.exec();
-
-    await touch(sessionCode);
-  }
 
   /**
    * The Deck Entries under `placeIds`, in the same order, in one HMGET; null
@@ -1020,7 +966,6 @@ export function createSessionStore(redis: Redis) {
     releaseShoppingListId,
     resetForRestart,
     wasRestartedAfterComplete,
-    replaceDeck,
     getDeck,
     readOrder,
     readOrderLines,

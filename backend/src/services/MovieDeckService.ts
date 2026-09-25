@@ -5,8 +5,7 @@
 //
 // ponytail: no Redis pool. The Cook Branch pools because its supply is a paid,
 // rate-limited vendor call worth sharing between Sessions; a static corpus
-// costs nothing to filter again, so the Session stores its Mood and a Restart
-// simply re-deals from it.
+// costs nothing to filter again, so every lobby start simply re-deals from it.
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 import {
@@ -118,11 +117,9 @@ interface DealOptions {
 }
 
 /**
- * A Restart's Deck: the Mood's best-known Movies with the just-wiped ones
- * dealt last, so the group sees new Movies first and repeats only once the
- * Mood runs out. A Mood that has stopped matching anything (a redeploy shrank
- * the corpus) reshuffles `current` — a Restart never leaves a Session without
- * a Deck.
+ * A Deck: the Mood's best-known Movies with the ones in `current` (the last
+ * round's Deck, empty on the first) dealt last, so the group sees new Movies
+ * first and repeats only once the Mood runs out.
  */
 export function redealMovieDeck(
   mood: Mood,
@@ -176,9 +173,4 @@ export function redealMovieDeck(
     if (!added) break;
   }
   return dealt.length ? shuffle(dealt) : interests ? [] : shuffle(current);
-}
-
-/** A Session's first Deck: up to `deckSize` Movies matching the Mood, or none. */
-export function dealMovieDeck(mood: Mood, options: DealOptions): DeckEntry[] {
-  return redealMovieDeck(mood, [], options);
 }

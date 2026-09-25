@@ -16,7 +16,8 @@ import {
 } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
 import { createOrderService } from '../../src/services/OrderService.js';
-import { SESSION_CODE_PATTERN, type Mood, type Movie, type Recipe } from '@dinder/shared/types';
+import { SESSION_CODE_PATTERN, type Movie, type Recipe } from '@dinder/shared/types';
+import { startedSession } from '../helpers/startedSession.js';
 
 describe('SessionService', () => {
   const testSessionCode = 'TEST1';
@@ -28,8 +29,6 @@ describe('SessionService', () => {
   // shape fails here instead of passing wired wrong (#397).
   let searchNearbyRestaurants: MockedFunction<SessionServiceDeps['searchNearbyRestaurants']>;
   let dealRecipeDeck: MockedFunction<SessionServiceDeps['dealRecipeDeck']>;
-  let redealRecipeDeck: MockedFunction<SessionServiceDeps['redealRecipeDeck']>;
-  let dealMovieDeck: MockedFunction<SessionServiceDeps['dealMovieDeck']>;
   let redealMovieDeck: MockedFunction<SessionServiceDeps['redealMovieDeck']>;
   let mintShoppingList: MockedFunction<SessionServiceDeps['mintShoppingList']>;
   let SessionService: ReturnType<typeof createSessionService>;
@@ -41,8 +40,6 @@ describe('SessionService', () => {
     store = createSessionStore(redis);
     searchNearbyRestaurants = vi.fn();
     dealRecipeDeck = vi.fn();
-    redealRecipeDeck = vi.fn();
-    dealMovieDeck = vi.fn();
     redealMovieDeck = vi.fn();
     mintShoppingList = vi.fn(
       async (_sessionCode: string, _placeId: string): Promise<string | undefined> => undefined
@@ -51,8 +48,6 @@ describe('SessionService', () => {
       store,
       searchNearbyRestaurants,
       dealRecipeDeck,
-      redealRecipeDeck,
-      dealMovieDeck,
       redealMovieDeck,
       mintShoppingList,
     });
@@ -65,391 +60,6 @@ describe('SessionService', () => {
   afterEach(() => {
     config.frontendUrl = originalFrontendUrl;
     vi.restoreAllMocks();
-  });
-
-  describe('createSession in the Cook Branch', () => {
-    const craving = {
-      mealType: 'main course' as const,
-      cuisines: ['italian' as const],
-      diets: ['vegetarian' as const],
-    };
-    const deck: Recipe[] = [
-      { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
-      { kind: 'recipe', placeId: 'rec2', name: 'Caponata', aggregateLikes: 40 },
-    ];
-
-    it('deals the Deck from the Craving pool, not from a restaurant search', async () => {
-      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: false });
-
-      const session = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: {
-          craving,
-          headcount: 4,
-        },
-      });
-
-      expect(dealRecipeDeck).toHaveBeenCalledWith(craving, undefined);
-      expect(searchNearbyRestaurants).not.toHaveBeenCalled();
-      expect(session.restaurantCount).toBe(2);
-      expect((await store.getDeck(session.sessionCode)).entries).toEqual(
-        expect.arrayContaining(deck)
-      );
-    });
-
-    it('stores the Headcount on the Session, untouched by the deal', async () => {
-      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: false });
-
-      const session = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: {
-          craving,
-          headcount: 6,
-        },
-      });
-
-      expect(session.headcount).toBe(6);
-      const stored = await store.readSession(session.sessionCode);
-      expect(stored?.headcount).toBe(6);
-      expect(stored?.branch).toBe('cook');
-      // Nothing about the pool this Deck came from is derived from Headcount.
-      expect(stored?.cravingKey).not.toContain('6');
-    });
-
-    it('refuses a Craving that pools no Recipes rather than opening an unswipeable Deck', async () => {
-      dealRecipeDeck.mockResolvedValue({ entries: [], recipeSourceDown: false });
-
-      await expect(
-        SessionService.createSession('Alice', {
-          branch: 'cook',
-          cook: {
-            craving,
-            headcount: 2,
-          },
-        })
-      ).rejects.toMatchObject({ code: 'NO_RECIPES_FOUND' });
-    });
-
-    it('says a source failure is a failure — "remove a filter" would be a lie', async () => {
-      dealRecipeDeck.mockRejectedValue(new Error('Spoonacular 503'));
-
-      await expect(
-        SessionService.createSession('Alice', {
-          branch: 'cook',
-          cook: {
-            craving,
-            headcount: 2,
-          },
-        })
-      ).rejects.toMatchObject({ code: 'RECIPE_SOURCE_UNAVAILABLE' });
-    });
-
-    it('freezes a short outage deal on the Session, for every Participant to read (#333)', async () => {
-      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: true });
-
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: { craving, headcount: 2 },
-      });
-
-      // Read back through the same Session lookup every Participant's page
-      // makes, so the one plain line they see is one line.
-      await expect(SessionService.getSession(sessionCode)).resolves.toMatchObject({
-        recipeSourceDown: true,
-      });
-    });
-
-    it('leaves a full deal saying nothing at all (#333)', async () => {
-      dealRecipeDeck.mockResolvedValue({ entries: deck, recipeSourceDown: false });
-
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: { craving, headcount: 2 },
-      });
-
-      const session = await SessionService.getSession(sessionCode);
-      expect(session?.recipeSourceDown).toBeUndefined();
-    });
-  });
-
-  describe('restartSession in the Cook Branch', () => {
-    const craving = {
-      mealType: 'main course' as const,
-      cuisines: ['italian' as const],
-      diets: [] as never[],
-    };
-    const dealt: Recipe[] = [
-      { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
-      { kind: 'recipe', placeId: 'rec2', name: 'Caponata', aggregateLikes: 40 },
-    ];
-    const nextDeal: Recipe[] = [
-      { kind: 'recipe', placeId: 'rec7', name: 'Beef Rendang', aggregateLikes: 640 },
-      { kind: 'recipe', placeId: 'rec8', name: 'Dal Tadka', aggregateLikes: 90 },
-    ];
-
-    /** A Cook Session decided once, so Restart has an outcome to wipe. */
-    async function decidedCookSession(): Promise<string> {
-      dealRecipeDeck.mockResolvedValue({ entries: dealt, recipeSourceDown: false });
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: { craving, headcount: 2 },
-      });
-      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
-      await SessionService.submitSelections(sessionCode, 'alice', ['rec1']);
-      return sessionCode;
-    }
-
-    it('deals a fresh Deck from the pool the Session was dealt from', async () => {
-      redealRecipeDeck.mockResolvedValue(nextDeal);
-      const sessionCode = await decidedCookSession();
-
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      const [poolKey, wiped] = redealRecipeDeck.mock.calls[0];
-      expect(poolKey).toBe((await store.readSession(sessionCode))?.cravingKey);
-      expect((wiped as Recipe[]).map((e) => e.placeId).sort()).toEqual(['rec1', 'rec2']);
-      expect((await store.getDeck(sessionCode)).entries).toEqual(expect.arrayContaining(nextDeal));
-    });
-
-    it('keeps the wiped Deck when the redeal hands the same Recipes back', async () => {
-      // A cold pool degrades to a reshuffle, which is still a whole Deck —
-      // Restart must land on something swipeable either way.
-      redealRecipeDeck.mockImplementation(async (_key, current) => current);
-      const sessionCode = await decidedCookSession();
-
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual([
-        'rec1',
-        'rec2',
-      ]);
-    });
-
-    it('keeps the setup deal when the lobby starts selecting — nobody has seen it yet', async () => {
-      // The lobby's "start selecting" is this same command on a 'waiting'
-      // Session. Re-dealing there would throw away the deal setup just made.
-      redealRecipeDeck.mockResolvedValue(nextDeal);
-      dealRecipeDeck.mockResolvedValue({ entries: dealt, recipeSourceDown: false });
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: { craving, headcount: 2 },
-      });
-      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
-
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      expect(redealRecipeDeck).not.toHaveBeenCalled();
-      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual([
-        'rec1',
-        'rec2',
-      ]);
-    });
-
-    it('leaves a Restaurant Session its own Deck — supply there is geography-bound', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { kind: 'restaurant', placeId: 'place1', name: 'Pizza Palace', rating: 4.5 },
-      ]);
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        location: { latitude: 1, longitude: 2 },
-        searchRadiusMiles: 5,
-        branch: 'takeaway',
-      });
-      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
-      // Decided, so the Restart is the real post-Match one, not the lobby's.
-      await SessionService.submitSelections(sessionCode, 'alice', ['place1']);
-
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      expect(redealRecipeDeck).not.toHaveBeenCalled();
-      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId)).toEqual(['place1']);
-    });
-  });
-
-  describe('the Host-chosen Deck size', () => {
-    const craving = {
-      mealType: 'main course' as const,
-      cuisines: ['italian' as const],
-      diets: [],
-    };
-    const mood: Mood = { genres: ['Comedy'], decades: [] };
-    const recipes: Recipe[] = [
-      { kind: 'recipe', placeId: 'rec1', name: 'Aglio e Olio', aggregateLikes: 120 },
-    ];
-    const movies: Movie[] = [{ kind: 'movie', placeId: 'Q1', name: 'Clueless', rating: 81 }];
-
-    it('deals a Cook Deck at the size the Host asked for, and again on Restart', async () => {
-      dealRecipeDeck.mockResolvedValue({ entries: recipes, recipeSourceDown: false });
-      redealRecipeDeck.mockResolvedValue(recipes);
-
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: { craving, headcount: 2 },
-        deckSize: 8,
-      });
-      expect(dealRecipeDeck).toHaveBeenCalledWith(craving, 8);
-
-      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
-      await SessionService.submitSelections(sessionCode, 'alice', ['rec1']);
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      expect(redealRecipeDeck.mock.calls[0][2]).toBe(8);
-    });
-
-    it('deals a Watch Deck at the size the Host asked for, and again on Restart', async () => {
-      dealMovieDeck.mockReturnValue(movies);
-      redealMovieDeck.mockReturnValue(movies);
-
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'watch',
-        watch: { mood },
-        deckSize: 8,
-      });
-      expect(dealMovieDeck).toHaveBeenCalledWith(mood, 8);
-
-      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
-      await SessionService.submitSelections(sessionCode, 'alice', ['Q1']);
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      expect(redealMovieDeck.mock.calls[0][2]).toBe(8);
-    });
-
-    it('caps a Restaurant search at the size the Host asked for', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { kind: 'restaurant', placeId: 'place1', name: 'Pizza Palace', rating: 4.5 },
-      ]);
-
-      await SessionService.createSession('Alice', {
-        location: { latitude: 1, longitude: 2 },
-        searchRadiusMiles: 5,
-        branch: 'eatout',
-        deckSize: 8,
-      });
-
-      expect(searchNearbyRestaurants.mock.calls[0][0]).toMatchObject({ maxResults: 8 });
-    });
-
-    it('stores the size so a Restart deals the same Deck again', async () => {
-      dealMovieDeck.mockReturnValue(movies);
-
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'watch',
-        watch: { mood },
-        deckSize: 8,
-      });
-
-      expect((await store.readSession(sessionCode))?.deckSize).toBe(8);
-    });
-
-    it('leaves the Branch default alone when the Host chose nothing', async () => {
-      dealRecipeDeck.mockResolvedValue({ entries: recipes, recipeSourceDown: false });
-
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'cook',
-        cook: { craving, headcount: 2 },
-      });
-
-      expect(dealRecipeDeck).toHaveBeenCalledWith(craving, undefined);
-      expect((await store.readSession(sessionCode))?.deckSize).toBeUndefined();
-    });
-  });
-
-  describe('createSession in the Watch Branch', () => {
-    const mood: Mood = { genres: ['Comedy'], decades: ['1990s'] };
-    const deck: Movie[] = [
-      {
-        kind: 'movie',
-        placeId: 'Q1',
-        name: 'Clueless',
-        rating: 81,
-        year: 1995,
-        genres: ['Comedy'],
-      },
-      { kind: 'movie', placeId: 'Q2', name: 'The Castle', year: 1997, genres: ['Comedy'] },
-    ];
-
-    it('deals the Deck from the corpus, not from a restaurant search, and stores the Mood', async () => {
-      dealMovieDeck.mockReturnValue(deck);
-
-      const session = await SessionService.createSession('Alice', {
-        branch: 'watch',
-        watch: { mood },
-      });
-
-      expect(dealMovieDeck).toHaveBeenCalledWith(mood, undefined);
-      expect(searchNearbyRestaurants).not.toHaveBeenCalled();
-      expect(dealRecipeDeck).not.toHaveBeenCalled();
-      expect(session.restaurantCount).toBe(2);
-      expect((await store.getDeck(session.sessionCode)).entries).toEqual(
-        expect.arrayContaining(deck)
-      );
-      // The Mood itself is what a Restart re-deals from — there is no pool key.
-      const stored = await store.readSession(session.sessionCode);
-      expect(stored?.branch).toBe('watch');
-      expect(stored?.mood).toEqual(mood);
-      expect(stored?.cravingKey).toBeUndefined();
-    });
-
-    it('refuses a Mood that deals no Movies rather than opening an unswipeable Deck', async () => {
-      dealMovieDeck.mockReturnValue([]);
-
-      await expect(
-        SessionService.createSession('Alice', { branch: 'watch', watch: { mood } })
-      ).rejects.toMatchObject({ code: 'NO_MOVIES_FOUND' });
-    });
-  });
-
-  describe('restartSession in the Watch Branch', () => {
-    const mood: Mood = { genres: ['Comedy'], decades: [] };
-    const dealt: Movie[] = [
-      { kind: 'movie', placeId: 'Q1', name: 'Clueless', rating: 81 },
-      { kind: 'movie', placeId: 'Q2', name: 'The Castle', rating: 88 },
-    ];
-    const nextDeal: Movie[] = [
-      { kind: 'movie', placeId: 'Q7', name: 'Hot Fuzz', rating: 91 },
-      { kind: 'movie', placeId: 'Q8', name: 'Paddington 2', rating: 99 },
-    ];
-
-    /** A Watch Session decided once, so Restart has an outcome to wipe. */
-    async function decidedWatchSession(): Promise<string> {
-      dealMovieDeck.mockReturnValue(dealt);
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'watch',
-        watch: { mood },
-      });
-      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
-      await SessionService.submitSelections(sessionCode, 'alice', ['Q1']);
-      return sessionCode;
-    }
-
-    it('deals a fresh Deck from the same Mood, handing over the wiped one', async () => {
-      redealMovieDeck.mockReturnValue(nextDeal);
-      const sessionCode = await decidedWatchSession();
-
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      const [redealtMood, wiped] = redealMovieDeck.mock.calls[0];
-      expect(redealtMood).toEqual(mood);
-      expect((wiped as Movie[]).map((e) => e.placeId).sort()).toEqual(['Q1', 'Q2']);
-      expect((await store.getDeck(sessionCode)).entries).toEqual(expect.arrayContaining(nextDeal));
-      expect(redealRecipeDeck).not.toHaveBeenCalled();
-    });
-
-    it('keeps the setup deal when the lobby starts selecting — nobody has seen it yet', async () => {
-      dealMovieDeck.mockReturnValue(dealt);
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        branch: 'watch',
-        watch: { mood },
-      });
-      await SessionService.joinSession(sessionCode, 'alice', 'Alice');
-
-      await SessionService.restartSession(sessionCode, 'alice');
-
-      expect(redealMovieDeck).not.toHaveBeenCalled();
-      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual([
-        'Q1',
-        'Q2',
-      ]);
-    });
   });
 
   describe('createSession code generation', () => {
@@ -473,7 +83,6 @@ describe('SessionService', () => {
           hasLocation: false,
           searchRadiusMiles: undefined,
           participantCount: 1,
-          restaurantCount: 0,
         },
         'Session created'
       );
@@ -582,6 +191,8 @@ describe('SessionService', () => {
   });
 
   describe('joinSession', () => {
+    const place1 = [{ placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 }];
+
     it('should reject missing sessions with a SESSION_NOT_FOUND domain error', async () => {
       const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
@@ -709,13 +320,8 @@ describe('SessionService', () => {
     });
 
     it('should preserve an already-recorded Submission across a token-matched rejoin with a new socket id', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-      const session = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
+      await startedSession(store, testSessionCode, place1);
+      const session = { sessionCode: testSessionCode };
 
       const firstJoin = await SessionService.joinSession(
         session.sessionCode,
@@ -772,12 +378,14 @@ describe('SessionService', () => {
       expect(result.branch).toBe('eatout');
     });
 
-    it('should omit the Branch for a Session created before the entry fork', async () => {
+    // A create naming no Branch predates the fork, when every Session was Eat Out.
+    it('should open a create that names no Branch as an Eat Out lobby', async () => {
       const session = await SessionService.createSession('Alice');
 
       const result = await SessionService.joinSession(session.sessionCode, 'socket-1', 'Alice');
 
-      expect(result.branch).toBeUndefined();
+      expect(result).toMatchObject({ branch: 'eatout', state: 'waiting' });
+      expect(result.lobby).toMatchObject({ branch: 'eatout', deckSize: 20 });
     });
 
     // #284: the Invite Link's rule — anyone holding it can join while the
@@ -796,16 +404,10 @@ describe('SessionService', () => {
     });
 
     it('should keep a late joiner from completing until they submit, without touching prior Submissions', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-      const session = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
+      await startedSession(store, testSessionCode, place1);
+      const session = { sessionCode: testSessionCode };
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
-      await store.updateState(session.sessionCode, 'selecting');
       const first = await SessionService.submitSelections(session.sessionCode, 'socket-alice', [
         'place1',
       ]);
@@ -929,13 +531,8 @@ describe('SessionService', () => {
     });
 
     it('should still admit a rejoin with a valid token in a complete session, carrying the Submission', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-      const session = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
+      await startedSession(store, testSessionCode, place1);
+      const session = { sessionCode: testSessionCode };
       const joined = await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
       await SessionService.submitSelections(session.sessionCode, 'socket-alice', ['place1']);
@@ -980,16 +577,10 @@ describe('SessionService', () => {
     });
 
     it('should complete the old session when its last holdout joins another', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-      const first = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
+      await startedSession(store, testSessionCode, place1);
+      const first = { sessionCode: testSessionCode };
       await SessionService.joinSession(first.sessionCode, 'socket-alice', 'Alice');
       await SessionService.joinSession(first.sessionCode, 'socket-bob', 'Bob');
-      await store.updateState(first.sessionCode, 'selecting');
       await SessionService.submitSelections(first.sessionCode, 'socket-alice', ['place1']);
       const second = await SessionService.createSession('Cara');
 
@@ -1022,8 +613,6 @@ describe('SessionService', () => {
         store: racyStore,
         searchNearbyRestaurants,
         dealRecipeDeck,
-        redealRecipeDeck,
-        dealMovieDeck,
         redealMovieDeck,
         mintShoppingList,
       });
@@ -1040,7 +629,7 @@ describe('SessionService', () => {
     // #284 review: the other half of the same race — a Participant who slipped
     // in beside the closing Submission must not re-complete the Session and
     // overwrite the broadcast Match with a narrower one.
-    it('should not recompute the Match when a submit lands on an already-complete session', async () => {
+    it('should refuse a submit that lands on an already-complete session', async () => {
       const session = await SessionService.createSession('Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-alice', 'Alice');
       await SessionService.joinSession(session.sessionCode, 'socket-bob', 'Bob');
@@ -1049,10 +638,12 @@ describe('SessionService', () => {
       // The race resolved against Bob: the session completed without him.
       await store.updateState(session.sessionCode, 'complete');
 
-      const second = await SessionService.submitSelections(session.sessionCode, 'socket-bob', []);
-
-      expect(second).toMatchObject({ submittedCount: 2, participantCount: 2 });
-      expect(second.results).toBeUndefined();
+      await expect(
+        SessionService.submitSelections(session.sessionCode, 'socket-bob', [])
+      ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(store.getParticipant('socket-bob')).resolves.toMatchObject({
+        hasSubmitted: false,
+      });
       await expect(store.readSession(session.sessionCode)).resolves.toMatchObject({
         state: 'complete',
       });
@@ -1061,16 +652,10 @@ describe('SessionService', () => {
     // #284 review: a refusal AFTER the old-Session departure committed must
     // still carry the departure, so the transport can tell the old room.
     it('should carry the committed old-session departure on a post-add refusal', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-      const first = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
+      await startedSession(store, testSessionCode, place1);
+      const first = { sessionCode: testSessionCode };
       await SessionService.joinSession(first.sessionCode, 'socket-alice', 'Alice');
       await SessionService.joinSession(first.sessionCode, 'socket-bob', 'Bob');
-      await store.updateState(first.sessionCode, 'selecting');
       await SessionService.submitSelections(first.sessionCode, 'socket-alice', ['place1']);
 
       const second = await SessionService.createSession('Cara');
@@ -1090,8 +675,6 @@ describe('SessionService', () => {
         store: racyStore,
         searchNearbyRestaurants,
         dealRecipeDeck,
-        redealRecipeDeck,
-        dealMovieDeck,
         redealMovieDeck,
         mintShoppingList,
       });
@@ -1155,38 +738,12 @@ describe('SessionService', () => {
   });
 
   describe('joinSession race', () => {
-    it('should atomically reject one of two concurrent joins claiming the same display name', async () => {
-      let snapshotCount = 0;
-      let releaseSnapshots!: () => void;
-      const bothSnapshotsTaken = new Promise<void>((resolve) => {
-        releaseSnapshots = resolve;
-      });
-      const racyStore = {
-        ...store,
-        listParticipants: async (code: string) => {
-          const participants = await store.listParticipants(code);
-          snapshotCount += 1;
-          if (snapshotCount <= 2) {
-            if (snapshotCount === 2) releaseSnapshots();
-            await bothSnapshotsTaken;
-          }
-          return participants;
-        },
-      };
-      const racyService = createSessionService({
-        store: racyStore,
-        searchNearbyRestaurants,
-        dealRecipeDeck,
-        redealRecipeDeck,
-        dealMovieDeck,
-        redealMovieDeck,
-        mintShoppingList,
-      });
-      const session = await racyService.createSession('Alice');
+    it('should reject one of two concurrent joins claiming the same display name', async () => {
+      const session = await SessionService.createSession('Alice');
 
       const outcomes = await Promise.allSettled([
-        racyService.joinSession(session.sessionCode, 'socket-bob-1', 'Bob'),
-        racyService.joinSession(session.sessionCode, 'socket-bob-2', 'Bob'),
+        SessionService.joinSession(session.sessionCode, 'socket-bob-1', 'Bob'),
+        SessionService.joinSession(session.sessionCode, 'socket-bob-2', 'Bob'),
       ]);
 
       expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
@@ -1213,8 +770,6 @@ describe('SessionService', () => {
         store: racyStore,
         searchNearbyRestaurants,
         dealRecipeDeck,
-        redealRecipeDeck,
-        dealMovieDeck,
         redealMovieDeck,
         mintShoppingList,
       });
@@ -1227,7 +782,7 @@ describe('SessionService', () => {
     });
   });
 
-  describe('createSession with location', () => {
+  describe('createSession', () => {
     it('should create a shareable link from default and custom frontend URLs', async () => {
       delete process.env.FRONTEND_URL;
 
@@ -1246,157 +801,36 @@ describe('SessionService', () => {
       );
     });
 
-    it('should search for nearby restaurants', async () => {
-      const logSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-      const mockRestaurants = [
-        {
-          placeId: 'place1',
-          name: 'Restaurant 1',
-          rating: 4.5,
-          priceLevel: 2,
-          cuisineType: 'Italian',
-          address: '123 Main St',
-        },
-        {
-          placeId: 'place2',
-          name: 'Restaurant 2',
-          rating: 4.2,
-          priceLevel: 3,
-          cuisineType: 'Chinese',
-          address: '456 Oak Ave',
-        },
-      ];
-      searchNearbyRestaurants.mockResolvedValue(mockRestaurants);
+    it('should store the Branch default Deck size, or the size the Host asked for', async () => {
+      const sizes = [];
+      for (const branch of ['eatout', 'takeaway', 'cook', 'watch'] as const) {
+        const { sessionCode } = await SessionService.createSession('Alice', { branch });
+        sizes.push((await store.readSession(sessionCode))?.deckSize);
+      }
+      const chosen = await SessionService.createSession('Alice', { branch: 'cook', deckSize: 8 });
 
-      const result = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
-
-      // closeTo's second argument is a digit count, not a tolerance — assert
-      // the documented 1-metre allowance explicitly.
-      const searchArgs = searchNearbyRestaurants.mock.calls[0][0];
-      expect(searchArgs).toMatchObject({
-        latitude: 37.7749,
-        longitude: -122.4194,
-        maxResults: 20,
-      });
-      expect(Math.abs(searchArgs.radiusMeters - 8046.7)).toBeLessThanOrEqual(1); // 5 miles in meters, ±1 m
-
-      expect(result.restaurantCount).toBe(2);
-      expect(logSpy).toHaveBeenCalledWith(
-        {
-          sessionCode: result.sessionCode,
-          hasLocation: true,
-          searchRadiusMiles: 5,
-          participantCount: 1,
-          restaurantCount: 2,
-        },
-        'Session created'
-      );
+      expect(sizes).toEqual([20, 20, 15, 15]);
+      expect((await store.readSession(chosen.sessionCode))?.deckSize).toBe(8);
     });
 
-    it('should store restaurant Place IDs in Redis Set', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-
-      const result = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
+    it('should seed a Cook lobby with the meal type and Headcount it was created with', async () => {
+      const { sessionCode, lobby } = await SessionService.createSession('Alice', {
+        branch: 'cook',
+        mealType: 'dessert',
+        headcount: 6,
       });
 
-      const placeIds = await redis.smembers(`session:${result.sessionCode}:restaurant_ids`);
-      expect(placeIds).toContain('place1');
-    });
-
-    it('should store full restaurant data in Redis Hash', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2, cuisineType: 'Italian' },
-      ]);
-
-      const result = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
-
-      const restaurantData = await redis.hget(
-        `session:${result.sessionCode}:restaurants`,
-        'place1'
-      );
-
-      const restaurant = JSON.parse(restaurantData!);
-      expect(restaurant.name).toBe('R1');
-      expect(restaurant.rating).toBe(4.5);
-    });
-
-    it('should throw error if no restaurants found', async () => {
-      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-      searchNearbyRestaurants.mockResolvedValue([]);
-
-      const error = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      }).then(
-        () => null,
-        (e) => e
-      );
-
-      expect(error).toBeInstanceOf(DomainError);
-      expect(error.code).toBe('NO_RESTAURANTS_FOUND');
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        {
-          sessionCode: expect.any(String),
-          searchRadiusMiles: 5,
-        },
-        'No restaurants found during session creation'
-      );
-    });
-
-    it('should set TTL on restaurant keys', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-
-      const result = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
-
-      const ttl = await redis.ttl(`session:${result.sessionCode}:restaurant_ids`);
-      expect(ttl).toBeGreaterThan(0);
-      expect(ttl).toBeLessThanOrEqual(1800); // 30 minutes
-    });
-
-    it('should convert miles to meters correctly', async () => {
-      searchNearbyRestaurants.mockResolvedValue([
-        { placeId: 'place1', name: 'R1', rating: 4.5, priceLevel: 2 },
-      ]);
-
-      await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 10,
-      });
-
-      // closeTo's second argument is a digit count, not a tolerance — assert
-      // the documented 1-metre allowance explicitly.
-      const searchArgs = searchNearbyRestaurants.mock.calls[0][0];
-      expect(searchArgs).toMatchObject({
-        latitude: 37.7749,
-        longitude: -122.4194,
-        maxResults: 20,
-      });
-      expect(Math.abs(searchArgs.radiusMeters - 16093.4)).toBeLessThanOrEqual(1); // 10 miles in meters, ±1 m
+      expect(lobby).toMatchObject({ branch: 'cook', mealType: 'dessert', headcount: 6 });
+      expect((await store.readSession(sessionCode))?.headcount).toBe(6);
     });
   });
 
   describe('submitSelections', () => {
     async function createTwoParticipantSession(): Promise<string> {
-      const { sessionCode } = await SessionService.createSession('Alice');
-      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
-      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
-      return sessionCode;
+      await startedSession(store, testSessionCode, []);
+      await SessionService.joinSession(testSessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(testSessionCode, 'p-bob', 'Bob');
+      return testSessionCode;
     }
 
     it('records a submission and returns counts without results while others are pending', async () => {
@@ -1439,10 +873,10 @@ describe('SessionService', () => {
 
   describe('leaveSession', () => {
     async function createTwoParticipantSession(): Promise<string> {
-      const { sessionCode } = await SessionService.createSession('Alice');
-      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
-      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
-      return sessionCode;
+      await startedSession(store, testSessionCode, []);
+      await SessionService.joinSession(testSessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(testSessionCode, 'p-bob', 'Bob');
+      return testSessionCode;
     }
 
     it('rejects leaves from missing sessions', async () => {
@@ -1512,15 +946,12 @@ describe('SessionService', () => {
       rejoinToken: string;
       broadcast: Awaited<ReturnType<typeof SessionService.submitSelections>>['results'];
     }> {
-      searchNearbyRestaurants.mockResolvedValue([
+      const sessionCode = testSessionCode;
+      await startedSession(store, sessionCode, [
         { placeId: 'A', name: 'Apple Bistro', rating: 4.9 },
         { placeId: 'B', name: 'Bean Bar', rating: 4.0 },
         { placeId: 'C', name: 'Curry Club', rating: 4.5 },
       ]);
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
       const { rejoinToken } = await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
       await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
       await SessionService.submitSelections(sessionCode, 'p-alice', ['A', 'B']);
@@ -1587,14 +1018,11 @@ describe('SessionService', () => {
         store.claimShoppingListId(sessionCode, 'list-1')
       );
       const sessionCode = 'COOK1';
-      await store.createSession(sessionCode, {
-        hostName: 'Alice',
-        entries: [
-          { kind: 'recipe', placeId: 'recA', name: 'Aglio e Olio', aggregateLikes: 900 },
-          { kind: 'recipe', placeId: 'recB', name: 'Beef Rendang', aggregateLikes: 100 },
-          { kind: 'recipe', placeId: 'recC', name: 'Caponata', aggregateLikes: 500 },
-        ],
-      });
+      await startedSession(store, sessionCode, [
+        { kind: 'recipe', placeId: 'recA', name: 'Aglio e Olio', aggregateLikes: 900 },
+        { kind: 'recipe', placeId: 'recB', name: 'Beef Rendang', aggregateLikes: 100 },
+        { kind: 'recipe', placeId: 'recC', name: 'Caponata', aggregateLikes: 500 },
+      ]);
       const { rejoinToken } = await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
       await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
       await SessionService.submitSelections(sessionCode, 'p-alice', ['recA', 'recB']);
@@ -1643,11 +1071,8 @@ describe('SessionService', () => {
         openNow?: boolean;
       }>
     ): Promise<string> {
-      searchNearbyRestaurants.mockResolvedValue(restaurants);
-      const { sessionCode } = await SessionService.createSession('Alice', {
-        location: { latitude: 37.7749, longitude: -122.4194 },
-        searchRadiusMiles: 5,
-      });
+      const sessionCode = testSessionCode;
+      await startedSession(store, sessionCode, restaurants);
       await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
       await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
       return sessionCode;
@@ -1777,7 +1202,8 @@ describe('SessionService', () => {
     });
 
     async function createTwoParticipantSessionNoDeck(): Promise<string> {
-      const { sessionCode } = await SessionService.createSession('Alice');
+      const sessionCode = testSessionCode;
+      await startedSession(store, sessionCode, []);
       await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
       await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
       return sessionCode;
@@ -1827,16 +1253,13 @@ describe('SessionService', () => {
     });
 
     // The Deck deals Restaurants or Recipes (#254). Recipes are seeded straight
-    // into the store (this suite fakes the real dealer, dealRecipeDeck) — the
+    // into a started lobby (this suite fakes the real dealer) — the
     // point is that the crowning mechanics need no fork, only a per-kind
     // middle rung.
     describe('Recipe Deck', () => {
       async function createSessionWithRecipeDeck(entries: Recipe[]): Promise<string> {
         const sessionCode = 'COOK1';
-        await store.createSession(sessionCode, {
-          hostName: 'Alice',
-          entries,
-        });
+        await startedSession(store, sessionCode, entries);
         await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
         await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
         return sessionCode;
@@ -1942,10 +1365,7 @@ describe('SessionService', () => {
     describe('Movie Deck', () => {
       async function createSessionWithMovieDeck(entries: Movie[]): Promise<string> {
         const sessionCode = 'WATCH';
-        await store.createSession(sessionCode, {
-          hostName: 'Alice',
-          entries,
-        });
+        await startedSession(store, sessionCode, entries);
         await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
         await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
         return sessionCode;
@@ -2012,34 +1432,23 @@ describe('SessionService', () => {
       });
     });
 
-    it('wipes submissions and puts the session back in selecting', async () => {
-      const { sessionCode } = await SessionService.createSession('Alice');
-      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
-      await SessionService.submitSelections(sessionCode, 'p-alice', []);
+    it('wipes submissions and puts the session back in the lobby', async () => {
+      await startedSession(store, testSessionCode, []);
+      await SessionService.joinSession(testSessionCode, 'p-alice', 'Alice');
+      await SessionService.submitSelections(testSessionCode, 'p-alice', []);
 
-      await SessionService.restartSession(sessionCode, 'p-alice');
+      await SessionService.restartSession(testSessionCode, 'p-alice');
 
-      const session = await SessionService.getSession(sessionCode);
-      expect(session?.state).toBe('selecting');
-    });
-
-    // #405: the lobby's Start Selecting is this command from 'waiting', and it
-    // moves the whole room — a joiner must not be able to push everyone into
-    // the Deck before the Host has finished inviting.
-    it('rejects a start from a Participant who is not the Host', async () => {
-      const { sessionCode } = await SessionService.createSession('Alice');
-      await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
-      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
-
-      await expect(SessionService.restartSession(sessionCode, 'p-bob')).rejects.toMatchObject({
-        code: 'NOT_HOST',
-      });
-      const session = await SessionService.getSession(sessionCode);
+      const session = await SessionService.getSession(testSessionCode);
       expect(session?.state).toBe('waiting');
+      await expect(store.getParticipant('p-alice')).resolves.toMatchObject({
+        hasSubmitted: false,
+      });
     });
 
     it('rejects a decided Session Restart from a Participant who is not the Host', async () => {
-      const { sessionCode } = await SessionService.createSession('Alice');
+      const sessionCode = testSessionCode;
+      await startedSession(store, sessionCode, []);
       await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
       await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
       await SessionService.submitSelections(sessionCode, 'p-alice', []);
@@ -2052,8 +1461,9 @@ describe('SessionService', () => {
 
     // #405: nothing promotes a successor, so a Host who leaves would otherwise
     // pin the room on "Waiting for the host" until the TTL ran out.
-    it('lets whoever is left start once the Host has gone', async () => {
-      const { sessionCode } = await SessionService.createSession('Alice');
+    it('lets whoever is left restart once the Host has gone', async () => {
+      const sessionCode = testSessionCode;
+      await startedSession(store, sessionCode, []);
       await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
       await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
       await SessionService.leaveSession(sessionCode, 'p-alice');
@@ -2061,7 +1471,7 @@ describe('SessionService', () => {
       await SessionService.restartSession(sessionCode, 'p-bob');
 
       const session = await SessionService.getSession(sessionCode);
-      expect(session?.state).toBe('selecting');
+      expect(session?.state).toBe('waiting');
     });
 
     // #405: a Disconnect keeps the Host a current Participant, and a Host who
@@ -2069,8 +1479,9 @@ describe('SessionService', () => {
     // beside their own dead entry as an ordinary Participant. Keying off the
     // entry alone would refuse the real Host and everyone else, freezing the
     // room until the TTL.
-    it('lets the room start when the Host is listed but offline', async () => {
-      const { sessionCode } = await SessionService.createSession('Alice');
+    it('lets the room restart when the Host is listed but offline', async () => {
+      const sessionCode = testSessionCode;
+      await startedSession(store, sessionCode, []);
       await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
       await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
       await store.markDisconnected('p-alice');
@@ -2078,7 +1489,7 @@ describe('SessionService', () => {
       await SessionService.restartSession(sessionCode, 'p-bob');
 
       const session = await SessionService.getSession(sessionCode);
-      expect(session?.state).toBe('selecting');
+      expect(session?.state).toBe('waiting');
     });
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 import { sessionStore as store } from '../../src/server.js';
+import { startedSession } from '../helpers/startedSession.js';
 import type { Restaurant } from '@dinder/shared/types';
 
 // The Match is a real Redis SINTER over each Participant's selections.
@@ -22,7 +23,7 @@ describe('Integration Test: Results (FR-009, FR-010, FR-011, FR-016, FR-021)', (
 
   beforeEach(async () => {
     await cleanupTestData(redis);
-    await store.createSession(sessionCode, { hostName: 'Alice', entries: restaurants });
+    await startedSession(store, sessionCode, restaurants);
     await store.addParticipant(sessionCode, {
       participantId: 'alice',
       displayName: 'Alice',

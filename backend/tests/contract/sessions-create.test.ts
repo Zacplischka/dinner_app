@@ -46,7 +46,6 @@ describe('Contract Test: POST /api/sessions', () => {
       sessionCode: response.body.sessionCode,
       hasLocation: false,
       searchRadiusMiles: null,
-      restaurantCount: 0,
     });
   });
 
@@ -107,13 +106,13 @@ describe('Contract Test: POST /api/sessions', () => {
     expect(response.body.branch).toBe('takeaway');
   });
 
-  it('omits branch entirely when the client never sends one', async () => {
+  it('opens an Eat Out lobby when the client never sends a branch', async () => {
     const response = await request(app)
       .post('/api/sessions')
       .send({ hostName: 'Alice' })
       .expect(201);
 
-    expect(response.body).not.toHaveProperty('branch');
+    expect(response.body).toMatchObject({ branch: 'eatout', lobby: { branch: 'eatout' } });
   });
 
   it('rejects an unknown branch with 400', async () => {

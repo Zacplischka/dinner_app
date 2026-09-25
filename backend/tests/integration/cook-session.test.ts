@@ -1,6 +1,6 @@
-// Integration Test: the Cook tracer bullet (#259) — setup deals a Recipe Deck,
-// Participants swipe it with the existing mechanics, and the existing Top Pick
-// rule crowns a Recipe outright. Solo and group, no solo/group question.
+// Integration Test: the Cook tracer bullet (#259) — the lobby's start deals a
+// Recipe Deck, Participants swipe it with the existing mechanics, and the
+// existing Top Pick rule crowns a Recipe outright. Solo and group, no solo/group question.
 // Spoonacular is faked at the fetch boundary; everything else is the real
 // service over real Redis. The second supply is substituted at its own seam:
 // `OWNED_RECIPES_DIR` (vitest.config.ts) points the app's corpus at three
@@ -10,17 +10,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import type Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis, testKeys } from '../helpers/testSetup.js';
 import { sessionService, sessionStore as store } from '../../src/server.js';
-import {
-  recipeHits,
-  spoonacularFetchFake,
-  type RecipeSearchHit,
-} from '../helpers/spoonacularFetchFake.js';
-
-const craving = {
-  mealType: 'main course' as const,
-  cuisines: ['italian' as const],
-  diets: [] as never[],
-};
+import { spoonacularFetchFake, type RecipeSearchHit } from '../helpers/spoonacularFetchFake.js';
 
 // Three Recipes with a deliberate spread of aggregate likes, so the middle
 // rung is what decides when Selections tie.
@@ -53,21 +43,26 @@ describe('Integration Test: a Cook Session end to end', () => {
     if (pooled.length > 0) await redis.del(...pooled);
   });
 
-  async function cookSession(hostName: string, headcount: number) {
-    const created = await sessionService.createSession(hostName, {
+  /** A Cook Session everyone in `names` joined and the first, its host, started. */
+  async function cookSession(headcount: number, names = ['Alice']) {
+    const ids = names.map((name) => name.toLowerCase());
+    const { sessionCode } = await sessionService.createSession(names[0], {
       branch: 'cook',
-      cook: {
-        craving,
-        headcount,
-      },
+      headcount,
     });
-    return created.sessionCode;
+    for (const [i, name] of names.entries())
+      await sessionService.joinSession(sessionCode, ids[i], name);
+    for (const id of ids) {
+      const { revision } = (await sessionService.getLobby(sessionCode))!;
+      await sessionService.setReady(sessionCode, id, revision, true);
+    }
+    const { revision } = (await sessionService.getLobby(sessionCode))!;
+    await sessionService.startRound(sessionCode, ids[0], revision);
+    return sessionCode;
   }
 
   it('crowns a Recipe for a group, most Selections first', async () => {
-    const sessionCode = await cookSession('Alice', 4);
-    await sessionService.joinSession(sessionCode, 'alice', 'Alice');
-    await sessionService.joinSession(sessionCode, 'bob', 'Bob');
+    const sessionCode = await cookSession(4, ['Alice', 'Bob']);
 
     await sessionService.submitSelections(sessionCode, 'alice', ['11', '33']);
     const { results } = await sessionService.submitSelections(sessionCode, 'bob', ['11']);
@@ -81,8 +76,7 @@ describe('Integration Test: a Cook Session end to end', () => {
   });
 
   it('crowns a Recipe for one person deciding alone — no solo/group fork', async () => {
-    const sessionCode = await cookSession('Alice', 1);
-    await sessionService.joinSession(sessionCode, 'alice', 'Alice');
+    const sessionCode = await cookSession(1);
 
     const { results } = await sessionService.submitSelections(sessionCode, 'alice', ['22']);
 
@@ -90,9 +84,7 @@ describe('Integration Test: a Cook Session end to end', () => {
   });
 
   it('breaks a Selection tie on aggregate likes, standing in for a rating', async () => {
-    const sessionCode = await cookSession('Alice', 2);
-    await sessionService.joinSession(sessionCode, 'alice', 'Alice');
-    await sessionService.joinSession(sessionCode, 'bob', 'Bob');
+    const sessionCode = await cookSession(2, ['Alice', 'Bob']);
 
     // Both Recipes are selected by both Participants: the Match is a tie.
     await sessionService.submitSelections(sessionCode, 'alice', ['11', '22']);
@@ -103,8 +95,7 @@ describe('Integration Test: a Cook Session end to end', () => {
   });
 
   it('still crowns a Recipe when nobody selected anything', async () => {
-    const sessionCode = await cookSession('Alice', 2);
-    await sessionService.joinSession(sessionCode, 'alice', 'Alice');
+    const sessionCode = await cookSession(2);
 
     const { results } = await sessionService.submitSelections(sessionCode, 'alice', []);
 
@@ -113,77 +104,10 @@ describe('Integration Test: a Cook Session end to end', () => {
   });
 
   it('keeps the Headcount on the Session, whatever the Participant count does', async () => {
-    const sessionCode = await cookSession('Alice', 6);
-    await sessionService.joinSession(sessionCode, 'alice', 'Alice');
-    await sessionService.joinSession(sessionCode, 'bob', 'Bob');
+    const sessionCode = await cookSession(6, ['Alice', 'Bob']);
 
     const session = await store.readSession(sessionCode);
     expect(session?.headcount).toBe(6);
     expect(session?.participantCount).toBe(2);
-  });
-
-  // Restart means "show me different ones" in the Cook Branch (#246, #260) —
-  // and it never means "no", however thin or cold the pool behind it is.
-  describe('Restart', () => {
-    /** A Cook Session decided once from a pool of `count`, ready to Restart. */
-    async function decided(count: number) {
-      vi.restoreAllMocks();
-      vi.spyOn(globalThis, 'fetch').mockImplementation(
-        spoonacularFetchFake({ recipes: recipeHits(count) }).fetchImpl
-      );
-      const sessionCode = await cookSession('Alice', 2);
-      await sessionService.joinSession(sessionCode, 'alice', 'Alice');
-      const wiped = (await store.getDeck(sessionCode)).entries.map((e) => e.placeId);
-      await sessionService.submitSelections(sessionCode, 'alice', [wiped[0]]);
-      return { sessionCode, wiped };
-    }
-
-    it('deals a Deck that avoids the just-wiped one where a supply can afford it', async () => {
-      const { sessionCode, wiped } = await decided(60);
-
-      await sessionService.restartSession(sessionCode, 'alice');
-
-      const dealt = (await store.getDeck(sessionCode)).entries;
-      expect(dealt).toHaveLength(15);
-      // Fresh-first is computed per source (#331). The vendor's sixty easily
-      // afford twelve unshown cards; the corpus's answers to this Craving were
-      // all on the wiped Deck, and the floor holds rather than being quietly
-      // dropped to go looking for fresher ones.
-      const sourced = dealt.filter((entry) => !entry.placeId.startsWith('owned:'));
-      expect(sourced.filter((entry) => wiped.includes(entry.placeId))).toEqual([]);
-      expect(dealt.length - sourced.length).toBe(3);
-    });
-
-    it('tops up with repeats rather than dealing short from a thin pool', async () => {
-      const { sessionCode } = await decided(20);
-
-      await sessionService.restartSession(sessionCode, 'alice');
-
-      expect((await store.getDeck(sessionCode)).entries).toHaveLength(15);
-    });
-
-    it('reshuffles the wiped Deck on a cold pool instead of failing', async () => {
-      const { sessionCode, wiped } = await decided(60);
-      const cravingKey = (await store.readSession(sessionCode))?.cravingKey;
-      await redis.del(cravingKey!);
-
-      await expect(sessionService.restartSession(sessionCode, 'alice')).resolves.toEqual({
-        restarted: true,
-      });
-
-      expect((await store.getDeck(sessionCode)).entries.map((e) => e.placeId).sort()).toEqual(
-        [...wiped].sort()
-      );
-    });
-
-    it('wipes Selections along with the deal, so the Deck is swipeable again', async () => {
-      const { sessionCode } = await decided(60);
-
-      await sessionService.restartSession(sessionCode, 'alice');
-
-      expect((await store.readSession(sessionCode))?.state).toBe('selecting');
-      expect((await store.getParticipant('alice'))?.hasSubmitted).toBe(false);
-      expect(await store.readSelections(sessionCode, 'alice')).toEqual([]);
-    });
   });
 });

@@ -36,6 +36,16 @@ function foldedMap(ctx: CanvasRenderingContext2D, x: number, y: number, open: nu
   }
 }
 
+/** Clears the stage, saves ctx for the caller to restore; returns the fit-to-width scale. */
+function beginScene(ctx: CanvasRenderingContext2D, width: number): number {
+  ctx.clearRect(0, 0, width, 180);
+  ctx.save();
+  ctx.translate(width / 2, 0);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  return Math.min((width - 12) / 300, 1);
+}
+
 /** Scout keeps moving only while ComparePage owns an actual pending search. */
 export function drawNeighbourhoodScout(
   ctx: CanvasRenderingContext2D,
@@ -43,15 +53,10 @@ export function drawNeighbourhoodScout(
   elapsed: number
 ) {
   const { rounded, ellipse, path, line, cat } = sceneDrawing(ctx);
-  ctx.clearRect(0, 0, width, 180);
-  ctx.save();
-  ctx.translate(width / 2, 0);
-  const scale = Math.min((width - 12) / 300, 1);
+  const scale = beginScene(ctx, width);
   ctx.scale(scale, scale);
   // Reserve the runtime's bottom-right Pause control without distorting the cat.
   ctx.translate(-150, -28);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
   ellipse(153, 153, 137, 11, '#121b24');
   // One illustrative awning, with no retailer identity or available-venue claim.
   rounded(203, 54, 61, 94, 6, '#314153', ink, 2);
@@ -103,15 +108,10 @@ export function drawNeighbourhoodScout(
 /** A brief unfold, then the runtime holds the final pose until Change area. */
 export function drawALittleFurther(ctx: CanvasRenderingContext2D, width: number, elapsed: number) {
   const { ellipse, cat } = sceneDrawing(ctx);
-  ctx.clearRect(0, 0, width, 180);
-  ctx.save();
-  ctx.translate(width / 2, 0);
-  const scale = Math.min((width - 12) / 300, 1);
+  const scale = beginScene(ctx, width);
   ctx.translate(0, (180 - 180 * scale) / 2);
   ctx.scale(scale, scale);
   ctx.translate(-150, 0);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
   ellipse(151, 157, 116, 10, '#121b24');
   const time = Math.min(3, elapsed);
   cat(91, 151, 1, 0, false, true, false, time);

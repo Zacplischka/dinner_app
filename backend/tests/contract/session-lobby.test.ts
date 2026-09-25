@@ -234,7 +234,6 @@ describe('gather-first Session wire contract', () => {
       hostName: 'Host',
       branch: 'watch',
       deckSize: 6,
-      lobby: { revision: 0, round: 1, mealType: 'main course' },
     });
     await refused(old.rejoinToken!);
     await refused(randomUUID());
@@ -269,7 +268,6 @@ describe('gather-first Session wire contract', () => {
       .expect(201);
     const sessionCode: string = created.body.sessionCode;
     expect(created.body).toMatchObject({
-      restaurantCount: 0,
       state: 'waiting',
       lobby: { participants: [] },
     });

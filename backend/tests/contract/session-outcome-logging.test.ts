@@ -3,7 +3,9 @@ import type Redis from 'ioredis';
 import { getTestRedis, cleanupTestData, waitForRedis } from '../helpers/testSetup.js';
 import { captureLogs } from '../helpers/logCapture.js';
 import { sessionStore as store, sessionService } from '../../src/server.js';
+import * as RestaurantSearchService from '../../src/services/RestaurantSearchService.js';
 import type { Restaurant } from '@dinder/shared/types';
+import { startedSession } from '../helpers/startedSession.js';
 
 // Contract: every completed Session emits exactly one anonymous 'Session
 // outcome' log line — counts and the session code only, no names (#69).
@@ -32,9 +34,10 @@ describe('Contract Test: session-outcome metrics log line', () => {
   });
 
   async function seedSession(participantIds: string[]) {
-    await store.createSession(sessionCode, {
+    await startedSession(store, sessionCode, restaurants, {
       hostName: participantIds[0],
-      entries: restaurants,
+      branch: 'eatout',
+      location: { latitude: -37.81, longitude: 144.96 },
     });
     for (const [i, pid] of participantIds.entries()) {
       await store.addParticipant(sessionCode, {
@@ -118,8 +121,15 @@ describe('Contract Test: session-outcome metrics log line', () => {
     await sessionService.submitSelections(sessionCode, 'alice', ['place1']);
     await sessionService.submitSelections(sessionCode, 'bob', ['place2']);
 
-    // Restart, then complete again with overlap
+    // Restart back to the lobby, start the next round, and complete it with overlap
+    vi.spyOn(RestaurantSearchService, 'searchNearbyRestaurants').mockResolvedValue(restaurants);
     await sessionService.restartSession(sessionCode, 'alice');
+    for (const id of ['alice', 'bob']) {
+      const { revision } = (await sessionService.getLobby(sessionCode))!;
+      await sessionService.setReady(sessionCode, id, revision, true);
+    }
+    const { revision } = (await sessionService.getLobby(sessionCode))!;
+    await sessionService.startRound(sessionCode, 'alice', revision);
     await sessionService.submitSelections(sessionCode, 'alice', ['place1']);
     await sessionService.submitSelections(sessionCode, 'bob', ['place1']);
 

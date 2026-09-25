@@ -3,7 +3,7 @@
 // The backend's private DomainErrorCode maps onto this smaller vocabulary in
 // one transport mapping (#104); persistence details never appear here.
 
-export const API_ERROR_CODES = [
+const API_ERROR_CODES = [
   // Session domain
   'SESSION_NOT_FOUND',
   'SESSION_FULL',

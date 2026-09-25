@@ -32,22 +32,17 @@ export async function handleSessionRestart(
     payload,
     callback,
     async ({ sessionCode }, ack) => {
-      const { restarted } = await service.restartSession(sessionCode, socket.id);
+      await service.restartSession(sessionCode, socket.id);
 
       // Send acknowledgment. No-data command → canonical data is null.
       ack(null);
 
-      // Broadcast to ALL participants (including sender). The lobby's
-      // start rides the same event; only the message says which it was (#289).
+      // Broadcast to ALL participants (including sender).
       const lobby = await service.getLobby(sessionCode);
       io.in(sessionCode).emit('session:restarted', {
         ...(lobby ? { state: 'waiting' as const, lobby } : {}),
         sessionCode,
-        message: lobby
-          ? 'Back in the lobby. Review your choices and confirm Ready.'
-          : restarted
-            ? 'Session restarted. Make new selections.'
-            : 'Selection started.',
+        message: 'Back in the lobby. Review your choices and confirm Ready.',
       });
     }
   );

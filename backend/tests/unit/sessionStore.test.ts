@@ -15,6 +15,7 @@ import {
 } from '../../src/store/sessionStore.js';
 import { DomainError } from '../../src/services/DomainError.js';
 import type { Restaurant } from '@dinder/shared/types';
+import { startedSession } from '../helpers/startedSession.js';
 
 const sessionCode = 'TEST1';
 
@@ -35,10 +36,8 @@ beforeEach(async () => {
 });
 
 async function createTestSession(withRestaurants = true) {
-  return await store.createSession(sessionCode, {
-    hostName: 'Alice',
-    entries: withRestaurants ? restaurants : undefined,
-  });
+  if (withRestaurants) await startedSession(store, sessionCode, restaurants);
+  else await store.createSession(sessionCode, { hostName: 'Alice' });
 }
 
 describe('SessionStore', () => {
@@ -62,11 +61,7 @@ describe('SessionStore', () => {
 
     it('round-trips the Mood a Watch Session was dealt from, and only there', async () => {
       const mood = { genres: ['Comedy' as const, 'Horror' as const], decades: ['1990s' as const] };
-      await store.createSession(sessionCode, {
-        hostName: 'Alice',
-        branch: 'watch',
-        mood,
-      });
+      await startedSession(store, sessionCode, [], { branch: 'watch', mood });
       await store.createSession('TEST2', { hostName: 'Bob', branch: 'eatout' });
 
       expect((await store.readSession(sessionCode))?.mood).toEqual(mood);
@@ -313,7 +308,7 @@ describe('SessionStore', () => {
   });
 
   describe('resetForRestart', () => {
-    it('wipes Selections, Submissions, and the Match; back to selecting', async () => {
+    it('wipes Selections, Submissions, and the Match; back to the lobby', async () => {
       await createTestSession();
       await store.addParticipant(sessionCode, { participantId: 'p1', displayName: 'Alice' });
       await store.recordSubmission(sessionCode, 'p1', ['place1']);
@@ -322,7 +317,7 @@ describe('SessionStore', () => {
 
       await store.resetForRestart(sessionCode);
 
-      expect((await store.readSession(sessionCode))?.state).toBe('selecting');
+      expect((await store.readSession(sessionCode))?.state).toBe('waiting');
       expect((await store.getParticipant('p1'))?.hasSubmitted).toBe(false);
       expect(await redis.exists(`session:${sessionCode}:p1:selections`)).toBe(0);
       expect(await redis.exists(`session:${sessionCode}:results`)).toBe(0);
@@ -435,52 +430,9 @@ describe('SessionStore', () => {
         overview: 'The crew of a commercial starship answer a distress call.',
         trailerUrl: 'https://example.test/alien-trailer',
       };
-      await store.createSession(sessionCode, {
-        hostName: 'Alice',
-        entries: [movie],
-      });
+      await startedSession(store, sessionCode, [movie]);
 
       expect((await store.getDeck(sessionCode)).entries).toEqual([movie]);
-    });
-
-    it('replaceDeck leaves nothing of the old Deck behind', async () => {
-      await createTestSession();
-
-      await store.replaceDeck(sessionCode, [
-        { kind: 'recipe', placeId: 'rec9', name: 'Aglio e Olio', aggregateLikes: 12 },
-      ]);
-
-      const { entries, missingCount } = await store.getDeck(sessionCode);
-      expect(entries).toEqual([
-        { kind: 'recipe', placeId: 'rec9', name: 'Aglio e Olio', aggregateLikes: 12 },
-      ]);
-      // A stale id left in the id set would read as lost Deck data, not a swap.
-      expect(missingCount).toBe(0);
-    });
-
-    it('replaceDeck refuses an empty deal rather than emptying the Deck', async () => {
-      await createTestSession();
-
-      await store.replaceDeck(sessionCode, []);
-
-      expect((await store.getDeck(sessionCode)).entries).toHaveLength(3);
-    });
-
-    it('replaceDeck slides the session TTL onto the new Deck', async () => {
-      await createTestSession();
-
-      await store.replaceDeck(sessionCode, [
-        { kind: 'recipe', placeId: 'rec9', name: 'Aglio e Olio', aggregateLikes: 12 },
-      ]);
-
-      for (const key of [
-        `session:${sessionCode}:restaurant_ids`,
-        `session:${sessionCode}:restaurants`,
-      ]) {
-        const ttl = await redis.ttl(key);
-        expect(ttl).toBeGreaterThan(0);
-        expect(ttl).toBeLessThanOrEqual(SESSION_TTL_SECONDS);
-      }
     });
   });
 
@@ -503,13 +455,10 @@ describe('SessionStore', () => {
   // the full write->Redis->read round-trip with their declared types intact.
   describe('typed round-trip', () => {
     it('round-trips a fully-typed Session, Participants, Selections, Submissions, Restaurants, and the Match', async () => {
-      const { session } = await store.createSession(sessionCode, {
-        hostName: 'Alice',
+      await startedSession(store, sessionCode, restaurants, {
         location: { latitude: 1, longitude: 2, address: 'Somewhere' },
         searchRadiusMiles: 3,
-        entries: restaurants,
       });
-      expect(session.state).toBe('waiting');
 
       await store.addParticipant(sessionCode, {
         participantId: 'p1',
@@ -521,6 +470,7 @@ describe('SessionStore', () => {
       await store.recordSubmission(sessionCode, 'p2', ['place2', 'place3']);
 
       const readSession: Session | null = await store.readSession(sessionCode);
+      expect(readSession?.state).toBe('selecting');
       expect(readSession?.location).toEqual({ latitude: 1, longitude: 2, address: 'Somewhere' });
       expect(readSession?.searchRadiusMiles).toBe(3);
 

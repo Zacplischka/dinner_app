@@ -2,7 +2,7 @@
 
 import { Navigate, useNavigate, useParams } from 'react-router';
 import type { Movie, Restaurant } from '@dinder/shared/types';
-import { isMovie, isRecipe, isRestaurant, type Participant } from '../types';
+import { isEffectiveHost, isMovie, isRecipe, isRestaurant, type Participant } from '../types';
 import { restartSession } from '../services/socketBindings';
 import { useLeaveSession } from '../hooks/useLeaveSession';
 import { API_BASE_URL } from '../services/apiClient';
@@ -381,12 +381,8 @@ export default function ResultsPage() {
   const PickContainer = allPassed ? 'details' : 'div';
 
   // A Restart wipes the whole room's Match, so it is the Host's call and the
-  // server refuses it from anyone else (#405). Everyone else waits — unless no
-  // Host is actually here (left, or dropped), since nothing promotes a
-  // successor and the server lets whoever is still around restart rather than
-  // strand the room. Same rule as the Lobby's start, which is the same command.
-  const me = participants.find((p) => p.participantId === currentUserId);
-  const isHost = !!me && (me.isHost || !participants.some((p) => p.isHost && p.isOnline !== false));
+  // server refuses it from anyone else (#405). Everyone else waits.
+  const isHost = isEffectiveHost(participants, currentUserId);
   const waitingForHost = (
     <p className="text-center text-sm text-muted">Waiting for the host to start another round</p>
   );
