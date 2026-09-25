@@ -8,7 +8,7 @@ const DOCUMENT_EDGE_CACHE = {
   cacheTags: ['dinder-route-html'],
 };
 
-test('routes both branded hosts to the fixed frontend without losing join URLs or cache headers', async (t) => {
+test('routes both branded hosts to the fixed frontend without losing cache headers', async (t) => {
   const upstream = t.mock.method(
     globalThis,
     'fetch',
@@ -23,7 +23,7 @@ test('routes both branded hosts to the fixed frontend without losing join URLs o
       })
     );
     const forwarded = upstream.mock.calls.at(-1).arguments[0];
-    assert.equal(forwarded.url, 'https://frontend-production-bdfc.up.railway.app/join?code=ABCDE');
+    assert.equal(forwarded.url, 'https://frontend-production-bdfc.up.railway.app/join');
     assert.equal(forwarded.headers.get('Host'), 'frontend-production-bdfc.up.railway.app');
     assert.equal(forwarded.headers.get('Accept'), 'text/html');
     assert.equal(forwarded.method, 'HEAD');
@@ -43,16 +43,21 @@ test('edge-caches GET and HEAD documents under the purged tag while browsers kee
       })
   );
   for (const method of ['GET', 'HEAD']) {
-    const result = await proxy.fetch(
-      new Request('https://yupcrew.com/session/ABCDE', {
-        method,
-        // The shell is the same static file for everyone, so identity never splits it.
-        headers: { Accept: 'text/html,application/xhtml+xml,*/*;q=0.8', Cookie: 'a=b' },
-      })
-    );
-    assert.deepEqual(upstream.mock.calls.at(-1).arguments[1], { cf: DOCUMENT_EDGE_CACHE });
-    assert.equal(result.headers.get('Cache-Control'), 'max-age=0, must-revalidate');
-    assert.equal(result.headers.get('Content-Type'), 'text/html');
+    // Every invite link shares one cached shell; the browser keeps its own ?code=.
+    for (const query of ['?code=ABCDE', '?code=FGHIJ']) {
+      const result = await proxy.fetch(
+        new Request(`https://yupcrew.com/join${query}`, {
+          method,
+          // The shell is the same static file for everyone, so identity never splits it.
+          headers: { Accept: 'text/html,application/xhtml+xml,*/*;q=0.8', Cookie: 'a=b' },
+        })
+      );
+      const [forwarded, init] = upstream.mock.calls.at(-1).arguments;
+      assert.equal(forwarded.url, 'https://frontend-production-bdfc.up.railway.app/join');
+      assert.deepEqual(init, { cf: DOCUMENT_EDGE_CACHE });
+      assert.equal(result.headers.get('Cache-Control'), 'max-age=0, must-revalidate');
+      assert.equal(result.headers.get('Content-Type'), 'text/html');
+    }
   }
   assert.equal(
     await (
@@ -68,12 +73,14 @@ test('passes assets, non-HTML clients and writes straight through without edge c
   });
   const upstream = t.mock.method(globalThis, 'fetch', async () => response);
   for (const [path, init] of [
-    ['/assets/index-AbCdEf12.js', { headers: { Accept: '*/*' } }],
-    ['/join', { headers: { Accept: 'application/json' } }],
-    ['/join', { method: 'POST', headers: { Accept: 'text/html' }, body: 'x' }],
+    ['/assets/index-AbCdEf12.js?v=1', { headers: { Accept: '*/*' } }],
+    ['/join?code=ABCDE', { headers: { Accept: 'application/json' } }],
+    ['/join?code=ABCDE', { method: 'POST', headers: { Accept: 'text/html' }, body: 'x' }],
   ]) {
     const result = await proxy.fetch(new Request(`https://yupcrew.com${path}`, init));
-    assert.equal(upstream.mock.calls.at(-1).arguments.length, 1, `${path} ${init.method ?? 'GET'}`);
+    const call = upstream.mock.calls.at(-1).arguments;
+    assert.equal(call.length, 1, `${path} ${init.method ?? 'GET'}`);
+    assert.equal(call[0].url, `https://frontend-production-bdfc.up.railway.app${path}`);
     assert.equal(result, response);
   }
 });
