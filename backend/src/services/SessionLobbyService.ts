@@ -10,6 +10,13 @@ import type { SessionServiceDeps } from './SessionService.js';
 import { cravingPoolKey, satisfiesDiets } from './RecipePoolService.js';
 import { DomainError } from './DomainError.js';
 
+/**
+ * Lobby starts a Session may send to a paid source (#502): room to widen the
+ * area or retry an empty one, while a scripted socket loop has to create a
+ * fresh Session for every few paid searches it wants.
+ */
+const MAX_PAID_DEALS = 3;
+
 export function createLobbyCommands(
   deps: Pick<
     SessionServiceDeps,
@@ -252,19 +259,52 @@ export function createLobbyCommands(
         );
       if ((session.branch === 'eatout' || session.branch === 'takeaway') && !session.location)
         throw new DomainError('VALIDATION_ERROR', 'Choose a shared search area first.');
+      const sorted = [...roster].sort((a, b) => a.displayName.localeCompare(b.displayName));
+      const current = (await store.getDeck(sessionCode)).entries;
+      const craving: Craving | undefined =
+        session.branch === 'cook'
+          ? {
+              mealType: session.lobby!.mealType,
+              cuisines: [...new Set(sorted.flatMap((p) => p.cuisines ?? []))],
+              diets: [...new Set(sorted.flatMap((p) => p.diets ?? []))],
+            }
+          : undefined;
+      const searchKey =
+        session.branch === 'watch' || session.branch === 'cook'
+          ? undefined
+          : JSON.stringify([
+              session.location?.latitude,
+              session.location?.longitude,
+              session.searchRadiusMiles ?? 5,
+              session.deckSize ?? 20,
+            ]);
+      // Only a deal that can reach a paid source counts (#502): an area this
+      // Session holds no Deck for, or a Craving it has not been dealt. Watch
+      // deals from the corpus and never does.
+      // ponytail: a new Craving counts even when another Session has already
+      // warmed its pool, so a Cook Session can be capped early. Upgrade path:
+      // have the deal report whether it called the vendor, and count that.
+      const paid =
+        searchKey !== undefined
+          ? session.dealtSearch !== searchKey || !current.length
+          : craving !== undefined && cravingPoolKey(craving) !== session.cravingKey;
+      const capped = paid && (session.paidDeals ?? 0) >= MAX_PAID_DEALS;
+      if (paid && !capped) session.paidDeals = (session.paidDeals ?? 0) + 1;
       session.lobby!.starting = true;
       session.lobby!.revision++;
       session.lobby!.notice = undefined;
       await store.writeLobbySession(session);
-      return {
-        session,
-        roster: [...roster].sort((a, b) => a.displayName.localeCompare(b.displayName)),
-        current: (await store.getDeck(sessionCode)).entries,
-      };
+      return { session, roster: sorted, current, craving, searchKey, capped };
     });
-    const { session, roster, current } = snapshot;
+    const { session, roster, current, craving, searchKey, capped } = snapshot;
     let entries: DeckEntry[];
     try {
+      // Thrown here, so the failed-deal path below says so in the Lobby.
+      if (capped)
+        throw new DomainError(
+          'RATE_LIMITED',
+          'This Session has used all its searches. Start a new Session to search again.'
+        );
       // The deal takes seconds; let the room see it has started. Inside the
       // try, so a failed broadcast clears starting like a failed deal.
       const starting = await readLobby(sessionCode);
@@ -282,12 +322,7 @@ export function createLobbyCommands(
             'NO_MOVIES_FOUND',
             'No movies or series match these interests. Adjust your choices and try again.'
           );
-      } else if (session.branch === 'cook') {
-        const craving: Craving = {
-          mealType: session.lobby!.mealType,
-          cuisines: [...new Set(roster.flatMap((p) => p.cuisines ?? []))],
-          diets: [...new Set(roster.flatMap((p) => p.diets ?? []))],
-        };
+      } else if (craving) {
         const dealt = await (
           deps.dealCollaborativeRecipeDeck
             ? deps.dealCollaborativeRecipeDeck(
@@ -316,12 +351,6 @@ export function createLobbyCommands(
         session.recipeSourceDown = dealt.recipeSourceDown;
       } else {
         const location = session.location as SessionLocation;
-        const searchKey = JSON.stringify([
-          location.latitude,
-          location.longitude,
-          session.searchRadiusMiles ?? 5,
-          session.deckSize ?? 20,
-        ]);
         entries =
           session.dealtSearch === searchKey && current.length
             ? current

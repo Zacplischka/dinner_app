@@ -27,6 +27,8 @@ interface ComparisonServiceDeps {
   doorDashActorId?: string;
   fetchPlaceDetails(placeId: string): Promise<VenueDetails>;
   snapshotStore: SnapshotStore;
+  /** The app-wide daily budget on cold Comparisons (#502): throws RATE_LIMITED once spent. */
+  spendColdComparison?: () => Promise<void>;
 }
 
 export interface StorefrontResolver {
@@ -75,6 +77,7 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
         });
         return;
       }
+      await deps.spendColdComparison?.();
 
       const venue = await deps.fetchPlaceDetails(placeId);
       emit(flight, { type: 'venue', placeId: venue.placeId, venueName: venue.name });
@@ -113,11 +116,13 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
         // An unknown Venue is not transient: say so, and the client drops Retry.
         err instanceof DomainError && err.code === 'not_found'
           ? { type: 'error', code: 'NOT_FOUND', message: err.message }
-          : {
-              type: 'error',
-              code: 'COMPARISON_FAILED',
-              message: 'Could not compare this Venue right now.',
-            }
+          : err instanceof DomainError && err.code === 'RATE_LIMITED'
+            ? { type: 'error', code: 'RATE_LIMITED', message: err.message }
+            : {
+                type: 'error',
+                code: 'COMPARISON_FAILED',
+                message: 'Could not compare this Venue right now.',
+              }
       );
     } finally {
       flights.delete(placeId);

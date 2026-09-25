@@ -99,9 +99,12 @@ export function createComparisonRouter({
 
       const ip = requestIp(req);
       req.log?.info({ placeId: input.placeId, source: input.source }, 'Comparison subscribe');
-      // Headers flush lazily on the first event, so a rate-limited cold
-      // Comparison can still answer with a real 429 instead of an SSE error.
+      // Headers flush lazily on the first event, so a cold Comparison over
+      // this IP's window can still answer with a real 429 instead of an SSE
+      // error. The app-wide daily budget (#502) is no wait this caller can
+      // sit out, so it streams its RATE_LIMITED event like any other error.
       let streaming = false;
+      let overHourlyLimit = false;
 
       let unsubscribe: () => void = () => undefined;
       res.on('close', () => unsubscribe());
@@ -110,7 +113,7 @@ export function createComparisonRouter({
         (event) => {
           if (res.writableEnded) return;
           if (!streaming) {
-            if (event.type === 'error' && event.code === 'RATE_LIMITED') {
+            if (event.type === 'error' && overHourlyLimit) {
               const retryAfter = retryAfterSeconds(coldCompareRequests, ip, COLD_COMPARE_WINDOW_MS);
               res.setHeader('Retry-After', retryAfter);
               // Off the handler's stack, so a throw would never reach errorHandler.
@@ -137,8 +140,15 @@ export function createComparisonRouter({
           if (type === 'comparison' || type === 'error') res.end();
         },
         {
-          beginColdCompare: () =>
-            admitRequest(coldCompareRequests, ip, COLD_COMPARE_LIMIT, COLD_COMPARE_WINDOW_MS),
+          beginColdCompare: () => {
+            overHourlyLimit = !admitRequest(
+              coldCompareRequests,
+              ip,
+              COLD_COMPARE_LIMIT,
+              COLD_COMPARE_WINDOW_MS
+            );
+            return !overHourlyLimit;
+          },
         }
       );
       return undefined;

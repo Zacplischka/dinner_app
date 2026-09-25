@@ -49,6 +49,8 @@ export interface Session {
   cravingKey?: string;
   /** The area and size used by the current Restaurant Deck. */
   dealtSearch?: string;
+  /** Lobby starts that went to a paid source (#502): a new area, or a new Craving. */
+  paidDeals?: number;
   /**
    * How many cards the Host asked to swipe (#415), on every Branch. Absent when
    * they took the Branch's default, and a ceiling either way — a Restart deals
@@ -377,6 +379,7 @@ export function createSessionStore(redis: Redis) {
       deckSize: data.deckSize ? parseInt(data.deckSize, 10) : undefined,
       cravingKey: data.cravingKey,
       dealtSearch: data.dealtSearch,
+      paidDeals: data.paidDeals ? parseInt(data.paidDeals, 10) : undefined,
       mood: data.mood ? (JSON.parse(data.mood) as Mood) : undefined,
       recipeSourceDown: data.recipeSourceDown === '1' ? true : undefined,
       shoppingListId: data.shoppingListId,
@@ -856,6 +859,7 @@ export function createSessionStore(redis: Redis) {
     if (session.mood) fields.mood = JSON.stringify(session.mood);
     if (session.cravingKey) fields.cravingKey = session.cravingKey;
     if (session.dealtSearch) fields.dealtSearch = session.dealtSearch;
+    if (session.paidDeals) fields.paidDeals = session.paidDeals;
     fields.recipeSourceDown = session.recipeSourceDown ? '1' : '0';
     return fields;
   }

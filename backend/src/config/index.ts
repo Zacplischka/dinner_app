@@ -65,6 +65,19 @@ export const config = {
     // alone, so a hanging Spoonacular can never hold a Host at setup.
     dealBudgetMs: parseInt(process.env.RECIPE_DEAL_BUDGET_MS || '2500', 10),
   },
+  // The global paid-API budget (#502): calls a day per paid SKU, app-wide,
+  // each the vendor's quota less headroom for calls that never pass through
+  // it (local runs, e2e and verify-live share the Places key).
+  paidBudget: {
+    // Text Search is quota-capped at 100 a day (GCP mypickle-486702); 20 spare.
+    placesTextSearch: parseInt(process.env.PLACES_TEXT_SEARCH_DAILY_CEILING || '80', 10),
+    // Place Photo media is quota-capped at 200 a day; 20 spare.
+    placePhoto: parseInt(process.env.PLACE_PHOTO_DAILY_CEILING || '180', 10),
+    // No vendor quota: ~1,200 cold Woolworths lookups at ~12 lines a list keeps one politeness queue ours.
+    shoppingListMint: parseInt(process.env.SHOPPING_LIST_MINT_DAILY_CEILING || '100', 10),
+    // Apify's free plan stops at $5 a month; a cold Comparison is at most ~$0.06, so a day drains an eighth.
+    coldComparison: parseInt(process.env.COLD_COMPARISON_DAILY_CEILING || '10', 10),
+  },
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,
     // ADR 0010); the cache self-heals onto whatever store responses name.
