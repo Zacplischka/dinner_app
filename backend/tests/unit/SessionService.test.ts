@@ -15,6 +15,7 @@ import {
   type SessionServiceDeps,
 } from '../../src/services/SessionService.js';
 import { DomainError } from '../../src/services/DomainError.js';
+import { createOrderService } from '../../src/services/OrderService.js';
 import { SESSION_CODE_PATTERN, type Mood, type Movie, type Recipe } from '@dinder/shared/types';
 
 describe('SessionService', () => {
@@ -1499,6 +1500,118 @@ describe('SessionService', () => {
       const { results } = await SessionService.leaveSession(sessionCode, 'p-bob');
 
       expect(results).toBeUndefined();
+    });
+  });
+
+  // #506: a Leave on a complete Session deletes the leaver's Selections, so a
+  // rejoin that recomputed the Match over whoever is left could flip the Top
+  // Pick away from the one everyone was shown.
+  describe('a completed Session rejoined after a Leave', () => {
+    async function completeAliceAndBob(): Promise<{
+      sessionCode: string;
+      rejoinToken: string;
+      broadcast: Awaited<ReturnType<typeof SessionService.submitSelections>>['results'];
+    }> {
+      searchNearbyRestaurants.mockResolvedValue([
+        { placeId: 'A', name: 'Apple Bistro', rating: 4.9 },
+        { placeId: 'B', name: 'Bean Bar', rating: 4.0 },
+        { placeId: 'C', name: 'Curry Club', rating: 4.5 },
+      ]);
+      const { sessionCode } = await SessionService.createSession('Alice', {
+        location: { latitude: 37.7749, longitude: -122.4194 },
+        searchRadiusMiles: 5,
+      });
+      const { rejoinToken } = await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['A', 'B']);
+      const { results: broadcast } = await SessionService.submitSelections(sessionCode, 'p-bob', [
+        'B',
+        'C',
+      ]);
+      return { sessionCode, rejoinToken, broadcast };
+    }
+
+    it('hands the rejoiner exactly the outcome that was broadcast', async () => {
+      const { sessionCode, rejoinToken, broadcast } = await completeAliceAndBob();
+      expect(broadcast?.topPick?.restaurant.placeId).toBe('B');
+
+      await SessionService.leaveSession(sessionCode, 'p-bob');
+      const rejoin = await SessionService.joinSession(
+        sessionCode,
+        'p-alice-2',
+        'Alice',
+        rejoinToken
+      );
+
+      expect(rejoin.results).toEqual({ sessionCode, ...broadcast });
+    });
+
+    it('lets the rejoiner open the Group Order on their Top Pick', async () => {
+      const { sessionCode, rejoinToken } = await completeAliceAndBob();
+      await SessionService.leaveSession(sessionCode, 'p-bob');
+      const rejoin = await SessionService.joinSession(
+        sessionCode,
+        'p-alice-2',
+        'Alice',
+        rejoinToken
+      );
+
+      // No Snapshot, so the order answers stale — past the outcome gate, not refused by it.
+      const orders = createOrderService({ store, snapshotStore: { getLatest: async () => null } });
+      await expect(
+        orders.open(sessionCode, 'p-alice-2', rejoin.results?.topPick?.restaurant.placeId ?? '')
+      ).resolves.toMatchObject({ reason: 'stale' });
+    });
+
+    it("keeps a Cook rejoiner's Top Pick on the Recipe its Shopping List was minted for", async () => {
+      mintShoppingList.mockImplementation((sessionCode) =>
+        store.claimShoppingListId(sessionCode, 'list-1')
+      );
+      const sessionCode = 'COOK1';
+      await store.createSession(sessionCode, {
+        hostName: 'Alice',
+        entries: [
+          { kind: 'recipe', placeId: 'recA', name: 'Aglio e Olio', aggregateLikes: 900 },
+          { kind: 'recipe', placeId: 'recB', name: 'Beef Rendang', aggregateLikes: 100 },
+          { kind: 'recipe', placeId: 'recC', name: 'Caponata', aggregateLikes: 500 },
+        ],
+      });
+      const { rejoinToken } = await SessionService.joinSession(sessionCode, 'p-alice', 'Alice');
+      await SessionService.joinSession(sessionCode, 'p-bob', 'Bob');
+      await SessionService.submitSelections(sessionCode, 'p-alice', ['recA', 'recB']);
+      await SessionService.submitSelections(sessionCode, 'p-bob', ['recB', 'recC']);
+
+      await SessionService.leaveSession(sessionCode, 'p-bob');
+      const rejoin = await SessionService.joinSession(
+        sessionCode,
+        'p-alice-2',
+        'Alice',
+        rejoinToken
+      );
+
+      expect(mintShoppingList).toHaveBeenCalledTimes(1);
+      expect(mintShoppingList).toHaveBeenCalledWith(
+        sessionCode,
+        rejoin.results?.topPick?.restaurant.placeId
+      );
+      expect(rejoin.results?.shoppingListId).toBe('list-1');
+    });
+
+    // The window between a completion marking the Session complete and storing
+    // its outcome must not serve the previous round's.
+    it('forgets the outcome on Restart', async () => {
+      const { sessionCode, rejoinToken } = await completeAliceAndBob();
+      await SessionService.restartSession(sessionCode, 'p-alice');
+      await store.updateState(sessionCode, 'complete');
+
+      const rejoin = await SessionService.joinSession(
+        sessionCode,
+        'p-alice-2',
+        'Alice',
+        rejoinToken
+      );
+
+      expect(rejoin.results).toMatchObject({ overlappingOptions: [], hasOverlap: false });
     });
   });
 
