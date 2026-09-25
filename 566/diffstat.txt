@@ -1,0 +1,37 @@
+# #566 squash a0098ef on main (parent 9ca4f2b)
+
+$ git diff --stat a0098ef~1 a0098ef
+ backend/src/api/comparison.ts                   | 52 ++++++++++-----------
+ backend/src/api/cravingSchema.ts                | 18 --------
+ backend/src/api/friends.ts                      | 25 +++++------
+ backend/src/api/geocode.ts                      | 31 ++++---------
+ backend/src/api/lobbySchema.ts                  | 23 +++++++++-
+ backend/src/api/rateWindow.ts                   | 34 ++++++++++++--
+ backend/src/api/redirect.ts                     | 20 +++------
+ backend/src/api/sessions.ts                     | 37 ++++++---------
+ backend/src/api/toApiError.ts                   |  1 -
+ backend/src/services/DomainError.ts             |  3 +-
+ backend/src/services/FriendsService.ts          |  4 +-
+ backend/src/services/doorDashStorefront.ts      |  3 +-
+ backend/src/services/profilePhoto.ts            |  4 +-
+ backend/src/services/storefrontResolution.ts    |  6 +--
+ backend/src/store/friendsStore.ts               |  2 +-
+ backend/src/websocket/joinHandler.ts            |  7 ++-
+ backend/tests/contract/canonical-errors.test.ts |  5 ---
+ backend/tests/contract/friend-deletion.test.ts  |  2 +-
+ backend/tests/contract/profile-photos.test.ts   | 13 +++++-
+ backend/tests/unit/FriendsService.test.ts       |  4 +-
+ backend/tests/unit/rateWindow.test.ts           | 60 ++++++++++++++++++++++++-
+ frontend/src/components/SessionEntry.tsx        |  8 ++--
+ frontend/src/pages/JoinSessionPage.tsx          |  8 ++--
+ frontend/src/services/radius.ts                 |  8 +++-
+ frontend/src/utils/displayName.ts               |  8 +++-
+ shared/types/comparison-contract.ts             |  9 ++--
+ shared/types/session-contract.ts                |  7 +++
+ 27 files changed, 237 insertions(+), 165 deletions(-)
+
+The squash content equals the verified PR head: every +/- line of `git diff 9ca4f2b a0098ef` matches `git diff 3d0a88a 457c18d` (diff of the two changed-line lists: empty; 27 files in both).
+Source only (backend/src, frontend/src, shared): see `git diff --shortstat a0098ef~1 a0098ef -- backend/src frontend/src shared` below.
+
+$ git diff --shortstat a0098ef~1 a0098ef -- backend/src frontend/src shared
+ 22 files changed, 163 insertions(+), 155 deletions(-)

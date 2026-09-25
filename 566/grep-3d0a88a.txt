@@ -1,0 +1,109 @@
+# #566 evidence greps at 3d0a88a (3d0a88a9260f07a696b35258ff4b2803270feb76)
+
+## 1. cravingSchema.ts file and imports of it
+$ git ls-tree -r --name-only 3d0a88a backend/src/api | grep -c cravingSchema
+1
+$ git grep -n -e 'cravingSchema.js' -e 'cravingSchema.ts' 3d0a88a
+backend/src/api/sessions.ts:7:import { cravingSchema } from './cravingSchema.js';
+  -> 1 hit(s)
+$ git grep -n -e 'cravingSchema =' -e 'cravingSchema }' -e ', cravingSchema' 3d0a88a -- backend/src
+backend/src/api/cravingSchema.ts:14:export const cravingSchema = z.object({
+
+## 2. 'validation_error' (DomainErrorCode alias + toApiError row). Log reasons in sessions.ts / api-logging / sessions-create are kept by the issue; frontend apiClient.test.ts is a legacy wire-body fixture.
+$ git grep -n "validation_error" 3d0a88a
+backend/src/api/friends.ts:71:        throw new DomainError('validation_error', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
+backend/src/api/sessions.ts:86:          { reason: 'validation_error', fields: validationFields(validation.error) },
+backend/src/api/toApiError.ts:53:  validation_error: { code: 'VALIDATION_ERROR', status: 400 },
+backend/src/services/DomainError.ts:46:  | 'validation_error';
+backend/src/services/FriendsService.ts:130:      throw new DomainError('validation_error', 'You cannot send a friend request to yourself');
+backend/src/services/FriendsService.ts:188:      throw new DomainError('validation_error', 'No valid friend IDs provided');
+backend/src/services/profilePhoto.ts:24:    throw new DomainError('validation_error', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
+backend/src/services/profilePhoto.ts:48:      'validation_error',
+backend/src/store/friendsStore.ts:304:    throw new DomainError('validation_error', 'Friend identifiers must be valid UUIDs');
+backend/tests/contract/api-logging.test.ts:101:      reason: 'validation_error',
+backend/tests/contract/canonical-errors.test.ts:152:    validation_error: {
+backend/tests/contract/friend-deletion.test.ts:114:    code: 'validation_error',
+backend/tests/contract/profile-photos.test.ts:191:      code: 'validation_error',
+backend/tests/contract/sessions-create.test.ts:66:      reason: 'validation_error',
+backend/tests/unit/FriendsService.test.ts:362:      ).rejects.toMatchObject({ code: 'validation_error' });
+backend/tests/unit/FriendsService.test.ts:467:      ).rejects.toMatchObject({ code: 'validation_error' });
+frontend/tests/unit/apiClient.test.ts:269:        json: async () => ({ error: 'validation_error', message: 'Valid email is required' }),
+frontend/tests/unit/apiClient.test.ts:274:        code: 'validation_error',
+  -> 18 hit(s)
+$ git grep -n -e "| 'validation_error'" -e "validation_error: {" -e "DomainError('validation_error'" -e "^ *'validation_error',$" 3d0a88a -- backend/src   # the code alias, its mapping row and its throw sites
+backend/src/api/friends.ts:71:        throw new DomainError('validation_error', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
+backend/src/api/toApiError.ts:53:  validation_error: { code: 'VALIDATION_ERROR', status: 400 },
+backend/src/services/DomainError.ts:46:  | 'validation_error';
+backend/src/services/FriendsService.ts:130:      throw new DomainError('validation_error', 'You cannot send a friend request to yourself');
+backend/src/services/FriendsService.ts:188:      throw new DomainError('validation_error', 'No valid friend IDs provided');
+backend/src/services/profilePhoto.ts:24:    throw new DomainError('validation_error', 'Choose a JPEG, PNG or WebP photo up to 5 MB.');
+backend/src/services/profilePhoto.ts:48:      'validation_error',
+backend/src/store/friendsStore.ts:304:    throw new DomainError('validation_error', 'Friend identifiers must be valid UUIDs');
+  -> 8 hit(s)
+
+## 3. isRecord / queryNumber definitions (private backend copies)
+$ git grep -n -e 'function isRecord' -e 'function queryNumber' 3d0a88a
+backend/src/api/rateWindow.ts:54:export function queryNumber(value: unknown): number {
+backend/src/services/storefrontResolution.ts:39:export function isRecord(value: unknown): value is Record<string, unknown> {
+shared/types/comparison-contract.ts:145:function isRecord(value: unknown): value is Record<string, unknown> {
+shared/types/comparison-contract.ts:149:function queryNumber(value: unknown): number {
+  -> 4 hit(s)
+
+## 4. Hard-coded display-name / radius literals
+$ git grep -n -e 'max(50' -e 'maxLength={50}' -e '/50 characters' -e '1-50' -e '1 and 50' -e '> 50' -e 'min(1).max(15)' -e 'Math.min(15' -e '1–15' -e '1-15' -e '< 1 ||' -e '> 15' 3d0a88a -- backend/src frontend/src shared
+backend/src/api/comparison.ts:153:          'Valid latitude, longitude, and radiusMiles (1–15) are required'
+backend/src/api/lobbySchema.ts:37:  searchRadiusMiles: z.number().min(1).max(15).optional(),
+backend/src/api/sessions.ts:37:      hostName: z.string().trim().min(1).max(50),
+backend/src/api/sessions.ts:40:      searchRadiusMiles: z.number().min(1).max(15).optional(),
+backend/src/api/sessions.ts:92:          'hostName is required and must be 1-50 characters'
+backend/src/websocket/joinHandler.ts:27:  displayName: z.string().trim().min(1, 'Display name required').max(50, 'Display name too long'),
+backend/src/websocket/submitHandler.ts:23:  selections: z.array(z.string()).max(50),
+frontend/src/components/SessionEntry.tsx:85:                maxLength={50}
+frontend/src/components/SessionEntry.tsx:90:              <p className="mt-1.5 text-xs text-muted">{name.length}/50 characters</p>
+frontend/src/pages/ComparePage.tsx:114:    // Backend contract is miles (1-15); the UI speaks kilometres.
+frontend/src/pages/JoinSessionPage.tsx:236:                  maxLength={50}
+frontend/src/pages/JoinSessionPage.tsx:240:                <p className="mt-1.5 text-xs text-muted">{participantName.length}/50 characters</p>
+frontend/src/services/radius.ts:2:// is miles (1-15). Convert and clamp at the request edge in one place.
+frontend/src/services/radius.ts:9:  return Math.min(15, Math.max(1, Math.round((radiusKm / KM_PER_MILE) * 10) / 10));
+frontend/src/utils/displayName.ts:3:// so the 1-50 bound is on the trimmed length.
+frontend/src/utils/displayName.ts:6:  return length < 1 || length > 50 ? 'Name must be between 1 and 50 characters' : null;
+shared/types/comparison-contract.ts:86:    radiusMiles < 1 ||
+shared/types/comparison-contract.ts:87:    radiusMiles > 15
+
+## 5. Inline rate-limit rejection blocks in route files (admitRequest calls outside rateWindow.ts)
+$ git grep -n 'admitRequest(' 3d0a88a -- backend/src/api ':!backend/src/api/rateWindow.ts'
+backend/src/api/comparison.ts:66:        if (!admitRequest(photoRequests, ip, PHOTO_LIMIT, PHOTO_WINDOW_MS)) {
+backend/src/api/comparison.ts:139:            admitRequest(coldCompareRequests, ip, COLD_COMPARE_LIMIT, COLD_COMPARE_WINDOW_MS),
+backend/src/api/comparison.ts:158:      if (!admitRequest(venueRequests, ip, VENUE_LIMIT, VENUE_WINDOW_MS)) {
+backend/src/api/friends.ts:53:      if (!admitRequest(photoRequests, req.user!.id, 6, 60_000)) {
+backend/src/api/geocode.ts:51:      if (!admitRequest(geocodeRequests, ip, GEOCODE_LIMIT, GEOCODE_WINDOW_MS)) {
+backend/src/api/redirect.ts:93:        if (!admitRequest(redirectRequests, ip, REDIRECT_LIMIT, REDIRECT_WINDOW_MS)) {
+backend/src/api/sessions.ts:97:      if (!admitRequest(createRequests, ip, CREATE_LIMIT, CREATE_WINDOW_MS)) {
+$ git grep -n "'Retry-After', '60'" 3d0a88a -- backend/src
+backend/src/api/friends.ts:54:        res.set('Retry-After', '60');
+
+## 6. Where each derivable claim now lives: rateLimit() and its call sites
+$ git grep -n -e 'export function rateLimit' -e ' = rateLimit(' -e 'Limit(req, res)' -e '    photoLimit,' -e 'router.use(requireAuth)' 3d0a88a -- backend/src
+backend/src/api/friends.ts:49:  router.use(requireAuth);
+
+## 7. Where each derivable claim now lives: shared limit constants and readers
+$ git grep -n -e MAX_DISPLAY_NAME_LENGTH -e MIN_SEARCH_RADIUS_MILES -e MAX_SEARCH_RADIUS_MILES 3d0a88a -- backend/src frontend/src shared
+$ git grep -n -e 'choicesPayloadSchema.pick' -e 'headcount: z' -e 'deckSize: z' -e 'searchRadiusMiles: z' 3d0a88a -- backend/src/api
+backend/src/api/lobbySchema.ts:34:  headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
+backend/src/api/lobbySchema.ts:35:  deckSize: z.number().int().min(MIN_DECK_SIZE).max(MAX_DECK_SIZE).optional(),
+backend/src/api/lobbySchema.ts:37:  searchRadiusMiles: z.number().min(1).max(15).optional(),
+backend/src/api/sessions.ts:40:      searchRadiusMiles: z.number().min(1).max(15).optional(),
+backend/src/api/sessions.ts:43:      headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
+backend/src/api/sessions.ts:47:      deckSize: z.number().int().min(MIN_DECK_SIZE).max(MAX_DECK_SIZE).optional(),
+
+## 8. Keep items
+$ git grep -n -e 'selections: z' 3d0a88a -- backend/src/websocket/submitHandler.ts
+backend/src/websocket/submitHandler.ts:23:  selections: z.array(z.string()).max(50),
+$ git grep -n -e 'INVALID_RESTAURANTS' -e 'reason: error.code' 3d0a88a -- backend/src
+backend/src/api/toApiError.ts:31:  INVALID_RESTAURANTS: { code: 'VALIDATION_ERROR', status: 400 },
+backend/src/services/DomainError.ts:26:  | 'INVALID_RESTAURANTS'
+backend/src/store/sessionStore.ts:587:   * INVALID_RESTAURANTS if any place id isn't in the session's restaurant list.
+backend/src/store/sessionStore.ts:603:        throw new DomainError('INVALID_RESTAURANTS', 'One or more selected options are invalid');
+backend/src/websocket/runCommand.ts:35:      logger.warn({ socketId, sessionCode, reason: error.code }, `Rejected ${event}`);
+$ git grep -n 'beginColdCompare' 3d0a88a -- backend/src/api/comparison.ts
+backend/src/api/comparison.ts:138:          beginColdCompare: () =>

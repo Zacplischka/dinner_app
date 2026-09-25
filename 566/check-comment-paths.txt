@@ -1,0 +1,16 @@
+# node --test scripts/check-comment-paths.test.mjs  (at a0098ef)
+✔ extracts doc paths from comments, resolving and dangling alike (1.211541ms)
+✔ path-like strings that are not documentation references are ignored (0.053833ms)
+✔ only comment text is scanned, never code (0.08425ms)
+✔ a dangling citation in a source tree is reported, a resolving one is not (1.135584ms)
+✔ markdown links resolve from the citing file, backticked cites from the repo root (0.29325ms)
+✔ a dangling markdown link or cite is reported, a resolving one is not (0.652084ms)
+✔ no comment in backend, frontend or shared sources cites a missing repository path (21.260375ms)
+✔ no committed Markdown file links or cites a missing repository path (14.975834ms)
+ℹ tests 8
+ℹ pass 8
+ℹ fail 0
+exit=0
+
+# node scripts/check-comment-paths.mjs  (at a0098ef)
+exit=0

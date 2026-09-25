@@ -1,0 +1,45 @@
+# #566 route tests for every rate-limited endpoint: base 3d0a88a vs main a0098ef
+# Private Redis on 7566; placeholder Supabase env; `npm run build --workspace=shared` first at each SHA.
+$ npx vitest run --no-file-parallelism --reporter=verbose tests/contract/comparison-venues.test.ts tests/unit/geocode.test.ts tests/contract/redirect.test.ts tests/contract/sessions-create.test.ts tests/contract/profile-photos.test.ts tests/contract/comparison-stream.test.ts tests/unit/rateWindow.test.ts tests/contract/canonical-errors.test.ts tests/contract/friend-deletion.test.ts tests/unit/FriendsService.test.ts tests/contract/sessions-create-cook.test.ts tests/contract/sessions-create-watch.test.ts
+
+3d0a88a:
+ Test Files  12 passed (12)
+      Tests  152 passed (152)
+exit=0
+a0098ef:
+ Test Files  12 passed (12)
+      Tests  154 passed (154)
+exit=0
+
+## Rate-limit tests passing at BOTH SHAs (comparison-venues, comparison-stream, geocode, redirect and sessions-create test files are not in the diff; rateWindow.test.ts only gained tests)
+|contract| tests/contract/comparison-stream.test.ts > per-IP rate limit on cold Comparisons > allows five cold Comparisons per IP and streams each to completion
+|contract| tests/contract/comparison-stream.test.ts > per-IP rate limit on cold Comparisons > counts concurrent subscribers deduped onto one flight as a single cold Comparison
+|contract| tests/contract/comparison-stream.test.ts > per-IP rate limit on cold Comparisons > returns the sixth cold Comparison as a 429 naming the limit and retry timing
+|contract| tests/contract/comparison-stream.test.ts > per-IP rate limit on cold Comparisons > serves fresh-Snapshot Comparisons unthrottled and without consuming budget
+|contract| tests/contract/comparison-venues.test.ts > GET /api/comparison/photo > does not count cached redirects against the photo lookup rate limit
+|contract| tests/contract/comparison-venues.test.ts > GET /api/comparison/photo > limits authenticated Google photo lookups per client IP
+|contract| tests/contract/comparison-venues.test.ts > GET /api/comparison/venues > limits venue browsing by Railway X-Real-IP instead of proxy forwarding headers
+|contract| tests/contract/comparison-venues.test.ts > GET /api/comparison/venues > trusts the Railway edge proxy so rate limits use the client IP
+|contract| tests/contract/redirect.test.ts > GET /api/redirect > rate-limits uncached redirects per IP so anonymous taps cannot run up Places spend
+|contract| tests/contract/sessions-create.test.ts > Contract Test: POST /api/sessions > rate-limits creates per Railway X-Real-IP so one visitor cannot run up Places spend
+|unit| tests/unit/geocode.test.ts > GET /api/geocode > rate limits repeated lookups per IP
+|unit| tests/unit/rateWindow.test.ts > rateWindow > admits up to the limit within a window and refuses the next request
+|unit| tests/unit/rateWindow.test.ts > rateWindow > keeps refusing until the window boundary, then rolls into a fresh window
+|unit| tests/unit/rateWindow.test.ts > rateWindow > prunes only the windows that have expired
+|unit| tests/unit/rateWindow.test.ts > rateWindow > reports seconds until the window resets, never below one
+|unit| tests/unit/rateWindow.test.ts > rateWindow > trusts x-real-ip only when it is a valid IP
+
+## Only at base (row removed with the alias, as the issue asks)
+|contract| tests/contract/canonical-errors.test.ts > canonical error transport > maps DomainError('validation_error') → 'VALIDATION_ERROR' 400 as exactly { code, message }
+
+## Only at a0098ef (new tests)
+|contract| tests/contract/profile-photos.test.ts > persistent Profile photos > caps photo changes per user, not per IP, and says when to retry
+|unit| tests/unit/rateWindow.test.ts > rateWindow > rateLimit > counts by key when given, so one user shares a window across IPs
+|unit| tests/unit/rateWindow.test.ts > rateWindow > rateLimit > passes requests through until the window is full, then sets Retry-After and throws
+
+## Full suites at PR head 457c18d (squash a0098ef has identical changed lines), all exit 0
+npm run typecheck                -> exit 0
+npm run lint                     -> exit 0 (0 errors; 1 pre-existing warning in SelectionPage.tsx, not in this diff)
+npm test --workspace=backend     -> Test Files 81 passed (81) | Tests 1089 passed (1089)
+npm test --workspace=frontend    -> Test Files 59 passed (59) | Tests 721 passed (721)
+friends.test.ts x3 at 457c18d    -> exit 0, 0, 0 (the implementer-reported intermittent 404-vs-500 did not reproduce)

@@ -1,0 +1,57 @@
+# #566 behaviour probes: base 3d0a88a vs main a0098ef
+# Scripts run with tsx against each SHA's real routers and errorHandler. Only Supabase getUser and the services are stubbed.
+# Reproduce: from <checkout>/backend after `npm run build --workspace=shared`: WT=<checkout> NODE_ENV=test GOOGLE_PLACES_API_KEY=test SUPABASE_URL=https://placeholder.supabase.co SUPABASE_SERVICE_ROLE_KEY=placeholder npx tsx probe-<name>.mts
+
+## 1. PUT /api/users/me/photo limiter (real friends router + requireAuth). 6 uploads, clock +20 s, 7th upload, then a 2nd user on the same IP, then no auth.
+### 3d0a88a
+user-a first 6 statuses: 200,200,200,200,200,200
+user-a 7th @+20s: 429 {"code":"RATE_LIMITED","message":"Please wait a minute before changing your photo again."} Retry-After= 60
+user-b 1st (same IP, other user): 200
+no auth: 401 {"code":"MISSING_TOKEN","message":"Authentication required"}
+saves reaching service: 7
+### a0098ef
+user-a first 6 statuses: 200,200,200,200,200,200
+user-a 7th @+20s: 429 {"code":"RATE_LIMITED","message":"Please wait a minute before changing your photo again."} Retry-After= 40
+user-b 1st (same IP, other user): 200
+no auth: 401 {"code":"MISSING_TOKEN","message":"Authentication required"}
+saves reaching service: 7
+-> Same statuses, same per-user keying, still behind requireAuth (401 before any 429). Retry-After is now the real seconds left (40) instead of a fixed 60, which the issue asks for.
+
+## 2. POST /api/sessions create-schema parity: 18 bodies. Columns: status, then the rejected fields (400) or the args that reach createSession (500 = passed validation, the stub throws).
+### a0098ef
+minimal 500 {"hostName":"A","opts":{}}
+deck4 400 [{"reason":"validation_error","fields":["deckSize"]}]
+deck51 400 [{"reason":"validation_error","fields":["deckSize"]}]
+deck5_5 400 [{"reason":"validation_error","fields":["deckSize"]}]
+deck50 500 {"hostName":"A","opts":{"deckSize":50}}
+radius0_9 400 [{"reason":"validation_error","fields":["searchRadiusMiles"]}]
+radius15_1 400 [{"reason":"validation_error","fields":["searchRadiusMiles"]}]
+radius1 500 {"hostName":"A","opts":{"searchRadiusMiles":1}}
+radius15 500 {"hostName":"A","opts":{"searchRadiusMiles":15}}
+headcount0 400 [{"reason":"validation_error","fields":["headcount"]}]
+headcount1_5 400 [{"reason":"validation_error","fields":["headcount"]}]
+extraKeys 500 {"hostName":"A","opts":{}}
+name51 400 [{"reason":"validation_error","fields":["hostName"]}]
+name50padded 500 {"hostName":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","opts":{}}
+locatedNoRadius 500 {"hostName":"A","opts":{"location":{"latitude":1,"longitude":2},"searchRadiusMiles":5}}
+cookNoHeadcount 400 [{"reason":"validation_error","fields":["headcount"]}]
+cookFull 500 {"hostName":"A","opts":{"branch":"cook","cook":{"craving":{"mealType":"main course","cuisines":[],"diets":[]},"headcount":4},"deckSize":10}}
+deckString 400 [{"reason":"validation_error","fields":["deckSize"]}]
+### diff 3d0a88a a0098ef
+(no differences, exit 0)
+
+## 3. Validation messages now built from the shared constants
+### 3d0a88a
+sessions 400: 400 hostName is required and must be 1-50 characters
+venues 400: 400 Valid latitude, longitude, and radiusMiles (1–15) are required
+venue radius 0.99/1/15/15.01: rejected,ok,ok,rejected
+### a0098ef
+sessions 400: 400 hostName is required and must be 1-50 characters
+venues 400: 400 Valid latitude, longitude, and radiusMiles (1–15) are required
+venue radius 0.99/1/15/15.01: rejected,ok,ok,rejected
+
+## 4. Production after deploy (validation-only requests: both reject before the rate limiter or any Places call)
+$ curl -s 'https://backend-production-4ce9.up.railway.app/api/comparison/venues?latitude=0&longitude=0&radiusMiles=16'
+{"code":"VALIDATION_ERROR","message":"Valid latitude, longitude, and radiusMiles (1–15) are required"}  HTTP 400
+$ curl -s -X POST -H 'Content-Type: application/json' -d '{}' 'https://backend-production-4ce9.up.railway.app/api/sessions'
+{"code":"VALIDATION_ERROR","message":"hostName is required and must be 1-50 characters"}  HTTP 400

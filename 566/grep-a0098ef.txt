@@ -1,0 +1,105 @@
+# #566 evidence greps at a0098ef (a0098ef8d5e0fcfbf2cddb49641b30cba377a19e)
+
+## 1. cravingSchema.ts file and imports of it
+$ git ls-tree -r --name-only a0098ef backend/src/api | grep -c cravingSchema
+0
+$ git grep -n -e 'cravingSchema.js' -e 'cravingSchema.ts' a0098ef
+  -> 0 hit(s)
+$ git grep -n -e 'cravingSchema =' -e 'cravingSchema }' -e ', cravingSchema' a0098ef -- backend/src
+backend/src/api/lobbySchema.ts:26:export const cravingSchema = z.object({
+backend/src/api/sessions.ts:6:import { choicesPayloadSchema, cravingSchema, locationSchema, moodSchema } from './lobbySchema.js';
+
+## 2. 'validation_error' (DomainErrorCode alias + toApiError row). Log reasons in sessions.ts / api-logging / sessions-create are kept by the issue; frontend apiClient.test.ts is a legacy wire-body fixture.
+$ git grep -n "validation_error" a0098ef
+backend/src/api/sessions.ts:84:          { reason: 'validation_error', fields: validationFields(validation.error) },
+backend/tests/contract/api-logging.test.ts:101:      reason: 'validation_error',
+backend/tests/contract/sessions-create.test.ts:66:      reason: 'validation_error',
+frontend/tests/unit/apiClient.test.ts:269:        json: async () => ({ error: 'validation_error', message: 'Valid email is required' }),
+frontend/tests/unit/apiClient.test.ts:274:        code: 'validation_error',
+  -> 5 hit(s)
+$ git grep -n -e "| 'validation_error'" -e "validation_error: {" -e "DomainError('validation_error'" -e "^ *'validation_error',$" a0098ef -- backend/src   # the code alias, its mapping row and its throw sites
+  -> 0 hit(s)
+
+## 3. isRecord / queryNumber definitions (private backend copies)
+$ git grep -n -e 'function isRecord' -e 'function queryNumber' a0098ef
+shared/types/comparison-contract.ts:146:export function isRecord(value: unknown): value is Record<string, unknown> {
+shared/types/comparison-contract.ts:150:export function queryNumber(value: unknown): number {
+  -> 2 hit(s)
+
+## 4. Hard-coded display-name / radius literals
+$ git grep -n -e 'max(50' -e 'maxLength={50}' -e '/50 characters' -e '1-50' -e '1 and 50' -e '> 50' -e 'min(1).max(15)' -e 'Math.min(15' -e '1–15' -e '1-15' -e '< 1 ||' -e '> 15' a0098ef -- backend/src frontend/src shared
+backend/src/websocket/submitHandler.ts:23:  selections: z.array(z.string()).max(50),
+frontend/src/pages/ComparePage.tsx:114:    // Backend contract is miles (1-15); the UI speaks kilometres.
+frontend/src/utils/displayName.ts:8:  return length < 1 || length > MAX_DISPLAY_NAME_LENGTH
+
+## 5. Inline rate-limit rejection blocks in route files (admitRequest calls outside rateWindow.ts)
+$ git grep -n 'admitRequest(' a0098ef -- backend/src/api ':!backend/src/api/rateWindow.ts'
+backend/src/api/comparison.ts:141:            admitRequest(coldCompareRequests, ip, COLD_COMPARE_LIMIT, COLD_COMPARE_WINDOW_MS),
+$ git grep -n "'Retry-After', '60'" a0098ef -- backend/src
+
+## 6. Where each derivable claim now lives: rateLimit() and its call sites
+$ git grep -n -e 'export function rateLimit' -e ' = rateLimit(' -e 'Limit(req, res)' -e '    photoLimit,' -e 'router.use(requireAuth)' a0098ef -- backend/src
+backend/src/api/comparison.ts:49:  const photoLimit = rateLimit({
+backend/src/api/comparison.ts:54:  const venueLimit = rateLimit({
+backend/src/api/comparison.ts:77:        photoLimit(req, res);
+backend/src/api/comparison.ts:159:      venueLimit(req, res);
+backend/src/api/friends.ts:48:  router.use(requireAuth);
+backend/src/api/friends.ts:50:  const photoLimit = rateLimit({
+backend/src/api/friends.ts:58:    photoLimit,
+backend/src/api/geocode.ts:19:  const geocodeLimit = rateLimit({
+backend/src/api/geocode.ts:45:      geocodeLimit(req, res);
+backend/src/api/rateWindow.ts:62:export function rateLimit({
+backend/src/api/redirect.ts:50:  const redirectLimit = rateLimit({
+backend/src/api/redirect.ts:94:        redirectLimit(req, res);
+backend/src/api/sessions.ts:28:  const createLimit = rateLimit({
+backend/src/api/sessions.ts:94:      createLimit(req, res);
+
+## 7. Where each derivable claim now lives: shared limit constants and readers
+$ git grep -n -e MAX_DISPLAY_NAME_LENGTH -e MIN_SEARCH_RADIUS_MILES -e MAX_SEARCH_RADIUS_MILES a0098ef -- backend/src frontend/src shared
+backend/src/api/comparison.ts:4:  MAX_SEARCH_RADIUS_MILES,
+backend/src/api/comparison.ts:5:  MIN_SEARCH_RADIUS_MILES,
+backend/src/api/comparison.ts:155:          `Valid latitude, longitude, and radiusMiles (${MIN_SEARCH_RADIUS_MILES}–${MAX_SEARCH_RADIUS_MILES}) are required`
+backend/src/api/lobbySchema.ts:12:  MIN_SEARCH_RADIUS_MILES,
+backend/src/api/lobbySchema.ts:13:  MAX_SEARCH_RADIUS_MILES,
+backend/src/api/lobbySchema.ts:56:    .min(MIN_SEARCH_RADIUS_MILES)
+backend/src/api/lobbySchema.ts:57:    .max(MAX_SEARCH_RADIUS_MILES)
+backend/src/api/sessions.ts:12:  MAX_DISPLAY_NAME_LENGTH,
+backend/src/api/sessions.ts:37:      hostName: z.string().trim().min(1).max(MAX_DISPLAY_NAME_LENGTH),
+backend/src/api/sessions.ts:90:          `hostName is required and must be 1-${MAX_DISPLAY_NAME_LENGTH} characters`
+backend/src/websocket/joinHandler.ts:10:  MAX_DISPLAY_NAME_LENGTH,
+backend/src/websocket/joinHandler.ts:32:    .max(MAX_DISPLAY_NAME_LENGTH, 'Display name too long'),
+frontend/src/components/SessionEntry.tsx:3:import { MAX_DISPLAY_NAME_LENGTH, type Branch } from '@dinder/shared/types';
+frontend/src/components/SessionEntry.tsx:85:                maxLength={MAX_DISPLAY_NAME_LENGTH}
+frontend/src/components/SessionEntry.tsx:91:                {name.length}/{MAX_DISPLAY_NAME_LENGTH} characters
+frontend/src/pages/JoinSessionPage.tsx:8:import { MAX_DISPLAY_NAME_LENGTH, SESSION_CODE_LENGTH } from '@dinder/shared/types';
+frontend/src/pages/JoinSessionPage.tsx:236:                  maxLength={MAX_DISPLAY_NAME_LENGTH}
+frontend/src/pages/JoinSessionPage.tsx:241:                  {participantName.length}/{MAX_DISPLAY_NAME_LENGTH} characters
+frontend/src/services/radius.ts:3:import { MAX_SEARCH_RADIUS_MILES, MIN_SEARCH_RADIUS_MILES } from '@dinder/shared/types';
+frontend/src/services/radius.ts:11:    MAX_SEARCH_RADIUS_MILES,
+frontend/src/services/radius.ts:12:    Math.max(MIN_SEARCH_RADIUS_MILES, Math.round((radiusKm / KM_PER_MILE) * 10) / 10)
+frontend/src/utils/displayName.ts:1:import { MAX_DISPLAY_NAME_LENGTH } from '@dinder/shared/types';
+frontend/src/utils/displayName.ts:8:  return length < 1 || length > MAX_DISPLAY_NAME_LENGTH
+frontend/src/utils/displayName.ts:9:    ? `Name must be between 1 and ${MAX_DISPLAY_NAME_LENGTH} characters`
+shared/types/comparison-contract.ts:13:import { MAX_SEARCH_RADIUS_MILES, MIN_SEARCH_RADIUS_MILES } from './session-contract.js';
+shared/types/comparison-contract.ts:87:    radiusMiles < MIN_SEARCH_RADIUS_MILES ||
+shared/types/comparison-contract.ts:88:    radiusMiles > MAX_SEARCH_RADIUS_MILES
+shared/types/session-contract.ts:24:export const MAX_DISPLAY_NAME_LENGTH = 50;
+shared/types/session-contract.ts:27:export const MIN_SEARCH_RADIUS_MILES = 1;
+shared/types/session-contract.ts:28:export const MAX_SEARCH_RADIUS_MILES = 15;
+$ git grep -n -e 'choicesPayloadSchema.pick' -e 'headcount: z' -e 'deckSize: z' -e 'searchRadiusMiles: z' a0098ef -- backend/src/api
+backend/src/api/lobbySchema.ts:51:  headcount: z.number().int().min(1).max(MAX_HEADCOUNT).optional(),
+backend/src/api/lobbySchema.ts:52:  deckSize: z.number().int().min(MIN_DECK_SIZE).max(MAX_DECK_SIZE).optional(),
+backend/src/api/lobbySchema.ts:54:  searchRadiusMiles: z
+backend/src/api/sessions.ts:46:    .merge(choicesPayloadSchema.pick({ headcount: true, deckSize: true, searchRadiusMiles: true }))
+
+## 8. Keep items
+$ git grep -n -e 'selections: z' a0098ef -- backend/src/websocket/submitHandler.ts
+backend/src/websocket/submitHandler.ts:23:  selections: z.array(z.string()).max(50),
+$ git grep -n -e 'INVALID_RESTAURANTS' -e 'reason: error.code' a0098ef -- backend/src
+backend/src/api/toApiError.ts:31:  INVALID_RESTAURANTS: { code: 'VALIDATION_ERROR', status: 400 },
+backend/src/services/DomainError.ts:26:  | 'INVALID_RESTAURANTS'
+backend/src/store/sessionStore.ts:590:   * INVALID_RESTAURANTS if any place id isn't in the session's restaurant list.
+backend/src/store/sessionStore.ts:606:        throw new DomainError('INVALID_RESTAURANTS', 'One or more selected options are invalid');
+backend/src/websocket/runCommand.ts:35:      logger.warn({ socketId, sessionCode, reason: error.code }, `Rejected ${event}`);
+$ git grep -n 'beginColdCompare' a0098ef -- backend/src/api/comparison.ts
+backend/src/api/comparison.ts:140:          beginColdCompare: () =>
