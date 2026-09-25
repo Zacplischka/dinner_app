@@ -2,7 +2,7 @@
 
 The four `frontend/public/images/tonight-*.webp` assets were generated for Dinder with the built-in imagegen tool on 7 September 2026. They illustrate the four kinds of night, rather than representing a particular Restaurant, Recipe or Movie. No third-party source photo or attribution requirement was introduced.
 
-The generated PNGs were encoded as WebP at quality 80, preserving their 1536 × 1024 dimensions and composition. Those 1536 × 1024 WebPs were then re-encoded at 480 × 320 (`cwebp -m 6 -sharp_yuv -resize 480 320 -q 76`), which covers the largest card frame (128 × 96) at 3× DPR with `object-cover`. Together the served assets are 74 KB, down from 435 KB. The original generated files remain outside the repository. The fixed image frames reserve space before loading; coloured surfaces and readable labels remain on failure.
+The generated PNGs were encoded as WebP at quality 80, preserving their 1536 × 1024 dimensions and composition. Those 1536 × 1024 WebPs were then re-encoded at 480 × 320 (`cwebp -m 6 -sharp_yuv -resize 480 320 -q 76`), which covers the largest card frame (128 × 96) at 3× DPR with `object-cover`, and renamed `tonight-*-480.webp` so no cache keeps serving the 1536 × 1024 files under the old names. Together the served assets are 74 KB, down from 435 KB. The original generated files remain outside the repository. The fixed image frames reserve space before loading; coloured surfaces and readable labels remain on failure.
 
 ## Prompts
 
