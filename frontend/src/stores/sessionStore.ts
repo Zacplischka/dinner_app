@@ -29,7 +29,7 @@ interface SessionState {
   branch?: Branch;
 
   lobby?: SessionLobbyState;
-  /** Round restored without retaining the old Lobby or other people's data. */
+  /** Round restored without retaining the old Lobby or roster. */
   recoveryRound?: number;
   setLobby: (lobby?: SessionLobbyState) => void;
 
@@ -322,6 +322,10 @@ export const useSessionStore = create<SessionState>()(
             ],
             selections: rest.selections,
             deckCursor: rest.deckCursor,
+            // The cursor's other half (#513): without it the rejoin's replay
+            // re-announces, or re-celebrates, cards already decided behind it.
+            // Display names only, and a new round's setLobby discards it.
+            liveSelections: rest.liveSelections,
             recoveryRound: rest.lobby?.round ?? rest.recoveryRound,
             orderPlaceId: rest.orderPlaceId,
           };
