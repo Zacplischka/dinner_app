@@ -261,6 +261,32 @@ describe('socketService', () => {
     }
   });
 
+  // #511: order:open is an idempotent read whose failure the order page and
+  // recovery already handle. Recovering on its timeout lifts the gate back onto
+  // the page, which reads again: a ten-second loop.
+  it('recovers after a lost mutation ack but not after a lost basket read', async () => {
+    vi.useFakeTimers();
+    try {
+      const socket = setupSocket();
+      const onUncertainOutcome = vi.fn();
+      socketService.initializeSocket({ onUncertainOutcome });
+      socket.silent.add('order:open');
+      socket.silent.add('order:item');
+
+      const read = socketService.openOrder({ sessionCode: 'AB123', placeId: 'place-1' });
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(await read).toMatchObject({ success: false, error: { code: 'UNKNOWN' } });
+      expect(onUncertainOutcome).not.toHaveBeenCalled();
+
+      const tap = socketService.addOrderItem({ sessionCode: 'AB123', index: 0, delta: 1 });
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(await tap).toMatchObject({ success: false });
+      expect(onUncertainOutcome).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('returns a failure Ack when disconnected and exposes socket helpers', async () => {
     const socket = setupSocket(false);
     socketService.initializeSocket();
