@@ -471,6 +471,56 @@ describe('Full House takeover', () => {
     expect(within(dialog).getByText('EVERYONE LIKED THIS')).toBeInTheDocument();
     expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
   });
+
+  // #513: when someone joins mid-Deck, every phone already swiping re-sends its
+  // current likes. The joiner buffers them before its first swipe, so liking an
+  // entry the room already liked is a Full House on the joiner's phone too.
+  it("fires on a joiner's phone for an entry the replayed Live Selections already hold", async () => {
+    seedParticipants('Dana', 'Bob');
+    renderSelectionPage();
+    await waitFor(() => expect(screen.getByText('Ramen Ichiban')).toBeInTheDocument());
+
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Bob')); // Bob's replay
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Like' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Ramen Ichiban')).toBeInTheDocument();
+  });
+
+  // #513: the same replay reaches the phones that already hold it. Duplicates
+  // change nothing: an already-shown Full House stays down, even once the
+  // joiner makes it unanimous again, and the takeover the join re-armed is
+  // still there for a genuinely new one.
+  it('stays down when a join replays Live Selections this phone already holds', async () => {
+    await raiseFullHouse(); // place-1, celebrated for the trio
+    fireEvent.click(screen.getByRole('button', { name: 'Keep swiping' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    act(() => useSessionStore.getState().addParticipant(participant('p4', 'Dana')));
+    const buffered = useSessionStore.getState().liveSelections;
+    act(() => {
+      // Bob's and Carol's replays for Dana, re-broadcast to the whole room.
+      useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-1', 'Carol');
+    });
+    expect(useSessionStore.getState().liveSelections).toBe(buffered);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    act(() => useSessionStore.getState().recordLiveSelection('place-1', 'Dana'));
+    expect(strip()).toHaveTextContent('4 of 4 liked Ramen Ichiban');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Like' })); // like place-2, advance
+    await waitFor(() => expect(screen.getByText('Pho Bar')).toBeInTheDocument());
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-2', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-2', 'Carol');
+      useSessionStore.getState().recordLiveSelection('place-2', 'Dana');
+    });
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Taco Turno')).toBeInTheDocument();
+  });
 });
 
 // A Participant who submitted and then reloaded (or whose socket rejoined) must
