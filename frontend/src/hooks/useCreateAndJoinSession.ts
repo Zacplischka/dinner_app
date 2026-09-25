@@ -25,13 +25,15 @@ export function useCreateAndJoinSession() {
     const intent = beginSessionIntent();
     setIsCreating(true);
     try {
-      const [response, { waitForConnection, joinSession }] = await Promise.all([
+      // The socket handshake overlaps POST /sessions rather than following it (#518).
+      const [response, { joinSession }] = await Promise.all([
         createSession(hostName, setup),
-        import('../services/socketBindings'),
+        import('../services/socketBindings').then(async (socket) => {
+          await socket.waitForConnection();
+          return socket;
+        }),
       ]);
 
-      // Connect WebSocket and wait for connection, then join as host
-      await waitForConnection();
       if (!isSessionIntentCurrent(intent)) return null;
       const ack = await joinSession(response.sessionCode, hostName, false, intent);
       if (!isSessionIntentCurrent(intent)) return null;
@@ -45,7 +47,8 @@ export function useCreateAndJoinSession() {
       // immediately, but a caller that stays mounted (a modal, say) would
       // otherwise be left with its submit button disabled forever.
       setIsCreating(false);
-      navigate(`/session/${response.sessionCode}`);
+      // Replace, so browser Back skips the setup page instead of re-running create (#510).
+      navigate(`/session/${response.sessionCode}`, { replace: true });
       return null;
     } catch (err: unknown) {
       if (!isSessionIntentCurrent(intent)) return null;

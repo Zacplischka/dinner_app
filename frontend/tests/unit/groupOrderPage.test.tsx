@@ -142,7 +142,7 @@ describe('GroupOrderPage', () => {
 
     await waitFor(() => expect(screen.getByText('In the basket')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
 
     expect(screen.getByText('Leave the basket?')).toBeInTheDocument();
     expect(
@@ -165,7 +165,7 @@ describe('GroupOrderPage', () => {
     renderPage();
     await screen.findByText('In the basket');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Leave session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
 
     expect(screen.getByRole('dialog')).toHaveTextContent('Leave session?');
     expect(screen.queryByText(/Your items stay in the basket/)).not.toBeInTheDocument();

@@ -115,6 +115,10 @@ export default function NavigationHeader({
       .catch(() => toast.error('Could not copy code'));
   };
 
+  // On a Session page the control opens the Leave dialog, so it says Leave, and
+  // its accessible name is the word shown (WCAG 2.5.3 Label in Name, #510).
+  const backText = confirmOnBack && sessionCode ? 'Leave' : backLabel;
+
   const handleBackClick = () => {
     if (confirmOnBack) setShowConfirmModal(true);
     else void onBack();
@@ -162,7 +166,7 @@ export default function NavigationHeader({
               <button
                 onClick={handleBackClick}
                 className="flex shrink-0 items-center gap-1 text-muted hover:text-text transition-colors min-h-[44px] min-w-[44px] pl-2 pr-1"
-                aria-label={confirmOnBack && sessionCode ? 'Leave session' : backLabel}
+                aria-label={backText}
               >
                 <svg
                   className="w-5 h-5 flex-shrink-0"
@@ -179,7 +183,7 @@ export default function NavigationHeader({
                   />
                 </svg>
                 <span className={compact ? 'sr-only' : 'hidden text-sm min-[420px]:inline'}>
-                  {backLabel}
+                  {backText}
                 </span>
               </button>
             </div>

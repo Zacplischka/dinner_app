@@ -64,6 +64,10 @@ export function initializeSocket(config: SocketConfig = {}): void {
   canMutate = config.canMutate;
 
   socket = io(BACKEND_URL, {
+    // Straight to WebSocket: the default polling-first handshake costs serial
+    // round trips before connect. ponytail: no polling fallback (owner's call,
+    // #518); add tryAllTransports if a proxy that blocks WebSocket shows up.
+    transports: ['websocket'],
     reconnection: true,
     // Never give up on our own: a cap of 5 stopped retrying ~15s into a
     // 30-minute Session while the UI kept saying "Reconnecting...". The
