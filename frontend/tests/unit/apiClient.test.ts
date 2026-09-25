@@ -1,9 +1,17 @@
 // API Client Tests - TDD for Google Places API integration
 // Phase 2.1: Update API Client to support location and restaurants
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as apiClient from '../../src/services/apiClient';
 import { Capacitor } from '@capacitor/core';
+
+// A server that never answers: the request settles only if its signal aborts.
+const hang = (_url: RequestInfo | URL, init?: RequestInit) =>
+  new Promise<Response>((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () =>
+      reject(new DOMException('Aborted', 'AbortError'))
+    );
+  });
 
 describe('apiClient', () => {
   beforeEach(() => {
@@ -11,24 +19,19 @@ describe('apiClient', () => {
     vi.clearAllMocks();
   });
 
-  it('bounds Profile requests and clears timers without requiring AbortSignal.timeout', async () => {
+  it('bounds Profile requests with one timer and clears it without requiring AbortSignal.timeout', async () => {
     vi.useFakeTimers();
     const unsupported = vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
       throw new Error('Unsupported WebView API');
     });
     try {
-      const fetchProfile = vi.fn().mockImplementationOnce(
-        (_url, init: RequestInit) =>
-          new Promise((_resolve, reject) => {
-            init.signal!.addEventListener('abort', () =>
-              reject(new DOMException('Aborted', 'AbortError'))
-            );
-          })
-      );
+      const fetchProfile = vi.fn().mockImplementationOnce(hang);
       global.fetch = fetchProfile;
       const timedOut = expect(apiClient.getCurrentProfile()).rejects.toThrow(
-        'Profile request timed out. Try again.'
+        'The request timed out. Try again.'
       );
+      // request()'s own bound, not a second one stacked on it (#533).
+      expect(vi.getTimerCount()).toBe(1);
       await vi.advanceTimersByTimeAsync(15_000);
       await timedOut;
       expect(vi.getTimerCount()).toBe(0);
@@ -247,6 +250,35 @@ describe('apiClient', () => {
       expect(freshApiClient.API_BASE_URL).toBe(apiBase);
       expect(fetch).toHaveBeenCalledWith(`${apiBase}/sessions/AB123`);
       vi.unstubAllEnvs();
+    });
+  });
+
+  // #533: a stalled server must not leave a spinner or a poll waiting forever.
+  describe('request timeout', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it.each([
+      ['getSession', () => apiClient.getSession('AB123')],
+      ['getRestaurants', () => apiClient.getRestaurants('AB123')],
+      ['getShoppingList', () => apiClient.getShoppingList('list-1')],
+      ['createSession', () => apiClient.createSession('Alice')],
+      ['getFriends', () => apiClient.getFriends()],
+    ])('rejects %s after 15s when the server never answers', async (_name, call) => {
+      vi.useFakeTimers();
+      global.fetch = vi.fn(hang);
+      let outcome: string | undefined;
+      call().then(
+        () => (outcome = 'resolved'),
+        (error: Error) => (outcome = error.message)
+      );
+
+      await vi.advanceTimersByTimeAsync(14_999);
+      expect(outcome).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(outcome).toBe('The request timed out. Try again.');
+      expect(vi.getTimerCount()).toBe(0);
     });
   });
 

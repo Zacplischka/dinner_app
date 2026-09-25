@@ -116,6 +116,34 @@ describe('useShoppingList', () => {
     expect(mocks.getShoppingList).toHaveBeenCalledTimes(1);
   });
 
+  // #533: the guard above must not become a lock. A read whose server never
+  // answers times out, and the next tick reads again — or other Shoppers'
+  // Claims never appear.
+  it('polls again once a read the server never answers has timed out', async () => {
+    const actual = await vi.importActual<typeof import('../../src/services/apiClient')>(
+      '../../src/services/apiClient'
+    );
+    mocks.getShoppingList.mockImplementation(actual.getShoppingList);
+    const fetch = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError'))
+          );
+        })
+    );
+    vi.stubGlobal('fetch', fetch);
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() => useShoppingList('list-1', 5_000));
+      await act(() => vi.advanceTimersByTimeAsync(20_000));
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(result.current.error).toBe('The request timed out. Try again.');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it.each(['read', 'claim'] as const)(
     'removes an expired list after a failed %s',
     async (operation) => {
