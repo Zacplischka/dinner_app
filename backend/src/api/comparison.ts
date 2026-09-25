@@ -23,6 +23,8 @@ import { toApiError } from './toApiError.js';
 
 interface ComparisonRouterDeps {
   searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<Venue[]>;
+  /** The app-wide Text Search budget (#502): throws RATE_LIMITED once spent. */
+  spendVenueSearch?: () => Promise<void>;
   reverseGeocodeSuburb?: (latitude: number, longitude: number) => Promise<string | undefined>;
   fetchPlacePhoto?: (photoName: string) => Promise<string>;
   photoCache?: Pick<Redis, 'get' | 'set'>;
@@ -36,6 +38,7 @@ const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
 
 export function createComparisonRouter({
   searchNearbyVenues,
+  spendVenueSearch,
   reverseGeocodeSuburb,
   fetchPlacePhoto,
   photoCache,
@@ -149,6 +152,10 @@ export function createComparisonRouter({
             );
             return !overHourlyLimit;
           },
+          refundColdCompare: () => {
+            const window = coldCompareRequests.get(ip);
+            if (window) window.count--;
+          },
         }
       );
       return undefined;
@@ -167,6 +174,8 @@ export function createComparisonRouter({
       }
 
       venueLimit(req, res);
+      // Spent before either Google call starts, so a refused search bills no Geocoding.
+      await spendVenueSearch?.();
       const [venues, suburb] = await Promise.all([
         searchNearbyVenues({
           latitude: input.latitude,

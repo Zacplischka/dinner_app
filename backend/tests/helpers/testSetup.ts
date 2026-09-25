@@ -1,7 +1,5 @@
 // Test setup helpers for proper Redis and server management
 import Redis from 'ioredis';
-import { config } from '../../src/config/index.js';
-import { budgetKey, type PaidSku } from '../../src/services/paidBudget.js';
 
 // Every key written under vitest is namespaced with this prefix — both by the
 // app under test (src/redis/client.ts applies it when VITEST is set) and by
@@ -57,10 +55,6 @@ export async function cleanupTestData(redis: Redis): Promise<void> {
   // silently deal owned-only instead of calling its own fake. Two fixed names,
   // so they go by name — a wildcard sweep would take out a parallel lane's.
   await redis.del('recipes:vendor:dark', 'recipes:vendor:blips');
-  // Every paid call a test routes through the app spends today's budget (#502),
-  // and the counters live two days: left behind, a few runs on a shared Redis
-  // would spend the day and refuse every later one. Named, never swept.
-  await redis.del(...Object.keys(config.paidBudget).map((sku) => budgetKey(sku as PaidSku)));
 }
 
 /**

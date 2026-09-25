@@ -1,9 +1,27 @@
+import { logger } from '../logger.js';
+
 // Load .env with Node's own loader: no override of what is already set, and
 // no file is not an error — the environment is the configuration.
 try {
   process.loadEnvFile();
 } catch {
   // No .env file.
+}
+
+/**
+ * A paid-budget ceiling (#502). Anything but a count would switch its guard off
+ * silently (`spent > NaN` is never true), so it falls back to the default, loudly.
+ */
+function budgetCeiling(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const ceiling = Number(raw);
+  if (Number.isFinite(ceiling) && ceiling >= 0) return ceiling;
+  logger.error(
+    { name, value: raw, fallback },
+    'Paid-budget ceiling is not a count; using the default'
+  );
+  return fallback;
 }
 
 export const config = {
@@ -65,18 +83,19 @@ export const config = {
     // alone, so a hanging Spoonacular can never hold a Host at setup.
     dealBudgetMs: parseInt(process.env.RECIPE_DEAL_BUDGET_MS || '2500', 10),
   },
-  // The global paid-API budget (#502): calls a day per paid SKU, app-wide,
-  // each the vendor's quota less headroom for calls that never pass through
-  // it (local runs, e2e and verify-live share the Places key).
+  // The global paid-API budget (#502): calls per quota period per paid SKU,
+  // app-wide, each the vendor's quota less headroom for calls that never pass
+  // through it (local runs, e2e and verify-live share the Places key).
   paidBudget: {
     // Text Search is quota-capped at 100 a day (GCP mypickle-486702); 20 spare.
-    placesTextSearch: parseInt(process.env.PLACES_TEXT_SEARCH_DAILY_CEILING || '80', 10),
+    placesTextSearch: budgetCeiling('PLACES_TEXT_SEARCH_DAILY_CEILING', 80),
     // Place Photo media is quota-capped at 200 a day; 20 spare.
-    placePhoto: parseInt(process.env.PLACE_PHOTO_DAILY_CEILING || '180', 10),
+    placePhoto: budgetCeiling('PLACE_PHOTO_DAILY_CEILING', 180),
     // No vendor quota: ~1,200 cold Woolworths lookups at ~12 lines a list keeps one politeness queue ours.
-    shoppingListMint: parseInt(process.env.SHOPPING_LIST_MINT_DAILY_CEILING || '100', 10),
-    // Apify's free plan stops at $5 a month; a cold Comparison is at most ~$0.06, so a day drains an eighth.
-    coldComparison: parseInt(process.env.COLD_COMPARISON_DAILY_CEILING || '10', 10),
+    shoppingListMint: budgetCeiling('SHOPPING_LIST_MINT_DAILY_CEILING', 100),
+    // A month, not a day: Apify's free plan stops at $5 a month, ~83 cold Comparisons at ~$0.06; the
+    // rest is headroom for the extra actor runs a stale stored store URL costs.
+    coldComparison: budgetCeiling('COLD_COMPARISON_MONTHLY_CEILING', 60),
   },
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,

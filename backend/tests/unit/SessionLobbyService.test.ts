@@ -13,6 +13,7 @@ import {
   redealMovieDeck,
 } from '../../src/services/MovieDeckService.js';
 import { logger } from '../../src/logger.js';
+import { DomainError } from '../../src/services/DomainError.js';
 import { registerLobbyHandlers } from '../../src/websocket/lobbyHandler.js';
 
 const recipe: Recipe = {
@@ -412,23 +413,33 @@ describe('gather-first Sessions', () => {
   });
 
   // #502: nudging the area by 0.0001° made every start a new paid Text Search.
+  async function moveTo(code: string, latitude: number) {
+    return service.updateChoices(code, 'host', {
+      sessionCode: code,
+      revision: await revision(code),
+      location: { latitude, longitude: 0 },
+    });
+  }
+
   it('refuses a fourth paid search in one Session, says so in the Lobby, and still reuses a dealt area', async () => {
     const { code } = await joined('eatout');
-    const moveTo = async (latitude: number) =>
-      service.updateChoices(code, 'host', {
-        sessionCode: code,
-        revision: await revision(code),
-        location: { latitude, longitude: 0 },
-      });
     for (const latitude of [0.0001, 0.0002, 0.0003]) {
-      await moveTo(latitude);
+      await moveTo(code, latitude);
       await start(code);
       await service.restartSession(code, 'host');
     }
     expect(search).toHaveBeenCalledTimes(3);
 
-    await moveTo(0.0004);
-    await expect(start(code)).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    await moveTo(code, 0.0004);
+    await ready(code, 'host');
+    await ready(code, 'guest');
+    const onStarting = vi.fn();
+    // This Session's own cap, not the app's budget: a 429 the caller can act on.
+    await expect(
+      service.startRound(code, 'host', await revision(code), onStarting)
+    ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+    // Refused before starting, so the room never saw a start that could not happen.
+    expect(onStarting).not.toHaveBeenCalled();
     expect(search).toHaveBeenCalledTimes(3);
     expect(await service.getLobby(code)).toMatchObject({
       state: 'waiting',
@@ -437,7 +448,7 @@ describe('gather-first Sessions', () => {
     });
 
     // The area the Deck was last dealt for costs nothing, so the cap never blocks it.
-    await moveTo(0.0003);
+    await moveTo(code, 0.0003);
     expect((await start(code)).state).toBe('selecting');
     expect(search).toHaveBeenCalledTimes(3);
   });
@@ -463,8 +474,32 @@ describe('gather-first Sessions', () => {
     expect(supply).toHaveBeenCalledTimes(4);
 
     await eat(['vegan', 'gluten free']);
-    await expect(start(code)).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    await expect(start(code)).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
     expect(supply).toHaveBeenCalledTimes(4);
+  });
+
+  it('gives the paid-deal slot back when no vendor was reached', async () => {
+    const { code } = await joined('eatout');
+    // The app-wide budget refused the search before it went out.
+    search.mockRejectedValue(new DomainError('RATE_LIMITED', 'The daily search limit is spent.'));
+    for (const latitude of [0.0001, 0.0002, 0.0003]) {
+      await moveTo(code, latitude);
+      await expect(start(code)).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    }
+    // A start that failed before the deal did not reach one either.
+    await moveTo(code, 0.0004);
+    await ready(code, 'host');
+    await ready(code, 'guest');
+    await expect(
+      service.startRound(code, 'host', await revision(code), () => {
+        throw new Error('emit failed');
+      })
+    ).rejects.toThrow('emit failed');
+    expect((await store.readSession(code))?.paidDeals).toBe(0);
+
+    search.mockResolvedValue([{ placeId: 'venue', name: 'Cafe' }]);
+    expect((await start(code)).state).toBe('selecting');
+    expect((await store.readSession(code))?.paidDeals).toBe(1);
   });
 
   it('rejects a delayed Submission from the previous round after Restart and a fresh start', async () => {

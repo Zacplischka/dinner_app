@@ -27,7 +27,7 @@ interface ComparisonServiceDeps {
   doorDashActorId?: string;
   fetchPlaceDetails(placeId: string): Promise<VenueDetails>;
   snapshotStore: SnapshotStore;
-  /** The app-wide daily budget on cold Comparisons (#502): throws RATE_LIMITED once spent. */
+  /** The app-wide monthly budget on cold Comparisons (#502): throws RATE_LIMITED once spent. */
   spendColdComparison?: () => Promise<void>;
 }
 
@@ -47,6 +47,8 @@ interface Flight {
 
 interface ComparisonSubscriptionOptions {
   beginColdCompare?: () => boolean;
+  /** Hands the caller's slot back when the app-wide budget, not the caller, refused. */
+  refundColdCompare?: () => void;
 }
 
 export function createComparisonService(deps: ComparisonServiceDeps) {
@@ -77,9 +79,15 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
         });
         return;
       }
-      await deps.spendColdComparison?.();
 
       const venue = await deps.fetchPlaceDetails(placeId);
+      // Spent only by a compare that will reach Apify: an unknown Venue has
+      // already thrown. The refusal is the app's, not the caller's, so their
+      // hourly slot goes back — a Retry must not read as "5 per hour".
+      await deps.spendColdComparison?.().catch((error: unknown) => {
+        options?.refundColdCompare?.();
+        throw error;
+      });
       emit(flight, { type: 'venue', placeId: venue.placeId, venueName: venue.name });
 
       const uberEatsPromise = fetchStorefront(

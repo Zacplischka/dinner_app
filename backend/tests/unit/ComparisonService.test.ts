@@ -280,6 +280,23 @@ describe('createComparisonService', () => {
     expect(runActor).not.toHaveBeenCalled();
   });
 
+  // #502: the monthly Apify budget is for compares that reach Apify.
+  it('spends no cold-Comparison budget on a Venue Place Details does not know', async () => {
+    const spendColdComparison = vi.fn().mockResolvedValue(undefined);
+    const service = createComparisonService({
+      runActor: vi.fn(),
+      fetchPlaceDetails: vi
+        .fn()
+        .mockRejectedValue(new DomainError('not_found', "We couldn't find that venue.")),
+      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert: vi.fn() },
+      spendColdComparison,
+    });
+
+    await collectComparison(service, 'nope');
+
+    expect(spendColdComparison).not.toHaveBeenCalled();
+  });
+
   it('keeps a transient Place Details failure a retryable COMPARISON_FAILED', async () => {
     const service = createComparisonService({
       runActor: vi.fn(),

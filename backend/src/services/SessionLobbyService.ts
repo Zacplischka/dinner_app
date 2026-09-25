@@ -16,6 +16,8 @@ import { DomainError } from './DomainError.js';
  * fresh Session for every few paid searches it wants.
  */
 const MAX_PAID_DEALS = 3;
+const SEARCHES_USED =
+  'This Session has used all its searches. Start a new Session to search again.';
 
 export function createLobbyCommands(
   deps: Pick<
@@ -278,6 +280,9 @@ export function createLobbyCommands(
               session.searchRadiusMiles ?? 5,
               session.deckSize ?? 20,
             ]);
+      // The Deck already dealt for this exact area and size is reused, free.
+      const reuse =
+        searchKey !== undefined && session.dealtSearch === searchKey && current.length > 0;
       // Only a deal that can reach a paid source counts (#502): an area this
       // Session holds no Deck for, or a Craving it has not been dealt. Watch
       // deals from the corpus and never does.
@@ -286,29 +291,31 @@ export function createLobbyCommands(
       // have the deal report whether it called the vendor, and count that.
       const paid =
         searchKey !== undefined
-          ? session.dealtSearch !== searchKey || !current.length
+          ? !reuse
           : craving !== undefined && cravingPoolKey(craving) !== session.cravingKey;
-      const capped = paid && (session.paidDeals ?? 0) >= MAX_PAID_DEALS;
-      if (paid && !capped) session.paidDeals = (session.paidDeals ?? 0) + 1;
+      if (paid && (session.paidDeals ?? 0) >= MAX_PAID_DEALS) {
+        // Refused before starting, so the room never sees a start that cannot happen.
+        session.lobby!.revision++;
+        session.lobby!.notice = SEARCHES_USED;
+        await store.writeLobbySession(session);
+        throw new DomainError('TOO_MANY_REQUESTS', SEARCHES_USED);
+      }
+      if (paid) session.paidDeals = (session.paidDeals ?? 0) + 1;
       session.lobby!.starting = true;
       session.lobby!.revision++;
       session.lobby!.notice = undefined;
       await store.writeLobbySession(session);
-      return { session, roster: sorted, current, craving, searchKey, capped };
+      return { session, roster: sorted, current, craving, searchKey, reuse, paid };
     });
-    const { session, roster, current, craving, searchKey, capped } = snapshot;
+    const { session, roster, current, craving, searchKey, reuse, paid } = snapshot;
     let entries: DeckEntry[];
+    let dealing = false;
     try {
-      // Thrown here, so the failed-deal path below says so in the Lobby.
-      if (capped)
-        throw new DomainError(
-          'RATE_LIMITED',
-          'This Session has used all its searches. Start a new Session to search again.'
-        );
       // The deal takes seconds; let the room see it has started. Inside the
       // try, so a failed broadcast clears starting like a failed deal.
       const starting = await readLobby(sessionCode);
       if (starting) onStarting?.(starting);
+      dealing = true;
       if (session.branch === 'watch') {
         const interests = roster.map((p) => p.mood ?? { genres: [], decades: [], mediaTypes: [] });
         session.mood = {
@@ -351,14 +358,13 @@ export function createLobbyCommands(
         session.recipeSourceDown = dealt.recipeSourceDown;
       } else {
         const location = session.location as SessionLocation;
-        entries =
-          session.dealtSearch === searchKey && current.length
-            ? current
-            : await deps.searchNearbyRestaurants({
-                ...location,
-                radiusMeters: (session.searchRadiusMiles ?? 5) * 1609.34,
-                maxResults: session.deckSize ?? 20,
-              });
+        entries = reuse
+          ? current
+          : await deps.searchNearbyRestaurants({
+              ...location,
+              radiusMeters: (session.searchRadiusMiles ?? 5) * 1609.34,
+              maxResults: session.deckSize ?? 20,
+            });
         session.dealtSearch = searchKey;
         if (!entries.length)
           throw new DomainError(
@@ -367,6 +373,10 @@ export function createLobbyCommands(
           );
       }
     } catch (error) {
+      // A paid deal that never reached its vendor gives its slot back (#502):
+      // it failed before the deal, or the app-wide budget refused it.
+      const unspent =
+        paid && (!dealing || (error instanceof DomainError && error.code === 'RATE_LIMITED'));
       await store.withSessionLock(sessionCode, async () => {
         const latest = await store.readSession(sessionCode);
         if (latest?.lobby?.revision === session.lobby!.revision) {
@@ -376,6 +386,7 @@ export function createLobbyCommands(
             error instanceof DomainError
               ? error.message
               : 'The search could not finish. Try again in a moment.';
+          if (unspent) latest.paidDeals = (latest.paidDeals ?? 1) - 1;
           await store.writeLobbySession(latest);
         }
       });

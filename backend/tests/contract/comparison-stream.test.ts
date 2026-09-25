@@ -64,6 +64,7 @@ describe('GET /api/comparison/:placeId/stream', () => {
     expect(response.text).toContain('event: comparison\ndata: {"comparison":');
     expect(comparisonService.subscribe).toHaveBeenCalledWith('place-1', expect.any(Function), {
       beginColdCompare: expect.any(Function),
+      refundColdCompare: expect.any(Function),
     });
     await vi.waitFor(() => expect(unsubscribe).toHaveBeenCalledTimes(1));
   });

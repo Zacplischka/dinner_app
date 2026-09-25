@@ -29,10 +29,34 @@ describe('spendPaidBudget', () => {
   });
 
   it('gives the counter an expiry, so a day that has passed leaves nothing behind', async () => {
-    await spendPaidBudget(redis, 'coldComparison', 10);
-    const ttl = await redis.pttl(budgetKey('coldComparison'));
+    await spendPaidBudget(redis, 'placePhoto', 10);
+    const ttl = await redis.pttl(budgetKey('placePhoto'));
     expect(ttl).toBeGreaterThan(0);
     expect(ttl).toBeLessThanOrEqual(48 * 3_600_000);
+  });
+
+  it('starts the clock when the counter is created, and never restarts it', async () => {
+    const pexpire = vi.spyOn(redis, 'pexpire');
+    await spendPaidBudget(redis, 'placePhoto', 10);
+    await spendPaidBudget(redis, 'placePhoto', 10);
+    expect(pexpire).toHaveBeenCalledTimes(1);
+  });
+
+  // Apify's free plan is $5 a month: a daily ceiling would still empty it in a week.
+  it('budgets cold Comparisons by the Pacific month, with a counter that outlives it', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 05:00 UTC on 1 October is still 30 September in California.
+    vi.setSystemTime(new Date('2026-10-01T05:00:00.000Z'));
+    expect(budgetKey('coldComparison')).toBe('budget:coldComparison:2026-09');
+    vi.setSystemTime(new Date('2026-10-01T08:00:00.000Z'));
+    expect(budgetKey('coldComparison')).toBe('budget:coldComparison:2026-10');
+
+    await spendPaidBudget(redis, 'coldComparison', 1);
+    await expect(spendPaidBudget(redis, 'coldComparison', 1)).rejects.toMatchObject({
+      code: 'RATE_LIMITED',
+      message: expect.stringMatching(/monthly limit/),
+    });
+    expect(await redis.pttl(budgetKey('coldComparison'))).toBeGreaterThan(31 * 24 * 3_600_000);
   });
 
   it("keys the day to Google's quota day, which turns over at midnight Pacific", async () => {

@@ -859,7 +859,8 @@ export function createSessionStore(redis: Redis) {
     if (session.mood) fields.mood = JSON.stringify(session.mood);
     if (session.cravingKey) fields.cravingKey = session.cravingKey;
     if (session.dealtSearch) fields.dealtSearch = session.dealtSearch;
-    if (session.paidDeals) fields.paidDeals = session.paidDeals;
+    // Always written: a slot given back must be able to return the count to 0.
+    fields.paidDeals = session.paidDeals ?? 0;
     fields.recipeSourceDown = session.recipeSourceDown ? '1' : '0';
     return fields;
   }

@@ -176,9 +176,8 @@ app.use('/api/options', createOptionsRouter(sessionStore));
 app.use(
   '/api/comparison',
   createComparisonRouter({
-    searchNearbyVenues: budgeted('placesTextSearch', (...args) =>
-      RestaurantSearchService.searchNearbyVenues(...args)
-    ),
+    searchNearbyVenues: (...args) => RestaurantSearchService.searchNearbyVenues(...args),
+    spendVenueSearch: () => spendPaidBudget(redis, 'placesTextSearch'),
     reverseGeocodeSuburb: (...args) => RestaurantSearchService.reverseGeocodeSuburb(...args),
     fetchPlacePhoto: budgeted('placePhoto', (...args) =>
       RestaurantSearchService.fetchPlacePhoto(...args)
