@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { loadEnv } from 'vite';
 import { Server } from 'socket.io';
 import { test, expect, type Page } from '@playwright/test';
+import { routeSocketIo } from './utils/test-helpers';
 import type {
   Branch,
   DeckEntry,
@@ -13,16 +14,11 @@ import type {
 // Sessions or paid menu fetches: the actual routes, stores and bindings still run.
 async function sessionFixture(page: Page, branch: Branch, entryOverride?: DeckEntry) {
   const http = createServer();
-  const io = new Server(http, { transports: ['polling'], cors: { origin: true } });
+  const io = new Server(http, { transports: ['websocket'], cors: { origin: true } });
   await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', resolve));
   const address = http.address();
   if (!address || typeof address === 'string') throw new Error('Missing fixture port');
-  await page.route('**/socket.io/**', async (route) => {
-    const url = new URL(route.request().url());
-    url.host = `127.0.0.1:${address.port}`;
-    const response = await route.fetch({ url: url.toString(), timeout: 0 });
-    await route.fulfill({ response });
-  });
+  await routeSocketIo(page, `http://127.0.0.1:${address.port}`);
   const entry: DeckEntry =
     entryOverride ??
     (branch === 'watch'

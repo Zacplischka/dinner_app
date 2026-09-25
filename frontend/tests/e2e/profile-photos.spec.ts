@@ -6,6 +6,7 @@ import { test, expect, type Browser, type BrowserContext, type Page } from '@pla
 import { WatchSetupPage } from './pages/WatchSetupPage';
 import { SessionLobbyPage } from './pages/SessionLobbyPage';
 import { SelectionPage } from './pages/SelectionPage';
+import { routeSocketIo } from './utils/test-helpers';
 
 // Four isolated identities against a disposable backend running production handlers.
 // Supabase Auth/Profile HTTP responses are fixtures: no real Google/Supabase accounts.
@@ -78,14 +79,7 @@ async function contextFor(
     const response = await route.fetch({ url: `${backend}${url.pathname}${url.search}` });
     await route.fulfill({ response });
   });
-  await context.route('**/socket.io/**', async (route) => {
-    const url = new URL(route.request().url());
-    const response = await route.fetch({
-      url: `${backend}${url.pathname}${url.search}`,
-      timeout: 0,
-    });
-    await route.fulfill({ response });
-  });
+  await routeSocketIo(context, backend);
   await context.route(`${authUrl}/**`, (route) => route.fulfill({ json: {} }));
   await context.route('https://example.test/**', (route) => route.fulfill({ status: 404 }));
   await context.route('https://image.tmdb.org/**', (route) => route.fulfill({ status: 404 }));
