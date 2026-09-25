@@ -140,9 +140,9 @@ const PACKET_GOODS = [
  * Shopping List mutes and every Tally excludes. A listed Staple is exempt from
  * the "named in a step" rule below, because the method is free to reach for it
  * as "the oil" or "a pinch".
- * ponytail: the tail rule without staples.ts's `NOT_STAPLE` exceptions, which
- * only ever make the exemption slightly wider. Port them if a real Recipe is
- * ever let off by one.
+ * ponytail: still the tail rule staples.ts dropped for an exact match (#504),
+ * which only ever makes this exemption wider than the Shopping List's. Narrow
+ * it to `STAPLES.includes` if a real Recipe is ever let off by one.
  */
 const STAPLES = tsStringList(source('../../backend/src/services/staples.ts'), 'STAPLES');
 
