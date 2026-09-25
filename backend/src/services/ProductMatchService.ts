@@ -6,7 +6,7 @@ import type { ProductMatchOutcome } from '@dinder/shared/types';
 import { config } from '../config/index.js';
 import { logger } from '../logger.js';
 import type { RedisLike } from '../redis/redisLike.js';
-import { matchProducts, type WoolworthsProduct } from './productMatcher.js';
+import { matchProducts, retailerQuery, type WoolworthsProduct } from './productMatcher.js';
 import { woolworthsQueue, type Enqueue } from './politenessQueue.js';
 import { deriveSearchTerm } from './usToAuTerms.js';
 import type { WoolworthsClient } from './woolworthsClient.js';
@@ -130,14 +130,17 @@ export function createProductMatchService(deps: ProductMatchServiceDeps) {
   return {
     async matchProduct(term: string, wantedForm?: WantedPackForm): Promise<ProductMatchOutcome> {
       const searchTerm = deriveSearchTerm(term);
+      // The diet stays in `searchTerm` for the Matcher to hold (#505); the
+      // Retailer, and so the cache, sees only the product.
+      const query = retailerQuery(searchTerm);
       const storeId = await currentStoreId();
-      const key = priceKey(storeId, searchTerm);
+      const key = priceKey(storeId, query);
       let answer = await readCache(key);
       if (!answer) {
         answer = await enqueue(async () => {
           // Re-check inside the queue: an identical term queued behind us may
           // have already paid for this answer.
-          return (await readCache(key)) ?? fetchAndCache(searchTerm, storeId);
+          return (await readCache(key)) ?? fetchAndCache(query, storeId);
         });
       }
 

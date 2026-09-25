@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { matchProducts, type WoolworthsProduct } from '../../src/services/productMatcher.js';
+import {
+  matchProducts,
+  retailerQuery,
+  type WoolworthsProduct,
+} from '../../src/services/productMatcher.js';
 
 function product(overrides: Partial<WoolworthsProduct> & { stockcode: number }): WoolworthsProduct {
   return {
@@ -411,6 +415,88 @@ describe('matchProducts', () => {
       'chicken stock'
     );
     expect(result?.match.stockcode).toBe(2);
+  });
+
+  it('buys a diet-qualified line only a product that says so, or nothing (#505)', () => {
+    // The term is what the mint searches: "fish sauce gluten free" is a diet
+    // claim, and the plain sauce ranked first must not be what fulfils it.
+    const plain = product({ stockcode: 1, name: 'Fish Sauce 700ml' });
+    const labelled = product({ stockcode: 2, name: 'Gluten-Free Fish Sauce 250ml' });
+    const others = [3, 4].map((stockcode) => product({ stockcode, name: 'Fish Sauce 200ml' }));
+    const result = matchProducts([plain, ...others, labelled], 'fish sauce gluten free');
+    expect(result?.match.stockcode).toBe(2);
+    expect(result?.runnersUp).toEqual([]);
+
+    // Nothing that says so is a clean miss: the line stays Unmatched, with its
+    // Search Woolworths link, rather than buying the plain product. A product
+    // with no dietary statement — one cached before the field was read — is
+    // judged on its name alone.
+    expect(matchProducts([plain], 'fish sauce gluten free')).toBeNull();
+    const parmesan = product({ stockcode: 5, name: 'Parmesan Cheese Grated 250g' });
+    expect(matchProducts([parmesan], 'parmesan cheese vegetarian')).toBeNull();
+    expect(matchProducts([parmesan], 'parmesan cheese')?.match.stockcode).toBe(5);
+  });
+
+  it('reads the store’s own dietary statement, not only the name (#505)', () => {
+    // A live answer for "fish sauce gluten free": the fish sauce is labelled
+    // gluten free without saying so in its name, and the pasta ranked second
+    // says so in its name. The label is what makes the sauce the match.
+    const sauce = product({
+      stockcode: 1,
+      name: 'Original Fish Sauce 300ml',
+      sapCategory: 'CONDIMENTS',
+      dietaryStatement: 'Gluten Free',
+    });
+    const pasta = product({
+      stockcode: 2,
+      name: 'Fresh Gluten Free Tagliatelle Pasta',
+      sapCategory: 'DELI CONVENIENCE',
+      dietaryStatement: 'Gluten Free',
+    });
+    const result = matchProducts([sauce, pasta], 'fish sauce gluten free');
+    expect(result?.match.stockcode).toBe(1);
+    expect(result?.match).not.toHaveProperty('dietaryStatement');
+
+    // A statement that names another diet is not this one.
+    const lowSugar = { ...sauce, dietaryStatement: 'Low Sugar' };
+    expect(matchProducts([lowSugar], 'fish sauce gluten free')).toBeNull();
+  });
+
+  it('holds vegan as a qualifier, and lets a vegan product meet a vegetarian line (#505)', () => {
+    const vegan = product({
+      stockcode: 1,
+      name: 'Parmesan Style Grated',
+      dietaryStatement: 'Vegan',
+    });
+    expect(matchProducts([vegan], 'parmesan vegetarian')?.match.stockcode).toBe(1);
+    const namedVegan = product({ stockcode: 2, name: 'Vegan Parmesan Style Grated' });
+    expect(matchProducts([namedVegan], 'parmesan vegetarian')?.match.stockcode).toBe(2);
+
+    // Vegetarian is not vegan: rennet-free cheese is still dairy.
+    const vegetarian = product({
+      stockcode: 3,
+      name: 'Parmesan Cheese Grated',
+      dietaryStatement: 'Gluten Free,Vegetarian',
+    });
+    expect(matchProducts([vegetarian], 'parmesan vegan')).toBeNull();
+  });
+
+  it('asks the Retailer for the product without its diet (#505)', () => {
+    expect(retailerQuery('beef liquid stock gluten free')).toBe('beef liquid stock');
+    expect(retailerQuery('parmesan cheese vegetarian')).toBe('parmesan cheese');
+    expect(retailerQuery('vegan feta')).toBe('feta');
+    // Nothing but a diet is still a query, never "".
+    expect(retailerQuery('gluten free')).toBe('gluten free');
+  });
+
+  it('holds a Sourced Recipe’s diet-qualified line to the same rule (#505)', () => {
+    // A decision, not an accident: Spoonacular's "gluten free flour blend"
+    // buying plain flour is the same harm as an Owned Recipe's stock doing so.
+    const plainFlour = product({ stockcode: 1, name: 'Plain Flour 1kg' });
+    const blend = product({ stockcode: 2, name: 'Gluten Free Plain Flour Blend 1kg' });
+    const term = 'gluten free flour blend';
+    expect(matchProducts([plainFlour, blend], term)?.match.stockcode).toBe(2);
+    expect(matchProducts([plainFlour], term)).toBeNull();
   });
 
   it('penalises unavailable and priceless candidates so a priceable one wins a tie', () => {

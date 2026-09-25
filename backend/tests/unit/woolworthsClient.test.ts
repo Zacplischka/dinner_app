@@ -34,6 +34,29 @@ describe('createWoolworthsClient', () => {
     });
   });
 
+  it('carries the store’s dietary statement for the Matcher (#505)', async () => {
+    const { fetchImpl } = woolworthsFetchFake({
+      'fish sauce gluten free': {
+        Products: [
+          {
+            Products: [
+              {
+                Stockcode: 1,
+                Name: 'Original Fish Sauce',
+                AdditionalAttributes: {
+                  sapcategoryname: 'CONDIMENTS',
+                  lifestyleanddietarystatement: 'Gluten Free',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const { products } = await createWoolworthsClient(fetchImpl).search('fish sauce gluten free');
+    expect(products[0].dietaryStatement).toBe('Gluten Free');
+  });
+
   it('carries identity on every request: pinned UA, From, X-Requested-With, seeded cookies', async () => {
     const { fetchImpl, requests } = woolworthsFetchFake({ coriander });
     const client = createWoolworthsClient(fetchImpl);

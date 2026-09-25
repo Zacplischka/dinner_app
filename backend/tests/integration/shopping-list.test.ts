@@ -66,9 +66,9 @@ const wholeTomatoes = {
 
 /**
  * What the fixture corpus's Owned Recipe is shopping for. Its line is named
- * "gluten free spaghetti" — cook-honest, and a term Woolworths answers with
- * nothing — so the record authors "spaghetti" beside it (#332), and this is
- * the product only that term reaches.
+ * "gluten free spaghetti" and authored with the term "spaghetti gluten free"
+ * beside it (#332, #505): the Retailer is asked for "spaghetti", and this is
+ * the product in that answer that says it is gluten free.
  */
 const glutenFreeSpaghetti = {
   Stockcode: 54321,
@@ -258,9 +258,8 @@ describe('Integration Test: a Cook Session mints a Shopping List', () => {
     // pool, so the fixture's name and lines below can have come from nowhere
     // else — prices it through the same ladder, and marks the payload `owned`
     // so the Cook View credits nobody. The line reads as the record wrote it
-    // while the Retailer is asked for the term the record authored; without
-    // that term Woolworths answers "gluten free spaghetti" with nothing, and
-    // the line would fall out of the tally.
+    // while the Retailer is asked for the product the record authored, and
+    // the Matcher holds it to the diet the term keeps.
     const { results } = await decided(4, 'owned:fixture-pasta');
 
     const { body } = await readList(results!.shoppingListId!);

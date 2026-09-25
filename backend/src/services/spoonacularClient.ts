@@ -26,9 +26,10 @@ export interface IngredientInfo {
 export interface PooledIngredient {
   name: string;
   /** The term everything downstream of the card searches on, when `name` is
-   * not searchable: an Owned Recipe authors "gluten free vegetable stock" to
-   * read right on the card and "vegetable stock" here (#336). Never set by a
-   * Sourced Recipe — Spoonacular states one name and it is the only one. */
+   * not searchable: an Owned Recipe authors "gluten-free vegetable stock" to
+   * read right on the card and "vegetable liquid stock gluten free" here —
+   * the store's wording, with the diet qualifier kept (#336, #505). Never set
+   * by a Sourced Recipe — Spoonacular states one name and it is the only one. */
   searchTerm?: string;
   amount: number;
   unit: string;

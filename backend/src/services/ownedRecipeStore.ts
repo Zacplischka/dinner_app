@@ -36,12 +36,13 @@ const ownedRecipeSchema = z
       .array(
         z.object({
           name: z.string().min(1),
-          /** The matchable Woolworths term, when `name` has to stay
-           *  cook-honest to clear the corpus's culinary gate: "gluten free
-           *  vegetable stock" reads right on the card and searches like
-           *  nothing, so the Product Match gets "vegetable stock" here. Read
-           *  by the mint as `PooledIngredient.searchTerm` — the line keeps the
-           *  name, everything that searches takes this. */
+          /** The Woolworths term, when `name` has to stay cook-honest to
+           *  clear the corpus's culinary gate: "gluten-free vegetable stock"
+           *  reads right on the card, and the Product Match gets "vegetable
+           *  liquid stock gluten free" here — the store's wording, the diet
+           *  qualifier kept (#505). Read by the mint as
+           *  `PooledIngredient.searchTerm` — the line keeps the name,
+           *  everything that searches takes this. */
           searchTerm: z.string().min(1).optional(),
           amount: z.number(),
           unit: z.string(),

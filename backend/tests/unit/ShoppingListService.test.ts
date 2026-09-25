@@ -51,11 +51,10 @@ const recipe: PooledRecipe = {
 };
 
 /**
- * An Owned Recipe whose line authors its own Retailer term (#332). The pilot's
- * conflict: the culinary gate demands diet-qualified names, the tally gate
- * needs matchable ones — so the name stays cook-honest and `searchTerm`
- * carries the term Woolworths can answer. Stated for the Headcount, so the
- * scale is not what this is about.
+ * An Owned Recipe whose line authors its own Retailer term (#332). The name
+ * stays cook-honest for the culinary gate, and `searchTerm` carries the
+ * store's wording with the diet kept (#505) — a plain term would buy the plain
+ * product. Stated for the Headcount, so the scale is not what this is about.
  */
 const authored: PooledRecipe = {
   ...recipe,
@@ -67,7 +66,7 @@ const authored: PooledRecipe = {
       amount: 500,
       unit: 'ml',
       original: '500 ml gluten-free vegetable stock',
-      searchTerm: 'vegetable stock',
+      searchTerm: 'vegetable liquid stock gluten free',
     },
   ],
 };
@@ -326,9 +325,9 @@ describe('ShoppingListService.mint', () => {
   });
 
   it('searches an Owned Recipe’s searchTerm while the line still reads the honest name', async () => {
-    // #336: a name kept cook-honest for the culinary gate ("gluten free
-    // vegetable stock") searches like nothing, so the corpus authors the
-    // matchable term beside it — and everything that searches takes that one.
+    // #336, #505: a name kept cook-honest for the culinary gate ("gluten free
+    // vegetable stock") beside the store's wording, diet kept — and everything
+    // that searches takes the authored one, the link included.
     const { service, matchProduct, resolveLine } = build({
       recipe: {
         ...recipe,
@@ -336,7 +335,7 @@ describe('ShoppingListService.mint', () => {
         ingredients: [
           {
             name: 'gluten free vegetable stock',
-            searchTerm: 'vegetable stock',
+            searchTerm: 'vegetable liquid stock gluten free',
             amount: 500,
             unit: 'ml',
             original: '500 ml gluten free vegetable stock',
@@ -349,27 +348,27 @@ describe('ShoppingListService.mint', () => {
 
     const list = await service.readList((await service.mint('AB123', '11'))!);
 
-    expect(matchProduct).toHaveBeenCalledWith('vegetable stock', 'volume');
+    expect(matchProduct).toHaveBeenCalledWith('vegetable liquid stock gluten free', 'volume');
     expect(resolveLine).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'vegetable stock' }),
+      expect.objectContaining({ name: 'vegetable liquid stock gluten free' }),
       expect.anything()
     );
     expect(list?.lines[0]).toMatchObject({
       text: '500 ml gluten free vegetable stock',
       state: 'unmatched',
-      searchTerm: 'vegetable stock',
+      searchTerm: 'vegetable liquid stock gluten free',
     });
   });
 
   it('searches the Retailer for an authored term, and still renders the line as written', async () => {
     // What an Owned Recipe buys with `searchTerm` (#332): "gluten free
     // vegetable stock" is what the cook reads and what the culinary gate
-    // demands, "vegetable stock" is what Woolworths can answer.
+    // demands; the authored term is the store's wording with the diet kept.
     const { service, matchProduct } = build({ recipe: authored });
 
     const list = await service.readList((await service.mint('AB123', 'owned:gf-stew'))!);
 
-    expect(matchProduct).toHaveBeenCalledWith('vegetable stock', 'volume');
+    expect(matchProduct).toHaveBeenCalledWith('vegetable liquid stock gluten free', 'volume');
     expect(list?.lines[0]).toMatchObject({
       text: '500 ml gluten free vegetable stock',
       state: 'priced',
@@ -1107,7 +1106,10 @@ describe('ShoppingListService swaps', () => {
 
     const list = await service.swapLine(listId, '0', null);
 
-    expect(list?.lines[0]).toMatchObject({ state: 'unmatched', searchTerm: 'vegetable stock' });
+    expect(list?.lines[0]).toMatchObject({
+      state: 'unmatched',
+      searchTerm: 'vegetable liquid stock gluten free',
+    });
   });
 
   it('keeps the Claim on a line that gets swapped', async () => {

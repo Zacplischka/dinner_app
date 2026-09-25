@@ -18,6 +18,8 @@ export interface WoolworthsProduct extends ProductCandidate {
   sapCategory?: string;
   sapSubCategory?: string;
   instorePriceCents?: number;
+  /** The store's own diet label, e.g. "Gluten Free,Low Sugar,Vegetarian". */
+  dietaryStatement?: string;
 }
 
 // Shop sections that never hold a cooking ingredient, matched against the SAP
@@ -67,6 +69,32 @@ const STOP_WORDS = new Set([
   'iceberg',
 ]);
 
+// A diet the term names is a requirement, not a ranking signal (#505): a line
+// searched as "fish sauce gluten free" buys a product whose name or dietary
+// statement says so, or nothing, and stays Unmatched with its search link. A
+// vegan product meets a vegetarian line; a vegetarian one never meets vegan.
+// ponytail: a product the store does not label is refused, compliant or not.
+const DIET_QUALIFIERS = [
+  { asks: /\bgluten[\s-]*free\b/i, meets: /\bgluten[\s-]*free\b/i },
+  { asks: /\bvegetarian\b/i, meets: /\b(?:vegetarian|vegan)\b/i },
+  { asks: /\bvegan\b/i, meets: /\bvegan\b/i },
+];
+
+/**
+ * What the Retailer is asked for a line: the product, without the diet the
+ * Matcher holds it to. Woolworths reads a diet word as a shelf of its own — a
+ * live "parmesan cheese vegetarian" ranked ricotta first and the parmesans
+ * eighth — so the qualifier stays in the term the Matcher and the search link
+ * see, and out of the query.
+ */
+export function retailerQuery(term: string): string {
+  const query = DIET_QUALIFIERS.reduce(
+    (rest, { asks }) => rest.replace(new RegExp(asks.source, 'gi'), ' '),
+    term
+  );
+  return query.replace(/\s+/g, ' ').trim() || term;
+}
+
 function identityKeywords(term: string): string[] {
   return (term.toLowerCase().match(/[a-z]+/g) ?? []).filter(
     (word) => word.length > 2 && !STOP_WORDS.has(word)
@@ -106,6 +134,7 @@ function toCandidate(product: WoolworthsProduct): ProductCandidate {
   delete candidate.sapCategory;
   delete candidate.sapSubCategory;
   delete candidate.instorePriceCents;
+  delete candidate.dietaryStatement;
   return candidate;
 }
 
@@ -125,6 +154,7 @@ export function matchProducts(
   const freshGarlic = /^(?:fresh |whole )?garlic(?: cloves?| bulbs?| heads?| loose)?$/i.test(
     term.trim()
   );
+  const diets = DIET_QUALIFIERS.filter(({ asks }) => asks.test(term));
   const eligible = products
     .map((product, rank) => ({ product, rank }))
     .filter(({ product }) => {
@@ -141,6 +171,9 @@ export function matchProducts(
       return (
         product.sapCategory &&
         !BLOCKED_SECTIONS.test(`${product.sapCategory} ${subCategory}`) &&
+        diets.every(({ meets }) =>
+          meets.test(`${product.name} ${product.dietaryStatement ?? ''}`)
+        ) &&
         (!freshGarlic ||
           (/\bgarlic\b/i.test(product.name) &&
             !/\b(pastes?|crushed|minced|chopped|dried|powder|granules?|bread|butter|oil|sauce|dip|aioli|salt|pickled|black|roasted|supplements?)\b/i.test(
