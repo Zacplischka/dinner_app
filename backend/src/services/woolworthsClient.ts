@@ -131,6 +131,7 @@ function parseSearchResponse(body: unknown): WoolworthsSearchResult {
       available: item.IsAvailable !== false,
       sapCategory: string(attributes.sapcategoryname),
       sapSubCategory: string(attributes.sapsubcategoryname),
+      dietaryStatement: string(attributes.lifestyleanddietarystatement),
     });
   }
   return { storeId, products };

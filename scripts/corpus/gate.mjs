@@ -170,15 +170,34 @@ const FRESH_HERBS = [
 ];
 
 /**
- * The heads a declared diet cannot take on trust (#505), keyed by the diet —
- * whose chip name is also the qualifier an ingredient says it with. Stock and
- * sauces can carry wheat, cheese animal rennet, thickened cream gelatine; each
- * is a trap only for the diet it breaks. These grow the way the lists above do.
+ * The heads a declared diet cannot take on trust (#505), and the words an
+ * ingredient says that diet with — a vegan product is a vegetarian one. Stock,
+ * sauces and cornflour can carry wheat; cheese animal rennet; thickened cream
+ * and gelatine animal collagen; fish, oyster and worcestershire sauce fish.
+ * Each is a trap only for the diet it breaks. These grow the way the lists
+ * above do.
  */
 const DIET_TRAPS = {
-  'gluten free': ['stock', 'fish sauce', 'curry paste', 'soy sauce'],
-  vegetarian: ['thickened cream', 'parmesan', 'cheddar', 'feta', 'mozzarella'],
+  'gluten free': {
+    says: ['gluten free'],
+    traps: ['stock', 'fish sauce', 'curry paste', 'soy sauce', 'cornflour', 'oyster sauce'],
+  },
+  vegetarian: {
+    says: ['vegetarian', 'vegan'],
+    traps: [
+      'thickened cream',
+      'parmesan',
+      'cheddar',
+      'feta',
+      'mozzarella',
+      'fish sauce',
+      'oyster sauce',
+      'worcestershire sauce',
+      'gelatine',
+    ],
+  },
 };
+const DIET_QUALIFIERS = [...new Set(Object.values(DIET_TRAPS).flatMap(({ says }) => says))];
 
 /** A pack-form gram or millilitre amount: whole, and round at the sizes shops sell. */
 const PACK_STEP = 5;
@@ -282,7 +301,7 @@ export function shapeFailures(recipe, { slug, seen = new Map() } = {}) {
  * carries and the term drops buys the plain product; and a trap with no
  * qualifier at all is the record breaking its own label.
  */
-export function dietFailures(ingredients, diets) {
+export function dietFailures(ingredients, diets = []) {
   // `vegan ⊆ vegetarian`: the store's ladder, so a vegan record answers to both.
   const declared = new Set(diets.includes('vegan') ? [...diets, 'vegetarian'] : diets);
   const failures = [];
@@ -290,22 +309,22 @@ export function dietFailures(ingredients, diets) {
     const name = String(ingredient.name ?? '').toLowerCase();
     const term = ingredient.searchTerm;
     const label = JSON.stringify(ingredient.name);
-    for (const [diet, traps] of Object.entries(DIET_TRAPS)) {
-      if (holds(name, diet)) {
-        if (term !== undefined && !holds(String(term).toLowerCase(), diet)) {
-          failures.push(
-            `ingredient ${label}: searchTerm ${JSON.stringify(term)} drops "${diet}", so the ` +
-              `Shopping List buys the plain product — search "${term} ${diet}"`
-          );
-        }
-      } else if (declared.has(diet)) {
-        const trap = traps.find((head) => holds(name, head));
-        if (trap) {
-          failures.push(
-            `ingredient ${label}: ${trap} is not ${diet} unless it says so, and the Recipe ` +
-              `declares "${diet}" — qualify the name (and any searchTerm), or use one that is`
-          );
-        }
+    for (const qualifier of DIET_QUALIFIERS) {
+      if (!holds(name, qualifier) || term === undefined) continue;
+      if (holds(String(term).toLowerCase(), qualifier)) continue;
+      failures.push(
+        `ingredient ${label}: searchTerm ${JSON.stringify(term)} drops "${qualifier}", so the ` +
+          `Shopping List buys the plain product — search "${term} ${qualifier}"`
+      );
+    }
+    for (const [diet, { says, traps }] of Object.entries(DIET_TRAPS)) {
+      if (!declared.has(diet) || says.some((word) => holds(name, word))) continue;
+      const trap = traps.find((head) => holds(name, head));
+      if (trap) {
+        failures.push(
+          `ingredient ${label}: ${trap} is not ${diet} unless it says so, and the Recipe ` +
+            `declares "${diet}" — qualify the name (and any searchTerm), or use one that is`
+        );
       }
     }
   }
