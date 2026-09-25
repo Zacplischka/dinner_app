@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
+import RedisMock from 'ioredis-mock';
 import type { ComparisonStreamEvent, Snapshot, SnapshotPayload } from '@dinder/shared/types';
 import { SNAPSHOT_FRESHNESS_MS } from '@dinder/shared/types';
 import uberEatsFixture from '../fixtures/comparison/ubereats-search-11-inch-pizza.json';
 import { createComparisonService } from '../../src/services/ComparisonService.js';
 import { DomainError } from '../../src/services/DomainError.js';
+import { budgetKey, spendPaidBudget } from '../../src/services/paidBudget.js';
 import { doorDashStorefront } from '../../src/services/doorDashStorefront.js';
 import { uberEatsStorefront } from '../../src/services/uberEatsStorefront.js';
 
@@ -278,6 +280,42 @@ describe('createComparisonService', () => {
       { type: 'error', code: 'NOT_FOUND', message: "We couldn't find that venue." },
     ]);
     expect(runActor).not.toHaveBeenCalled();
+  });
+
+  // #502: the monthly Apify budget is for compares that reach Apify.
+  it('spends no cold-Comparison budget on a Venue Place Details does not know', async () => {
+    const spendColdComparison = vi.fn().mockResolvedValue(undefined);
+    const service = createComparisonService({
+      runActor: vi.fn(),
+      fetchPlaceDetails: vi
+        .fn()
+        .mockRejectedValue(new DomainError('not_found', "We couldn't find that venue.")),
+      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert: vi.fn() },
+      spendColdComparison,
+    });
+
+    await collectComparison(service, 'nope');
+
+    expect(spendColdComparison).not.toHaveBeenCalled();
+  });
+
+  it('answers an unknown Venue NOT_FOUND with the budget unspent', async () => {
+    const redis = new RedisMock();
+    await redis.flushall();
+    const service = createComparisonService({
+      runActor: vi.fn(),
+      fetchPlaceDetails: vi
+        .fn()
+        .mockRejectedValue(new DomainError('not_found', "We couldn't find that venue.")),
+      snapshotStore: { getLatest: vi.fn().mockResolvedValue(null), insert: vi.fn() },
+      spendColdComparison: () => spendPaidBudget(redis, 'coldComparison', 60),
+    });
+
+    expect(await collectComparison(service, 'nope')).toEqual([
+      { type: 'error', code: 'NOT_FOUND', message: "We couldn't find that venue." },
+    ]);
+    expect(await redis.get(budgetKey('coldComparison'))).toBeNull();
+    redis.disconnect();
   });
 
   it('keeps a transient Place Details failure a retryable COMPARISON_FAILED', async () => {

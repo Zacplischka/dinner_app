@@ -80,4 +80,32 @@ describe('Google Places API Configuration', () => {
       },
     });
   });
+
+  // #502: parseInt('abc') is NaN, and `spent > NaN` never refuses — the guard silently off.
+  it('falls back to the default paid-budget ceiling, loudly, when the override is not a count', async () => {
+    vi.resetModules();
+    vi.spyOn(process, 'loadEnvFile').mockImplementation(() => {});
+    Object.assign(process.env, {
+      PLACES_TEXT_SEARCH_DAILY_CEILING: 'abc',
+      PLACE_PHOTO_DAILY_CEILING: '-1',
+      SHOPPING_LIST_MINT_DAILY_CEILING: '40',
+    });
+    delete process.env.COLD_COMPARISON_MONTHLY_CEILING;
+    const { logger } = await import('../../src/logger.js');
+    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+
+    const { config: loadedConfig } = await import('../../src/config/index.js');
+
+    expect(loadedConfig.paidBudget).toEqual({
+      placesTextSearch: 30,
+      placePhoto: 180,
+      shoppingListMint: 40,
+      coldComparison: 60,
+    });
+    // Not `name`: pino prints that as the logger's own name.
+    expect(error.mock.calls.map(([fields]) => (fields as { variable: string }).variable)).toEqual([
+      'PLACES_TEXT_SEARCH_DAILY_CEILING',
+      'PLACE_PHOTO_DAILY_CEILING',
+    ]);
+  });
 });

@@ -1,9 +1,27 @@
+import { logger } from '../logger.js';
+
 // Load .env with Node's own loader: no override of what is already set, and
 // no file is not an error — the environment is the configuration.
 try {
   process.loadEnvFile();
 } catch {
   // No .env file.
+}
+
+/**
+ * A paid-budget ceiling (#502). Anything but a count would switch its guard off
+ * silently (`spent > NaN` is never true), so it falls back to the default, loudly.
+ */
+function budgetCeiling(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const ceiling = Number(raw);
+  if (Number.isFinite(ceiling) && ceiling >= 0) return ceiling;
+  logger.error(
+    { variable: name, value: raw, fallback },
+    'Paid-budget ceiling is not a count; using the default'
+  );
+  return fallback;
 }
 
 export const config = {
@@ -64,6 +82,24 @@ export const config = {
     // failure for that deal: past this the deal gives up on it and deals owned
     // alone, so a hanging Spoonacular can never hold a Host at setup.
     dealBudgetMs: parseInt(process.env.RECIPE_DEAL_BUDGET_MS || '2500', 10),
+  },
+  // The global paid-API budget (#502): calls per quota period per paid SKU,
+  // app-wide, each kept under the vendor's quota or bill with headroom for
+  // calls that never pass through it (local runs, e2e and verify-live share
+  // the Places key).
+  paidBudget: {
+    // The only cap: Google's Text Search quota is its 75,000-a-day default (no override on
+    // mypickle-486702). 30 a day is ~930 a month, inside the 1,000 free Enterprise calls with room
+    // for local, e2e and verify-live runs on the same key; past that it bills toward the A$10
+    // kill switch, which detaches billing and takes search and photos down together.
+    placesTextSearch: budgetCeiling('PLACES_TEXT_SEARCH_DAILY_CEILING', 30),
+    // Place Photo media is quota-capped at 200 a day; 20 spare.
+    placePhoto: budgetCeiling('PLACE_PHOTO_DAILY_CEILING', 180),
+    // No vendor quota: ~1,200 cold Woolworths lookups at ~12 lines a list keeps one politeness queue ours.
+    shoppingListMint: budgetCeiling('SHOPPING_LIST_MINT_DAILY_CEILING', 100),
+    // A month, not a day: Apify's free plan stops at $5 a month, ~83 cold Comparisons at ~$0.06; the
+    // rest is headroom for the extra actor runs a stale stored store URL costs.
+    coldComparison: budgetCeiling('COLD_COMPARISON_MONTHLY_CEILING', 60),
   },
   woolworths: {
     // The store Woolworths serves to production's egress (1101 Mayfield NSW,

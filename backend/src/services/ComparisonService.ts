@@ -27,6 +27,10 @@ interface ComparisonServiceDeps {
   doorDashActorId?: string;
   fetchPlaceDetails(placeId: string): Promise<VenueDetails>;
   snapshotStore: SnapshotStore;
+  /** The app-wide monthly budget on cold Comparisons (#502): throws RATE_LIMITED once spent. */
+  spendColdComparison?: () => Promise<void>;
+  /** The same budget, read without spending: throws RATE_LIMITED if it is already spent. */
+  checkColdComparison?: () => Promise<void>;
 }
 
 export interface StorefrontResolver {
@@ -45,6 +49,8 @@ interface Flight {
 
 interface ComparisonSubscriptionOptions {
   beginColdCompare?: () => boolean;
+  /** Hands the caller's slot back when the app-wide budget, not the caller, refused. */
+  refundColdCompare?: () => void;
 }
 
 export function createComparisonService(deps: ComparisonServiceDeps) {
@@ -76,7 +82,19 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
         return;
       }
 
+      // A spent month refuses before Place Details, which Google bills, so a
+      // Retry loop costs nothing. The refusal is the app's, not the caller's:
+      // their hourly slot goes back, or a Retry would read as "5 per hour".
+      await deps.checkColdComparison?.().catch((error: unknown) => {
+        options?.refundColdCompare?.();
+        throw error;
+      });
+
       const venue = await deps.fetchPlaceDetails(placeId);
+      // Spent only by a compare that will reach Apify: an unknown Venue has
+      // already thrown. A refusal here means the month ran out since the
+      // check; Place Details was billed, so the hourly slot stays spent.
+      await deps.spendColdComparison?.();
       emit(flight, { type: 'venue', placeId: venue.placeId, venueName: venue.name });
 
       const uberEatsPromise = fetchStorefront(
@@ -113,11 +131,13 @@ export function createComparisonService(deps: ComparisonServiceDeps) {
         // An unknown Venue is not transient: say so, and the client drops Retry.
         err instanceof DomainError && err.code === 'not_found'
           ? { type: 'error', code: 'NOT_FOUND', message: err.message }
-          : {
-              type: 'error',
-              code: 'COMPARISON_FAILED',
-              message: 'Could not compare this Venue right now.',
-            }
+          : err instanceof DomainError && err.code === 'RATE_LIMITED'
+            ? { type: 'error', code: 'RATE_LIMITED', message: err.message }
+            : {
+                type: 'error',
+                code: 'COMPARISON_FAILED',
+                message: 'Could not compare this Venue right now.',
+              }
       );
     } finally {
       flights.delete(placeId);

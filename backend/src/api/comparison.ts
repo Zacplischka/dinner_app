@@ -23,6 +23,8 @@ import { toApiError } from './toApiError.js';
 
 interface ComparisonRouterDeps {
   searchNearbyVenues: (params: GooglePlacesSearchParams) => Promise<Venue[]>;
+  /** The app-wide Text Search budget (#502): throws RATE_LIMITED once spent. */
+  spendVenueSearch?: () => Promise<void>;
   reverseGeocodeSuburb?: (latitude: number, longitude: number) => Promise<string | undefined>;
   fetchPlacePhoto?: (photoName: string) => Promise<string>;
   photoCache?: Pick<Redis, 'get' | 'set'>;
@@ -36,6 +38,7 @@ const COLD_COMPARE_WINDOW_MS = 60 * 60_000;
 
 export function createComparisonRouter({
   searchNearbyVenues,
+  spendVenueSearch,
   reverseGeocodeSuburb,
   fetchPlacePhoto,
   photoCache,
@@ -99,9 +102,12 @@ export function createComparisonRouter({
 
       const ip = requestIp(req);
       req.log?.info({ placeId: input.placeId, source: input.source }, 'Comparison subscribe');
-      // Headers flush lazily on the first event, so a rate-limited cold
-      // Comparison can still answer with a real 429 instead of an SSE error.
+      // Headers flush lazily on the first event, so a cold Comparison over
+      // this IP's window can still answer with a real 429 instead of an SSE
+      // error. The app-wide daily budget (#502) is no wait this caller can
+      // sit out, so it streams its RATE_LIMITED event like any other error.
       let streaming = false;
+      let overHourlyLimit = false;
 
       let unsubscribe: () => void = () => undefined;
       res.on('close', () => unsubscribe());
@@ -110,7 +116,7 @@ export function createComparisonRouter({
         (event) => {
           if (res.writableEnded) return;
           if (!streaming) {
-            if (event.type === 'error' && event.code === 'RATE_LIMITED') {
+            if (event.type === 'error' && overHourlyLimit) {
               const retryAfter = retryAfterSeconds(coldCompareRequests, ip, COLD_COMPARE_WINDOW_MS);
               res.setHeader('Retry-After', retryAfter);
               // Off the handler's stack, so a throw would never reach errorHandler.
@@ -137,8 +143,19 @@ export function createComparisonRouter({
           if (type === 'comparison' || type === 'error') res.end();
         },
         {
-          beginColdCompare: () =>
-            admitRequest(coldCompareRequests, ip, COLD_COMPARE_LIMIT, COLD_COMPARE_WINDOW_MS),
+          beginColdCompare: () => {
+            overHourlyLimit = !admitRequest(
+              coldCompareRequests,
+              ip,
+              COLD_COMPARE_LIMIT,
+              COLD_COMPARE_WINDOW_MS
+            );
+            return !overHourlyLimit;
+          },
+          refundColdCompare: () => {
+            const window = coldCompareRequests.get(ip);
+            if (window) window.count--;
+          },
         }
       );
       return undefined;
@@ -157,6 +174,8 @@ export function createComparisonRouter({
       }
 
       venueLimit(req, res);
+      // Spent before either Google call starts, so a refused search bills no Geocoding.
+      await spendVenueSearch?.();
       const [venues, suburb] = await Promise.all([
         searchNearbyVenues({
           latitude: input.latitude,

@@ -21,6 +21,7 @@ import type { RedisLike } from '../redis/redisLike.js';
 import type { Session } from '../store/sessionStore.js';
 import { wantedPackForm, type IngredientAmount, type WantedPackForm } from './quantityLadder.js';
 import type { PooledIngredient, PooledRecipe } from './spoonacularClient.js';
+import { spendPaidBudget } from './paidBudget.js';
 import { isStaple } from './staples.js';
 import { deriveSearchTerm, sanitiseIngredientName } from './usToAuTerms.js';
 
@@ -545,6 +546,18 @@ export function createShoppingListService(deps: ShoppingListServiceDeps): Shoppi
       if (listId !== candidate) {
         await deps.redis.del(recipeKey(candidate));
         await deps.redis.del(listKey(candidate));
+        return listId;
+      }
+
+      // The app-wide daily pricing budget (#502), spent by the winner alone.
+      // Refused, the list reads exactly as a failed pricing does: the Recipe
+      // and method are there, the prices are unavailable, and the Match that
+      // minted it never notices.
+      try {
+        await spendPaidBudget(deps.redis, 'shoppingListMint');
+      } catch (error) {
+        logger.warn({ err: error, sessionCode, listId }, 'Shopping List minted unpriced');
+        await deps.redis.del(listKey(listId)).catch(() => undefined);
         return listId;
       }
 

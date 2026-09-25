@@ -27,6 +27,14 @@ const serviceEnv = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role',
   OWNED_RECIPES_DIR: fileURLToPath(new URL('tests/fixtures/owned-recipes/', import.meta.url)),
   MOVIES_FILE: fileURLToPath(new URL('tests/fixtures/movies.json', import.meta.url)),
+  // Every suite that boots the app spends the paid-API budget (#502) on the
+  // shared Redis, and its counters outlive the run. Ceilings out of reach keep
+  // one suite's reruns from spending another's; the budget's own tests pass
+  // their ceilings explicitly.
+  PLACES_TEXT_SEARCH_DAILY_CEILING: '1000000',
+  PLACE_PHOTO_DAILY_CEILING: '1000000',
+  SHOPPING_LIST_MINT_DAILY_CEILING: '1000000',
+  COLD_COMPARISON_MONTHLY_CEILING: '1000000',
 };
 
 export default defineConfig({

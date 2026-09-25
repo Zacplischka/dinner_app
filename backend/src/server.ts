@@ -35,6 +35,7 @@ import { createFriendsService } from './services/FriendsService.js';
 import { createComparisonService } from './services/ComparisonService.js';
 import { createOrderService } from './services/OrderService.js';
 import { runApifyActor } from './services/apifyClient.js';
+import { checkPaidBudget, spendPaidBudget, type PaidSku } from './services/paidBudget.js';
 import * as friendsStore from './store/friendsStore.js';
 import * as comparisonSnapshotStore from './store/comparisonSnapshotStore.js';
 import * as RestaurantSearchService from './services/RestaurantSearchService.js';
@@ -62,6 +63,14 @@ const allowedOrigins = [
 // Composition root: the only place production stores and services are
 // constructed. Everything else receives them by injection.
 const sessionStore = createSessionStore(redis);
+// The global paid-API budget (#502), spent where each paid Google call is
+// wired, so every route and socket path that reaches one pays into it.
+const budgeted =
+  <A extends unknown[], R>(sku: PaidSku, call: (...args: A) => Promise<R>) =>
+  async (...args: A): Promise<R> => {
+    await spendPaidBudget(redis, sku);
+    return call(...args);
+  };
 // Late-bound fetch throughout: the boundary tests fake it, and the clients are
 // built once.
 // One shared Spoonacular client, and one daily-points guard around the fetch
@@ -96,7 +105,9 @@ const shoppingListService = createShoppingListService({
 });
 const sessionService = createSessionService({
   store: sessionStore,
-  searchNearbyRestaurants: (...args) => RestaurantSearchService.searchNearbyRestaurants(...args),
+  searchNearbyRestaurants: budgeted('placesTextSearch', (...args) =>
+    RestaurantSearchService.searchNearbyRestaurants(...args)
+  ),
   dealRecipeDeck: (craving, deckSize) => recipePoolService.dealDeck(craving, deckSize),
   redealRecipeDeck: (poolKey, current, deckSize) =>
     recipePoolService.redeal(poolKey, current, deckSize),
@@ -116,6 +127,8 @@ const comparisonService = createComparisonService({
   doorDashActorId: config.apify.doorDashActorId,
   fetchPlaceDetails: (...args) => RestaurantSearchService.fetchPlaceDetails(...args),
   snapshotStore: comparisonSnapshotStore,
+  spendColdComparison: () => spendPaidBudget(redis, 'coldComparison'),
+  checkColdComparison: () => checkPaidBudget(redis, 'coldComparison'),
 });
 const orderService = createOrderService({
   store: sessionStore,
@@ -165,8 +178,11 @@ app.use(
   '/api/comparison',
   createComparisonRouter({
     searchNearbyVenues: (...args) => RestaurantSearchService.searchNearbyVenues(...args),
+    spendVenueSearch: () => spendPaidBudget(redis, 'placesTextSearch'),
     reverseGeocodeSuburb: (...args) => RestaurantSearchService.reverseGeocodeSuburb(...args),
-    fetchPlacePhoto: (...args) => RestaurantSearchService.fetchPlacePhoto(...args),
+    fetchPlacePhoto: budgeted('placePhoto', (...args) =>
+      RestaurantSearchService.fetchPlacePhoto(...args)
+    ),
     photoCache: redis,
     comparisonService,
   })
