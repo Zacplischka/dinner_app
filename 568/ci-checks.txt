@@ -1,0 +1,12 @@
+Verify Production Deploy	skipping	0	https://github.com/Zacplischka/dinner_app/actions/runs/36089669743/job/107930004011	
+Compile android	pass	3m17s	https://github.com/Zacplischka/dinner_app/actions/runs/36089669740/job/107929171269	
+Compile ios	pass	3m57s	https://github.com/Zacplischka/dinner_app/actions/runs/36089669740/job/107929171094	
+Contract Tests	pass	46s	https://github.com/Zacplischka/dinner_app/actions/runs/36089669743/job/107929170993	
+E2E (keyless mobile subset)	pass	3m51s	https://github.com/Zacplischka/dinner_app/actions/runs/36089669743/job/107929171141	
+Integration Tests	pass	1m11s	https://github.com/Zacplischka/dinner_app/actions/runs/36089669743/job/107929171221	
+Lint and Type Check	pass	1m45s	https://github.com/Zacplischka/dinner_app/actions/runs/36089669743/job/107929171166	
+claude-review	pass	4m18s	https://github.com/Zacplischka/dinner_app/actions/runs/36089669782/job/107929171578	
+Compile android	Reject development bundles at the native Release entrypoint	2026-09-25T03:19:29.0884874Z Mobile release guard: Release requires production preparation. Configure production settings and run npm run mobile:sync --workspace=frontend -- production.
+Compile android	Reject development bundles at the native Release entrypoint	2026-09-25T03:19:29.0892565Z Mobile release guard: Release requires production preparation. Configure production settings and run npm run mobile:sync --workspace=frontend -- production.
+Compile ios	Reject development bundles at the native Release entrypoint	2026-09-25T03:20:06.1695290Z Mobile release guard: Release requires production preparation. Configure production settings and run npm run mobile:sync --workspace=frontend -- production.
+Compile ios	Reject development bundles at the native Release entrypoint	2026-09-25T03:20:06.1719160Z Mobile release guard: Release requires production preparation. Configure production settings and run npm run mobile:sync --workspace=frontend -- production.

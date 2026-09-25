@@ -1,0 +1,16 @@
+label: head-prod  tarball: 568-head.tar
+env files present in frontend/: .env.production 
+committed .env.production keys: VITE_BACKEND_URL 
+VITE_BACKEND_URL override in process env: <none>
+vite build exit=0
+--- '/api' base literals in dist/assets/*.js (url-shaped):
+   1 "https://backend-production-4ce9.up.railway.app/api"
+--- occurrences of 'localhost:3001' in dist/assets/*.js:
+(end localhost count)
+--- occurrences of 'VITE_API_BASE_URL' in dist/assets/*.js:
+(end VITE_API_BASE_URL count)
+--- occurrences of the backend origin in dist/assets/*.js (file: count):
+dist/assets/apiClient-09Or2Il4.js:1
+dist/assets/index-Bopy58L8.js:1
+dist/assets/socketBindings-C_B5a6Gw.js:1
+--- CSP connect-src in dist/index.html:

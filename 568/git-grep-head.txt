@@ -1,0 +1,1 @@
+10fa1d2a5966219db3c4bf80022bba0eabae5e9d:docs/archive/mobile-app-transformation-plan.md:81:3. Keep `VITE_API_BASE_URL` and `VITE_BACKEND_URL` for the remote services; add one explicit public web origin for user-facing links. Native release builds must fail if required URLs are missing, non-HTTPS or accidentally point at a development backend.

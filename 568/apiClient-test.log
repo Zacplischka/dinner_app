@@ -1,0 +1,36 @@
+
+ RUN  v4.1.11 <local>
+
+stderr | tests/unit/apiClient.test.ts > apiClient > createSession with location > derives the API base from VITE_BACKEND_URL="https://api.example.test"
+GoTrueClient@sb-placeholder-auth-token:1 (2.116.0) 2026-09-25T03:19:44.814Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+stderr | tests/unit/apiClient.test.ts > apiClient > createSession with location > derives the API base from VITE_BACKEND_URL=""
+GoTrueClient@sb-placeholder-auth-token:2 (2.116.0) 2026-09-25T03:19:44.815Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+ ✓ tests/unit/apiClient.test.ts > apiClient > bounds Profile requests and clears timers without requiring AbortSignal.timeout 3ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > should send location and radius to backend 1ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > should handle location without address 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > carries the Mood on the wire for a Watch Session (#369) 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > carries the Host-chosen Deck size, and leaves it off when there is none (#415) 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > should allow creating session without location (backward compatibility) 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > should throw error if no restaurants found 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > should use fallback error message when create session response has no message 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > derives the API base from VITE_BACKEND_URL="https://api.example.test" 2ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > createSession with location > derives the API base from VITE_BACKEND_URL="" 1ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > error normalization > preserves code, message, and status from a canonical { code, message } body 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > error normalization > carries a legacy error-only body value verbatim as the code 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > error normalization > falls back to UNKNOWN and an HTTP message for body-less failures 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > 204 No Content success > resolves without parsing a body 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > getVenues > fetches nearby Venues without authentication 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > getRestaurants > should fetch restaurants for session code 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > getRestaurants > should throw error for invalid session code 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > getRestaurants > should throw error for session with no restaurants 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > getRestaurants > should use fallback error message for restaurant failures without a message 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > getSession > should fetch session details 0ms
+ ✓ tests/unit/apiClient.test.ts > apiClient > getSession > should use fallback error message for session lookup failures 0ms
+
+ Test Files  1 passed (1)
+      Tests  21 passed (21)
+   Start at  13:19:44
+   Duration  534ms (transform 48ms, setup 140ms, import 60ms, tests 10ms, environment 234ms)
+

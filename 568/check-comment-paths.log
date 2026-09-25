@@ -1,0 +1,16 @@
+✔ extracts doc paths from comments, resolving and dangling alike (1.182791ms)
+✔ path-like strings that are not documentation references are ignored (0.06725ms)
+✔ only comment text is scanned, never code (0.08825ms)
+✔ a dangling citation in a source tree is reported, a resolving one is not (1.118166ms)
+✔ markdown links resolve from the citing file, backticked cites from the repo root (0.253375ms)
+✔ a dangling markdown link or cite is reported, a resolving one is not (0.585084ms)
+✔ no comment in backend, frontend or shared sources cites a missing repository path (24.988875ms)
+✔ no committed Markdown file links or cites a missing repository path (14.821ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.599

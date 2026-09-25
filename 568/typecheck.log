@@ -1,0 +1,8 @@
+
+> dinder@1.0.0 typecheck
+> npm run build --workspace=shared && npx tsc --noEmit -p backend && npx tsc --noEmit -p backend/tsconfig.test.json && npx tsc --noEmit -p frontend && npx tsc --noEmit -p frontend/tsconfig.test.json
+
+
+> @dinder/shared@1.0.0 build
+> tsc
+

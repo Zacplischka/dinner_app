@@ -1,0 +1,10 @@
+captured: 2026-09-25T03:23:22Z
+index bundle: https://yupcrew.com/assets/index-C9mcwYDP.js (43825 bytes)
+apiClient chunk: https://yupcrew.com/assets/apiClient-8kRiD7y0.js (3785 bytes)
+--- apiClient chunk: API base constant (url ending /api):
+   1 "https://backend-production-4ce9.up.railway.app/api"
+--- apiClient chunk: 'localhost:3001' count: 0
+--- index chunk: literal 'https://backend-production-4ce9.up.railway.app/api' count: 1
+--- index chunk: inlined env keys (values omitted):
+VITE_API_BASE_URL: VITE_BACKEND_URL: VITE_SUPABASE_ANON_KEY: VITE_SUPABASE_URL: 
+--- index chunk: VITE_BACKEND_URL value: VITE_BACKEND_URL:"https://backend-production-4ce9.up.railway.app"

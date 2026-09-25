@@ -1,0 +1,59 @@
+
+> @dinder/frontend@1.0.0 test
+> npm run test:unit
+
+
+> @dinder/frontend@1.0.0 test:unit
+> vitest run
+
+
+ RUN  v4.1.11 <local>
+
+Error: Uncaught [Error: boom]
+    at reportException (<local>:66:24)
+    at innerInvokeEventListeners (<local>:353:9)
+    at invokeEventListeners (<local>:286:3)
+    at HTMLUnknownElementImpl._dispatch (<local>:233:9)
+    at HTMLUnknownElementImpl.dispatchEvent (<local>:104:17)
+    at HTMLUnknownElement.dispatchEvent (<local>:241:34)
+    at Object.invokeGuardedCallbackDev (<local>:4213:16)
+    at invokeGuardedCallback (<local>:4277:31)
+    at beginWork$1 (<local>:27490:7)
+    at performUnitOfWork (<local>:26599:12) Error: boom
+    at Bomb (<repo>/frontend/tests/unit/errorBoundary.test.tsx:8:9)
+    at renderWithHooks (<local>:15486:18)
+    at mountIndeterminateComponent (<local>:20103:13)
+    at beginWork (<local>:21626:16)
+    at HTMLUnknownElement.callCallback (<local>:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (<local>:26:30)
+    at innerInvokeEventListeners (<local>:350:25)
+    at invokeEventListeners (<local>:286:3)
+    at HTMLUnknownElementImpl._dispatch (<local>:233:9)
+    at HTMLUnknownElementImpl.dispatchEvent (<local>:104:17)
+Error: Uncaught [Error: boom]
+    at reportException (<local>:66:24)
+    at innerInvokeEventListeners (<local>:353:9)
+    at invokeEventListeners (<local>:286:3)
+    at HTMLUnknownElementImpl._dispatch (<local>:233:9)
+    at HTMLUnknownElementImpl.dispatchEvent (<local>:104:17)
+    at HTMLUnknownElement.dispatchEvent (<local>:241:34)
+    at Object.invokeGuardedCallbackDev (<local>:4213:16)
+    at invokeGuardedCallback (<local>:4277:31)
+    at beginWork$1 (<local>:27490:7)
+    at performUnitOfWork (<local>:26599:12) Error: boom
+    at Bomb (<repo>/frontend/tests/unit/errorBoundary.test.tsx:8:9)
+    at renderWithHooks (<local>:15486:18)
+    at mountIndeterminateComponent (<local>:20103:13)
+    at beginWork (<local>:21626:16)
+    at HTMLUnknownElement.callCallback (<local>:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (<local>:26:30)
+    at innerInvokeEventListeners (<local>:350:25)
+    at invokeEventListeners (<local>:286:3)
+    at HTMLUnknownElementImpl._dispatch (<local>:233:9)
+    at HTMLUnknownElementImpl.dispatchEvent (<local>:104:17)
+
+ Test Files  59 passed (59)
+      Tests  722 passed (722)
+   Start at  13:19:57
+   Duration  4.53s (transform 2.90s, setup 6.58s, import 6.82s, tests 12.98s, environment 12.84s)
+

@@ -1,0 +1,16 @@
+✔ release configuration refuses development services and privileged keys before bundling (2.164709ms)
+✔ production verification reads the copied bundle and records only public settings (2.596458ms)
+✔ a direct Release verification after development or staging preparation is rejected (2.642834ms)
+✔ preparation and Release verification agree across process locales (244.47ms)
+✔ stale, missing and additional copied bytes cannot pass a production receipt (5.984167ms)
+✔ Release rejects changed intended settings, missing receipts and invalid public configuration (1.364791ms)
+✔ Release rejects changed or remote Capacitor configuration (1.324041ms)
+✔ a native build using a symlinked checkout cannot silently skip the verifier CLI (111.691834ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1440.571875

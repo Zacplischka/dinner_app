@@ -1,0 +1,13 @@
+ .github/workflows/mobile-checks.yml   |  2 --
+ README.md                             |  2 +-
+ docs/mobile-development.md            |  1 -
+ frontend/.env.production              |  1 -
+ frontend/package.json                 |  2 +-
+ frontend/playwright.config.ts         |  2 +-
+ frontend/scripts/mobile.mjs           |  4 ++--
+ frontend/src/services/apiClient.ts    |  2 +-
+ frontend/src/vite-env.d.ts            |  1 -
+ frontend/tests/unit/apiClient.test.ts | 10 +++++++---
+ frontend/vite.config.ts               |  2 +-
+ scripts/mobile-config.test.mjs        | 12 ++++++------
+ 12 files changed, 20 insertions(+), 21 deletions(-)

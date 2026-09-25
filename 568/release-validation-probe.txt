@@ -1,0 +1,23 @@
+production | valid | ACCEPTED
+production | missing (undefined) | REJECTED: VITE_BACKEND_URL is required for a bundled app
+production | missing (empty) | REJECTED: VITE_BACKEND_URL is required for a bundled app
+production | non-HTTPS | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+production | dev: localhost | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+production | dev: 127.0.0.1 | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+production | dev: [::1] | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+production | dev: .local | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+production | dev: .localhost | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+production | dev: .test | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+production | dev: plain localhost http | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for production
+staging | valid | ACCEPTED
+staging | missing (undefined) | REJECTED: VITE_BACKEND_URL is required for a bundled app
+staging | missing (empty) | REJECTED: VITE_BACKEND_URL is required for a bundled app
+staging | non-HTTPS | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+staging | dev: localhost | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+staging | dev: 127.0.0.1 | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+staging | dev: [::1] | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+staging | dev: .local | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+staging | dev: .localhost | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+staging | dev: .test | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+staging | dev: plain localhost http | REJECTED: VITE_BACKEND_URL must be a public HTTPS endpoint for staging
+production | stray VITE_API_BASE_URL=http://localhost... | ACCEPTED (ignored)

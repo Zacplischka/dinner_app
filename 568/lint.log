@@ -1,0 +1,18 @@
+
+> dinder@1.0.0 lint
+> npm run lint --workspace=backend && npm run lint --workspace=frontend
+
+
+> @dinder/backend@1.0.0 lint
+> eslint src --ext .ts
+
+
+> @dinder/frontend@1.0.0 lint
+> eslint src --ext .ts,.tsx
+
+
+<repo>/frontend/src/pages/SelectionPage.tsx
+  277:46  warning  The ref value 'revealTimerRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'revealTimerRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+✖ 1 problem (0 errors, 1 warning)
+

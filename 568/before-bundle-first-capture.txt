@@ -1,0 +1,8 @@
+captured: 2026-09-25T03:17:25Z
+bundle: https://yupcrew.com/assets/index-CrDm4gge.js (   43825 bytes)
+--- context around backend-production-4ce9.up.railway.app:
+MODE:"production",PROD:!0,SSR:!1,VITE_API_BASE_URL:"https://backend-production-4ce9.up.railway.app/api",VITE_BACKEND_URL:"https://backend-
+--- count of literal 'https://backend-production-4ce9.up.railway.app/api':
+       1
+--- count of 'localhost:3001':
+       0
