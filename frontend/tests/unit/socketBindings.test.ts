@@ -1737,4 +1737,77 @@ describe('socketBindings', () => {
       await oldRecovery;
     }
   });
+
+  // #521: supabase-js now loads after the socket code, so a signed-in reload
+  // can reach the join before the session is restored. A join without the
+  // token loses the verified avatar (#495).
+  describe('waits for auth to settle before joining', () => {
+    const joinCalls = (emit: { mock: { calls: unknown[][] } }) =>
+      emit.mock.calls.filter(([event]) => event === 'session:join');
+
+    function joinable() {
+      const socket = setupSocket();
+      socket.acks.set('session:join', {
+        success: true,
+        data: {
+          participantId: socket.id,
+          sessionCode: 'AB123',
+          displayName: 'Alice',
+          participantCount: 1,
+          rejoinToken: 'rejoin-token',
+          participants: [{ participantId: socket.id, displayName: 'Alice', isHost: true }],
+        },
+      });
+      const emit = vi.spyOn(socket, 'emit');
+      socketBindings.initializeSocket();
+      return emit;
+    }
+
+    it('sends the restored access token once a signed-in session is restored', async () => {
+      const emit = joinable();
+      useAuthStore.setState({ session: null, isLoading: true });
+
+      const joined = socketBindings.joinSession('AB123', 'Alice');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(joinCalls(emit)).toHaveLength(0);
+
+      useAuthStore.setState({ session: { access_token: 'restored' } as any, isLoading: false });
+      expect(await joined).toMatchObject({ success: true });
+      expect(joinCalls(emit)).toEqual([
+        [
+          'session:join',
+          expect.objectContaining({ accessToken: 'restored' }),
+          expect.any(Function),
+        ],
+      ]);
+    });
+
+    it('does not hold a guest', async () => {
+      const emit = joinable();
+      useAuthStore.setState({ session: null, isLoading: false });
+      vi.useFakeTimers();
+
+      // No timer is advanced: a join that waited on one would never resolve.
+      expect(await socketBindings.joinSession('AB123', 'Alice')).toMatchObject({ success: true });
+      expect(joinCalls(emit)).toEqual([
+        ['session:join', expect.objectContaining({ accessToken: undefined }), expect.any(Function)],
+      ]);
+    });
+
+    it('joins without a token after 3 s when auth never settles', async () => {
+      const emit = joinable();
+      useAuthStore.setState({ session: null, isLoading: true });
+      vi.useFakeTimers();
+
+      const joined = socketBindings.joinSession('AB123', 'Alice');
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(joinCalls(emit)).toHaveLength(0);
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await joined).toMatchObject({ success: true });
+      expect(joinCalls(emit)).toEqual([
+        ['session:join', expect.objectContaining({ accessToken: undefined }), expect.any(Function)],
+      ]);
+    });
+  });
 });

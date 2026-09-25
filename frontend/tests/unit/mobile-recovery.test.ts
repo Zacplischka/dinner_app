@@ -53,6 +53,14 @@ vi.mock('../../src/services/socketService', () => ({
   sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
 }));
 
+// App runs initialize() at launch. Native always restores the session first,
+// and a join waits for that (#521).
+async function launch() {
+  const { useAuthStore } = await import('../../src/stores/authStore');
+  await useAuthStore.getState().initialize();
+  return import('../../src/services/socketBindings');
+}
+
 describe('native recovery through the shared socket boundary', () => {
   it('discards a stale basket when a cold native resume receives the same-round waiting Lobby', async () => {
     const participant = {
@@ -86,7 +94,7 @@ describe('native recovery through the shared socket boundary', () => {
     );
     vi.resetModules();
     const { useSessionStore } = await import('../../src/stores/sessionStore');
-    const bindings = await import('../../src/services/socketBindings');
+    const bindings = await launch();
     await useSessionStore.persist.rehydrate();
     expect(useSessionStore.getState()).toMatchObject({
       lobby: undefined,
@@ -143,7 +151,7 @@ describe('native recovery through the shared socket boundary', () => {
 
   it('recovers only with a secure capability, preserves transient failures, resets a missed round and clears Leave', async () => {
     let { useSessionStore } = await import('../../src/stores/sessionStore');
-    let bindings = await import('../../src/services/socketBindings');
+    let bindings = await launch();
     const participant = { participantId: 'old-socket', displayName: 'Alice', isHost: true };
     const lobby = {
       sessionCode: 'AB123',
@@ -177,7 +185,7 @@ describe('native recovery through the shared socket boundary', () => {
     // New JS runtime, same OS storage. Hydration precedes socket initialization.
     vi.resetModules();
     ({ useSessionStore } = await import('../../src/stores/sessionStore'));
-    bindings = await import('../../src/services/socketBindings');
+    bindings = await launch();
     expect(useSessionStore.getState().sessionCode).toBeNull();
     await useSessionStore.persist.rehydrate();
     expect(useSessionStore.getState().isConnected).toBe(false);
