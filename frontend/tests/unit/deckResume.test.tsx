@@ -200,6 +200,14 @@ describe('the Deck cursor survives a reload', () => {
     });
 
     expect(screen.queryByRole('dialog')).toBeNull();
+
+    // #513: the rejoin's replay of a buffer the reload restored (native too) is
+    // all duplicates, so the celebrated Full House stays down.
+    act(() => {
+      useSessionStore.getState().recordLiveSelection('place-1', 'Bob');
+      useSessionStore.getState().recordLiveSelection('place-1', 'Carol');
+    });
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('is cleared when the Selections are reset', () => {

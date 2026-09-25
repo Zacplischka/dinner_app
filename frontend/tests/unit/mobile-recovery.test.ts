@@ -50,6 +50,7 @@ vi.mock('../../src/services/socketService', () => ({
   openOrder: device.openOrder,
   addOrderItem: vi.fn(),
   claimBuyer: vi.fn(),
+  sendLiveSelection: vi.fn(async () => ({ success: true, data: null })),
 }));
 
 describe('native recovery through the shared socket boundary', () => {
@@ -236,5 +237,58 @@ describe('native recovery through the shared socket boundary', () => {
       sessionCode: null,
       rejectedSessionCode: 'AB123',
     });
+  });
+
+  // #513: a rejoin brings every other phone's Live Selections back as a replay.
+  // A native reload that dropped the buffer would take them as news, and
+  // re-announce (or re-celebrate) cards already decided behind the cursor.
+  it('restores the Live Selection buffer after a native reload, so the rejoin replay is a duplicate', async () => {
+    device.preferences.clear();
+    device.credentials.clear();
+    vi.resetModules();
+    let { useSessionStore } = await import('../../src/stores/sessionStore');
+    let bindings = await import('../../src/services/socketBindings');
+    const participant = { participantId: 'old-socket', displayName: 'Alice', isHost: true };
+    device.join.mockResolvedValue({
+      success: true,
+      data: {
+        participantId: participant.participantId,
+        rejoinToken: 'secret-capability',
+        participants: [participant],
+        lobby: {
+          sessionCode: 'AB123',
+          branch: 'watch',
+          state: 'selecting',
+          revision: 1,
+          round: 1,
+          participants: [{ ...participant, hasSubmitted: false }],
+        },
+      },
+    });
+    await bindings.joinSession('AB123', 'Alice');
+    useSessionStore.getState().addSelection('movie-1');
+    useSessionStore.getState().setDeckCursor(1);
+    useSessionStore.getState().recordLiveSelection('movie-1', 'Bob');
+    await vi.waitFor(() =>
+      expect(JSON.parse(device.preferences.get('dinner-session-storage')!).state).toMatchObject({
+        deckCursor: 1,
+      })
+    );
+
+    // New JS runtime, same OS storage.
+    vi.resetModules();
+    ({ useSessionStore } = await import('../../src/stores/sessionStore'));
+    bindings = await import('../../src/services/socketBindings');
+    await useSessionStore.persist.rehydrate();
+    const restored = useSessionStore.getState().liveSelections;
+    expect(restored).toEqual({ 'movie-1': ['Bob'] });
+
+    useSessionStore.getState().recordLiveSelection('movie-1', 'Bob'); // Bob's replay
+    expect(useSessionStore.getState().liveSelections).toBe(restored);
+
+    await bindings.leaveSession('AB123');
+    await vi.waitFor(() =>
+      expect(device.preferences.get('dinner-session-storage')).not.toContain('Bob')
+    );
   });
 });

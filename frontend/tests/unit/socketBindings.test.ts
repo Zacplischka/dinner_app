@@ -533,6 +533,67 @@ describe('socketBindings', () => {
       expect(liveSends(emit.mock.calls)).toEqual([]);
     });
 
+    // Mid-reconnect every send would be refused, so none is attempted.
+    it('re-sends nothing while this phone is itself reconnecting', () => {
+      const socket = setupSocket();
+      const emit = vi.spyOn(socket, 'emit');
+      socketBindings.initializeSocket();
+      selecting();
+      useSessionStore.setState({ isConnected: false });
+
+      socket.trigger('participant:joined', {
+        participantId: 'participant-2',
+        displayName: 'Bob',
+        sessionCode: 'AB123',
+        isRejoin: false,
+      });
+
+      expect(liveSends(emit.mock.calls)).toEqual([]);
+    });
+
+    // A, B and C: C joined while B was offline, so A replayed to C but B was not
+    // there to. A phone never hears participant:joined for its own return, so B
+    // replays its likes once its rejoin has its place back, for C to record.
+    it('re-sends my own current likes once my rejoin into a selecting Session recovers', async () => {
+      const socket = setupSocket();
+      const emit = vi.spyOn(socket, 'emit');
+      sessionStorage.setItem('dinder:rejoin:AB123:Alice', 'rejoin-token');
+      selecting();
+      useSessionStore.setState({
+        currentUserId: participant.participantId,
+        participants: [participant],
+        isConnected: false,
+      });
+      socket.acks.set('session:join', {
+        success: true,
+        data: {
+          participantId: socket.id,
+          sessionCode: 'AB123',
+          displayName: 'Alice',
+          participantCount: 3,
+          rejoinToken: 'next-rejoin-token',
+          state: 'selecting',
+          participants: [
+            { participantId: 'participant-a', displayName: 'Ann', isHost: false },
+            { participantId: socket.id, displayName: 'Alice', isHost: true },
+            { participantId: 'participant-c', displayName: 'Cy', isHost: false },
+          ],
+        },
+      });
+
+      socketBindings.initializeSocket();
+      socket.trigger('connect');
+
+      await vi.waitFor(() => expect(useSessionStore.getState().isConnected).toBe(true));
+      const events = emit.mock.calls.map(([event]) => event);
+      expect(events.indexOf('session:join')).toBeGreaterThanOrEqual(0);
+      expect(events.indexOf('session:join')).toBeLessThan(events.indexOf('selection:live'));
+      expect(liveSends(emit.mock.calls)).toEqual([
+        { sessionCode: 'AB123', placeId: 'place-1', retract: undefined, round: 2 },
+        { sessionCode: 'AB123', placeId: 'place-3', retract: undefined, round: 2 },
+      ]);
+    });
+
     // The joiner's side: the room's re-broadcast of a replay lands in the
     // buffer, and a replay this phone already holds changes nothing at all.
     it('records a replayed Live Selection once, however often it is re-sent', () => {
